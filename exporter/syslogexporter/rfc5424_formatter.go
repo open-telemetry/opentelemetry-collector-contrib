@@ -91,7 +91,7 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 			if !ok {
 				continue
 			}
-			sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
+			sdElements = append(sdElements, fmt.Sprintf("%s=%q", k, vv))
 		}
 		sdBuilder.WriteString(fmt.Sprint(sdElements))
 	}

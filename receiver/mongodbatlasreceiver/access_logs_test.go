@@ -387,7 +387,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -397,7 +397,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -412,7 +412,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -432,7 +432,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -442,7 +442,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},

@@ -245,7 +245,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	randString, _ := uuid.NewRandom()
 	// the header (i.e. the portion before \n) is invalid
 	err := writePacket(t, addr,
-		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
+		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody") //nolint:gocritic //sprintfQuotedString for JSON
 	assert.NoError(t, err, "cannot write packet in the TestJsonInvalidHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable

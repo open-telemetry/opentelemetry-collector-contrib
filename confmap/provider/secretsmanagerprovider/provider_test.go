@@ -67,7 +67,7 @@ func TestSecretsManagerFetchSecretIgnoreDefault(t *testing.T) {
 func TestFetchSecretsManagerFieldValidJson(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
-	secretJSON := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue)
+	secretJSON := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue) //nolint:gocritic //sprintfQuotedString for JSON
 
 	fp := newTestProvider(secretJSON)
 	result, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
@@ -95,7 +95,7 @@ func TestFetchSecretsManagerFieldInvalidJson(t *testing.T) {
 func TestFetchSecretsManagerFieldMissingInJson(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
-	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue)
+	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue) //nolint:gocritic //sprintfQuotedString for JSON
 
 	fp := newTestProvider(secretJSON)
 	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
@@ -123,7 +123,7 @@ func TestFetchSecretsManagerDefaultValueEmptySelector(t *testing.T) {
 func TestFetchSecretsManagerDefaultValueEmptySecret(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
-	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue)
+	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue) //nolint:gocritic //sprintfQuotedString for JSON
 	defaultValue := "defaultValue"
 
 	fp := newTestProvider(secretJSON)
