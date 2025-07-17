@@ -146,8 +146,9 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 	var ingestor azkustoingest.Ingestor
 
 	var ingestOptions []azkustoingest.FileOption
-	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
-	ingestOptions = append(ingestOptions, azkustoingest.CompressionType(ingestoptions.GZIP))
+	ingestOptions = append(ingestOptions,
+		azkustoingest.FileFormat(azkustoingest.JSON),
+		azkustoingest.CompressionType(ingestoptions.GZIP))
 	// Expect that this mapping is already existent
 	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
 		ingestOptions = append(ingestOptions, refOption)

@@ -41,8 +41,9 @@ func TestTranslateFromTraces(t *testing.T) {
 			ptracesFile: filepath.Join("testdata", "two-resource-spans-different-resource-attributes-ptraces", "ptraces.yaml"),
 			wantPayloads: func() []faroTypes.Payload {
 				payloads := make([]faroTypes.Payload, 0)
-				payloads = append(payloads, PayloadFromFile(t, "two-resource-spans-different-resource-attributes-ptraces/payload-1.json"))
-				payloads = append(payloads, PayloadFromFile(t, "two-resource-spans-different-resource-attributes-ptraces/payload-2.json"))
+				payloads = append(payloads,
+					PayloadFromFile(t, "two-resource-spans-different-resource-attributes-ptraces/payload-1.json"),
+					PayloadFromFile(t, "two-resource-spans-different-resource-attributes-ptraces/payload-2.json"))
 				return payloads
 			}(),
 			wantErr: assert.NoError,

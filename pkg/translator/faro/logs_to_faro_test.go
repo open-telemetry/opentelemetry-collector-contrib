@@ -50,8 +50,9 @@ func TestTranslateFromLogs(t *testing.T) {
 			plogsFile: filepath.Join("testdata", "two-identical-log-records-different-service-name-resource-attribute", "plogs.yaml"),
 			wantPayloads: func() []faroTypes.Payload {
 				payloads := make([]faroTypes.Payload, 0)
-				payloads = append(payloads, PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-1.json"))
-				payloads = append(payloads, PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-2.json"))
+				payloads = append(payloads,
+					PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-1.json"),
+					PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-2.json"))
 				return payloads
 			}(),
 			wantErr: assert.NoError,
@@ -71,8 +72,9 @@ func TestTranslateFromLogs(t *testing.T) {
 			plogsFile: filepath.Join("testdata", "two-log-records-different-app-release", "plogs.yaml"),
 			wantPayloads: func() []faroTypes.Payload {
 				payloads := make([]faroTypes.Payload, 0)
-				payloads = append(payloads, PayloadFromFile(t, "two-log-records-different-app-release/payload-1.json"))
-				payloads = append(payloads, PayloadFromFile(t, "two-log-records-different-app-release/payload-2.json"))
+				payloads = append(payloads,
+					PayloadFromFile(t, "two-log-records-different-app-release/payload-1.json"),
+					PayloadFromFile(t, "two-log-records-different-app-release/payload-2.json"))
 				return payloads
 			}(),
 			wantErr: assert.NoError,

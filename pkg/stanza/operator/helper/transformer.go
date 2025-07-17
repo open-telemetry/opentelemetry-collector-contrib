@@ -144,9 +144,10 @@ func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool,
 
 func zapAttributes(entry *entry.Entry, action string, err error) []zap.Field {
 	logFields := make([]zap.Field, 0, 3+len(entry.Attributes))
-	logFields = append(logFields, zap.Error(err))
-	logFields = append(logFields, zap.String("action", action))
-	logFields = append(logFields, zap.Time("entry.timestamp", entry.Timestamp))
+	logFields = append(logFields,
+		zap.Error(err),
+		zap.String("action", action),
+		zap.Time("entry.timestamp", entry.Timestamp))
 	for attrName, attrValue := range entry.Attributes {
 		logFields = append(logFields, zap.Any(attrName, attrValue))
 	}

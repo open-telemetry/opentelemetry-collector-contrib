@@ -67,8 +67,9 @@ func newMetricsExporter(
 	gatewayUsage *attributes.GatewayUsage,
 ) (*metricsExporter, error) {
 	options := cfg.Metrics.ToTranslatorOpts()
-	options = append(options, otlpmetrics.WithFallbackSourceProvider(sourceProvider))
-	options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	options = append(options,
+		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
+		otlpmetrics.WithStatsOut(statsOut))
 	if pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled() {
 		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
 	} else {

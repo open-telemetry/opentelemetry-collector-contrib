@@ -463,8 +463,9 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 		// Instead of sending metrics as a Statistical Set (contains min,max, count, sum), the emfexporter will enrich the
 		// values by sending each quantile values as a datapoint (from quantile 0 ... 1)
 		values := metric.QuantileValues()
-		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs})
-		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
+		datapoints = append(datapoints,
+			dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs},
+			dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
 
 		for i := 0; i < values.Len(); i++ {
 			cLabels := maps.Clone(labels)
