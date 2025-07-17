@@ -66,3 +66,81 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 9, metrics.MetricCount())
 }
+
+func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *testing.T) {
+	encodedMetrics := `{"records":[
+{
+  "time":"2025-07-14T12:35:36.3259399Z",
+  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
+  "ResourceGUID":"00000000-0000-0000-0000-000000000000",
+  "Type":"AppMetrics",
+  "AppRoleInstance":"00000000-0000-0000-0000-000000000000",
+  "AppRoleName":"service",
+  "AppVersion":"1.0.0.0",
+  "ClientBrowser":"Other",
+  "ClientCity":"City",
+  "ClientCountryOrRegion":"Country",
+  "ClientIP":"0.0.0.0",
+  "ClientModel":"Other",
+  "ClientOS":"Linux",
+  "ClientStateOrProvince":"Province",
+  "ClientType":"PC",
+  "IKey":"00000000-0000-0000-0000-000000000000",
+  "_BilledSize":444,
+  "SDKVersion":"dotnetiso:1.1.0.0_dotnet8.0.16:otel1.12.0:ext1.4.0",
+  "Name":"metric.name",
+  "Sum":8,
+  "Min":8,
+  "Max":8,
+  "ItemCount":1
+}
+]}`
+	event := eventhub.Event{Data: []byte(encodedMetrics)}
+	logger := zap.NewNop()
+	unmarshaler := newAzureResourceMetricsUnmarshaler(
+		component.BuildInfo{
+			Command:     "Test",
+			Description: "Test",
+			Version:     "Test",
+		},
+		logger,
+		[]string{
+			"",
+		},
+	)
+	metrics, err := unmarshaler.UnmarshalMetrics(&event)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 4, metrics.MetricCount())
+
+	expectedAttributes := map[string]string{
+		"service.instance.id":   "00000000-0000-0000-0000-000000000000",
+		"service.name":          "service",
+		"service.version":       "1.0.0.0",
+		"telemetry.sdk.version": "dotnetiso:1.1.0.0_dotnet8.0.16:otel1.12.0:ext1.4.0",
+		"cloud.provider":        "azure",
+		"resourceId":            "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
+		"ClientBrowser":         "Other",
+		"ClientCity":            "City",
+		"ClientCountryOrRegion": "Country",
+		"ClientIP":              "0.0.0.0",
+		"ClientModel":           "Other",
+		"ClientOS":              "Linux",
+		"ClientStateOrProvince": "Province",
+		"ClientType":            "PC",
+	}
+	metric := metrics.ResourceMetrics().At(0).Resource()
+
+	assert.Equal(t, len(expectedAttributes), metric.Attributes().Len())
+
+	for k, expected := range expectedAttributes {
+		actual, ok := metric.Attributes().Get(k)
+
+		if !ok {
+			t.Errorf("Attribute %s not found", k)
+			continue
+		}
+
+		assert.Equal(t, expected, actual.AsString())
+	}
+}

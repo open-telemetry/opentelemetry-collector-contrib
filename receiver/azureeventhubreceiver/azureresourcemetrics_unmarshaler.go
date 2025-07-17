@@ -6,6 +6,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,28 +42,25 @@ type azureMetricRecords struct {
 }
 
 type azureMetricAppender interface {
-	AppendMetric(azureResourceMetricsConfiger, *pmetric.Metrics) error
+	AppendMetrics(azureResourceMetricsConfiger, map[string]interface{}, *pmetric.Metrics) error
 }
 
 type azureGenericMetricRecord struct {
-	Type   string
 	Record azureMetricAppender
+	Fields map[string]interface{}
 }
 
 func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
-	var recordWithType struct {
-		Type string `json:"Type"`
-	}
 	typeDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
-	err := typeDecoder.Decode(&recordWithType)
+	err := typeDecoder.Decode(&r.Fields)
 
 	if err != nil {
 		return err
 	}
 
-	r.Type = recordWithType.Type
+	recordType, _ := r.Fields["Type"].(string)
 
-	switch r.Type {
+	switch recordType {
 	case "AppMetrics":
 		r.Record = &azureAppMetricRecord{}
 	default:
@@ -93,7 +91,7 @@ type azureResourceMetricRecord struct {
 	Average    float64 `json:"average"`
 }
 
-func (r *azureResourceMetricRecord) AppendMetric(c azureResourceMetricsConfiger, md *pmetric.Metrics) error {
+func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, _ map[string]interface{}, md *pmetric.Metrics) error {
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
 
 	resource := resourceMetrics.Resource()
@@ -168,23 +166,12 @@ func (r *azureResourceMetricRecord) AppendMetric(c azureResourceMetricsConfiger,
 // azureMetricRecord represents a single Azure Metric following
 // the common schema does not exist (yet):
 type azureAppMetricRecord struct {
-	Time       string `json:"time"`
-	ResourceID string `json:"resourceId"`
-	Type       string `json:"Type"`
+	Time string `json:"time"`
 
 	AppRoleInstance string `json:"AppRoleInstance"`
 	AppRoleName     string `json:"AppRoleName"`
 	AppVersion      string `json:"AppVersion"`
 	SDKVersion      string `json:"SDKVersion"`
-
-	ClientBrowser         string `json:"ClientBrowser"`
-	ClientCity            string `json:"ClientCity"`
-	ClientCountryOrRegion string `json:"ClientCountryOrRegion"`
-	ClientIP              string `json:"ClientIP"`
-	ClientModel           string `json:"ClientModel"`
-	ClientOS              string `json:"ClientOS"`
-	ClientStateOrProvince string `json:"ClientStateOrProvince"`
-	ClientType            string `json:"ClientType"`
 
 	MetricName string  `json:"Name"`
 	Total      float64 `json:"Sum"`
@@ -193,7 +180,7 @@ type azureAppMetricRecord struct {
 	Count      float64 `json:"ItemCount"`
 }
 
-func (r *azureAppMetricRecord) AppendMetric(c azureResourceMetricsConfiger, md *pmetric.Metrics) error {
+func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, fields map[string]interface{}, md *pmetric.Metrics) error {
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
 
 	resource := resourceMetrics.Resource()
@@ -203,16 +190,35 @@ func (r *azureAppMetricRecord) AppendMetric(c azureResourceMetricsConfiger, md *
 	resource.Attributes().PutStr(string(conventions.ServiceNameKey), r.AppRoleName)
 	resource.Attributes().PutStr(string(conventions.ServiceVersionKey), r.AppVersion)
 
+	ignoredAttributes := []string{
+		"time",
+		"Type",
+		"ResourceGUID",
+		"AppRoleInstance",
+		"AppRoleName",
+		"AppVersion",
+		"SDKVersion",
+		"IKey",
+		"_BilledSize",
+		"Name",
+		"Sum",
+		"Min",
+		"Max",
+		"ItemCount",
+	}
+
+	for k, v := range fields {
+		if slices.Contains(ignoredAttributes, k) {
+			continue
+		}
+
+		resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+	}
+
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
 	metrics := scopeMetrics.Metrics()
 	metrics.EnsureCapacity(4)
-
-	if r.ResourceID != "" {
-		resourceMetrics.Resource().Attributes().PutStr(azureResourceID, r.ResourceID)
-	} else {
-		c.GetLogger().Warn("No ResourceID Set on Metrics!")
-	}
 
 	nanos, err := asTimestamp(r.Time, c.GetTimeFormat())
 	if err != nil {
@@ -278,7 +284,7 @@ func (r *azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (p
 	}
 
 	for _, mr := range azureMetrics.Records {
-		err := mr.Record.AppendMetric(r, &md)
+		err := mr.Record.AppendMetrics(r, mr.Fields, &md)
 		if err != nil {
 			r.logger.Warn("Failed to append metric", zap.Error(err))
 		}
