@@ -136,7 +136,6 @@ linters:
         - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
-        - typeAssertChain
         - typeDefFirst
         - unnamedResult
         - unnecessaryBlock
