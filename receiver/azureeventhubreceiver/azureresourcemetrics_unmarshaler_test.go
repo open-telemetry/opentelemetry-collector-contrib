@@ -40,6 +40,10 @@ var encodedMetrics = `{"records":[
   "IKey":"00000000-0000-0000-0000-000000000000",
   "_BilledSize":444,
   "SDKVersion":"dotnetiso:1.1.0.0_dotnet8.0.16:otel1.12.0:ext1.4.0",
+  "Properties": {
+    "an_attribute": "a_value",
+    "another_attribute": "another_value"
+  },
   "Name":"metric.name",
   "Sum":8,
   "Min":8,
@@ -88,15 +92,11 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *te
 		"service.version":       "1.0.0.0",
 		"telemetry.sdk.version": "dotnetiso:1.1.0.0_dotnet8.0.16:otel1.12.0:ext1.4.0",
 		"cloud.provider":        "azure",
-		"resourceId":            "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
-		"ClientBrowser":         "Other",
-		"ClientCity":            "City",
-		"ClientCountryOrRegion": "Country",
-		"ClientIP":              "0.0.0.0",
-		"ClientModel":           "Other",
-		"ClientOS":              "Linux",
-		"ClientStateOrProvince": "Province",
-		"ClientType":            "PC",
+		"cloud.region":          "Country",
+		"azure.resource.id":     "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
+		"os.name":               "Linux",
+		"an_attribute":          "a_value",
+		"another_attribute":     "another_value",
 	}
 	metric := metrics.ResourceMetrics().At(1).Resource()
 
