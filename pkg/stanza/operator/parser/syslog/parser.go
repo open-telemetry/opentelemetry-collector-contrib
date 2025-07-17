@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-var priRegex = regexp.MustCompile(`\<\d{1,3}\>`)
+var priRegex = regexp.MustCompile(`<\d{1,3}>`)
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)

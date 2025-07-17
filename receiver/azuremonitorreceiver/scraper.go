@@ -317,7 +317,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 }
 
 func getResourceGroupFromID(id string) string {
-	s := regexp.MustCompile(`\/resourcegroups/([^\/]+)\/`)
+	s := regexp.MustCompile(`/resourcegroups/([^/]+)/`)
 	match := s.FindStringSubmatch(strings.ToLower(id))
 
 	if len(match) == 2 {

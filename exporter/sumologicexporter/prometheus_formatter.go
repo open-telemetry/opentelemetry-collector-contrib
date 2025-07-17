@@ -32,7 +32,7 @@ const (
 )
 
 func newPrometheusFormatter() prometheusFormatter {
-	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z\./_:\-]`)
+	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z./_:\-]`)
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,

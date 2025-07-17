@@ -1554,7 +1554,7 @@ service:
 		got = strings.ReplaceAll(got, "\r\n", "\n")
 
 		// replace the port because that changes on each run
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replaced := portRegex.ReplaceAll([]byte(got), []byte(":55555"))
 		assert.Equal(t, expectedOwnMetricsSection, string(replaced))
 	})
@@ -1730,7 +1730,7 @@ service:
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
 		// replace random port numbers
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
 		assert.Equal(t, expectedMergedConfig, string(replacedMergedConfig))
 	})
