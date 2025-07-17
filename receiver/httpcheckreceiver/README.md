@@ -42,7 +42,6 @@ Each target has the following properties:
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
 - `body` (optional): Request body content for POST, PUT, PATCH, and other methods.
-- `validations` (optional): Response validation rules for API monitoring.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
@@ -124,40 +123,6 @@ receivers:
 - Other content: `text/plain`
 - Custom headers override auto-detection
 
-### Response Validation
-
-The receiver supports response body validation for API monitoring:
-
-```yaml
-receivers:
-  httpcheck:
-    targets:
-      - endpoint: "https://api.example.com/health"
-        validations:
-          # String matching
-          - contains: "healthy"
-          - not_contains: "error"
-          
-          # JSON path validation using gjson syntax
-          - json_path: "$.status"
-            equals: "ok"
-          - json_path: "$.services[*].status"
-            equals: "up"
-          
-          # Response size validation (bytes)
-          - max_size: 1024
-          - min_size: 10
-          
-          # Regex validation
-          - regex: "^HTTP/[0-9.]+ 200"
-```
-
-**Validation Types:**
-- `contains` / `not_contains`: String matching
-- `json_path` + `equals`: JSON path queries using [gjson syntax](https://github.com/tidwall/gjson)
-- `max_size` / `min_size`: Response body size limits
-- `regex`: Regular expression matching
-
 ### Example Configuration
 
 ```yaml
@@ -194,17 +159,9 @@ receivers:
           Authorization: "Bearer <your_bearer_token>"
       - method: "GET"
         endpoint: "https://api.example.com/health"
-        validations:
-          - contains: "healthy"
-          - json_path: "$.status"
-            equals: "ok"
-          - max_size: 1024
       - method: "POST"
         endpoint: "https://api.example.com/users"
         body: '{"name": "Test User", "email": "test@example.com"}'
-        validations:
-          - contains: "created"
-          - json_path: "$.id"
 processors:
   batch:
     send_batch_max_size: 1000
