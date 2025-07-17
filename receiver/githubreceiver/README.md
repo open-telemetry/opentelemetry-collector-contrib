@@ -176,7 +176,7 @@ receivers:
                 WAF-Header: "value"
         scrapers: # The validation expects at least a dummy scraper config
             scraper:
-                github_org: <some value>
+                github_org: open-telemetry
 ```
 
 For tracing, all configuration is set under the `webhook` key. The full set
