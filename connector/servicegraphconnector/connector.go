@@ -360,7 +360,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
-		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
+		if e.ClientService == "" && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
 			if p.config.VirtualNodeExtraLabel {
 				e.VirtualNodeLabel = store.ClientVirtualNode
@@ -368,7 +368,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 			p.onComplete(e)
 		}
 
-		if len(e.ServerService) == 0 {
+		if e.ServerService == "" {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
 			if p.config.VirtualNodeExtraLabel {
 				e.VirtualNodeLabel = store.ServerVirtualNode

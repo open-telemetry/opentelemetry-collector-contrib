@@ -355,7 +355,7 @@ func extractSDKFromKeyVal(kv map[string]string) faroTypes.SDK {
 
 func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKIntegration {
 	sdkIntegrations := make([]faroTypes.SDKIntegration, 0)
-	if len(integrationsString) == 0 {
+	if integrationsString == "" {
 		return sdkIntegrations
 	}
 
@@ -759,7 +759,7 @@ func parseStacktraceFromString(stacktraceStr, exceptionType, exceptionValue stri
 
 func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 	var frame faroTypes.Frame
-	if len(frameStr) == 0 {
+	if frameStr == "" {
 		return nil, nil
 	}
 

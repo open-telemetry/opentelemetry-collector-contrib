@@ -82,7 +82,7 @@ func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) e
 
 func buildKey(prefix string, separator string, key string, depth int) string {
 	res := prefix
-	if depth > 0 && len(prefix) > 0 {
+	if depth > 0 && prefix != "" {
 		res += separator
 	}
 	res += key
@@ -109,7 +109,7 @@ func updateWithPrefixedValues(target map[string]any, prefix string, separator st
 			// now the last value wins
 			// Should the first value win?
 			_, found := target[prefix]
-			if !found || len(suffix) == 0 {
+			if !found || suffix == "" {
 				target[prefix] = source
 				break
 			}
@@ -141,7 +141,7 @@ func inferServerHost(
 	valA, okA := attrs[add_events.AttrServerHost]
 	if okA {
 		host := fmt.Sprintf("%v", valA)
-		if len(host) > 0 {
+		if host != "" {
 			return host
 		}
 	}
@@ -151,7 +151,7 @@ func inferServerHost(
 		valR, okR := resource.Attributes().Get(resKey)
 		if okR {
 			host := valR.AsString()
-			if len(host) > 0 {
+			if host != "" {
 				return host
 			}
 		}

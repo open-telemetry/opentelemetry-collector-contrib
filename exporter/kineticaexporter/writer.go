@@ -791,7 +791,7 @@ func (kiwriter *kiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryR
 func (kiwriter *kiWriter) doChunkedInsert(_ context.Context, tableName string, records []any) error {
 	// Build the final table name with the schema prepended
 	var finalTable string
-	if len(kiwriter.cfg.Schema) != 0 {
+	if kiwriter.cfg.Schema != "" {
 		finalTable = fmt.Sprintf("%s.%s", kiwriter.cfg.Schema, tableName)
 	} else {
 		finalTable = tableName

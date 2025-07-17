@@ -44,12 +44,12 @@ func (cfg *Config) Validate() error {
 	}
 	// Key
 	keyArr := strings.Split(cfg.Key, ":")
-	if len(keyArr) == 2 && len(keyArr[1]) == 0 {
+	if len(keyArr) == 2 && keyArr[1] == "" {
 		/**
 		 * Service name is empty. We are trying our best effort to resolve the service name
 		 */
 		serviceName := resolveServiceNameBestEffort()
-		if len(serviceName) > 0 {
+		if serviceName != "" {
 			cfg.Key = keyArr[0] + ":" + serviceName
 		}
 	}
@@ -64,9 +64,9 @@ func (cfg *Config) Validate() error {
 }
 
 func resolveServiceNameBestEffort() string {
-	if otelServiceName, otelServiceNameDefined := os.LookupEnv("OTEL_SERVICE_NAME"); otelServiceNameDefined && len(otelServiceName) > 0 {
+	if otelServiceName, otelServiceNameDefined := os.LookupEnv("OTEL_SERVICE_NAME"); otelServiceNameDefined && otelServiceName != "" {
 		return otelServiceName
-	} else if awsLambdaFunctionName, awsLambdaFunctionNameDefined := os.LookupEnv("AWS_LAMBDA_FUNCTION_NAME"); awsLambdaFunctionNameDefined && len(awsLambdaFunctionName) > 0 {
+	} else if awsLambdaFunctionName, awsLambdaFunctionNameDefined := os.LookupEnv("AWS_LAMBDA_FUNCTION_NAME"); awsLambdaFunctionNameDefined && awsLambdaFunctionName != "" {
 		return awsLambdaFunctionName
 	}
 	return ""

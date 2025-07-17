@@ -62,7 +62,7 @@ func readCredentialsFile(path string) (string, error) {
 }
 
 func getActualValue(value, filepath string) (string, error) {
-	if len(filepath) > 0 {
+	if filepath != "" {
 		return readCredentialsFile(filepath)
 	}
 

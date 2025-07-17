@@ -31,7 +31,7 @@ func (p *redisSvc) info() (info, error) {
 	lines := strings.Split(str, p.delimiter)
 	attrs := make(map[string]string)
 	for _, line := range lines {
-		if len(line) == 0 || strings.HasPrefix(line, "#") {
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 		pair := strings.Split(line, ":")

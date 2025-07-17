@@ -80,7 +80,7 @@ func TestConfigValidation(t *testing.T) {
 			}
 			if tc.wantErr {
 				assert.Error(t, err)
-				if len(tc.errorMessage) != 0 {
+				if tc.errorMessage != "" {
 					assert.Equal(t, errors.New(tc.errorMessage), err, "Error messages must match")
 				}
 				return

@@ -1248,7 +1248,7 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 }
 
 func (s *Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
-	if settings == nil || len(settings.DestinationEndpoint) == 0 {
+	if settings == nil || settings.DestinationEndpoint == "" {
 		return data
 	}
 	data[fmt.Sprintf("%sEndpoint", signal)] = settings.DestinationEndpoint

@@ -100,7 +100,7 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 
 func (f *rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {
 	formatted := getAttributeValueOrDefault(logRecord, message, emptyMessage)
-	if len(formatted) > 0 {
+	if formatted != "" {
 		formatted = " " + formatted
 	}
 	return formatted

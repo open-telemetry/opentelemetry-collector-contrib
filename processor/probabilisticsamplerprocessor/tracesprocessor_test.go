@@ -893,7 +893,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					require.Empty(t, expectTS)
 				}
 
-				if len(tt.log) == 0 {
+				if tt.log == "" {
 					require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				} else {
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())

@@ -121,7 +121,7 @@ func (cfg *Config) Validate() error {
 			return errors.New("path must contain exactly one * when group_by is enabled")
 		}
 
-		if len(pathParts[0]) == 0 {
+		if pathParts[0] == "" {
 			return errors.New("path must not start with * when group_by is enabled")
 		}
 

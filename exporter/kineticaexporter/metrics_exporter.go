@@ -146,7 +146,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *kineticaMetricsExporte
 func (e *kineticaMetricsExporter) start(ctx context.Context, _ component.Host) error {
 	fmt.Println("SCHEMA NAME - ", e.writer.cfg.Schema)
 
-	if e.writer.cfg.Schema != "" && len(e.writer.cfg.Schema) != 0 {
+	if e.writer.cfg.Schema != "" {
 		// Config has a schema name
 		if err := createSchema(ctx, e.writer, e.writer.cfg); err != nil {
 			return err
@@ -202,7 +202,7 @@ func createTablesForMetricType(ctx context.Context, metricTypeDDLs []string, kiW
 
 	var schema string
 	schema = strings.Trim(kiWriter.cfg.Schema, " ")
-	if len(schema) > 0 {
+	if schema != "" {
 		schema += "."
 	} else {
 		schema = ""

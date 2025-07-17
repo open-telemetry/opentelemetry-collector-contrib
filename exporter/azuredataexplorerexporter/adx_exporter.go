@@ -194,7 +194,7 @@ func getMappingRef(config *Config, telemetryDataType int) azkustoingest.FileOpti
 
 func createKcsb(config *Config, version string) *azkustodata.ConnectionStringBuilder {
 	var kcsb *azkustodata.ConnectionStringBuilder
-	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
+	isManagedIdentity := strings.TrimSpace(config.ManagedIdentityID) != ""
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {

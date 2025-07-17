@@ -73,7 +73,7 @@ func (logEvent *Event) Validate(logger *zap.Logger) error {
 	if *logEvent.InputLogEvent.Timestamp == int64(0) {
 		logEvent.InputLogEvent.Timestamp = aws.Int64(logEvent.GeneratedTime.UnixNano() / int64(time.Millisecond))
 	}
-	if len(*logEvent.InputLogEvent.Message) == 0 {
+	if *logEvent.InputLogEvent.Message == "" {
 		return errors.New("empty log event message")
 	}
 

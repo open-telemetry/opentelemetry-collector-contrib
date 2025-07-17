@@ -32,7 +32,7 @@ func adjustedCount() (ottl.ExprFunc[ottlspan.TransformContext], error) {
 			// If otel trace state is missing, default to 1
 			return float64(1), nil
 		}
-		if len(otTraceState.TValue()) == 0 {
+		if otTraceState.TValue() == "" {
 			// For non-probabilistic sampler OR always sampling threshold, default to 1
 			return float64(1), nil
 		}

@@ -55,7 +55,7 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 	carrier := &recordCarrier{
 		record: l,
 	}
-	if tvalue := carrier.get("sampling.threshold"); len(tvalue) != 0 {
+	if tvalue := carrier.get("sampling.threshold"); tvalue != "" {
 		th, err := sampling.TValueToThreshold(tvalue)
 		if err != nil {
 			ret = errors.Join(err, ret)
@@ -64,7 +64,7 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 			carrier.parsed.threshold = th
 		}
 	}
-	if rvalue := carrier.get("sampling.randomness"); len(rvalue) != 0 {
+	if rvalue := carrier.get("sampling.randomness"); rvalue != "" {
 		rnd, err := sampling.RValueToRandomness(rvalue)
 		if err != nil {
 			ret = errors.Join(err, ret)
@@ -77,11 +77,11 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 }
 
 func (rc *recordCarrier) threshold() (sampling.Threshold, bool) {
-	return rc.parsed.threshold, len(rc.parsed.tvalue) != 0
+	return rc.parsed.threshold, rc.parsed.tvalue != ""
 }
 
 func (rc *recordCarrier) explicitRandomness() (randomnessNamer, bool) {
-	if len(rc.parsed.rvalue) == 0 {
+	if rc.parsed.rvalue == "" {
 		return newMissingRandomnessMethod(), false
 	}
 	return newSamplingRandomnessMethod(rc.parsed.randomness), true

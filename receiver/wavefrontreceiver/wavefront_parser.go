@@ -144,7 +144,7 @@ func (wp *wavefrontParser) injectCollectDLabels(
 func buildLabels(attributes pcommon.Map, tags string) error {
 	for {
 		tags = strings.TrimLeft(tags, " ")
-		if len(tags) == 0 {
+		if tags == "" {
 			return nil
 		}
 
