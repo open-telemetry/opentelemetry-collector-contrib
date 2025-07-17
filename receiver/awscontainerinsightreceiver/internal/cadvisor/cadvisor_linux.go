@@ -28,7 +28,7 @@ import (
 )
 
 // The amount of time for which to keep stats in memory.
-const statsCacheDuration = 2 * time.Minute
+const statsCacheDuration = 15 * time.Minute
 
 // Max collection interval, it is not meaningful if allowDynamicHousekeeping = false
 var maxHousekeepingInterval = 15 * time.Second

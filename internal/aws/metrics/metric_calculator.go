@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	cleanInterval = 5 * time.Minute
+	cleanInterval = 15 * time.Minute
 )
 
 // CalculateFunc defines how to process metric values by the calculator. It
