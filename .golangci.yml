@@ -129,8 +129,6 @@ linters:
         - nilValReturn
         - paramTypeCombine
         - preferDecodeRune
-        - preferFprint
-        - preferStringWriter
         - preferWriteByte
         - ptrToRefParam
         - rangeValCopy

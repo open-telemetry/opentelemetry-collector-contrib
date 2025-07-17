@@ -45,7 +45,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 	scriptFile, err := os.CreateTemp(t.TempDir(), "subproc")
 	require.NoError(t, err)
 
-	_, err = scriptFile.Write([]byte(scriptContents))
+	_, err = scriptFile.WriteString(scriptContents)
 	require.NoError(t, err)
 	require.NoError(t, scriptFile.Chmod(0o700))
 	scriptFile.Close()
