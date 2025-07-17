@@ -235,7 +235,7 @@ func TestFailedReq(t *testing.T) {
 		{
 			desc:   "Invalid method",
 			cfg:    *cfg,
-			req:    httptest.NewRequest(http.MethodGet, "http://localhost/events", nil),
+			req:    httptest.NewRequest(http.MethodGet, "http://localhost/events", http.NoBody),
 			status: http.StatusBadRequest,
 		},
 		{
@@ -310,7 +310,7 @@ func TestHealthCheck(t *testing.T) {
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil), httprouter.ParamsFromContext(context.Background()))
+	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", http.NoBody), httprouter.ParamsFromContext(context.Background()))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)

@@ -45,7 +45,7 @@ type openshiftProvider struct {
 
 func (o *openshiftProvider) makeOCPRequest(ctx context.Context, endpoint, target string) (*http.Request, error) {
 	addr := fmt.Sprintf("%s/apis/config.openshift.io/v1/%s/%s/status", o.address, endpoint, target)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 // K8SClusterVersion requests the ClusterVersion from the kubernetes api.
 func (o *openshiftProvider) K8SClusterVersion(ctx context.Context) (string, error) {
 	addr := fmt.Sprintf("%s/version", o.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
 	if err != nil {
 		return "", err
 	}

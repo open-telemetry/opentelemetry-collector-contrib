@@ -647,7 +647,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 	if err != nil {
 		return fmt.Errorf("unable to parse heartbeat URL %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("unable to create HTTP request %w", err)
 	}

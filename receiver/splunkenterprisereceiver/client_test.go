@@ -121,7 +121,7 @@ func TestClientCreateRequest(t *testing.T) {
 				path := fmt.Sprintf("/services/search/jobs/%s/results", testJobID)
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)
-				req, _ := http.NewRequest(method, url, nil)
+				req, _ := http.NewRequest(method, url, http.NoBody)
 				return req
 			}(),
 		},
@@ -169,7 +169,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	// build the expected request
 	expectedURL := client.clients[typeIdx].endpoint.String() + "/test/endpoint"
-	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
+	expected, _ := http.NewRequest(http.MethodGet, expectedURL, http.NoBody)
 
 	require.Equal(t, expected.URL, req.URL)
 	require.Equal(t, expected.Method, req.Method)
