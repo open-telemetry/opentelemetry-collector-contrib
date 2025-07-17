@@ -33,6 +33,8 @@ type datadogRUMReceiver struct {
 
 	server    *http.Server
 	lReceiver *receiverhelper.ObsReport
+
+	cancel        context.CancelFunc
 }
 
 func newDataDogRUMReceiver(config *Config, params receiver.Settings) (component.Component, error) {
@@ -72,7 +74,7 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 		AllowCredentials: true,                                                     // Allow credentials
 	}).Handler(ddmux)
 
-	ddr.server, err = ddr.config.ServerConfig.ToServer(
+	ddr.server, err = ddr.config.ToServer(
 		ctx,
 		host,
 		ddr.params.TelemetrySettings,
@@ -81,24 +83,26 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.ServerConfig.ToListener(ctx)
+	hln, err := ddr.config.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
 
 	ddr.address = hln.Addr().String()
 
+	ctx, ddr.cancel = context.WithCancel(ctx)
+
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
+			ddr.cancel()
 		}
 	}()
 	return nil
 }
 
 func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("%%%%%%%%%%%%%% STARTING RUM RECEIVER", req.Header)
-
+	ddr.params.Logger.Info("Received RUM event")
 	obsCtx := ddr.lReceiver.StartTracesOp(req.Context())
 	var err error
 	var eventCount int
@@ -120,8 +124,6 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 	}
 	reqBytes := buf.Bytes()
 
-	fmt.Printf("&&&&&&&&&& RECEIVED RUM REQUEST BODY: %v\n", buf.String())
-
 	var jsonEvents []map[string]any
 	decoder := json.NewDecoder(buf)
 	for {
@@ -136,17 +138,18 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 		}
 		jsonEvents = append(jsonEvents, event)
 	}
-	fmt.Println("%%%%%%%%%%%%%% HEADER: ", req.Header)
+
+	ddr.params.Logger.Info("Request headers", zap.Any("headers", req.Header))
 	for _, event := range jsonEvents {
 		traceparent := req.Header.Get("traceparent")
 		if traceparent == "" && event["_dd"].(map[string]any)["trace_id"] == nil {
-			fmt.Println("failed to retrieve W3Ctraceparent or trace_id from header; treating as log instead")
+			ddr.params.Logger.Info("failed to retrieve W3Ctraceparent or trace_id from header; treating as log instead")
 			otelLogs := translator.ToLogs(event, req, reqBytes)
 			if ddr.nextLogsConsumer != nil {
 				err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, otelLogs)
 			}
 		} else {
-			fmt.Println("%%%%%%%%%%%%%% TO TRACES!!!!")
+			ddr.params.Logger.Info("Treating as trace")
 			otelTraces := translator.ToTraces(event, req, reqBytes, traceparent)
 			if ddr.nextTracesConsumer != nil {
 				err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)

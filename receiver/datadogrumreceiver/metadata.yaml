@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     development: [logs, traces, metrics]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [IbraheemA, dd-jasminesun]
 

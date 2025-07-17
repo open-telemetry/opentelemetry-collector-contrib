@@ -30,6 +30,7 @@ const (
 	PrefixAction      = "action"
 	PrefixClient      = "client"
 	PrefixApplication = "application"
+	PrefixContainer   = "container"
 )
 
 // ====================
