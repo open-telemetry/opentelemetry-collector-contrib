@@ -419,8 +419,6 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 		} else {
 			mg.value = v
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
-		fallthrough
 	default:
 		mg.value = v
 	}
@@ -518,8 +516,6 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		}
 		pointCount = hdpL.Len()
 
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
-		fallthrough
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
