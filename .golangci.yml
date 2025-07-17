@@ -121,7 +121,6 @@ linters:
         - evalOrder
         - exposedSyncMutex
         - filepathJoin
-        - httpNoBody
         - hugeParam
         - importShadow
         - initClause
