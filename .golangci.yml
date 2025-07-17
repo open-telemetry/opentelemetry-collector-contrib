@@ -133,7 +133,6 @@ linters:
         - rangeValCopy
         - redundantSprint
         - returnAfterHttpError
-        - sqlQuery
         - sloppyReassign
         - stringsCompare
         - stringConcatSimplify
