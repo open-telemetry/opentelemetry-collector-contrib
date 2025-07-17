@@ -47,7 +47,7 @@ func getSplunkSearchResults(user string, password string, baseURL string, jobID 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	eventURL := fmt.Sprintf("%s/services/search/jobs/%s/events?output_mode=json", baseURL, jobID)
 	logger.Println("URL: " + eventURL)
-	reqEvents, err := http.NewRequest(http.MethodGet, eventURL, nil)
+	reqEvents, err := http.NewRequest(http.MethodGet, eventURL, http.NoBody)
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +89,7 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	checkReqEvents, err := http.NewRequest(http.MethodGet, checkEventURL, nil)
+	checkReqEvents, err := http.NewRequest(http.MethodGet, checkEventURL, http.NoBody)
 	if err != nil {
 		panic(err)
 	}
@@ -173,7 +173,7 @@ func CheckMetricsFromSplunk(index string, metricName string) []any {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	req, err := http.NewRequest(http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		panic(err)
 	}

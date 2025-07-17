@@ -52,9 +52,17 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 }
 
 func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	fpm.tb.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		),
+	)
+	fpm.tb.KafkaBrokerThrottlingLatency.Record(
+		context.Background(),
+		throttleInterval.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		),
@@ -66,9 +74,18 @@ func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, 
 	if err != nil {
 		outcome = "failure"
 	}
+	// KafkaExporterLatency is deprecated in favor of KafkaExporterWriteLatency.
 	fpm.tb.KafkaExporterLatency.Record(
 		context.Background(),
 		writeWait.Milliseconds()+timeToWrite.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+	)
+	fpm.tb.KafkaExporterWriteLatency.Record(
+		context.Background(),
+		writeWait.Seconds()+timeToWrite.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
@@ -86,7 +103,13 @@ func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, t
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
+	// KafkaExporterMessages is deprecated in favor of KafkaExporterRecords.
 	fpm.tb.KafkaExporterMessages.Add(
+		context.Background(),
+		int64(m.NumRecords),
+		metric.WithAttributes(attrs...),
+	)
+	fpm.tb.KafkaExporterRecords.Add(
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),
@@ -116,7 +139,13 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 		attribute.Int64("partition", int64(r.Partition)),
 		attribute.String("outcome", "failure"),
 	}
+	// KafkaExporterMessages is deprecated in favor of KafkaExporterRecords.
 	fpm.tb.KafkaExporterMessages.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(attrs...),
+	)
+	fpm.tb.KafkaExporterRecords.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(attrs...),

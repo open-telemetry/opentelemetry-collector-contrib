@@ -4,11 +4,14 @@
 package pprofiletest
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func Test_validateProfile(t *testing.T) {
@@ -841,5 +844,24 @@ func Test_validateAttributeUnitAt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.wantErr(t, validateAttributeUnit(tt.dictionary, tt.attrUnit))
 		})
+	}
+}
+
+func TestGeneratedData(t *testing.T) {
+	data := testdata.GenerateProfiles(3)
+
+	for i := range data.ResourceProfiles().Len() {
+		rp := data.ResourceProfiles().At(i)
+		for j := range rp.ScopeProfiles().Len() {
+			sp := rp.ScopeProfiles().At(j)
+			for k := range sp.Profiles().Len() {
+				p := sp.Profiles().At(k)
+				err := ValidateProfile(data.ProfilesDictionary(), p)
+				if err != nil {
+					err = fmt.Errorf("profile ResourceProfiles[%d]ScopeProfiles[%d]Profiles[%d]: %w", i, j, k, err)
+				}
+				require.NoError(t, err)
+			}
+		}
 	}
 }
