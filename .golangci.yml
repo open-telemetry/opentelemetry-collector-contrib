@@ -155,7 +155,6 @@ linters:
         - unnecessaryBlock
         - unnecessaryDefer
         - whyNoLint
-        - yodaStyleExpr
 
       enable-all: true
 
