@@ -20,7 +20,6 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 - `pkg/ottl`: Add a `GetOr` function to `ottl.Optional` to return a default value when the optional is empty. (#40243)
 - `metricstarttimeprocessor`: Add the start_time_metric, which sets the start time based on another metric in the batch of metrics. (#38383)
-- `googlecloudmonitoringreceiver`: Conversion of Distribution to Histogram handles implicit zero counts. (#99999)
 
 <!-- previous-version -->
 
