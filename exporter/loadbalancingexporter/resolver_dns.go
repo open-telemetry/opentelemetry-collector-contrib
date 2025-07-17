@@ -66,7 +66,7 @@ func newDNSResolver(
 	timeout time.Duration,
 	tb *metadata.TelemetryBuilder,
 ) (*dnsResolver, error) {
-	if len(hostname) == 0 {
+	if hostname == "" {
 		return nil, errNoHostname
 	}
 	if interval == 0 {

@@ -12,6 +12,8 @@ on:
       current-beta:
         required: true
         description: Current version (beta, like 0.69.1)
+permissions:
+  contents: read
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
@@ -28,10 +30,15 @@ jobs:
         with:
           go-version: 1.23.10
           cache: false
+      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
           REPO: open-telemetry/opentelemetry-collector-contrib
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CURRENT_BETA: ${{ inputs.current-beta }}
