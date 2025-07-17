@@ -30,7 +30,7 @@ func ValidateHostname(hostname string) (string, error) {
 // RemoveTrailingDot removes a trailing dot from a hostname if present
 // Note: LookupAddr results typically have a trailing dot which can be removed
 func RemoveTrailingDot(hostname string) string {
-	if len(hostname) > 0 && hostname[len(hostname)-1] == '.' {
+	if hostname != "" && hostname[len(hostname)-1] == '.' {
 		return hostname[:len(hostname)-1]
 	}
 	return hostname
