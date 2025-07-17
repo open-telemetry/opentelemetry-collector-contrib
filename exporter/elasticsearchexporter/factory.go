@@ -230,6 +230,11 @@ func exporterhelperOptions(
 	case qbc.Batch.HasValue():
 		// Latest queue batch settings are used, prioritize them
 		opts = append(opts, exporterhelper.WithQueueBatch(qbc, qbs))
+		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+		//
+		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
+		// to ensure sending data to the background workers will not block indefinitely.
+		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	case cfg.Batcher.enabledSet:
 		if cfg.Batcher.Enabled {
 			qbc.Batch = configoptional.Some(exporterhelper.BatchConfig{
@@ -248,13 +253,13 @@ func exporterhelperOptions(
 		}
 
 		opts = append(opts, exporterhelper.WithQueue(qbc))
+		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+		//
+		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
+		// to ensure sending data to the background workers will not block indefinitely.
+		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	default:
 		opts = append(opts, exporterhelper.WithQueue(qbc))
 	}
-	// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-	//
-	// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-	// to ensure sending data to the background workers will not block indefinitely.
-	opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	return opts
 }
