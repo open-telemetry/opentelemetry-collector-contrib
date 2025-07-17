@@ -96,6 +96,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Insecure = true
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.Metrics.PostgresqlTempIo.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
 				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
 				rCfg.Metrics.PostgresqlTupReturned.Enabled = true

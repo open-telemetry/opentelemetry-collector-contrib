@@ -51,6 +51,8 @@ all_set:
       enabled: true
     postgresql.table.vacuum.count:
       enabled: true
+    postgresql.temp.io:
+      enabled: true
     postgresql.temp_files:
       enabled: true
     postgresql.tup_deleted:
@@ -134,6 +136,8 @@ none_set:
     postgresql.table.size:
       enabled: false
     postgresql.table.vacuum.count:
+      enabled: false
+    postgresql.temp.io:
       enabled: false
     postgresql.temp_files:
       enabled: false
