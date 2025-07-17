@@ -64,6 +64,15 @@ type Config struct {
 	AsyncInsert bool `mapstructure:"async_insert"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
+	// SqlTemplate is the sql template.
+	SqlTemplate SqlTemplate `mapstructure:"sql"`
+}
+
+type SqlTemplate struct {
+	// LogsInsert is the sql template to insert to logs table
+	LogsInsert string `mapstructure:"logs_insert"`
+	// LogsCreateTable is the sql template to create logs table
+	LogsCreateTable string `mapstructure:"logs_create_table"`
 }
 
 type MetricTablesConfig struct {
