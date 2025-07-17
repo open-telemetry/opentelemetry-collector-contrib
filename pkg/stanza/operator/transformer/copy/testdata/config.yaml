@@ -22,3 +22,11 @@ resource_to_nested_resource:
   type: copy
   from: resource.key
   to: resource.one.two.three
+invalid_missing_from:
+  type: copy
+  to: body.something
+invalid_missing_to:
+  type: copy
+  from: body.nothing
+invalid_missing_to_and_from:
+  type: copy

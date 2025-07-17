@@ -192,6 +192,8 @@ func TestTransform(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
+				p.SetPeriod(1e9 / 20)
 
 				st := p.SampleType().AppendEmpty()
 				st.SetTypeStrindex(2)
@@ -260,6 +262,7 @@ func TestTransform(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
+						Frequency:    20,
 						Count:        1,
 					},
 				},
@@ -337,6 +340,8 @@ func TestStackPayloads(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
+				p.SetPeriod(1e9 / 20)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
@@ -398,6 +403,7 @@ func TestStackPayloads(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
+						Frequency:    20,
 						Count:        1,
 					},
 				},
@@ -442,6 +448,8 @@ func TestStackPayloads(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
+				p.SetPeriod(1e9 / 20)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
@@ -503,7 +511,17 @@ func TestStackPayloads(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
-						Count:        2,
+						Frequency:    20,
+						Count:        1,
+					},
+				},
+				{
+					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
+						TimeStamp:    1000000000,
+						StackTraceID: wantedTraceID,
+						Frequency:    20,
+						Count:        1,
 					},
 				},
 			},
@@ -558,6 +576,7 @@ func TestStackTraceEvent(t *testing.T) {
 			wantEvent: StackTraceEvent{
 				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
+				Frequency:    20,
 				Count:        1,
 			},
 		},
@@ -584,6 +603,7 @@ func TestStackTraceEvent(t *testing.T) {
 				EcsVersion:   EcsVersion{V: EcsVersionString},
 				TimeStamp:    1000000000000000000,
 				StackTraceID: stacktraceIDBase64,
+				Frequency:    20,
 				Count:        1,
 			},
 		},
@@ -608,6 +628,7 @@ func TestStackTraceEvent(t *testing.T) {
 			wantEvent: StackTraceEvent{
 				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
+				Frequency:    20,
 				Count:        1,
 			},
 		},
@@ -618,12 +639,6 @@ func TestStackTraceEvent(t *testing.T) {
 				dic.StringTable().Append(stacktraceIDBase64)
 
 				a := dic.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.K8SPodNameKey))
-				a.Value().SetStr("my_pod")
-				a = dic.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.ContainerNameKey))
-				a.Value().SetStr("my_container")
-				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey(string(semconv.ThreadNameKey))
 				a.Value().SetStr("my_thread")
 				a = dic.AttributeTable().AppendEmpty()
@@ -634,22 +649,32 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
+				_ = rp.Resource().Attributes().FromRaw(map[string]any{
+					string(semconv.K8SPodNameKey):       "my_pod",
+					string(semconv.ContainerNameKey):    "my_container",
+					string(semconv.ContainerIDKey):      "my_container_id",
+					string(semconv.K8SNamespaceNameKey): "my_k8s_namespace_name",
+				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
 				s := p.Sample().AppendEmpty()
-				s.AttributeIndices().Append(0, 1, 2, 3)
+				s.AttributeIndices().Append(0, 1)
 
 				return rp
 			},
 
 			wantEvent: StackTraceEvent{
-				EcsVersion:    EcsVersion{V: EcsVersionString},
-				PodName:       "my_pod",
-				ContainerName: "my_container",
-				ThreadName:    "my_thread",
-				StackTraceID:  stacktraceIDBase64,
-				Count:         1,
+				EcsVersion:       EcsVersion{V: EcsVersionString},
+				PodName:          "my_pod",
+				K8sNamespaceName: "my_k8s_namespace_name",
+				ContainerName:    "my_container",
+				ContainerID:      "my_container_id",
+				ThreadName:       "my_thread",
+				ServiceName:      "my_service",
+				StackTraceID:     stacktraceIDBase64,
+				Frequency:        20,
+				Count:            1,
 			},
 		},
 	} {
@@ -659,7 +684,8 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Sample().At(0)
 
-			event := stackTraceEvent(dic, stacktraceIDBase64, s, map[string]string{})
+			hostMetadata := newHostMetadata(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, hostMetadata)
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
@@ -734,6 +760,7 @@ func TestStackTrace(t *testing.T) {
 			},
 			buildProfile: func() pprofile.Profile {
 				p := pprofile.NewProfile()
+				p.LocationIndices().FromRaw([]int32{0, 1, 2})
 
 				s := p.Sample().AppendEmpty()
 				s.SetLocationsLength(3)
@@ -757,7 +784,7 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Sample().At(0)
 
-			frames, frameTypes, _, err := stackFrames(dic, s)
+			frames, frameTypes, _, err := stackFrames(dic, p, s)
 			require.NoError(t, err)
 
 			stacktrace := stackTrace("", frames, frameTypes)
@@ -782,6 +809,11 @@ func frameTypesToString(frameTypes []libpf.FrameType) string {
 func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 	dic := pprofile.NewProfilesDictionary()
 	p := pprofile.NewProfile()
+	indices := make([]int32, len(frameIDs))
+	for i := range frameIDs {
+		indices[i] = int32(i)
+	}
+	p.LocationIndices().FromRaw(indices)
 	s := p.Sample().AppendEmpty()
 	s.SetLocationsLength(int32(len(frameIDs)))
 
@@ -805,7 +837,7 @@ func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 		l.AttributeIndices().Append(0)
 	}
 
-	frames, _, _, err := stackFrames(dic, s)
+	frames, _, _, err := stackFrames(dic, p, s)
 	require.NoError(t, err)
 
 	traceID, err := stackTraceID(frames)

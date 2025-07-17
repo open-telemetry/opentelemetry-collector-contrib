@@ -396,6 +396,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
 	cfg.QuerySampleCollection.Enabled = true
+	cfg.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 
@@ -412,9 +413,10 @@ func TestScrapeQuerySample(t *testing.T) {
 		Logger: logger,
 	}
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
-		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "state", "query"},
-	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,idle,select * from pg_stat_activity where id = 32"))
+		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query"},
+	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32"))
 	actualLogs, err := scraper.scrapeQuerySamples(context.Background(), 30)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
@@ -434,6 +436,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
 	cfg.TopQueryCollection.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 
@@ -495,6 +498,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "scraper", "top-query", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
+	// golden.WriteLogs(t, expectedFile, actualLogs)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 }
@@ -531,7 +535,7 @@ func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
 }
 
 // getQuerySamples implements client.
-func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ *zap.Logger) ([]map[string]any, error) {
+func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ float64, _ *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 
@@ -575,6 +579,11 @@ func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) 
 func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
 	args := m.Called(ctx, database)
 	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
+}
+
+func (m *mockClient) getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[functionIdentifer]functionStat), args.Error(1)
 }
 
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
@@ -811,5 +820,23 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 			},
 		}
 		m.On("getIndexStats", mock.Anything, database).Return(indexStats, nil)
+
+		function1 := "test_function1"
+		function2 := "test_function2"
+		functionStats := map[functionIdentifer]functionStat{
+			functionKey(database, schema, function1): {
+				database: database,
+				schema:   schema,
+				function: function1,
+				calls:    int64(index + 50),
+			},
+			functionKey(database, schema, function2): {
+				database: database,
+				schema:   schema,
+				function: function2,
+				calls:    int64(index + 51),
+			},
+		}
+		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 	}
 }

@@ -68,15 +68,15 @@ var canonicalCodesGrpcMap = map[string]sentry.SpanStatus{
 	"16": sentry.SpanStatusUnauthenticated,
 }
 
-// SentryExporter defines the Sentry Exporter.
-type SentryExporter struct {
+// sentryExporter defines the Sentry Exporter.
+type sentryExporter struct {
 	transport   transport
 	environment string
 }
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
+func (s *sentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
 	var exceptionEvents []*sentry.Event
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
@@ -492,7 +492,7 @@ func createSentryExporter(config *Config, set exporter.Settings) (exporter.Trace
 
 	transport.Configure(clientOptions)
 
-	s := &SentryExporter{
+	s := &sentryExporter{
 		transport:   transport,
 		environment: config.Environment,
 	}

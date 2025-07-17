@@ -5,7 +5,9 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -32,11 +34,49 @@ type httpcheckScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
+// extractTLSInfo extracts TLS certificate information from the connection state
+func extractTLSInfo(state *tls.ConnectionState) (issuer string, commonName string, sans []any, timeLeft int64) {
+	if state == nil || len(state.PeerCertificates) == 0 {
+		return "", "", nil, 0
+	}
+
+	cert := state.PeerCertificates[0]
+	issuer = cert.Issuer.String()
+	commonName = cert.Subject.CommonName
+
+	// Collect all SANs
+	sans = make([]any, 0, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
+	for _, ip := range cert.IPAddresses {
+		sans = append(sans, ip.String())
+	}
+	for _, uri := range cert.URIs {
+		sans = append(sans, uri.String())
+	}
+	for _, dnsName := range cert.DNSNames {
+		sans = append(sans, dnsName)
+	}
+	for _, emailAddress := range cert.EmailAddresses {
+		sans = append(sans, emailAddress)
+	}
+
+	// Calculate time left until expiry
+	currentTime := time.Now()
+	timeLeftSeconds := cert.NotAfter.Sub(currentTime).Seconds()
+	timeLeft = int64(timeLeftSeconds)
+
+	return issuer, commonName, sans, timeLeft
+}
+
 // start initializes the scraper by creating HTTP clients for each endpoint.
 func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err error) {
 	var expandedTargets []*targetConfig
 
 	for _, target := range h.cfg.Targets {
+		if target.Timeout == 0 {
+			// Set a reasonable timeout to prevent hanging requests
+			target.Timeout = 30 * time.Second
+		}
+
 		// Create a unified list of endpoints
 		var allEndpoints []string
 		if len(target.Endpoints) > 0 {
@@ -103,7 +143,35 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Send the request and measure response time
 			start := time.Now()
 			resp, err := targetClient.Do(req)
+
+			// Always close response body if it exists, even on error
+			if resp != nil && resp.Body != nil {
+				defer func() {
+					// Drain the body to allow connection reuse
+					_, _ = io.Copy(io.Discard, resp.Body)
+					if closeErr := resp.Body.Close(); closeErr != nil {
+						h.settings.Logger.Error("failed to close response body", zap.Error(closeErr))
+					}
+				}()
+			}
+
 			mux.Lock()
+
+			// Check if TLS metric is enabled and this is an HTTPS endpoint
+			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
+				// Extract TLS info directly from the HTTP response
+				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
+				if issuer != "" || commonName != "" || len(sans) > 0 {
+					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
+						now,
+						timeLeft,
+						h.cfg.Targets[targetIndex].Endpoint,
+						issuer,
+						commonName,
+						sans,
+					)
+				}
+			}
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
 				time.Since(start).Milliseconds(),

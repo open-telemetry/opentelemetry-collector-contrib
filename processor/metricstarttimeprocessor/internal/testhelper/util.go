@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -172,6 +174,39 @@ func ExponentialHistogramPointNoValue(attributes []*KV, startTimestamp, timestam
 	return hdp
 }
 
+// exponentialHistogramPointSimplified let's you define an exponential
+// histogram with just a few parameters.
+// Scale and ZeroCount are set to the provided values.
+// Positive and negative buckets are generated using the offset and bucketCount
+// parameters by adding buckets from offset in both positive and negative
+// directions. Bucket counts start from 1 and increase by 1 for each bucket.
+// Sum and Count will be proportional to the bucket count.
+func ExponentialHistogramPointSimplified(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, offset int32, bucketCount int) pmetric.ExponentialHistogramDataPoint {
+	hdp := ExponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetScale(scale)
+	hdp.SetZeroCount(zeroCount)
+
+	positive := hdp.Positive()
+	positive.SetOffset(offset)
+	positive.BucketCounts().EnsureCapacity(bucketCount)
+	negative := hdp.Negative()
+	negative.SetOffset(offset)
+	negative.BucketCounts().EnsureCapacity(bucketCount)
+
+	var sum float64
+	var count uint64
+	for i := 0; i < bucketCount; i++ {
+		positive.BucketCounts().Append(uint64(i + 1))
+		negative.BucketCounts().Append(uint64(i + 1))
+		count += uint64(i+1) + uint64(i+1)
+		sum += float64(i+1)*10 + float64(i+1)*10.0
+	}
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+
+	return hdp
+}
+
 func DoublePointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetStartTimestamp(startTimestamp)
@@ -306,7 +341,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
-			assert.Equal(t, test.Adjusted, adjusted)
+			assert.NoError(t, pmetrictest.CompareMetrics(test.Adjusted, adjusted))
 		})
 	}
 }

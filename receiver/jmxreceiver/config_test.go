@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
@@ -40,6 +41,8 @@ func TestLoadConfig(t *testing.T) {
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:12345",
 				TargetSystem:       "jvm",
+				TargetSource:       "",
+				JmxConfigs:         "",
 				CollectionInterval: 15 * time.Second,
 				Username:           "myusername",
 				Password:           "mypassword",
@@ -89,6 +92,21 @@ func TestLoadConfig(t *testing.T) {
 			expectedErr: "missing required field(s): `target_system`",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutConfig{
+						Timeout: 5 * time.Second,
+					},
+				},
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "missingtargetandjmxconfig"),
+			expectedErr: "missing required field(s): `target_system`, `jmx_configs`",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx_scraper.jar",
 				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
@@ -183,6 +201,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:          component.NewIDWithName(metadata.Type, "invalidloglevelscraper"),
+			expectedErr: "`log_level` can only be used with a JMX Metrics Gatherer JAR",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				Endpoint:           "myendpoint:55555",
+				TargetSystem:       "jvm",
+				LogLevel:           "truth",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutConfig{
+						Timeout: 5 * time.Second,
+					},
+				},
+			},
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "invalidtargetsystem"),
 			expectedErr: "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'",
 			expected: &Config{
@@ -225,7 +260,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestCustomMetricsGathererConfig(t *testing.T) {
+func TestCustomMetricsConfig(t *testing.T) {
 	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
 		jar:     "fake wildfly jar",
 		version: "2.3.4",
@@ -273,7 +308,7 @@ func TestClassPathParse(t *testing.T) {
 		expected       string
 	}{
 		{
-			desc: "Metric Gatherer JAR Only",
+			desc: "Metric JAR Only",
 			cfg: &Config{
 				JARPath: "testdata/fake_jmx.jar",
 			},
@@ -316,6 +351,76 @@ func TestClassPathParse(t *testing.T) {
 	}
 }
 
+func TestJARProperties(t *testing.T) {
+	testCases := []struct {
+		desc                        string
+		cfg                         *Config
+		expectedMainClass           string
+		expectedProperties          []string
+		expectedSamplingConfigKey   string
+		expectedSamplingConfigValue string
+	}{
+		{
+			desc: "Default config with JMX Gatherer JAR",
+			cfg: &Config{
+				JARPath: "testdata/fake_jmx.jar",
+			},
+			expectedMainClass:           "io.opentelemetry.contrib.jmxmetrics.JmxMetrics",
+			expectedProperties:          []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=error"},
+			expectedSamplingConfigKey:   "otel.jmx.interval.milliseconds",
+			expectedSamplingConfigValue: "0",
+		},
+		{
+			desc: "Default config with JMX Scraper JAR",
+			cfg: &Config{
+				JARPath: "testdata/fake_jmx_scraper.jar",
+			},
+			expectedMainClass:           "io.opentelemetry.contrib.jmxscraper.JmxScraper",
+			expectedProperties:          nil,
+			expectedSamplingConfigKey:   "otel.metric.export.interval",
+			expectedSamplingConfigValue: "0s",
+		},
+		{
+			desc: "Log level and sampling config with JMX Gatherer JAR",
+			cfg: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				LogLevel:           "trace",
+				CollectionInterval: 10 * time.Second,
+			},
+			expectedMainClass:           "io.opentelemetry.contrib.jmxmetrics.JmxMetrics",
+			expectedProperties:          []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=trace"},
+			expectedSamplingConfigKey:   "otel.jmx.interval.milliseconds",
+			expectedSamplingConfigValue: "10000",
+		},
+		{
+			desc: "Sampling config with JMX Scraper JAR",
+			cfg: &Config{
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				LogLevel:           "trace",
+				CollectionInterval: 10 * time.Second,
+			},
+			expectedMainClass:           "io.opentelemetry.contrib.jmxscraper.JmxScraper",
+			expectedProperties:          nil,
+			expectedSamplingConfigKey:   "otel.metric.export.interval",
+			expectedSamplingConfigValue: "10s",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			mockJarVersions()
+			t.Cleanup(func() {
+				unmockJarVersions()
+			})
+			require.Equal(t, tc.expectedMainClass, tc.cfg.jarMainClass())
+			require.Equal(t, tc.expectedProperties, tc.cfg.parseProperties(zap.NewNop()))
+			samplingKey, samplingVal := tc.cfg.jarJMXSamplingConfig()
+			require.Equal(t, tc.expectedSamplingConfigKey, samplingKey)
+			require.Equal(t, tc.expectedSamplingConfigValue, samplingVal)
+		})
+	}
+}
+
 func TestWithInvalidConfig(t *testing.T) {
 	f := NewFactory()
 	assert.Equal(t, metadata.Type, f.Type())
@@ -330,6 +435,11 @@ func TestWithInvalidConfig(t *testing.T) {
 func mockJarVersions() {
 	jmxMetricsGathererVersions["5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"] = supportedJar{
 		jar:     "fake jar",
+		version: "1.2.3",
+	}
+
+	jmxScraperVersions["dce3d9a8457bb5097144e88e1c1246f428e047a677462cff1a638c172c7eeab1"] = supportedJar{
+		jar:     "fake scraper jar",
 		version: "1.2.3",
 	}
 
