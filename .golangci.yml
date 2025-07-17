@@ -135,7 +135,6 @@ linters:
         - returnAfterHttpError
         - sqlQuery
         - sloppyReassign
-        - sprintfQuotedString
         - stringsCompare
         - stringConcatSimplify
         - stringXbytes
