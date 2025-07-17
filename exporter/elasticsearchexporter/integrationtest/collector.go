@@ -176,7 +176,7 @@ func (c *recreatableOtelCol) Start(_ testbed.StartParams) error {
 		return err
 	}
 
-	if _, err = confFile.Write([]byte(c.configStr)); err != nil {
+	if _, err = confFile.WriteString(c.configStr); err != nil {
 		os.Remove(confFile.Name())
 		return err
 	}
