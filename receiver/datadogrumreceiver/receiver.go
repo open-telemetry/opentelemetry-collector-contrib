@@ -66,7 +66,6 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 
 	var err error
 
-	// TODO: double check this
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://localhost:*", "http://localhost:*"},    // Specify allowed origins
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},                       // Specify allowed methods
@@ -150,10 +149,11 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 			}
 		} else {
 			ddr.params.Logger.Info("Treating as trace")
-			otelTraces := translator.ToTraces(event, req, reqBytes, traceparent)
+			otelTraces := translator.ToTraces(ddr.params.Logger, event, req, reqBytes, traceparent)
 			if ddr.nextTracesConsumer != nil {
 				err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 			}
+			eventCount = otelTraces.SpanCount()
 		}
 		if err != nil {
 			http.Error(w, "Log consumer errored out", http.StatusInternalServerError)

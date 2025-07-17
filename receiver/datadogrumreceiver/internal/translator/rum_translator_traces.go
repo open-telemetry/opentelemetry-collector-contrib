@@ -9,9 +9,10 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	"go.uber.org/zap"
 )
 
-func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte, traceparent string) ptrace.Traces {
+func ToTraces(logger *zap.Logger, payload map[string]any, req *http.Request, reqBytes []byte, traceparent string) ptrace.Traces {
 	results := ptrace.NewTraces()
 	rs := results.ResourceSpans().AppendEmpty()
 	rs.SetSchemaUrl(semconv.SchemaURL)
@@ -21,8 +22,8 @@ func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte, tracep
 	in.Scope().SetName(InstrumentationScopeName)
 
 	traceID, spanID, err := parseW3CTraceContext(traceparent)
-	fmt.Println("%%%%%%%%%%%%%% W3C TRACE ID: ", traceID)
-	fmt.Println("%%%%%%%%%%%%%% W3C SPAN ID: ", spanID)
+	logger.Info("W3C Trace ID", zap.String("traceID", traceID.String()))
+	logger.Info("W3C Span ID", zap.String("spanID", spanID.String()))
 	if err != nil {
 		err = nil
 		traceID, spanID, err = parseIDs(payload, req)
@@ -32,8 +33,8 @@ func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte, tracep
 		}
 	}
 
-	fmt.Println("%%%%%%%%%%%%%% TRACE ID: ", traceID)
-	fmt.Println("%%%%%%%%%%%%%% SPAN ID: ", spanID)
+	logger.Info("Trace ID", zap.String("traceID", traceID.String()))
+	logger.Info("Span ID", zap.String("spanID", spanID.String()))
 	newSpan := in.Spans().AppendEmpty()
 	if eventType, ok := payload[AttrType].(string); ok {
 		newSpan.SetName("datadog.rum." + eventType)
