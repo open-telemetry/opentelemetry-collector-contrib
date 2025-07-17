@@ -5,6 +5,7 @@ package ctxprofilesample // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -31,6 +32,8 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		return accessLinkIndex[K](), nil
 	case "timestamps_unix_nano":
 		return accessTimestampsUnixNano[K](), nil
+	case "timestamps":
+		return accessTimestamps[K](), nil
 	case "attributes":
 		if path.Keys() == nil {
 			return accessAttributes[K](), nil
@@ -112,6 +115,26 @@ func accessTimestampsUnixNano[K Context]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			return ctxutil.SetCommonIntSliceValues[uint64](tCtx.GetProfileSample().TimestampsUnixNano(), val)
+		},
+	}
+}
+
+func accessTimestamps[K Context]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			var ts []time.Time
+			for _, t := range tCtx.GetProfileSample().TimestampsUnixNano().All() {
+				ts = append(ts, time.Unix(0, int64(t)).UTC())
+			}
+			return ts, nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			if ts, ok := val.([]time.Time); ok {
+				for _, t := range ts {
+					tCtx.GetProfileSample().TimestampsUnixNano().Append(uint64(t.UTC().UnixNano()))
+				}
+			}
+			return nil
 		},
 	}
 }

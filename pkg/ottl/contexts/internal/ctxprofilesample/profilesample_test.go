@@ -18,6 +18,7 @@ import (
 )
 
 func TestPathGetSetter(t *testing.T) {
+	tsNow := time.Now().UTC()
 	tests := []struct {
 		path string
 		val  any
@@ -45,7 +46,11 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "timestamps_unix_nano",
-			val:  []int64{time.Now().Unix(), 2, 3},
+			val:  []int64{tsNow.Unix(), 2, 3},
+		},
+		{
+			path: "timestamps",
+			val:  []time.Time{tsNow},
 		},
 	}
 
