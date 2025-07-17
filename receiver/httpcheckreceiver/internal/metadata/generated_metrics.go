@@ -21,12 +21,16 @@ var MetricsInfo = metricsInfo{
 	HttpcheckStatus: metricInfo{
 		Name: "httpcheck.status",
 	},
+	HttpcheckTLSCertRemaining: metricInfo{
+		Name: "httpcheck.tls.cert_remaining",
+	},
 }
 
 type metricsInfo struct {
-	HttpcheckDuration metricInfo
-	HttpcheckError    metricInfo
-	HttpcheckStatus   metricInfo
+	HttpcheckDuration         metricInfo
+	HttpcheckError            metricInfo
+	HttpcheckStatus           metricInfo
+	HttpcheckTLSCertRemaining metricInfo
 }
 
 type metricInfo struct {
@@ -194,17 +198,72 @@ func newMetricHttpcheckStatus(cfg MetricConfig) metricHttpcheckStatus {
 	return m
 }
 
+type metricHttpcheckTLSCertRemaining struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills httpcheck.tls.cert_remaining metric with initial data.
+func (m *metricHttpcheckTLSCertRemaining) init() {
+	m.data.SetName("httpcheck.tls.cert_remaining")
+	m.data.SetDescription("Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricHttpcheckTLSCertRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpTLSIssuerAttributeValue string, httpTLSCnAttributeValue string, httpTLSSanAttributeValue []any) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	dp.Attributes().PutStr("http.tls.issuer", httpTLSIssuerAttributeValue)
+	dp.Attributes().PutStr("http.tls.cn", httpTLSCnAttributeValue)
+	dp.Attributes().PutEmptySlice("http.tls.san").FromRaw(httpTLSSanAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricHttpcheckTLSCertRemaining) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricHttpcheckTLSCertRemaining) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricHttpcheckTLSCertRemaining(cfg MetricConfig) metricHttpcheckTLSCertRemaining {
+	m := metricHttpcheckTLSCertRemaining{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                  MetricsBuilderConfig // config of the metrics builder.
-	startTime               pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity         int                  // maximum observed number of metrics per resource.
-	metricsBuffer           pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo               component.BuildInfo  // contains version information.
-	metricHttpcheckDuration metricHttpcheckDuration
-	metricHttpcheckError    metricHttpcheckError
-	metricHttpcheckStatus   metricHttpcheckStatus
+	config                          MetricsBuilderConfig // config of the metrics builder.
+	startTime                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                 int                  // maximum observed number of metrics per resource.
+	metricsBuffer                   pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                       component.BuildInfo  // contains version information.
+	metricHttpcheckDuration         metricHttpcheckDuration
+	metricHttpcheckError            metricHttpcheckError
+	metricHttpcheckStatus           metricHttpcheckStatus
+	metricHttpcheckTLSCertRemaining metricHttpcheckTLSCertRemaining
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -226,13 +285,14 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                  mbc,
-		startTime:               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:           pmetric.NewMetrics(),
-		buildInfo:               settings.BuildInfo,
-		metricHttpcheckDuration: newMetricHttpcheckDuration(mbc.Metrics.HttpcheckDuration),
-		metricHttpcheckError:    newMetricHttpcheckError(mbc.Metrics.HttpcheckError),
-		metricHttpcheckStatus:   newMetricHttpcheckStatus(mbc.Metrics.HttpcheckStatus),
+		config:                          mbc,
+		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                   pmetric.NewMetrics(),
+		buildInfo:                       settings.BuildInfo,
+		metricHttpcheckDuration:         newMetricHttpcheckDuration(mbc.Metrics.HttpcheckDuration),
+		metricHttpcheckError:            newMetricHttpcheckError(mbc.Metrics.HttpcheckError),
+		metricHttpcheckStatus:           newMetricHttpcheckStatus(mbc.Metrics.HttpcheckStatus),
+		metricHttpcheckTLSCertRemaining: newMetricHttpcheckTLSCertRemaining(mbc.Metrics.HttpcheckTLSCertRemaining),
 	}
 
 	for _, op := range options {
@@ -301,6 +361,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricHttpcheckDuration.emit(ils.Metrics())
 	mb.metricHttpcheckError.emit(ils.Metrics())
 	mb.metricHttpcheckStatus.emit(ils.Metrics())
+	mb.metricHttpcheckTLSCertRemaining.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -335,6 +396,11 @@ func (mb *MetricsBuilder) RecordHttpcheckErrorDataPoint(ts pcommon.Timestamp, va
 // RecordHttpcheckStatusDataPoint adds a data point to httpcheck.status metric.
 func (mb *MetricsBuilder) RecordHttpcheckStatusDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpStatusCodeAttributeValue int64, httpMethodAttributeValue string, httpStatusClassAttributeValue string) {
 	mb.metricHttpcheckStatus.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, httpStatusCodeAttributeValue, httpMethodAttributeValue, httpStatusClassAttributeValue)
+}
+
+// RecordHttpcheckTLSCertRemainingDataPoint adds a data point to httpcheck.tls.cert_remaining metric.
+func (mb *MetricsBuilder) RecordHttpcheckTLSCertRemainingDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpTLSIssuerAttributeValue string, httpTLSCnAttributeValue string, httpTLSSanAttributeValue []any) {
+	mb.metricHttpcheckTLSCertRemaining.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, httpTLSIssuerAttributeValue, httpTLSCnAttributeValue, httpTLSSanAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

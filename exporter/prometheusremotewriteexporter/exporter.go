@@ -42,6 +42,9 @@ type prwTelemetry interface {
 	recordTranslatedTimeSeries(ctx context.Context, numTS int)
 	recordRemoteWriteSentBatch(ctx context.Context)
 	setNumberConsumer(ctx context.Context, n int64)
+	recordWrittenSamples(ctx context.Context, numSamples int64)
+	recordWrittenHistograms(ctx context.Context, numHistograms int64)
+	recordWrittenExemplars(ctx context.Context, numExemplars int64)
 }
 
 type prwTelemetryOtel struct {
@@ -63,6 +66,18 @@ func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
 
 func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS int) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordWrittenSamples(ctx context.Context, numSamples int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenSamples.Add(ctx, numSamples, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordWrittenHistograms(ctx context.Context, numHistograms int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenHistograms.Add(ctx, numHistograms, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordWrittenExemplars(ctx context.Context, numExemplars int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenExemplars.Add(ctx, numExemplars, metric.WithAttributes(p.otelAttrs...))
 }
 
 type buffer struct {
@@ -421,13 +436,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// implementation is not compliant with the specification. Reference:
 		// https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
 		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
-			samplesWritten := resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written")
-			if samplesWritten == "" {
-				prwe.settings.Logger.Warn(
-					"X-Prometheus-Remote-Write-Samples-Written header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
-					zap.String("url", resp.Request.URL.String()),
-				)
-			}
+			prwe.handleWrittenHeaders(ctx, resp)
 		}
 
 		// 2xx status code is considered a success
