@@ -9,8 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
-	encodedMetrics := `{"records":[
+var encodedMetrics = `{"records":[
 {
   "count":23,
   "total":12292.1382,
@@ -48,6 +47,8 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
   "ItemCount":1
 }
 ]}`
+
+func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
 	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
 	logger := zap.NewNop()
 	unmarshaler := newAzureResourceMetricsUnmarshaler(
@@ -57,9 +58,7 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
 			Version:     "Test",
 		},
 		logger,
-		[]string{
-			"",
-		},
+		&Config{},
 	)
 	metrics, err := unmarshaler.UnmarshalMetrics(&event)
 
@@ -68,34 +67,7 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
 }
 
 func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *testing.T) {
-	encodedMetrics := `{"records":[
-{
-  "time":"2025-07-14T12:35:36.3259399Z",
-  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
-  "ResourceGUID":"00000000-0000-0000-0000-000000000000",
-  "Type":"AppMetrics",
-  "AppRoleInstance":"00000000-0000-0000-0000-000000000000",
-  "AppRoleName":"service",
-  "AppVersion":"1.0.0.0",
-  "ClientBrowser":"Other",
-  "ClientCity":"City",
-  "ClientCountryOrRegion":"Country",
-  "ClientIP":"0.0.0.0",
-  "ClientModel":"Other",
-  "ClientOS":"Linux",
-  "ClientStateOrProvince":"Province",
-  "ClientType":"PC",
-  "IKey":"00000000-0000-0000-0000-000000000000",
-  "_BilledSize":444,
-  "SDKVersion":"dotnetiso:1.1.0.0_dotnet8.0.16:otel1.12.0:ext1.4.0",
-  "Name":"metric.name",
-  "Sum":8,
-  "Min":8,
-  "Max":8,
-  "ItemCount":1
-}
-]}`
-	event := eventhub.Event{Data: []byte(encodedMetrics)}
+	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
 	logger := zap.NewNop()
 	unmarshaler := newAzureResourceMetricsUnmarshaler(
 		component.BuildInfo{
@@ -104,14 +76,11 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *te
 			Version:     "Test",
 		},
 		logger,
-		[]string{
-			"",
-		},
+		&Config{},
 	)
 	metrics, err := unmarshaler.UnmarshalMetrics(&event)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 4, metrics.MetricCount())
 
 	expectedAttributes := map[string]string{
 		"service.instance.id":   "00000000-0000-0000-0000-000000000000",
@@ -129,7 +98,7 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *te
 		"ClientStateOrProvince": "Province",
 		"ClientType":            "PC",
 	}
-	metric := metrics.ResourceMetrics().At(0).Resource()
+	metric := metrics.ResourceMetrics().At(1).Resource()
 
 	assert.Equal(t, len(expectedAttributes), metric.Attributes().Len())
 
@@ -143,4 +112,29 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *te
 
 		assert.Equal(t, expected, actual.AsString())
 	}
+}
+
+func TestAzureResourceMetricsUnmarshaler_UnmarshalAggregatedAppMetrics(t *testing.T) {
+	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
+	logger := zap.NewNop()
+	unmarshaler := newAzureResourceMetricsUnmarshaler(
+		component.BuildInfo{
+			Command:     "Test",
+			Description: "Test",
+			Version:     "Test",
+		},
+		logger,
+		&Config{
+			MetricAggregation: "average",
+		},
+	)
+	metrics, err := unmarshaler.UnmarshalMetrics(&event)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 6, metrics.MetricCount())
+
+	metric := metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
+
+	assert.Equal(t, "metric.name", metric.Name())
+	assert.Equal(t, 8.0, metric.Gauge().DataPoints().At(0).DoubleValue())
 }
