@@ -20,12 +20,16 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ElasticsearchBulkLatency.Record(context.Background(), 1)
 	tb.ElasticsearchBulkRequestsCount.Add(context.Background(), 1)
 	tb.ElasticsearchDocsProcessed.Add(context.Background(), 1)
 	tb.ElasticsearchDocsReceived.Add(context.Background(), 1)
 	tb.ElasticsearchDocsRetried.Add(context.Background(), 1)
 	tb.ElasticsearchFlushedBytes.Add(context.Background(), 1)
 	tb.ElasticsearchFlushedUncompressedBytes.Add(context.Background(), 1)
+	AssertEqualElasticsearchBulkLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualElasticsearchBulkRequestsCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
