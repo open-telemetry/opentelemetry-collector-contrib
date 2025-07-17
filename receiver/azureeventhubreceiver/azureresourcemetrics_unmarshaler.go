@@ -24,15 +24,17 @@ import (
 const azureResourceID = "azure.resource.id"
 
 type azureResourceMetricsUnmarshaler struct {
-	buildInfo  component.BuildInfo
-	logger     *zap.Logger
-	TimeFormat []string
+	buildInfo   component.BuildInfo
+	logger      *zap.Logger
+	TimeFormat  []string
+	Aggregation string
 }
 
 type azureResourceMetricsConfiger interface {
 	GetLogger() *zap.Logger
 	GetBuildVersion() string
 	GetTimeFormat() []string
+	GetAggregation() string
 }
 
 // azureMetricRecords represents an array of Azure metric records
@@ -80,15 +82,16 @@ func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
 // azureMetricRecord represents a single Azure Metric following
 // the common schema does not exist (yet):
 type azureResourceMetricRecord struct {
-	Time       string  `json:"time"`
-	ResourceID string  `json:"resourceId"`
-	MetricName string  `json:"metricName"`
-	TimeGrain  string  `json:"timeGrain"`
-	Total      float64 `json:"total"`
-	Count      float64 `json:"count"`
-	Minimum    float64 `json:"minimum"`
-	Maximum    float64 `json:"maximum"`
-	Average    float64 `json:"average"`
+	Time       string `json:"time"`
+	ResourceID string `json:"resourceId"`
+	MetricName string `json:"metricName"`
+	TimeGrain  string `json:"timeGrain"`
+
+	Total   float64 `json:"total"`
+	Count   float64 `json:"count"`
+	Minimum float64 `json:"minimum"`
+	Maximum float64 `json:"maximum"`
+	Average float64 `json:"average"`
 }
 
 func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, _ map[string]interface{}, md *pmetric.Metrics) error {
@@ -228,6 +231,17 @@ func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, fie
 
 	startTimestamp := pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
+	if c.GetAggregation() == "average" {
+		metricAverage := metrics.AppendEmpty()
+		metricAverage.SetName(strings.ToLower(strings.ReplaceAll(r.MetricName, " ", "_")))
+		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpAverage.SetStartTimestamp(startTimestamp)
+		dpAverage.SetTimestamp(nanos)
+		dpAverage.SetDoubleValue(r.Total / r.Count)
+
+		return nil
+	}
+
 	metricTotal := metrics.AppendEmpty()
 	metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
 	dpTotal := metricTotal.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -259,11 +273,12 @@ func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, fie
 	return nil
 }
 
-func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string) eventMetricsUnmarshaler {
+func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, cfg *Config) eventMetricsUnmarshaler {
 	return &azureResourceMetricsUnmarshaler{
-		buildInfo:  buildInfo,
-		logger:     logger,
-		TimeFormat: timeFormat,
+		buildInfo:   buildInfo,
+		logger:      logger,
+		TimeFormat:  cfg.TimeFormats.Metrics,
+		Aggregation: cfg.MetricAggregation,
 	}
 }
 
@@ -303,6 +318,10 @@ func (r *azureResourceMetricsUnmarshaler) GetBuildVersion() string {
 
 func (r *azureResourceMetricsUnmarshaler) GetTimeFormat() []string {
 	return r.TimeFormat
+}
+
+func (r *azureResourceMetricsUnmarshaler) GetAggregation() string {
+	return r.Aggregation
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
