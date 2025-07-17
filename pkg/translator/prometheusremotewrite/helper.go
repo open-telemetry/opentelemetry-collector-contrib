@@ -504,7 +504,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		return
 	}
 
-	name := prometheustranslator.TargetInfoMetricName
+	name := otlptranslator.TargetInfoMetricName
 	if settings.Namespace != "" {
 		name = settings.Namespace + "_" + name
 	}
