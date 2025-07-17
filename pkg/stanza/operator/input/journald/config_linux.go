@@ -56,14 +56,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 func (c Config) buildArgs() ([]string, error) {
 	args := make([]string, 0, 10)
 
-	// Export logs in UTC time
-	args = append(args, "--utc")
-
-	// Export logs as JSON
-	args = append(args, "--output=json")
-
-	// Continue watching logs until cancelled
-	args = append(args, "--follow")
+	args = append(args,
+		"--utc",         // Export logs in UTC time
+		"--output=json", // Export logs as JSON
+		"--follow",      // Continue watching logs until cancelled
+	)
 
 	switch c.StartAt {
 	case "end":
