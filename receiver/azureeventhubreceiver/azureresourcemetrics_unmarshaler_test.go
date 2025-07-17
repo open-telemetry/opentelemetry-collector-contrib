@@ -131,10 +131,13 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAggregatedAppMetrics(t *testin
 	metrics, err := unmarshaler.UnmarshalMetrics(&event)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 6, metrics.MetricCount())
+	assert.Equal(t, 2, metrics.MetricCount())
 
-	metric := metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
+	resMetric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "dependencies/duration", resMetric.Name())
+	assert.Equal(t, 534.4407913043478, resMetric.Gauge().DataPoints().At(0).DoubleValue())
 
-	assert.Equal(t, "metric.name", metric.Name())
-	assert.Equal(t, 8.0, metric.Gauge().DataPoints().At(0).DoubleValue())
+	appMetric := metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "metric.name", appMetric.Name())
+	assert.Equal(t, 8.0, appMetric.Gauge().DataPoints().At(0).DoubleValue())
 }

@@ -105,7 +105,6 @@ func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
 	metrics := scopeMetrics.Metrics()
-	metrics.EnsureCapacity(5)
 
 	if r.ResourceID != "" {
 		resourceMetrics.Resource().Attributes().PutStr(azureResourceID, r.ResourceID)
@@ -126,6 +125,20 @@ func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger
 	}
 
 	startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
+
+	if c.GetAggregation() == "average" {
+		metrics.EnsureCapacity(1)
+		metricAverage := metrics.AppendEmpty()
+		metricAverage.SetName(strings.ToLower(strings.ReplaceAll(r.MetricName, " ", "_")))
+		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpAverage.SetStartTimestamp(startTimestamp)
+		dpAverage.SetTimestamp(nanos)
+		dpAverage.SetDoubleValue(r.Total / r.Count)
+
+		return nil
+	}
+
+	metrics.EnsureCapacity(5)
 
 	metricTotal := metrics.AppendEmpty()
 	metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
@@ -213,7 +226,6 @@ func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, md 
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
 	metrics := scopeMetrics.Metrics()
-	metrics.EnsureCapacity(4)
 
 	nanos, err := asTimestamp(r.Time, c.GetTimeFormat())
 	if err != nil {
@@ -224,6 +236,7 @@ func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, md 
 	startTimestamp := pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
 	if c.GetAggregation() == "average" {
+		metrics.EnsureCapacity(1)
 		metricAverage := metrics.AppendEmpty()
 		metricAverage.SetName(strings.ToLower(strings.ReplaceAll(r.MetricName, " ", "_")))
 		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -233,6 +246,8 @@ func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, md 
 
 		return nil
 	}
+
+	metrics.EnsureCapacity(4)
 
 	metricTotal := metrics.AppendEmpty()
 	metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
