@@ -102,7 +102,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 			}
 			line := strings.TrimSpace(string(bytes))
 			if line != "" {
-				transferChan <- Metric{line, c.LocalAddr()}
+				transferChan <- Metric{line, c.RemoteAddr()}
 			}
 		}
 	}
