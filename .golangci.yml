@@ -131,7 +131,6 @@ linters:
         - preferWriteByte
         - ptrToRefParam
         - rangeValCopy
-        - redundantSprint
         - returnAfterHttpError
         - sloppyReassign
         - stringsCompare
