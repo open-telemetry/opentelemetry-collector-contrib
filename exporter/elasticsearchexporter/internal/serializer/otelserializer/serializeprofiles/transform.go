@@ -386,10 +386,10 @@ func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libp
 	// Fetch build ID from profiles.attribute_table.
 	buildIDStr, err := getStringFromAttribute(dic, mapping, "process.executable.build_id.htlhash")
 	switch {
-	case errors.Is(err, errMissingAttribute):
-		return libpf.NewFileID(0, 0), nil
 	case errors.Is(err, nil):
 		return libpf.FileIDFromString(buildIDStr)
+	case errors.Is(err, errMissingAttribute):
+		return libpf.NewFileID(0, 0), nil
 	default:
 		return libpf.FileID{}, err
 	}
