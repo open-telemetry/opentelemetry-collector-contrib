@@ -202,7 +202,7 @@ func populateMetrics(host *as.Host) error {
 	if err != nil {
 		return errors.New("failed registering udf file")
 	}
-	if nil != <-task.OnComplete() {
+	if <-task.OnComplete() != nil {
 		return errors.New("failed while registering udf file")
 	}
 
