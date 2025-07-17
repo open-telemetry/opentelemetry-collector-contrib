@@ -43,6 +43,7 @@ The following exporter configuration parameters are supported.
 | `retry_mode`              | The retryer implementation, the supported values are "standard", "adaptive" and "nop". "nop" will set the retryer as `aws.NopRetryer`, which effectively disable the retry.                                                | standard                                    |
 | `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set. Setting max attempts to 0 will allow the SDK to retry all retryable errors until the request succeeds, or a non-retryable error is returned. | 3                                           |
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
+| `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`. |  |
 
 ### Marshaler
 
@@ -51,6 +52,22 @@ Marshaler determines the format of data sent to AWS S3. Currently, the following
 - `otlp_json` (default): the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as json.
 - `otlp_proto`: the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as Protocol Buffers. A single protobuf message is written into each object.
 - `sumo_ic`: the [Sumo Logic Installed Collector Archive format](https://help.sumologic.com/docs/manage/data-archiving/archive/).
+  - _sourceCategory, _sourceHost, and _sourceName is needed
+
+    ```yaml
+    resource/add_source_category:
+      attributes:
+      - action: insert
+        key: _sourceCategory
+        value: "value"
+      - action: insert
+        key: _sourceHost
+        value: "value"
+      - action: insert
+        key: _sourceName
+        value: "value"
+    ```
+
   **This format is supported only for logs.**
 - `body`: export the log body as string.
   **This format is supported only for logs.**
@@ -66,6 +83,10 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
 - `gzip`: Files will be compressed with gzip. **This does not support `sumo_ic`marshaler.**
 
 ### resource_attrs_to_s3
+- `s3_bucket`: Defines which resource attribute's value should be used as the S3 bucket.
+  When this option is set, it dynamically overrides `s3uploader/s3_bucket`. 
+  If the specified resource attribute exists in the data,  
+  its value will be used as the bucket; otherwise, `s3uploader/s3_bucket` will serve as the fallback.
 - `s3_prefix`: Defines which resource attribute's value should be used as the S3 prefix.
   When this option is set, it dynamically overrides `s3uploader/s3_prefix`. 
   If the specified resource attribute exists in the data,  
@@ -121,8 +142,8 @@ metric/YYYY/MM/DD/HH/mm
 ```
 
 ## Data routing based on resource attributes
-When `resource_attrs_to_s3/s3_prefix` is configured, the S3 prefix is dynamically derived from a specified resource attribute in your data.
-If the attribute value is unavailable, the prefix will fall back to the value defined in `s3uploader/s3_prefix`.
+When `resource_attrs_to_s3/s3_bucket` or `resource_attrs_to_s3/s3_prefix` is configured, the S3 bucket and/or prefix are dynamically derived from specified resource attributes in your data.
+If the attribute values are unavailable, the bucket and prefix will fall back to the values defined in `s3uploader/s3_bucket` and `s3uploader/s3_prefix` respectively.
 ```yaml
 exporters:
   awss3:
@@ -132,15 +153,16 @@ exporters:
       s3_prefix: 'metric'
       s3_partition_format: '%Y/%m/%d/%H/%M'
     resource_attrs_to_s3:
+      s3_bucket: "com.awss3.bucket"
       s3_prefix: "com.awss3.prefix"
 ```
 In this case, metrics, logs and traces would be stored in the following path format examples:
 
 ```console
-prefix1/YYYY/MM/DD/HH/mm
-foo-prefix/YYYY/MM/DD/HH/mm
-prefix-bar/YYYY/MM/DD/HH/mm
-metric/YYYY/MM/DD/HH/mm
+bucket1/prefix1/YYYY/MM/DD/HH/mm
+bucket2/foo-prefix/YYYY/MM/DD/HH/mm
+bucket3/prefix-bar/YYYY/MM/DD/HH/mm
+databucket/metric/YYYY/MM/DD/HH/mm
 ...
 ```
 
