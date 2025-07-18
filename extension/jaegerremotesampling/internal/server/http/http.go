@@ -87,7 +87,7 @@ func (h *SamplingHTTPServer) Shutdown(ctx context.Context) error {
 
 func (h *SamplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *http.Request) {
 	svc := r.URL.Query().Get("service")
-	if len(svc) == 0 {
+	if svc == "" {
 		err := errors.New("'service' parameter must be provided")
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return

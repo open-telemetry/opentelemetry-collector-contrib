@@ -141,7 +141,7 @@ func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	case <-subprocess.shutdownSignal:
 	case <-t.C:
 		subprocess.logger.Warn("subprocess hasn't returned within shutdown timeout. May be zombied.",
-			zap.String("timeout", fmt.Sprintf("%v", timeout)))
+			zap.String("timeout", timeout.String()))
 	}
 
 	return nil

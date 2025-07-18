@@ -227,8 +227,6 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeEmpty:
-		fallthrough
 	default:
 		logger.Warn(
 			"Unsupported metric type : ",

@@ -18,7 +18,7 @@ import (
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
 )
 
-var _ (Client) = &nsxClient{}
+var _ Client = &nsxClient{}
 
 // Client is a way of interacting with the NSX REST API
 type Client interface {
@@ -145,7 +145,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

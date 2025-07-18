@@ -195,7 +195,7 @@ func TestEventsScraper(t *testing.T) {
 					default:
 						queriesCount.Add(1)
 						// Simulate a long-running query
-						_, queryErr := db.Query(tc.clientQuery)
+						_, queryErr := db.Exec(tc.clientQuery)
 						if !finished.Load() {
 							// only check this condition if the test is not finished
 							assert.NoError(t, queryErr)

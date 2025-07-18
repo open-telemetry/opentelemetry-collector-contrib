@@ -285,8 +285,6 @@ func NewLabelValueMetadata(name string, columnName string, valueType ValueType) 
 			var valueHolder []*lockRequest
 			return &valueHolder
 		}
-	case UnknownValueType, FloatValueType, NullFloatValueType:
-		fallthrough
 	default:
 		return nil, fmt.Errorf("invalid value type received for label %q", name)
 	}

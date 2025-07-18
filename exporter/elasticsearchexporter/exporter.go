@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
@@ -41,9 +42,16 @@ type elasticsearchExporter struct {
 	documentEncoders         [NumMappingModes]documentEncoder
 	documentRouters          [NumMappingModes]documentRouter
 	spanEventDocumentRouters [NumMappingModes]documentRouter
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize internal telemetry: %w", err)
+	}
+
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	exporter := &elasticsearchExporter{
@@ -54,6 +62,8 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
+		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
+		telemetryBuilder:    telemetryBuilder,
 	}
 	for mappingMode := range NumMappingModes {
 		encoder, err := newEncoder(mappingMode)
@@ -77,6 +87,10 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if err := e.bulkIndexers.shutdown(ctx); err != nil {
 		return fmt.Errorf("error shutting down bulk indexers: %w", err)
+	}
+	if e.telemetryBuilder != nil {
+		e.telemetryBuilder.Shutdown()
+		e.telemetryBuilder = nil
 	}
 	return nil
 }

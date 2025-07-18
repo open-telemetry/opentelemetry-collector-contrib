@@ -93,6 +93,9 @@ linters:
             - pkg: math/rand$
               desc: Use math/rand/v2 instead of math/rand
 
+            - pkg: sigs.k8s.io/yaml
+              desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           deny:
@@ -104,9 +107,41 @@ linters:
             - '!**/*_test.go'
 
     exhaustive:
+      # Presence of "default" case in switch statements satisfies exhaustiveness,
+      # even if all enum members are not listed.
+      default-signifies-exhaustive: true
+      # Only run exhaustive check on switches with "//exhaustive:enforce" comment.
       explicit-exhaustive-switch: true
-
+      # Enum members matching the supplied regex do not have to be listed in
+      # switch statements to satisfy exhaustiveness.
       ignore-enum-members: pmetric.MetricTypeEmpty
+
+    gocritic:
+      disabled-checks:
+        - badRegexp
+        - commentedOutCode
+        - deferInLoop
+        - equalFold
+        - exposedSyncMutex
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - nestingReduce
+        - paramTypeCombine
+        - ptrToRefParam
+        - rangeValCopy
+        - returnAfterHttpError
+        - sloppyReassign
+        - stringConcatSimplify
+        - todoCommentWithoutDetail
+        - tooManyResultsChecker
+        - typeAssertChain
+        - typeDefFirst
+        - unnamedResult
+        - unnecessaryBlock
+        - whyNoLint
+
+      enable-all: true
 
     gosec:
       excludes:

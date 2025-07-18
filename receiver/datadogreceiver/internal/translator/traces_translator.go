@@ -220,12 +220,12 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
 			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
 			for k, v := range span.GetMeta() {
-				if k = translateDatadogKeyToOTel(k); len(k) > 0 {
+				if k = translateDatadogKeyToOTel(k); k != "" {
 					newSpan.Attributes().PutStr(k, v)
 				}
 			}
 			for k, v := range span.GetMetrics() {
-				if k = translateDatadogKeyToOTel(k); len(k) > 0 {
+				if k = translateDatadogKeyToOTel(k); k != "" {
 					newSpan.Attributes().PutDouble(k, v)
 				}
 			}
@@ -455,11 +455,7 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 		}
 		_, err = dest.UnmarshalMsg(buf.Bytes())
 		return err
-	case "application/json":
-		fallthrough
-	case "text/json":
-		fallthrough
-	case "":
+	case "application/json", "text/json", "":
 		err = json.NewDecoder(req.Body).Decode(&dest)
 		return err
 	default:
