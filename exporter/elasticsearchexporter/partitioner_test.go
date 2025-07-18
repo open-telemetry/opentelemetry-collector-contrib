@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -19,7 +22,7 @@ func TestGetKey(t *testing.T) {
 			name:         "empty",
 			metadataKeys: nil,
 			metadata: map[string][]string{
-				"key1": []string{"val1"},
+				"key1": {"val1"},
 			},
 			expected: "",
 		},
@@ -27,7 +30,7 @@ func TestGetKey(t *testing.T) {
 			name:         "with_missing_key",
 			metadataKeys: []string{"key404"},
 			metadata: map[string][]string{
-				"key1": []string{"val1"},
+				"key1": {"val1"},
 			},
 			expected: "",
 		},
@@ -35,7 +38,7 @@ func TestGetKey(t *testing.T) {
 			name:         "with_key_in_metadata",
 			metadataKeys: []string{"key1"},
 			metadata: map[string][]string{
-				"key1": []string{"val1"},
+				"key1": {"val1"},
 			},
 			expected: "key1\x00val1",
 		},
@@ -43,8 +46,8 @@ func TestGetKey(t *testing.T) {
 			name:         "with_multiple_key_in_metadata",
 			metadataKeys: []string{"key1", "key2"},
 			metadata: map[string][]string{
-				"key1": []string{"val1"},
-				"key2": []string{"val2.1", "val2.2", "val2.3"},
+				"key1": {"val1"},
+				"key2": {"val2.1", "val2.2", "val2.3"},
 			},
 			expected: "key1\x00val1\x00key2\x00val2.1\x00val2.2\x00val2.3",
 		},
@@ -62,13 +65,14 @@ func BenchmarkGetKey(b *testing.B) {
 	p := metadataKeysPartitioner{keys: []string{"key1", "key2"}}
 	ctx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
-			"key1": []string{"val1"},
-			"key2": []string{"val2.1", "val2.2", "val2.3"},
+			"key1": {"val1"},
+			"key2": {"val2.1", "val2.2", "val2.3"},
 		}),
 	})
 
 	b.ReportAllocs()
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		_ = p.GetKey(ctx, nil)
 	}
 }

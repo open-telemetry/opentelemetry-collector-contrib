@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -14,7 +17,7 @@ type metadataKeysPartitioner struct {
 
 func (p metadataKeysPartitioner) GetKey(
 	ctx context.Context,
-	req exporterhelper.Request,
+	_ exporterhelper.Request,
 ) string {
 	var kb bytes.Buffer
 	meta := client.FromContext(ctx).Metadata

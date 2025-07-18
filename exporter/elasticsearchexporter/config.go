@@ -105,6 +105,8 @@ type Config struct {
 	// then the Flush will be ignored even if Batcher.Enabled is false.
 	//
 	// Deprecated: [v0.131.0] This config is now deprecated. Use `sending_queue#batch` instead.
+	// Batcher config will be ignored if `sending_queue#batch` is defined even if sending queue
+	// is disabled.
 	Batcher BatcherConfig `mapstructure:"batcher"`
 
 	// Experimental: MetadataKeys defines a list of client.Metadata keys that

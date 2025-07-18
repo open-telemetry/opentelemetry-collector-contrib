@@ -228,13 +228,17 @@ func exporterhelperOptions(
 	qbc := cfg.QueueBatchConfig
 	switch {
 	case qbc.Batch.HasValue():
-		// Latest queue batch settings are used, prioritize them
+		// Latest queue batch settings are used, prioritize them even if sending queue is disabled
 		opts = append(opts, exporterhelper.WithQueueBatch(qbc, qbs))
+
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//
-		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-		// to ensure sending data to the background workers will not block indefinitely.
-		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
+		// We keep timeout_sender enabled in the async mode (sending_queue not enabled OR sending
+		// queue enabled but batching not enabled OR based on the deprecated batcher setting), to
+		// ensure sending data to the background workers will not block indefinitely.
+		if qbc.Enabled {
+			opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
+		}
 	case cfg.Batcher.enabledSet:
 		if cfg.Batcher.Enabled {
 			qbc.Batch = configoptional.Some(exporterhelper.BatchConfig{
@@ -252,12 +256,15 @@ func exporterhelperOptions(
 			}
 		}
 
-		opts = append(opts, exporterhelper.WithQueue(qbc))
-		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-		//
-		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-		// to ensure sending data to the background workers will not block indefinitely.
-		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
+		opts = append(
+			opts,
+			// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+			//
+			// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
+			// to ensure sending data to the background workers will not block indefinitely.
+			exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+			exporterhelper.WithQueue(qbc),
+		)
 	default:
 		opts = append(opts, exporterhelper.WithQueue(qbc))
 	}
