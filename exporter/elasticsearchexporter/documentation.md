@@ -6,13 +6,13 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol.elasticsearch.bulk_latency
+### otelcol.elasticsearch.bulk_requests.count
 
-Latency of Elasticsearch bulk operations in seconds. [alpha]
+Count of the completed bulk requests. [alpha]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
 
 #### Attributes
 
@@ -21,13 +21,13 @@ Latency of Elasticsearch bulk operations in seconds. [alpha]
 | outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
 | http_status_code | HTTP status code. | Any Int |
 
-### otelcol.elasticsearch.bulk_requests.count
+### otelcol.elasticsearch.bulk_requests.latency
 
-Count of the completed bulk requests. [alpha]
+Latency of Elasticsearch bulk operations in seconds. [alpha]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
 
 #### Attributes
 

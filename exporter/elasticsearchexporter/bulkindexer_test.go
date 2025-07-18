@@ -148,13 +148,12 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
 				{Value: 43}, // hard-coding the flush bytes since the input is fixed
 			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchBulkLatency(t, ct, []metricdata.HistogramDataPoint[float64]{
+			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"),
 						semconv.HTTPResponseStatusCode(http.StatusOK),
 					),
-					Count: 1,
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		})
@@ -454,7 +453,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				)
 			}
 			if tt.wantESLatency != nil {
-				metadatatest.AssertEqualElasticsearchBulkLatency(
+				metadatatest.AssertEqualElasticsearchBulkRequestsLatency(
 					t, ct,
 					[]metricdata.HistogramDataPoint[float64]{*tt.wantESLatency},
 					metricdatatest.IgnoreTimestamp(),

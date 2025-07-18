@@ -438,7 +438,7 @@ func flushBulkIndexer(
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
-			tb.ElasticsearchBulkLatency.Record(ctx, latency, attrSet)
+			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		case errors.As(err, &bulkFailedErr):
 			var outcome string
 			code := bulkFailedErr.StatusCode()
@@ -458,7 +458,7 @@ func flushBulkIndexer(
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
-			tb.ElasticsearchBulkLatency.Record(ctx, latency, attrSet)
+			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
@@ -467,7 +467,7 @@ func flushBulkIndexer(
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
-			tb.ElasticsearchBulkLatency.Record(ctx, latency, attrSet)
+			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		}
 	} else {
 		// Record a successful completed bulk request
@@ -479,7 +479,7 @@ func flushBulkIndexer(
 		))
 
 		tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), successAttrSet)
-		tb.ElasticsearchBulkLatency.Record(ctx, latency, successAttrSet)
+		tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, successAttrSet)
 	}
 
 	var tooManyReqs, clientFailed, serverFailed int64
