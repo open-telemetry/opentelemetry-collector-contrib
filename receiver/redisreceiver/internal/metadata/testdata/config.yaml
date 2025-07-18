@@ -9,6 +9,8 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
+    redis.cluster.cluster_enabled:
+      enabled: true
     redis.cmd.calls:
       enabled: true
     redis.cmd.latency:
@@ -53,6 +55,10 @@ all_set:
       enabled: true
     redis.memory.used:
       enabled: true
+    redis.memory.used_memory_overhead:
+      enabled: true
+    redis.memory.used_memory_startup:
+      enabled: true
     redis.net.input:
       enabled: true
     redis.net.output:
@@ -68,6 +74,8 @@ all_set:
     redis.role:
       enabled: true
     redis.slaves.connected:
+      enabled: true
+    redis.stats.tracking_total_keys:
       enabled: true
     redis.uptime:
       enabled: true
@@ -88,6 +96,8 @@ none_set:
       enabled: false
     redis.clients.max_output_buffer:
       enabled: false
+    redis.cluster.cluster_enabled:
+      enabled: false
     redis.cmd.calls:
       enabled: false
     redis.cmd.latency:
@@ -132,6 +142,10 @@ none_set:
       enabled: false
     redis.memory.used:
       enabled: false
+    redis.memory.used_memory_overhead:
+      enabled: false
+    redis.memory.used_memory_startup:
+      enabled: false
     redis.net.input:
       enabled: false
     redis.net.output:
@@ -147,6 +161,8 @@ none_set:
     redis.role:
       enabled: false
     redis.slaves.connected:
+      enabled: false
+    redis.stats.tracking_total_keys:
       enabled: false
     redis.uptime:
       enabled: false
