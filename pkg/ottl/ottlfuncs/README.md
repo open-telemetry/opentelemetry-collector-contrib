@@ -1079,13 +1079,13 @@ Examples:
 
 ### Index
 
-`Index(source, value)`
+`Index(target, value)`
 
-The `Index` Converter returns the index of the first occurrence of the `value` in the `source`, or `-1` if not found. Values are compared using the OTTL [comparison rules](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/LANGUAGE.md#comparison-rules).
+The `Index` Converter returns the index of the first occurrence of the `value` in the `target`, or `-1` if not found. Values are compared using the OTTL [comparison rules](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/LANGUAGE.md#comparison-rules).
 
-`source` is a string or a slice of any type described in the OTTL comparison rules.
+`target` is a string or a slice of any type described in the OTTL comparison rules.
 
-`value` is the content whose index is being searched for in the `source`.
+`value` is the content whose index is being searched for in the `target`.
 
 The returned type is `int64`.
 

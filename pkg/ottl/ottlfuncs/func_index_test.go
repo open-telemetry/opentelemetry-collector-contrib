@@ -340,7 +340,7 @@ func Test_index_native_slices(t *testing.T) {
 				},
 			}
 
-			indexFn := index(sourceExpr, valueExpr)
+			indexFn := index(ottl.NewValueComparator(), sourceExpr, valueExpr)
 			result, err := indexFn(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -366,7 +366,7 @@ func Test_index_error_cases(t *testing.T) {
 			name:        "string source with non-string value",
 			source:      "hello world",
 			value:       123,
-			expectedErr: "when source is string, value must also be string",
+			expectedErr: "invalid value type for Index function, value must be a string",
 		},
 		{
 			name: "pcommon.Value with slice type",
@@ -422,7 +422,7 @@ func Test_index_error_cases(t *testing.T) {
 				},
 			}
 
-			indexFn := index(sourceExpr, valueExpr)
+			indexFn := index(ottl.NewValueComparator(), sourceExpr, valueExpr)
 			result, err := indexFn(context.Background(), nil)
 
 			if tt.expectedErr != "" {
@@ -455,7 +455,7 @@ func Test_IndexFactory(t *testing.T) {
 		// Set up the arguments appropriately
 		indexArgs, ok := args.(*IndexArguments[any])
 		require.True(t, ok)
-		indexArgs.Source = ottl.StandardGetSetter[any]{
+		indexArgs.Target = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return "test source", nil
 			},
