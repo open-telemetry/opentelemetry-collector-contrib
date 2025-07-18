@@ -75,9 +75,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	require.Equal(t, routeConsumer, route.consumer)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
