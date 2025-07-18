@@ -127,23 +127,18 @@ linters:
         - hugeParam
         - importShadow
         - nestingReduce
-        - nilValReturn
         - paramTypeCombine
-        - preferWriteByte
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
         - sloppyReassign
-        - stringsCompare
         - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
-        - truncateCmp
         - typeAssertChain
         - typeDefFirst
         - unnamedResult
         - unnecessaryBlock
-        - unnecessaryDefer
         - whyNoLint
 
       enable-all: true
