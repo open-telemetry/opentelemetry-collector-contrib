@@ -414,8 +414,8 @@ type summaryDatapoint struct {
 	Flags         int     `avro:"flags"`
 }
 
-// SummaryDataPointAttribute - struct modeling a summary Datapoint attribute
-type SummaryDataPointAttribute struct {
+// summaryDataPointAttribute - struct modeling a summary Datapoint attribute
+type summaryDataPointAttribute struct {
 	SummaryID      string `avro:"summary_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	Key            string `avro:"key"`

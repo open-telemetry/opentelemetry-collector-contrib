@@ -67,7 +67,7 @@ type kineticaExponentialHistogramRecord struct {
 type kineticaSummaryRecord struct {
 	summary                        *summary
 	summaryDatapoint               []summaryDatapoint
-	summaryDatapointAttribute      []SummaryDataPointAttribute
+	summaryDatapointAttribute      []summaryDataPointAttribute
 	summaryResourceAttribute       []summaryResourceAttribute
 	summaryScopeAttribute          []summaryScopeAttribute
 	summaryDatapointQuantileValues []summaryDatapointQuantileValues
@@ -403,7 +403,7 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 	kiSummaryRecord.summary = summary
 
 	// Handle data points
-	var datapointAttribute []SummaryDataPointAttribute
+	var datapointAttribute []summaryDataPointAttribute
 	datapointAttributes := make(map[string]valueTypePair)
 
 	for i := 0; i < summaryRecord.DataPoints().Len(); i++ {
@@ -1575,7 +1575,7 @@ func (e *kineticaMetricsExporter) newSummaryScopeAttributeValue(summaryID string
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newSummaryDatapointAttributeValue(summaryID string, summaryDatapointID string, key string, vtPair valueTypePair) (*SummaryDataPointAttribute, error) {
+func (e *kineticaMetricsExporter) newSummaryDatapointAttributeValue(summaryID string, summaryDatapointID string, key string, vtPair valueTypePair) (*summaryDataPointAttribute, error) {
 	var av *attributeValue
 	var err error
 
@@ -1584,7 +1584,7 @@ func (e *kineticaMetricsExporter) newSummaryDatapointAttributeValue(summaryID st
 		return nil, err
 	}
 
-	sa := &SummaryDataPointAttribute{summaryID, summaryDatapointID, key, *av}
+	sa := &summaryDataPointAttribute{summaryID, summaryDatapointID, key, *av}
 	return sa, nil
 }
 
