@@ -182,7 +182,8 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 		return err
 	}
 
-	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
+	err = s.addRequestHeaders(req, pipeline, flds)
+	if err != nil {
 		return err
 	}
 

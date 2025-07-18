@@ -42,7 +42,8 @@ func (or *ocDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consu
 	if or.metricsReceiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc); err != nil {
 		return err
 	}
-	if err = or.traceReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+	err = or.traceReceiver.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
 		return err
 	}
 	return or.metricsReceiver.Start(context.Background(), componenttest.NewNopHost())

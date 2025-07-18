@@ -133,7 +133,6 @@ linters:
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
-        - sloppyReassign
         - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
