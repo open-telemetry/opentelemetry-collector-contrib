@@ -6,18 +6,15 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"reflect"
 	"strings"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var valueComparator = ottl.NewValueComparator()
-
 type IndexArguments[K any] struct {
-	Source ottl.Getter[K]
+	Target ottl.Getter[K]
 	Value  ottl.Getter[K]
 }
 
@@ -31,12 +28,13 @@ func createIndexFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	if !ok {
 		return nil, errors.New("IndexFactory args must be of type *IndexArguments[K]")
 	}
-	return index(args.Source, args.Value), nil
+
+	return index(ottl.NewValueComparator(), args.Target, args.Value), nil
 }
 
-func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] {
+func index[K any](valueComparator ottl.ValueComparator, target ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		sourceVal, err := source.Get(ctx, tCtx)
+		sourceVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -54,12 +52,12 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 			}
 			return int64(strings.Index(s, v)), nil
 		case pcommon.Slice:
-			return findIndexInSlice(s, valueVal), nil
+			return findIndexInSlice(valueComparator, s, valueVal), nil
 		case pcommon.Value:
 			if s.Type() != pcommon.ValueTypeSlice {
 				return nil, errors.New("when source is pcommon.Value, only pcommon.ValueTypeSlice is supported")
 			}
-			return findIndexInSlice(s.Slice(), valueVal), nil
+			return findIndexInSlice(valueComparator, s.Slice(), valueVal), nil
 		case []any:
 			// for the []any case, we try to utilize ValueComparator's power
 			slice := pcommon.NewSlice()
@@ -67,29 +65,29 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 			if err != nil {
 				return nil, err
 			}
-			return findIndexInSlice(slice, valueVal), nil
+			return findIndexInSlice(valueComparator, slice, valueVal), nil
 		case []string:
 			return findIndexInStrings(s, valueVal), nil
 		case []int:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []int16:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []int32:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []int64:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []uint:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []uint16:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []uint32:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []uint64:
-			return findIndexInIntegers(s, valueVal), nil
+			return findIndexInIntegers(valueComparator, s, valueVal), nil
 		case []float32:
-			return findIndexInFloats(s, valueVal), nil
+			return findIndexInFloats(valueComparator, s, valueVal), nil
 		case []float64:
-			return findIndexInFloats(s, valueVal), nil
+			return findIndexInFloats(valueComparator, s, valueVal), nil
 		case []bool:
 			return findIndexInBooleans(s, valueVal), nil
 		default:
@@ -98,7 +96,7 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 	}
 }
 
-func findIndexInSlice(slice pcommon.Slice, value any) int64 {
+func findIndexInSlice(valueComparator ottl.ValueComparator, slice pcommon.Slice, value any) int64 {
 	for i := 0; i < slice.Len(); i++ {
 		sliceValue := slice.At(i).AsRaw()
 		if valueComparator.Equal(sliceValue, value) {
@@ -121,7 +119,7 @@ func findIndexInStrings(slice []string, value any) int64 {
 	return -1
 }
 
-func findIndexInIntegers[T ~int | ~int16 | ~int32 | ~int64 | ~uint | ~uint16 | ~uint32 | ~uint64](slice []T, value any) int64 {
+func findIndexInIntegers[T ~int | ~int16 | ~int32 | ~int64 | ~uint | ~uint16 | ~uint32 | ~uint64](valueComparator ottl.ValueComparator, slice []T, value any) int64 {
 	for i, v := range slice {
 		if valueComparator.Equal(int64(v), value) {
 			return int64(i)
@@ -130,7 +128,7 @@ func findIndexInIntegers[T ~int | ~int16 | ~int32 | ~int64 | ~uint | ~uint16 | ~
 	return -1
 }
 
-func findIndexInFloats[T ~float32 | ~float64](slice []T, value any) int64 {
+func findIndexInFloats[T ~float32 | ~float64](valueComparator ottl.ValueComparator, slice []T, value any) int64 {
 	for i, v := range slice {
 		if valueComparator.Equal(float64(v), value) {
 			return int64(i)
