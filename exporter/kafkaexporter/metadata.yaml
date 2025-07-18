@@ -4,6 +4,7 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
+    development: [profiles]
   distributions: [core, contrib]
   codeowners:
     active: [pavolloffay, MovieStoreGuy, axw]

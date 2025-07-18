@@ -125,3 +125,31 @@ func runBenchmarkTraces(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkProfiles(b *testing.B) {
+	configureBenchmark(b)
+	runBenchmarkProfiles(b)
+}
+
+func runBenchmarkProfiles(b *testing.B) {
+	config := createDefaultConfig().(*Config)
+	config.ProtocolVersion = "2.3.0"
+
+	exp := newProfilesExporter(*config, exportertest.NewNopSettings(metadata.Type))
+	b.Cleanup(func() { exp.Close(context.Background()) })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err := exp.Start(ctx, componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	b.ResetTimer()
+	b.RunParallel(func(p *testing.PB) {
+		data := testdata.GenerateProfiles(10)
+		for p.Next() {
+			err := exp.exportData(ctx, data)
+			require.NoError(b, err)
+		}
+	})
+}
