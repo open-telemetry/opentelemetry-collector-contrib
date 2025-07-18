@@ -137,7 +137,6 @@ linters:
         - sloppyReassign
         - stringsCompare
         - stringConcatSimplify
-        - stringXbytes
         - todoCommentWithoutDetail
         - tooManyResultsChecker
         - truncateCmp
