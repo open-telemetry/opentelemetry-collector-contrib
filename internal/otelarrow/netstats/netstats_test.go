@@ -63,35 +63,34 @@ func viewsFromLevel(level configtelemetry.Level) []metric.View {
 	if level < configtelemetry.LevelDetailed {
 		scope := instrumentation.Scope{Name: scopeName}
 		// Compressed size metrics.
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_*_compressed_size",
-			Scope: scope,
-		}))
+		views = append(views,
+			dropView(metric.Instrument{
+				Name:  "otelcol_*_compressed_size",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "otelcol_*_compressed_size",
+				Scope: scope,
+			}),
+			// makeRecvMetrics for exporters.
+			dropView(metric.Instrument{
+				Name:  "otelcol_exporter_recv",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "otelcol_exporter_recv_wire",
+				Scope: scope,
+			}),
 
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_*_compressed_size",
-			Scope: scope,
-		}))
-
-		// makeRecvMetrics for exporters.
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_exporter_recv",
-			Scope: scope,
-		}))
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_exporter_recv_wire",
-			Scope: scope,
-		}))
-
-		// makeSentMetrics for receivers.
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_receiver_sent",
-			Scope: scope,
-		}))
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_receiver_sent_wire",
-			Scope: scope,
-		}))
+			// makeSentMetrics for receivers.
+			dropView(metric.Instrument{
+				Name:  "otelcol_receiver_sent",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "otelcol_receiver_sent_wire",
+				Scope: scope,
+			}))
 	}
 	return views
 }

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -63,11 +64,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				QueueSize:       10,
 				Sizer:           exporterhelper.RequestSizerTypeItems,
 				BlockOnOverflow: true,
-				Batch: &exporterhelper.BatchConfig{
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      1000,
 					MaxSize:      10000,
-				},
+				}),
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
@@ -83,14 +85,14 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				Keepalive: &configgrpc.KeepaliveClientConfig{
+				Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 					Time:                20 * time.Second,
 					PermitWithoutStream: true,
 					Timeout:             30 * time.Second,
-				},
+				}),
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
+				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))}),
 			},
 			Arrow: ArrowConfig{
 				NumStreams:         2,

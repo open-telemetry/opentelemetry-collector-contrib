@@ -12,7 +12,7 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-var allowedPaths = regexp.MustCompile(`^(tmpfs|\/dev\/.*|overlay)$`)
+var allowedPaths = regexp.MustCompile(`^(tmpfs|/dev/.*|overlay)$`)
 
 type FileSystemMetricExtractor struct {
 	allowListRegexP *regexp.Regexp

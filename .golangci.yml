@@ -93,6 +93,9 @@ linters:
             - pkg: math/rand$
               desc: Use math/rand/v2 instead of math/rand
 
+            - pkg: sigs.k8s.io/yaml
+              desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           deny:
@@ -107,6 +110,46 @@ linters:
       explicit-exhaustive-switch: true
 
       ignore-enum-members: pmetric.MetricTypeEmpty
+
+    gocritic:
+      disabled-checks:
+        - badRegexp
+        - commentedOutCode
+        - deferInLoop
+        - emptyFallthrough
+        - equalFold
+        - evalOrder
+        - exposedSyncMutex
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - methodExprCall
+        - nestingReduce
+        - nilValReturn
+        - paramTypeCombine
+        - preferDecodeRune
+        - preferWriteByte
+        - ptrToRefParam
+        - rangeValCopy
+        - redundantSprint
+        - returnAfterHttpError
+        - sloppyReassign
+        - stringsCompare
+        - stringConcatSimplify
+        - stringXbytes
+        - todoCommentWithoutDetail
+        - tooManyResultsChecker
+        - truncateCmp
+        - typeAssertChain
+        - typeDefFirst
+        - typeUnparen
+        - uncheckedInlineErr
+        - unnamedResult
+        - unnecessaryBlock
+        - unnecessaryDefer
+        - whyNoLint
+
+      enable-all: true
 
     gosec:
       excludes:

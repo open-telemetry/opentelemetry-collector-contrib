@@ -174,7 +174,7 @@ func TestSuccessfulScrape(t *testing.T) {
 				expectedMetrics, err := golden.ReadMetrics(expectedFile)
 				assert.NoError(t, err)
 
-				assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+				assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 					pmetrictest.IgnoreMetricDataPointsOrder(),
 					pmetrictest.IgnoreStartTimestamp(),
 					pmetrictest.IgnoreTimestamp(),
