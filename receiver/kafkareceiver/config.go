@@ -54,6 +54,12 @@ type Config struct {
 	// ErrorBackoff controls backoff/retry behavior when the next consumer
 	// returns an error.
 	ErrorBackOff configretry.BackOffConfig `mapstructure:"error_backoff"`
+
+	// ReportRecordsDelay controls whether the metric kafka_receiver_records_delay
+	// that measures the time in seconds between producing and receiving a batch of records
+	// will be reported or not. This metric is not reported by default because
+	// it may slow down high-volume consuming.
+	ReportRecordsDelay bool `mapstructure:"report_records_delay"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

@@ -45,6 +45,7 @@ kafka/logs:
     max_interval: 10s
     max_elapsed_time: 1m
     multiplier: 1.5
+  report_records_delay: false
 kafka/rebalance_strategy:
   metrics:
     topic: otlp_metrics
