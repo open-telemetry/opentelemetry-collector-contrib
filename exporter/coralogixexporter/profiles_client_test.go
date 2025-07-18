@@ -359,11 +359,11 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 
 	profile1 := scopeProfiles.Profiles().AppendEmpty()
 	var id1 [16]byte
-	copy(id1[:], []byte("profile1-unique"))
+	copy(id1[:], "profile1-unique")
 	profile1.SetProfileID(id1)
 	profile2 := scopeProfiles.Profiles().AppendEmpty()
 	var id2 [16]byte
-	copy(id2[:], []byte("profile2-unique"))
+	copy(id2[:], "profile2-unique")
 	profile2.SetProfileID(id2)
 
 	partialSuccess := pprofileotlp.NewExportPartialSuccess()

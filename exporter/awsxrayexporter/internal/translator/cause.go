@@ -573,7 +573,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	exception.Stack = nil
 	for {
-		match := re.Match([]byte(line))
+		match := re.MatchString(line)
 		if match {
 			line, _ = r.ReadLine()
 		}
