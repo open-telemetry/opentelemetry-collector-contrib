@@ -18,16 +18,18 @@ func (p metadataKeysPartitioner) GetKey(
 ) string {
 	var kb bytes.Buffer
 	meta := client.FromContext(ctx).Metadata
+
+	var afterFirst bool
 	for _, k := range p.keys {
-		if len(p.keys) > 0 {
-			// Write key as idenitifier if more than one keys
-			kb.WriteString(k)
-			kb.WriteByte(0)
-		}
 		if values := meta.Get(k); len(values) != 0 {
-			for _, val := range values {
-				kb.WriteString(val)
+			if afterFirst {
 				kb.WriteByte(0)
+			}
+			kb.WriteString(k)
+			afterFirst = true
+			for _, val := range values {
+				kb.WriteByte(0)
+				kb.WriteString(val)
 			}
 		}
 	}
