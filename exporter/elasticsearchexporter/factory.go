@@ -141,7 +141,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewTracesQueueBatchSettings()
+	qbs := exporterhelper.NewMetricsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
