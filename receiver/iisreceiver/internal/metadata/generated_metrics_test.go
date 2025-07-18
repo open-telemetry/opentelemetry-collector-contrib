@@ -68,9 +68,11 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisApplicationPoolStateDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisApplicationPoolUptimeDataPoint(ts, 1)
 
