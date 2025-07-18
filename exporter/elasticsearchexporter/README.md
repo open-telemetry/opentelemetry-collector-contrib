@@ -86,10 +86,10 @@ All other defaults are as defined by [confighttp].
 
 The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper] which supports both queueing and batching. However, the sending queue is currently disabled by default. Sending queue can be enabled by setting `sending_queue#enabled` to `true`. The batching support in sending queue is also disabled by default. Batching can be enabled by defining `sending_queue#batch`.
 
-The exporter will perform its own buffering and batching and will issue async requests to Elasticsearch under the following conditions:
+The exporter will perform its own buffering and batching and will issue async requests to Elasticsearch if any of the following condition is true:
 
 - `sending_queue#enabled` is set to `false`
-- `sending_queue#enabled` is set to `true` with `sending_queue#batch` defined
+- `sending_queue#enabled` is set to `true` with `sending_queue#batch` unset or undefined
 - `batcher#enabled` is unset or undefined
 
 NOTE: Exporter's inbuilt handling of batching is a legacy feature and is scheduled to be deprecated when `sending_queue` API is out of the experimental stage.
