@@ -36,7 +36,7 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 }
 
 // SQL URL is of the format: protocol+transport://host:port/dbName?queryParam
-var re = regexp.MustCompile(`^(.+\/\/.+)\/([^\?]+)\??.*$`)
+var re = regexp.MustCompile(`^(.+//.+)/([^\?]+)\??.*$`)
 
 const (
 	dbURLI  = 1
