@@ -37,6 +37,7 @@ ignored_paths:
   - exporter/elasticsearchexporter/integrationtest
   - scraper/zookeeperscraper
   - testbed/mockdatasenders/mockdatadogagentexporter
+  - extension/sumologicextension # 40655
 allowed_functions:
   - name: NewFactory
     classes:
