@@ -104,15 +104,15 @@ type Config struct {
 	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
 	// then the Flush will be ignored even if Batcher.Enabled is false.
 	//
-	// Deprecated: [v0.131.0] This config is now deprecated. Use `sending_queue#batch` instead.
-	// Batcher config will be ignored if `sending_queue#batch` is defined even if sending queue
+	// Deprecated: [v0.131.0] This config is now deprecated. Use `sending_queue::batch` instead.
+	// Batcher config will be ignored if `sending_queue::batch` is defined even if sending queue
 	// is disabled.
 	Batcher BatcherConfig `mapstructure:"batcher"`
 
 	// Experimental: MetadataKeys defines a list of client.Metadata keys that
 	// will be used as partition keys for when batcher is enabled and will be
 	// added to the exporter's telemetry if defined. The config only applies
-	// when `sending_queue#batch` is defined or when the, now deprecated, batcher
+	// when `sending_queue::batch` is defined or when the, now deprecated, batcher
 	// is used (set to `true` or `false`). The metadata keys are converted to
 	// lower case as key lookups for client metadata is case insensitive. This
 	// means that the metric produced by internal telemetry will also have the
