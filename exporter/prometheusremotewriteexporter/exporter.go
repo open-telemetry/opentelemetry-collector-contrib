@@ -19,6 +19,7 @@ import (
 	"github.com/cenkalti/backoff/v5"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
@@ -33,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -276,12 +276,13 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
+	namer := otlptranslator.LabelNamer{}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
 			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
+		sanitizedLabels[namer.Build(key)] = value
 	}
 
 	return sanitizedLabels, nil
