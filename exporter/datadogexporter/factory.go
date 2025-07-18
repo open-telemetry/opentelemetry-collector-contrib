@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/routing"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -313,6 +314,8 @@ func (f *factory) createMetricsExporter(
 		}
 	}
 
+	// Declare metricsRouter at function level
+	var metricsRouter routing.MetricsRouter
 	switch {
 	case cfg.OnlyMetadata:
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
@@ -398,67 +401,35 @@ func (f *factory) createMetricsExporter(
 			return nil, err
 		}
 
-		// Check if routing is enabled and create OTLP exporter if needed
-		var otlpExporter exporter.Metrics
+		// Check if routing is enabled and create metrics router
 		set.Logger.Info("Metrics routing configuration", zap.Any("routing_config", cfg.Metrics.Routing))
 		if cfg.Metrics.Routing.Enabled {
-			otlpExporter, err = createOTLPMetricsExporter(ctx, set, cfg.Metrics.Routing, string(cfg.API.Key), cfg.API.Site)
+			// Create metrics router
+			routerSettings := routing.MetricsRouterSettings{
+				DatadogPushFunc:  serializerExp.ConsumeMetrics,
+				RoutingConfig:    cfg.Metrics.Routing,
+				APIKey:           string(cfg.API.Key),
+				Site:             cfg.API.Site,
+				Logger:           set.Logger,
+				ExporterSettings: set,
+			}
+
+			var err error
+			metricsRouter, err = routing.NewMetricsRouter(ctx, routerSettings)
 			if err != nil {
 				cancel()
 				wg.Wait()
-				return nil, fmt.Errorf("failed to create OTLP metrics exporter for routing: %w", err)
-			}
-			if otlpExporter != nil {
-				// Start the OTLP exporter as well
-				if err := otlpExporter.Start(ctx, nil); err != nil {
-					cancel()
-					wg.Wait()
-					return nil, fmt.Errorf("failed to start OTLP metrics exporter: %w", err)
-				}
+				return nil, fmt.Errorf("failed to create metrics router: %w", err)
 			}
 		}
 
-		if otlpExporter != nil {
-			// Wrap the serializer exporter with routing capabilities
-			if serializerConsumer, ok := serializerExp.(consumer.Metrics); ok {
-				routingExp := newRoutingMetricsExporter(serializerConsumer.ConsumeMetrics, otlpExporter, cfg.Metrics.Routing, set.Logger)
-				// Create a new exporter that uses the routing logic
-				routingExporter, routingErr := exporterhelper.NewMetrics(
-					ctx,
-					set,
-					cfg,
-					routingExp.ConsumeMetrics,
-					// explicitly disable since we rely on http.Client timeout logic.
-					exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
-					// We use our own custom mechanism for retries, since we hit several endpoints.
-					exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
-					// The metrics remapping code mutates data
-					exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-					exporterhelper.WithQueue(cfg.QueueSettings),
-					exporterhelper.WithShutdown(func(context.Context) error {
-						cancel()  // first cancel context
-						wg.Wait() // then wait for shutdown
-						f.StopReporter()
-						statsWriter.Stop()
-						if statsIn != nil {
-							close(statsIn)
-						}
-						return nil
-					}),
-				)
-				if routingErr != nil {
-					cancel()
-					wg.Wait()
-					return nil, routingErr
-				}
-				return routingExporter, nil
-			} else {
-				set.Logger.Warn("Serializer exporter does not implement consumer.Metrics interface, routing disabled")
-			}
+		if metricsRouter != nil {
+			// Use routing exporter
+			pushMetricsFn = metricsRouter.ConsumeMetrics
+		} else {
+			// Use standard Datadog exporter
+			pushMetricsFn = serializerExp.ConsumeMetrics
 		}
-
-		// Return the original serializer exporter if no routing
-		return serializerExp, nil
 	default:
 		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
 		if metricsErr != nil {
@@ -467,49 +438,48 @@ func (f *factory) createMetricsExporter(
 			return nil, metricsErr
 		}
 
-		// Check if routing is enabled and create OTLP exporter if needed
-		var otlpExporter exporter.Metrics
+		// Check if routing is enabled and create metrics router
 		set.Logger.Info("Metrics routing configuration", zap.Any("routing_config", cfg.Metrics.Routing))
 		if cfg.Metrics.Routing.Enabled {
-			otlpExporter, err = createOTLPMetricsExporter(ctx, set, cfg.Metrics.Routing, string(cfg.API.Key), cfg.API.Site)
+			// Create metrics router
+			routerSettings := routing.MetricsRouterSettings{
+				DatadogPushFunc:  exp.PushMetricsDataScrubbed,
+				RoutingConfig:    cfg.Metrics.Routing,
+				APIKey:           string(cfg.API.Key),
+				Site:             cfg.API.Site,
+				Logger:           set.Logger,
+				ExporterSettings: set,
+			}
+
+			var err error
+			metricsRouter, err = routing.NewMetricsRouter(ctx, routerSettings)
 			if err != nil {
 				cancel()
 				wg.Wait()
-				return nil, fmt.Errorf("failed to create OTLP metrics exporter for routing: %w", err)
-			}
-			if otlpExporter != nil {
-				// Start the OTLP exporter as well
-				if err := otlpExporter.Start(ctx, nil); err != nil {
-					cancel()
-					wg.Wait()
-					return nil, fmt.Errorf("failed to start OTLP metrics exporter: %w", err)
-				}
+				return nil, fmt.Errorf("failed to create metrics router: %w", err)
 			}
 		}
 
-		if otlpExporter != nil {
+		if metricsRouter != nil {
 			// Use routing exporter
-			routingExp := newRoutingMetricsExporter(exp.PushMetricsDataScrubbed, otlpExporter, cfg.Metrics.Routing, set.Logger)
-			pushMetricsFn = routingExp.ConsumeMetrics
+			pushMetricsFn = metricsRouter.ConsumeMetrics
 		} else {
 			// Use standard Datadog exporter
 			pushMetricsFn = exp.PushMetricsDataScrubbed
 		}
 	}
 
-	exporter, err := exporterhelper.NewMetrics(
-		ctx,
-		set,
-		cfg,
-		pushMetricsFn,
-		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
-		// We use our own custom mechanism for retries, since we hit several endpoints.
-		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
-		// The metrics remapping code mutates data
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
+	// Create the final metrics exporter with proper lifecycle management
+	var startFunc func(context.Context, component.Host) error
+	var shutdownFunc func(context.Context) error
+
+	if metricsRouter != nil {
+		startFunc = metricsRouter.Start
+		shutdownFunc = func(ctx context.Context) error {
+			// Shutdown metrics router first
+			if err := metricsRouter.Shutdown(ctx); err != nil {
+				set.Logger.Error("Failed to shutdown metrics router", zap.Error(err))
+			}
 			cancel()  // first cancel context
 			wg.Wait() // then wait for shutdown
 			f.StopReporter()
@@ -518,7 +488,41 @@ func (f *factory) createMetricsExporter(
 				close(statsIn)
 			}
 			return nil
-		}),
+		}
+	} else {
+		shutdownFunc = func(context.Context) error {
+			cancel()  // first cancel context
+			wg.Wait() // then wait for shutdown
+			f.StopReporter()
+			statsWriter.Stop()
+			if statsIn != nil {
+				close(statsIn)
+			}
+			return nil
+		}
+	}
+
+	exporterOptions := []exporterhelper.Option{
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
+		// We use our own custom mechanism for retries, since we hit several endpoints.
+		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
+		// The metrics remapping code mutates data
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithShutdown(shutdownFunc),
+	}
+
+	if startFunc != nil {
+		exporterOptions = append(exporterOptions, exporterhelper.WithStart(startFunc))
+	}
+
+	exporter, err := exporterhelper.NewMetrics(
+		ctx,
+		set,
+		cfg,
+		pushMetricsFn,
+		exporterOptions...,
 	)
 	if err != nil {
 		return nil, err

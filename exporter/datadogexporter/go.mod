@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
-go 1.23.0
+go 1.23.10
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.157
@@ -50,7 +50,6 @@ require (
 	go.opentelemetry.io/collector/consumer v1.36.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/exporter v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/exporter/exportertest v0.130.1-0.20250715222903-0a7598ec1e19
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/featuregate v1.36.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/otelcol v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.130.1-0.20250715222903-0a7598ec1e19
@@ -412,6 +411,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/extension v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
