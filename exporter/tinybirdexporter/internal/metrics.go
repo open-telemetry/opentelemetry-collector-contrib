@@ -6,10 +6,19 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
+
+type DataPoint interface {
+	StartTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+	Flags() pmetric.DataPointFlags
+	Attributes() pcommon.Map
+	Exemplars() pmetric.ExemplarSlice
+}
 
 type baseMetricSignal struct {
 	ResourceSchemaURL           string              `json:"resource_schema_url"`
@@ -31,6 +40,66 @@ type baseMetricSignal struct {
 	ExemplarsValue              []float64           `json:"exemplars_value"`
 	ExemplarsSpanID             []string            `json:"exemplars_span_id"`
 	ExemplarsTraceID            []string            `json:"exemplars_trace_id"`
+}
+
+func newBaseMetricSignal(
+	resourceSchemaURL string,
+	resourceAttributes map[string]string,
+	serviceName string,
+	scopeName string,
+	scopeVersion string,
+	scopeSchemaURL string,
+	scopeAttributes map[string]string,
+	metric pmetric.Metric,
+	dataPoint DataPoint,
+) baseMetricSignal {
+	// Convert exemplars
+	exemplars := dataPoint.Exemplars()
+	filteredAttributes := make([]map[string]string, exemplars.Len())
+	timestamps := make([]string, exemplars.Len())
+	values := make([]float64, exemplars.Len())
+	spanIDs := make([]string, exemplars.Len())
+	traceIDs := make([]string, exemplars.Len())
+	for i := 0; i < exemplars.Len(); i++ {
+		ex := exemplars.At(i)
+		filteredAttributes[i] = convertAttributes(ex.FilteredAttributes())
+		timestamps[i] = ex.Timestamp().AsTime().Format(time.RFC3339Nano)
+		var value float64
+		switch ex.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
+			value = float64(ex.IntValue())
+		case pmetric.ExemplarValueTypeDouble:
+			value = ex.DoubleValue()
+		case pmetric.ExemplarValueTypeEmpty:
+			// Value is unset, use 0.0 as default
+			value = 0.0
+		}
+		values[i] = value
+		spanIDs[i] = traceutil.SpanIDToHexOrEmptyString(ex.SpanID())
+		traceIDs[i] = traceutil.TraceIDToHexOrEmptyString(ex.TraceID())
+	}
+
+	return baseMetricSignal{
+		ResourceSchemaURL:           resourceSchemaURL,
+		ResourceAttributes:          resourceAttributes,
+		ServiceName:                 serviceName,
+		ScopeName:                   scopeName,
+		ScopeVersion:                scopeVersion,
+		ScopeSchemaURL:              scopeSchemaURL,
+		ScopeAttributes:             scopeAttributes,
+		MetricName:                  metric.Name(),
+		MetricDescription:           metric.Description(),
+		MetricUnit:                  metric.Unit(),
+		MetricAttributes:            convertAttributes(dataPoint.Attributes()),
+		StartTimestamp:              dataPoint.StartTimestamp().AsTime().Format(time.RFC3339Nano),
+		Timestamp:                   dataPoint.Timestamp().AsTime().Format(time.RFC3339Nano),
+		Flags:                       uint32(dataPoint.Flags()),
+		ExemplarsFilteredAttributes: filteredAttributes,
+		ExemplarsTimestamp:          timestamps,
+		ExemplarsValue:              values,
+		ExemplarsSpanID:             spanIDs,
+		ExemplarsTraceID:            traceIDs,
+	}
 }
 
 type sumMetricSignal struct {
@@ -71,33 +140,6 @@ type exponentialHistogramMetricSignal struct {
 	AggregationTemporality int32    `json:"aggregation_temporality"`
 }
 
-func convertExemplars(exemplars pmetric.ExemplarSlice) (filteredAttributes []map[string]string, timestamps []string, values []float64, spanIDs []string, traceIDs []string) {
-	filteredAttributes = make([]map[string]string, exemplars.Len())
-	timestamps = make([]string, exemplars.Len())
-	values = make([]float64, exemplars.Len())
-	spanIDs = make([]string, exemplars.Len())
-	traceIDs = make([]string, exemplars.Len())
-	for i := 0; i < exemplars.Len(); i++ {
-		ex := exemplars.At(i)
-		filteredAttributes[i] = convertAttributes(ex.FilteredAttributes())
-		timestamps[i] = ex.Timestamp().AsTime().Format(time.RFC3339Nano)
-		var value float64
-		switch ex.ValueType() {
-		case pmetric.ExemplarValueTypeInt:
-			value = float64(ex.IntValue())
-		case pmetric.ExemplarValueTypeDouble:
-			value = ex.DoubleValue()
-		case pmetric.ExemplarValueTypeEmpty:
-			// Value is unset, use 0.0 as default
-			value = 0.0
-		}
-		values[i] = value
-		spanIDs[i] = traceutil.SpanIDToHexOrEmptyString(ex.SpanID())
-		traceIDs[i] = traceutil.TraceIDToHexOrEmptyString(ex.TraceID())
-	}
-	return filteredAttributes, timestamps, values, spanIDs, traceIDs
-}
-
 func covertValue(dp pmetric.NumberDataPoint) float64 {
 	switch dp.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
@@ -136,30 +178,9 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder Encoder, gaugeEncoder Encoder
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
 
-						filteredAttrs, timestamps, values, spanIDs, traceIDs := convertExemplars(dp.Exemplars())
-
+						bms := newBaseMetricSignal(schemaURL, resourceAttributes, serviceName, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, dp)
 						sumSignal := sumMetricSignal{
-							baseMetricSignal: baseMetricSignal{
-								ResourceSchemaURL:           schemaURL,
-								ResourceAttributes:          resourceAttributes,
-								ServiceName:                 serviceName,
-								ScopeName:                   scopeName,
-								ScopeVersion:                scopeVersion,
-								ScopeSchemaURL:              scopeSchemaURL,
-								ScopeAttributes:             scopeAttributes,
-								MetricName:                  metric.Name(),
-								MetricDescription:           metric.Description(),
-								MetricUnit:                  metric.Unit(),
-								MetricAttributes:            convertAttributes(dp.Attributes()),
-								StartTimestamp:              dp.StartTimestamp().AsTime().Format(time.RFC3339Nano),
-								Timestamp:                   dp.Timestamp().AsTime().Format(time.RFC3339Nano),
-								Flags:                       uint32(dp.Flags()),
-								ExemplarsFilteredAttributes: filteredAttrs,
-								ExemplarsTimestamp:          timestamps,
-								ExemplarsValue:              values,
-								ExemplarsSpanID:             spanIDs,
-								ExemplarsTraceID:            traceIDs,
-							},
+							baseMetricSignal:       bms,
 							Value:                  covertValue(dp),
 							AggregationTemporality: int32(sum.AggregationTemporality()),
 							IsMonotonic:            sum.IsMonotonic(),
@@ -173,30 +194,10 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder Encoder, gaugeEncoder Encoder
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
 
-						filteredAttrs, timestamps, values, spanIDs, traceIDs := convertExemplars(dp.Exemplars())
+						bms := newBaseMetricSignal(schemaURL, resourceAttributes, serviceName, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, dp)
 						gaugeSignal := gaugeMetricSignal{
-							baseMetricSignal: baseMetricSignal{
-								ResourceSchemaURL:           schemaURL,
-								ResourceAttributes:          resourceAttributes,
-								ServiceName:                 serviceName,
-								ScopeName:                   scopeName,
-								ScopeVersion:                scopeVersion,
-								ScopeSchemaURL:              scopeSchemaURL,
-								ScopeAttributes:             scopeAttributes,
-								MetricName:                  metric.Name(),
-								MetricDescription:           metric.Description(),
-								MetricUnit:                  metric.Unit(),
-								MetricAttributes:            convertAttributes(dp.Attributes()),
-								StartTimestamp:              dp.StartTimestamp().AsTime().Format(time.RFC3339Nano),
-								Timestamp:                   dp.Timestamp().AsTime().Format(time.RFC3339Nano),
-								Flags:                       uint32(dp.Flags()),
-								ExemplarsFilteredAttributes: filteredAttrs,
-								ExemplarsTimestamp:          timestamps,
-								ExemplarsValue:              values,
-								ExemplarsSpanID:             spanIDs,
-								ExemplarsTraceID:            traceIDs,
-							},
-							Value: covertValue(dp),
+							baseMetricSignal: bms,
+							Value:            covertValue(dp),
 						}
 						if err := gaugeEncoder.Encode(gaugeSignal); err != nil {
 							return err
@@ -217,29 +218,9 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder Encoder, gaugeEncoder Encoder
 							localMax := dp.Max()
 							maxVal = &localMax
 						}
-						filteredAttrs, timestamps, values, spanIDs, traceIDs := convertExemplars(dp.Exemplars())
+						bms := newBaseMetricSignal(schemaURL, resourceAttributes, serviceName, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, dp)
 						histogramSignal := histogramMetricSignal{
-							baseMetricSignal: baseMetricSignal{
-								ResourceSchemaURL:           schemaURL,
-								ResourceAttributes:          resourceAttributes,
-								ServiceName:                 serviceName,
-								ScopeName:                   scopeName,
-								ScopeVersion:                scopeVersion,
-								ScopeSchemaURL:              scopeSchemaURL,
-								ScopeAttributes:             scopeAttributes,
-								MetricName:                  metric.Name(),
-								MetricDescription:           metric.Description(),
-								MetricUnit:                  metric.Unit(),
-								MetricAttributes:            convertAttributes(dp.Attributes()),
-								StartTimestamp:              dp.StartTimestamp().AsTime().Format(time.RFC3339Nano),
-								Timestamp:                   dp.Timestamp().AsTime().Format(time.RFC3339Nano),
-								Flags:                       uint32(dp.Flags()),
-								ExemplarsFilteredAttributes: filteredAttrs,
-								ExemplarsTimestamp:          timestamps,
-								ExemplarsValue:              values,
-								ExemplarsSpanID:             spanIDs,
-								ExemplarsTraceID:            traceIDs,
-							},
+							baseMetricSignal:       bms,
 							Count:                  dp.Count(),
 							Sum:                    dp.Sum(),
 							BucketCounts:           dp.BucketCounts().AsRaw(),
@@ -267,29 +248,9 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder Encoder, gaugeEncoder Encoder
 							localMax := dp.Max()
 							maxVal = &localMax
 						}
-						filteredAttrs, timestamps, values, spanIDs, traceIDs := convertExemplars(dp.Exemplars())
+						bms := newBaseMetricSignal(schemaURL, resourceAttributes, serviceName, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, dp)
 						exponentialHistogramSignal := exponentialHistogramMetricSignal{
-							baseMetricSignal: baseMetricSignal{
-								ResourceSchemaURL:           schemaURL,
-								ResourceAttributes:          resourceAttributes,
-								ServiceName:                 serviceName,
-								ScopeName:                   scopeName,
-								ScopeVersion:                scopeVersion,
-								ScopeSchemaURL:              scopeSchemaURL,
-								ScopeAttributes:             scopeAttributes,
-								MetricName:                  metric.Name(),
-								MetricDescription:           metric.Description(),
-								MetricUnit:                  metric.Unit(),
-								MetricAttributes:            convertAttributes(dp.Attributes()),
-								StartTimestamp:              dp.StartTimestamp().AsTime().Format(time.RFC3339Nano),
-								Timestamp:                   dp.Timestamp().AsTime().Format(time.RFC3339Nano),
-								Flags:                       uint32(dp.Flags()),
-								ExemplarsFilteredAttributes: filteredAttrs,
-								ExemplarsTimestamp:          timestamps,
-								ExemplarsValue:              values,
-								ExemplarsSpanID:             spanIDs,
-								ExemplarsTraceID:            traceIDs,
-							},
+							baseMetricSignal:       bms,
 							Count:                  dp.Count(),
 							Sum:                    dp.Sum(),
 							Scale:                  dp.Scale(),
