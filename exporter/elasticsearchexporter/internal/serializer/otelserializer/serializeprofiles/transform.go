@@ -5,6 +5,7 @@ package serializeprofiles // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -308,10 +309,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 			lineNumbers = append(lineNumbers, int32(line.Line()))
 		}
 
-		frameID, err := getFrameID(dic, location)
-		if err != nil {
-			return nil, nil, nil, err
-		}
+		frameID := getFrameID(dic, location)
 
 		if locationIdx == 0 {
 			leafFrameID = frameID
@@ -331,7 +329,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 	return frames, frameTypes, leafFrameID, nil
 }
 
-func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) (*libpf.FrameID, error) {
+func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *libpf.FrameID {
 	// The MappingIndex is known to be valid.
 	mapping := dic.MappingTable().At(int(location.MappingIndex()))
 	fileID, err := getBuildID(dic, mapping)
@@ -358,7 +356,7 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) (*l
 	}
 
 	frameID := libpf.NewFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
-	return &frameID, nil
+	return &frameID
 }
 
 type attributable interface {
@@ -511,8 +509,6 @@ func addEventHostData(data map[string]string, attrs pcommon.Map) {
 
 func int64ToBytes(value int64) []byte {
 	buf := make([]byte, 8)
-	for i := range 8 {
-		buf[i] = byte(value >> (8 * i))
-	}
+	binary.BigEndian.PutUint64(buf, uint64(value))
 	return buf
 }

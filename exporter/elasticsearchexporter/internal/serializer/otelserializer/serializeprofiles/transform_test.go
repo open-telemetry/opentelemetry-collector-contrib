@@ -761,8 +761,8 @@ func TestStackTrace(t *testing.T) {
 				li = locWithoutBuildID.Line().AppendEmpty()
 				li.SetLine(99)
 
-				m := dic.MappingTable().AppendEmpty() // empty default mapping at pos 0
-				m = dic.MappingTable().AppendEmpty()
+				dic.MappingTable().AppendEmpty() // empty default mapping at pos 0
+				m := dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(3)
 				m = dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(4)
@@ -784,7 +784,7 @@ func TestStackTrace(t *testing.T) {
 
 			wantTrace: StackTrace{
 				EcsVersion: EcsVersion{V: EcsVersionString},
-				FrameIDs:   "5KovZMXfW0vkqi9kxd9bSwAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
+				FrameIDs:   "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,
