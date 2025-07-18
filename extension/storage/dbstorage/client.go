@@ -306,10 +306,10 @@ func generatePlaceholders(n int, groupSize int) string {
 	// Simple case when we don'e need to group placeholders
 	if groupSize == 0 {
 		for i := range n {
-			sb.WriteRune('$')
+			sb.WriteByte('$')
 			sb.WriteString(strconv.Itoa(i + 1))
 			if i != n-1 {
-				sb.WriteRune(',')
+				sb.WriteByte(',')
 			}
 		}
 
@@ -319,19 +319,19 @@ func generatePlaceholders(n int, groupSize int) string {
 	// Complex case when we need to group placeholders with defined group size
 	n *= groupSize
 	for i := 0; i < n; {
-		sb.WriteRune('(')
+		sb.WriteByte('(')
 		for range groupSize {
 			i++
-			sb.WriteRune('$')
+			sb.WriteByte('$')
 			sb.WriteString(strconv.Itoa(i))
 
 			if i%groupSize != 0 {
-				sb.WriteRune(',')
+				sb.WriteByte(',')
 			}
 		}
-		sb.WriteRune(')')
+		sb.WriteByte(')')
 		if i != n {
-			sb.WriteRune(',')
+			sb.WriteByte(',')
 		}
 	}
 
