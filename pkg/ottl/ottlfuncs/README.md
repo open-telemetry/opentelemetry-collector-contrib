@@ -1983,14 +1983,16 @@ Examples:
 
 ### SliceToMap
 
-`SliceToMap(target, keyPath, Optional[valuePath])`
+`SliceToMap(target, Optional[keyPath], Optional[valuePath])`
 
 The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
 
 - `target`: A list of maps containing the entries to be converted.
-- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
-the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
-to a map entry.
+- `keyPath`: This optional string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+if `keyPath` is provided, it must resolve to a string value, otherwise the converter will not be able to convert the item to a map entry.
+
+If `keyPath` isn't provided, the string representation of the index when looping through objects in the slice will be the key for the object in the output map. 
+
 - `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
 `valuePath` is defined, the value of the map entry will be the same as the original slice item.
 
@@ -2020,6 +2022,22 @@ attributes:
       name: foo
       value: 2
     bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(resource.attributes["things"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    "0":
+      name: foo
+      value: 2
+    "1":
       name: bar
       value: 5
 ```
