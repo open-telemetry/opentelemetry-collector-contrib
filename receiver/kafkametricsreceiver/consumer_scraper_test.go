@@ -208,6 +208,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 	_, err := cs.scrape(t.Context())
 	assert.Error(t, err)
 }
+
 func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
 	clusterAdmin := newMockClusterAdmin()

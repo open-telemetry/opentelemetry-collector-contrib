@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -29,6 +30,7 @@ type topicScraper struct {
 	topicFilter  *regexp.Regexp
 	config       Config
 	mb           *metadata.MetricsBuilder
+	mu           sync.Mutex
 }
 
 const (
@@ -187,6 +189,8 @@ func createTopicsScraper(_ context.Context, cfg Config, settings receiver.Settin
 
 func (s *topicScraper) resetClientOnError(err error) error {
 	if isRecoverableError(err) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.client.Close()
 		s.client = nil
 		return fmt.Errorf("closing client because of reconnection error %w", err)
