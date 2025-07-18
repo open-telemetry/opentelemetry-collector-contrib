@@ -43,7 +43,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 	}
 
 	name := prometheustranslator.TargetInfoMetricName
-	if len(settings.Namespace) > 0 {
+	if settings.Namespace != "" {
 		// TODO what to do with this in case of full utf-8 support?
 		name = settings.Namespace + "_" + name
 	}

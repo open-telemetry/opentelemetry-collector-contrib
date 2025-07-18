@@ -40,7 +40,7 @@ func TestRoundTripper(t *testing.T) {
 					Metadata: tt.metadata,
 				},
 			)
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", http.NoBody)
 			assert.NoError(t, err)
 			assert.NotNil(t, req)
 

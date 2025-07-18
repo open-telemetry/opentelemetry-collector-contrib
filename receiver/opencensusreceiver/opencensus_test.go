@@ -209,7 +209,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest(http.MethodOptions, url, nil)
+	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
