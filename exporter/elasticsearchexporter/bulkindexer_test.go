@@ -646,7 +646,7 @@ func TestNewBulkIndexer(t *testing.T) {
 			expectSyncBulkIndexer: false,
 		},
 		{
-			name: "sending_queue_enabled_with_batcher",
+			name: "sending_queue__with_batch_enabled",
 			config: map[string]any{
 				"sending_queue": map[string]any{
 					"enabled": true,
@@ -659,6 +659,24 @@ func TestNewBulkIndexer(t *testing.T) {
 			expectSyncBulkIndexer: true,
 		},
 		{
+			name: "sending_queue_disabled_but_queue_configured",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": false,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+				"batcher": map[string]any{
+					// no enabled set
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
 			name: "sending_queue_overrides_batcher",
 			config: map[string]any{
 				"sending_queue": map[string]any{
@@ -669,7 +687,21 @@ func TestNewBulkIndexer(t *testing.T) {
 					},
 				},
 				"batcher": map[string]any{
-					// no enabled set
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_without_batch_with_batcher_enabled",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+				},
+				"batcher": map[string]any{
+					"enabled":  true,
 					"min_size": 100,
 					"max_size": 200,
 				},

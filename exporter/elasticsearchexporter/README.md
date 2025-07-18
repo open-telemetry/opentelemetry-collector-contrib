@@ -84,20 +84,19 @@ All other defaults are as defined by [confighttp].
 
 ### Queuing and batching
 
-The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper] which supports both queueing and batching. However, the sending queue is currently disabled by default. Sending queue can be enabled by setting `sending_queue#enabled` to `true`. The batching support in sending queue is also disabled by default. Batching can be enabled by defining `sending_queue#batch`.
+The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper] which supports both queueing and batching. However, the sending queue is currently disabled by default. Sending queue can be enabled by setting `sending_queue::enabled` to `true`. The batching support in sending queue is also disabled by default. Batching can be enabled by defining `sending_queue::batch`.
 
-The exporter will perform its own buffering and batching and will issue async requests to Elasticsearch if any of the following condition is true:
+The exporter will perform its own buffering and batching and will issue async requests to Elasticsearch in all cases other than if any of the following conditions are met:
 
-- `sending_queue#enabled` is set to `false`
-- `sending_queue#enabled` is set to `true` with `sending_queue#batch` unset or undefined
-- `batcher#enabled` is unset or undefined
+- `sending_queue::batch` is defined (irrespective of `sending_queue` being enabled or not)
+- `batcher::enabled` is defined (set to `true` or `false`)
 
-NOTE: Exporter's inbuilt handling of batching is a legacy feature and is scheduled to be deprecated when `sending_queue` API is out of the experimental stage.
+NOTE: Exporter's inbuilt handling of batching is a legacy feature and is scheduled to be deprecated when `sending_queue` API is out of the experimental stage. The best way to enable this mode is to remove all `batcher` and `sending_queue::batch` configurations.
 
 ### Batching
 
 > [!WARNING]
-> The `batcher` config is now deprecated and will be removed in an upcoming version. Check the [queueing and batching](#queueing-and-batching) section for using the `sending_queue` setting that supersedes `batcher`. In the interim, `batcher` configurations are still valid, however, they will be ignored if `sending_queue#batch` is defined even if `sending_queue` is not enabled.
+> The `batcher` config is now deprecated and will be removed in an upcoming version. Check the [queueing and batching](#queueing-and-batching) section for using the `sending_queue` setting that supersedes `batcher`. In the interim, `batcher` configurations are still valid, however, they will be ignored if `sending_queue::batch` is defined even if `sending_queue` is not enabled.
 
 The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/internal/queue_sender.go).
 
