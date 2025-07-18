@@ -43,7 +43,7 @@ func newPrometheusFormatter() prometheusFormatter {
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
-func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) prometheusTags {
+func (f *prometheusFormatter) tags2String(attr, labels pcommon.Map) prometheusTags {
 	attrsPlusLabelsLen := attr.Len() + labels.Len()
 	if attrsPlusLabelsLen == 0 {
 		return ""
@@ -234,7 +234,7 @@ func (f *prometheusFormatter) bucketMetric(name string) string {
 }
 
 // mergeAttributes gets two pcommon.Maps and returns new which contains values from both of them
-func (f *prometheusFormatter) mergeAttributes(attributes pcommon.Map, additionalAttributes pcommon.Map) pcommon.Map {
+func (f *prometheusFormatter) mergeAttributes(attributes, additionalAttributes pcommon.Map) pcommon.Map {
 	mergedAttributes := pcommon.NewMap()
 	mergedAttributes.EnsureCapacity(attributes.Len() + additionalAttributes.Len())
 

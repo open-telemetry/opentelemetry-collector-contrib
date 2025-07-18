@@ -213,7 +213,7 @@ func createKcsb(config *Config, version string) *azkustodata.ConnectionStringBui
 }
 
 // Depending on the table, create separate ingestors
-func createManagedStreamingIngestor(config *Config, version string, tablename string) (*azkustoingest.Managed, error) {
+func createManagedStreamingIngestor(config *Config, version, tablename string) (*azkustoingest.Managed, error) {
 	kcsb := createKcsb(config, version)
 	ingestopts := []azkustoingest.Option{
 		azkustoingest.WithDefaultDatabase(config.Database),
@@ -224,7 +224,7 @@ func createManagedStreamingIngestor(config *Config, version string, tablename st
 }
 
 // A queued ingestor in case that is provided as the config option
-func createQueuedIngestor(config *Config, version string, tablename string) (*azkustoingest.Ingestion, error) {
+func createQueuedIngestor(config *Config, version, tablename string) (*azkustoingest.Ingestion, error) {
 	kcsb := createKcsb(config, version)
 	ingestopts := []azkustoingest.Option{
 		azkustoingest.WithDefaultDatabase(config.Database),

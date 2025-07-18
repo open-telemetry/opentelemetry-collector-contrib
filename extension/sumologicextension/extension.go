@@ -1068,7 +1068,7 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func addCollectorCredentials(req *http.Request, collectorCredentialID string, collectorCredentialKey string) {
+func addCollectorCredentials(req *http.Request, collectorCredentialID, collectorCredentialKey string) {
 	token := base64.StdEncoding.EncodeToString(
 		[]byte(collectorCredentialID + ":" + collectorCredentialKey),
 	)

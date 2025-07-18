@@ -3,8 +3,6 @@
 
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 
-// goimports and gci has unresolvable conflict here, so we have to disable one of them
-//nolint:gci
 import (
 	"context"
 	"database/sql"
@@ -12,13 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	// Postgres driver
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib" // Postgres driver
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
-
-	// SQLite driver
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // SQLite driver
 )
 
 type dbStorageClient struct {
@@ -27,7 +22,7 @@ type dbStorageClient struct {
 	dialect *dbDialect
 }
 
-func newClient(ctx context.Context, logger *zap.Logger, db *sql.DB, driverName string, tableName string) (*dbStorageClient, error) {
+func newClient(ctx context.Context, logger *zap.Logger, db *sql.DB, driverName, tableName string) (*dbStorageClient, error) {
 	dialect := newDBDialect(driverName, tableName)
 
 	// Create storage table if not exists
@@ -297,7 +292,7 @@ func canAggregate(ops ...*storage.Operation) (storage.OpType, bool) {
 // By default, when `groupSize = 0` will generate N monotonic placeholders, i.e. "$1, $2, ... $n"
 // If `groupSize > 0` - will generate placeholders groups with size = `groupSize`,
 // i.e for `groupSize = 2` - "($1, $2), ($3, $4), ... ($n*groupSize-1, $n*groupSize)"
-func generatePlaceholders(n int, groupSize int) string {
+func generatePlaceholders(n, groupSize int) string {
 	if n <= 0 {
 		return ""
 	}

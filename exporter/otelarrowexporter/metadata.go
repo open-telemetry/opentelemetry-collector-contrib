@@ -100,7 +100,7 @@ func (e *metadataExporter) start(_ context.Context, host component.Host) (err er
 
 func (e *metadataExporter) shutdown(ctx context.Context) error {
 	var err error
-	e.exporters.Range(func(_ any, value any) bool {
+	e.exporters.Range(func(_, value any) bool {
 		be := value.(exp)
 		err = multierr.Append(err, be.shutdown(ctx))
 		return true

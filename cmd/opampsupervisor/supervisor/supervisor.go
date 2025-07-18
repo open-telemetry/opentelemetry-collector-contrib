@@ -444,7 +444,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	// and available components using the Collector's OpAMP extension.
 	err = srv.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnecting: func(_ *http.Request) (bool, int) {
+		onConnecting: func(*http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
 		},
@@ -634,7 +634,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		InstanceUid:        types.InstanceUid(s.persistentState.InstanceID),
 		RemoteConfigStatus: s.persistentState.GetLastRemoteConfigStatus(),
 		Callbacks: types.Callbacks{
-			OnConnect: func(_ context.Context) {
+			OnConnect: func(context.Context) {
 				s.telemetrySettings.Logger.Info("Connected to the server.")
 			},
 			OnConnectFailed: func(_ context.Context, err error) {
@@ -656,10 +656,10 @@ func (s *Supervisor) startOpAMPClient() error {
 				}
 				return nil
 			},
-			SaveRemoteConfigStatus: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatus: func(context.Context, *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
-			GetEffectiveConfig: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfig: func(context.Context) (*protobufs.EffectiveConfig, error) {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
@@ -710,13 +710,13 @@ func (s *Supervisor) startOpAMPServer() error {
 
 	err = s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnecting: func(_ *http.Request) (bool, int) {
+		onConnecting: func(*http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
 			return !alreadyConnected, http.StatusConflict
 		},
 		onMessage: s.handleAgentOpAMPMessage,
-		onConnectionClose: func(_ serverTypes.Connection) {
+		onConnectionClose: func(serverTypes.Connection) {
 			connected.Store(false)
 		},
 	}.toServerSettings())

@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
+func CreateCollectorObjects(t *testing.T, client *K8sClient, testID, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
 	if manifestsDir == "" {
 		manifestsDir = filepath.Join(".", "testdata", "e2e", "collector")
 	}

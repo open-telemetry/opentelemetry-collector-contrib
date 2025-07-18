@@ -38,7 +38,7 @@ type ec2Metadata struct {
 type ec2MetadataOption func(*ec2Metadata)
 
 func newEC2Metadata(ctx context.Context, cfg aws.Config, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, instanceIPReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption,
+	instanceIDReadyC, instanceIPReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption,
 ) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client:           imds.NewFromConfig(cfg),

@@ -10,10 +10,10 @@ import (
 
 type systemdReceiver struct{}
 
-func (s systemdReceiver) Start(_ context.Context, _ component.Host) error {
+func (s systemdReceiver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s systemdReceiver) Shutdown(_ context.Context) error {
+func (s systemdReceiver) Shutdown(context.Context) error {
 	return nil
 }

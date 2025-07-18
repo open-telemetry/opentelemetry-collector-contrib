@@ -528,7 +528,7 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest ptrace.Span, destAttrs p
 
 // unmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // TODO: Find a way to avoid this duplicate code. Consider to expose this in pdata.
-func unmarshalJSON(dst []byte, src []byte) error {
+func unmarshalJSON(dst, src []byte) error {
 	if l := len(src); l >= 2 && src[0] == '"' && src[l-1] == '"' {
 		src = src[1 : l-1]
 	}

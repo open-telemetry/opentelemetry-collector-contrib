@@ -88,7 +88,7 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	return f.failover.Consume(ctx, td)
 }
 
-func (f *tracesFailover) Shutdown(_ context.Context) error {
+func (f *tracesFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}

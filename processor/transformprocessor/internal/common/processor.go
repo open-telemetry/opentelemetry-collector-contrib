@@ -269,7 +269,7 @@ func parseScopeContextStatements[R any](
 	return result.(R), nil
 }
 
-func parseGlobalExpr[K any, O any](
+func parseGlobalExpr[K, O any](
 	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings, []O) (*ottl.ConditionSequence[K], error),
 	conditions []string,
 	errorMode ottl.ErrorMode,

@@ -279,7 +279,7 @@ func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
 	return -1
 }
 
-func (bq bqTest) verifyMetrics(t *testing.T) (inflight int64, waiting int64) {
+func (bq bqTest) verifyMetrics(t *testing.T) (inflight, waiting int64) {
 	inflight = -1
 	waiting = -1
 
