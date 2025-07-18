@@ -239,7 +239,7 @@ func parseResourceContextStatements[R any](
 		return *new(R), errGlobalBoolExpr
 	}
 	rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.Settings, ottlresource.WithStatementSequenceErrorMode(errorMode))
-	result := (baseContext)(resourceStatements{rStatements, globalExpr})
+	result := baseContext(resourceStatements{rStatements, globalExpr})
 	return result.(R), nil
 }
 
@@ -265,7 +265,7 @@ func parseScopeContextStatements[R any](
 		return *new(R), errGlobalBoolExpr
 	}
 	sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.Settings, ottlscope.WithStatementSequenceErrorMode(errorMode))
-	result := (baseContext)(scopeStatements{sStatements, globalExpr})
+	result := baseContext(scopeStatements{sStatements, globalExpr})
 	return result.(R), nil
 }
 

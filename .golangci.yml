@@ -107,8 +107,13 @@ linters:
             - '!**/*_test.go'
 
     exhaustive:
+      # Presence of "default" case in switch statements satisfies exhaustiveness,
+      # even if all enum members are not listed.
+      default-signifies-exhaustive: true
+      # Only run exhaustive check on switches with "//exhaustive:enforce" comment.
       explicit-exhaustive-switch: true
-
+      # Enum members matching the supplied regex do not have to be listed in
+      # switch statements to satisfy exhaustiveness.
       ignore-enum-members: pmetric.MetricTypeEmpty
 
     gocritic:
@@ -116,9 +121,7 @@ linters:
         - badRegexp
         - commentedOutCode
         - deferInLoop
-        - emptyFallthrough
         - equalFold
-        - evalOrder
         - exposedSyncMutex
         - filepathJoin
         - hugeParam
@@ -131,7 +134,6 @@ linters:
         - preferWriteByte
         - ptrToRefParam
         - rangeValCopy
-        - redundantSprint
         - returnAfterHttpError
         - sloppyReassign
         - stringsCompare
@@ -142,7 +144,6 @@ linters:
         - truncateCmp
         - typeAssertChain
         - typeDefFirst
-        - typeUnparen
         - uncheckedInlineErr
         - unnamedResult
         - unnecessaryBlock

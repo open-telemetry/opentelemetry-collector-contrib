@@ -302,7 +302,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.ErrorContains(t, err, serverURL.String())
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	baseRoundTripper := (http.RoundTripper)(transport)
+	baseRoundTripper := http.RoundTripper(transport)
 	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 	require.NoError(t, err)
 
