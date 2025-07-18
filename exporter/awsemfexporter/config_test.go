@@ -311,10 +311,10 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			if len(tc.metricNameSpace) > 0 {
+			if tc.metricNameSpace != "" {
 				cfg.Namespace = tc.metricNameSpace
 			}
-			if len(tc.logGroupName) > 0 {
+			if tc.logGroupName != "" {
 				cfg.LogGroupName = tc.logGroupName
 			}
 

@@ -304,9 +304,6 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 				case pmetric.MetricTypeExponentialHistogram:
 					a.adjustMetricExponentialHistogram(tsm, metric)
 
-				case pmetric.MetricTypeEmpty:
-					fallthrough
-
 				default:
 					// this shouldn't happen
 					a.logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))

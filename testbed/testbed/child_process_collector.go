@@ -210,8 +210,7 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 				return err
 			}
 		}
-		args = append(args, "--config")
-		args = append(args, cp.configFileName)
+		args = append(args, "--config", cp.configFileName)
 	}
 	// #nosec
 	cp.cmd = exec.Command(exePath, args...)

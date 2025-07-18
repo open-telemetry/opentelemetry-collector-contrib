@@ -309,7 +309,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 			req, err := http.NewRequest(
 				http.MethodPost,
 				fmt.Sprintf("http://%s/info", dd.(*datadogReceiver).address),
-				nil,
+				http.NoBody,
 			)
 			require.NoError(t, err, "Must not error when creating request")
 

@@ -203,33 +203,33 @@ func (cfg *Config) shouldCreateSchema() bool {
 func (cfg *Config) buildMetricTableNames() {
 	tableName := defaultMetricTableName
 
-	if len(cfg.MetricsTableName) != 0 && !cfg.areMetricTableNamesSet() {
+	if cfg.MetricsTableName != "" && !cfg.areMetricTableNamesSet() {
 		tableName = cfg.MetricsTableName
 	}
 
-	if len(cfg.MetricsTables.Gauge.Name) == 0 {
+	if cfg.MetricsTables.Gauge.Name == "" {
 		cfg.MetricsTables.Gauge.Name = tableName + defaultGaugeSuffix
 	}
-	if len(cfg.MetricsTables.Sum.Name) == 0 {
+	if cfg.MetricsTables.Sum.Name == "" {
 		cfg.MetricsTables.Sum.Name = tableName + defaultSumSuffix
 	}
-	if len(cfg.MetricsTables.Summary.Name) == 0 {
+	if cfg.MetricsTables.Summary.Name == "" {
 		cfg.MetricsTables.Summary.Name = tableName + defaultSummarySuffix
 	}
-	if len(cfg.MetricsTables.Histogram.Name) == 0 {
+	if cfg.MetricsTables.Histogram.Name == "" {
 		cfg.MetricsTables.Histogram.Name = tableName + defaultHistogramSuffix
 	}
-	if len(cfg.MetricsTables.ExponentialHistogram.Name) == 0 {
+	if cfg.MetricsTables.ExponentialHistogram.Name == "" {
 		cfg.MetricsTables.ExponentialHistogram.Name = tableName + defaultExpHistogramSuffix
 	}
 }
 
 func (cfg *Config) areMetricTableNamesSet() bool {
-	return len(cfg.MetricsTables.Gauge.Name) != 0 ||
-		len(cfg.MetricsTables.Sum.Name) != 0 ||
-		len(cfg.MetricsTables.Summary.Name) != 0 ||
-		len(cfg.MetricsTables.Histogram.Name) != 0 ||
-		len(cfg.MetricsTables.ExponentialHistogram.Name) != 0
+	return cfg.MetricsTables.Gauge.Name != "" ||
+		cfg.MetricsTables.Sum.Name != "" ||
+		cfg.MetricsTables.Summary.Name != "" ||
+		cfg.MetricsTables.Histogram.Name != "" ||
+		cfg.MetricsTables.ExponentialHistogram.Name != ""
 }
 
 // tableEngineString generates the ENGINE string.

@@ -85,7 +85,7 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	c := *(cfg.(*Config))
-	if len(c.Topic) == 0 {
+	if c.Topic == "" {
 		c.Topic = defaultTraceTopic
 	}
 	r, err := newTracesReceiver(c, set, f.tracesUnmarshalers, nextConsumer)
@@ -102,7 +102,7 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := *(cfg.(*Config))
-	if len(c.Topic) == 0 {
+	if c.Topic == "" {
 		c.Topic = defaultMetricsTopic
 	}
 	r, err := newMetricsReceiver(c, set, f.metricsUnmarshalers, nextConsumer)
@@ -119,7 +119,7 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 	c := *(cfg.(*Config))
-	if len(c.Topic) == 0 {
+	if c.Topic == "" {
 		c.Topic = defaultLogsTopic
 	}
 	r, err := newLogsReceiver(c, set, f.logsUnmarshalers, nextConsumer)

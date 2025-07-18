@@ -359,7 +359,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 			// remove levels and append write list of outstanding '}' into the writer
 			if L > 0 {
-				for delta := objPrefix[L:]; len(delta) > 0; {
+				for delta := objPrefix[L:]; delta != ""; {
 					idx := strings.IndexByte(delta, '.')
 					if idx < 0 {
 						break

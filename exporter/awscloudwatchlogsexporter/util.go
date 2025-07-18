@@ -86,10 +86,10 @@ func getLogInfo(resourceAttrs map[string]any, config *Config) (string, string, b
 	strAttributeMap := anyMapToStringMap(resourceAttrs)
 
 	// Override log group/stream if specified in config. However, in this case, customer won't have correlation experience
-	if len(config.LogGroupName) > 0 {
+	if config.LogGroupName != "" {
 		logGroup, groupReplaced = replacePatterns(config.LogGroupName, strAttributeMap, config.logger)
 	}
-	if len(config.LogStreamName) > 0 {
+	if config.LogStreamName != "" {
 		logStream, streamReplaced = replacePatterns(config.LogStreamName, strAttributeMap, config.logger)
 	}
 

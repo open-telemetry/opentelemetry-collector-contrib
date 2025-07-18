@@ -54,7 +54,7 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 		return err
 	}
 
-	if _, err = confFile.Write([]byte(ipp.configStr)); err != nil {
+	if _, err = confFile.WriteString(ipp.configStr); err != nil {
 		os.Remove(confFile.Name())
 		return err
 	}

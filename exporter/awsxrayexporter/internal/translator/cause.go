@@ -555,7 +555,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 	var path string
 	var lineNumber int
 
-	plnre := regexp.MustCompile(`([^:\s]+)\:(\d+)`)
+	plnre := regexp.MustCompile(`([^:\s]+):(\d+)`)
 	re := regexp.MustCompile(`^goroutine.*\brunning\b.*:$`)
 
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))

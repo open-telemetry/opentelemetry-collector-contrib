@@ -742,8 +742,6 @@ func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationSc
 		log.Body().SetEmptySlice().AppendEmpty().SetStr("body")
 	case "int":
 		log.Body().SetInt(1)
-	case "string":
-		fallthrough
 	default:
 		log.Body().SetStr("body")
 	}

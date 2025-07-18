@@ -171,7 +171,7 @@ func (cdr *collectDRecord) getReasonableMetricName(index int, attrs map[string]s
 		parts = append(parts, *cdr.TypeS...)
 	}
 	parts = cdr.pointTypeInstance(attrs, parts)
-	if cdr.Dsnames != nil && !isNilOrEmpty(cdr.Dsnames[index]) && len(cdr.Dsnames) > 1 {
+	if len(cdr.Dsnames) > 1 && !isNilOrEmpty(cdr.Dsnames[index]) {
 		if len(parts) > 0 {
 			parts = append(parts, '.')
 		}

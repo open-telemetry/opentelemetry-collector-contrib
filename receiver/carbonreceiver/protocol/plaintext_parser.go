@@ -13,7 +13,7 @@ import (
 // PlaintextConfig holds the configuration for the plaintext parser.
 type PlaintextConfig struct{}
 
-var _ (ParserConfig) = (*PlaintextConfig)(nil)
+var _ ParserConfig = (*PlaintextConfig)(nil)
 
 // BuildParser creates a new Parser instance that receives plaintext
 // Carbon data.

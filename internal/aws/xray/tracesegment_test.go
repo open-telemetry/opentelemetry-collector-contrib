@@ -687,7 +687,7 @@ func TestValidate(t *testing.T) {
 	for _, tc := range tests {
 		err := tc.input.Validate()
 
-		if len(tc.expectedErrorStr) > 0 {
+		if tc.expectedErrorStr != "" {
 			assert.EqualError(t, err, tc.expectedErrorStr)
 		} else {
 			assert.NoError(t, err, "Validate should not fail")

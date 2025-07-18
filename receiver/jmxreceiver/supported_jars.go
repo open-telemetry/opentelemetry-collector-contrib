@@ -14,6 +14,9 @@ type supportedJar struct {
 // Provided as a build time variable if a development or customer specific JMX Metrics Gatherer needs to be supported
 var MetricsGathererHash = "n/a"
 
+// Provided as a build time variable if a development or customer specific JMX Scraper needs to be supported
+var ScraperHash = "n/a"
+
 // Support for SSL properties passed via property file will be available starting in v1.14.0
 func oldFormatProperties(c *Config, j supportedJar) error {
 	if c.KeystorePassword != "" ||
@@ -26,6 +29,13 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 			"from the jmxreceiver. Update to the latest JMX Metrics Gatherer if you would like SSL support", j.version)
 	}
 	return nil
+}
+
+var jmxScraperVersions = map[string]supportedJar{
+	"5599d696621c4cce7efc3e481d15d5790d275ad12354cab84401c4b24d3f53b3": {
+		version: "1.46.0-alpha",
+		jar:     "JMX scraper",
+	},
 }
 
 // If you change this variable name, please open an issue in opentelemetry-java-contrib
@@ -192,6 +202,14 @@ func initSupportedJars() {
 			MetricsGathererHash: {
 				version: "custom",
 				jar:     "JMX metrics gatherer",
+			},
+		}
+	}
+	if ScraperHash != "n/a" {
+		jmxScraperVersions = map[string]supportedJar{
+			ScraperHash: {
+				version: "custom",
+				jar:     "JMX scraper",
 			},
 		}
 	}

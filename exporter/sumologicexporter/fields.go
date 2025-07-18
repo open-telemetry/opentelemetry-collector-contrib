@@ -46,7 +46,7 @@ func (f fields) string() string {
 		sv := v.AsString()
 
 		// Skip empty field
-		if len(sv) == 0 {
+		if sv == "" {
 			continue
 		}
 

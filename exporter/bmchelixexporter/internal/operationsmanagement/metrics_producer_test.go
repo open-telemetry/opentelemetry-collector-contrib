@@ -112,7 +112,7 @@ func TestProduceHelixPayload(t *testing.T) {
 			assert.NoError(t, err, "Expected no error during payload production")
 			assert.NotNil(t, payload, "Payload should not be nil")
 
-			assert.Equal(t, tt.expectedPayload, payload, "Payload should match the expected payload")
+			assert.ElementsMatch(t, tt.expectedPayload, payload, "Payload should match the expected payload")
 		})
 	}
 }
@@ -148,4 +148,137 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 	dp2.SetDoubleValue(84.0)
 
 	return metrics
+}
+
+func TestEnrichMetricNamesWithAttributes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		inputMetrics   []BMCHelixOMMetric
+		expectedLabels []map[string]string
+	}{
+		{
+			name: "Single metric without varying attributes",
+			inputMetrics: []BMCHelixOMMetric{
+				{
+					Labels: map[string]string{
+						"entityId":           "host:cpu:core0",
+						"metricName":         "system.cpu.time",
+						"cpu.mode":           "idle",
+						"cpu.logical_number": "0",
+					},
+				},
+			},
+			expectedLabels: []map[string]string{
+				{
+					"entityId":           "host:cpu:core0",
+					"metricName":         "system.cpu.time",
+					"cpu.mode":           "idle",
+					"cpu.logical_number": "0",
+				},
+			},
+		},
+		{
+			name: "Metrics with different state values",
+			inputMetrics: []BMCHelixOMMetric{
+				{
+					Labels: map[string]string{
+						"entityId":   "host:cpu:core0",
+						"metricName": "system.cpu.time",
+						"cpu.mode":   "idle",
+					},
+				},
+				{
+					Labels: map[string]string{
+						"entityId":   "host:cpu:core0",
+						"metricName": "system.cpu.time",
+						"cpu.mode":   "user",
+					},
+				},
+			},
+			expectedLabels: []map[string]string{
+				{
+					"metricName": "system.cpu.time",
+					"cpu.mode":   "idle",
+				},
+				{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time.idle",
+				},
+				{
+					"metricName": "system.cpu.time",
+					"cpu.mode":   "user",
+				},
+				{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time.user",
+				},
+			},
+		},
+		{
+			name: "Metrics with multiple varying attributes",
+			inputMetrics: []BMCHelixOMMetric{
+				{
+					Labels: map[string]string{
+						"entityId":           "host:cpu:core0",
+						"metricName":         "system.cpu.time",
+						"cpu.mode":           "system",
+						"cpu.mode.code":      "0",
+						"cpu.logical_number": "0",
+					},
+				},
+				{
+					Labels: map[string]string{
+						"entityId":           "host:cpu:core0",
+						"metricName":         "system.cpu.time",
+						"cpu.mode":           "user",
+						"cpu.mode.code":      "1",
+						"cpu.logical_number": "0",
+					},
+				},
+			},
+			expectedLabels: []map[string]string{
+				{
+					"metricName":         "system.cpu.time",
+					"cpu.mode":           "system",
+					"cpu.mode.code":      "0",
+					"cpu.logical_number": "0",
+				},
+				{
+					"entityId":           "host:cpu:core0",
+					"metricName":         "system.cpu.time.system.0",
+					"cpu.logical_number": "0",
+				},
+				{
+					"metricName":         "system.cpu.time",
+					"cpu.mode":           "user",
+					"cpu.mode.code":      "1",
+					"cpu.logical_number": "0",
+				},
+				{
+					"entityId":           "host:cpu:core0",
+					"metricName":         "system.cpu.time.user.1",
+					"cpu.logical_number": "0",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := enrichMetricNamesWithAttributes(tt.inputMetrics)
+
+			var actualLabels []map[string]string
+			for _, m := range result {
+				// Copy to a new map to avoid mutation side-effects
+				labelsCopy := make(map[string]string)
+				for k, v := range m.Labels {
+					labelsCopy[k] = v
+				}
+				actualLabels = append(actualLabels, labelsCopy)
+			}
+
+			assert.ElementsMatch(t, tt.expectedLabels, actualLabels)
+		})
+	}
 }

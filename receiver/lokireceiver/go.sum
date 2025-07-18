@@ -153,6 +153,8 @@ github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNw
 github.com/prometheus/client_model v0.6.2/go.mod h1:y3m2F6Gdpfy6Ut/GBsUqTWZqCUvMVzSfMLjcu6wAwpE=
 github.com/prometheus/common v0.65.0 h1:QDwzd+G1twt//Kwj/Ww6E9FQq1iVMmODnILtW1t2VzE=
 github.com/prometheus/common v0.65.0/go.mod h1:0gZns+BLRQ3V6NdaerOhMbwwRbNh9hkGINtQAsP5GS8=
+github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588 h1:QlySqDdSESgWDePeAYskbbcKKdowI26m9aU9zloHyYE=
+github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588/go.mod h1:P8AwMgdD7XEr6QRUJ2QWLpiAZTgTE2UYgjlu3svompI=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
 github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a h1:g/nRTrO18wB/VeyJfU2DMAbwWh7Pt/wJ/FcbDlMZb+A=
@@ -227,8 +229,8 @@ go.opentelemetry.io/collector/pdata v1.36.1-0.20250715222903-0a7598ec1e19 h1:6mY
 go.opentelemetry.io/collector/pdata v1.36.1-0.20250715222903-0a7598ec1e19/go.mod h1:pttpb089864qG1k0DMeXLgwwTFLk+o3fAW9I6MF9tzw=
 go.opentelemetry.io/collector/pdata/pprofile v0.130.1-0.20250715222903-0a7598ec1e19 h1:pPxlmvyHf9pfIxCoh1rp6RMr20VSS0Fopp0G85y8iMU=
 go.opentelemetry.io/collector/pdata/pprofile v0.130.1-0.20250715222903-0a7598ec1e19/go.mod h1:HB7W9u+Wn4+2U9hPXK/0Mqzu/gaxFbwln59fM0Tkcb0=
-go.opentelemetry.io/collector/pdata/testdata v0.130.0 h1:AwHz3z+rWzRbh720KjMxprnB7WSe6CBE4IizuhRKD50=
-go.opentelemetry.io/collector/pdata/testdata v0.130.0/go.mod h1:QYqBQJq0duCalwvPr8rSe3vC6sXAMbNtsC4166Gx208=
+go.opentelemetry.io/collector/pdata/testdata v0.130.1-0.20250715222903-0a7598ec1e19 h1:uC9JGy1RNfzwe1r45Jg0rYfQhr0zIstemlcYSIUWF2w=
+go.opentelemetry.io/collector/pdata/testdata v0.130.1-0.20250715222903-0a7598ec1e19/go.mod h1:QYqBQJq0duCalwvPr8rSe3vC6sXAMbNtsC4166Gx208=
 go.opentelemetry.io/collector/pipeline v0.130.1-0.20250715222903-0a7598ec1e19 h1:2F7NFfqxmMx53mwEx54Arc99lvkwBkerjq6kQZ1r990=
 go.opentelemetry.io/collector/pipeline v0.130.1-0.20250715222903-0a7598ec1e19/go.mod h1:TO02zju/K6E+oFIOdi372Wk0MXd+Szy72zcTsFQwXl4=
 go.opentelemetry.io/collector/receiver v1.36.1-0.20250715222903-0a7598ec1e19 h1:zkuVe+C9NbDF56JRBVA8CU2BgaTKNl/nhvWSQ7Yan00=
