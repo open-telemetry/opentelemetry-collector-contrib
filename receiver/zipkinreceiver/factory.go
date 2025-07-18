@@ -31,9 +31,15 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default configuration for Zipkin receiver.
 func createDefaultConfig() component.Config {
+	httpConfig := confighttp.NewDefaultServerConfig()
+	httpConfig.Endpoint = defaultHTTPEndpoint
+	// For backward compatibility, use the legacy configuration format
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultHTTPEndpoint,
+		ServerConfig: httpConfig,
+		Protocols: Protocols{
+			HTTP: &HTTPConfig{
+				ServerConfig: httpConfig,
+			},
 		},
 		ParseStringTags: false,
 	}
