@@ -112,7 +112,7 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(saf.key); ok {
 					truncatableStr := v.Str()
-					if len(truncatableStr) > 0 {
+					if truncatableStr != "" {
 						if ok := saf.matcher(v.Str()); ok {
 							return false
 						}
@@ -136,7 +136,7 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 		func(span ptrace.Span) bool {
 			if v, ok := span.Attributes().Get(saf.key); ok {
 				truncatableStr := v.Str()
-				if len(truncatableStr) > 0 {
+				if truncatableStr != "" {
 					if ok := saf.matcher(v.Str()); ok {
 						return true
 					}

@@ -247,13 +247,13 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		}
 
 		l := s.logger.With(zap.String("status", resp.Status))
-		if len(rResponse.ID) > 0 {
+		if rResponse.ID != "" {
 			l = l.With(zap.String("id", rResponse.ID))
 		}
-		if len(rResponse.Code) > 0 {
+		if rResponse.Code != "" {
 			l = l.With(zap.String("code", rResponse.Code))
 		}
-		if len(rResponse.Message) > 0 {
+		if rResponse.Message != "" {
 			l = l.With(zap.String("message", rResponse.Message))
 		}
 		l.Warn("There was an issue sending data")
@@ -289,13 +289,13 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 			fmt.Sprintf("status: %s", resp.Status),
 		}
 
-		if len(rResponse.ID) > 0 {
+		if rResponse.ID != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("id: %s", rResponse.ID))
 		}
-		if len(rResponse.Code) > 0 {
+		if rResponse.Code != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("code: %s", rResponse.Code))
 		}
-		if len(rResponse.Message) > 0 {
+		if rResponse.Message != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("message: %s", rResponse.Message))
 		}
 		if len(rResponse.Errors) > 0 {
@@ -366,7 +366,7 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 	case pcommon.ValueTypeEmpty:
 		return true
 	case pcommon.ValueTypeStr:
-		return len(att.Str()) == 0
+		return att.Str() == ""
 	case pcommon.ValueTypeSlice:
 		return att.Slice().Len() == 0
 	case pcommon.ValueTypeMap:
