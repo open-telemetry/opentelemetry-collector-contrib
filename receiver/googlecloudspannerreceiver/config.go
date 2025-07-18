@@ -6,6 +6,7 @@ package googlecloudspannerreceiver // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -24,6 +25,9 @@ type Config struct {
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
 	TruncateText                      bool      `mapstructure:"truncate_text"`
+	// DiscoveryInterval determines how often the receiver checks for new or deleted databases for dynamic instances.
+	// If not set, discovery will run only once at startup.
+	DiscoveryInterval time.Duration `mapstructure:"discovery_interval,omitempty"`
 }
 
 type Project struct {
@@ -35,6 +39,8 @@ type Project struct {
 type Instance struct {
 	ID        string   `mapstructure:"instance_id"`
 	Databases []string `mapstructure:"databases"`
+	// Add this new field
+	ScrapeAllDatabases bool `mapstructure:"scrape_all_databases,omitempty"`
 }
 
 func (config *Config) Validate() error {
@@ -90,8 +96,19 @@ func (instance Instance) Validate() error {
 		return errors.New("field \"instance_id\" is required and cannot be empty for instance configuration")
 	}
 
-	if len(instance.Databases) == 0 {
-		return errors.New("field \"databases\" is required and cannot be empty for instance configuration")
+	hasDatabases := len(instance.Databases) > 0
+
+	if instance.ScrapeAllDatabases {
+		if hasDatabases {
+			return errors.New("\"scrape_all_databases\" cannot be true when \"databases\" is populated")
+		}
+		// Validation passes if scrape_all_databases is true and databases is empty.
+		return nil
+	}
+
+	// This is the original logic, which now only runs if ScrapeAllDatabases is false.
+	if !hasDatabases {
+		return errors.New("either \"databases\" must be specified or \"scrape_all_databases\" must be set to true")
 	}
 
 	for _, database := range instance.Databases {

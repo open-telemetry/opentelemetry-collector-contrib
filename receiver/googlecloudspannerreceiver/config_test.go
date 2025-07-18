@@ -196,3 +196,77 @@ func TestValidateConfig(t *testing.T) {
 		})
 	}
 }
+
+// This test function is to test the dynamic database discovery
+func TestValidateInstanceWithScrapeAll(t *testing.T) {
+	testCases := map[string]struct {
+		instance     Instance
+		requireError bool
+		errorMsg     string
+	}{
+		"Valid: ScrapeAllDatabases=true, databases is empty": {
+			instance: Instance{
+				ID:                 "id1",
+				ScrapeAllDatabases: true,
+				Databases:          []string{},
+			},
+			requireError: false,
+		},
+		"Valid: ScrapeAllDatabases=true, databases is nil": {
+			instance: Instance{
+				ID:                 "id1",
+				ScrapeAllDatabases: true,
+				Databases:          nil,
+			},
+			requireError: false,
+		},
+		"Valid: ScrapeAllDatabases=false, databases is populated": {
+			instance: Instance{
+				ID:                 "id1",
+				ScrapeAllDatabases: false,
+				Databases:          []string{"db1"},
+			},
+			requireError: false,
+		},
+		"Invalid: ScrapeAllDatabases=true, databases is populated": {
+			instance: Instance{
+				ID:                 "id1",
+				ScrapeAllDatabases: true,
+				Databases:          []string{"db1"},
+			},
+			requireError: true,
+			errorMsg:     `"scrape_all_databases" cannot be true when "databases" is populated`,
+		},
+		"Invalid: ScrapeAllDatabases=false, databases is empty": {
+			instance: Instance{
+				ID:                 "id1",
+				ScrapeAllDatabases: false,
+				Databases:          []string{},
+			},
+			requireError: true,
+			errorMsg:     `either "databases" must be specified or "scrape_all_databases" must be set to true`,
+		},
+		"Invalid: ScrapeAllDatabases=false, databases is nil": {
+			instance: Instance{
+				ID:                 "id1",
+				ScrapeAllDatabases: false,
+				Databases:          nil,
+			},
+			requireError: true,
+			errorMsg:     `either "databases" must be specified or "scrape_all_databases" must be set to true`,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := tc.instance.Validate()
+
+			if tc.requireError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
