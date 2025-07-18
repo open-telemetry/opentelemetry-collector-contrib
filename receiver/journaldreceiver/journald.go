@@ -15,10 +15,10 @@ import (
 
 // newFactoryAdapter creates a factory for journald receiver
 func newFactoryAdapter() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(receiverType{}, metadata.LogsStability)
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (ReceiverType) CreateDefaultConfig() component.Config {
+func (f receiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }
