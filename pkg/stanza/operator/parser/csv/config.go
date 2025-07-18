@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -82,11 +83,14 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, errors.New("missing field delimiter in header")
 	}
 
+	fieldDelimiter, _ := utf8.DecodeRuneInString(c.FieldDelimiter)
+	headerDelimiter, _ := utf8.DecodeRuneInString(c.HeaderDelimiter)
+
 	p := &Parser{
 		ParserOperator:  parserOperator,
 		headerAttribute: c.HeaderAttribute,
-		fieldDelimiter:  []rune(c.FieldDelimiter)[0],
-		headerDelimiter: []rune(c.HeaderDelimiter)[0],
+		fieldDelimiter:  fieldDelimiter,
+		headerDelimiter: headerDelimiter,
 		lazyQuotes:      c.LazyQuotes,
 		ignoreQuotes:    c.IgnoreQuotes,
 	}
