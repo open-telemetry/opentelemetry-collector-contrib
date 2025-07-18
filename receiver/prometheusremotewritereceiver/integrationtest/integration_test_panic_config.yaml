@@ -1,0 +1,17 @@
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41347
+receivers:
+  prometheusremotewrite:
+    endpoint: ${env:PRW_ENDPOINT}
+
+exporters:
+  debug/1:
+  debug/2:
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    metrics/oss:
+      receivers: [prometheusremotewrite]
+      exporters: [debug/1, debug/2]
