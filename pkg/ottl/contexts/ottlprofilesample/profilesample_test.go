@@ -35,8 +35,8 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			path: &pathtest.Path[TransformContext]{
 				N: "link_index",
 			},
-			orig:   int32(42),
-			newVal: int32(43),
+			orig:   int64(42),
+			newVal: int64(43),
 			modified: func(sample pprofile.Sample, _ pcommon.Map) {
 				sample.SetLinkIndex(43)
 			},
