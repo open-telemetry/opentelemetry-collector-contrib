@@ -50,7 +50,7 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 		case string:
 			v, ok := valueVal.(string)
 			if !ok {
-				return nil, errors.New("when source is string, value must also be string")
+				return nil, errors.New("invalid value type for Index function, value must be a string")
 			}
 			return int64(strings.Index(s, v)), nil
 		case pcommon.Slice:
