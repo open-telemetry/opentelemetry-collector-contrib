@@ -134,7 +134,6 @@ linters:
         - rangeValCopy
         - returnAfterHttpError
         - sloppyReassign
-        - stringsCompare
         - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
