@@ -36,17 +36,13 @@ func values[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 			return nil, err
 		}
 
-		output := make([]any, 0, m.Len())
+		output := pcommon.NewSlice()
+		output.EnsureCapacity(m.Len())
 
-		for _, v := range m.All() {
-			output = append(output, v.AsRaw())
+		for _, val := range m.All() {
+			val.CopyTo(output.AppendEmpty())
 		}
 
-		outputSlice := pcommon.NewSlice()
-
-		if err := outputSlice.FromRaw(output); err != nil {
-			return nil, err
-		}
-		return outputSlice, nil
+		return output, nil
 	}
 }

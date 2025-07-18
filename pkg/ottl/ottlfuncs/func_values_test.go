@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -42,7 +43,7 @@ func Test_values(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			target := ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return m, nil
@@ -51,7 +52,7 @@ func Test_values(t *testing.T) {
 
 			exprFunc := values[any](target)
 			gotSlice, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			gotRaw := gotSlice.(pcommon.Slice).AsRaw()
 
 			assert.ElementsMatch(t, gotRaw, tt.wantRaw)
