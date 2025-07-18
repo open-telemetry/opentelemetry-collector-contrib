@@ -43,17 +43,19 @@ func createDefaultConfig() component.Config {
 	clientConfig.WriteBufferSize = 512 * 1024
 
 	return &Config{
-		ClientConfig:                clientConfig,
-		RetryConfig:                 configretry.NewDefaultBackOffConfig(),
-		QueueConfig:                 exporterhelper.NewDefaultQueueConfig(),
-		Token:                       "",
-		MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
-		MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
-		MetricsHistogram:            SignalConfig{Datasource: "metrics_histogram"},
-		MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
-		Traces:                      SignalConfig{Datasource: "traces"},
-		Logs:                        SignalConfig{Datasource: "logs"},
-		Wait:                        false,
+		ClientConfig: clientConfig,
+		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
+		Token:        "",
+		Metrics: MetricSignalConfig{
+			Gauge:                SignalConfig{Datasource: "metrics_gauge"},
+			Sum:                  SignalConfig{Datasource: "metrics_sum"},
+			Histogram:            SignalConfig{Datasource: "metrics_histogram"},
+			ExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+		},
+		Traces: SignalConfig{Datasource: "traces"},
+		Logs:   SignalConfig{Datasource: "logs"},
+		Wait:   false,
 	}
 }
 

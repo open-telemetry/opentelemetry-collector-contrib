@@ -12,9 +12,9 @@ tests:
   config:
     endpoint: "http://localhost:1234"
     token: "test-token"
-    metrics_gauge::datasource: "metrics_gauge"
-    metrics_sum::datasource: "metrics_sum"
-    metrics_histogram::datasource: "metrics_histogram"
-    metrics_exponential_histogram::datasource: "metrics_exponential_histogram"
+    metrics::gauge::datasource: "metrics_gauge"
+    metrics::sum::datasource: "metrics_sum"
+    metrics::histogram::datasource: "metrics_histogram"
+    metrics::exponential_histogram::datasource: "metrics_exponential_histogram"
     traces::datasource: "traces"
     logs::datasource: "logs"
