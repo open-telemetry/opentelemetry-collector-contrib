@@ -5,6 +5,8 @@ package ctxprofilesample // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -13,6 +15,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+)
+
+var (
+	errMaxValueExceed   = errors.New("exceeded max value")
+	errInvalidValueType = errors.New("invalid value type")
 )
 
 func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -47,13 +54,17 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 func accessLocationsStartIndex[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfileSample().LocationsStartIndex(), nil
+			return int64(tCtx.GetProfileSample().LocationsStartIndex()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int32); ok {
-				tCtx.GetProfileSample().SetLocationsStartIndex(v)
+			if v, ok := val.(int64); ok {
+				if v >= math.MaxInt32 {
+					return errMaxValueExceed
+				}
+				tCtx.GetProfileSample().SetLocationsStartIndex(int32(v))
+				return nil
 			}
-			return nil
+			return errInvalidValueType
 		},
 	}
 }
@@ -61,13 +72,17 @@ func accessLocationsStartIndex[K Context]() ottl.StandardGetSetter[K] {
 func accessLocationsLength[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfileSample().LocationsLength(), nil
+			return int64(tCtx.GetProfileSample().LocationsLength()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int32); ok {
-				tCtx.GetProfileSample().SetLocationsLength(v)
+			if v, ok := val.(int64); ok {
+				if v >= math.MaxInt32 {
+					return errMaxValueExceed
+				}
+				tCtx.GetProfileSample().SetLocationsLength(int32(v))
+				return nil
 			}
-			return nil
+			return errInvalidValueType
 		},
 	}
 }
@@ -97,13 +112,17 @@ func accessAttributeIndices[K Context]() ottl.StandardGetSetter[K] {
 func accessLinkIndex[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfileSample().LinkIndex(), nil
+			return int64(tCtx.GetProfileSample().LinkIndex()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int32); ok {
-				tCtx.GetProfileSample().SetLinkIndex(v)
+			if v, ok := val.(int64); ok {
+				if v >= math.MaxInt32 {
+					return errMaxValueExceed
+				}
+				tCtx.GetProfileSample().SetLinkIndex(int32(v))
+				return nil
 			}
-			return nil
+			return errInvalidValueType
 		},
 	}
 }

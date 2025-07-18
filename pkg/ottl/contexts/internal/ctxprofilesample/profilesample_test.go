@@ -26,11 +26,11 @@ func TestPathGetSetter(t *testing.T) {
 	}{
 		{
 			path: "locations_start_index",
-			val:  int32(42),
+			val:  int64(42),
 		},
 		{
 			path: "locations_length",
-			val:  int32(43),
+			val:  int64(43),
 		},
 		{
 			path: "values",
@@ -42,7 +42,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "link_index",
-			val:  int32(44),
+			val:  int64(44),
 		},
 		{
 			path: "timestamps_unix_nano",
