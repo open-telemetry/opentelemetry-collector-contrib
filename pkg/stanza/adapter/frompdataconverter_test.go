@@ -102,7 +102,7 @@ func TestConvertFromSeverity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("%v", tc.severityNumber), func(t *testing.T) {
+		t.Run(tc.severityNumber.String(), func(t *testing.T) {
 			entry := entry.New()
 			logRecord := plog.NewLogRecord()
 			logRecord.SetSeverityNumber(tc.severityNumber)

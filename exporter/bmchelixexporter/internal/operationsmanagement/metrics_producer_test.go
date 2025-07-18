@@ -112,7 +112,7 @@ func TestProduceHelixPayload(t *testing.T) {
 			assert.NoError(t, err, "Expected no error during payload production")
 			assert.NotNil(t, payload, "Payload should not be nil")
 
-			assert.Equal(t, tt.expectedPayload, payload, "Payload should match the expected payload")
+			assert.ElementsMatch(t, tt.expectedPayload, payload, "Payload should match the expected payload")
 		})
 	}
 }
