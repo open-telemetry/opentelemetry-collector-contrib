@@ -83,7 +83,7 @@ type RegexRule struct {
 	metricNameParts []string
 }
 
-var _ (ParserConfig) = (*RegexParserConfig)(nil)
+var _ ParserConfig = (*RegexParserConfig)(nil)
 
 // BuildParser builds the respective parser of the configuration instance.
 func (rpc *RegexParserConfig) BuildParser() (Parser, error) {

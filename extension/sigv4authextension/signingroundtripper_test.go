@@ -26,7 +26,7 @@ func (ert *errorRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error)
 func TestRoundTrip(t *testing.T) {
 	awsCredsProvider := mockCredentials()
 
-	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	defaultRoundTripper := http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone())
 	errorRoundTripper := &errorRoundTripper{}
 
 	tests := []struct {
@@ -180,7 +180,7 @@ func TestInferServiceAndRegion(t *testing.T) {
 			sa := newSigv4Extension(testcase.cfg, "awsSDKInfo", zap.NewNop())
 			assert.NotNil(t, sa)
 
-			rt, err := sa.RoundTripper((http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone()))
+			rt, err := sa.RoundTripper(http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone()))
 			assert.NoError(t, err)
 			si := rt.(*signingRoundTripper)
 

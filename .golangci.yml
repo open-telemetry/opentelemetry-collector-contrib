@@ -140,7 +140,6 @@ linters:
         - truncateCmp
         - typeAssertChain
         - typeDefFirst
-        - typeUnparen
         - uncheckedInlineErr
         - unnamedResult
         - unnecessaryBlock

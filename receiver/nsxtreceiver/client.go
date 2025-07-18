@@ -18,7 +18,7 @@ import (
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
 )
 
-var _ (Client) = &nsxClient{}
+var _ Client = &nsxClient{}
 
 // Client is a way of interacting with the NSX REST API
 type Client interface {
