@@ -107,7 +107,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -1155,14 +1155,14 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	}
 
 	if pod.Address != "" && !pod.HostNetwork {
-		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromConnection(pod.Address),
-		})
-
-		// k8s.pod.ip is set by passthrough mode
-		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
-		})
+		ids = append(ids,
+			PodIdentifier{
+				PodIdentifierAttributeFromConnection(pod.Address),
+			},
+			// k8s.pod.ip is set by passthrough mode
+			PodIdentifier{
+				PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
+			})
 	}
 
 	return ids

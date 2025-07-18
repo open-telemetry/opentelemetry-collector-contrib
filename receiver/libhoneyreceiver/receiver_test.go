@@ -231,7 +231,7 @@ func TestLibhoneyReceiver_AuthEndpoint(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			req := httptest.NewRequest(http.MethodGet, "/1/auth", nil)
+			req := httptest.NewRequest(http.MethodGet, "/1/auth", http.NoBody)
 			req.Header.Set("x-honeycomb-team", tt.apiKey)
 			w := httptest.NewRecorder()
 
@@ -288,7 +288,7 @@ func TestReadContentType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, "/test", nil)
+			req := httptest.NewRequest(tt.method, "/test", http.NoBody)
 			req.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
 

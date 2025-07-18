@@ -113,36 +113,26 @@ linters:
 
     gocritic:
       disabled-checks:
-        - appendCombine
         - badRegexp
         - commentedOutCode
         - deferInLoop
         - emptyFallthrough
-        - emptyStringTest
         - equalFold
         - evalOrder
         - exposedSyncMutex
         - filepathJoin
-        - httpNoBody
         - hugeParam
         - importShadow
-        - initClause
         - methodExprCall
         - nestingReduce
         - nilValReturn
         - paramTypeCombine
         - preferDecodeRune
-        - preferFprint
-        - preferStringWriter
         - preferWriteByte
         - ptrToRefParam
         - rangeValCopy
-        - redundantSprint
-        - regexpSimplify
         - returnAfterHttpError
-        - sqlQuery
         - sloppyReassign
-        - sprintfQuotedString
         - stringsCompare
         - stringConcatSimplify
         - stringXbytes
@@ -153,12 +143,10 @@ linters:
         - typeDefFirst
         - typeUnparen
         - uncheckedInlineErr
-        - unlabelStmt
         - unnamedResult
         - unnecessaryBlock
         - unnecessaryDefer
         - whyNoLint
-        - yodaStyleExpr
 
       enable-all: true
 

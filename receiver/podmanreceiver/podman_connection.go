@@ -84,7 +84,7 @@ func unixConnection(_url *url.URL) *http.Client {
 func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphrase string) (*http.Client, error) {
 	var signers []ssh.Signer // order Signers are appended to this list determines which key is presented to server
 
-	if len(key) > 0 {
+	if key != "" {
 		s, err := publicKey(key, []byte(passphrase))
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse identity %q: %w", key, err)
