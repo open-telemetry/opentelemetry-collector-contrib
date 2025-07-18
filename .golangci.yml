@@ -127,7 +127,6 @@ linters:
         - hugeParam
         - importShadow
         - nestingReduce
-        - nilValReturn
         - paramTypeCombine
         - preferWriteByte
         - ptrToRefParam
