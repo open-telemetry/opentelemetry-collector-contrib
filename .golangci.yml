@@ -146,7 +146,6 @@ linters:
         - uncheckedInlineErr
         - unnamedResult
         - unnecessaryBlock
-        - unnecessaryDefer
         - whyNoLint
 
       enable-all: true
