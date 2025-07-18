@@ -378,10 +378,11 @@ func TestScraperMultipleTargets(t *testing.T) {
 
 func TestResponseValidation(t *testing.T) {
 	// Create a mock server that returns JSON
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		w.Write([]byte(`{"status": "ok", "count": 5, "message": "healthy"}`))
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"status": "ok", "count": 5, "message": "healthy"}`))
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -443,10 +444,11 @@ func TestResponseValidation(t *testing.T) {
 
 func TestResponseValidationFailures(t *testing.T) {
 	// Create a mock server that returns JSON with some failing conditions
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		w.Write([]byte(`{"status": "error", "count": 3, "message": "unhealthy"}`))
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"status": "error", "count": 3, "message": "unhealthy"}`))
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
