@@ -31,12 +31,14 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
@@ -1175,4 +1177,103 @@ func loadOTLPMetrics(t *testing.T, filename string) pmetric.Metrics {
 	require.NoError(t, err)
 
 	return otlpmetrics
+}
+
+func TestMetricsExporterWithSerializerRouting(t *testing.T) {
+	// This test validates that routing works with the serializer exporter path
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
+			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Site: "datadoghq.com",
+		},
+		Metrics: datadogconfig.MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: datadogconfig.HistogramConfig{
+				Mode:             datadogconfig.HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeToDelta,
+			},
+			Routing: datadogconfig.MetricsRoutingConfig{
+				RoutingConfig: datadogconfig.RoutingConfig{
+					Enabled: true,
+					// Use auto-generated endpoint (empty endpoint)
+					OTLPHeaders: map[string]configopaque.String{
+						"Dd-Protocol": "otlp",
+					},
+					Rules: []datadogconfig.RoutingRule{
+						{
+							Name: "test_routing",
+							Condition: datadogconfig.RoutingCondition{
+								InstrumentationScopeName: "test.scope",
+							},
+							Target: datadogconfig.TargetOTLP,
+						},
+					},
+				},
+			},
+		},
+		HostMetadata: datadogconfig.HostMetadataConfig{
+			Enabled: false, // Disable to avoid complexity in test
+		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
+	}
+
+	// Create an observed logger to capture log messages
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	params.Logger = zap.New(observedZapCore)
+
+	// Force the serializer path to be taken
+	require.NoError(t, enableMetricExportSerializer())
+	defer func() {
+		// Reset to default after test
+		require.NoError(t, enableNativeMetricExport())
+	}()
+
+	f := NewFactory()
+
+	// The client should have been created correctly with routing
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+
+	// Verify that routing configuration was logged
+	logs := observedLogs.TakeAll()
+	var foundRoutingConfigLog, foundAutoGenLog bool
+
+	for _, log := range logs {
+		switch log.Message {
+		case "Metrics routing configuration":
+			foundRoutingConfigLog = true
+			assert.Equal(t, zap.InfoLevel, log.Level)
+		case "Auto-generated OTLP endpoint for metrics routing":
+			foundAutoGenLog = true
+			assert.Equal(t, zap.InfoLevel, log.Level)
+			assert.Equal(t, "datadoghq.com", log.ContextMap()["site"])
+			assert.Equal(t, "https://trace.agent.datadoghq.com/api/v0.2/stats", log.ContextMap()["generated_endpoint"])
+		}
+	}
+
+	assert.True(t, foundRoutingConfigLog, "Should have routing configuration log")
+	assert.True(t, foundAutoGenLog, "Should have auto-generated endpoint log")
+
+	// Test consuming metrics - this verifies the exporter was created correctly
+	testMetrics := pmetric.NewMetrics()
+	rm := testMetrics.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("regular.scope") // This should go to Datadog, not OTLP
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test.metric")
+
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
 }

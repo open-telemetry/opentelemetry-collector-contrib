@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+package routing // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/routing"
 
 import (
 	"context"
@@ -15,42 +15,76 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
-// Compile-time interface implementation check
-var _ consumer.Metrics = (*routingMetricsExporter)(nil)
+// MetricsRouter provides metrics routing capabilities between Datadog and OTLP endpoints
+type MetricsRouter interface {
+	consumer.Metrics
+	component.Component
+}
 
-// routingMetricsExporter wraps the standard Datadog metrics exporter with routing capabilities
-type routingMetricsExporter struct {
+// MetricsRouterSettings contains configuration for creating a metrics router
+type MetricsRouterSettings struct {
+	// DatadogPushFunc is the function to push metrics to Datadog
+	DatadogPushFunc consumer.ConsumeMetricsFunc
+	// RoutingConfig contains the routing configuration
+	RoutingConfig config.MetricsRoutingConfig
+	// APIKey is the Datadog API key for OTLP routing
+	APIKey string
+	// Site is the Datadog site for OTLP routing
+	Site string
+	// Logger for the router
+	Logger *zap.Logger
+	// ExporterSettings for creating OTLP exporter
+	ExporterSettings exporter.Settings
+}
+
+// metricsRouter implements MetricsRouter interface
+type metricsRouter struct {
 	datadogPushFunc consumer.ConsumeMetricsFunc
 	otlpExporter    exporter.Metrics
-	routingConfig   datadogconfig.MetricsRoutingConfig
+	routingConfig   config.MetricsRoutingConfig
 	logger          *zap.Logger
 }
 
-// newRoutingMetricsExporter creates a new routing metrics exporter
-func newRoutingMetricsExporter(
-	datadogPushFunc consumer.ConsumeMetricsFunc,
-	otlpExporter exporter.Metrics,
-	routingConfig datadogconfig.MetricsRoutingConfig,
-	logger *zap.Logger,
-) *routingMetricsExporter {
-	logger.Info("Creating routing metrics exporter",
-		zap.Bool("routing_enabled", routingConfig.Enabled),
-		zap.String("otlp_endpoint", routingConfig.OTLPEndpoint),
+// NewMetricsRouter creates a new metrics router with the provided settings
+func NewMetricsRouter(ctx context.Context, settings MetricsRouterSettings) (MetricsRouter, error) {
+	var otlpExporter exporter.Metrics
+	var err error
+
+	// Create OTLP exporter if routing is enabled
+	if settings.RoutingConfig.Enabled {
+		otlpExporter, err = createOTLPMetricsExporter(
+			ctx,
+			settings.ExporterSettings,
+			settings.RoutingConfig,
+			settings.APIKey,
+			settings.Site,
+		)
+		if err != nil {
+			settings.Logger.Error("Failed to create OTLP metrics exporter for routing", zap.Error(err))
+			return nil, err
+		}
+	}
+
+	router := &metricsRouter{
+		datadogPushFunc: settings.DatadogPushFunc,
+		otlpExporter:    otlpExporter,
+		routingConfig:   settings.RoutingConfig,
+		logger:          settings.Logger,
+	}
+
+	settings.Logger.Info("Created metrics router",
+		zap.Bool("routing_enabled", settings.RoutingConfig.Enabled),
+		zap.String("otlp_endpoint", settings.RoutingConfig.OTLPEndpoint),
 		zap.Bool("has_otlp_exporter", otlpExporter != nil))
 
-	return &routingMetricsExporter{
-		datadogPushFunc: datadogPushFunc,
-		otlpExporter:    otlpExporter,
-		routingConfig:   routingConfig,
-		logger:          logger,
-	}
+	return router, nil
 }
 
 // ConsumeMetrics routes metrics based on the configured routing rules
-func (r *routingMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (r *metricsRouter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	if !r.routingConfig.Enabled || r.otlpExporter == nil {
 		r.logger.Debug("Routing disabled or no OTLP exporter, using standard Datadog exporter",
 			zap.Bool("routing_enabled", r.routingConfig.Enabled),
@@ -78,7 +112,7 @@ func (r *routingMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.
 				zap.String("target", string(target)),
 				zap.Int("metrics_count", scopeMetric.Metrics().Len()))
 
-			if target == datadogconfig.TargetOTLP {
+			if target == config.TargetOTLP {
 				shouldRouteToOTLP = true
 				r.logger.Debug("Found metrics that should be routed to OTLP")
 				break
@@ -122,15 +156,31 @@ func (r *routingMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.
 }
 
 // Capabilities returns the consumer capabilities
-func (r *routingMetricsExporter) Capabilities() consumer.Capabilities {
+func (r *metricsRouter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
+}
+
+// Start starts the metrics router and any associated exporters
+func (r *metricsRouter) Start(ctx context.Context, host component.Host) error {
+	if r.otlpExporter != nil {
+		return r.otlpExporter.Start(ctx, host)
+	}
+	return nil
+}
+
+// Shutdown shuts down the metrics router and any associated exporters
+func (r *metricsRouter) Shutdown(ctx context.Context) error {
+	if r.otlpExporter != nil {
+		return r.otlpExporter.Shutdown(ctx)
+	}
+	return nil
 }
 
 // createOTLPMetricsExporter creates an OTLP HTTP exporter for metrics routing
 func createOTLPMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	routingConfig datadogconfig.MetricsRoutingConfig,
+	routingConfig config.MetricsRoutingConfig,
 	apiKey string,
 	site string,
 ) (exporter.Metrics, error) {
