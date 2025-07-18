@@ -161,6 +161,6 @@ func buildEventsFromTraces(ld ptrace.Traces, serverHost string, settings TracesS
 	return events
 }
 
-func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
+func (e *datasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
 	return sendBatch(buildEventsFromTraces(ld, e.serverHost, e.exporterCfg.tracesSettings), e.client)
 }
