@@ -3,7 +3,7 @@ type: groupbytrace
 status:
   class: processor
   stability:
-    beta: [traces]
+    unmaintained: [traces]
   distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
