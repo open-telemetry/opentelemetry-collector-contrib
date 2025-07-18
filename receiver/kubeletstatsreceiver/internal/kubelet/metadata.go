@@ -203,7 +203,7 @@ func (m *Metadata) getContainerID(podUID string, containerName string) (string, 
 		if pod.UID == uid {
 			for _, containerStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
 				if containerName == containerStatus.Name {
-					if len(strings.TrimSpace(containerStatus.ContainerID)) == 0 {
+					if strings.TrimSpace(containerStatus.ContainerID) == "" {
 						return "", fmt.Errorf("pod %q with container %q has an empty containerID", podUID, containerName)
 					}
 					return stripContainerID(containerStatus.ContainerID), nil

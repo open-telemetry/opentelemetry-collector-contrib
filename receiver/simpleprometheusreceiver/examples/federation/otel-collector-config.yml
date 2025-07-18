@@ -8,6 +8,9 @@ receivers:
     metrics_path: /federate
     params:
       match[]: '{job="counter"}'
+    labels:
+      # custom static label for all metrics
+      deployment_tier: staging
   otlp:
     protocols:
       grpc:
