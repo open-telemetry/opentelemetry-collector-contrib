@@ -107,7 +107,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
 
 		// Get the filter query for the metric
-		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metricType)
+		filterQuery = fmt.Sprintf(`metric.type = %q`, metricType)
 
 		// Define the request to list time series data
 		tsReq := &monitoringpb.ListTimeSeriesRequest{
@@ -237,7 +237,7 @@ func getFilterQuery(metric MetricConfig) string {
 
 	// see https://cloud.google.com/monitoring/api/v3/filters
 	if metric.MetricName != "" {
-		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metric.MetricName)
+		filterQuery = fmt.Sprintf(`metric.type = %q`, metric.MetricName)
 	} else {
 		filterQuery = metric.MetricDescriptorFilter
 	}

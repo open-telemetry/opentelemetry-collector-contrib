@@ -107,7 +107,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
