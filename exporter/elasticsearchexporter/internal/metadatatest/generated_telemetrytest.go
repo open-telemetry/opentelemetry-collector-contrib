@@ -23,7 +23,7 @@ func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 
 func AssertEqualElasticsearchBulkLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.elasticsearch.bulk.latency",
+		Name:        "otelcol.elasticsearch.bulk_latency",
 		Description: "Latency of Elasticsearch bulk operations in seconds. [alpha]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
@@ -31,7 +31,7 @@ func AssertEqualElasticsearchBulkLatency(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.elasticsearch.bulk.latency")
+	got, err := tt.GetMetric("otelcol.elasticsearch.bulk_latency")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

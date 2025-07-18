@@ -65,7 +65,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.meter = Meter(settings)
 	var err, errs error
 	builder.ElasticsearchBulkLatency, err = builder.meter.Float64Histogram(
-		"otelcol.elasticsearch.bulk.latency",
+		"otelcol.elasticsearch.bulk_latency",
 		metric.WithDescription("Latency of Elasticsearch bulk operations in seconds. [alpha]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),

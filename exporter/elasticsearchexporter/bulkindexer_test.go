@@ -127,6 +127,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 					Value: 1,
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -151,6 +152,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
 					),
 					Count: 1,
 				},

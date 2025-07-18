@@ -87,7 +87,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    elasticsearch.bulk.latency:
+    elasticsearch.bulk_latency:
       prefix: otelcol.
       stability:
         level: alpha

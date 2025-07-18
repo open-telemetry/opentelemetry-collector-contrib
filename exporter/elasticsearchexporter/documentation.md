@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol.elasticsearch.bulk.latency
+### otelcol.elasticsearch.bulk_latency
 
 Latency of Elasticsearch bulk operations in seconds. [alpha]
 

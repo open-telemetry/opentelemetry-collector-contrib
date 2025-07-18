@@ -474,6 +474,7 @@ func flushBulkIndexer(
 		successAttrSet := metric.WithAttributeSet(attribute.NewSet(
 			append([]attribute.KeyValue{
 				attribute.String("outcome", "success"),
+				semconv.HTTPResponseStatusCode(http.StatusOK),
 			}, defaultMetaAttrs...)...,
 		))
 
