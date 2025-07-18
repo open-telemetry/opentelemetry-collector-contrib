@@ -707,3 +707,101 @@ func TestRequestBodyWithCustomHeaders(t *testing.T) {
 	assert.Equal(t, "application/custom+json", receivedContentType)
 	assert.Equal(t, "custom-value", receivedCustomHeader)
 }
+
+func TestAutoContentTypeConfiguration(t *testing.T) {
+	// Create a mock server that captures request details
+	var receivedContentType string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedContentType = r.Header.Get("Content-Type")
+
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"result": "ok"}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	testCases := []struct {
+		name                string
+		body                string
+		autoContentType     bool
+		expectedContentType string
+	}{
+		{
+			name:                "JSON body with auto_content_type enabled",
+			body:                `{"key": "value"}`,
+			autoContentType:     true,
+			expectedContentType: "application/json",
+		},
+		{
+			name:                "JSON body with auto_content_type disabled",
+			body:                `{"key": "value"}`,
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set
+		},
+		{
+			name:                "Form data with auto_content_type enabled",
+			body:                `name=test&email=test@example.com`,
+			autoContentType:     true,
+			expectedContentType: "application/x-www-form-urlencoded",
+		},
+		{
+			name:                "Form data with auto_content_type disabled",
+			body:                `name=test&email=test@example.com`,
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set
+		},
+		{
+			name:                "Plain text with auto_content_type enabled",
+			body:                `plain text content`,
+			autoContentType:     true,
+			expectedContentType: "text/plain",
+		},
+		{
+			name:                "Plain text with auto_content_type disabled",
+			body:                `plain text content`,
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set
+		},
+		{
+			name:                "Empty body with auto_content_type enabled",
+			body:                "",
+			autoContentType:     true,
+			expectedContentType: "", // No Content-Type should be set for empty body
+		},
+		{
+			name:                "Empty body with auto_content_type disabled",
+			body:                "",
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set for empty body
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Reset captured values
+			receivedContentType = ""
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Targets = []*targetConfig{
+				{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: server.URL,
+					},
+					Method:          "POST",
+					Body:            tc.body,
+					AutoContentType: tc.autoContentType,
+				},
+			}
+
+			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+			_, err := scraper.scrape(context.Background())
+			require.NoError(t, err)
+
+			// Verify the Content-Type header behavior
+			assert.Equal(t, tc.expectedContentType, receivedContentType)
+		})
+	}
+}

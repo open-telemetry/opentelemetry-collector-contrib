@@ -35,8 +35,9 @@ type Config struct {
 type targetConfig struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 	Method                  string   `mapstructure:"method"`
-	Endpoints               []string `mapstructure:"endpoints"` // Field for a list of endpoints
-	Body                    string   `mapstructure:"body"`      // Request body content
+	Endpoints               []string `mapstructure:"endpoints"`         // Field for a list of endpoints
+	Body                    string   `mapstructure:"body"`              // Request body content
+	AutoContentType         bool     `mapstructure:"auto_content_type"` // Whether to automatically set Content-Type based on body
 }
 
 // Validate validates an individual targetConfig.

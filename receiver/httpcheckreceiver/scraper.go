@@ -216,8 +216,8 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 
-			// Set Content-Type header automatically if body is present and no Content-Type is set
-			if h.cfg.Targets[targetIndex].Body != "" && req.Header.Get("Content-Type") == "" {
+			// Set Content-Type header automatically if body is present, no Content-Type is set, and auto_content_type is enabled
+			if h.cfg.Targets[targetIndex].Body != "" && req.Header.Get("Content-Type") == "" && h.cfg.Targets[targetIndex].AutoContentType {
 				body := strings.TrimSpace(h.cfg.Targets[targetIndex].Body)
 				switch {
 				case strings.HasPrefix(body, "{") || strings.HasPrefix(body, "["):
