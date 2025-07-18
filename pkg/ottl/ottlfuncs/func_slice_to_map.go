@@ -29,10 +29,10 @@ func sliceToMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, errors.New("SliceToMapFactory args must be of type *SliceToMapArguments[K")
 	}
 
-	return getSliceToMapFunc(args.Target, args.KeyPath, args.ValuePath)
+	return getSliceToMapFunc(args.Target, args.KeyPath, args.ValuePath), nil
 }
 
-func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath ottl.Optional[[]string], valuePath ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
+func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath ottl.Optional[[]string], valuePath ottl.Optional[[]string]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -47,7 +47,7 @@ func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath ottl.Optional[[]str
 		default:
 			return nil, fmt.Errorf("unsupported type provided to SliceToMap function: %T", v)
 		}
-	}, nil
+	}
 }
 
 func sliceToMap(v []any, keyPath ottl.Optional[[]string], valuePath ottl.Optional[[]string]) (any, error) {
