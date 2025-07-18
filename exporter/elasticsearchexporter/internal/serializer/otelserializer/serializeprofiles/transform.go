@@ -336,7 +336,6 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *li
 	if err != nil || fileID.IsZero() {
 		// Synthesize a file ID if the build ID is not available.
 		hasher := xxhash.New()
-		fmt.Printf("Location.Line().Len() = %d\n", location.Line().Len())
 		for _, line := range location.Line().All() {
 			f := getFunction(dic, int(line.FunctionIndex()))
 			_, _ = hasher.WriteString(getString(dic, int(f.NameStrindex())))
