@@ -77,14 +77,15 @@ type spanAndScope struct {
 }
 
 var (
-	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
-	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
-	decisionToAttribute = map[sampling.Decision]metric.MeasurementOption{
+	attrSampledTrue      = metric.WithAttributes(attribute.String("sampled", "true"), attribute.String("dropped", "false"))
+	attrSampledFalse     = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("dropped", "false"))
+	attrDropped          = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("dropped", "true"))
+	decisionToAttributes = map[sampling.Decision]metric.MeasurementOption{
 		sampling.Sampled:          attrSampledTrue,
 		sampling.NotSampled:       attrSampledFalse,
 		sampling.InvertNotSampled: attrSampledFalse,
 		sampling.InvertSampled:    attrSampledTrue,
-		sampling.Dropped:          attrSampledFalse,
+		sampling.Dropped:          attrDropped,
 	}
 )
 
@@ -365,7 +366,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		decision := tsp.makeDecision(id, trace, &metrics)
 
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision])
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -425,10 +426,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 			continue
 		}
 
-		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttributes[decision])
 
 		if telemetry.IsMetricStatCountSpansSampledEnabled() {
-			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttributes[decision])
 		}
 
 		// We associate the first policy with the sampling decision to understand what policy sampled a span
