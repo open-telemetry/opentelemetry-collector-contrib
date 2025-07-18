@@ -189,7 +189,7 @@ func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time ti
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
-	switch v := (any)(value).(type) {
+	switch v := any(value).(type) {
 	case int64:
 		e.SetIntValue(v)
 	case float64:
