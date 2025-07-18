@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -28,6 +29,7 @@ type consumerScraper struct {
 	clusterAdmin sarama.ClusterAdmin
 	config       Config
 	mb           *metadata.MetricsBuilder
+	mu           sync.Mutex
 }
 
 func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
@@ -189,6 +191,8 @@ func createConsumerScraper(_ context.Context, cfg Config, settings receiver.Sett
 
 func (s *consumerScraper) resetClientOnError(err error) error {
 	if isRecoverableError(err) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.clusterAdmin.Close()
 		s.clusterAdmin = nil
 		return fmt.Errorf("closing client because of reconnection error %w", err)
