@@ -71,12 +71,12 @@ type exponentialHistogramMetricSignal struct {
 	AggregationTemporality int32    `json:"aggregation_temporality"`
 }
 
-func convertExemplars(exemplars pmetric.ExemplarSlice) ([]map[string]string, []string, []float64, []string, []string) {
-	filteredAttributes := make([]map[string]string, exemplars.Len())
-	timestamps := make([]string, exemplars.Len())
-	values := make([]float64, exemplars.Len())
-	spanIDs := make([]string, exemplars.Len())
-	traceIDs := make([]string, exemplars.Len())
+func convertExemplars(exemplars pmetric.ExemplarSlice) (filteredAttributes []map[string]string, timestamps []string, values []float64, spanIDs []string, traceIDs []string) {
+	filteredAttributes = make([]map[string]string, exemplars.Len())
+	timestamps = make([]string, exemplars.Len())
+	values = make([]float64, exemplars.Len())
+	spanIDs = make([]string, exemplars.Len())
+	traceIDs = make([]string, exemplars.Len())
 	for i := 0; i < exemplars.Len(); i++ {
 		ex := exemplars.At(i)
 		filteredAttributes[i] = convertAttributes(ex.FilteredAttributes())
