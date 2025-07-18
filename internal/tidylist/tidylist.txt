@@ -124,7 +124,6 @@ internal/kafka
 pkg/batchpersignal
 pkg/kafka/topic
 exporter/kafkaexporter
-exporter/kineticaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter

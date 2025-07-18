@@ -32,7 +32,6 @@ processor/routingprocessor/
 
 exporter/awscloudwatchlogsexporter
 exporter/carbonexporter
-exporter/kineticaexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver
