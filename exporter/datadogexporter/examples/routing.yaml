@@ -23,22 +23,25 @@ exporters:
     metrics:
       routing:
         enabled: true
-        otlp_endpoint: "https://trace.agent.${DD_SITE}/api/v0.2/stats" # replace "${DD_SITE}" with your Datadog site manually
+        # otlp_endpoint is optional - if not specified, it will be auto-generated 
+        # as "https://trace.agent.{DD_SITE}/api/v0.2/stats" using the api.site value
+        # otlp_endpoint: "https://custom.endpoint.com/otlp" # specify only if using a custom endpoint
         otlp_headers:
           "Dd-Protocol": "otlp"
           "X-Datadog-Reported-Languages": "java"
+          "dd-api-key": ${env:DD_API_KEY}
         rules:
           - name: "datadog_trace_metrics"
             condition:
               instrumentation_scope_name: "datadog.trace.metrics"
             target: "otlp"
-          - name: "special_service_metrics"
-            condition:
-              resource_attributes:
-                "service.name": "special-service"
-            target: "otlp"
 
 service:
+  telemetry:
+    logs:
+      level: debug
+    metrics:
+      level: detailed
   pipelines:
     metrics:
       receivers: [otlp]

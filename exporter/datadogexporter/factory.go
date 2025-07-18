@@ -389,7 +389,76 @@ func (f *factory) createMetricsExporter(
 			},
 			HostMetadata: cfg.HostMetadata,
 		}
-		return sf.CreateMetrics(ctx, set, ex)
+
+		// Create the serializer exporter
+		serializerExp, err := sf.CreateMetrics(ctx, set, ex)
+		if err != nil {
+			cancel()
+			wg.Wait()
+			return nil, err
+		}
+
+		// Check if routing is enabled and create OTLP exporter if needed
+		var otlpExporter exporter.Metrics
+		set.Logger.Info("Metrics routing configuration", zap.Any("routing_config", cfg.Metrics.Routing))
+		if cfg.Metrics.Routing.Enabled {
+			otlpExporter, err = createOTLPMetricsExporter(ctx, set, cfg.Metrics.Routing, string(cfg.API.Key), cfg.API.Site)
+			if err != nil {
+				cancel()
+				wg.Wait()
+				return nil, fmt.Errorf("failed to create OTLP metrics exporter for routing: %w", err)
+			}
+			if otlpExporter != nil {
+				// Start the OTLP exporter as well
+				if err := otlpExporter.Start(ctx, nil); err != nil {
+					cancel()
+					wg.Wait()
+					return nil, fmt.Errorf("failed to start OTLP metrics exporter: %w", err)
+				}
+			}
+		}
+
+		if otlpExporter != nil {
+			// Wrap the serializer exporter with routing capabilities
+			if serializerConsumer, ok := serializerExp.(consumer.Metrics); ok {
+				routingExp := newRoutingMetricsExporter(serializerConsumer.ConsumeMetrics, otlpExporter, cfg.Metrics.Routing, set.Logger)
+				// Create a new exporter that uses the routing logic
+				routingExporter, routingErr := exporterhelper.NewMetrics(
+					ctx,
+					set,
+					cfg,
+					routingExp.ConsumeMetrics,
+					// explicitly disable since we rely on http.Client timeout logic.
+					exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
+					// We use our own custom mechanism for retries, since we hit several endpoints.
+					exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
+					// The metrics remapping code mutates data
+					exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+					exporterhelper.WithQueue(cfg.QueueSettings),
+					exporterhelper.WithShutdown(func(context.Context) error {
+						cancel()  // first cancel context
+						wg.Wait() // then wait for shutdown
+						f.StopReporter()
+						statsWriter.Stop()
+						if statsIn != nil {
+							close(statsIn)
+						}
+						return nil
+					}),
+				)
+				if routingErr != nil {
+					cancel()
+					wg.Wait()
+					return nil, routingErr
+				}
+				return routingExporter, nil
+			} else {
+				set.Logger.Warn("Serializer exporter does not implement consumer.Metrics interface, routing disabled")
+			}
+		}
+
+		// Return the original serializer exporter if no routing
+		return serializerExp, nil
 	default:
 		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
 		if metricsErr != nil {
@@ -400,8 +469,9 @@ func (f *factory) createMetricsExporter(
 
 		// Check if routing is enabled and create OTLP exporter if needed
 		var otlpExporter exporter.Metrics
+		set.Logger.Info("Metrics routing configuration", zap.Any("routing_config", cfg.Metrics.Routing))
 		if cfg.Metrics.Routing.Enabled {
-			otlpExporter, err = createOTLPMetricsExporter(ctx, set, cfg.Metrics.Routing, string(cfg.API.Key))
+			otlpExporter, err = createOTLPMetricsExporter(ctx, set, cfg.Metrics.Routing, string(cfg.API.Key), cfg.API.Site)
 			if err != nil {
 				cancel()
 				wg.Wait()
@@ -419,7 +489,7 @@ func (f *factory) createMetricsExporter(
 
 		if otlpExporter != nil {
 			// Use routing exporter
-			routingExp := newRoutingMetricsExporter(exp.PushMetricsDataScrubbed, otlpExporter, cfg.Metrics.Routing)
+			routingExp := newRoutingMetricsExporter(exp.PushMetricsDataScrubbed, otlpExporter, cfg.Metrics.Routing, set.Logger)
 			pushMetricsFn = routingExp.ConsumeMetrics
 		} else {
 			// Use standard Datadog exporter
