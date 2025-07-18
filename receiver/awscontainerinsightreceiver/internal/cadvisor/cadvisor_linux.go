@@ -392,11 +392,12 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 	}
 
 	c.metricsExtractors = make([]extractors.MetricExtractor, 0, 5)
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewCPUMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewMemMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewDiskIOMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewNetMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewFileSystemMetricExtractor(c.logger))
+	c.metricsExtractors = append(c.metricsExtractors,
+		extractors.NewCPUMetricExtractor(c.logger),
+		extractors.NewMemMetricExtractor(c.logger),
+		extractors.NewDiskIOMetricExtractor(c.logger),
+		extractors.NewNetMetricExtractor(c.logger),
+		extractors.NewFileSystemMetricExtractor(c.logger))
 
 	return nil
 }
