@@ -95,9 +95,6 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
-				case pmetric.MetricTypeEmpty:
-					fallthrough
-
 				default:
 					a.set.Logger.Warn("Unknown metric type", zap.String("type", metric.Type().String()))
 				}
@@ -135,8 +132,6 @@ func (a *Adjuster) getStartTime(metrics pmetric.Metrics) (float64, error) {
 						}
 						return metric.Sum().DataPoints().At(0).DoubleValue(), nil
 
-					case pmetric.MetricTypeEmpty, pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
-						fallthrough
 					default:
 						return 0, errUnsupportedTypeStartTimeMetric
 					}

@@ -551,9 +551,8 @@ func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
-	case strings.HasPrefix(name, "Setter"):
-		fallthrough
-	case strings.HasPrefix(name, "GetSetter"):
+	case strings.HasPrefix(name, "Setter"),
+		strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal != nil && argVal.Literal.Path != nil {
 			return p.buildGetSetterFromPath(argVal.Literal.Path)
 		}
