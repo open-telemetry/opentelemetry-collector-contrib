@@ -92,7 +92,7 @@ func (e *tinybirdExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) 
 		return consumererror.NewPermanent(err)
 	}
 
-	// TODO: perform the exports in parallel to improve the operation latency
+	// TODO: perform the exports in parallel to improve the operation latency (#41409)
 	if sumBuffer.Len() > 0 {
 		err = errors.Join(err, e.export(ctx, e.config.Metrics.Sum.Datasource, sumBuffer))
 	}
