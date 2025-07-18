@@ -170,10 +170,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 
 		return strings.Contains(lastEntry.Message, "Failed to split segment header and body") &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
-			strings.Compare(
-				errors.Unwrap(
-					lastEntry.Context[0].Interface.(error)).Error(),
-				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
+			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
 	assertReceiverTraces(t, tt, receiverID, 0, 1)
