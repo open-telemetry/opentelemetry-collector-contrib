@@ -24,6 +24,7 @@ func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.Number
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			name,
 		)
@@ -55,6 +56,7 @@ func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDa
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			name,
 		)
