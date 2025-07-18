@@ -140,7 +140,6 @@ linters:
         - typeDefFirst
         - unnamedResult
         - unnecessaryBlock
-        - unnecessaryDefer
         - whyNoLint
 
       enable-all: true
