@@ -32,7 +32,13 @@ type TimerHistogramMapping struct {
 }
 
 type HistogramConfig struct {
-	MaxSize int32 `mapstructure:"max_size"`
+	MaxSize         int32                `mapstructure:"max_size"`
+	ExplicitBuckets map[string][]float64 `mapstructure:"explicit_buckets"`
+}
+
+type ExplicitBucket struct {
+	MatcherPattern string    `mapstructure:"matcher_pattern"`
+	Buckets        []float64 `mapstructure:"buckets"`
 }
 
 type SummaryConfig struct {
