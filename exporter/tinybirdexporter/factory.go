@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 		RetryConfig:  configretry.NewDefaultBackOffConfig(),
 		QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
 		Token:        "",
-		Metrics: MetricSignalConfig{
+		Metrics: MetricsSignalConfig{
 			Gauge:                SignalConfig{Datasource: "metrics_gauge"},
 			Sum:                  SignalConfig{Datasource: "metrics_sum"},
 			Histogram:            SignalConfig{Datasource: "metrics_histogram"},
