@@ -129,7 +129,6 @@ linters:
         - nestingReduce
         - nilValReturn
         - paramTypeCombine
-        - preferWriteByte
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
