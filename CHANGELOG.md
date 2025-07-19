@@ -8,7 +8,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 <!-- next version -->
 
 ### 🛑 Breaking changes 🛑
-- The `Loki Exporter` component has been removed from the repo and is no longer being published as it has been deprecated since 22nd October 2024.
+- The `Loki Exporter` component has been removed from the repo and is no longer being published as it has been deprecated since 9th July 2024.
 
 ## v0.130.0
 
