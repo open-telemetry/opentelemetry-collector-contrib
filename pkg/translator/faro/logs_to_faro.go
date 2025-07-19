@@ -725,7 +725,7 @@ func extractExceptionContextFromKeyVal(kv map[string]string) faroTypes.Exception
 	return exceptionContext
 }
 
-func extractStacktraceFromKeyVal(kv map[string]string, exceptionType string, exceptionValue string) (*faroTypes.Stacktrace, error) {
+func extractStacktraceFromKeyVal(kv map[string]string, exceptionType, exceptionValue string) (*faroTypes.Stacktrace, error) {
 	stacktraceStr, ok := kv[faroExceptionStacktrace]
 	if !ok {
 		return nil, nil

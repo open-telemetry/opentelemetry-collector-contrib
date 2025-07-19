@@ -208,7 +208,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	verifyCorsResp(t, url, "disallowed-origin.com", http.StatusNoContent, false)
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url, origin string, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)

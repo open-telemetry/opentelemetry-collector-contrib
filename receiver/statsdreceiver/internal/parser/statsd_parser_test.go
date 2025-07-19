@@ -645,7 +645,7 @@ func testStatsDMetric(
 	}
 }
 
-func testDescription(name string, metricType MetricType, keys []string, values []string) statsDMetricDescription {
+func testDescription(name string, metricType MetricType, keys, values []string) statsDMetricDescription {
 	var kvs []attribute.KeyValue
 	for n, k := range keys {
 		kvs = append(kvs, attribute.String(k, values[n]))

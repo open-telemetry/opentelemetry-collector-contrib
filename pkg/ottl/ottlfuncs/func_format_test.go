@@ -36,7 +36,7 @@ func Test_Format(t *testing.T) {
 			name:         "padded int",
 			formatString: "test-%04d",
 			formatArgs: []ottl.Getter[any]{
-				getterFunc[any](func(_ context.Context, _ any) (any, error) {
+				getterFunc[any](func(context.Context, any) (any, error) {
 					return 2, nil
 				}),
 			},
@@ -46,10 +46,10 @@ func Test_Format(t *testing.T) {
 			name:         "multiple-args",
 			formatString: "test-%04d-%4s",
 			formatArgs: []ottl.Getter[any]{
-				getterFunc[any](func(_ context.Context, _ any) (any, error) {
+				getterFunc[any](func(context.Context, any) (any, error) {
 					return 2, nil
 				}),
-				getterFunc[any](func(_ context.Context, _ any) (any, error) {
+				getterFunc[any](func(context.Context, any) (any, error) {
 					return "te", nil
 				}),
 			},
@@ -68,7 +68,7 @@ func Test_Format(t *testing.T) {
 }
 
 func TestFormat_error(t *testing.T) {
-	target := getterFunc[any](func(_ context.Context, _ any) (any, error) {
+	target := getterFunc[any](func(context.Context, any) (any, error) {
 		return nil, errors.New("failed to get")
 	})
 

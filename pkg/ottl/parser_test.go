@@ -1570,7 +1570,7 @@ func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 			Getter: func(_ context.Context, tCtx any) (any, error) {
 				return tCtx, nil
 			},
-			Setter: func(_ context.Context, tCtx any, val any) error {
+			Setter: func(_ context.Context, tCtx, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
@@ -1585,7 +1585,7 @@ func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 				}
 				return m[p.Name()], nil
 			},
-			Setter: func(_ context.Context, tCtx any, val any) error {
+			Setter: func(_ context.Context, tCtx, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
@@ -1600,7 +1600,7 @@ func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 				}
 				return m[p.Name()], nil
 			},
-			Setter: func(_ context.Context, tCtx any, val any) error {
+			Setter: func(_ context.Context, tCtx, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
@@ -2546,7 +2546,7 @@ func Test_Statement_Execute(t *testing.T) {
 		{
 			name:      "Condition matched",
 			condition: alwaysTrue[any],
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
 			expectedCondition: true,
@@ -2555,7 +2555,7 @@ func Test_Statement_Execute(t *testing.T) {
 		{
 			name:      "Condition not matched",
 			condition: alwaysFalse[any],
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
 			expectedCondition: false,
@@ -2564,7 +2564,7 @@ func Test_Statement_Execute(t *testing.T) {
 		{
 			name:      "No result",
 			condition: alwaysTrue[any],
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return nil, nil
 			},
 			expectedCondition: true,
@@ -2629,7 +2629,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			condition: func(context.Context, any) (bool, error) {
 				return true, errors.New("test")
 			},
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
 			errorMode: IgnoreError,
@@ -2639,7 +2639,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			condition: func(context.Context, any) (bool, error) {
 				return true, errors.New("test")
 			},
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
 			errorMode: PropagateError,
@@ -2649,7 +2649,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test")
 			},
 			errorMode: IgnoreError,
@@ -2659,7 +2659,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test")
 			},
 			errorMode: PropagateError,
@@ -2669,7 +2669,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			condition: func(context.Context, any) (bool, error) {
 				return true, errors.New("test")
 			},
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
 			errorMode: SilentError,
@@ -2679,7 +2679,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(_ context.Context, _ any) (any, error) {
+			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test")
 			},
 			errorMode: SilentError,
@@ -2942,7 +2942,7 @@ func Test_prependContextToStatementPaths_Success(t *testing.T) {
 	}
 
 	mockSetFactory := NewFactory("set", &mockSetArguments[any]{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
-		return func(_ context.Context, _ any) (any, error) {
+		return func(context.Context, any) (any, error) {
 			return nil, nil
 		}, nil
 	})
@@ -3079,7 +3079,7 @@ func Test_prependContextToConditionPaths_Success(t *testing.T) {
 	}
 
 	mockSetFactory := NewFactory("set", &mockSetArguments[any]{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
-		return func(_ context.Context, _ any) (any, error) {
+		return func(context.Context, any) (any, error) {
 			return nil, nil
 		}, nil
 	})
@@ -3216,7 +3216,7 @@ func Test_prependContextToValueExpressionPaths_Success(t *testing.T) {
 	}
 
 	mockSetFactory := NewFactory("set", &mockSetArguments[any]{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
-		return func(_ context.Context, _ any) (any, error) {
+		return func(context.Context, any) (any, error) {
 			return nil, nil
 		}, nil
 	})

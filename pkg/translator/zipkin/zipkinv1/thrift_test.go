@@ -23,7 +23,7 @@ import (
 )
 
 // compareTraces compares got to want while ignoring order. Both are modified in place.
-func compareTraces(t *testing.T, want ptrace.Traces, got ptrace.Traces) {
+func compareTraces(t *testing.T, want, got ptrace.Traces) {
 	require.Equal(t, mapperTraces(t, want), mapperTraces(t, got))
 }
 

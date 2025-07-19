@@ -155,7 +155,7 @@ func (exp *traceExporter) consumeTraces(
 	return nil
 }
 
-func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
 	var err error

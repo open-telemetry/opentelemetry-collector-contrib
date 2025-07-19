@@ -266,7 +266,7 @@ func (c *bigipClient) checkHTTPStatus(resp *http.Response) (err error) {
 }
 
 // combinePoolMembers takes two PoolMembers and returns an aggregate of them both
-func combinePoolMembers(poolMembersA *models.PoolMembers, poolMembersB *models.PoolMembers) *models.PoolMembers {
+func combinePoolMembers(poolMembersA, poolMembersB *models.PoolMembers) *models.PoolMembers {
 	var aSize int
 	if poolMembersA != nil {
 		aSize = len(poolMembersA.Entries)

@@ -16,7 +16,7 @@ import (
 
 func Test_extractPatterns(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return `a=b c=d`, nil
 		},
 	}
@@ -75,7 +75,7 @@ func Test_extractPatterns_validation(t *testing.T) {
 		{
 			name: "bad regex",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "foobar", nil
 				},
 			},
@@ -84,7 +84,7 @@ func Test_extractPatterns_validation(t *testing.T) {
 		{
 			name: "no named capture group",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "foobar", nil
 				},
 			},
@@ -109,7 +109,7 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 		{
 			name: "target is non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 123, nil
 				},
 			},
@@ -118,7 +118,7 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 		{
 			name: "target is nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},

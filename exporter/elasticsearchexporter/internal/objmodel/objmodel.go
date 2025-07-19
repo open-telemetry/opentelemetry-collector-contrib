@@ -143,7 +143,7 @@ func (doc *Document) Add(key string, v Value) {
 }
 
 // AddString adds a string to the document.
-func (doc *Document) AddString(key string, v string) {
+func (doc *Document) AddString(key, v string) {
 	if v != "" {
 		doc.Add(key, StringValue(v))
 	}
@@ -586,7 +586,7 @@ func appendAttributeFields(fields []field, path string, am pcommon.Map) []field 
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value) []field {
+func appendAttributeValue(fields []field, path, key string, attr pcommon.Value) []field {
 	if attr.Type() == pcommon.ValueTypeEmpty {
 		return fields
 	}

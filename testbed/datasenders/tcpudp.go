@@ -28,7 +28,7 @@ type TCPUDPWriter struct {
 
 var _ testbed.LogDataSender = (*TCPUDPWriter)(nil)
 
-func NewTCPUDPWriter(network string, host string, port int, batchSize int) *TCPUDPWriter {
+func NewTCPUDPWriter(network, host string, port, batchSize int) *TCPUDPWriter {
 	f := &TCPUDPWriter{
 		network: network,
 		bufSize: batchSize,

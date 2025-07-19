@@ -1223,7 +1223,7 @@ func TestReceiverAuthHeadersStream(t *testing.T) {
 	t.Run("per-data", func(t *testing.T) { testReceiverAuthHeaders(t, true, true) })
 }
 
-func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
+func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 

@@ -178,7 +178,7 @@ func (p *intervalProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	return errs
 }
 
-func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints DPS, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP) {
+func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		dp := dataPoints.At(i)
 

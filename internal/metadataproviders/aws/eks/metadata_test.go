@@ -85,7 +85,7 @@ func TestGetK8sInstanceMetadata(t *testing.T) {
 	}
 }
 
-func setupNodeProviderID(client *fake.Clientset, provideID string, nodeName string) error {
+func setupNodeProviderID(client *fake.Clientset, provideID, nodeName string) error {
 	node := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: nodeName,

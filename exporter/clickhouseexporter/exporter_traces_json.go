@@ -170,7 +170,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 	return nil
 }
 
-func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []string, err error) {
+func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names, attrs []string, err error) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
@@ -186,7 +186,7 @@ func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names [
 	return
 }
 
-func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []string, states []string, attrs []string, err error) {
+func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, attrs []string, err error) {
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		traceIDs = append(traceIDs, link.TraceID().String())

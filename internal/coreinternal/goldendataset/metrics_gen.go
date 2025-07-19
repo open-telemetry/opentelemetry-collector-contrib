@@ -204,7 +204,7 @@ func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
 	}
 }
 
-func getTimestamp(startTime uint64, stepSize uint64, i int) pcommon.Timestamp {
+func getTimestamp(startTime, stepSize uint64, i int) pcommon.Timestamp {
 	return pcommon.Timestamp(startTime + (stepSize * uint64(i+1)))
 }
 

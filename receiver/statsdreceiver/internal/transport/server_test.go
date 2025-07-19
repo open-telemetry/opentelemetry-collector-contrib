@@ -25,7 +25,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		transport         Transport
 		buildServerFn     func(transport Transport, addr string) (Server, error)
 		getFreeEndpointFn func(tb testing.TB, transport string) string
-		buildClientFn     func(transport string, address string) (*client.StatsD, error)
+		buildClientFn     func(transport, address string) (*client.StatsD, error)
 	}{
 		{
 			name:              "udp",
@@ -94,7 +94,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	}
 }
 
-func testFreeEndpoint(t *testing.T, transport string, address string) {
+func testFreeEndpoint(t *testing.T, transport, address string) {
 	t.Helper()
 
 	var ln0, ln1 io.Closer

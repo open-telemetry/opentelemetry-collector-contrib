@@ -62,7 +62,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
-func testTime[K any](time string, format string) (ExprFunc[K], error) {
+func testTime[K any](time, format string) (ExprFunc[K], error) {
 	loc, err := timeutils.GetLocation(nil, &format)
 	if err != nil {
 		return nil, err

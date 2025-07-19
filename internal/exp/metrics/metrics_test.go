@@ -49,7 +49,7 @@ func TestMergeMetrics(t *testing.T) {
 	}
 }
 
-func naiveMerge(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics {
+func naiveMerge(mdA, mdB pmetric.Metrics) pmetric.Metrics {
 	for i := 0; i < mdB.ResourceMetrics().Len(); i++ {
 		rm := mdB.ResourceMetrics().At(i)
 
@@ -63,7 +63,7 @@ func naiveMerge(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics {
 func BenchmarkMergeManyIntoSingle(b *testing.B) {
 	benchmarks := []struct {
 		name      string
-		mergeFunc func(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics
+		mergeFunc func(mdA, mdB pmetric.Metrics) pmetric.Metrics
 	}{
 		{
 			name:      "Naive",
@@ -97,7 +97,7 @@ func BenchmarkMergeManyIntoSingle(b *testing.B) {
 func BenchmarkMergeManyIntoMany(b *testing.B) {
 	benchmarks := []struct {
 		name      string
-		mergeFunc func(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics
+		mergeFunc func(mdA, mdB pmetric.Metrics) pmetric.Metrics
 	}{
 		{
 			name:      "Naive",

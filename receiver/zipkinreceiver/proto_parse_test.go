@@ -164,7 +164,7 @@ func newTestZipkinReceiver() *zipkinReceiver {
 	}
 }
 
-func compareResourceSpans(t *testing.T, wantRS ptrace.ResourceSpans, reqsRS ptrace.ResourceSpans) {
+func compareResourceSpans(t *testing.T, wantRS, reqsRS ptrace.ResourceSpans) {
 	assert.Equal(t, wantRS.ScopeSpans().Len(), reqsRS.ScopeSpans().Len())
 	wantIL := wantRS.ScopeSpans().At(0)
 	reqsIL := reqsRS.ScopeSpans().At(0)

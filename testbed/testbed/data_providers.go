@@ -176,7 +176,7 @@ type goldenDataProvider struct {
 
 // NewGoldenDataProvider creates a new instance of goldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string) DataProvider {
+func NewGoldenDataProvider(tracePairsFile, spanPairsFile, metricPairsFile string) DataProvider {
 	return &goldenDataProvider{
 		tracePairsFile:  tracePairsFile,
 		spanPairsFile:   spanPairsFile,

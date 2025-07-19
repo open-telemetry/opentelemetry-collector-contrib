@@ -47,7 +47,7 @@ func Test_HasSuffix(t *testing.T) {
 				ottl.FunctionContext{},
 				&HasSuffixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
 						},
 					},
@@ -63,7 +63,7 @@ func Test_HasSuffix(t *testing.T) {
 
 func Test_HasSuffix_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return true, nil
 		},
 	}

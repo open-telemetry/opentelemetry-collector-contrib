@@ -102,7 +102,7 @@ func TestTranslateAttributesDoesNotOverwriteMultipleExistingAttributes(t *testin
 	assertAttribute(t, attributes, "host.name", "hostname1")
 }
 
-func assertAttribute(t *testing.T, metadata pcommon.Map, attributeName string, expectedValue string) {
+func assertAttribute(t *testing.T, metadata pcommon.Map, attributeName, expectedValue string) {
 	value, exists := metadata.Get(attributeName)
 
 	if expectedValue == "" {

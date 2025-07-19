@@ -15,7 +15,7 @@ const (
 	defaultDataStreamTypeProfiles = "profiles"
 )
 
-func getFromAttributes(name string, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
+func getFromAttributes(name, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
 	for _, attributeMap := range attributeMaps {
 		if value, exists := attributeMap.Get(name); exists {
 			return value.AsString(), true

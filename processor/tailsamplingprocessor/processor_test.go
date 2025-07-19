@@ -388,7 +388,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
 	tsp := sp.(*tailSamplingSpanProcessor)
-	tsp.idToTrace.Range(func(_ any, _ any) bool {
+	tsp.idToTrace.Range(func(_, _ any) bool {
 		cnt++
 		return true
 	})

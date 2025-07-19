@@ -33,7 +33,7 @@ func createMetricsMetadata(query string) *metadata.MetricsMetadata {
 	return createMetricsMetadataFromTimestampColumn(query, "INTERVAL_END")
 }
 
-func createMetricsMetadataFromTimestampColumn(query string, timestampColumn string) *metadata.MetricsMetadata {
+func createMetricsMetadataFromTimestampColumn(query, timestampColumn string) *metadata.MetricsMetadata {
 	labelValueMetadata, _ := metadata.NewLabelValueMetadata("metric_label", "METRIC_LABEL",
 		metadata.StringValueType)
 	// Labels

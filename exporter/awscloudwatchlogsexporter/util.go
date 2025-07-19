@@ -68,7 +68,7 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 	return s, true
 }
 
-func replace(s, pattern string, value string, logger *zap.Logger) (string, bool) {
+func replace(s, pattern, value string, logger *zap.Logger) (string, bool) {
 	if value == "" {
 		logger.Debug("Empty resource attribute value found for pattern " + pattern)
 		return strings.ReplaceAll(s, pattern, "undefined"), false

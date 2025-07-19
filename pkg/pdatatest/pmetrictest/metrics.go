@@ -219,7 +219,7 @@ func CompareScopeMetrics(expected, actual pmetric.ScopeMetrics) error {
 	return errs
 }
 
-func CompareMetric(expected pmetric.Metric, actual pmetric.Metric) error {
+func CompareMetric(expected, actual pmetric.Metric) error {
 	var errs error
 
 	if actual.Name() != expected.Name() {

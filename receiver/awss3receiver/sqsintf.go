@@ -18,7 +18,7 @@ type sqsClient interface {
 }
 
 // newSQSClient creates a new SQS client with the provided configuration
-func newSQSClient(ctx context.Context, region string, endpoint string) (sqsClient, error) {
+func newSQSClient(ctx context.Context, region, endpoint string) (sqsClient, error) {
 	optionsFuncs := make([]func(*config.LoadOptions) error, 0)
 	if region != "" {
 		optionsFuncs = append(optionsFuncs, config.WithRegion(region))

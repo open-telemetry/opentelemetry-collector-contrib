@@ -597,7 +597,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
-func buildMetricName(namespace string, name string) string {
+func buildMetricName(namespace, name string) string {
 	if namespace != "" {
 		return namespace + "." + name
 	}

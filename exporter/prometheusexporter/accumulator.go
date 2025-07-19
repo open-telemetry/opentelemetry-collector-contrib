@@ -38,7 +38,7 @@ type accumulator interface {
 	Accumulate(resourceMetrics pmetric.ResourceMetrics) (processed int)
 	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
 	// The number or metrics and attributes returned will be the same.
-	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopeNames []string, scopeVersions []string, scopeSchemaURLs []string, scopeAttributes []pcommon.Map)
+	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopeNames, scopeVersions, scopeSchemaURLs []string, scopeAttributes []pcommon.Map)
 }
 
 // LastValueAccumulator keeps last value for accumulated metrics
@@ -78,7 +78,7 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 	return
 }
 
-func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map, resourceAttrs pcommon.Map, now time.Time) int {
+func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) int {
 	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
 
 	switch metric.Type() {
@@ -100,7 +100,7 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName string
 	return 0
 }
 
-func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	dps := metric.Summary().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -129,7 +129,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeNam
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	dps := metric.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -163,7 +163,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName 
 	return
 }
 
-func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	doubleSum := metric.Sum()
 
 	// Drop metrics with unspecified aggregations
@@ -224,7 +224,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName st
 	return
 }
 
-func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	histogram := metric.Histogram()
 	a.logger.Debug("Accumulate histogram.....")
 	dps := histogram.DataPoints()
@@ -325,7 +325,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 	return metrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
 }
 
-func timeseriesSignature(scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
+func timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, metric pmetric.Metric, attributes, resourceAttrs pcommon.Map) string {
 	var b strings.Builder
 	b.WriteString("*" + metric.Name())
 	b.WriteString(metric.Type().String())

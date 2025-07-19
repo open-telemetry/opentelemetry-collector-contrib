@@ -27,7 +27,7 @@ type SyslogWriter struct {
 
 var _ testbed.LogDataSender = (*SyslogWriter)(nil)
 
-func NewSyslogWriter(network string, host string, port int, batchSize int) *SyslogWriter {
+func NewSyslogWriter(network, host string, port, batchSize int) *SyslogWriter {
 	f := &SyslogWriter{
 		network: network,
 		bufSize: batchSize,

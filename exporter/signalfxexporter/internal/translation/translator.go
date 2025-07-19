@@ -573,7 +573,7 @@ func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) []
 	return out
 }
 
-func dimensionsEqual(d1 []*sfxpb.Dimension, d2 []*sfxpb.Dimension) bool {
+func dimensionsEqual(d1, d2 []*sfxpb.Dimension) bool {
 	if d1 == nil && d2 == nil {
 		return true
 	}

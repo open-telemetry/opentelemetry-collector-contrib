@@ -26,7 +26,7 @@ type traceBulkIndexer struct {
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(dataset string, namespace string, bulkAction string, model mappingModel) *traceBulkIndexer {
+func newTraceBulkIndexer(dataset, namespace, bulkAction string, model mappingModel) *traceBulkIndexer {
 	return &traceBulkIndexer{dataset, namespace, bulkAction, model, nil, nil}
 }
 

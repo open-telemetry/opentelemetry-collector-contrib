@@ -22,7 +22,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Mon",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 24, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -31,7 +31,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Tue",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 25, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -40,7 +40,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Wed",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 26, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -49,7 +49,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Thu",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 27, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -58,7 +58,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Fri",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 28, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -67,7 +67,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Sat",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 22, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -76,7 +76,7 @@ func Test_Weekday(t *testing.T) {
 		{
 			name: "Sun",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2025, time.February, 23, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -96,7 +96,7 @@ func Test_Weekday(t *testing.T) {
 
 func Test_Weekday_Error(t *testing.T) {
 	var getter ottl.TimeGetter[any] = &ottl.StandardTimeGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "not a time", nil
 		},
 	}

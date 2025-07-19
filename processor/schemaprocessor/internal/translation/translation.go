@@ -107,7 +107,7 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 	return t, nil
 }
 
-func newTranslator(log *zap.Logger, targetSchemaURL string, schema string) (*translator, error) {
+func newTranslator(log *zap.Logger, targetSchemaURL, schema string) (*translator, error) {
 	schemaFileSchema, err := encoder.Parse(strings.NewReader(schema))
 	if err != nil {
 		return nil, err

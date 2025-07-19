@@ -151,7 +151,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	}, nil
 }
 
-func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
+func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
@@ -199,7 +199,7 @@ func (p *serviceGraphConnector) flushMetrics(ctx context.Context) error {
 	return p.metricsConsumer.ConsumeMetrics(ctx, md)
 }
 
-func (p *serviceGraphConnector) Shutdown(_ context.Context) error {
+func (p *serviceGraphConnector) Shutdown(context.Context) error {
 	p.logger.Info("Shutting down servicegraphconnector")
 	close(p.shutdownCh)
 	return nil
@@ -319,7 +319,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 	return nil
 }
 
-func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
+func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]string, resourceAttr, spanAttr pcommon.Map) {
 	for _, dim := range p.config.Dimensions {
 		if v, ok := pdatautil.GetAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v

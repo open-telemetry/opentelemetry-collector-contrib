@@ -103,7 +103,7 @@ func scaleExpHistogramOp(metric pmetric.Metric, op internalOperation, f internal
 	}
 }
 
-func updateOffset(scale int32, offset int32, op *internalOperation) int32 {
+func updateOffset(scale, offset int32, op *internalOperation) int32 {
 	// Take the middle of the first bucket.
 	base := math.Pow(2, math.Pow(2, float64(-scale)))
 	value := (math.Pow(base, float64(offset)) + math.Pow(base, float64(offset+1))) / 2

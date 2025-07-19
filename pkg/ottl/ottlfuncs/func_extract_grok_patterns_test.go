@@ -104,7 +104,7 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(tt.namedCapturesOnly)
 			target := &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tt.targetString, nil
 				},
 			}
@@ -144,7 +144,7 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 		{
 			name: "bad regex",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "foobar", nil
 				},
 			},
@@ -155,7 +155,7 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 		{
 			name: "no named capture group",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "foobar", nil
 				},
 			},
@@ -166,7 +166,7 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 		{
 			name: "custom pattern name invalid",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "http://user:password@example.com:80/path?query=string", nil
 				},
 			},
@@ -204,7 +204,7 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 		{
 			name: "regex - target is non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 123, nil
 				},
 			},
@@ -213,7 +213,7 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 		{
 			name: "regex - target is nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -222,7 +222,7 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 		{
 			name: "target is nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -231,7 +231,7 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 		{
 			name: "target is non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 123, nil
 				},
 			},

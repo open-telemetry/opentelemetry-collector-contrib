@@ -162,7 +162,7 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 }
 
 // Checks if the key has given prefix and trims it if so.
-func getNewKey(key string, prefix string) (bool, string) {
+func getNewKey(key, prefix string) (bool, string) {
 	if strings.HasPrefix(key, prefix) {
 		return true, strings.TrimPrefix(key, prefix)
 	}

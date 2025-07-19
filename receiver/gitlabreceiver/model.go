@@ -52,7 +52,7 @@ func (p *glPipeline) setSpanIDs(span ptrace.Span, spanID pcommon.SpanID) error {
 	return nil
 }
 
-func (p *glPipeline) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (p *glPipeline) setTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
@@ -99,7 +99,7 @@ func (s *glPipelineStage) setSpanIDs(span ptrace.Span, parentSpanID pcommon.Span
 	return nil
 }
 
-func (s *glPipelineStage) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (s *glPipelineStage) setTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
@@ -171,7 +171,7 @@ func (j *glPipelineJob) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID
 	return nil
 }
 
-func (j *glPipelineJob) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (j *glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 

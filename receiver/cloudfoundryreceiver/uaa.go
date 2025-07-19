@@ -28,7 +28,7 @@ type uaaTokenProvider struct {
 	mutex          *sync.Mutex
 }
 
-func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, username string, password string) (*uaaTokenProvider, error) {
+func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, username, password string) (*uaaTokenProvider, error) {
 	client, err := uaago.NewClient(config.Endpoint)
 	if err != nil {
 		return nil, err

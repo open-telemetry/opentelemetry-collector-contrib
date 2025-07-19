@@ -16,7 +16,7 @@ func NewAdjustedCountFactory() ottl.Factory[ottlspan.TransformContext] {
 	return ottl.NewFactory("AdjustedCount", nil, createAdjustedCountFunction)
 }
 
-func createAdjustedCountFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
+func createAdjustedCountFunction(ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
 	return adjustedCount()
 }
 

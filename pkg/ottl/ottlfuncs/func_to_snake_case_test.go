@@ -21,7 +21,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "simple toSnake",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simpleString", nil
 				},
 			},
@@ -30,7 +30,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "noop already snake case",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -39,7 +39,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "multiple uppercase",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "CPUUtilizationMetric", nil
 				},
 			},
@@ -48,7 +48,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "hyphens",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -57,7 +57,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -83,7 +83,7 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 		{
 			name: "non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 10, nil
 				},
 			},
@@ -92,7 +92,7 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 		{
 			name: "nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},

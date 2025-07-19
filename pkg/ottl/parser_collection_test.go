@@ -913,7 +913,7 @@ func Test_NewValueExpressionsGetter(t *testing.T) {
 func mockParser(t *testing.T, options ...Option[any]) *Parser[any] {
 	mockSetFactory := NewFactory("set", &mockSetArguments[any]{},
 		func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
-			return func(_ context.Context, _ any) (any, error) {
+			return func(context.Context, any) (any, error) {
 				return nil, nil
 			}, nil
 		})

@@ -23,7 +23,7 @@ func SetGoPsutilEnvVars(_ string) common.EnvMap {
 	return common.EnvMap{}
 }
 
-func GetEnvWithContext(_ context.Context, _ string, dfault string, _ ...string) string {
+func GetEnvWithContext(_ context.Context, _, dfault string, _ ...string) string {
 	return dfault
 }
 

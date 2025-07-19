@@ -900,7 +900,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
+func buildSFxDatapointMsg(time, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
 	return &sfxpb.DataPointUploadMessage{
 		Datapoints: []*sfxpb.DataPoint{
 			{

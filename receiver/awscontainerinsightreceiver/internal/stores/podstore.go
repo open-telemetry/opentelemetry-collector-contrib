@@ -103,7 +103,7 @@ type PodStore struct {
 	addFullPodNameMetricLabel bool
 }
 
-func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(hostIP string, prefFullPodName, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
 	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err

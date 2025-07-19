@@ -76,7 +76,7 @@ var datadogKnownResourceAttributes = map[string]string{
 }
 
 // translateDatadogTagToKeyValuePair translates a Datadog tag to a key value pair
-func translateDatadogTagToKeyValuePair(tag string) (key string, value string) {
+func translateDatadogTagToKeyValuePair(tag string) (key, value string) {
 	if tag == "" {
 		return "", ""
 	}

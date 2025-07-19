@@ -296,7 +296,7 @@ func GenerateMetricsAllTypesNoDataPointsHelp() pmetric.Metrics {
 	return md
 }
 
-func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType, unit string, desc string) {
+func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType, unit, desc string) {
 	m.SetName(name)
 	m.SetUnit(unit)
 	m.SetDescription(desc)

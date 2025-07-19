@@ -208,7 +208,7 @@ checklinks:
 
 .PHONY: fmt
 fmt: $(GOFUMPT) $(GOIMPORTS)
-	$(GOFUMPT) -l -w .
+	$(GOFUMPT) -l -w -extra .
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: generate

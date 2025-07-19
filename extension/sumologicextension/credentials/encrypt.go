@@ -65,8 +65,8 @@ func HashKeyToEncryptionKeyWith(hasher Hasher, key string) ([]byte, error) {
 }
 
 // encrypt encrypts provided byte slice with AES using the encryption key.
-func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
-	f := func(_ Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
+func encrypt(data, encryptionKey []byte) ([]byte, error) {
+	f := func(_ Hasher, data, encryptionKey []byte) ([]byte, error) {
 		block, err := aes.NewCipher(encryptionKey)
 		if err != nil {
 			return nil, err
@@ -92,8 +92,8 @@ func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 }
 
 // decrypt decrypts provided byte slice with AES using the encryptionKey.
-func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
-	f := func(_ Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
+func decrypt(data, encryptionKey []byte) ([]byte, error) {
+	f := func(_ Hasher, data, encryptionKey []byte) ([]byte, error) {
 		block, err := aes.NewCipher(encryptionKey)
 		if err != nil {
 			return nil, fmt.Errorf("unable tocreate new aes cipher: %w", err)
