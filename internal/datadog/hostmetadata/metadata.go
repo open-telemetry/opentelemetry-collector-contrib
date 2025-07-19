@@ -90,6 +90,13 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 	}
 }
 
+type pusher struct {
+	params     exporter.Settings
+	pcfg       PusherConfig
+	retrier    *clientutil.Retrier
+	httpClient *http.Client
+}
+
 func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	path := p.pcfg.MetricsEndpoint + "/intake"
 	marshaled, err := json.Marshal(hm)
@@ -149,13 +156,6 @@ func (p *pusher) Push(_ context.Context, hm payload.HostMetadata) error {
 }
 
 var _ inframetadata.Pusher = (*pusher)(nil)
-
-type pusher struct {
-	params     exporter.Settings
-	pcfg       PusherConfig
-	retrier    *clientutil.Retrier
-	httpClient *http.Client
-}
 
 // NewPusher creates a new inframetadata.Pusher that pushes metadata payloads
 func NewPusher(params exporter.Settings, pcfg PusherConfig) inframetadata.Pusher {
