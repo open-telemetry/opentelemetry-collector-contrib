@@ -533,6 +533,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [Values](#values)
 - [Weekday](#weekday)
 - [Year](#year)
 
@@ -2495,6 +2496,17 @@ results in
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Values
+
+`Values(target)` converts a `pcommon.Map` into a slice of their values.
+
+`target` is a `pcommon.Map`
+
+The function returns a `pcommon.Slice`. The order of elements in the output `pcommon.Slice` is not guaranteed.
+
+Examples:
+- `Values({"key1": "value1", "key2": "value2",  "key3": 5, "key4": [1,2,3], "key5":{"b1": "c", "b2": "d"} })`
 
 ### Weekday
 
