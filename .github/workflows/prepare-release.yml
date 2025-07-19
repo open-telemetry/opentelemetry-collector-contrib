@@ -12,9 +12,13 @@ on:
       current-beta:
         required: true
         description: Current version (beta, like 0.69.1)
+permissions:
+  contents: read
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
+    permissions:
+      contents: write # required for pushing changes in release-prepare-release.sh
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
