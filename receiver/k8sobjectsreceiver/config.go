@@ -44,17 +44,18 @@ const (
 )
 
 type K8sObjectsConfig struct {
-	Name             string               `mapstructure:"name"`
-	Group            string               `mapstructure:"group"`
-	Namespaces       []string             `mapstructure:"namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
-	LabelSelector    string               `mapstructure:"label_selector"`
-	FieldSelector    string               `mapstructure:"field_selector"`
-	Interval         time.Duration        `mapstructure:"interval"`
-	ResourceVersion  string               `mapstructure:"resource_version"`
-	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
-	exclude          map[apiWatch.EventType]bool
-	gvr              *schema.GroupVersionResource
+	Name              string               `mapstructure:"name"`
+	Group             string               `mapstructure:"group"`
+	Namespaces        []string             `mapstructure:"namespaces"`
+	NamespaceDenyList []string             `mapstructure:"namespace_deny_list"`
+	Mode              mode                 `mapstructure:"mode"`
+	LabelSelector     string               `mapstructure:"label_selector"`
+	FieldSelector     string               `mapstructure:"field_selector"`
+	Interval          time.Duration        `mapstructure:"interval"`
+	ResourceVersion   string               `mapstructure:"resource_version"`
+	ExcludeWatchType  []apiWatch.EventType `mapstructure:"exclude_watch_type"`
+	exclude           map[apiWatch.EventType]bool
+	gvr               *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -185,6 +186,11 @@ func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 			Version:  k.gvr.Version,
 			Resource: k.gvr.Resource,
 		}
+	}
+
+	copied.NamespaceDenyList = make([]string, len(k.NamespaceDenyList))
+	if k.NamespaceDenyList != nil {
+		copy(copied.NamespaceDenyList, k.NamespaceDenyList)
 	}
 
 	return copied
