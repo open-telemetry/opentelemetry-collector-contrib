@@ -74,11 +74,10 @@ func (c *replicaSetClient) refresh() {
 	tmpMap := make(map[string]string)
 	for _, obj := range objsList {
 		replicaSet := obj.(*replicaSetInfo)
-	ownerLoop:
 		for _, owner := range replicaSet.owners {
 			if owner.kind == deployment && owner.name != "" {
 				tmpMap[replicaSet.name] = owner.name
-				break ownerLoop
+				break
 			}
 		}
 	}

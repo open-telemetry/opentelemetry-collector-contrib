@@ -167,7 +167,7 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 	return helperDataTransforms, nil
 }
 
-func createFilter(filterConfig FilterConfig) (internalFilter, error) {
+func createFilter(filterConfig filterConfig) (internalFilter, error) {
 	switch filterConfig.MatchType {
 	case strictMatchType:
 		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return strictMatcher(str), nil })
@@ -187,7 +187,7 @@ func createFilter(filterConfig FilterConfig) (internalFilter, error) {
 }
 
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions
-func createLabelValueMapping(valueActions []ValueAction, version string) map[string]string {
+func createLabelValueMapping(valueActions []valueAction, version string) map[string]string {
 	mapping := make(map[string]string)
 	for i := 0; i < len(valueActions); i++ {
 		valueActions[i].NewValue = strings.ReplaceAll(valueActions[i].NewValue, "{{version}}", version)

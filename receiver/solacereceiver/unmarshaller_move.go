@@ -123,7 +123,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 
 	// map the replication group ID for the move span
 	rgmid := rgmidToString(moveSpan.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
-	if len(rgmid) > 0 {
+	if rgmid != "" {
 		attributes.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
 

@@ -60,7 +60,7 @@ func (si *signingRoundTripper) signRequest(req *http.Request) (*http.Request, er
 
 	// Add the runtime information to the User-Agent header of the request
 	ua := req2.Header.Get("User-Agent")
-	if len(ua) > 0 {
+	if ua != "" {
 		ua = ua + " " + si.awsSDKInfo
 	} else {
 		ua = si.awsSDKInfo

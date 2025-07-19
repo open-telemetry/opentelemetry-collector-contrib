@@ -70,7 +70,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 		case string(conventionsv112.NetHostPortKey):
 			urlParts[key] = value.Str()
 			hasHTTP = true
-			if len(urlParts[key]) == 0 {
+			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case string(conventionsv112.HostNameKey):
@@ -84,7 +84,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			hasHTTPRequestURLAttributes = true
 		case string(conventionsv112.NetPeerPortKey):
 			urlParts[key] = value.Str()
-			if len(urlParts[key]) == 0 {
+			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case string(conventionsv112.NetPeerIPKey):
@@ -119,7 +119,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			hasHTTPRequestURLAttributes = true
 		case string(conventions.ServerPortKey):
 			urlParts[key] = value.Str()
-			if len(urlParts[key]) == 0 {
+			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		default:
@@ -202,7 +202,7 @@ func constructClientURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
+	if port != "" && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[string(conventionsv112.HTTPTargetKey)]
@@ -262,7 +262,7 @@ func constructServerURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
+	if port != "" && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[string(conventionsv112.HTTPTargetKey)]

@@ -158,7 +158,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 
 	// rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	rgmid := rgmidToString(spanData.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
-	if len(rgmid) > 0 {
+	if rgmid != "" {
 		attrMap.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
 

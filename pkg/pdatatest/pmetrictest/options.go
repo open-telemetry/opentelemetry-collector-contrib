@@ -76,8 +76,6 @@ func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 		dataPointSlice = metric.Sum().DataPoints()
 	case pmetric.MetricTypeEmpty:
 		dataPointSlice = pmetric.NewNumberDataPointSlice()
-	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
-		fallthrough
 	default:
 		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
 	}
@@ -480,8 +478,6 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 				attribute.SetBool(false)
 			case pcommon.ValueTypeInt:
 				attribute.SetInt(0)
-			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
-				fallthrough
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
@@ -503,8 +499,6 @@ func maskHistogramSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlic
 				attribute.SetBool(false)
 			case pcommon.ValueTypeInt:
 				attribute.SetInt(0)
-			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
-				fallthrough
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}

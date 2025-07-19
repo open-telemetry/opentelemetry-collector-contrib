@@ -132,7 +132,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
-	if len(cfg.TLSTrustCertsFilePath) > 0 {
+	if cfg.TLSTrustCertsFilePath != "" {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
 

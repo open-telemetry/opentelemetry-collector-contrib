@@ -727,7 +727,7 @@ func TestConvertSeverity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("%v", tc.severity), func(t *testing.T) {
+		t.Run(tc.severity.String(), func(t *testing.T) {
 			entry := entry.New()
 			entry.Severity = tc.severity
 			entry.SeverityText = tc.severityText

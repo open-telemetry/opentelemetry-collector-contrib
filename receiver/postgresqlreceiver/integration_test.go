@@ -163,7 +163,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	db, err := sql.Open("postgres", connStr)
 	assert.NoError(t, err)
 
-	_, err = db.Query("Select * from test2 where id = 67")
+	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 	defer db.Close()
 
@@ -240,7 +240,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	}
 	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
 
-	_, err = db.Query("Select * from test2 where id = 67")
+	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
 	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)

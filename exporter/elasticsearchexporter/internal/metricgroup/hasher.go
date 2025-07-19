@@ -98,7 +98,7 @@ func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
 
 func (h *OTelDataPointHasher) UpdateScope(scope pcommon.InstrumentationScope) {
 	hasher := xxhash.New()
-	_, _ = hasher.Write([]byte(scope.Name()))
+	_, _ = hasher.WriteString(scope.Name())
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
@@ -115,7 +115,7 @@ func (h *OTelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.StartTimestamp()))
 	_, _ = hasher.Write(timestampBuf)
 
-	_, _ = hasher.Write([]byte(dp.Metric().Unit()))
+	_, _ = hasher.WriteString(dp.Metric().Unit())
 
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.

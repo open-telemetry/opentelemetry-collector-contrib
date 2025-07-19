@@ -53,17 +53,17 @@ func TestLoadConfig(t *testing.T) {
 					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
 							MaxConnectionAgeGrace: 13 * time.Second,
 							Time:                  30 * time.Second,
 							Timeout:               5 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
-						},
+						}),
 					}),
 				},
 			},
@@ -81,9 +81,9 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
 					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle: 10 * time.Second,
-						},
+						}),
 					}),
 				},
 			},

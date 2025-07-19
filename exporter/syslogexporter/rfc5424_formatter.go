@@ -91,7 +91,7 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 			if !ok {
 				continue
 			}
-			sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
+			sdElements = append(sdElements, fmt.Sprintf("%s=%q", k, vv))
 		}
 		sdBuilder.WriteString(fmt.Sprint(sdElements))
 	}
@@ -100,7 +100,7 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 
 func (f *rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {
 	formatted := getAttributeValueOrDefault(logRecord, message, emptyMessage)
-	if len(formatted) > 0 {
+	if formatted != "" {
 		formatted = " " + formatted
 	}
 	return formatted
