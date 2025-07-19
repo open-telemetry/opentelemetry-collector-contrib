@@ -121,8 +121,8 @@ func (t *tcpServer) handleConnection(
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	reporterActive := false
-	var ctx context.Context
 	for {
+		ctx := context.Background()
 		if err := conn.SetDeadline(time.Now().Add(t.idleTimeout)); err != nil {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - conn.SetDeadLine error: %v",
@@ -146,7 +146,7 @@ func (t *tcpServer) handleConnection(
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
 			if !reporterActive {
-				ctx = t.reporter.OnDataReceived(context.Background())
+				ctx = t.reporter.OnDataReceived(ctx)
 				reporterActive = true
 			}
 			numReceivedMetricPoints++

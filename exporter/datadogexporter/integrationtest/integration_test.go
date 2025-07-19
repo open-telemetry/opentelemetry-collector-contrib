@@ -427,8 +427,7 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 		case 8, 9:
 			spanKind = apitrace.SpanKindInternal
 		}
-		var span apitrace.Span
-		ctx, span = tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(spanKind))
+		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(spanKind))
 
 		if i == 3 {
 			// Send some traces from a different resource

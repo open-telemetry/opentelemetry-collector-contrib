@@ -366,7 +366,7 @@ func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a custom consumer that captures the context
-			var capturedContext context.Context
+			capturedContext := context.Background()
 
 			customConsumer := &testConsumer{
 				logsConsumer:   &consumertest.LogsSink{},

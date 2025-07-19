@@ -449,7 +449,7 @@ func TestCancelAfterExport(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		md := testdata.GenerateMetrics(1)
 		pointCount += int64(md.DataPointCount())
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
 
 		err := exp.exportMetrics(ctx, md)
 		require.NoError(t, err)

@@ -32,6 +32,7 @@ linters:
     - errcheck
     - errorlint
     - exhaustive
+    - fatcontext
     - gocritic
     - gosec
     - govet
