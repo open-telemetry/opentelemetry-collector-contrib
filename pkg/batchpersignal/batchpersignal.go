@@ -120,9 +120,6 @@ func SplitMetrics(batch pmetric.Metrics) []pmetric.Metrics {
 			ils := rs.ScopeMetrics().At(j)
 			for k := 0; k < ils.Metrics().Len(); k++ {
 				metric := ils.Metrics().At(k)
-
-				// key := pcommon.NewByteSlice()
-				// key.FromRaw([]byte(metric.Name()))
 				key := metric.Name()
 
 				// for the first metric in the ILS, initialize the map entry

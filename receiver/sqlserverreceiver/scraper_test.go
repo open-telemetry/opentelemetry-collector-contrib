@@ -82,8 +82,6 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
 	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
-	// cfg.TopQueryCollection.Enabled = enabled
-	// cfg.QuerySample.Enabled = enabled
 }
 
 func TestEmptyScrape(t *testing.T) {

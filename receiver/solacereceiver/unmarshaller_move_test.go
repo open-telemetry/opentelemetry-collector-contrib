@@ -107,7 +107,6 @@ func TestMoveUnmarshallerMapClientSpanData(t *testing.T) {
 			u, _ := newTestMoveV1Unmarshaller(t)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapMoveSpanTracingInfo(tt.data, actual) // map the tracing information
-			// u.mapClientSpanData(tt.data, actual)      // other span attributes
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.want(expected)
 			assert.Equal(t, expected, actual)

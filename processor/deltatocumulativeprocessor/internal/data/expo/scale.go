@@ -99,7 +99,6 @@ func Collapse(bs Buckets) {
 			continue
 		}
 
-		// new[k] = old[k]+old[k+1]
 		counts.SetAt(i, counts.At(k))
 		if k+1 < counts.Len() {
 			counts.SetAt(i, counts.At(k)+counts.At(k+1))

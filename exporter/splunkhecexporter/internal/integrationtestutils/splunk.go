@@ -74,10 +74,7 @@ func getSplunkSearchResults(user, password, baseURL, jobID string) []any {
 		panic(err)
 	}
 
-	// logger.Println("json Response Events --->")   # debug
-	// logger.Println(jsonResponseEvents)			# debug
 	results := jsonResponseEvents["results"].([]any)
-	// logger.Println(results)
 	return results
 }
 
@@ -191,8 +188,6 @@ func CheckMetricsFromSplunk(index, metricName string) []any {
 	}
 
 	events := data["entry"].([]any)
-	// logger.Println(events) // debug
-
 	return events
 }
 

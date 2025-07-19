@@ -122,7 +122,6 @@ linters:
     gocritic:
       disabled-checks:
         - badRegexp
-        - commentedOutCode
         - deferInLoop
         - equalFold
         - exposedSyncMutex

@@ -498,7 +498,6 @@ func TestScrapeTopQueries(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "scraper", "top-query", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
-	// golden.WriteLogs(t, expectedFile, actualLogs)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 }

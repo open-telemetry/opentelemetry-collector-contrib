@@ -43,28 +43,6 @@ type MetricsServerTransport struct {
 
 // Do implements the policy.Transporter interface for MetricsServerTransport.
 func (m *MetricsServerTransport) Do(req *http.Request) (*http.Response, error) {
-	// rawMethod := req.Context().Value(runtime.CtxAPINameKey{})
-	// method, ok := rawMethod.(string)
-	// if !ok {
-	// 	return nil, nonRetriableError{errors.New("unable to dispatch request, missing value for CtxAPINameKey")}
-	// }
-	//
-	// var resp *http.Response
-	// var err error
-	//
-	// switch method {
-	// case "Client.QueryResources":
-	// 	resp, err = m.dispatchQueryResources(req)
-	// default:
-	// 	err = fmt.Errorf("unhandled API %s", method)
-	// }
-	//
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// return resp, nil
-
 	// We can't directly reuse the logic as the runtime.CtxAPINameKey is not send by the client.
 	return m.dispatchQueryResources(req)
 }

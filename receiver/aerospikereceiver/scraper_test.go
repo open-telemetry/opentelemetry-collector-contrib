@@ -89,9 +89,6 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	rb.SetAerospikeNodeName("BB990C28F270009")
 	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
 
-	// require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "badval", metadata.AttributeNamespaceComponentData))
-	// expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270009"))
-
 	initialClient := mocks.NewAerospike(t)
 	initialClient.On("Info").Return(clusterInfo{
 		"BB990C28F270008": metricsMap{

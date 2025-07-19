@@ -65,7 +65,6 @@ func TestLogsToLogs2(t *testing.T) {
 			assert.Len(t, allLogs, tc.expectedLogs)
 
 			if tc.expectedLogs > 0 {
-				// golden.WriteLogs(t, filepath.Join("testdata", "logsToLogs", tc.expectedFile), allLogs[0])
 				expected, err := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", tc.expectedFile))
 				assert.NoError(t, err)
 				assert.NoError(t, plogtest.CompareLogs(expected, allLogs[0]))
@@ -118,7 +117,6 @@ func TestLogsToMetrics(t *testing.T) {
 			assert.Len(t, allMetrics, tc.expectedMetrics)
 
 			if tc.expectedMetrics > 0 {
-				// golden.WriteMetrics(t, filepath.Join("testdata", "logsToMetrics", tc.expectedFile), allMetrics[0])
 				expected, err := golden.ReadMetrics(filepath.Join("testdata", "logsToMetrics", tc.expectedFile))
 				assert.NoError(t, err)
 				assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0]))
@@ -171,7 +169,6 @@ func TestLogsToTraces(t *testing.T) {
 			assert.Len(t, allMetrics, tc.expectedTraces)
 
 			if tc.expectedTraces > 0 {
-				// golden.WriteTraces(t, filepath.Join("testdata", "logsToTraces", tc.expectedFile), allMetrics[0])
 				expected, err := golden.ReadTraces(filepath.Join("testdata", "logsToTraces", tc.expectedFile))
 				assert.NoError(t, err)
 				assert.NoError(t, ptracetest.CompareTraces(expected, allMetrics[0]))

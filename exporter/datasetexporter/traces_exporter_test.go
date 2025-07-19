@@ -199,8 +199,6 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 	fillAttributes(rss.Scope().Attributes(), true, "S")
 	fillAttributes(rs.Resource().Attributes(), true, "R")
 
-	// sBytes := span.Attributes().PutEmptyBytes("bytes")
-	// sBytes.Append('a')
 	expected := &add_events.EventBundle{
 		Event: &add_events.Event{
 			Thread: "TT",

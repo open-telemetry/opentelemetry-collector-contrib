@@ -581,7 +581,6 @@ func TestDeleteQueue(t *testing.T) {
 }
 
 func TestDeleteLoop(t *testing.T) {
-	// go c.deleteLoop(time.Second * 1)
 	c, _ := newTestClient(t)
 
 	pod := &api_v1.Pod{}

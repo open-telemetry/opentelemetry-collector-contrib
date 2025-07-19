@@ -27,7 +27,4 @@ func TestScrape(t *testing.T) {
 
 	_, err := s.scrape(ctx)
 	require.NoErrorf(t, err, "scrape error %+v", err)
-
-	//	assert.Equal(t, 0, metrics.MetricCount())
-	//	assert.Equal(t, 0, metrics.DataPointCount())
 }

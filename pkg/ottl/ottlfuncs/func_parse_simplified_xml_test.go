@@ -173,7 +173,6 @@ func Test_ParseSimplifiedXML(t *testing.T) {
 			}(),
 		},
 		{
-			// ParseSimplifiedXML(ConvertAttributesToElementsXML(ConvertTextToElementsXML("<Event>...</Event>")))
 			name: "Simplified WEL",
 			document: `<Event>
 	<xmlns>http://schemas.microsoft.com/win/2004/08/events/event</xmlns>

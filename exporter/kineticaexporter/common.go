@@ -712,17 +712,9 @@ func getAttributeValue(vtPair valueTypePair) (*attributeValue, error) {
 		av = new(attributeValue)
 		copy(av.BytesValue, value)
 	case pcommon.ValueTypeMap:
-		// value := vtPair.value
-		// av = new(attributeValue)
-		// av.SetStringValue(value)
 		err = fmt.Errorf("Unhandled value type %v", vtPair.valueType)
-
 	case pcommon.ValueTypeSlice:
-		// value := vtPair.value.(string)
-		// av = new(attributeValue)
-		// av.SetStringValue(value)
 		err = fmt.Errorf("Unhandled value type %v", vtPair.valueType)
-
 	default:
 		err = fmt.Errorf("Unknown value type %v", vtPair.valueType)
 	}

@@ -90,7 +90,6 @@ func New(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.T
 					data = append(data, input[offset:offset+bufferSize]...)
 				}
 				advance, token, err = splitFunc(data, atEOF)
-				// t.Errorf("\nbuffer: %d, advance: %d, token: %q, err: %v", bufferSize, advance, token, err)
 
 				if atEOF {
 					if waited >= step.timeout {

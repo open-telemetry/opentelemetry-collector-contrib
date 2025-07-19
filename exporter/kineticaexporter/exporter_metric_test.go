@@ -456,14 +456,9 @@ func handleShowTable(w http.ResponseWriter, r *http.Request) {
 	}
 	requestBody := string(body)
 
-	// Print the request body
-	// fmt.Println("Request Body:", requestBody)
-
 	w.Header().Set("Content-Type", "application/octet-stream")
 
 	finalResponseBytes := getShowTableResponse(requestBody)
-
-	// fmt.Println("Response bytes => ", string(finalResponseBytes))
 
 	_, err = w.Write(finalResponseBytes)
 	if err != nil {

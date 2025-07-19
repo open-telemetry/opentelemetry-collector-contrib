@@ -45,8 +45,6 @@ func TestParseSecurity(t *testing.T) {
 
 			message, details := parseSecurity(string(messageBytes))
 
-			// initTestResult(testDir, message, details)
-
 			expectedMessageBytes, err := os.ReadFile(filepath.Join(testDir, "message.out"))
 			require.NoError(t, err, "problem reading expected message")
 			expectedMessage := string(expectedMessageBytes)
