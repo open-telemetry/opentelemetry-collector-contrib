@@ -39,7 +39,7 @@ func newPodmanConnection(logger *zap.Logger, endpoint, sshKey, sshPassphrase str
 	case "unix":
 		if !strings.HasPrefix(endpoint, "unix:///") {
 			// autofix unix://path_element vs unix:///path_element
-			_url.Path = "/" + strings.Join([]string{_url.Host, _url.Path}, "/")
+			_url.Path = "/" + _url.Host + "/" + _url.Path
 			_url.Host = ""
 		}
 		return unixConnection(_url), nil
