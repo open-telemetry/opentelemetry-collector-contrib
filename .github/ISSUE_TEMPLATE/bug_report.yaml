@@ -77,7 +77,6 @@ body:
       - exporter/prometheusremotewrite
       - exporter/pulsar
       - exporter/rabbitmq
-      - exporter/sapm
       - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
@@ -305,7 +304,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
