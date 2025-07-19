@@ -29,8 +29,11 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 type MetricsConfig struct {
 	HttpcheckDuration         MetricConfig `mapstructure:"httpcheck.duration"`
 	HttpcheckError            MetricConfig `mapstructure:"httpcheck.error"`
+	HttpcheckResponseSize     MetricConfig `mapstructure:"httpcheck.response.size"`
 	HttpcheckStatus           MetricConfig `mapstructure:"httpcheck.status"`
 	HttpcheckTLSCertRemaining MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
+	HttpcheckValidationFailed MetricConfig `mapstructure:"httpcheck.validation.failed"`
+	HttpcheckValidationPassed MetricConfig `mapstructure:"httpcheck.validation.passed"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -41,10 +44,19 @@ func DefaultMetricsConfig() MetricsConfig {
 		HttpcheckError: MetricConfig{
 			Enabled: true,
 		},
+		HttpcheckResponseSize: MetricConfig{
+			Enabled: false,
+		},
 		HttpcheckStatus: MetricConfig{
 			Enabled: true,
 		},
 		HttpcheckTLSCertRemaining: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckValidationFailed: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckValidationPassed: MetricConfig{
 			Enabled: false,
 		},
 	}
