@@ -28,6 +28,7 @@ Example:
 receivers:
   awsecscontainermetrics:
     collection_interval: 20s
+    ignore_missing_endpoint: true
 ```
 
 #### collection_interval:
@@ -35,6 +36,13 @@ receivers:
 This receiver collects task metadata and container stats at a fixed interval and emits metrics to the next consumer of OpenTelemetry pipeline. `collection_interval` will determine the frequency at which metrics are collected and emitted by this receiver.
 
 default: `20s`
+
+
+#### ignore_missing_endpoint:
+
+If true, the receiver will start successfully even when the ECS metadata endpoint is not available. When enabled and the endpoint is missing, the receiver logs a warning and operates in no-op mode without collecting metrics.
+
+default: `false`
 
 
 ## Enabling the AWS ECS Container Metrics Receiver
@@ -66,6 +74,26 @@ Customers can configure `collection_interval` under `awsecscontainermetrics` rec
 receivers:
   awsecscontainermetrics:
       collection_interval: 40s
+exporters:
+  awsemf:
+      namespace: 'ECS/ContainerMetrics/OpenTelemetry'
+      log_group_name: '/ecs/containermetrics/opentelemetry'
+
+service:
+  pipelines:
+      metrics:
+          receivers: [awsecscontainermetrics]
+          exporters: [awsemf]
+```
+
+## Handle Missing ECS Metadata Endpoint
+Customers can configure `ignore_missing_endpoint` under `awsecscontainermetrics` receiver to allow the receiver to start when the ECS metadata endpoint is not available. This is useful for development, testing, or migration scenarios. The following example configuration will start the receiver even if the ECS metadata endpoint is missing.
+
+```yaml
+receivers:
+  awsecscontainermetrics:
+      collection_interval: 20s
+      ignore_missing_endpoint: true
 exporters:
   awsemf:
       namespace: 'ECS/ContainerMetrics/OpenTelemetry'
