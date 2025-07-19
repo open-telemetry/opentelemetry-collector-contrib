@@ -523,11 +523,11 @@ func TestTimeErrors(t *testing.T) {
 	}
 }
 
-func runTimeParseTest(timeParser *TimeParser, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time) func(*testing.T) {
+func runTimeParseTest(timeParser *TimeParser, ent *entry.Entry, buildErr, parseErr bool, expected time.Time) func(*testing.T) {
 	return runLossyTimeParseTest(timeParser, ent, buildErr, parseErr, expected, time.Duration(0))
 }
 
-func runLossyTimeParseTest(timeParser *TimeParser, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
+func runLossyTimeParseTest(timeParser *TimeParser, ent *entry.Entry, buildErr, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
 		err := timeParser.Validate()
 		if buildErr {

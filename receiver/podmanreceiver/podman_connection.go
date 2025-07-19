@@ -29,7 +29,7 @@ import (
 // most of this file has been adopted from https://github.com/containers/podman/blob/main/pkg/bindings/connection.go
 // and then simplified to remove things we do not need.
 
-func newPodmanConnection(logger *zap.Logger, endpoint string, sshKey string, sshPassphrase string) (*http.Client, error) {
+func newPodmanConnection(logger *zap.Logger, endpoint, sshKey, sshPassphrase string) (*http.Client, error) {
 	_url, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err

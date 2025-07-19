@@ -61,7 +61,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	if h := resourceAttrs[hostkey]; h != nil {
 		host = h.(string)
 	}
-	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name string, desc string, mt pmetric.MetricType) *adxMetric {
+	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name, desc string, mt pmetric.MetricType) *adxMetric {
 		clonedScopedAttributes := copyMap(cloneMap(scopeattrs), attr.AsRaw())
 		if isEmpty(name) {
 			name = md.Name()
@@ -227,8 +227,6 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeEmpty:
-		fallthrough
 	default:
 		logger.Warn(
 			"Unsupported metric type : ",
@@ -257,7 +255,7 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 	return transformedAdxMetrics
 }
 
-func copyMap(toAttrib map[string]any, fromAttrib map[string]any) map[string]any {
+func copyMap(toAttrib, fromAttrib map[string]any) map[string]any {
 	for k, v := range fromAttrib {
 		toAttrib[k] = v
 	}

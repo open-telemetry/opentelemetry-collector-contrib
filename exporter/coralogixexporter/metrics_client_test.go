@@ -393,9 +393,10 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 			entry.ContextMap()["rejected_data_points"] == int64(1) {
 			fields := entry.ContextMap()
 			var names []string
-			if arr, ok := fields["metric_names"].([]string); ok {
+			switch arr := fields["metric_names"].(type) {
+			case []string:
 				names = arr
-			} else if arr, ok := fields["metric_names"].([]any); ok {
+			case []any:
 				for _, v := range arr {
 					if s, ok := v.(string); ok {
 						names = append(names, s)

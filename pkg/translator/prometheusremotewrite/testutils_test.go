@@ -147,7 +147,7 @@ func getPromLabels(lbs ...string) []prompb.Label {
 	return pbLbs.Labels
 }
 
-func getLabel(name string, value string) prompb.Label {
+func getLabel(name, value string) prompb.Label {
 	return prompb.Label{
 		Name:  name,
 		Value: value,
@@ -184,11 +184,11 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time time.Time, value V, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time time.Time, value V, traceID, spanID, attributeKey, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
-	switch v := (any)(value).(type) {
+	switch v := any(value).(type) {
 	case int64:
 		e.SetIntValue(v)
 	case float64:

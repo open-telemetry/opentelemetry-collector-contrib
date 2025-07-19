@@ -33,7 +33,7 @@ func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 	return fake.NewSimpleClientset(), nil
 }
 
-func newPodIdentifier(from string, name string, value string) PodIdentifier {
+func newPodIdentifier(from, name, value string) PodIdentifier {
 	if from == "connection" {
 		name = ""
 	}

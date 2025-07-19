@@ -458,7 +458,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.caseStr, func(_ *testing.T) {
+		t.Run(tc.caseStr, func(*testing.T) {
 			p.updateDurationMetrics(metricKey, tc.duration, tc.duration)
 		})
 	}

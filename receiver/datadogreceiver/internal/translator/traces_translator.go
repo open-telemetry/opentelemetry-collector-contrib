@@ -455,11 +455,7 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 		}
 		_, err = dest.UnmarshalMsg(buf.Bytes())
 		return err
-	case "application/json":
-		fallthrough
-	case "text/json":
-		fallthrough
-	case "":
+	case "application/json", "text/json", "":
 		err = json.NewDecoder(req.Body).Decode(&dest)
 		return err
 	default:

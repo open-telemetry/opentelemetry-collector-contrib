@@ -26,12 +26,12 @@ func newTraceToTraceConnector(logger *zap.Logger, nextConsumer consumer.Traces) 
 }
 
 // Start implements the component interface.
-func (c *traceToTraceConnector) Start(_ context.Context, _ component.Host) error {
+func (c *traceToTraceConnector) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // Shutdown implements the component interface.
-func (c *traceToTraceConnector) Shutdown(_ context.Context) error {
+func (c *traceToTraceConnector) Shutdown(context.Context) error {
 	return nil
 }
 
