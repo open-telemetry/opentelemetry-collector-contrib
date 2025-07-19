@@ -137,7 +137,6 @@ linters:
         - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
-        - typeDefFirst
         - unnamedResult
         - unnecessaryBlock
         - whyNoLint
