@@ -131,7 +131,6 @@ linters:
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
-        - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
         - unnamedResult
