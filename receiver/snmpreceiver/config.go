@@ -258,7 +258,7 @@ func (cfg *Config) Validate() error {
 
 	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
 	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
-	if strings.ToUpper(cfg.Version) == "V3" {
+	if strings.EqualFold(cfg.Version, "V3") {
 		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
 	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))

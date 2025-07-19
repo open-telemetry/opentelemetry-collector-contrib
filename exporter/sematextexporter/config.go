@@ -58,7 +58,7 @@ type LogsConfig struct {
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion && strings.ToLower(cfg.Region) != "" {
+	if !strings.EqualFold(cfg.Region, euRegion) && !strings.EqualFold(cfg.Region, usRegion) && !strings.EqualFold(cfg.Region, "") {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
 	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {
@@ -68,11 +68,11 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("invalid logs app_token: %s. app_token is not a valid UUID", cfg.LogsConfig.AppToken)
 	}
 
-	if strings.ToLower(cfg.Region) == euRegion {
+	if strings.EqualFold(cfg.Region, euRegion) {
 		cfg.MetricsEndpoint = euMetricsEndpoint
 		cfg.LogsEndpoint = euLogsEndpoint
 	}
-	if strings.ToLower(cfg.Region) == usRegion {
+	if strings.EqualFold(cfg.Region, usRegion) {
 		cfg.MetricsEndpoint = usMetricsEndpoint
 		cfg.LogsEndpoint = usLogsEndpoint
 	}

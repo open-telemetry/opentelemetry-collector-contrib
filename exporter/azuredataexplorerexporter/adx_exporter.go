@@ -154,7 +154,7 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 		ingestOptions = append(ingestOptions, refOption)
 	}
 	// The exporter could be configured to run in either modes. Using managedstreaming or batched queueing
-	if strings.ToLower(config.IngestionType) == managedIngestType {
+	if strings.EqualFold(config.IngestionType, managedIngestType) {
 		mi, err := createManagedStreamingIngestor(config, version, tableName)
 		if err != nil {
 			return nil, err

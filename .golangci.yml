@@ -124,7 +124,6 @@ linters:
         - badRegexp
         - commentedOutCode
         - deferInLoop
-        - equalFold
         - exposedSyncMutex
         - filepathJoin
         - hugeParam
