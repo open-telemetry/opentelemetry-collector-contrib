@@ -223,7 +223,7 @@ func (dp *goldenDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 	return pdm, false
 }
 
-func (dp *goldenDataProvider) GenerateLogs() (plog.Logs, bool) {
+func (*goldenDataProvider) GenerateLogs() (plog.Logs, bool) {
 	return plog.NewLogs(), true
 }
 

@@ -130,11 +130,11 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return p, nil
 }
 
-func (e *jsonLogExtension) Start(_ context.Context, _ component.Host) error {
+func (*jsonLogExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e *jsonLogExtension) Shutdown(_ context.Context) error {
+func (*jsonLogExtension) Shutdown(context.Context) error {
 	return nil
 }
 

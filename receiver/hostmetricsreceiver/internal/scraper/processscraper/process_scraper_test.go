@@ -419,7 +419,7 @@ type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(int) int32 {
+func (*processHandlesMock) Pid(int) int32 {
 	return 1
 }
 
@@ -1239,7 +1239,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 type ProcessReadError struct{}
 
-func (m *ProcessReadError) Error() string {
+func (*ProcessReadError) Error() string {
 	return "unable to read data"
 }
 

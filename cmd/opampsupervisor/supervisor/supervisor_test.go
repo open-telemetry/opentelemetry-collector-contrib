@@ -1422,11 +1422,11 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 	return msgChan, nil
 }
 
-func (m mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) (err error) {
+func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) (err error) {
 	return nil
 }
 
-func (m mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
+func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
 
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error

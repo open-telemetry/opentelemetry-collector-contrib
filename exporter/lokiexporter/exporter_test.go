@@ -335,9 +335,9 @@ type badProtoForCoverage struct {
 	Foo string `protobuf:"bytes,1,opt,name=labels,proto3" json:"foo"`
 }
 
-func (p *badProtoForCoverage) Reset()         {}
-func (p *badProtoForCoverage) String() string { return "" }
-func (p *badProtoForCoverage) ProtoMessage()  {}
-func (p *badProtoForCoverage) Marshal() (dAtA []byte, err error) {
+func (*badProtoForCoverage) Reset()         {}
+func (*badProtoForCoverage) String() string { return "" }
+func (*badProtoForCoverage) ProtoMessage()  {}
+func (*badProtoForCoverage) Marshal() (dAtA []byte, err error) {
 	return nil, errors.New("this is a bad proto")
 }

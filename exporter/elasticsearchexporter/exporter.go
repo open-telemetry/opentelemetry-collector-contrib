@@ -568,7 +568,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushProfileRecord(
+func (*elasticsearchExporter) pushProfileRecord(
 	ctx context.Context,
 	encoder documentEncoder,
 	ec encodingContext,

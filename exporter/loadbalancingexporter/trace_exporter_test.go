@@ -900,7 +900,7 @@ func (e *mockTracesExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
+func (*mockTracesExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

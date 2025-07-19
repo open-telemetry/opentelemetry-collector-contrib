@@ -61,7 +61,7 @@ type internalFilterStrict struct {
 	attrMatchers map[string]StringMatcher
 }
 
-func (f internalFilterStrict) getSubexpNames() []string {
+func (internalFilterStrict) getSubexpNames() []string {
 	return nil
 }
 

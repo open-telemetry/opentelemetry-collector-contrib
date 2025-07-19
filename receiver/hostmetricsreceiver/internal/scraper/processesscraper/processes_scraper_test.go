@@ -177,7 +177,7 @@ var fakeProcessesData = []proc{
 
 type errProcess struct{}
 
-func (e errProcess) Status() ([]string, error) {
+func (errProcess) Status() ([]string, error) {
 	return []string{""}, errors.New("errProcess")
 }
 

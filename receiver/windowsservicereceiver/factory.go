@@ -44,10 +44,10 @@ func newMetricsReceiver(*Config, consumer.Metrics) *windowsServiceReceiver {
 
 type windowsServiceReceiver struct{}
 
-func (r *windowsServiceReceiver) Start(context.Context, component.Host) error {
+func (*windowsServiceReceiver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (r *windowsServiceReceiver) Shutdown(context.Context) error {
+func (*windowsServiceReceiver) Shutdown(context.Context) error {
 	return nil
 }

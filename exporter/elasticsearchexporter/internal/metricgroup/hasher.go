@@ -48,7 +48,7 @@ func (h *ECSDataPointHasher) UpdateResource(resource pcommon.Resource) {
 	h.resource = resource
 }
 
-func (h *ECSDataPointHasher) UpdateScope(_ pcommon.InstrumentationScope) {
+func (*ECSDataPointHasher) UpdateScope(pcommon.InstrumentationScope) {
 }
 
 func (h *ECSDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {

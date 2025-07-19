@@ -78,10 +78,10 @@ func transformValue(value any) any {
 	return value
 }
 
-func (e *avroLogExtension) Start(_ context.Context, _ component.Host) error {
+func (*avroLogExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e *avroLogExtension) Shutdown(_ context.Context) error {
+func (*avroLogExtension) Shutdown(context.Context) error {
 	return nil
 }

@@ -134,7 +134,7 @@ func newUnhealthyTestChannel(t *testing.T) *unhealthyTestChannel {
 	return &unhealthyTestChannel{t: t}
 }
 
-func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
+func (unhealthyTestChannel) onConsume(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

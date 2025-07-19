@@ -221,7 +221,7 @@ type notifyingSink struct {
 	ch              chan int
 }
 
-func (s *notifyingSink) Capabilities() consumer.Capabilities {
+func (*notifyingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

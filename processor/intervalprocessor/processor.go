@@ -90,7 +90,7 @@ func (p *intervalProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (p *intervalProcessor) Capabilities() consumer.Capabilities {
+func (*intervalProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

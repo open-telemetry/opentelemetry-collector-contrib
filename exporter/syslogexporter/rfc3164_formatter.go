@@ -30,19 +30,19 @@ func (f *rfc3164Formatter) format(logRecord plog.LogRecord) string {
 	return formatted
 }
 
-func (f *rfc3164Formatter) formatPriority(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatPriority(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, priority, strconv.Itoa(defaultPriority))
 }
 
-func (f *rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
 	return logRecord.Timestamp().AsTime().Format("Jan 02 15:04:05")
 }
 
-func (f *rfc3164Formatter) formatHostname(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatHostname(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, hostname, emptyValue)
 }
 
-func (f *rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
 	value := getAttributeValueOrDefault(logRecord, app, "")
 	if value != "" {
 		value += ":"
@@ -50,6 +50,6 @@ func (f *rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
 	return value
 }
 
-func (f *rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, message, emptyMessage)
 }

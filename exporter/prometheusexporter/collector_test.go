@@ -32,7 +32,7 @@ type mockAccumulator struct {
 	scopeAttributes    []pcommon.Map
 }
 
-func (a *mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
+func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 	return 0
 }
 

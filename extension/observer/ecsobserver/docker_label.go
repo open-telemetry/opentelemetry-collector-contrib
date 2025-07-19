@@ -72,7 +72,7 @@ type dockerLabelMatcher struct {
 	exportSetting *commonExportSetting
 }
 
-func (d *dockerLabelMatcher) matcherType() matcherType {
+func (*dockerLabelMatcher) matcherType() matcherType {
 	return matcherTypeDockerLabel
 }
 

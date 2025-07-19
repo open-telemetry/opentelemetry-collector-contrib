@@ -895,7 +895,7 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.consumeError = err
 }
 
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+func (*errOrSinkConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -943,7 +943,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

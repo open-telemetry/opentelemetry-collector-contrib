@@ -60,7 +60,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	}, nil
 }
 
-func (e *logExporterImp) Capabilities() consumer.Capabilities {
+func (*logExporterImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

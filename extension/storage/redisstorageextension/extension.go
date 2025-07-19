@@ -120,7 +120,7 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 	return err
 }
 
-func (rc redisClient) Close(_ context.Context) error {
+func (redisClient) Close(context.Context) error {
 	return nil
 }
 

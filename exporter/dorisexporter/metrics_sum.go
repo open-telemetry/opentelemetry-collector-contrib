@@ -29,11 +29,11 @@ type metricModelSum struct {
 	metricModelCommon[dMetricSum]
 }
 
-func (m *metricModelSum) metricType() pmetric.MetricType {
+func (*metricModelSum) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeSum
 }
 
-func (m *metricModelSum) tableSuffix() string {
+func (*metricModelSum) tableSuffix() string {
 	return "_sum"
 }
 

@@ -205,7 +205,7 @@ func (p *serviceGraphConnector) Shutdown(context.Context) error {
 	return nil
 }
 
-func (p *serviceGraphConnector) Capabilities() consumer.Capabilities {
+func (*serviceGraphConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -327,7 +327,7 @@ func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]strin
 	}
 }
 
-func (p *serviceGraphConnector) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
+func (*serviceGraphConnector) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
 	for _, s := range m {
 		if v, ok := pdatautil.GetAttributeValue(s, spanAttr); ok {
 			peers[s] = v
@@ -639,7 +639,7 @@ func (p *serviceGraphConnector) storeExpirationLoop(d time.Duration) {
 	}
 }
 
-func (p *serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
+func (*serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
 	peerStr := "unknown"
 	for _, s := range m {
 		if peer, ok := peers[s]; ok {

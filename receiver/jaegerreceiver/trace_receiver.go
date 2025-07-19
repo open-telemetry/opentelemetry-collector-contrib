@@ -155,7 +155,7 @@ type agentHandler struct {
 }
 
 // EmitZipkinBatch is unsupported agent's
-func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
+func (*agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
 	panic("unsupported receiver")
 }
 
@@ -264,7 +264,7 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 	return processor, nil
 }
 
-func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
+func (*jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {

@@ -29,11 +29,11 @@ type ReplicaSetClient interface {
 
 type noOpReplicaSetClient struct{}
 
-func (nc *noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
+func (*noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
-func (nc *noOpReplicaSetClient) shutdown() {
+func (*noOpReplicaSetClient) shutdown() {
 }
 
 type replicaSetClientOption func(*replicaSetClient)

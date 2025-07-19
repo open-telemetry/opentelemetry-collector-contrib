@@ -677,7 +677,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) retrieveBackends(
+func (*postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
