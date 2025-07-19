@@ -1,0 +1,7 @@
+change_type: enhancement
+component: httpcheckreceiver
+note: Add request body to http requests
+issues: [41325]
+subtext: |
+  The httpcheckreceiver can be configured to send a request body to the target endpoint.
+change_logs: [user]
