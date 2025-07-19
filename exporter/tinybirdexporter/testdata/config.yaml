@@ -10,7 +10,10 @@ tinybird/full:
   sending_queue:
     enabled: false
   token: "test-token"
-  metrics::datasource: "metrics"
+  metrics::gauge::datasource: "metrics_gauge"
+  metrics::sum::datasource: "metrics_sum"
+  metrics::histogram::datasource: "metrics_histogram"
+  metrics::exponential_histogram::datasource: "metrics_exponential_histogram"
   traces::datasource: "traces"
   logs::datasource: "logs"
   wait: true
@@ -18,7 +21,10 @@ tinybird/full:
 tinybird/invalid_datasource:
   endpoint: "https://api.tinybird.co"
   token: "test-token"
-  metrics::datasource: "metrics-with-dashes"
+  metrics::gauge::datasource: "metrics-with-dashes"
+  metrics::sum::datasource: "metrics-with-dashes"
+  metrics::histogram::datasource: "metrics-with-dashes"
+  metrics::exponential_histogram::datasource: "metrics-with-dashes"
   traces::datasource: "traces-with-dashes"
   logs::datasource: "logs-with-dashes"
 

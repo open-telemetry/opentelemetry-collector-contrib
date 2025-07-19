@@ -17,7 +17,17 @@ This is the initial version of the Tinybird Exporter that sends data to Tinybird
 - `endpoint`: Tinybird API endpoint
 - `token`: Tinybird API token
 - `metrics`
-  - `datasource` (default `metrics`): Name of the metrics datasource
+  - `gauge`
+    - `datasource` (default `metrics_gauge`): Name of the gauge metrics datasource
+- `metrics`
+  - `sum`
+    - `datasource` (default `metrics_sum`): Name of the sum metrics datasource
+- `metrics`
+  - `histogram`
+    - `datasource` (default `metrics_histogram`): Name of the histogram metrics datasource
+- `metrics`
+  - `exponential_histogram`
+    - `datasource` (default `metrics_exponential_histogram`): Name of the exponential histogram metrics datasource
 - `traces`
   - `datasource` (default `traces`): Name of the traces datasource
 - `logs`
@@ -30,7 +40,17 @@ exporters:
     endpoint: https://api.us-east.aws.tinybird.co
     token: ${TINYBIRD_TOKEN}
     metrics:
-      datasource: metrics
+      gauge:
+        datasource: "metrics_gauge"
+    metrics:
+      sum:
+        datasource: "metrics_sum"
+    metrics:
+      histogram:
+        datasource: "metrics_histogram"
+    metrics:
+      exponential_histogram:
+        datasource: "metrics_exponential_histogram"
     logs:
       datasource: logs
     traces:

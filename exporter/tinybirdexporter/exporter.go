@@ -74,8 +74,38 @@ func (e *tinybirdExporter) pushTraces(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (e *tinybirdExporter) pushMetrics(_ context.Context, _ pmetric.Metrics) error {
-	return errors.New("this component is under development and metrics are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
+func (e *tinybirdExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	sumBuffer := bytes.NewBuffer(nil)
+	sumEncoder := json.NewEncoder(sumBuffer)
+
+	gaugeBuffer := bytes.NewBuffer(nil)
+	gaugeEncoder := json.NewEncoder(gaugeBuffer)
+
+	histogramBuffer := bytes.NewBuffer(nil)
+	histogramEncoder := json.NewEncoder(histogramBuffer)
+
+	exponentialHistogramBuffer := bytes.NewBuffer(nil)
+	exponentialHistogramEncoder := json.NewEncoder(exponentialHistogramBuffer)
+
+	err := internal.ConvertMetrics(md, sumEncoder, gaugeEncoder, histogramEncoder, exponentialHistogramEncoder)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	// TODO: perform the exports in parallel to improve the operation latency (#41409)
+	if sumBuffer.Len() > 0 {
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.Sum.Datasource, sumBuffer))
+	}
+	if gaugeBuffer.Len() > 0 {
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.Gauge.Datasource, gaugeBuffer))
+	}
+	if histogramBuffer.Len() > 0 {
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.Histogram.Datasource, histogramBuffer))
+	}
+	if exponentialHistogramBuffer.Len() > 0 {
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.ExponentialHistogram.Datasource, exponentialHistogramBuffer))
+	}
+	return err
 }
 
 func (e *tinybirdExporter) pushLogs(ctx context.Context, ld plog.Logs) error {

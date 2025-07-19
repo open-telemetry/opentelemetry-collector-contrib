@@ -24,6 +24,15 @@ type SignalConfig struct {
 	_ struct{}
 }
 
+type MetricsSignalConfig struct {
+	Gauge                SignalConfig `mapstructure:"gauge"`
+	Sum                  SignalConfig `mapstructure:"sum"`
+	Histogram            SignalConfig `mapstructure:"histogram"`
+	ExponentialHistogram SignalConfig `mapstructure:"exponential_histogram"`
+
+	_ struct{}
+}
+
 func (cfg SignalConfig) Validate() error {
 	if cfg.Datasource == "" {
 		return errors.New("datasource cannot be empty")
@@ -42,7 +51,7 @@ type Config struct {
 
 	// Tinybird API token.
 	Token   configopaque.String `mapstructure:"token"`
-	Metrics SignalConfig        `mapstructure:"metrics"`
+	Metrics MetricsSignalConfig `mapstructure:"metrics"`
 	Traces  SignalConfig        `mapstructure:"traces"`
 	Logs    SignalConfig        `mapstructure:"logs"`
 	// Wait for data to be ingested before returning a response.

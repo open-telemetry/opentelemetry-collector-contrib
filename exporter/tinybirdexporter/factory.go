@@ -47,10 +47,15 @@ func createDefaultConfig() component.Config {
 		RetryConfig:  configretry.NewDefaultBackOffConfig(),
 		QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
 		Token:        "",
-		Metrics:      SignalConfig{Datasource: "metrics"},
-		Traces:       SignalConfig{Datasource: "traces"},
-		Logs:         SignalConfig{Datasource: "logs"},
-		Wait:         false,
+		Metrics: MetricsSignalConfig{
+			Gauge:                SignalConfig{Datasource: "metrics_gauge"},
+			Sum:                  SignalConfig{Datasource: "metrics_sum"},
+			Histogram:            SignalConfig{Datasource: "metrics_histogram"},
+			ExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+		},
+		Traces: SignalConfig{Datasource: "traces"},
+		Logs:   SignalConfig{Datasource: "logs"},
+		Wait:   false,
 	}
 }
 
