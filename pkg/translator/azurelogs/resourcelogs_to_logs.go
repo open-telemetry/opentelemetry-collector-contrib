@@ -297,7 +297,7 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 	case categoryAppServicePlatformLogs:
 		handleFunc = handleAppServicePlatformLogs
 	default:
-		handleFunc = func(field string, value any, _ map[string]any, attrsProps map[string]any) {
+		handleFunc = func(field string, value any, _, attrsProps map[string]any) {
 			attrsProps[field] = value
 		}
 	}

@@ -30,7 +30,7 @@ var _ http.RoundTripper = (*mockRoundTripper)(nil)
 // mockKeyFetcher implements asap.KeyFetcher, eliminating the need to contact a key server.
 type mockKeyFetcher struct{}
 
-func (k *mockKeyFetcher) Fetch(_ string) (any, error) {
+func (k *mockKeyFetcher) Fetch(string) (any, error) {
 	return asap.NewPublicKey([]byte(publicKey))
 }
 

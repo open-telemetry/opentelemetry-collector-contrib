@@ -100,7 +100,7 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnectorNative) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnectorNative) Start(context.Context, component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
 	c.wg.Add(1)

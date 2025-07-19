@@ -105,7 +105,7 @@ func TestNilBatch(t *testing.T) {
 	m.assertBatchesLen(1)
 }
 
-func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key string, expected string) {
+func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key, expected string) {
 	v, ok := attr.Get(key)
 	require.True(t, ok)
 	require.Equal(t, expected, v.AsString())

@@ -161,7 +161,7 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	}, nil
 }
 
-func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func getFormatFromFormatHint(logAttr, resourceAttr pcommon.Map) string {
 	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
 	if !found {
@@ -177,7 +177,7 @@ func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 // GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {

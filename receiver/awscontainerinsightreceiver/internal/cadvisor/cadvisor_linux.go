@@ -176,7 +176,7 @@ func (c *Cadvisor) Shutdown() error {
 	return errs
 }
 
-func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV map[string]string) {
+func (c *Cadvisor) addEbsVolumeInfo(tags, ebsVolumeIDsUsedAsPV map[string]string) {
 	deviceName, ok := tags[ci.DiskDev]
 	if !ok {
 		return

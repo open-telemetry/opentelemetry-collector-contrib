@@ -171,7 +171,7 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 
 // newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and stage startedAt time.
 // It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
-func newStageSpanID(pipelineID int, stageName string, startedAt string) (pcommon.SpanID, error) {
+func newStageSpanID(pipelineID int, stageName, startedAt string) (pcommon.SpanID, error) {
 	if stageName == "" {
 		return pcommon.SpanID{}, errors.New("stageName is empty")
 	}
@@ -285,7 +285,7 @@ func (gtr *gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipe
 	return nil
 }
 
-func setSpanTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func setSpanTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	parsedStartTime, err := parseGitlabTime(startTime)
 	if err != nil {
 		return err
