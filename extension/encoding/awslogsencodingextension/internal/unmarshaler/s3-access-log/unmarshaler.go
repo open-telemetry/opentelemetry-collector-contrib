@@ -151,7 +151,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 			value = value + " " + zone
 		}
 
-		if err = addField(i, value, resourceAttr, record); err != nil {
+		if err := addField(i, value, resourceAttr, record); err != nil {
 			return err
 		}
 	}

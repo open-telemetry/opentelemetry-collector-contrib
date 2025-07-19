@@ -256,7 +256,8 @@ func handleDestination(backendHostname, endpoint string, record plog.LogRecord) 
 			record.Attributes().PutStr(addressField, host)
 		}
 		if port != "" {
-			if err = putInt(portField, port, record); err != nil {
+			err = putInt(portField, port, record)
+			if err != nil {
 				return err
 			}
 		}
