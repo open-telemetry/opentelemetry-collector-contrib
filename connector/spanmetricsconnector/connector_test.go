@@ -705,11 +705,11 @@ type errConsumer struct {
 	fakeErr error
 }
 
-func (e *errConsumer) Capabilities() consumer.Capabilities {
+func (*errConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
+func (e *errConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
 	e.wg.Done()
 	return e.fakeErr
 }

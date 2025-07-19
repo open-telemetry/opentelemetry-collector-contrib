@@ -256,6 +256,6 @@ func (m *mockReadCloser) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (m *mockReadCloser) Close() error {
+func (*mockReadCloser) Close() error {
 	return nil
 }

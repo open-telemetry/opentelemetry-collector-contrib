@@ -402,19 +402,19 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 
 type mockAWSErr struct{}
 
-func (m *mockAWSErr) Error() string {
+func (*mockAWSErr) Error() string {
 	return "mockAWSErr"
 }
 
-func (m *mockAWSErr) Code() string {
+func (*mockAWSErr) Code() string {
 	return sts.ErrCodeRegionDisabledException
 }
 
-func (m *mockAWSErr) Message() string {
+func (*mockAWSErr) Message() string {
 	return ""
 }
 
-func (m *mockAWSErr) OrigErr() error {
+func (*mockAWSErr) OrigErr() error {
 	return errors.New("mockAWSErr")
 }
 
@@ -430,7 +430,7 @@ func (m *mockProvider) Retrieve() (credentials.Value, error) {
 	return val, nil
 }
 
-func (m *mockProvider) IsExpired() bool {
+func (*mockProvider) IsExpired() bool {
 	return true
 }
 

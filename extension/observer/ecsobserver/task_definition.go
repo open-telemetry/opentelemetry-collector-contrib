@@ -77,7 +77,7 @@ type taskDefinitionMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (m *taskDefinitionMatcher) matcherType() matcherType {
+func (*taskDefinitionMatcher) matcherType() matcherType {
 	return matcherTypeTaskDefinition
 }
 

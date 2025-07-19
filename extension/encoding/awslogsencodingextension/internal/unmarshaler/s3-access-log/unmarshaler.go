@@ -76,7 +76,7 @@ func (s *s3AccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plo
 }
 
 // setResourceAttributes based on the resourceAttributes
-func (s *s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
+func (*s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
 	attr := logs.Resource().Attributes()
 	attr.PutStr(string(semconv.CloudProviderKey), semconv.CloudProviderAWS.Value.AsString())
 	if r.bucketName != "" {

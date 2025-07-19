@@ -1171,7 +1171,7 @@ type assertTraces struct {
 
 var _ consumer.Traces = &assertTraces{}
 
-func (a *assertTraces) Capabilities() consumer.Capabilities {
+func (*assertTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
