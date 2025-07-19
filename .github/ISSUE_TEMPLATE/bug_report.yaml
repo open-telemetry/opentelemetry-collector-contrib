@@ -78,6 +78,7 @@ body:
       - exporter/prometheusremotewrite
       - exporter/pulsar
       - exporter/rabbitmq
+      - exporter/sapm
       - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
