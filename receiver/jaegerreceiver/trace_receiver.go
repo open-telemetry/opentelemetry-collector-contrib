@@ -251,7 +251,8 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 		return nil, err
 	}
 	if cfg.SocketBufferSize > 0 {
-		if err = transport.SetSocketBufferSize(cfg.SocketBufferSize); err != nil {
+		err = transport.SetSocketBufferSize(cfg.SocketBufferSize)
+		if err != nil {
 			return nil, err
 		}
 	}

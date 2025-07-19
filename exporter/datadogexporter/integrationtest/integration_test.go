@@ -691,7 +691,7 @@ func seriesFromSerializer(metricsBytes []byte, expectedMetrics map[string]struct
 		return nil, err
 	}
 
-	if err = pl.Unmarshal(b); err != nil {
+	if err := pl.Unmarshal(b); err != nil {
 		return nil, err
 	}
 	metricMap := make(map[string]series)

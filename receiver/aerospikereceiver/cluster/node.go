@@ -55,7 +55,8 @@ func _newConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool, conn
 	}
 
 	if authEnabled {
-		if err = conn.Login(policy); err != nil {
+		err = conn.Login(policy)
+		if err != nil {
 			return nil, err
 		}
 	}

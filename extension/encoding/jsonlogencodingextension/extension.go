@@ -102,9 +102,9 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	if e.config.ArrayMode {
 		// Default mode to handle arrays having backward compatibility
 		var jsonLogs []map[string]any
-		var err error
 
-		if err = json.Unmarshal(buf, &jsonLogs); err != nil {
+		err := json.Unmarshal(buf, &jsonLogs)
+		if err != nil {
 			return p, err
 		}
 

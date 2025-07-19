@@ -195,7 +195,8 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	compactionStart := time.Now()
 
-	if err = bbolt.Compact(compactedDb, c.db, maxTransactionSize); err != nil {
+	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
+	if err != nil {
 		return err
 	}
 
@@ -333,11 +334,13 @@ func moveFileWithFallback(src, dest string) error {
 		return err
 	}
 
-	if err = os.Truncate(dest, 0); err != nil {
+	err = os.Truncate(dest, 0)
+	if err != nil {
 		return err
 	}
 
-	if err = os.WriteFile(dest, data, 0o600); err != nil {
+	err = os.WriteFile(dest, data, 0o600)
+	if err != nil {
 		return err
 	}
 

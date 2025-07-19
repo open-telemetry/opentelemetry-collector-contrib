@@ -53,7 +53,8 @@ func ParseRequest(req *http.Request) (*push.PushRequest, error) {
 
 	switch reqContentType {
 	case applicationJSON:
-		if err = decodePushRequest(body, &pushRequest); err != nil {
+		err = decodePushRequest(body, &pushRequest)
+		if err != nil {
 			return nil, err
 		}
 

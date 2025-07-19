@@ -67,7 +67,8 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("could not create docker client: %w", err)
 	}
 
-	if err = d.dClient.LoadContainerList(ctx); err != nil {
+	err = d.dClient.LoadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 

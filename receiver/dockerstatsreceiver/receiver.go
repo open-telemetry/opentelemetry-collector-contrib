@@ -66,7 +66,8 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	if err = r.client.LoadContainerList(ctx); err != nil {
+	err = r.client.LoadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 

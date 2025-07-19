@@ -430,7 +430,8 @@ func (opts translateOptions) translateValue(dst pcommon.Value, fd protoreflect.F
 		}
 
 		var s string
-		if err = json.Unmarshal(src, &s); err != nil {
+		err = json.Unmarshal(src, &s)
+		if err != nil {
 			return err
 		}
 		if val, err = strconv.ParseInt(s, 10, 64); err != nil {

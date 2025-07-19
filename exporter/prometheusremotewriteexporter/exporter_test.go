@@ -380,7 +380,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	if err = prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+	if err := prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
 

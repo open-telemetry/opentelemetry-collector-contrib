@@ -594,7 +594,7 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 
 		row := c.client.QueryRowContext(ctx, query)
 
-		if err = row.Scan(
+		if err := row.Scan(
 			&checkpointsReq,
 			&checkpointsScheduled,
 			&checkpointWriteTime,
@@ -634,7 +634,7 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 
 	row := c.client.QueryRowContext(ctx, query)
 
-	if err = row.Scan(
+	if err := row.Scan(
 		&checkpointsReq,
 		&checkpointsScheduled,
 		&checkpointWriteTime,

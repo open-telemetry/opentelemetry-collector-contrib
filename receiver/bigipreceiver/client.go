@@ -234,7 +234,8 @@ func (c *bigipClient) makeHTTPRequest(req *http.Request, respObj any) (err error
 	}()
 
 	// Check for OK status code
-	if err = c.checkHTTPStatus(resp); err != nil {
+	err = c.checkHTTPStatus(resp)
+	if err != nil {
 		return err
 	}
 

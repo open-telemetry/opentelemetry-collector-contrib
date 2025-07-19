@@ -56,7 +56,8 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale
 	var inputTimeLocale *string
 	if !locale.IsEmpty() {
 		l := locale.Get()
-		if err = timeutils.ValidateLocale(l); err != nil {
+		err = timeutils.ValidateLocale(l)
+		if err != nil {
 			return nil, err
 		}
 		inputTimeLocale = &l

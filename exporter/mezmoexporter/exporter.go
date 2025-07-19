@@ -147,7 +147,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 		if newBufSize >= maxBodySize-2 {
 			str := b.String()
 			str = str[:len(str)-1] + "]}"
-			if errs = m.sendLinesToMezmo(str); errs != nil {
+			if errs := m.sendLinesToMezmo(str); errs != nil {
 				return errs
 			}
 			b.Reset()

@@ -68,7 +68,8 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	}
 
 	if deadline, ok := ctx.Deadline(); ok {
-		if err = sock.SetDeadline(deadline); err != nil {
+		err = sock.SetDeadline(deadline)
+		if err != nil {
 			return nil, err
 		}
 	}
