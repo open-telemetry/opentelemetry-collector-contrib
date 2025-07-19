@@ -140,14 +140,15 @@ func parseAndHashRowrangestartkey(key string) string {
 
 func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
 	for index, labelValue := range mdp.labelValues {
-		if labelValue.Metadata().Name() == "row_range_start_key" {
-			key := labelValue.Value().(string)
-			hashedKey := parseAndHashRowrangestartkey(key)
-			v := mdp.labelValues[index].(byteSliceLabelValue)
-			p := &v
-			p.ModifyValue(hashedKey)
-			mdp.labelValues[index] = v
+		if labelValue.Metadata().Name() != "row_range_start_key" {
+			continue
 		}
+		key := labelValue.Value().(string)
+		hashedKey := parseAndHashRowrangestartkey(key)
+		v := mdp.labelValues[index].(byteSliceLabelValue)
+		p := &v
+		p.ModifyValue(hashedKey)
+		mdp.labelValues[index] = v
 	}
 }
 
@@ -165,14 +166,15 @@ func TruncateString(str string, length int) string {
 
 func (mdp *MetricsDataPoint) TruncateQueryText(length int) {
 	for index, labelValue := range mdp.labelValues {
-		if labelValue.Metadata().Name() == "query_text" {
-			queryText := labelValue.Value().(string)
-			truncateQueryText := TruncateString(queryText, length)
-			v := mdp.labelValues[index].(stringLabelValue)
-			p := &v
-			p.ModifyValue(truncateQueryText)
-			mdp.labelValues[index] = v
+		if labelValue.Metadata().Name() != "query_text" {
+			continue
 		}
+		queryText := labelValue.Value().(string)
+		truncateQueryText := TruncateString(queryText, length)
+		v := mdp.labelValues[index].(stringLabelValue)
+		p := &v
+		p.ModifyValue(truncateQueryText)
+		mdp.labelValues[index] = v
 	}
 }
 

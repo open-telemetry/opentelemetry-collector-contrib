@@ -163,44 +163,45 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 
 				// Process each S3 object notification
 				for _, record := range s3Event.Records {
-					if record.EventSource == "aws:s3" && strings.HasPrefix(record.EventName, "ObjectCreated:") {
-						bucket := record.S3.Bucket.Name
-						key := record.S3.Object.Key
+					if record.EventSource != "aws:s3" || !strings.HasPrefix(record.EventName, "ObjectCreated:") {
+						continue
+					}
+					bucket := record.S3.Bucket.Name
+					key := record.S3.Object.Key
 
-						if bucket != r.s3Bucket {
-							r.logger.Debug("Skipping object from different bucket",
-								zap.String("bucket", bucket),
-								zap.String("targetBucket", r.s3Bucket))
-							continue
-						}
-
-						if r.s3Prefix != "" && !strings.HasPrefix(key, r.s3Prefix) {
-							r.logger.Debug("Skipping object not matching prefix",
-								zap.String("key", key),
-								zap.String("prefix", r.s3Prefix))
-							continue
-						}
-
-						r.logger.Info("Processing new S3 object",
+					if bucket != r.s3Bucket {
+						r.logger.Debug("Skipping object from different bucket",
 							zap.String("bucket", bucket),
-							zap.String("key", key))
+							zap.String("targetBucket", r.s3Bucket))
+						continue
+					}
 
-						var content []byte
-						content, err = retrieveS3Object(ctx, r.s3Client, bucket, key)
-						if err != nil {
-							r.logger.Error("Failed to get S3 object",
-								zap.String("bucket", bucket),
-								zap.String("key", key),
-								zap.Error(err))
-							continue
-						}
+					if r.s3Prefix != "" && !strings.HasPrefix(key, r.s3Prefix) {
+						r.logger.Debug("Skipping object not matching prefix",
+							zap.String("key", key),
+							zap.String("prefix", r.s3Prefix))
+						continue
+					}
 
-						err = callback(ctx, key, content)
-						if err != nil {
-							r.logger.Error("Failed to process S3 object content",
-								zap.String("key", key),
-								zap.Error(err))
-						}
+					r.logger.Info("Processing new S3 object",
+						zap.String("bucket", bucket),
+						zap.String("key", key))
+
+					var content []byte
+					content, err = retrieveS3Object(ctx, r.s3Client, bucket, key)
+					if err != nil {
+						r.logger.Error("Failed to get S3 object",
+							zap.String("bucket", bucket),
+							zap.String("key", key),
+							zap.Error(err))
+						continue
+					}
+
+					err = callback(ctx, key, content)
+					if err != nil {
+						r.logger.Error("Failed to process S3 object content",
+							zap.String("key", key),
+							zap.Error(err))
 					}
 				}
 
