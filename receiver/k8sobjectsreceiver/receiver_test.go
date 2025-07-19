@@ -372,3 +372,64 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
 }
+
+func TestNamespaceDenyListWatchObject(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	mockClient.createNamespaces(
+		generateNamespace("default", "1"),
+		generateNamespace("default_ignore", "2"),
+	)
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:              "pods",
+			Mode:              WatchMode,
+			NamespaceDenyList: []string{"default_ignore"},
+		},
+	}
+
+	consumer := newMockLogConsumer()
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumer,
+	)
+
+	ctx := context.Background()
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+
+	time.Sleep(time.Millisecond * 100)
+	assert.Empty(t, consumer.Logs())
+	assert.Equal(t, 0, consumer.Count())
+
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{
+			"environment": "test",
+		}, "2"),
+		generatePod("pod3", "default_ignore", map[string]any{
+			"environment": "production",
+		}, "3"),
+		generatePod("pod4", "default", map[string]any{
+			"environment": "production",
+		}, "4"),
+	)
+	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, consumer.Logs(), 2)
+	assert.Equal(t, 2, consumer.Count())
+
+	assert.NoError(t, r.Shutdown(ctx))
+}
