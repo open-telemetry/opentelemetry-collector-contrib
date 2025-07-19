@@ -139,7 +139,6 @@ linters:
         - tooManyResultsChecker
         - typeDefFirst
         - unnamedResult
-        - unnecessaryBlock
         - whyNoLint
 
       enable-all: true
