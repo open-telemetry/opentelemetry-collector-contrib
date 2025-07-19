@@ -301,7 +301,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 
 	switch to.kind {
 	case "Job":
-		ms.Setup(gvk.Job, store)
+		ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-job-0"] = testutils.WithOwnerReferences(
@@ -319,7 +319,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 		}
 		return ms
 	case "ReplicaSet":
-		ms.Setup(gvk.ReplicaSet, store)
+		ms.Setup(gvk.ReplicaSet, metadata.ClusterWideInformerKey, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-replicaset-0"] = testutils.WithOwnerReferences(
