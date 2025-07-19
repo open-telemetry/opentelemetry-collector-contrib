@@ -790,7 +790,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			strings.Join([]string{name1, name2}, ","): {
+			name1 + "," + name2: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
