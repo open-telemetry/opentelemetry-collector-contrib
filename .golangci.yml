@@ -129,7 +129,6 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - nestingReduce
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
