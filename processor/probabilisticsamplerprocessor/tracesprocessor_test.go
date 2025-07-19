@@ -1374,7 +1374,7 @@ func TestHashingFunction(t *testing.T) {
 
 // makeSingleSpanWithAttrib is used to construct test data with
 // a specific TraceID and a single attribute.
-func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts, key string, attribValue pcommon.Value) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.TraceState().FromRaw(ts)

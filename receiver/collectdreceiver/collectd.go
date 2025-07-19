@@ -213,7 +213,7 @@ func addIfNotNullOrEmpty(m map[string]string, key string, val *string) {
 	}
 }
 
-func parseAndAddLabels(labels map[string]string, pluginInstance *string, host *string) {
+func parseAndAddLabels(labels map[string]string, pluginInstance, host *string) {
 	parseNameForLabels(labels, "plugin_instance", pluginInstance)
 	parseNameForLabels(labels, "host", host)
 }

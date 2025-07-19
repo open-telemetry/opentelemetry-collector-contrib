@@ -140,7 +140,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown function manages receiver shutdown tasks. part of the receiver.Logs interface.
-func (er *eventReceiver) Shutdown(_ context.Context) error {
+func (er *eventReceiver) Shutdown(context.Context) error {
 	// server must exist to be closed.
 	if er.server == nil {
 		return nil

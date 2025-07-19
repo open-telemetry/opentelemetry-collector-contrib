@@ -177,7 +177,7 @@ func (e *oidcExtension) setProviderConfig(ctx context.Context, config *Config) e
 	return err
 }
 
-func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback string) (string, error) {
+func getSubjectFromClaims(claims map[string]any, usernameClaim, fallback string) (string, error) {
 	if usernameClaim != "" {
 		username, found := claims[usernameClaim]
 		if !found {

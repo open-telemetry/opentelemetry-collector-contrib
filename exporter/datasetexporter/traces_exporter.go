@@ -100,7 +100,7 @@ const (
 	Process = ResourceType("process")
 )
 
-func updateResource(attrs map[string]any, resource map[string]any) {
+func updateResource(attrs, resource map[string]any) {
 	// first detect, whether there is key service.name
 	// if it's there, we are done
 	name, found := resource["service.name"]

@@ -227,7 +227,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *datadogconfig.C
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion string, agentVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		go func() {

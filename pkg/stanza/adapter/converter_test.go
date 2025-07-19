@@ -39,7 +39,7 @@ func BenchmarkConvertComplex(b *testing.B) {
 	}
 }
 
-func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
+func complexEntriesForNDifferentHosts(count, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
 	for i := 0; i < count; i++ {
 		e := entry.New()
@@ -83,7 +83,7 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	return ret
 }
 
-func complexEntriesForNDifferentHostsMDifferentScopes(count int, n int, m int) []*entry.Entry {
+func complexEntriesForNDifferentHostsMDifferentScopes(count, n, m int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
 	for i := 0; i < count; i++ {
 		for j := 0; j < m; j++ {

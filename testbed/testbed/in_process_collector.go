@@ -46,7 +46,7 @@ func (ipp *inProcessCollector) PrepareConfig(t *testing.T, configStr string) (co
 	return configCleanup, err
 }
 
-func (ipp *inProcessCollector) Start(_ StartParams) error {
+func (ipp *inProcessCollector) Start(StartParams) error {
 	var err error
 
 	confFile, err := os.CreateTemp(ipp.t.TempDir(), "conf-")

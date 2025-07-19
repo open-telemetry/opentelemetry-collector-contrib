@@ -23,7 +23,7 @@ func Test_trim(t *testing.T) {
 		{
 			name: "trim string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return " this is a test ", nil
 				},
 			},
@@ -34,7 +34,7 @@ func Test_trim(t *testing.T) {
 		{
 			name: "trim empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -45,7 +45,7 @@ func Test_trim(t *testing.T) {
 		{
 			name: "No replacement string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return " this is a test ", nil
 				},
 			},
@@ -56,7 +56,7 @@ func Test_trim(t *testing.T) {
 		{
 			name: "Set replacement string to \"\"",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return " this is a test ", nil
 				},
 			},

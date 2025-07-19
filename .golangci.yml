@@ -13,6 +13,9 @@ formatters:
         - standard
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+    gofumpt:
+      # Choose whether to use the extra rules.
+      extra-rules: true
 
 issues:
   # Maximum issues count per one linter.
@@ -127,7 +130,6 @@ linters:
         - hugeParam
         - importShadow
         - nestingReduce
-        - paramTypeCombine
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
