@@ -128,7 +128,6 @@ exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
 pkg/translator/loki
-exporter/lokiexporter
 exporter/mezmoexporter
 exporter/opensearchexporter
 internal/grpcutil
