@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("awskinesis")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
+	ScopeName = "go.opentelemetry.io/collector/cmd/mdatagen"
 )
 
 const (
