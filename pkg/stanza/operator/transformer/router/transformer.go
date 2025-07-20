@@ -32,7 +32,7 @@ type Route struct {
 }
 
 // CanProcess will always return true for a router operator
-func (t *Transformer) CanProcess() bool {
+func (*Transformer) CanProcess() bool {
 	return true
 }
 
@@ -80,7 +80,7 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // CanOutput will always return true for a router operator
-func (t *Transformer) CanOutput() bool {
+func (*Transformer) CanOutput() bool {
 	return true
 }
 
@@ -116,7 +116,7 @@ func (t *Transformer) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will do nothing.
-func (t *Transformer) SetOutputIDs(_ []string) {}
+func (*Transformer) SetOutputIDs(_ []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (t *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
@@ -132,7 +132,7 @@ func (t *Transformer) findOperators(operators []operator.Operator, operatorIDs [
 }
 
 // findOperator will find an operator from a collection.
-func (t *Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
+func (*Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
 	for _, operator := range operators {
 		if operator.ID() == operatorID {
 			return operator, nil

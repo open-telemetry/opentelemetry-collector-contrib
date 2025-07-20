@@ -83,7 +83,7 @@ func (e *s3Exporter) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *s3Exporter) Capabilities() consumer.Capabilities {
+func (*s3Exporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

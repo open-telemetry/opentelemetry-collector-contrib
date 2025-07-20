@@ -70,7 +70,7 @@ type roundRobin struct {
 	nextTraces   []consumer.Traces
 }
 
-func (rr *roundRobin) Capabilities() consumer.Capabilities {
+func (*roundRobin) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

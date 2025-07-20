@@ -44,22 +44,22 @@ func (h *mockHostWithEncodings) GetExtensions() map[component.ID]component.Compo
 	return args.Get(0).(map[component.ID]component.Component)
 }
 
-func (m *mockEncodingExtension) MarshalLogs(plog.Logs) ([]byte, error) {
+func (*mockEncodingExtension) MarshalLogs(plog.Logs) ([]byte, error) {
 	return nil, nil
 }
 
-func (m *mockEncodingExtension) MarshalTraces(ptrace.Traces) ([]byte, error) {
+func (*mockEncodingExtension) MarshalTraces(ptrace.Traces) ([]byte, error) {
 	return nil, nil
 }
 
-func (m *mockEncodingExtension) MarshalMetrics(pmetric.Metrics) ([]byte, error) {
+func (*mockEncodingExtension) MarshalMetrics(pmetric.Metrics) ([]byte, error) {
 	return nil, nil
 }
 
-func (m *mockEncodingExtension) Start(context.Context, component.Host) error {
+func (*mockEncodingExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m *mockEncodingExtension) Shutdown(context.Context) error {
+func (*mockEncodingExtension) Shutdown(context.Context) error {
 	return nil
 }

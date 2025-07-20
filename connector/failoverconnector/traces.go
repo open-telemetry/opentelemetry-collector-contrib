@@ -79,7 +79,7 @@ type tracesFailover struct {
 	logger   *zap.Logger
 }
 
-func (f *tracesFailover) Capabilities() consumer.Capabilities {
+func (*tracesFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

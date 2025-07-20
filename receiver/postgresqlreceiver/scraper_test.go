@@ -512,17 +512,17 @@ type (
 )
 
 // explainQuery implements client.
-func (m *mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
 // getTopQuery implements client.
-func (m *mockClient) getTopQuery(context.Context, int64, *zap.Logger) ([]map[string]any, error) {
+func (*mockClient) getTopQuery(context.Context, int64, *zap.Logger) ([]map[string]any, error) {
 	panic("unimplemented")
 }
 
 // close implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) close() error {
+func (mockSimpleClientFactory) close() error {
 	return nil
 }
 
@@ -535,7 +535,7 @@ func (m mockSimpleClientFactory) getClient(string) (client, error) {
 }
 
 // getQuerySamples implements client.
-func (m *mockClient) getQuerySamples(context.Context, int64, float64, *zap.Logger) ([]map[string]any, float64, error) {
+func (*mockClient) getQuerySamples(context.Context, int64, float64, *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 

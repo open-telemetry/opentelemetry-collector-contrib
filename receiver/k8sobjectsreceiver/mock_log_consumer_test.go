@@ -24,7 +24,7 @@ func newMockLogConsumer() *mockLogConsumer {
 	}
 }
 
-func (m *mockLogConsumer) Capabilities() consumer.Capabilities {
+func (*mockLogConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
 		MutatesData: false,
 	}

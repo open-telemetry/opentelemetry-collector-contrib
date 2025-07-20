@@ -397,11 +397,11 @@ type mockMetricsExporter struct {
 	md  []pmetric.Metrics
 }
 
-func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
+func (*mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
 
-func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
+func (*mockMetricsExporter) Shutdown(context.Context) error { return nil }
 
-func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (*mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
 func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.mtx.Lock()

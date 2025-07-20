@@ -212,11 +212,11 @@ func NewSynchronousLogEmitter(set component.TelemetrySettings, consumerFunc func
 	}
 }
 
-func (e *SynchronousLogEmitter) Start(_ operator.Persister) error {
+func (*SynchronousLogEmitter) Start(operator.Persister) error {
 	return nil
 }
 
-func (e *SynchronousLogEmitter) Stop() error {
+func (*SynchronousLogEmitter) Stop() error {
 	return nil
 }
 

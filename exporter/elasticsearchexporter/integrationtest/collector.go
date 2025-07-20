@@ -247,15 +247,15 @@ func (c *recreatableOtelCol) Restart(graceful bool, shutdownFor time.Duration) e
 	return c.run()
 }
 
-func (c *recreatableOtelCol) WatchResourceConsumption() error {
+func (*recreatableOtelCol) WatchResourceConsumption() error {
 	return nil
 }
 
-func (c *recreatableOtelCol) GetProcessMon() *process.Process {
+func (*recreatableOtelCol) GetProcessMon() *process.Process {
 	return nil
 }
 
-func (c *recreatableOtelCol) GetTotalConsumption() *testbed.ResourceConsumption {
+func (*recreatableOtelCol) GetTotalConsumption() *testbed.ResourceConsumption {
 	return &testbed.ResourceConsumption{
 		CPUPercentAvg: 0,
 		CPUPercentMax: 0,
@@ -264,7 +264,7 @@ func (c *recreatableOtelCol) GetTotalConsumption() *testbed.ResourceConsumption 
 	}
 }
 
-func (c *recreatableOtelCol) GetResourceConsumption() string {
+func (*recreatableOtelCol) GetResourceConsumption() string {
 	return ""
 }
 

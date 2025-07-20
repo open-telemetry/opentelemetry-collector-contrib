@@ -150,7 +150,7 @@ func (s *snmpScraper) scrapeIndexedMetrics(
 
 // scalarDataToMetric will take one piece of SNMP scalar data and turn it into a datapoint for
 // either a new or existing metric with attributes based on the related configs
-func (s *snmpScraper) scalarDataToMetric(
+func (*snmpScraper) scalarDataToMetric(
 	data snmpData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,

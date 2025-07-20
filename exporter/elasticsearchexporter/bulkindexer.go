@@ -156,7 +156,7 @@ func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
 }
 
 // Close is a no-op.
-func (s *syncBulkIndexer) Close(context.Context) error {
+func (*syncBulkIndexer) Close(context.Context) error {
 	return nil
 }
 
@@ -194,7 +194,7 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 }
 
 // End is a no-op.
-func (s *syncBulkIndexerSession) End() {
+func (*syncBulkIndexerSession) End() {
 	// TODO acquire docappender.BulkIndexer from pool in StartSession, release here
 }
 
@@ -332,11 +332,11 @@ func (s asyncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 }
 
 // End is a no-op.
-func (s asyncBulkIndexerSession) End() {
+func (asyncBulkIndexerSession) End() {
 }
 
 // Flush is a no-op.
-func (s asyncBulkIndexerSession) Flush(context.Context) error {
+func (asyncBulkIndexerSession) Flush(context.Context) error {
 	return nil
 }
 
@@ -761,7 +761,7 @@ func (s errBulkIndexerSession) Add(context.Context, string, string, string, io.W
 	return fmt.Errorf("creating bulk indexer session failed, cannot add item: %w", s.err)
 }
 
-func (s errBulkIndexerSession) End() {}
+func (errBulkIndexerSession) End() {}
 
 func (s errBulkIndexerSession) Flush(context.Context) error {
 	return fmt.Errorf("creating bulk indexer session failed, cannot flush: %w", s.err)

@@ -672,7 +672,7 @@ type reportingHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
+func (*reportingHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

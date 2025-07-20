@@ -20,7 +20,7 @@ func NewModuleInfoJSON() *ModuleInfoJSON {
 	}
 }
 
-func (m *ModuleInfoJSON) getKey(typeStr, kindStr string) string {
+func (*ModuleInfoJSON) getKey(typeStr, kindStr string) string {
 	return typeStr + ":" + kindStr
 }
 

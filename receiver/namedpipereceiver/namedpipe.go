@@ -21,12 +21,12 @@ func NewFactory() receiver.Factory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.Config {
+func (ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }
 
@@ -46,7 +46,7 @@ func createDefaultConfig() *NamedPipeConfig {
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
+func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*NamedPipeConfig).BaseConfig
 }
 
@@ -60,6 +60,6 @@ type NamedPipeConfig struct {
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*NamedPipeConfig).InputConfig)
 }

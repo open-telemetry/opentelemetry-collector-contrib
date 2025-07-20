@@ -362,7 +362,7 @@ func withContainerRunID(containerRunID string) generateResourceFunc {
 
 type strAddr string
 
-func (s strAddr) String() string {
+func (strAddr) String() string {
 	return "1.1.1.1:3200"
 }
 
@@ -1766,7 +1766,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

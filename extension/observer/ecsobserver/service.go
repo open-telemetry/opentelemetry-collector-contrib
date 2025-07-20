@@ -76,7 +76,7 @@ type serviceMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (s *serviceMatcher) matcherType() matcherType {
+func (*serviceMatcher) matcherType() matcherType {
 	return matcherTypeService
 }
 

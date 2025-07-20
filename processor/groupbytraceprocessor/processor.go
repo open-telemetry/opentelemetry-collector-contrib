@@ -83,7 +83,7 @@ func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td ptrace.Trac
 	return errs
 }
 
-func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {
+func (*groupByTraceProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

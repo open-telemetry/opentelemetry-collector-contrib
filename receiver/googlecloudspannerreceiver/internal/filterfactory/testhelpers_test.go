@@ -21,7 +21,7 @@ type mockFilter struct {
 	mock.Mock
 }
 
-func (f *mockFilter) Filter(source []*filter.Item) []*filter.Item {
+func (*mockFilter) Filter(source []*filter.Item) []*filter.Item {
 	return source
 }
 
@@ -30,11 +30,11 @@ func (f *mockFilter) Shutdown() error {
 	return args.Error(0)
 }
 
-func (f *mockFilter) TotalLimit() int {
+func (*mockFilter) TotalLimit() int {
 	return 0
 }
 
-func (f *mockFilter) LimitByTimestamp() int {
+func (*mockFilter) LimitByTimestamp() int {
 	return 0
 }
 

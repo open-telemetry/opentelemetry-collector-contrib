@@ -32,7 +32,7 @@ func NewConditionalAttributeSet[Match ValueMatch](mappings map[string]string, ma
 	}
 }
 
-func (ca ConditionalAttributeSet) IsMigrator() {}
+func (ConditionalAttributeSet) IsMigrator() {}
 
 // Do applies the attribute changes specified in the constructor if any of the values in values matches the matches specified in the constructor.
 func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {

@@ -54,7 +54,7 @@ func (lfs *localFileStorage) Start(context.Context, component.Host) error {
 }
 
 // Shutdown will close any open databases
-func (lfs *localFileStorage) Shutdown(context.Context) error {
+func (*localFileStorage) Shutdown(context.Context) error {
 	// TODO clean up data files that did not have a client
 	// and are older than a threshold (possibly configurable)
 	return nil

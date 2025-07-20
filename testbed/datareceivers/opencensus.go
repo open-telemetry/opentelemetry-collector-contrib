@@ -65,6 +65,6 @@ func (or *ocDataReceiver) GenConfigYAMLStr() string {
       insecure: true`, or.Port)
 }
 
-func (or *ocDataReceiver) ProtocolName() string {
+func (*ocDataReceiver) ProtocolName() string {
 	return "opencensus"
 }

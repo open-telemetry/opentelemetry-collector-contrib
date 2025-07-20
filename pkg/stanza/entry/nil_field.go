@@ -12,21 +12,21 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 type NilField struct{}
 
 // Get will return always return nil
-func (l NilField) Get(_ *Entry) (any, bool) {
+func (NilField) Get(*Entry) (any, bool) {
 	return nil, true
 }
 
 // Set will do nothing and return no error
-func (l NilField) Set(_ *Entry, _ any) error {
+func (NilField) Set(*Entry, any) error {
 	return nil
 }
 
 // Delete will do nothing and return no error
-func (l NilField) Delete(_ *Entry) (any, bool) {
+func (NilField) Delete(*Entry) (any, bool) {
 	return nil, true
 }
 
-func (l NilField) String() string {
+func (NilField) String() string {
 	return "$nil"
 }
 

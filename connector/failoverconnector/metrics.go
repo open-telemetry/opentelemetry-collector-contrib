@@ -78,7 +78,7 @@ type metricsFailover struct {
 	logger   *zap.Logger
 }
 
-func (f *metricsFailover) Capabilities() consumer.Capabilities {
+func (*metricsFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

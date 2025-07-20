@@ -28,12 +28,12 @@ func newLogsExporter(logger *zap.Logger, _ *Config) *kineticaLogsExporter {
 	return logsExp
 }
 
-func (e *kineticaLogsExporter) start(_ context.Context, _ component.Host) error {
+func (*kineticaLogsExporter) start(context.Context, component.Host) error {
 	return nil
 }
 
 // shutdown will shut down the exporter.
-func (e *kineticaLogsExporter) shutdown(_ context.Context) error {
+func (*kineticaLogsExporter) shutdown(context.Context) error {
 	return nil
 }
 
@@ -43,6 +43,6 @@ func (e *kineticaLogsExporter) shutdown(_ context.Context) error {
 //	@param ctx
 //	@param ld
 //	@return error
-func (e *kineticaLogsExporter) pushLogsData(_ context.Context, _ plog.Logs) error {
+func (*kineticaLogsExporter) pushLogsData(context.Context, plog.Logs) error {
 	return nil
 }

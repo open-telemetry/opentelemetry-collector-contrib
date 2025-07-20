@@ -218,7 +218,7 @@ func (p *deltaToCumulativeProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (p *deltaToCumulativeProcessor) Capabilities() consumer.Capabilities {
+func (*deltaToCumulativeProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

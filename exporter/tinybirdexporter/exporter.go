@@ -74,7 +74,7 @@ func (e *tinybirdExporter) pushTraces(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (e *tinybirdExporter) pushMetrics(_ context.Context, _ pmetric.Metrics) error {
+func (*tinybirdExporter) pushMetrics(context.Context, pmetric.Metrics) error {
 	return errors.New("this component is under development and metrics are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
 }
 

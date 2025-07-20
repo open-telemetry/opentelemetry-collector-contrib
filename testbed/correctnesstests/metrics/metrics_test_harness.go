@@ -50,7 +50,7 @@ func newTestHarness(
 	}
 }
 
-func (h *testHarness) Capabilities() consumer.Capabilities {
+func (*testHarness) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

@@ -730,7 +730,7 @@ type Optional[T any] struct {
 }
 
 // This is called only by reflection.
-func (o Optional[T]) set(val any) reflect.Value {
+func (Optional[T]) set(val any) reflect.Value {
 	return reflect.ValueOf(Optional[T]{
 		val:      val.(T),
 		hasValue: true,

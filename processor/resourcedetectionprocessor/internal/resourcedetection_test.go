@@ -35,7 +35,7 @@ func (p *mockDetector) Detect(_ context.Context) (pcommon.Resource, string, erro
 
 type mockDetectorConfig struct{}
 
-func (d *mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
+func (*mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
 	return nil
 }
 

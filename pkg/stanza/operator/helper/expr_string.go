@@ -127,7 +127,7 @@ func (e *ExprString) Render(env map[string]any) (string, error) {
 
 type patcher struct{}
 
-func (p *patcher) Visit(node *ast.Node) {
+func (*patcher) Visit(node *ast.Node) {
 	n, ok := (*node).(*ast.CallNode)
 	if !ok {
 		return

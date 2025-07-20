@@ -2446,7 +2446,7 @@ type neverSyncedResourceEventHandlerRegistration struct {
 	cache.ResourceEventHandlerRegistration
 }
 
-func (n *neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
+func (*neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
 	return false
 }
 

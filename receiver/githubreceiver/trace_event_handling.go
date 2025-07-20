@@ -173,7 +173,7 @@ func (gtr *githubTracesReceiver) createRootSpan(
 
 // createParentSpan creates a parent span based on the provided event, associated
 // with the deterministic traceID.
-func (gtr *githubTracesReceiver) createParentSpan(
+func (*githubTracesReceiver) createParentSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
@@ -288,7 +288,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 
 // createStepSpan creates a span with a deterministic spandID for the provided
 // step.
-func (gtr *githubTracesReceiver) createStepSpan(
+func (*githubTracesReceiver) createStepSpan(
 	resourceSpans ptrace.ResourceSpans,
 	traceID pcommon.TraceID,
 	parentSpanID pcommon.SpanID,
@@ -361,7 +361,7 @@ func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number
 
 // createJobQueueSpan creates a span for the job queue based on the provided
 // event by using the delta between the job created and completed times.
-func (gtr *githubTracesReceiver) createJobQueueSpan(
+func (*githubTracesReceiver) createJobQueueSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,

@@ -42,7 +42,7 @@ func NewConsumer(gatewayUsage *attributes.GatewayUsage) *Consumer {
 }
 
 // toDataType maps translator datatypes to DatadogV2's datatypes.
-func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType) {
+func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType) {
 	out = datadogV2.METRICINTAKETYPE_UNSPECIFIED
 
 	switch dt {

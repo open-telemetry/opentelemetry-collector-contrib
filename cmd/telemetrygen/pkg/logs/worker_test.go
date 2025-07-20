@@ -33,11 +33,11 @@ func (m *mockExporter) Export(_ context.Context, records []sdklog.Record) error 
 	return nil
 }
 
-func (m *mockExporter) Shutdown(context.Context) error {
+func (*mockExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *mockExporter) ForceFlush(context.Context) error {
+func (*mockExporter) ForceFlush(context.Context) error {
 	return nil
 }
 

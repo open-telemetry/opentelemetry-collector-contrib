@@ -811,7 +811,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	return firstBatch, true
 }
 
-func (s *syncIDBatcher) Stop() {
+func (*syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {

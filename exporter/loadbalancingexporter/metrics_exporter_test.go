@@ -1049,7 +1049,7 @@ func newNopMockMetricsExporter() exporter.Metrics {
 	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
-func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
+func (*mockMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

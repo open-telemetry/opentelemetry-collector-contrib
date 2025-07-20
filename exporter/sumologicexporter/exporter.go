@@ -294,7 +294,7 @@ func (se *sumologicexporter) getDataURLs() (logs, metrics, traces string) {
 	return se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces
 }
 
-func (se *sumologicexporter) shutdown(context.Context) error {
+func (*sumologicexporter) shutdown(context.Context) error {
 	return nil
 }
 

@@ -24,7 +24,7 @@ type MetricsSink struct {
 	Error      error
 }
 
-func (m *MetricsSink) Capabilities() consumer.Capabilities {
+func (*MetricsSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
 		MutatesData: false,
 	}

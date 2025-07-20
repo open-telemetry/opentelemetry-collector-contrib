@@ -35,7 +35,7 @@ func newRedisClient(options *redis.Options) client {
 }
 
 // Redis strings are CRLF delimited.
-func (c *redisClient) delimiter() string {
+func (*redisClient) delimiter() string {
 	return "\r\n"
 }
 

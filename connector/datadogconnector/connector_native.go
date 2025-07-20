@@ -128,7 +128,7 @@ func (c *traceToMetricConnectorNative) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
+func (*traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

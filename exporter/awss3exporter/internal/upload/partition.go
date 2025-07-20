@@ -95,7 +95,7 @@ func GenerateUUIDv7() string {
 	return id.String()
 }
 
-func (pki *PartitionKeyBuilder) randInt() string {
+func (*PartitionKeyBuilder) randInt() string {
 	// This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
 	const (

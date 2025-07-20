@@ -15,7 +15,7 @@ type SpanEventConditionalAttributes struct {
 	MultiConditionalAttributeSet migrate.MultiConditionalAttributeSet
 }
 
-func (o SpanEventConditionalAttributes) IsMigrator() {}
+func (SpanEventConditionalAttributes) IsMigrator() {}
 
 func (o SpanEventConditionalAttributes) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	for e := 0; e < span.Events().Len(); e++ {

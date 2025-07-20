@@ -51,7 +51,7 @@ func (d *defaultClientFactory) getClient(database string) (client, error) {
 	return &postgreSQLClient{client: db, closeFn: db.Close}, nil
 }
 
-func (d *defaultClientFactory) close() error {
+func (*defaultClientFactory) close() error {
 	return nil
 }
 

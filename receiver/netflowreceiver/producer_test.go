@@ -153,13 +153,13 @@ func TestProduceRaw(t *testing.T) {
 // This panicProducer replaces the ProtoProducer, to simulate it producing a panic
 type panicProducer struct{}
 
-func (m *panicProducer) Produce(_ any, _ *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
+func (*panicProducer) Produce(any, *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
 	panic("producer panic!")
 }
 
-func (m *panicProducer) Close() {}
+func (*panicProducer) Close() {}
 
-func (m *panicProducer) Commit(_ []producer.ProducerMessage) {}
+func (*panicProducer) Commit([]producer.ProducerMessage) {}
 
 func TestProducerPanic(t *testing.T) {
 	// Create a mock logger that can capture logged messages

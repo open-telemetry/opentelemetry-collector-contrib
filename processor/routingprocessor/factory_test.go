@@ -207,7 +207,7 @@ func TestShutdown(t *testing.T) {
 
 type mockProcessor struct{}
 
-func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
+func (*mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
 	return ptrace.NewTraces(), nil
 }
 

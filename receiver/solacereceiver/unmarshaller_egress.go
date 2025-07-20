@@ -40,7 +40,7 @@ func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (pt
 
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
-func (u *brokerTraceEgressUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*egress_v1.SpanData, error) {
+func (*brokerTraceEgressUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*egress_v1.SpanData, error) {
 	data := message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
@@ -65,7 +65,7 @@ func (u *brokerTraceEgressUnmarshallerV1) populateTraces(spanData *egress_v1.Spa
 	}
 }
 
-func (u *brokerTraceEgressUnmarshallerV1) mapResourceSpanAttributes(spanData *egress_v1.SpanData, attrMap pcommon.Map) {
+func (*brokerTraceEgressUnmarshallerV1) mapResourceSpanAttributes(spanData *egress_v1.SpanData, attrMap pcommon.Map) {
 	setResourceSpanAttributes(attrMap, spanData.RouterName, spanData.SolosVersion, spanData.MessageVpnName)
 }
 
@@ -101,7 +101,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpan(spanData *egress_v1.Span
 	}
 }
 
-func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpanCommon(spanData *egress_v1.SpanData_EgressSpan, clientSpan ptrace.Span) {
+func (*brokerTraceEgressUnmarshallerV1) mapEgressSpanCommon(spanData *egress_v1.SpanData_EgressSpan, clientSpan ptrace.Span) {
 	var traceID [16]byte
 	copy(traceID[:16], spanData.TraceId)
 	clientSpan.SetTraceID(traceID)

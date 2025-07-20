@@ -177,7 +177,7 @@ func transformFuncEndpoint(obj any) (any, error) {
 	return info, nil
 }
 
-func (c *epClient) createEndpointListWatch(client kubernetes.Interface, ns string) cache.ListerWatcher {
+func (*epClient) createEndpointListWatch(client kubernetes.Interface, ns string) cache.ListerWatcher {
 	ctx := context.Background()
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {

@@ -42,7 +42,7 @@ func newLogsConnector(logger *zap.Logger, config component.Config) *logsConnecto
 }
 
 // Capabilities implements the consumer interface.
-func (c *logsConnector) Capabilities() consumer.Capabilities {
+func (*logsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -86,7 +86,7 @@ func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (c *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
+func (*logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	return sl

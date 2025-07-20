@@ -258,7 +258,7 @@ func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...azku
 	return &azkustoingest.Result{}, nil
 }
 
-func (m *mockingestor) FromFile(_ context.Context, _ string, _ ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
+func (*mockingestor) FromFile(context.Context, string, ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
 	return &azkustoingest.Result{}, nil
 }
 
@@ -271,7 +271,7 @@ func (m *mockingestor) Records() []string {
 	return m.records
 }
 
-func (m *mockingestor) Close() error {
+func (*mockingestor) Close() error {
 	return nil
 }
 

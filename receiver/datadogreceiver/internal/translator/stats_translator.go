@@ -83,7 +83,7 @@ func (st *StatsTranslator) processStats(in *pb.ClientStatsPayload, lang, tracerV
 	return in
 }
 
-func (st *StatsTranslator) normalizeStatsGroup(b *pb.ClientGroupedStats, lang string) {
+func (*StatsTranslator) normalizeStatsGroup(b *pb.ClientGroupedStats, lang string) {
 	b.Name, _ = normalizeutil.NormalizeName(b.Name)
 	b.Service, _ = normalizeutil.NormalizeService(b.Service, lang)
 	if b.Resource == "" {

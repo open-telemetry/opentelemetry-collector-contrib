@@ -86,7 +86,7 @@ func (e *errPrivateIPNotFound) Error() string {
 	return m
 }
 
-func (e *errPrivateIPNotFound) message() string {
+func (*errPrivateIPNotFound) message() string {
 	return "private ip not found"
 }
 
@@ -151,7 +151,7 @@ func (e *errMappedPortNotFound) Error() string {
 		e.ContainerPort, e.NetworkMode, e.ContainerName, e.TaskArn)
 }
 
-func (e *errMappedPortNotFound) message() string {
+func (*errMappedPortNotFound) message() string {
 	return "mapped port not found"
 }
 

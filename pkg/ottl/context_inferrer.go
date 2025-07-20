@@ -263,7 +263,7 @@ func (s *priorityContextInferrer) sortContextCandidates(candidates []string) {
 // getConditionsHints extracts all path, function names (editor and converter), and enumSymbol
 // from the given condition. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
-func (s *priorityContextInferrer) getConditionsHints(conditions []string) ([]priorityContextInferrerHints, error) {
+func (*priorityContextInferrer) getConditionsHints(conditions []string) ([]priorityContextInferrerHints, error) {
 	hints := make([]priorityContextInferrerHints, 0, len(conditions))
 	for _, condition := range conditions {
 		parsed, err := parseCondition(condition)
@@ -281,7 +281,7 @@ func (s *priorityContextInferrer) getConditionsHints(conditions []string) ([]pri
 // getStatementsHints extracts all path, function names (editor and converter), and enumSymbol
 // from the given statement. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
-func (s *priorityContextInferrer) getStatementsHints(statements []string) ([]priorityContextInferrerHints, error) {
+func (*priorityContextInferrer) getStatementsHints(statements []string) ([]priorityContextInferrerHints, error) {
 	hints := make([]priorityContextInferrerHints, 0, len(statements))
 	for _, statement := range statements {
 		parsed, err := parseStatement(statement)
@@ -301,7 +301,7 @@ func (s *priorityContextInferrer) getStatementsHints(statements []string) ([]pri
 // getValueExpressionsHints extracts all path, function (converter) names, and enumSymbol
 // from the given value expressions. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
-func (s *priorityContextInferrer) getValueExpressionsHints(exprs []string) ([]priorityContextInferrerHints, error) {
+func (*priorityContextInferrer) getValueExpressionsHints(exprs []string) ([]priorityContextInferrerHints, error) {
 	hints := make([]priorityContextInferrerHints, 0, len(exprs))
 	for _, expr := range exprs {
 		parsed, err := parseValueExpression(expr)
@@ -332,7 +332,7 @@ func newGrammarContextInferrerVisitor() priorityContextInferrerHints {
 	}
 }
 
-func (v *priorityContextInferrerHints) visitMathExprLiteral(_ *mathExprLiteral) {}
+func (*priorityContextInferrerHints) visitMathExprLiteral(*mathExprLiteral) {}
 
 func (v *priorityContextInferrerHints) visitEditor(e *editor) {
 	v.functions[e.Function] = struct{}{}

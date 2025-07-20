@@ -165,12 +165,12 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 }
 
 // isValid validates that the cWMetric has been unmarshalled correctly.
-func (u Unmarshaler) isValid(metric cWMetric) bool {
+func (Unmarshaler) isValid(metric cWMetric) bool {
 	return metric.MetricName != "" && metric.Namespace != "" && metric.Unit != "" && metric.Value.isSet
 }
 
 // Type of the serialized messages.
-func (u Unmarshaler) Type() string {
+func (Unmarshaler) Type() string {
 	return TypeStr
 }
 

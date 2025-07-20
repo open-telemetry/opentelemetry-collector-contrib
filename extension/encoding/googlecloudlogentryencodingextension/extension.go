@@ -45,7 +45,7 @@ func (ex *ext) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (ex *ext) Shutdown(_ context.Context) error {
+func (*ext) Shutdown(context.Context) error {
 	return nil
 }
 

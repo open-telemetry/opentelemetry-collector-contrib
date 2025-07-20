@@ -202,11 +202,11 @@ func readFile(fname string) (map[string]string, error) {
 	return stats, nil
 }
 
-func (c *mockClient) Connect() error {
+func (*mockClient) Connect() error {
 	return nil
 }
 
-func (c *mockClient) getVersion() (*version.Version, error) {
+func (*mockClient) getVersion() (*version.Version, error) {
 	version, _ := version.NewVersion("8.0.27")
 	return version, nil
 }
@@ -489,6 +489,6 @@ func (c *mockClient) getQuerySamples(uint64) ([]querySample, error) {
 	return samples, nil
 }
 
-func (c *mockClient) Close() error {
+func (*mockClient) Close() error {
 	return nil
 }

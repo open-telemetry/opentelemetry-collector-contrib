@@ -131,11 +131,11 @@ func (cp *nopConnPool) get() (net.Conn, error) {
 	return createTCPConn(cp.tcpConfig, cp.timeout)
 }
 
-func (cp *nopConnPool) put(conn net.Conn) {
+func (*nopConnPool) put(conn net.Conn) {
 	_ = conn.Close()
 }
 
-func (cp *nopConnPool) close() error {
+func (*nopConnPool) close() error {
 	return nil
 }
 

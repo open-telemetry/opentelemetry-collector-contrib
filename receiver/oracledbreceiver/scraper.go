@@ -798,7 +798,7 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	return childAddressToPlanMap
 }
 
-func (s *oracleScraper) getTopNMetricNames() []string {
+func (*oracleScraper) getTopNMetricNames() []string {
 	return []string{
 		elapsedTimeMetric, queryExecutionMetric, cpuTimeMetric, applicationWaitTimeMetric,
 		concurrencyWaitTimeMetric, userIoWaitTimeMetric, clusterWaitTimeMetric, rowsProcessedMetric, bufferGetsMetric,

@@ -26,7 +26,7 @@ type resourceStatements struct {
 	expr.BoolExpr[ottlresource.TransformContext]
 }
 
-func (r resourceStatements) Context() ContextID {
+func (resourceStatements) Context() ContextID {
 	return Resource
 }
 
@@ -105,7 +105,7 @@ type scopeStatements struct {
 	expr.BoolExpr[ottlscope.TransformContext]
 }
 
-func (s scopeStatements) Context() ContextID {
+func (scopeStatements) Context() ContextID {
 	return Scope
 }
 

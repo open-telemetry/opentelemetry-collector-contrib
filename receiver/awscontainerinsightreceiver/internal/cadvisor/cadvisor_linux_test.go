@@ -28,7 +28,7 @@ type mockCadvisorManager struct {
 
 // Start the manager. Calling other manager methods before this returns
 // may produce undefined behavior.
-func (m *mockCadvisorManager) Start() error {
+func (*mockCadvisorManager) Start() error {
 	return nil
 }
 
@@ -40,44 +40,44 @@ func (m *mockCadvisorManager) SubcontainersInfo(_ string, _ *info.ContainerInfoR
 
 type mockCadvisorManager2 struct{}
 
-func (m *mockCadvisorManager2) Start() error {
+func (*mockCadvisorManager2) Start() error {
 	return errors.New("new error")
 }
 
-func (m *mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
+func (*mockCadvisorManager2) SubcontainersInfo(string, *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
 	return nil, nil
 }
 
 func newMockCreateManager(t *testing.T) createCadvisorManager {
-	return func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
-		_ container.MetricSet, _ *http.Client, _ []string,
-		_ string,
+	return func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig,
+		container.MetricSet, *http.Client, []string,
+		string,
 	) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
 	}
 }
 
-var mockCreateManager2 = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
-	_ container.MetricSet, _ *http.Client, _ []string,
-	_ string,
+var mockCreateManager2 = func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig,
+	container.MetricSet, *http.Client, []string,
+	string,
 ) (cadvisorManager, error) {
 	return &mockCadvisorManager2{}, nil
 }
 
-var mockCreateManagerWithError = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
-	_ container.MetricSet, _ *http.Client, _ []string,
-	_ string,
+var mockCreateManagerWithError = func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig,
+	container.MetricSet, *http.Client, []string,
+	string,
 ) (cadvisorManager, error) {
 	return nil, errors.New("error")
 }
 
 type MockK8sDecorator struct{}
 
-func (m *MockK8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
+func (*MockK8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
 	return metric
 }
 
-func (m *MockK8sDecorator) Shutdown() error {
+func (*MockK8sDecorator) Shutdown() error {
 	return nil
 }
 

@@ -190,7 +190,7 @@ func (e eksDetectorUtils) isIMDSAccessible(ctx context.Context) bool {
 	return true
 }
 
-func (e eksDetectorUtils) getAWSConfig(ctx context.Context, checkAccess bool) (aws.Config, error) {
+func (eksDetectorUtils) getAWSConfig(ctx context.Context, checkAccess bool) (aws.Config, error) {
 	awsConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return aws.Config{}, err

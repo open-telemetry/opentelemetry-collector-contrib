@@ -33,6 +33,6 @@ type Config struct {
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
-func (cfg *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }

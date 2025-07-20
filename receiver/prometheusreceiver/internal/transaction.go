@@ -390,7 +390,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (
 	return storage.SeriesRef(seriesRef), nil
 }
 
-func (t *transaction) SetOptions(_ *storage.AppendOptions) {
+func (*transaction) SetOptions(_ *storage.AppendOptions) {
 	// TODO: implement this func
 }
 
@@ -559,11 +559,11 @@ func (t *transaction) Commit() error {
 	return err
 }
 
-func (t *transaction) Rollback() error {
+func (*transaction) Rollback() error {
 	return nil
 }
 
-func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metadata.Metadata) (storage.SeriesRef, error) {
+func (*transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metadata.Metadata) (storage.SeriesRef, error) {
 	// TODO: implement this func
 	return 0, nil
 }

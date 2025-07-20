@@ -212,7 +212,7 @@ func (mp *MetricsProducer) createSingleDatapointMetric(dp pmetric.NumberDataPoin
 }
 
 // Update the entity information for the BMC Helix Operations Management payload
-func (mp *MetricsProducer) updateEntityInformation(labels map[string]string, metricName string, resourceAttrs map[string]string, dpAttributes map[string]any) error {
+func (*MetricsProducer) updateEntityInformation(labels map[string]string, metricName string, resourceAttrs map[string]string, dpAttributes map[string]any) error {
 	// Try to get the hostname from resource attributes first
 	hostname, found := resourceAttrs[string(conventions.HostNameKey)]
 	if !found || hostname == "" {

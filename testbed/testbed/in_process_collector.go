@@ -109,15 +109,15 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	return stopped, err
 }
 
-func (ipp *inProcessCollector) WatchResourceConsumption() error {
+func (*inProcessCollector) WatchResourceConsumption() error {
 	return nil
 }
 
-func (ipp *inProcessCollector) GetProcessMon() *process.Process {
+func (*inProcessCollector) GetProcessMon() *process.Process {
 	return nil
 }
 
-func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
+func (*inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	return &ResourceConsumption{
 		CPUPercentAvg:   0,
 		CPUPercentMax:   0,
@@ -128,6 +128,6 @@ func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	}
 }
 
-func (ipp *inProcessCollector) GetResourceConsumption() string {
+func (*inProcessCollector) GetResourceConsumption() string {
 	return ""
 }

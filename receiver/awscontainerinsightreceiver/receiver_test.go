@@ -19,23 +19,23 @@ import (
 // Mock cadvisor
 type mockCadvisor struct{}
 
-func (c *mockCadvisor) GetMetrics() []pmetric.Metrics {
+func (*mockCadvisor) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	return []pmetric.Metrics{md}
 }
 
-func (c *mockCadvisor) Shutdown() error {
+func (*mockCadvisor) Shutdown() error {
 	return nil
 }
 
 // Mock k8sapiserver
 type mockK8sAPIServer struct{}
 
-func (m *mockK8sAPIServer) Shutdown() error {
+func (*mockK8sAPIServer) Shutdown() error {
 	return nil
 }
 
-func (m *mockK8sAPIServer) GetMetrics() []pmetric.Metrics {
+func (*mockK8sAPIServer) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	return []pmetric.Metrics{md}
 }

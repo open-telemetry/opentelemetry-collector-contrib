@@ -47,7 +47,7 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 	}
 }
 
-func (v *LogPresentValidator) RecordResults(tc *TestCase) {
+func (*LogPresentValidator) RecordResults(tc *TestCase) {
 	var result string
 	if tc.t.Failed() {
 		result = "FAIL"
@@ -71,7 +71,7 @@ type PerfTestValidator struct {
 	IncludeLimitsInReport bool
 }
 
-func (v *PerfTestValidator) Validate(tc *TestCase) {
+func (*PerfTestValidator) Validate(tc *TestCase) {
 	if assert.Equal(tc.t,
 		int64(tc.LoadGenerator.DataItemsSent()),
 		int64(tc.MockBackend.DataItemsReceived()),
@@ -617,7 +617,7 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 	}
 }
 
-func (c *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
+func (*CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
 	rc := tc.agentProc.GetTotalConsumption()
 
 	var result string

@@ -20,7 +20,7 @@ type DiskIOMetricExtractor struct {
 	rateCalculator awsmetrics.MetricCalculator
 }
 
-func (d *DiskIOMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
+func (*DiskIOMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 	return info.Spec.HasDiskIo
 }
 

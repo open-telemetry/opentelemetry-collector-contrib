@@ -81,7 +81,7 @@ func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 }
 
 // CanOutput always returns true for a writer operator.
-func (w *WriterOperator) CanOutput() bool {
+func (*WriterOperator) CanOutput() bool {
 	return true
 }
 
@@ -122,7 +122,7 @@ func (w *WriterOperator) SetOutputIDs(opIDs []string) {
 }
 
 // FindOperator will find an operator matching the supplied id.
-func (w *WriterOperator) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, bool) {
+func (*WriterOperator) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, bool) {
 	for _, operator := range operators {
 		if operator.ID() == operatorID {
 			return operator, true

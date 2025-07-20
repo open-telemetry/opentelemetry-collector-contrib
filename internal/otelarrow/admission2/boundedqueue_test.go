@@ -262,7 +262,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 	}
 }
 
-func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
+func (bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
 	switch a := m.Data.(type) {
 	case metricdata.Sum[int64]:
 		require.Len(t, a.DataPoints, 1)
