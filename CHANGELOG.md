@@ -6,8 +6,6 @@ Starting with version v0.83.0, this changelog includes only user-facing changes.
 If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./CHANGELOG-API.md).
 
 <!-- next version -->
-### 🛑 Breaking changes 🛑
-- The `SAPM Receiver` component has been removed from the repo and is no longer being published as it has been deprecated since 22nd October 2024 and the removal date of April 2025 has passed.
 
 ## v0.134.0
 
