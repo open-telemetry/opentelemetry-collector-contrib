@@ -45,7 +45,7 @@ type traceExporterImp struct {
 }
 
 // Create new traces exporter
-func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
+func newTracesExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		return exporterFactory.CreateTraces(ctx, oParams, &oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	lb, err := newLoadBalancer(ctx, params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}

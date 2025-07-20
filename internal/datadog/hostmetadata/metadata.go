@@ -59,10 +59,10 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 	return hm
 }
 
-func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
+func fillHostMetadata(ctx context.Context, params exporter.Settings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
+		if src, err := p.Source(ctx); err == nil && src.Kind == source.HostnameKind {
 			hm.InternalHostname = src.Identifier
 			hm.Meta.Hostname = src.Identifier
 		}
@@ -77,14 +77,14 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
-		ec2HostInfo := ec2.GetHostInfo(context.Background(), params.Logger)
+		ec2HostInfo := ec2.GetHostInfo(ctx, params.Logger)
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 	}
 
 	// System data was not set from attributes
 	if hm.Meta.SocketHostname == "" {
-		systemHostInfo := system.GetHostInfo(params.Logger)
+		systemHostInfo := system.GetHostInfo(ctx, params.Logger)
 		hm.Meta.SocketHostname = systemHostInfo.OS
 		hm.Meta.SocketFqdn = systemHostInfo.FQDN
 	}
@@ -139,7 +139,7 @@ func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	return nil
 }
 
-func (p *pusher) Push(_ context.Context, hm payload.HostMetadata) error {
+func (p *pusher) Push(ctx context.Context, hm payload.HostMetadata) error {
 	if hm.Meta.Hostname == "" {
 		// if the hostname is empty, don't send metadata; we don't need it.
 		p.params.Logger.Debug("Skipping host metadata since the hostname is empty")
@@ -148,7 +148,7 @@ func (p *pusher) Push(_ context.Context, hm payload.HostMetadata) error {
 
 	p.params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hm))
 
-	_, err := p.retrier.DoWithRetries(context.Background(), func(context.Context) error {
+	_, err := p.retrier.DoWithRetries(ctx, func(context.Context) error {
 		return p.pushMetadata(hm)
 	})
 
@@ -186,7 +186,7 @@ func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig,
 	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs, nil)
 	}
-	fillHostMetadata(params, pcfg, p, &hostMetadata)
+	fillHostMetadata(ctx, params, pcfg, p, &hostMetadata)
 	// Consume one first time
 	if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
 		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))

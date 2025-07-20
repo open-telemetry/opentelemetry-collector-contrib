@@ -207,7 +207,7 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 		defer mu.Unlock()
 		// Note: In a real scenario, we'd decompress and unmarshal the payload
 		// For this test, we'll create a mock payload to verify structure
-		mockPayload := createTestOtelCollectorPayload()
+		mockPayload := createTestOtelCollectorPayload(r.Context())
 		receivedPayloads = append(receivedPayloads, *mockPayload)
 	}))
 	defer mockBackend.Close()
@@ -223,7 +223,7 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	}
 
 	// Step 1: Create a full OtelCollectorPayload with realistic data
-	testPayload := createTestOtelCollectorPayload()
+	testPayload := createTestOtelCollectorPayload(context.Background())
 	assert.NotNil(t, testPayload)
 
 	// Verify the payload structure
@@ -320,7 +320,7 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 }
 
 // createTestOtelCollectorPayload creates a realistic test payload with full component data
-func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
+func createTestOtelCollectorPayload(ctx context.Context) *payload.OtelCollectorPayload {
 	// Load sample configuration to get realistic data
 	configPath := filepath.Join("internal", "componentchecker", "testdata", "sample-config.yaml")
 
@@ -334,7 +334,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 	}
 
 	resolver, _ := confmap.NewResolver(resolverSettings)
-	confMap, _ := resolver.Resolve(context.Background())
+	confMap, _ := resolver.Resolve(ctx)
 
 	// Create module info and populate active components
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
@@ -512,7 +512,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		// we'll simulate a successful response without full decompression
 		payloadMutex.Lock()
 		// Create a mock payload for verification
-		mockPayload := createTestOtelCollectorPayload()
+		mockPayload := createTestOtelCollectorPayload(r.Context())
 		receivedPayloads = append(receivedPayloads, *mockPayload)
 		payloadMutex.Unlock()
 

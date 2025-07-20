@@ -43,8 +43,8 @@ type intervalProcessor struct {
 	nextConsumer consumer.Metrics
 }
 
-func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics) *intervalProcessor {
-	ctx, cancel := context.WithCancel(context.Background())
+func newProcessor(ctx context.Context, config *Config, log *zap.Logger, nextConsumer consumer.Metrics) *intervalProcessor {
+	ctx, cancel := context.WithCancel(ctx)
 
 	return &intervalProcessor{
 		ctx:    ctx,

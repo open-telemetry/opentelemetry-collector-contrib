@@ -50,7 +50,7 @@ type ocExporter struct {
 	settings component.TelemetrySettings
 }
 
-func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
+func newOcExporter(cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
 	if cfg.Endpoint == "" {
 		return nil, errors.New("OpenCensus exporter cfg requires an Endpoint")
 	}
@@ -123,8 +123,8 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newTracesExporter(ctx context.Context, cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
-	oce, err := newOcExporter(ctx, cfg, settings)
+func newTracesExporter(cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
+	oce, err := newOcExporter(cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -132,8 +132,8 @@ func newTracesExporter(ctx context.Context, cfg *Config, settings component.Tele
 	return oce, nil
 }
 
-func newMetricsExporter(ctx context.Context, cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
-	oce, err := newOcExporter(ctx, cfg, settings)
+func newMetricsExporter(cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
+	oce, err := newOcExporter(cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func newMetricsExporter(ctx context.Context, cfg *Config, settings component.Tel
 	return oce, nil
 }
 
-func (oce *ocExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
+func (oce *ocExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	// Get first available trace Client.
 	tClient, ok := <-oce.tracesClients
 	if !ok {
@@ -155,7 +155,7 @@ func (oce *ocExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	// object means that an error happened: could not connect, service went down, etc.
 	if tClient == nil {
 		var err error
-		tClient, err = oce.createTraceServiceRPC()
+		tClient, err = oce.createTraceServiceRPC(ctx)
 		if err != nil {
 			// Cannot create an RPC, put back nil to keep the number of workers constant.
 			oce.tracesClients <- nil
@@ -190,7 +190,7 @@ func (oce *ocExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	return nil
 }
 
-func (oce *ocExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
+func (oce *ocExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	// Get first available mClient.
 	mClient, ok := <-oce.metricsClients
 	if !ok {
@@ -204,7 +204,7 @@ func (oce *ocExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error 
 	// object means that an error happened: could not connect, service went down, etc.
 	if mClient == nil {
 		var err error
-		mClient, err = oce.createMetricsServiceRPC()
+		mClient, err = oce.createMetricsServiceRPC(ctx)
 		if err != nil {
 			// Cannot create an RPC, put back nil to keep the number of workers constant.
 			oce.metricsClients <- nil
@@ -236,9 +236,9 @@ func (oce *ocExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error 
 	return nil
 }
 
-func (oce *ocExporter) createTraceServiceRPC() (*tracesClientWithCancel, error) {
+func (oce *ocExporter) createTraceServiceRPC(ctx context.Context) (*tracesClientWithCancel, error) {
 	// Initiate the trace service by sending over node identifier info.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	if len(oce.cfg.Headers) > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
@@ -251,9 +251,9 @@ func (oce *ocExporter) createTraceServiceRPC() (*tracesClientWithCancel, error) 
 	return &tracesClientWithCancel{cancel: cancel, tsec: traceClient}, nil
 }
 
-func (oce *ocExporter) createMetricsServiceRPC() (*metricsClientWithCancel, error) {
+func (oce *ocExporter) createMetricsServiceRPC(ctx context.Context) (*metricsClientWithCancel, error) {
 	// Initiate the trace service by sending over node identifier info.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	if len(oce.cfg.Headers) > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}

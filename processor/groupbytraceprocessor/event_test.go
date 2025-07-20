@@ -92,7 +92,7 @@ func TestEventCallback(t *testing.T) {
 			em := newEventMachine(logger, 50, 1, 1_000, tel)
 			tt.registerCallback(em, wg)
 
-			em.startInBackground()
+			em.startInBackground(context.Background())
 			defer em.shutdown()
 
 			// test
@@ -142,7 +142,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 			em.onError = func(_ event) {
 				wg.Done()
 			}
-			em.startInBackground()
+			em.startInBackground(context.Background())
 			defer em.shutdown()
 
 			// test
@@ -213,7 +213,7 @@ func TestEventInvalidPayload(t *testing.T) {
 				wg.Done()
 			}
 			tt.registerCallback(em, wg)
-			em.startInBackground()
+			em.startInBackground(context.Background())
 			defer em.shutdown()
 
 			// test
@@ -240,7 +240,7 @@ func TestEventUnknownType(t *testing.T) {
 	em.onError = func(_ event) {
 		wg.Done()
 	}
-	em.startInBackground()
+	em.startInBackground(context.Background())
 	defer em.shutdown()
 
 	// test
@@ -299,7 +299,7 @@ func TestEventTracePerWorker(t *testing.T) {
 				wg.Done()
 				return nil
 			}
-			em.startInBackground()
+			em.startInBackground(context.Background())
 			defer em.shutdown()
 
 			td := ptrace.NewTraces()
@@ -380,7 +380,7 @@ func TestEventShutdown(t *testing.T) {
 		wg.Wait()
 		return nil
 	}
-	em.startInBackground()
+	em.startInBackground(context.Background())
 
 	// test
 	em.workers[0].fire(event{
@@ -465,7 +465,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	// test
 	em.workers[0].fire(event{typ: traceReceived})
 	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
-	go em.periodicMetrics()
+	go em.periodicMetrics(context.Background())
 
 	// ensure our gauge is showing 1 item in the queue
 	assert.Eventually(t, func() bool {

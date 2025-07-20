@@ -105,8 +105,8 @@ func (sr *swReceiver) collectorHTTPEnabled() bool {
 	return sr.config != nil && sr.config.CollectorHTTPPort > 0
 }
 
-func (sr *swReceiver) Start(_ context.Context, host component.Host) error {
-	return sr.startCollector(host)
+func (sr *swReceiver) Start(ctx context.Context, host component.Host) error {
+	return sr.startCollector(ctx, host)
 }
 
 func (sr *swReceiver) Shutdown(ctx context.Context) error {
@@ -125,12 +125,10 @@ func (sr *swReceiver) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (sr *swReceiver) startCollector(host component.Host) error {
+func (sr *swReceiver) startCollector(ctx context.Context, host component.Host) error {
 	if !sr.collectorGRPCEnabled() && !sr.collectorHTTPEnabled() {
 		return nil
 	}
-
-	ctx := context.Background()
 
 	if sr.collectorHTTPEnabled() {
 		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)

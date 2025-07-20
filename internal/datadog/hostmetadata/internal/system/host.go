@@ -20,10 +20,10 @@ type HostInfo struct {
 }
 
 // GetHostInfo gets system information about the hostname
-func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
+func GetHostInfo(ctx context.Context, logger *zap.Logger) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
-	if hostname, err := getSystemFQDN(); err == nil {
+	if hostname, err := getSystemFQDN(ctx); err == nil {
 		hostInfo.FQDN = hostname
 	} else {
 		logger.Warn("Could not get FQDN Hostname", zap.Error(err))
@@ -60,17 +60,17 @@ type Provider struct {
 	logger *zap.Logger
 }
 
-func (p *Provider) fillHostInfo() {
-	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
+func (p *Provider) fillHostInfo(ctx context.Context) {
+	p.once.Do(func() { p.hostInfo = *GetHostInfo(ctx, p.logger) })
 }
 
-func (p *Provider) Source(context.Context) (source.Source, error) {
-	p.fillHostInfo()
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
+	p.fillHostInfo(ctx)
 	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.GetHostname(p.logger)}, nil
 }
 
-func (p *Provider) HostInfo() *HostInfo {
-	p.fillHostInfo()
+func (p *Provider) HostInfo(ctx context.Context) *HostInfo {
+	p.fillHostInfo(ctx)
 	return &p.hostInfo
 }
 

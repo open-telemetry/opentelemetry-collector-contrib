@@ -33,7 +33,7 @@ type redisScraper struct {
 
 const redisMaxDbs = 16 // Maximum possible number of redis databases
 
-func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
+func newRedisScraper(ctx context.Context, cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
@@ -42,7 +42,7 @@ func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, 
 	}
 
 	var err error
-	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(context.Background()); err != nil {
+	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(ctx); err != nil {
 		return nil, err
 	}
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)

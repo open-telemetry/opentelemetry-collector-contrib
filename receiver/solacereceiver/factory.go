@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 
 // CreateTraces creates a trace receiver based on provided config. Component is not shared
 func createTracesReceiver(
-	_ context.Context,
+	ctx context.Context,
 	params receiver.Settings,
 	receiverConfig component.Config,
 	nextConsumer consumer.Traces,
@@ -62,5 +62,5 @@ func createTracesReceiver(
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	// pass cfg, params and next consumer through
-	return newTracesReceiver(cfg, params, nextConsumer)
+	return newTracesReceiver(ctx, cfg, params, nextConsumer)
 }

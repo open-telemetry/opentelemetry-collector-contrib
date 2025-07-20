@@ -4,6 +4,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 
 import (
+	"context"
 	"log"
 	"testing"
 	"time"
@@ -74,7 +75,7 @@ func (tc *correctnessTestCase) stopTestbedReceiver() {
 }
 
 func (tc *correctnessTestCase) sendFirstMetric() {
-	tc.harness.sendNextMetric()
+	tc.harness.sendNextMetric(context.Background())
 }
 
 func (tc *correctnessTestCase) waitForAllMetrics() {

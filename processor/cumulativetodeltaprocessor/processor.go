@@ -26,8 +26,8 @@ type cumulativeToDeltaProcessor struct {
 	cancelFunc         context.CancelFunc
 }
 
-func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) (*cumulativeToDeltaProcessor, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func newCumulativeToDeltaProcessor(ctx context.Context, config *Config, logger *zap.Logger) (*cumulativeToDeltaProcessor, error) {
+	ctx, cancel := context.WithCancel(ctx)
 
 	p := &cumulativeToDeltaProcessor{
 		logger:     logger,

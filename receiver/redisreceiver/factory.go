@@ -41,14 +41,14 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	scrp, err := newRedisScraper(oCfg, set)
+	scrp, err := newRedisScraper(ctx, oCfg, set)
 	if err != nil {
 		return nil, err
 	}

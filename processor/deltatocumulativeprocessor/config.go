@@ -42,8 +42,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func (c Config) Metrics(tel telemetry.Metrics) {
-	ctx := context.Background()
+func (c Config) Metrics(ctx context.Context, tel telemetry.Metrics) {
 	tel.DeltatocumulativeStreamsMaxStale.Record(ctx, int64(c.MaxStale.Seconds()))
 	tel.DeltatocumulativeStreamsLimit.Record(ctx, int64(c.MaxStreams))
 }

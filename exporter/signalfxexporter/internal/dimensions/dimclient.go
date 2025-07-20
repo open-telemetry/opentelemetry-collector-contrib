@@ -121,12 +121,11 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 }
 
 // Start the client's processing queue
-func (dc *DimensionClient) Start() {
-	var ctx context.Context
+func (dc *DimensionClient) Start(ctx context.Context) {
 	// The dimension client is started during the exporter's startup functionality.
 	// The collector spec states that for long-running operations, components should
 	// use the background context, rather than the passed in context.
-	ctx, dc.cancel = context.WithCancel(context.Background())
+	ctx, dc.cancel = context.WithCancel(ctx)
 	go dc.processQueue(ctx)
 }
 

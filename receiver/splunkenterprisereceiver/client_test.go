@@ -129,7 +129,7 @@ func TestClientCreateRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			req, err := test.client.createRequest(typeIdx, test.sr)
+			req, err := test.client.createRequest(context.Background(), typeIdx, test.sr)
 			require.NoError(t, err)
 			// have to test specific parts since individual fields are pointers
 			require.Equal(t, test.expected.URL, req.URL)
@@ -164,7 +164,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	require.NoError(t, err)
 
-	req, err := client.createAPIRequest(typeIdx, "/test/endpoint")
+	req, err := client.createAPIRequest(context.Background(), typeIdx, "/test/endpoint")
 	require.NoError(t, err)
 
 	// build the expected request

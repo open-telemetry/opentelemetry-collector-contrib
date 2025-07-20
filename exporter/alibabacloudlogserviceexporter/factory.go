@@ -30,25 +30,25 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	return newTracesExporter(set, cfg)
+	return newTracesExporter(ctx, set, cfg)
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exp exporter.Metrics, err error) {
-	return newMetricsExporter(set, cfg)
+	return newMetricsExporter(ctx, set, cfg)
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exp exporter.Logs, err error) {
-	return newLogsExporter(set, cfg)
+	return newLogsExporter(ctx, set, cfg)
 }

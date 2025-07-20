@@ -50,7 +50,7 @@ func TestAggregation(t *testing.T) {
 
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
+				ctx,
 				processortest.NewNopSettings(metadata.Type),
 				config,
 				next,

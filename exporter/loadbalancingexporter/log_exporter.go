@@ -35,7 +35,7 @@ type logExporterImp struct {
 }
 
 // Create new logs exporter
-func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
+func newLogsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	lb, err := newLoadBalancer(ctx, params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}

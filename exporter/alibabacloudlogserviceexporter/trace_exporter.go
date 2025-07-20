@@ -14,7 +14,7 @@ import (
 )
 
 // newTracesExporter return a new LogService trace exporter.
-func newTracesExporter(set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	l := &logServiceTraceSender{
 		logger: set.Logger,
 	}
@@ -25,7 +25,7 @@ func newTracesExporter(set exporter.Settings, cfg component.Config) (exporter.Tr
 	}
 
 	return exporterhelper.NewTraces(
-		context.TODO(),
+		ctx,
 		set,
 		cfg,
 		l.pushTraceData)

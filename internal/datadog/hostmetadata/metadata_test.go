@@ -57,6 +57,7 @@ var (
 )
 
 func TestFillHostMetadata(t *testing.T) {
+	ctx := context.Background()
 	params := exportertest.NewNopSettings(exportertest.NopType)
 	params.BuildInfo = mockBuildInfo
 
@@ -69,7 +70,7 @@ func TestFillHostMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	metadata := payload.NewEmpty()
-	fillHostMetadata(params, pcfg, hostProvider, &metadata)
+	fillHostMetadata(ctx, params, pcfg, hostProvider, &metadata)
 
 	assert.Equal(t, "hostname", metadata.InternalHostname)
 	assert.Equal(t, "otelcontribcol", metadata.Flavor)
@@ -83,7 +84,7 @@ func TestFillHostMetadata(t *testing.T) {
 		Tags:             &payload.HostTags{},
 	}
 
-	fillHostMetadata(params, pcfg, hostProvider, &metadataWithVals)
+	fillHostMetadata(ctx, params, pcfg, hostProvider, &metadataWithVals)
 	assert.Equal(t, "my-custom-hostname", metadataWithVals.InternalHostname)
 	assert.Equal(t, "otelcontribcol", metadataWithVals.Flavor)
 	assert.Equal(t, "1.0", metadataWithVals.Version)

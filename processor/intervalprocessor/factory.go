@@ -33,11 +33,11 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsProcessor(_ context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	processorConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("configuration parsing error")
 	}
 
-	return newProcessor(processorConfig, set.Logger, nextConsumer), nil
+	return newProcessor(ctx, processorConfig, set.Logger, nextConsumer), nil
 }

@@ -162,7 +162,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 				}
 			}
 
-			factory, err := newAMQPMessagingServiceFactory(tt.cfg, logger)
+			factory, err := newAMQPMessagingServiceFactory(context.Background(), tt.cfg, logger)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, factory)

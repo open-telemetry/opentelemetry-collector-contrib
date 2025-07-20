@@ -37,7 +37,7 @@ type metricExporterImp struct {
 	telemetry  *metadata.TelemetryBuilder
 }
 
-func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
+func newMetricsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		return exporterFactory.CreateMetrics(ctx, oParams, &oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	lb, err := newLoadBalancer(ctx, params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}

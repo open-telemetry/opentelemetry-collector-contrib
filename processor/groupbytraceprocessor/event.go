@@ -106,9 +106,9 @@ func newEventMachine(logger *zap.Logger, bufferSize, numWorkers, numTraces int, 
 	return em
 }
 
-func (em *eventMachine) startInBackground() {
-	em.startWorkers()
-	go em.periodicMetrics()
+func (em *eventMachine) startInBackground(ctx context.Context) {
+	em.startWorkers(ctx)
+	go em.periodicMetrics(ctx)
 }
 
 func (em *eventMachine) numEvents() int {
@@ -119,10 +119,10 @@ func (em *eventMachine) numEvents() int {
 	return result
 }
 
-func (em *eventMachine) periodicMetrics() {
+func (em *eventMachine) periodicMetrics(ctx context.Context) {
 	numEvents := em.numEvents()
 	em.logger.Debug("recording current state of the queue", zap.Int("num-events", numEvents))
-	em.telemetry.ProcessorGroupbytraceNumEventsInQueue.Record(context.Background(), int64(numEvents))
+	em.telemetry.ProcessorGroupbytraceNumEventsInQueue.Record(ctx, int64(numEvents))
 
 	em.shutdownLock.RLock()
 	closed := em.closed
@@ -132,17 +132,17 @@ func (em *eventMachine) periodicMetrics() {
 	}
 
 	time.AfterFunc(em.metricsCollectionInterval, func() {
-		em.periodicMetrics()
+		em.periodicMetrics(ctx)
 	})
 }
 
-func (em *eventMachine) startWorkers() {
+func (em *eventMachine) startWorkers(ctx context.Context) {
 	for _, worker := range em.workers {
-		go worker.start()
+		go worker.start(ctx)
 	}
 }
 
-func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
+func (em *eventMachine) handleEvent(ctx context.Context, e event, w *eventMachineWorker) {
 	switch e.typ {
 	case traceReceived:
 		if em.onTraceReceived == nil {
@@ -157,7 +157,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReceived", func() error {
+		em.handleEventWithObservability(ctx, "onTraceReceived", func() error {
 			return em.onTraceReceived(payload, w)
 		})
 	case traceExpired:
@@ -173,7 +173,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceExpired", func() error {
+		em.handleEventWithObservability(ctx, "onTraceExpired", func() error {
 			return em.onTraceExpired(payload, w)
 		})
 	case traceReleased:
@@ -189,7 +189,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReleased", func() error {
+		em.handleEventWithObservability(ctx, "onTraceReleased", func() error {
 			return em.onTraceReleased(payload)
 		})
 	case traceRemoved:
@@ -205,7 +205,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceRemoved", func() error {
+		em.handleEventWithObservability(ctx, "onTraceRemoved", func() error {
 			return em.onTraceRemoved(payload)
 		})
 	default:
@@ -287,11 +287,11 @@ func (em *eventMachine) callOnError(e event) {
 
 // handleEventWithObservability uses the given function to process and event,
 // recording the event's latency and timing out if it doesn't finish within a reasonable duration
-func (em *eventMachine) handleEventWithObservability(event string, do func() error) {
+func (em *eventMachine) handleEventWithObservability(ctx context.Context, event string, do func() error) {
 	start := time.Now()
 	succeeded, err := doWithTimeout(time.Second, do)
 	duration := time.Since(start)
-	em.telemetry.ProcessorGroupbytraceEventLatency.Record(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", event))))
+	em.telemetry.ProcessorGroupbytraceEventLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", event))))
 
 	if err != nil {
 		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", event))
@@ -312,11 +312,11 @@ type eventMachineWorker struct {
 	events chan event
 }
 
-func (w *eventMachineWorker) start() {
+func (w *eventMachineWorker) start(ctx context.Context) {
 	for {
 		select {
 		case e := <-w.events:
-			w.machine.handleEvent(e, w)
+			w.machine.handleEvent(ctx, e, w)
 		case <-w.machine.close:
 			return
 		}

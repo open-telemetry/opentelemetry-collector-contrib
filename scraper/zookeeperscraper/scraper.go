@@ -80,7 +80,7 @@ func (z *zookeeperMetricsScraper) ScrapeMetrics(ctx context.Context) (pmetric.Me
 }
 
 func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string) ([]string, error) {
-	conn, err := z.config.Dial(context.Background())
+	conn, err := z.config.Dial(ctx)
 	if err != nil {
 		z.logger.Error("failed to establish connection",
 			zap.String("endpoint", z.config.Endpoint),

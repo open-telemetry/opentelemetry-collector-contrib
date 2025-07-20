@@ -67,8 +67,8 @@ type solaceTracesReceiver struct {
 }
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
-func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
+func newTracesReceiver(ctx context.Context, config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
+	factory, err := newAMQPMessagingServiceFactory(ctx, config, set.Logger)
 	if err != nil {
 		set.Logger.Warn("Error validating messaging service configuration", zap.Error(err))
 		return nil, err
@@ -113,7 +113,7 @@ func (s *solaceTracesReceiver) Start(ctx context.Context, _ component.Host) erro
 	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateStarting), metric.WithAttributeSet(s.metricAttrs))
 	s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateClear), metric.WithAttributeSet(s.metricAttrs))
 	var cancelableContext context.Context
-	cancelableContext, s.cancel = context.WithCancel(context.Background())
+	cancelableContext, s.cancel = context.WithCancel(ctx)
 
 	s.settings.Logger.Info("Starting receiver")
 	// start the reconnection loop with a cancellable context and a factory to build new messaging services
@@ -124,18 +124,18 @@ func (s *solaceTracesReceiver) Start(ctx context.Context, _ component.Host) erro
 }
 
 // Shutdown implements component.Receiver::Shutdown
-func (s *solaceTracesReceiver) Shutdown(_ context.Context) error {
+func (s *solaceTracesReceiver) Shutdown(ctx context.Context) error {
 	if s.cancel == nil {
 		return nil
 	}
 	// set the component name for the connected Solace broker
 	s.terminating.Store(true)
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateTerminating), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateTerminating), metric.WithAttributeSet(s.metricAttrs))
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
 	s.cancel() // cancels the context passed to the reconnection loop
 	s.shutdownWaitGroup.Wait()
 	s.settings.Logger.Info("Receiver shutdown successfully")
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateTerminated), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateTerminated), metric.WithAttributeSet(s.metricAttrs))
 	return nil
 }
 
@@ -151,7 +151,7 @@ func (s *solaceTracesReceiver) connectAndReceive(ctx context.Context) {
 	disable := false
 
 	// indicate we are in connecting state at the start
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateConnecting), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateConnecting), metric.WithAttributeSet(s.metricAttrs))
 
 reconnectionLoop:
 	for !disable {
@@ -164,14 +164,14 @@ reconnectionLoop:
 		}
 		// create a new connection within the closure to defer the service.close
 		func() {
-			defer func() {
+			defer func(ctx context.Context) {
 				// if the receiver is disabled, record the idle state, otherwise record the connecting state
 				if disable {
-					s.recordConnectionState(receiverStateIdle)
+					s.recordConnectionState(ctx, receiverStateIdle)
 				} else {
-					s.recordConnectionState(receiverStateConnecting)
+					s.recordConnectionState(ctx, receiverStateConnecting)
 				}
-			}()
+			}(ctx)
 			service := s.factory()
 			defer service.close(ctx)
 
@@ -181,7 +181,7 @@ reconnectionLoop:
 				return
 			}
 			// dial was successful, record the connected state
-			s.recordConnectionState(receiverStateConnected)
+			s.recordConnectionState(ctx, receiverStateConnected)
 
 			if err := s.receiveMessages(ctx, service); err != nil {
 				s.settings.Logger.Debug("Encountered error while receiving messages", zap.Error(err))
@@ -201,9 +201,9 @@ reconnectionLoop:
 // This does not fully prevent the state transitions terminating->(state)->terminated but
 // is a best effort without mutex protection and additional state tracking, and in reality if
 // this state transition were to happen, it would be short lived.
-func (s *solaceTracesReceiver) recordConnectionState(state receiverState) {
+func (s *solaceTracesReceiver) recordConnectionState(ctx context.Context, state receiverState) {
 	if !s.terminating.Load() {
-		s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(state), metric.WithAttributeSet(s.metricAttrs))
+		s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(state), metric.WithAttributeSet(s.metricAttrs))
 	}
 }
 

@@ -66,7 +66,7 @@ var cacheExpiration = time.Minute * 5
 var cacheCleanupInterval = time.Minute
 
 // function to create a new connector
-func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnector, error) {
+func newTraceToMetricConnector(ctx context.Context, set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnector, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
@@ -87,7 +87,6 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 			ctags[val] = ""
 		}
 	}
-	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:            set.Logger,
 		agent:             statsprocessor.NewAgentWithConfig(ctx, getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
@@ -133,10 +132,10 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnector) Start(context.Context, component.Host) error {
+func (c *traceToMetricConnector) Start(ctx context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
-	go c.run()
+	go c.run(ctx)
 	c.isStarted = true
 	return nil
 }
@@ -222,7 +221,7 @@ func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *traceToMetricConnector) run() {
+func (c *traceToMetricConnector) run(ctx context.Context) {
 	defer close(c.exit)
 	for {
 		select {
@@ -245,8 +244,6 @@ func (c *traceToMetricConnector) run() {
 				continue
 			}
 			// APM stats as metrics
-			ctx := context.TODO()
-
 			// send metrics to the consumer or next component in pipeline
 			if err := c.metricsConsumer.ConsumeMetrics(ctx, mx); err != nil {
 				c.logger.Error("Failed ConsumeMetrics", zap.Error(err))

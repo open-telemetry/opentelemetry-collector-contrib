@@ -209,7 +209,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		return
 	}
 	for _, atts := range attributes {
-		p.lb.RecordDbServerQuerySampleEvent(context.Background(),
+		p.lb.RecordDbServerQuerySampleEvent(ctx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
 			atts["db.namespace"].(string),
@@ -344,7 +344,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		}
 
 		p.lb.RecordDbServerTopQueryEvent(
-			context.Background(),
+			ctx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
 			item.row[DatabaseAttributeName].(string),

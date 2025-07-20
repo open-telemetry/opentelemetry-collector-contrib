@@ -92,8 +92,8 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 }
 
 // For running ad hoc searches only
-func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req *http.Request, err error) {
-	ctx := context.WithValue(context.Background(), endpointType("type"), eptType)
+func (c *splunkEntClient) createRequest(ctx context.Context, eptType string, sr *searchResponse) (req *http.Request, err error) {
+	ctx = context.WithValue(ctx, endpointType("type"), eptType)
 
 	// Running searches via Splunk's REST API is a two step process: First you submit the job to run
 	// this returns a jobid which is then used in the second part to retrieve the search results
@@ -133,9 +133,9 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 }
 
 // forms an *http.Request for use with Splunk built-in API's (like introspection).
-func (c *splunkEntClient) createAPIRequest(eptType, apiEndpoint string) (req *http.Request, err error) {
+func (c *splunkEntClient) createAPIRequest(ctx context.Context, eptType, apiEndpoint string) (req *http.Request, err error) {
 	var u string
-	ctx := context.WithValue(context.Background(), endpointType("type"), eptType)
+	ctx = context.WithValue(ctx, endpointType("type"), eptType)
 
 	if e, ok := c.clients[eptType]; ok {
 		u = e.endpoint.String() + apiEndpoint

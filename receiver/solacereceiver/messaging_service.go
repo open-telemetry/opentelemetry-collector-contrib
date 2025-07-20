@@ -29,7 +29,7 @@ type messagingService interface {
 type messagingServiceFactory func() messagingService
 
 // newAMQPMessagingServiceFactory creates a new messagingServiceFactory backed by AMQP
-func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingServiceFactory, error) {
+func newAMQPMessagingServiceFactory(ctx context.Context, cfg *Config, logger *zap.Logger) (messagingServiceFactory, error) {
 	saslConnOption, authErr := toAMQPAuthentication(cfg)
 	if authErr != nil {
 		return nil, authErr
@@ -37,7 +37,7 @@ func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingS
 
 	// Use the default load config for TLS. Note that in the case where "insecure" is true and no
 	// ca file is provided, tlsConfig will be nil representing a plaintext connection.
-	loadedTLSConfig, err := cfg.TLS.LoadTLSConfig(context.Background())
+	loadedTLSConfig, err := cfg.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

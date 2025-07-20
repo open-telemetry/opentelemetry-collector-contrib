@@ -244,7 +244,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfig(tt.config)
+			got, err := getPrometheusConfig(context.Background(), tt.config)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
@@ -446,7 +446,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopSettings(metadata.Type))
+			got, err := getPrometheusConfigWrapper(context.Background(), tt.config, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

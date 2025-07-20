@@ -40,10 +40,10 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
-	return newSAPMTracesExporter(eCfg, params)
+	return newSAPMTracesExporter(ctx, eCfg, params)
 }
