@@ -40,17 +40,17 @@ var _ ec2provider.Provider = (*mockMetadata)(nil)
 
 type mockClientBuilder struct{}
 
-func (e *mockClientBuilder) buildClient(_ context.Context, _ string, _ *http.Client) (ec2.DescribeTagsAPIClient, error) {
+func (*mockClientBuilder) buildClient(context.Context, string, *http.Client) (ec2.DescribeTagsAPIClient, error) {
 	return &mockEC2Client{}, nil
 }
 
 type mockClientBuilderError struct{}
 
-func (e *mockClientBuilderError) buildClient(_ context.Context, _ string, _ *http.Client) (ec2.DescribeTagsAPIClient, error) {
+func (*mockClientBuilderError) buildClient(context.Context, string, *http.Client) (ec2.DescribeTagsAPIClient, error) {
 	return &mockEC2ClientError{}, nil
 }
 
-func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
+func (mm mockMetadata) InstanceID(context.Context) (string, error) {
 	if !mm.isAvailable {
 		return "", errUnavailable
 	}
@@ -115,14 +115,14 @@ func TestNewDetector(t *testing.T) {
 type mockEC2ClientError struct{}
 
 // override the DescribeTags function to mock the output from an actual EC2 instance
-func (m *mockEC2ClientError) DescribeTags(_ context.Context, _ *ec2.DescribeTagsInput, _ ...func(*ec2.Options)) (*ec2.DescribeTagsOutput, error) {
+func (*mockEC2ClientError) DescribeTags(context.Context, *ec2.DescribeTagsInput, ...func(*ec2.Options)) (*ec2.DescribeTagsOutput, error) {
 	return nil, errors.New("Error fetching tags")
 }
 
 type mockEC2Client struct{}
 
 // override the DescribeTags function to mock the output from an actual EC2 instance
-func (m *mockEC2Client) DescribeTags(_ context.Context, input *ec2.DescribeTagsInput, _ ...func(*ec2.Options)) (*ec2.DescribeTagsOutput, error) {
+func (*mockEC2Client) DescribeTags(_ context.Context, input *ec2.DescribeTagsInput, _ ...func(*ec2.Options)) (*ec2.DescribeTagsOutput, error) {
 	if len(input.Filters) > 0 && len(input.Filters[0].Values) > 0 && input.Filters[0].Values[0] == "error" {
 		return nil, errors.New("error")
 	}

@@ -236,7 +236,7 @@ type mockNotifier struct {
 	changeCount  int
 }
 
-func (m *mockNotifier) ID() observer.NotifyID {
+func (*mockNotifier) ID() observer.NotifyID {
 	return "mockNotifier"
 }
 

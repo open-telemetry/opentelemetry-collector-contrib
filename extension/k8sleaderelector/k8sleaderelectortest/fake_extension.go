@@ -23,7 +23,7 @@ func (fh *FakeHost) GetExtensions() map[component.ID]component.Component {
 	}
 }
 
-func (fh *FakeHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+func (*FakeHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 
@@ -43,9 +43,9 @@ func (fle *FakeLeaderElection) InvokeOnLeading() {
 	}
 }
 
-func (fle *FakeLeaderElection) Start(_ context.Context, _ component.Host) error { return nil }
+func (*FakeLeaderElection) Start(context.Context, component.Host) error { return nil }
 
-func (fle *FakeLeaderElection) Shutdown(_ context.Context) error { return nil }
+func (*FakeLeaderElection) Shutdown(context.Context) error { return nil }
 
 func (fle *FakeLeaderElection) InvokeOnStopping() {
 	if fle.OnStopping != nil {
