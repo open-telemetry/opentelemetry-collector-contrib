@@ -2499,7 +2499,7 @@ The `UUID` function generates a v4 uuid string.
 
 ### Values
 
-`Values(target)` converts a `pcommon.Map` into a slice of their values.
+`Values(target)` converts a `pcommon.Map` into a slice containing its values.
 
 `target` is a `pcommon.Map`
 
