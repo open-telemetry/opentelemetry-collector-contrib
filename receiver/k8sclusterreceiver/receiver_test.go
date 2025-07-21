@@ -34,7 +34,7 @@ type nopHost struct {
 	component.Host
 }
 
-func (nh *nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+func (*nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

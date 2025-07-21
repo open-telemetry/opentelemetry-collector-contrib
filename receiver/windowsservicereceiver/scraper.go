@@ -33,12 +33,12 @@ func newWindowsServiceScraper(settings receiver.Settings, _ *Config) windowsServ
 }
 
 //nolint:unused
-func (ws *windowsServiceScraper) start(context.Context, component.Host) (err error) {
+func (*windowsServiceScraper) start(context.Context, component.Host) (err error) {
 	return nil
 }
 
 //nolint:unused
-func (ws *windowsServiceScraper) shutdown(context.Context) (err error) {
+func (*windowsServiceScraper) shutdown(context.Context) (err error) {
 	return nil
 }
 

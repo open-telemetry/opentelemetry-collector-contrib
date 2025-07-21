@@ -705,11 +705,11 @@ type errConsumer struct {
 	fakeErr error
 }
 
-func (e *errConsumer) Capabilities() consumer.Capabilities {
+func (*errConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
+func (e *errConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
 	e.wg.Done()
 	return e.fakeErr
 }
@@ -1108,21 +1108,17 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 						switch metric.Type() {
 						case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
-							{
-								dp := metric.Histogram().DataPoints()
-								for dpi := 0; dpi < dp.Len(); dpi++ {
-									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-										assert.NotContains(t, excludeDimensions, attributeKey)
-									}
+							dp := metric.Histogram().DataPoints()
+							for dpi := 0; dpi < dp.Len(); dpi++ {
+								for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+									assert.NotContains(t, excludeDimensions, attributeKey)
 								}
 							}
 						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
-							{
-								dp := metric.Sum().DataPoints()
-								for dpi := 0; dpi < dp.Len(); dpi++ {
-									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-										assert.NotContains(t, excludeDimensions, attributeKey)
-									}
+							dp := metric.Sum().DataPoints()
+							for dpi := 0; dpi < dp.Len(); dpi++ {
+								for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+									assert.NotContains(t, excludeDimensions, attributeKey)
 								}
 							}
 						}
@@ -1768,28 +1764,24 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
-					{
-						dps := metric.Sum().DataPoints()
-						for dpi := 0; dpi < dps.Len(); dpi++ {
-							if int64(start) == 0 {
-								start = dps.At(dpi).StartTimestamp()
-								timestamp = dps.At(dpi).Timestamp()
-							}
-							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
-							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+					dps := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						if int64(start) == 0 {
+							start = dps.At(dpi).StartTimestamp()
+							timestamp = dps.At(dpi).Timestamp()
 						}
+						assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+						assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
 					}
 				case pmetric.MetricTypeHistogram:
-					{
-						dps := metric.Histogram().DataPoints()
-						for dpi := 0; dpi < dps.Len(); dpi++ {
-							if int64(start) == 0 {
-								start = dps.At(dpi).StartTimestamp()
-								timestamp = dps.At(dpi).Timestamp()
-							}
-							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
-							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+					dps := metric.Histogram().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						if int64(start) == 0 {
+							start = dps.At(dpi).StartTimestamp()
+							timestamp = dps.At(dpi).Timestamp()
 						}
+						assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+						assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
 					}
 				default:
 					t.Fail()

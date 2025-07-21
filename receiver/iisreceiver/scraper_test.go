@@ -183,17 +183,17 @@ func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (w
 }
 
 // ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
-func (mpc *mockPerfCounter) ScrapeRawValue(_ *int64) (bool, error) {
+func (*mockPerfCounter) ScrapeRawValue(*int64) (bool, error) {
 	panic("unimplemented")
 }
 
 // ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
-func (mpc *mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+func (*mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
 	panic("unimplemented")
 }
 
 // Path
-func (mpc *mockPerfCounter) Path() string {
+func (*mockPerfCounter) Path() string {
 	return ""
 }
 
@@ -203,10 +203,10 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 }
 
 // Close
-func (mpc *mockPerfCounter) Close() error {
+func (*mockPerfCounter) Close() error {
 	return nil
 }
 
-func (mpc *mockPerfCounter) Reset() error {
+func (*mockPerfCounter) Reset() error {
 	return nil
 }

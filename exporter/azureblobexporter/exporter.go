@@ -178,7 +178,7 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal) (string, er
 	return blobName, nil
 }
 
-func (e *azureBlobExporter) Capabilities() consumer.Capabilities {
+func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -264,6 +264,6 @@ type readSeekCloserWrapper struct {
 	*bytes.Reader
 }
 
-func (r readSeekCloserWrapper) Close() error {
+func (readSeekCloserWrapper) Close() error {
 	return nil
 }

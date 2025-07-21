@@ -47,7 +47,7 @@ type ottlValueComparator struct{}
 
 // invalidComparison returns false for everything except ne (where it returns true to indicate that the
 // objects were definitely not equivalent).
-func (p *ottlValueComparator) invalidComparison(op compareOp) bool {
+func (*ottlValueComparator) invalidComparison(op compareOp) bool {
 	return op == ne
 }
 
@@ -72,7 +72,7 @@ func comparePrimitives[T constraints.Ordered](a, b T, op compareOp) bool {
 	}
 }
 
-func (p *ottlValueComparator) compareBools(a, b bool, op compareOp) bool {
+func (*ottlValueComparator) compareBools(a, b bool, op compareOp) bool {
 	switch op {
 	case eq:
 		return a == b
@@ -91,7 +91,7 @@ func (p *ottlValueComparator) compareBools(a, b bool, op compareOp) bool {
 	}
 }
 
-func (p *ottlValueComparator) compareBytes(a, b []byte, op compareOp) bool {
+func (*ottlValueComparator) compareBytes(a, b []byte, op compareOp) bool {
 	switch op {
 	case eq:
 		return bytes.Equal(a, b)

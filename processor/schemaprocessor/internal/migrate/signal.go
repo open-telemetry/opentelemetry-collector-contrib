@@ -32,7 +32,7 @@ func NewSignalNameChange[Key, Value SignalType](mappings map[Key]Value) SignalNa
 	return sig
 }
 
-func (s SignalNameChange) IsMigrator() {}
+func (SignalNameChange) IsMigrator() {}
 
 func (s *SignalNameChange) Do(ss StateSelector, signal alias.NamedSignal) {
 	var (

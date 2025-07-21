@@ -38,11 +38,11 @@ type metricModelExponentialHistogram struct {
 	metricModelCommon[dMetricExponentialHistogram]
 }
 
-func (m *metricModelExponentialHistogram) metricType() pmetric.MetricType {
+func (*metricModelExponentialHistogram) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeExponentialHistogram
 }
 
-func (m *metricModelExponentialHistogram) tableSuffix() string {
+func (*metricModelExponentialHistogram) tableSuffix() string {
 	return "_exponential_histogram"
 }
 

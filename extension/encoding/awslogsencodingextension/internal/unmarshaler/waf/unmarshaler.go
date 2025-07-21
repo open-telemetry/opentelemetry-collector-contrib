@@ -138,7 +138,7 @@ func setResourceAttributes(resourceLogs plog.ResourceLogs, webACLID string) erro
 	return nil
 }
 
-func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
+func (*wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 	// timestamp is in milliseconds, so we need to convert it to ns first
 	nanos := log.Timestamp * 1_000_000
 	ts := pcommon.Timestamp(nanos)
