@@ -11,11 +11,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.130.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.36.1-0.20250715222903-0a7598ec1e19
-	go.opentelemetry.io/collector/component/componenttest v0.130.0
-	go.opentelemetry.io/collector/confmap v1.36.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.130.0
+	go.opentelemetry.io/collector/component/componenttest v0.130.1-0.20250715222903-0a7598ec1e19
+	go.opentelemetry.io/collector/confmap v1.36.1-0.20250715222903-0a7598ec1e19
+	go.opentelemetry.io/collector/confmap/xconfmap v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/extension v1.36.1-0.20250715222903-0a7598ec1e19
-	go.opentelemetry.io/collector/extension/extensiontest v0.130.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/pdata v1.36.1-0.20250715222903-0a7598ec1e19
 	go.uber.org/goleak v1.3.0
 	google.golang.org/genproto v0.0.0-20250715232539-7130f93afb79
@@ -30,14 +30,14 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.1 // indirect
+	github.com/knadh/koanf/v2 v2.2.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
