@@ -6,6 +6,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +25,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
+
+//need a semaphore kind of variable to wait watch for all the goroutines of length (object count)
 
 type k8sobjectsreceiver struct {
 	setting         receiver.Settings
@@ -75,10 +78,100 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 	cctx, cancel := context.WithCancel(ctx)
 	kr.cancel = cancel
 
+	var listWatchObjects int
+	var listWatchInterval time.Duration
 	for _, object := range kr.config.Objects {
-		kr.start(cctx, object)
+		if object.Mode == ListWatchMode {
+			listWatchObjects++
+			if strings.ToLower(object.Name) == "pods" {
+				listWatchInterval = object.Interval
+			}
+		} else {
+			kr.start(cctx, object)
+		}
+	}
+	if listWatchObjects > 0 {
+		//if there is no list watch interval set for pods, use the first object interval
+		if listWatchInterval == 0 {
+			listWatchInterval = kr.config.Objects[0].Interval
+		}
+		go kr.startListWatchObjects(cctx, kr.config.Objects, listWatchInterval)
 	}
 	return nil
+}
+
+func (kr *k8sobjectsreceiver) startListWatchObjects(ctx context.Context, objects []*K8sObjectsConfig, interval time.Duration) {
+	stopperChan := make(chan struct{})
+	kr.mu.Lock()
+	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
+
+	// Start a ticker for the list watch mode
+	ticker := newTicker(ctx, interval)
+	defer ticker.Stop()
+
+	stopperChanNew := make(chan struct{})
+	cancelCtx, cancel := context.WithCancel(ctx)
+
+	for {
+		select {
+		case <-ticker.C:
+			if stopperChanNew != nil {
+				close(stopperChanNew)
+			}
+			cancel()
+			stopperChanNew = make(chan struct{})
+			cancelCtx, cancel = context.WithCancel(ctx)
+			pullBarrier := make(chan struct{})
+
+			// Create a new WaitGroup for each cycle
+			var pullWQ sync.WaitGroup
+
+			for _, object := range objects {
+				if object.Mode == ListWatchMode {
+					resource := kr.client.Resource(*object.gvr)
+					kr.setting.Logger.Info("Started collecting", zap.Any("gvr", object.gvr), zap.Any("mode", object.Mode), zap.Any("namespaces", object.Namespaces))
+					if len(object.Namespaces) == 0 {
+						pullWQ.Add(1)
+						go kr.startListWatch(cancelCtx, object, resource, stopperChanNew, cancel, &pullWQ, pullBarrier)
+					} else {
+						for _, ns := range object.Namespaces {
+							pullWQ.Add(1)
+							go kr.startListWatch(cancelCtx, object, resource.Namespace(ns), stopperChanNew, cancel, &pullWQ, pullBarrier)
+						}
+					}
+				}
+			}
+			kr.setting.Logger.Info("timer waiting for all pull operations to finish before starting watch")
+			pullWQ.Wait()
+			kr.setting.Logger.Info("timer waiting over for all pull operations and starting watch")
+			//send a final log for the end of the pull operation
+			pullEndLog := createResourcePullEndLog(nil)
+			obsCtx := kr.obsrecv.StartLogsOp(ctx)
+			err := kr.consumer.ConsumeLogs(obsCtx, pullEndLog)
+			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), pullEndLog.LogRecordCount(), err)
+			//Notify to start watch
+			close(pullBarrier)
+		case <-stopperChan:
+			cancel()
+			if stopperChanNew != nil {
+				close(stopperChanNew)
+			}
+			return
+		}
+	}
+
+}
+
+func (kr *k8sobjectsreceiver) startListWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface, stopperChanNew chan struct{}, cancel context.CancelFunc, pullWQ *sync.WaitGroup, pullBarrier chan struct{}) {
+
+	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+		options.FieldSelector = config.FieldSelector
+		options.LabelSelector = config.LabelSelector
+		return resource.Watch(ctx, options)
+	}
+	go kr.pullAndDoWatch(ctx, *config, resource, cancel, watchFunc, stopperChanNew, pullWQ, pullBarrier)
+
 }
 
 func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
@@ -109,7 +202,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 			}
 		}
 
-	case WatchMode, ListWatchMode:
+	case WatchMode:
 		if len(object.Namespaces) == 0 {
 			go kr.startWatch(ctx, object, resource)
 		} else {
@@ -184,47 +277,28 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 		options.LabelSelector = config.LabelSelector
 		return resource.Watch(ctx, options)
 	}
-
-	if config.Mode == WatchMode {
-		cancelCtx, cancel := context.WithCancel(ctx)
-		cfgCopy := *config
-		kr.pullAndDoWatch(cancelCtx, cfgCopy, resource, cancel, watchFunc, stopperChan)
-	} else {
-		//means ListWatchMode
-		ticker := time.NewTicker(config.Interval)
-		cancelCtx, cancel := context.WithCancel(ctx)
-		cfgCopy := *config
-		stopperChanNew := make(chan struct{})
-		go kr.pullAndDoWatch(cancelCtx, cfgCopy, resource, cancel, watchFunc, stopperChanNew)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				// Restart the pull and watch cycle
-				// This will reset the resource version and start a new watch.
-				// This is needed because the ListWatchMode requires a fresh resource version
-				close(stopperChanNew)
-				cancel()
-				stopperChanNew = make(chan struct{})
-				cancelCtx, cancel = context.WithCancel(ctx)
-				go kr.pullAndDoWatch(cancelCtx, cfgCopy, resource, cancel, watchFunc, stopperChanNew)
-			case <-stopperChan:
-				if stopperChanNew != nil {
-					close(stopperChanNew)
-				}
-				return
-			}
-		}
-	}
+	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	cfgCopy := *config
+	kr.pullAndDoWatch(cancelCtx, cfgCopy, resource, cancel, watchFunc, stopperChan, nil, nil)
 }
 
-func (kr *k8sobjectsreceiver) pullAndDoWatch(cancelCtx context.Context, cfgCopy K8sObjectsConfig, resource dynamic.ResourceInterface, cancel context.CancelFunc, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) {
+func (kr *k8sobjectsreceiver) pullAndDoWatch(cancelCtx context.Context, cfgCopy K8sObjectsConfig, resource dynamic.ResourceInterface, cancel context.CancelFunc, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, pullWQ *sync.WaitGroup, pullBarrier chan struct{}) {
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := kr.doPullOnceAndGetResourceVersion(newCtx, &cfgCopy, resource)
+		if pullWQ != nil {
+			pullWQ.Done()
+		}
 		if err != nil {
 			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
 			cancel()
 			return
+		}
+		if pullBarrier != nil {
+			// Wait for all threads to finish the pull operation
+			kr.setting.Logger.Debug("Waiting for all pull operations to finish before starting watch", zap.String("resource", cfgCopy.gvr.String()))
+			<-pullBarrier
+			kr.setting.Logger.Debug("Waiting over for all pull operations and starting watch", zap.String("resource", cfgCopy.gvr.String()))
 		}
 
 		done := kr.doWatch(newCtx, &cfgCopy, resourceVersion, watchFunc, stopperChan)
@@ -376,8 +450,7 @@ func (kr *k8sobjectsreceiver) resourcePullWithPagination(ctx context.Context, co
 		continueToken = objects.GetContinue()
 		if continueToken == "" {
 			//send one watch event for the end of the list with type "PullEnd" and kind in the object should be the config.name, send this as log
-			//send one watch event for the end of the list with type "PullEnd" and kind in the object should be the config.name, send this as log
-			pullEndLog := createPullEndLog(config)
+			pullEndLog := createResourcePullEndLog(config)
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
 			err = kr.consumer.ConsumeLogs(obsCtx, pullEndLog)
 			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), pullEndLog.LogRecordCount(), err)

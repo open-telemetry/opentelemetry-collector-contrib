@@ -80,8 +80,8 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 	return out
 }
 
-// createPullEndLog creates a log record for the end of a pull operation, using the same body structure as a watch event.
-func createPullEndLog(config *K8sObjectsConfig) plog.Logs {
+// createResourcePullEndLog creates a log record for the end of a pull operation, using the same body structure as a watch event.
+func createResourcePullEndLog(config *K8sObjectsConfig) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -89,12 +89,20 @@ func createPullEndLog(config *K8sObjectsConfig) plog.Logs {
 	record.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	// Build the body to match the watch event structure
+	kind := "K8SResources"
+	pullType := "PullCompleted"
+	if config != nil && config.Name != "" {
+		kind = config.Name
+		pullType = "PullEnd"
+	}
+
 	bodyMap := map[string]interface{}{
-		"type": "PullEnd",
+		"type": pullType,
 		"object": map[string]interface{}{
-			"kind": config.Name,
+			"kind": kind,
 		},
 	}
+
 	record.Body().SetEmptyMap().FromRaw(bodyMap)
 	return logs
 }
