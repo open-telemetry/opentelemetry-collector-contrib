@@ -452,7 +452,7 @@ func flushBulkIndexer(
 			}
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
-					semconv.HTTPResponseStatusCode(bulkFailedErr.StatusCode()),
+					semconv.HTTPResponseStatusCode(code),
 					attribute.String("outcome", outcome),
 				}, defaultMetaAttrs...)...,
 			))
@@ -463,6 +463,7 @@ func flushBulkIndexer(
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				}, defaultMetaAttrs...)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)

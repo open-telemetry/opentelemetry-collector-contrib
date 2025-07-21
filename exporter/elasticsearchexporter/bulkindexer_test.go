@@ -301,17 +301,20 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 			wantESLatency: &metricdata.HistogramDataPoint[float64]{
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 		},
