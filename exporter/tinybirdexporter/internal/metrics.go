@@ -110,7 +110,7 @@ func covertValue(dp pmetric.NumberDataPoint) float64 {
 	return 0.0
 }
 
-func ConvertMetrics(md pmetric.Metrics, sumEncoder Encoder, gaugeEncoder Encoder, histogramEncoder Encoder, exponentialHistogramEncoder Encoder) error {
+func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncoder, exponentialHistogramEncoder Encoder) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
 		resource := rm.Resource()
