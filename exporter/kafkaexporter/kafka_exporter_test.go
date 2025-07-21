@@ -1445,11 +1445,11 @@ func (f pprofileMarshalerFuncExtension) MarshalProfiles(td pprofile.Profiles) ([
 	return f(td)
 }
 
-func (f pprofileMarshalerFuncExtension) Start(context.Context, component.Host) error {
+func (pprofileMarshalerFuncExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (f pprofileMarshalerFuncExtension) Shutdown(context.Context) error {
+func (pprofileMarshalerFuncExtension) Shutdown(context.Context) error {
 	return nil
 }
 

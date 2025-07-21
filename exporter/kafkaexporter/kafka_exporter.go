@@ -328,7 +328,7 @@ func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profi
 	return getTopic(ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
 }
 
-func (e *kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
+func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
 	return func(yield func([]byte, pprofile.Profiles) bool) {
 		yield(nil, ld)
 	}
