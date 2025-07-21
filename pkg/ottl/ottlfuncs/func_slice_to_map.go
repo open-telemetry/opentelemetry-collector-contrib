@@ -50,7 +50,7 @@ func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath ottl.Optional[[]str
 	}
 }
 
-func sliceToMap(v []any, keyPath ottl.Optional[[]string], valuePath ottl.Optional[[]string]) (any, error) {
+func sliceToMap(v []any, keyPath, valuePath ottl.Optional[[]string]) (any, error) {
 	result := make(map[string]any, len(v))
 	for i, elem := range v {
 		e, ok := elem.(map[string]any)
