@@ -186,7 +186,7 @@ func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 	return expectedOutput
 }
 
-func compareMetricsMaps(t *testing.T, expected map[string]pmetric.Metrics, actual map[string]pmetric.Metrics) {
+func compareMetricsMaps(t *testing.T, expected, actual map[string]pmetric.Metrics) {
 	expectedKeys := make([]string, 0, len(expected))
 	for key := range expected {
 		expectedKeys = append(expectedKeys, key)
@@ -832,7 +832,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	require.Positive(t, counter2.Load())
 }
 
-func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpCount int) pmetric.Metrics {
+func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	timeStamp := pcommon.Timestamp(rand.IntN(256))
@@ -884,7 +884,7 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 	return md
 }
 
-func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount int, rmCount int, smCount int, mCount int, dpCount int) {
+func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCount, smCount, mCount, dpCount int) {
 	ts, tb := getTelemetryAssets(b)
 
 	sink := new(consumertest.MetricsSink)
@@ -1049,7 +1049,7 @@ func newNopMockMetricsExporter() exporter.Metrics {
 	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
-func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
+func (*mockMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

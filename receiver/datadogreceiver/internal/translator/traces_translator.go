@@ -381,7 +381,8 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		}
 		var traces pb.Traces
 
-		if err = traces.UnmarshalMsgDictionary(buf.Bytes()); err != nil {
+		err = traces.UnmarshalMsgDictionary(buf.Bytes())
+		if err != nil {
 			return nil, err
 		}
 
@@ -400,7 +401,8 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 
 	case strings.HasPrefix(req.URL.Path, "/v0.1"):
 		var spans []pb.Span
-		if err = json.NewDecoder(req.Body).Decode(&spans); err != nil {
+		err = json.NewDecoder(req.Body).Decode(&spans)
+		if err != nil {
 			return nil, err
 		}
 		tracerPayload := &pb.TracerPayload{
@@ -418,7 +420,8 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		}
 
 		var agentPayload pb.AgentPayload
-		if err = proto.Unmarshal(buf.Bytes(), &agentPayload); err != nil {
+		err = proto.Unmarshal(buf.Bytes(), &agentPayload)
+		if err != nil {
 			return nil, err
 		}
 
@@ -426,7 +429,8 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 
 	default:
 		var traces pb.Traces
-		if err = decodeRequest(req, &traces); err != nil {
+		err = decodeRequest(req, &traces)
+		if err != nil {
 			return nil, err
 		}
 		traceChunks := traceChunksFromTraces(traces)
@@ -455,11 +459,7 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 		}
 		_, err = dest.UnmarshalMsg(buf.Bytes())
 		return err
-	case "application/json":
-		fallthrough
-	case "text/json":
-		fallthrough
-	case "":
+	case "application/json", "text/json", "":
 		err = json.NewDecoder(req.Body).Decode(&dest)
 		return err
 	default:

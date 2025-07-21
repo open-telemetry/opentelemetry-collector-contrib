@@ -72,7 +72,7 @@ func (dsb *DataSenderBase) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (dsb *DataSenderBase) Flush() {
+func (*DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
@@ -103,7 +103,7 @@ func (ods *otlpHTTPDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *otlpHTTPDataSender) ProtocolName() string {
+func (*otlpHTTPDataSender) ProtocolName() string {
 	return "otlp"
 }
 
@@ -234,7 +234,7 @@ func (ods *otlpDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *otlpDataSender) ProtocolName() string {
+func (*otlpDataSender) ProtocolName() string {
 	return "otlp"
 }
 

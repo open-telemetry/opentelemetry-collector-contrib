@@ -47,16 +47,16 @@ func (p *glPipeline) setSpanData(span ptrace.Span) error {
 }
 
 // the glPipeline doesn't have a parent span ID, bc it's the root span
-func (p *glPipeline) setSpanIDs(span ptrace.Span, spanID pcommon.SpanID) error {
+func (*glPipeline) setSpanIDs(span ptrace.Span, spanID pcommon.SpanID) error {
 	span.SetSpanID(spanID)
 	return nil
 }
 
-func (p *glPipeline) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (*glPipeline) setTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func (p *glPipeline) setAttributes(_ ptrace.Span) error {
+func (*glPipeline) setAttributes(_ ptrace.Span) error {
 	// ToDo in next PR: set semconv attributes
 	return nil
 }
@@ -99,11 +99,11 @@ func (s *glPipelineStage) setSpanIDs(span ptrace.Span, parentSpanID pcommon.Span
 	return nil
 }
 
-func (s *glPipelineStage) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (*glPipelineStage) setTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func (s *glPipelineStage) setAttributes(_ ptrace.Span) error {
+func (*glPipelineStage) setAttributes(ptrace.Span) error {
 	// ToDo in next PR: set semconv attributes
 	return nil
 }
@@ -171,11 +171,11 @@ func (j *glPipelineJob) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID
 	return nil
 }
 
-func (j *glPipelineJob) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (*glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func (j *glPipelineJob) setAttributes(_ ptrace.Span) error {
+func (*glPipelineJob) setAttributes(ptrace.Span) error {
 	// ToDo in next PR: set semconv attributes
 	return nil
 }

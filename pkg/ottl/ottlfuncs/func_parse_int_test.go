@@ -25,7 +25,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "string in base 10",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -39,7 +39,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "string in base 2",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "01010101", nil
 				},
 			},
@@ -53,7 +53,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "an out of range string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return fmt.Sprintf("%d", uint64(math.MaxUint64)), nil
 				},
 			},
@@ -68,7 +68,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "string in base 16",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "AF", nil
 				},
 			},
@@ -82,7 +82,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "string in base 16 with 0x prefix",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "0XAF", nil
 				},
 			},
@@ -96,7 +96,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "not a number string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "test", nil
 				},
 			},
@@ -111,7 +111,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -126,7 +126,7 @@ func Test_ParseInt(t *testing.T) {
 		{
 			name: "negative base value",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "12345", nil
 				},
 			},

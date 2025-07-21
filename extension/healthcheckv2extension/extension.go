@@ -163,7 +163,7 @@ func (hc *healthCheckExtension) Ready() error {
 }
 
 // NotReady implements the extension.PipelineWatcher interface.
-func (hc *healthCheckExtension) NotReady() error {
+func (*healthCheckExtension) NotReady() error {
 	return nil
 }
 

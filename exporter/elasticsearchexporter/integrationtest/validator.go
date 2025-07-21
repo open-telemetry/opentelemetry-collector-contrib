@@ -34,4 +34,4 @@ func (v *countValidator) Validate(tc *testbed.TestCase) {
 	)
 }
 
-func (v *countValidator) RecordResults(_ *testbed.TestCase) {}
+func (*countValidator) RecordResults(*testbed.TestCase) {}

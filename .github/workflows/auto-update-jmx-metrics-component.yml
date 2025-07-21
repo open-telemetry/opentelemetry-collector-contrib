@@ -6,9 +6,6 @@ on:
     - cron: '30 1 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   check-versions:
     runs-on: ubuntu-24.04

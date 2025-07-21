@@ -186,7 +186,7 @@ func Benchmark(b *testing.B) {
 		batchSize   = numMetrics / numRoutines
 	)
 
-	sink := new(CountingSink)
+	sink := new(countingSink)
 	proc, _ := setup(b, nil, sink)
 
 	// below b.Parallel call executes the benchmark with $GOMAXPROCS workers.
@@ -257,16 +257,16 @@ func Benchmark(b *testing.B) {
 	require.Equal(b, int64(dps), sink.Load())
 }
 
-type CountingSink struct {
+type countingSink struct {
 	atomic.Int64
 }
 
-func (cs *CountingSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (cs *countingSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	cs.Add(int64(md.DataPointCount()))
 	return nil
 }
 
-func (cs *CountingSink) Capabilities() consumer.Capabilities {
+func (*countingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 

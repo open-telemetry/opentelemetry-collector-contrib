@@ -35,7 +35,7 @@ func newLogsConnector(set connector.Settings, config component.Config, logsConsu
 }
 
 // Capabilities implements the consumer interface
-func (c *connectorLogs) Capabilities() consumer.Capabilities {
+func (*connectorLogs) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

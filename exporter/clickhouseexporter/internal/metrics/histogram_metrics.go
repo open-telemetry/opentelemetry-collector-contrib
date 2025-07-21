@@ -106,7 +106,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db driver.Conn) error {
 	return nil
 }
 
-func (h *histogramMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
+func (h *histogramMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name, description, unit string) error {
 	histogram, ok := metrics.(pmetric.Histogram)
 	if !ok {
 		return errors.New("metrics param is not type of Histogram")

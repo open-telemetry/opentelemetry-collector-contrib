@@ -47,7 +47,7 @@ type dnsResolver struct {
 	endpoints         []string
 	onChangeCallbacks []func([]string)
 
-	stopCh             chan (struct{})
+	stopCh             chan struct{}
 	updateLock         sync.Mutex
 	shutdownWg         sync.WaitGroup
 	changeCallbackLock sync.RWMutex
