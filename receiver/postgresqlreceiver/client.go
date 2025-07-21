@@ -75,8 +75,9 @@ type client interface {
 }
 
 type postgreSQLClient struct {
-	client  *sql.DB
-	closeFn func() error
+	client     *sql.DB
+	closeFn    func() error
+	obfuscator *obfuscator
 }
 
 // explainQuery implements client.
@@ -117,7 +118,7 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
 	}
-	return obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
+	return c.obfuscator.obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -927,7 +928,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		newestQueryTimestamp = math.Max(newestQueryTimestamp, _queryStartTimestamp)
 
 		// TODO: check if the query is truncated.
-		obfuscated, err := obfuscateSQL(row["query"])
+		obfuscated, err := c.obfuscator.obfuscateSQLString(row["query"])
 		if err != nil {
 			logger.Warn("failed to obfuscate query", zap.String("query", row["query"]))
 			obfuscated = ""
@@ -1021,7 +1022,7 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 			totalPlanTimeColumnName:     convertMillisecondToSecond,
 			"query": func(_, val string, logger *zap.Logger) (any, error) {
 				// TODO: check if it is truncated.
-				result, err := obfuscateSQL(val)
+				result, err := c.obfuscator.obfuscateSQLString(val)
 				if err != nil {
 					logger.Error("failed to obfuscate query", zap.String("query", val))
 					return "", err

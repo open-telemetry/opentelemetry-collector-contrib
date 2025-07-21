@@ -1,25 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// source(Apache 2.0): https://github.com/DataDog/datadog-agent/blob/main/pkg/collector/python/datadog_agent.go
-
-// Unless explicitly stated otherwise all files in this repository are licensed
-// under the Apache License Version 2.0.
-// This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2016-present Datadog, Inc.
-
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 import (
-	"sync"
-
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 )
 
-var (
-	obfuscator       *obfuscate.Obfuscator
-	obfuscatorLoader sync.Once
-)
+var obfuscateSQLConfig = obfuscate.SQLConfig{
+	DBMS:         "postgres",
+	KeepSQLAlias: true,
+	KeepBoolean:  true,
+	KeepNull:     true,
+}
 
 // defaultSQLPlanNormalizeSettings are the default JSON obfuscator settings for both obfuscating and normalizing SQL
 // execution plans
@@ -157,6 +150,27 @@ var defaultSQLPlanNormalizeSettings = obfuscate.JSONConfig{
 	},
 }
 
+type obfuscator obfuscate.Obfuscator
+
+func newObfuscator() *obfuscator {
+	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{
+		SQLExecPlan:          defaultSQLPlanObfuscateSettings,
+		SQLExecPlanNormalize: defaultSQLPlanNormalizeSettings,
+	}))
+}
+
+func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
+	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLStringWithOptions(sql, &obfuscateSQLConfig, "")
+	if err != nil {
+		return "", err
+	}
+	return obfuscatedQuery.Query, nil
+}
+
+func (o *obfuscator) obfuscateSQLExecPlan(plan string) (string, error) {
+	return (*obfuscate.Obfuscator)(o).ObfuscateSQLExecPlan(plan, true)
+}
+
 // defaultSQLPlanObfuscateSettings builds upon sqlPlanNormalizeSettings by including cost & row estimates in the keep
 // list
 var defaultSQLPlanObfuscateSettings = obfuscate.JSONConfig{
@@ -171,40 +185,3 @@ var defaultSQLPlanObfuscateSettings = obfuscate.JSONConfig{
 	}, defaultSQLPlanNormalizeSettings.KeepValues...),
 	ObfuscateSQLValues: defaultSQLPlanNormalizeSettings.ObfuscateSQLValues,
 }
-
-// lazyInitObfuscator initializes the obfuscator the first time it is used.
-func lazyInitObfuscator() *obfuscate.Obfuscator {
-	obfuscatorLoader.Do(func() {
-		obfuscator = obfuscate.NewObfuscator(obfuscate.Config{
-			SQLExecPlan:          defaultSQLPlanObfuscateSettings,
-			SQLExecPlanNormalize: defaultSQLPlanNormalizeSettings,
-		})
-	})
-	return obfuscator
-}
-
-// obfuscateSQL obfuscates & normalizes the provided SQL query, writing the error into errResult if the operation fails.
-func obfuscateSQL(rawQuery string) (string, error) {
-	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLStringWithOptions(rawQuery, &obfuscate.SQLConfig{
-		// the information is need to be kept to prepare statement for explain.
-		KeepSQLAlias: true,
-		KeepBoolean:  true,
-		KeepNull:     true,
-	}, "")
-	if err != nil {
-		return "", err
-	}
-
-	return obfuscatedQuery.Query, nil
-}
-
-// obfuscateSQLExecPlan obfuscates the provided json query execution plan, writing the error into errResult if the
-// operation fails
-func obfuscateSQLExecPlan(rawPlan string) (string, error) {
-	return lazyInitObfuscator().ObfuscateSQLExecPlan(
-		rawPlan,
-		true,
-	)
-}
-
-// Ending source(Apache 2.0): https://github.com/DataDog/datadog-agent/blob/main/pkg/collector/python/datadog_agent.go

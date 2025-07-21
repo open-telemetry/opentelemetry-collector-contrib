@@ -20,7 +20,7 @@ func TestObfuscateSQL(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "obfuscate", "inputSQL.sql"))
 	assert.NoError(t, err)
 
-	result, err := obfuscateSQL(string(input))
+	result, err := newObfuscator().obfuscateSQLString(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSQL, result)
 }
@@ -33,7 +33,7 @@ func TestObfuscateSqlPlan(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "obfuscate", "inputQueryPlan.json"))
 	assert.NoError(t, err)
 
-	result, err := obfuscateSQLExecPlan(string(input))
+	result, err := newObfuscator().obfuscateSQLExecPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSQL, result)
 }
