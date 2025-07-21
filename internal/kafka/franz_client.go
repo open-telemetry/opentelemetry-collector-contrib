@@ -32,6 +32,7 @@ const (
 	SCRAMSHA256          = "SCRAM-SHA-256"
 	PLAIN                = "PLAIN"
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
+	OIDC_FILE            = "OIDC_FILE"
 )
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
