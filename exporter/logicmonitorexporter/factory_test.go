@@ -59,7 +59,7 @@ func TestCreateLogs(t *testing.T) {
 			}
 			if tt.shouldError {
 				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
+				if tt.errorMessage != "" {
 					assert.Equal(t, tt.errorMessage, err.Error())
 				}
 				return
@@ -99,7 +99,7 @@ func TestCreateTraces(t *testing.T) {
 			}
 			if tt.shouldError {
 				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
+				if tt.errorMessage != "" {
 					assert.Equal(t, tt.errorMessage, err.Error())
 				}
 				return

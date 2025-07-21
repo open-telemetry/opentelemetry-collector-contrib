@@ -25,10 +25,9 @@ type LeaderElection interface {
 	SetCallBackFuncs(StartCallback, StopCallback)
 }
 
-// SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
-func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
-	lee.onStartedLeading = append(lee.onStartedLeading, onStartLeading)
-	lee.onStoppedLeading = append(lee.onStoppedLeading, onStopLeading)
+type callBackFuncs struct {
+	onStartLeading StartCallback
+	onStopLeading  StopCallback
 }
 
 // leaderElectionExtension is the main struct implementing the extension's behavior.
@@ -40,21 +39,52 @@ type leaderElectionExtension struct {
 	cancel        context.CancelFunc
 	waitGroup     sync.WaitGroup
 
-	onStartedLeading []StartCallback
-	onStoppedLeading []StopCallback
+	callBackFuncs []callBackFuncs
+
+	isLeader bool
+
+	mu sync.Mutex
+}
+
+// SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
+func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
+	// Have a write lock while setting the callbacks.
+	lee.mu.Lock()
+	defer lee.mu.Unlock()
+	callBack := callBackFuncs{
+		onStartLeading: onStartLeading,
+		onStopLeading:  onStopLeading,
+	}
+
+	lee.callBackFuncs = append(lee.callBackFuncs, callBack)
+
+	if lee.isLeader {
+		// Immediately invoke the callback since we are already leader
+		onStartLeading(context.Background())
+	}
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
-	for _, callback := range lee.onStartedLeading {
-		callback(ctx)
+	// Have read lock so that we no new callbacks can be added while we are invoking the callbacks.
+	lee.mu.Lock()
+	defer lee.mu.Unlock()
+	lee.isLeader = true
+	for _, callback := range lee.callBackFuncs {
+		callback.onStartLeading(ctx)
 	}
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
 func (lee *leaderElectionExtension) stoppedLeading() {
-	for _, callback := range lee.onStoppedLeading {
-		callback()
+	// Have a read lock while stopping the receivers. This would make sure that if we have executed any onStartLeading callbacks
+	// after becoming leader, we would execute the onStopLeading callbacks for them as well.
+	lee.mu.Lock()
+	defer lee.mu.Unlock()
+
+	lee.isLeader = false
+	for _, callback := range lee.callBackFuncs {
+		callback.onStopLeading()
 	}
 }
 
@@ -64,6 +94,7 @@ func (lee *leaderElectionExtension) Start(_ context.Context, _ component.Host) e
 
 	ctx := context.Background()
 	ctx, lee.cancel = context.WithCancel(ctx)
+
 	// Create the K8s leader elector
 	leaderElector, err := newK8sLeaderElector(lee.config, lee.client, lee.startedLeading, lee.stoppedLeading, lee.leaseHolderID)
 	if err != nil {
@@ -77,7 +108,6 @@ func (lee *leaderElectionExtension) Start(_ context.Context, _ component.Host) e
 		defer lee.waitGroup.Done()
 		for {
 			leaderElector.Run(ctx)
-
 			if ctx.Err() != nil {
 				break
 			}

@@ -119,5 +119,6 @@ func createNewPersistentState(file string, logger *zap.Logger) (*persistentState
 		logger:     logger,
 	}
 
-	return p, p.writeState()
+	err = p.writeState()
+	return p, err
 }

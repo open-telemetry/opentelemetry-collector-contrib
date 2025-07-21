@@ -54,7 +54,7 @@ func (lfs *localFileStorage) Start(context.Context, component.Host) error {
 }
 
 // Shutdown will close any open databases
-func (lfs *localFileStorage) Shutdown(context.Context) error {
+func (*localFileStorage) Shutdown(context.Context) error {
 	// TODO clean up data files that did not have a client
 	// and are older than a threshold (possibly configurable)
 	return nil
@@ -71,6 +71,11 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
+	if lfs.cfg.Recreate {
+		if err := os.Rename(absoluteName, absoluteName+".backup"); err != nil {
+			return nil, fmt.Errorf("error renaming the database. Please remove %s manually: %w", absoluteName, err)
+		}
+	}
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 	if err != nil {
 		return nil, err

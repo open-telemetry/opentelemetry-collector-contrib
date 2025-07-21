@@ -221,7 +221,7 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
