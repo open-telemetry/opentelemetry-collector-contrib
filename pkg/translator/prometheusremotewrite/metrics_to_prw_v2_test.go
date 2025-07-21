@@ -93,7 +93,7 @@ func TestIsSameMetricV2(t *testing.T) {
 func TestConflictHandling(t *testing.T) {
 	// Test 1: No conflicts - different metrics should have different hashes
 	t.Run("different metrics should not conflict", func(t *testing.T) {
-		converter := newPrometheusConverterV2()
+		converter := newPrometheusConverterV2(Settings{})
 
 		metric1 := createSample(1.0, []prompb.Label{
 			{Name: "name1", Value: "value1"},
@@ -114,7 +114,7 @@ func TestConflictHandling(t *testing.T) {
 
 	// Test 2: Same metric - should be merged
 	t.Run("same metric should be merged", func(t *testing.T) {
-		converter := newPrometheusConverterV2()
+		converter := newPrometheusConverterV2(Settings{})
 
 		labels := []prompb.Label{
 			{Name: "name", Value: "value"},

@@ -101,6 +101,11 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 func (m *mockStorageClient) Close(_ context.Context) error {
 	m.cacheMux.Lock()
 	defer m.cacheMux.Unlock()
+
+	if m.forceError {
+		return errors.New("forced storage error")
+	}
+
 	m.cache = nil
 	return nil
 }
@@ -249,4 +254,14 @@ func TestDeleteCheckpoint_StorageError(t *testing.T) {
 	err := persister.DeleteCheckpoint(ctx, logGroupName)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "forced storage error")
+}
+
+func TestShutdown(t *testing.T) {
+	mockClient := newMockStorageClient()
+	logger := zap.NewNop()
+	persister := newCloudwatchCheckpointPersister(mockClient, logger)
+
+	ctx := context.Background()
+	err := persister.Shutdown(ctx)
+	assert.NoError(t, err)
 }

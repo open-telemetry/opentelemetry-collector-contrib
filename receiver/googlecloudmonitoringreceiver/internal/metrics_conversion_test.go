@@ -228,7 +228,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 				Value: &monitoringpb.TypedValue{
 					Value: &monitoringpb.TypedValue_DistributionValue{
 						DistributionValue: &distribution.Distribution{
-							Count: int64(0),
+							Count: int64(1234), // counts are still reported for distributions without buckets
 							BucketOptions: &distribution.Distribution_BucketOptions{
 								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
 									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
@@ -298,6 +298,57 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
+	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, wrapMetric(m)))
+}
+
+func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_ImplicitZeroCounts(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	sourceBucketCounts := []int64{
+		5,  // [-inifinity, 0)
+		11, // [0, 50)
+		20, // [50, 100)
+	}
+	sourceCountTotal := int64(0)
+	for _, bucketCount := range sourceBucketCounts {
+		sourceCountTotal += bucketCount
+	}
+	ts := &monitoringpb.TimeSeries{
+		Metric: &metric.Metric{},
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 13},
+					EndTime:   &timestamppb.Timestamp{Seconds: 73},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_DistributionValue{
+						DistributionValue: &distribution.Distribution{
+							Count: sourceCountTotal,
+							BucketOptions: &distribution.Distribution_BucketOptions{
+								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+										Bounds: []float64{0, 50, 100, 150, 200},
+									},
+								},
+							},
+							BucketCounts: sourceBucketCounts,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertDistributionToMetrics(ts, m)
+
+	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_ImplicitZeroCounts.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
@@ -477,6 +528,60 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, wrapMetric(m)))
 }
 
+func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint_ImplicitZeroCounts(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	sourceBucketCounts := []int64{
+		0,  // [-infinity, 11.1)
+		5,  // [11.1, 18.8)
+		11, // [18.8, 26.5)
+	}
+	sourceCountTotal := int64(0)
+	for _, bucketCount := range sourceBucketCounts {
+		sourceCountTotal += bucketCount
+	}
+	ts := &monitoringpb.TimeSeries{
+		Metric: &metric.Metric{},
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 13},
+					EndTime:   &timestamppb.Timestamp{Seconds: 73},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_DistributionValue{
+						DistributionValue: &distribution.Distribution{
+							Count: sourceCountTotal,
+							BucketOptions: &distribution.Distribution_BucketOptions{
+								Options: &distribution.Distribution_BucketOptions_LinearBuckets{
+									LinearBuckets: &distribution.Distribution_BucketOptions_Linear{
+										// [-infinity, 11.1), [11.1, 18.8), [18.8, 26.5), [26.5,  34.2), [34.2, 41.9), [41.9, 49.6), [47.7, +infinity)
+										NumFiniteBuckets: 5,
+										Offset:           11.1,
+										Width:            7.7,
+									},
+								},
+							},
+							BucketCounts: sourceBucketCounts,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertDistributionToMetrics(ts, m)
+
+	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint_ImplicitZeroCounts.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
+	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, wrapMetric(m)))
+}
+
 func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint(t *testing.T) {
 	logger := zap.NewNop()
 	mb := NewMetricsBuilder(logger)
@@ -580,6 +685,60 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
+	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, wrapMetric(m)))
+}
+
+func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint_ImplicitZeroCounts(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	sourceBucketCounts := []int64{
+		0,  // [-infinity, 10)
+		5,  // [10, 20)
+		11, // [20, 40)
+	}
+	sourceCountTotal := int64(0)
+	for _, bucketCount := range sourceBucketCounts {
+		sourceCountTotal += bucketCount
+	}
+	ts := &monitoringpb.TimeSeries{
+		Metric: &metric.Metric{},
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 13},
+					EndTime:   &timestamppb.Timestamp{Seconds: 73},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_DistributionValue{
+						DistributionValue: &distribution.Distribution{
+							Count: sourceCountTotal,
+							BucketOptions: &distribution.Distribution_BucketOptions{
+								Options: &distribution.Distribution_BucketOptions_ExponentialBuckets{
+									ExponentialBuckets: &distribution.Distribution_BucketOptions_Exponential{
+										// [-infinity, 10), [10, 20), [20, 40), [40, 80), [80, 160), [160, 320), [320, +infinity)
+										NumFiniteBuckets: 5,
+										GrowthFactor:     2,
+										Scale:            10,
+									},
+								},
+							},
+							BucketCounts: sourceBucketCounts,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertDistributionToMetrics(ts, m)
+
+	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint_ImplicitZeroCounts.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)

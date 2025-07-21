@@ -106,14 +106,14 @@ type mockReporter struct {
 	wgMetricsProcessed sync.WaitGroup
 }
 
-func (m *mockReporter) OnDataReceived(ctx context.Context) context.Context {
+func (*mockReporter) OnDataReceived(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (m *mockReporter) OnTranslationError(context.Context, error) {}
+func (*mockReporter) OnTranslationError(context.Context, error) {}
 
 func (m *mockReporter) OnMetricsProcessed(context.Context, int, error) {
 	m.wgMetricsProcessed.Done()
 }
 
-func (m *mockReporter) OnDebugf(string, ...any) {}
+func (*mockReporter) OnDebugf(string, ...any) {}

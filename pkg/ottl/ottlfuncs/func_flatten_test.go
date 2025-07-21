@@ -344,10 +344,10 @@ func Test_flatten(t *testing.T) {
 
 			setterWasCalled := false
 			target := ottl.StandardPMapGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
+				Getter: func(context.Context, any) (pcommon.Map, error) {
 					return m, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
+				Setter: func(_ context.Context, _, val any) error {
 					setterWasCalled = true
 					if v, ok := val.(pcommon.Map); ok {
 						v.CopyTo(m)
@@ -506,10 +506,10 @@ func Test_flatten_undeterministic(t *testing.T) {
 
 			setterWasCalled := false
 			target := ottl.StandardPMapGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
+				Getter: func(context.Context, any) (pcommon.Map, error) {
 					return m, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
+				Setter: func(_ context.Context, _, val any) error {
 					setterWasCalled = true
 					if v, ok := val.(pcommon.Map); ok {
 						v.CopyTo(m)
@@ -552,7 +552,7 @@ func Test_flatten_bad_depth(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			target := &ottl.StandardPMapGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
+				Getter: func(context.Context, any) (pcommon.Map, error) {
 					return pcommon.NewMap(), nil
 				},
 			}

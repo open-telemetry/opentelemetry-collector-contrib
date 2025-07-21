@@ -377,7 +377,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 }
 
 func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
-	appendDeltaHistogram := func(startTs time.Time, ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice) {
+	appendDeltaHistogram := func(startTs, ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice) {
 		metric := metrics.AppendEmpty()
 		metric.SetName("test_metric")
 		metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)

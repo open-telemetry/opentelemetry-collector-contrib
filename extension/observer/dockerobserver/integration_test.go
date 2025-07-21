@@ -55,14 +55,15 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	endpoints := mn.EndpointsMap()
 	found := false
 	for _, e := range endpoints {
-		if e.Details.Env()["image"] == "docker.io/library/nginx" {
-			found = true
-			require.Equal(t, uint16(80), e.Details.Env()["alternate_port"])
-			require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
-			require.Equal(t, image, e.Details.Env()["image"])
-			require.Equal(t, tag, e.Details.Env()["tag"])
-			break
+		if e.Details.Env()["image"] != "docker.io/library/nginx" {
+			continue
 		}
+		found = true
+		require.Equal(t, uint16(80), e.Details.Env()["alternate_port"])
+		require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
+		require.Equal(t, image, e.Details.Env()["image"])
+		require.Equal(t, tag, e.Details.Env()["tag"])
+		break
 	}
 	require.True(t, found, "No nginx container found")
 }
@@ -116,13 +117,14 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	endpoints = mn.EndpointsMap()
 	found = false
 	for _, e := range endpoints {
-		if image == e.Details.Env()["image"] {
-			found = true
-			require.Equal(t, "nginx-updated", e.Details.Env()["name"])
-			require.Equal(t, uint16(80), e.Details.Env()["port"])
-			require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
-			require.Equal(t, tag, e.Details.Env()["tag"])
+		if image != e.Details.Env()["image"] {
+			continue
 		}
+		found = true
+		require.Equal(t, "nginx-updated", e.Details.Env()["name"])
+		require.Equal(t, uint16(80), e.Details.Env()["port"])
+		require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
+		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 	require.True(t, found, "No nginx container found")
 }
@@ -234,7 +236,7 @@ type mockNotifier struct {
 	changeCount  int
 }
 
-func (m *mockNotifier) ID() observer.NotifyID {
+func (*mockNotifier) ID() observer.NotifyID {
 	return "mockNotifier"
 }
 

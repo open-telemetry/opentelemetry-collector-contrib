@@ -196,12 +196,10 @@ func TestRedisKey(t *testing.T) {
 
 		ops := []*storage.Operation{
 			{Type: storage.Set, Key: "key1", Value: []byte("val1")},
-			{Type: storage.Get, Key: "key1"},
 			{Type: storage.Delete, Key: "key1"},
 		}
 
 		mock.ExpectSet(client.prefix+"key1", []byte("val1"), 0).SetVal("OK")
-		mock.ExpectGet(client.prefix + "key1").SetVal("val1")
 		mock.ExpectDel(client.prefix + "key1").SetVal(1)
 
 		err := client.Batch(ctx, ops...)

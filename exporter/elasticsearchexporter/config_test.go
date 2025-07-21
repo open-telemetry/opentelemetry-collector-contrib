@@ -119,13 +119,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 30 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -199,13 +195,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 30 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -279,13 +271,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 30 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -361,6 +349,15 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 				includeSource := true
 				cfg.IncludeSourceOnError = &includeSource
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "metadata_keys"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
 			}),
 		},
 	}
@@ -475,6 +472,13 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Retry.MaxRequests = 1
 			}),
 			err: `must not specify both retry::max_requests and retry::max_retries`,
+		},
+		"duplicate metadata_keys specified": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.MetadataKeys = []string{"x-test-1", "x-test-2", "x-test-1"}
+			}),
+			err: `metadata_keys must be case-insenstive and unique, found duplicate: x-test-1`,
 		},
 	}
 

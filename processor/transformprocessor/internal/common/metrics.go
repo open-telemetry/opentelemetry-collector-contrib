@@ -27,7 +27,7 @@ type metricStatements struct {
 	expr.BoolExpr[ottlmetric.TransformContext]
 }
 
-func (m metricStatements) Context() ContextID {
+func (metricStatements) Context() ContextID {
 	return Metric
 }
 
@@ -60,7 +60,7 @@ type dataPointStatements struct {
 	expr.BoolExpr[ottldatapoint.TransformContext]
 }
 
-func (d dataPointStatements) Context() ContextID {
+func (dataPointStatements) Context() ContextID {
 	return DataPoint
 }
 
