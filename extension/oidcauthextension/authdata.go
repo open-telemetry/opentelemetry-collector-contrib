@@ -8,7 +8,9 @@ import "go.opentelemetry.io/collector/client"
 var _ client.AuthData = (*authData)(nil)
 
 type authData struct {
-	raw        string
+	raw    string
+	claims map[string]any
+
 	subject    string
 	membership []string
 }
@@ -22,10 +24,20 @@ func (a *authData) GetAttribute(name string) any {
 	case "raw":
 		return a.raw
 	default:
+		e, ok := a.claims[name]
+		if ok {
+			return e
+		}
+
 		return nil
 	}
 }
 
-func (*authData) GetAttributeNames() []string {
-	return []string{"subject", "membership", "raw"}
+func (a *authData) GetAttributeNames() []string {
+	attributeNames := []string{"subject", "membership", "raw"}
+	for n := range a.claims {
+		attributeNames = append(attributeNames, n)
+	}
+
+	return attributeNames
 }
