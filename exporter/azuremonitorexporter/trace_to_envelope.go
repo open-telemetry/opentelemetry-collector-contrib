@@ -753,7 +753,7 @@ func setAttributeValueAsProperty(
 	}
 }
 
-func prefixIfNecessary(s string, prefix string) string {
+func prefixIfNecessary(s, prefix string) string {
 	if strings.HasPrefix(s, prefix) {
 		return s
 	}

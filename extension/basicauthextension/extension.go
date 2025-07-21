@@ -189,7 +189,7 @@ func (p *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 }
 
 // RequireTransportSecurity always returns true for this implementation.
-func (p *perRPCAuth) RequireTransportSecurity() bool {
+func (*perRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 

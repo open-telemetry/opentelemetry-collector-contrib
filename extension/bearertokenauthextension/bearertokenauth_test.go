@@ -41,7 +41,7 @@ func TestPerRPCAuth(t *testing.T) {
 
 type mockRoundTripper struct{}
 
-func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
 	for k, v := range req.Header {
 		resp.Header.Set(k, v[0])

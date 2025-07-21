@@ -68,7 +68,7 @@ func TestRequestTranslation(t *testing.T) {
 
 type errorProvider struct{}
 
-func (p *errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
+func (*errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
 	return "", errors.New("error")
 }
 
