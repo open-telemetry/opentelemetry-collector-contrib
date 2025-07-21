@@ -75,11 +75,11 @@ func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component
 
 type nonEncodingExtension struct{}
 
-func (e nonEncodingExtension) Start(_ context.Context, _ component.Host) error {
+func (nonEncodingExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e nonEncodingExtension) Shutdown(_ context.Context) error {
+func (nonEncodingExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -89,11 +89,11 @@ type unmarshalExtension struct {
 	log    plog.Logs
 }
 
-func (e unmarshalExtension) Start(_ context.Context, _ component.Host) error {
+func (unmarshalExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e unmarshalExtension) Shutdown(_ context.Context) error {
+func (unmarshalExtension) Shutdown(context.Context) error {
 	return nil
 }
 

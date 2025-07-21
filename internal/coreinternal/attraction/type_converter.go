@@ -16,7 +16,7 @@ const (
 	doubleConversionTarget = "double"
 )
 
-func convertValue(logger *zap.Logger, key string, to string, v pcommon.Value) {
+func convertValue(logger *zap.Logger, key, to string, v pcommon.Value) {
 	switch to {
 	case stringConversionTarget:
 		switch v.Type() {

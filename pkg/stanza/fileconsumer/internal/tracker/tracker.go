@@ -51,7 +51,7 @@ type fileTracker struct {
 	archive archive.Archive
 }
 
-func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
+func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
@@ -69,7 +69,7 @@ func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBat
 	return t
 }
 
-func (t *fileTracker) Name() string {
+func (*fileTracker) Name() string {
 	return FileTracker
 }
 
@@ -165,7 +165,7 @@ func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Track
 	}
 }
 
-func (t *noStateTracker) Name() string {
+func (*noStateTracker) Name() string {
 	return NoStateTracker
 }
 
@@ -190,18 +190,18 @@ func (t *noStateTracker) EndConsume() (filesClosed int) {
 	return
 }
 
-func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) *reader.Reader { return nil }
+func (*noStateTracker) GetOpenFile(*fingerprint.Fingerprint) *reader.Reader { return nil }
 
-func (t *noStateTracker) GetClosedFile(_ *fingerprint.Fingerprint) *reader.Metadata { return nil }
+func (*noStateTracker) GetClosedFile(*fingerprint.Fingerprint) *reader.Metadata { return nil }
 
-func (t *noStateTracker) GetMetadata() []*reader.Metadata { return nil }
+func (*noStateTracker) GetMetadata() []*reader.Metadata { return nil }
 
-func (t *noStateTracker) LoadMetadata(_ []*reader.Metadata) {}
+func (*noStateTracker) LoadMetadata([]*reader.Metadata) {}
 
-func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
+func (*noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
-func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
+func (*noStateTracker) ClosePreviousFiles() int { return 0 }
 
-func (t *noStateTracker) EndPoll(context.Context) {}
+func (*noStateTracker) EndPoll(context.Context) {}
 
-func (t *noStateTracker) TotalReaders() int { return 0 }
+func (*noStateTracker) TotalReaders() int { return 0 }

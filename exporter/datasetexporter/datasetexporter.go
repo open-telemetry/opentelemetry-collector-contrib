@@ -80,7 +80,7 @@ func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) e
 	return client.AddEvents(events)
 }
 
-func buildKey(prefix string, separator string, key string, depth int) string {
+func buildKey(prefix, separator, key string, depth int) string {
 	res := prefix
 	if depth > 0 && prefix != "" {
 		res += separator
@@ -89,21 +89,21 @@ func buildKey(prefix string, separator string, key string, depth int) string {
 	return res
 }
 
-func updateWithPrefixedValuesMap(target map[string]any, prefix string, separator string, suffix string, source map[string]any, depth int) {
+func updateWithPrefixedValuesMap(target map[string]any, prefix, separator, suffix string, source map[string]any, depth int) {
 	for k, v := range source {
 		key := buildKey(prefix, separator, k, depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValuesArray(target map[string]any, prefix string, separator string, suffix string, source []any, depth int) {
+func updateWithPrefixedValuesArray(target map[string]any, prefix, separator, suffix string, source []any, depth int) {
 	for i, v := range source {
 		key := buildKey(prefix, separator, strconv.FormatInt(int64(i), 10), depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValues(target map[string]any, prefix string, separator string, suffix string, source any, depth int) {
+func updateWithPrefixedValues(target map[string]any, prefix, separator, suffix string, source any, depth int) {
 	setValue := func() {
 		for {
 			// now the last value wins

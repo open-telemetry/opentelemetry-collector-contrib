@@ -311,7 +311,7 @@ type carbonServer struct {
 	expectedContainsValue string
 }
 
-func newCarbonServer(t *testing.T, addr string, expectedContainsValue string) *carbonServer {
+func newCarbonServer(t *testing.T, addr, expectedContainsValue string) *carbonServer {
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)
 	ln, err := net.ListenTCP("tcp", laddr)

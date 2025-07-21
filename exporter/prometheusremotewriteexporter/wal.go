@@ -357,7 +357,8 @@ func (prweWAL *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalS
 		timer.Stop()
 		timer = freshTimer()
 
-		if err = prweWAL.exportThenFrontTruncateWAL(ctx, reqL); err != nil {
+		err = prweWAL.exportThenFrontTruncateWAL(ctx, reqL)
+		if err != nil {
 			return err
 		}
 		// Reset but reuse the write requests slice.
@@ -467,7 +468,8 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		prweWAL.telemetry.recordWALBytesRead(ctx, len(protoBlob))
 		if err == nil { // The read succeeded.
 			req := new(prompb.WriteRequest)
-			if err = proto.Unmarshal(protoBlob, req); err != nil {
+			err = proto.Unmarshal(protoBlob, req)
+			if err != nil {
 				return nil, err
 			}
 

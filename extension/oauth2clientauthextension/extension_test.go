@@ -187,7 +187,7 @@ type testRoundTripper struct {
 	testString string
 }
 
-func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (*testRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 

@@ -147,7 +147,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 	return errs
 }
 
-func (p *metricsProcessor) group(
+func (*metricsProcessor) group(
 	key string,
 	groups map[string]metricsGroup,
 	exporters []exporter.Metrics,
@@ -199,10 +199,10 @@ func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metric
 	return errs
 }
 
-func (p *metricsProcessor) Capabilities() consumer.Capabilities {
+func (*metricsProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (p *metricsProcessor) Shutdown(context.Context) error {
+func (*metricsProcessor) Shutdown(context.Context) error {
 	return nil
 }
