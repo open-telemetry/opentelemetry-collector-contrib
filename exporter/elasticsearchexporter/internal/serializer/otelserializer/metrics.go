@@ -94,7 +94,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 	sort.Strings(metricNames)
 	hasher := xxhash.New()
 	for _, name := range metricNames {
-		_, _ = hasher.Write([]byte(name))
+		_, _ = hasher.WriteString(name)
 	}
 	// workaround for https://github.com/elastic/elasticsearch/issues/99123
 	// should use a string field to benefit from run-length encoding

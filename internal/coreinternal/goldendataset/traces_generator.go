@@ -17,7 +17,7 @@ import (
 // parameters defined in the parameters file specified by the tracePairsFile parameter. The pairs to generate
 // spans for for defined in the file specified by the spanPairsFile parameter.
 // The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
-func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]ptrace.Traces, error) {
+func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, error) {
 	random := (*randReader)(rand.New(rand.NewPCG(42, 0)))
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {

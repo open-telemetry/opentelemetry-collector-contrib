@@ -41,8 +41,6 @@ func (metricType MetricType) dataType() (pmetric.MetricType, error) {
 		dataType = pmetric.MetricTypeGauge
 	case SumMetricDataType:
 		dataType = pmetric.MetricTypeSum
-	case UnknownMetricDataType:
-		fallthrough
 	default:
 		return pmetric.MetricTypeEmpty, errors.New("invalid data type received")
 	}
@@ -60,8 +58,6 @@ func (metricType MetricType) aggregationTemporality() (pmetric.AggregationTempor
 		aggregationTemporality = pmetric.AggregationTemporalityCumulative
 	case "":
 		aggregationTemporality = pmetric.AggregationTemporalityUnspecified
-	case UnknownAggregationType:
-		fallthrough
 	default:
 		return pmetric.AggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
 	}

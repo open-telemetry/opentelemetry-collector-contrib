@@ -41,22 +41,22 @@ func keyValFromFloatMap(m map[string]float64) *keyVal {
 }
 
 // mergeKeyVal will merge source in target
-func mergeKeyVal(target *keyVal, source *keyVal) {
+func mergeKeyVal(target, source *keyVal) {
 	for el := source.Oldest(); el != nil; el = el.Next() {
 		target.Set(el.Key, el.Value)
 	}
 }
 
 // mergeKeyValWithPrefix will merge source in target, adding a prefix to each key being merged in
-func mergeKeyValWithPrefix(target *keyVal, source *keyVal, prefix string) {
+func mergeKeyValWithPrefix(target, source *keyVal, prefix string) {
 	for el := source.Oldest(); el != nil; el = el.Next() {
 		target.Set(fmt.Sprintf("%s%s", prefix, el.Key), el.Value)
 	}
 }
 
 // keyValAdd adds a key + value string pair to kv
-func keyValAdd(kv *keyVal, key string, value string) {
-	if len(value) > 0 {
+func keyValAdd(kv *keyVal, key, value string) {
+	if value != "" {
 		kv.Set(key, value)
 	}
 }
@@ -128,7 +128,7 @@ func exceptionToString(e faroTypes.Exception) string {
 // frameToString function converts a Frame into a human readable string
 func frameToString(frame faroTypes.Frame) string {
 	module := ""
-	if len(frame.Module) > 0 {
+	if frame.Module != "" {
 		module = frame.Module + "|"
 	}
 	return fmt.Sprintf("\n  at %s (%s%s:%v:%v)", frame.Function, module, frame.Filename, frame.Lineno, frame.Colno)

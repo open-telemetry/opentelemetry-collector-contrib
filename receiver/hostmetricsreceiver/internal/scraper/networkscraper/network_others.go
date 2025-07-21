@@ -27,6 +27,6 @@ var allTCPStates = []string{
 	"TIME_WAIT",
 }
 
-func (s *networkScraper) recordNetworkConntrackMetrics(context.Context) error {
+func (*networkScraper) recordNetworkConntrackMetrics(context.Context) error {
 	return nil
 }

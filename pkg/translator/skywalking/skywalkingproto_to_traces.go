@@ -86,7 +86,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	}
 }
 
-func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
+func swSpansToSpanSlice(traceID, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
@@ -100,7 +100,7 @@ func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanO
 	}
 }
 
-func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
+func swSpanToSpan(traceID, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
 	dest.SetTraceID(swTraceIDToTraceID(traceID))
 	// skywalking defines segmentId + spanId as unique identifier
 	// so use segmentId to convert to an unique otel-span

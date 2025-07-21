@@ -6,6 +6,7 @@ package serializeprofiles // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"errors"
+	"encoding/binary"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
@@ -308,10 +310,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 			lineNumbers = append(lineNumbers, int32(line.Line()))
 		}
 
-		frameID, err := getFrameID(dic, location)
-		if err != nil {
-			return nil, nil, nil, err
-		}
+		frameID := getFrameID(dic, location)
 
 		if locationIdx == 0 {
 			leafFrameID = frameID
@@ -331,12 +330,22 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 	return frames, frameTypes, leafFrameID, nil
 }
 
-func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) (*libpf.FrameID, error) {
+func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *libpf.FrameID {
 	// The MappingIndex is known to be valid.
 	mapping := dic.MappingTable().At(int(location.MappingIndex()))
-	buildID, err := getBuildID(dic, mapping)
-	if err != nil {
-		return nil, err
+	fileID, err := getBuildID(dic, mapping)
+	if err != nil || fileID.IsZero() {
+		// Synthesize a file ID if the build ID is not available.
+		hasher := xxhash.New()
+		for _, line := range location.Line().All() {
+			f := getFunction(dic, int(line.FunctionIndex()))
+			_, _ = hasher.WriteString(getString(dic, int(f.NameStrindex())))
+			_, _ = hasher.WriteString(getString(dic, int(f.FilenameStrindex())))
+			_, _ = hasher.Write(int64ToBytes(line.Line()))
+			_, _ = hasher.Write(int64ToBytes(line.Column()))
+		}
+		h := hasher.Sum64()
+		fileID = libpf.NewFileID(h, h)
 	}
 
 	var addressOrLineno uint64
@@ -346,8 +355,8 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) (*l
 		addressOrLineno = uint64(location.Line().At(location.Line().Len() - 1).Line())
 	}
 
-	frameID := libpf.NewFrameID(buildID, libpf.AddressOrLineno(addressOrLineno))
-	return &frameID, nil
+	frameID := libpf.NewFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
+	return &frameID
 }
 
 type attributable interface {
@@ -478,6 +487,13 @@ func getString(dic pprofile.ProfilesDictionary, index int) string {
 	return ""
 }
 
+func getFunction(dic pprofile.ProfilesDictionary, index int) pprofile.Function {
+	if index < dic.FunctionTable().Len() {
+		return dic.FunctionTable().At(index)
+	}
+	return dic.FunctionTable().At(0) // return empty function if index is out of bounds
+}
+
 func GetStartOfWeekFromTime(t time.Time) uint32 {
 	return uint32(t.Truncate(time.Hour * 24 * 7).Unix())
 }
@@ -500,4 +516,10 @@ func addEventHostData(data map[string]string, attrs pcommon.Map) {
 	for k, v := range attrs.All() {
 		data[k] = v.AsString()
 	}
+}
+
+func int64ToBytes(value int64) []byte {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(value))
+	return buf
 }

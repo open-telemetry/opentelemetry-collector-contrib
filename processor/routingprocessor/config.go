@@ -69,11 +69,11 @@ func (c *Config) Validate() error {
 	// validate that every route has a value for the routing attribute and has
 	// at least one exporter
 	for _, item := range c.Table {
-		if len(item.Value) == 0 && len(item.Statement) == 0 {
+		if item.Value == "" && item.Statement == "" {
 			return fmt.Errorf("invalid (empty) route : %w", errEmptyRoute)
 		}
 
-		if len(item.Value) != 0 && len(item.Statement) != 0 {
+		if item.Value != "" && item.Statement != "" {
 			return fmt.Errorf("invalid route: both statement (%s) and value (%s) provided", item.Statement, item.Value)
 		}
 
@@ -89,7 +89,7 @@ func (c *Config) Validate() error {
 	if ottlRoutingOnly {
 		c.AttributeSource = ""
 		c.FromAttribute = ""
-	} else if len(c.FromAttribute) == 0 {
+	} else if c.FromAttribute == "" {
 		// we also need a "FromAttribute" value
 		return fmt.Errorf(
 			"invalid attribute to read the route's value from: %w",
@@ -145,7 +145,7 @@ func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 		if cfg.DropRoutingResourceAttribute {
 			s.WriteString(
 				fmt.Sprintf(
-					"delete_key(resource.attributes, \"%s\")",
+					"delete_key(resource.attributes, %q)",
 					cfg.FromAttribute,
 				),
 			)
@@ -154,7 +154,7 @@ func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 		}
 		s.WriteString(
 			fmt.Sprintf(
-				" where resource.attributes[\"%s\"] == \"%s\"",
+				" where resource.attributes[%q] == %q",
 				cfg.FromAttribute,
 				e.Value,
 			),

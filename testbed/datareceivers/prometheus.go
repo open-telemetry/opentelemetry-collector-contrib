@@ -72,6 +72,6 @@ func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, dr.Port)
 }
 
-func (dr *prometheusDataReceiver) ProtocolName() string {
+func (*prometheusDataReceiver) ProtocolName() string {
 	return "prometheus"
 }
