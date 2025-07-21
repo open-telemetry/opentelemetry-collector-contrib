@@ -5,8 +5,8 @@ package serializeprofiles // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
-	"errors"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"math"
