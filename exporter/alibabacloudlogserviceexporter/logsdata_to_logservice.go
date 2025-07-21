@@ -129,50 +129,46 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 	slsLog.Contents = append(slsLog.Contents, resourceContents...)
 	slsLog.Contents = append(slsLog.Contents, instrumentationLibraryContents...)
 
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogTimeUnixNano),
-		Value: proto.String(strconv.FormatUint(uint64(lr.Timestamp()), 10)),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogSeverityNumber),
-		Value: proto.String(strconv.FormatInt(int64(lr.SeverityNumber()), 10)),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogSeverityText),
-		Value: proto.String(lr.SeverityText()),
-	})
+	contentsBuffer = append(contentsBuffer,
+		sls.LogContent{
+			Key:   proto.String(slsLogTimeUnixNano),
+			Value: proto.String(strconv.FormatUint(uint64(lr.Timestamp()), 10)),
+		},
+		sls.LogContent{
+			Key:   proto.String(slsLogSeverityNumber),
+			Value: proto.String(strconv.FormatInt(int64(lr.SeverityNumber()), 10)),
+		},
+		sls.LogContent{
+			Key:   proto.String(slsLogSeverityText),
+			Value: proto.String(lr.SeverityText()),
+		})
 
 	fields := map[string]any{}
 	for k, v := range lr.Attributes().All() {
 		fields[k] = v.AsString()
 	}
 	attributeBuffer, _ := json.Marshal(fields)
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogAttribute),
-		Value: proto.String(string(attributeBuffer)),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogContent),
-		Value: proto.String(lr.Body().AsString()),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogFlags),
-		Value: proto.String(strconv.FormatUint(uint64(lr.Flags()), 16)),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(traceIDField),
-		Value: proto.String(traceutil.TraceIDToHexOrEmptyString(lr.TraceID())),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(spanIDField),
-		Value: proto.String(traceutil.SpanIDToHexOrEmptyString(lr.SpanID())),
-	})
+	contentsBuffer = append(contentsBuffer,
+		sls.LogContent{
+			Key:   proto.String(slsLogAttribute),
+			Value: proto.String(string(attributeBuffer)),
+		},
+		sls.LogContent{
+			Key:   proto.String(slsLogContent),
+			Value: proto.String(lr.Body().AsString()),
+		},
+		sls.LogContent{
+			Key:   proto.String(slsLogFlags),
+			Value: proto.String(strconv.FormatUint(uint64(lr.Flags()), 16)),
+		},
+		sls.LogContent{
+			Key:   proto.String(traceIDField),
+			Value: proto.String(traceutil.TraceIDToHexOrEmptyString(lr.TraceID())),
+		},
+		sls.LogContent{
+			Key:   proto.String(spanIDField),
+			Value: proto.String(traceutil.SpanIDToHexOrEmptyString(lr.SpanID())),
+		})
 
 	for i := range contentsBuffer {
 		slsLog.Contents = append(slsLog.Contents, &contentsBuffer[i])

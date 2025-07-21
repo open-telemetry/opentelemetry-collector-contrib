@@ -567,11 +567,11 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Empty(t, span.Meta["version"])
 }
 
-func simpleTraces(rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+func simpleTraces(rattrs, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
 	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, sattrs, kind)
 }
 
-func genTraces(traceID pcommon.TraceID, rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+func genTraces(traceID pcommon.TraceID, rattrs, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()

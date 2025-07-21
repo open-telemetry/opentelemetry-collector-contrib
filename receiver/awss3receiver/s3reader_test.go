@@ -321,11 +321,11 @@ type mockNotifier struct {
 	messages []statusNotification
 }
 
-func (m *mockNotifier) Start(_ context.Context, _ component.Host) error {
+func (*mockNotifier) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m *mockNotifier) Shutdown(_ context.Context) error {
+func (*mockNotifier) Shutdown(context.Context) error {
 	return nil
 }
 

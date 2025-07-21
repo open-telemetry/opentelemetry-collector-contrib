@@ -191,7 +191,7 @@ type MockTraceConsumer struct {
 	backend          *MockBackend
 }
 
-func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
+func (*MockTraceConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -243,7 +243,7 @@ type MockMetricConsumer struct {
 	backend            *MockBackend
 }
 
-func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
+func (*MockMetricConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -275,7 +275,7 @@ type MockLogConsumer struct {
 	backend               *MockBackend
 }
 
-func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
+func (*MockLogConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

@@ -40,7 +40,6 @@ receivers:
   googlecloudpubsub:
     project: otel-project
     subscription: projects/otel-project/subscriptions/otlp-logs
-    encoding: raw_json
 ```
 
 ## Encoding

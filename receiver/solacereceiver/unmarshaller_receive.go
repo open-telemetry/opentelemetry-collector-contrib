@@ -41,7 +41,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshal(message *inboundMessage) (p
 
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
-func (u *brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*receive_v1.SpanData, error) {
+func (*brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*receive_v1.SpanData, error) {
 	data := message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
@@ -71,11 +71,11 @@ func (u *brokerTraceReceiveUnmarshallerV1) populateTraces(spanData *receive_v1.S
 	u.mapEvents(spanData, clientSpan)
 }
 
-func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *receive_v1.SpanData, attrMap pcommon.Map) {
+func (*brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *receive_v1.SpanData, attrMap pcommon.Map) {
 	setResourceSpanAttributes(attrMap, spanData.RouterName, spanData.SolosVersion, spanData.MessageVpnName)
 }
 
-func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *receive_v1.SpanData, clientSpan ptrace.Span) {
+func (*brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *receive_v1.SpanData, clientSpan ptrace.Span) {
 	// Set client span name
 	if spanData.Topic != "" {
 		clientSpan.SetName(spanData.Topic + " receive")
@@ -158,7 +158,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 
 	// rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	rgmid := rgmidToString(spanData.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
-	if len(rgmid) > 0 {
+	if rgmid != "" {
 		attrMap.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
 
@@ -344,7 +344,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) rgmidToString(rgmid []byte) string {
 
 // unmarshalBaggage will unmarshal a baggage string
 // See spec https://github.com/open-telemetry/opentelemetry-go/blob/v1.11.1/baggage/baggage.go
-func (u *brokerTraceReceiveUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, baggageString string) error {
+func (*brokerTraceReceiveUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, baggageString string) error {
 	const (
 		baggageValuePrefix    = "messaging.solace.message.baggage."
 		baggageMetadataPrefix = "messaging.solace.message.baggage_metadata."

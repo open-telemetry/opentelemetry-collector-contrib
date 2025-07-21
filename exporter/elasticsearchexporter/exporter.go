@@ -42,6 +42,8 @@ type elasticsearchExporter struct {
 	documentEncoders         [NumMappingModes]documentEncoder
 	documentRouters          [NumMappingModes]documentRouter
 	spanEventDocumentRouters [NumMappingModes]documentRouter
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
@@ -61,6 +63,7 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
 		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
+		telemetryBuilder:    telemetryBuilder,
 	}
 	for mappingMode := range NumMappingModes {
 		encoder, err := newEncoder(mappingMode)
@@ -84,6 +87,10 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if err := e.bulkIndexers.shutdown(ctx); err != nil {
 		return fmt.Errorf("error shutting down bulk indexers: %w", err)
+	}
+	if e.telemetryBuilder != nil {
+		e.telemetryBuilder.Shutdown()
+		e.telemetryBuilder = nil
 	}
 	return nil
 }
@@ -561,7 +568,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushProfileRecord(
+func (*elasticsearchExporter) pushProfileRecord(
 	ctx context.Context,
 	encoder documentEncoder,
 	ec encodingContext,
