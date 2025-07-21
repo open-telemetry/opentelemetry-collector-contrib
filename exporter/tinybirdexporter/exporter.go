@@ -94,16 +94,16 @@ func (e *tinybirdExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) 
 
 	// TODO: perform the exports in parallel to improve the operation latency
 	if sumBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.MetricsSum.Datasource, sumBuffer))
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsSum.Datasource, sumBuffer))
 	}
 	if gaugeBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.MetricsGauge.Datasource, gaugeBuffer))
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsGauge.Datasource, gaugeBuffer))
 	}
 	if histogramBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.MetricsHistogram.Datasource, histogramBuffer))
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsHistogram.Datasource, histogramBuffer))
 	}
 	if exponentialHistogramBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.MetricsExponentialHistogram.Datasource, exponentialHistogramBuffer))
+		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsExponentialHistogram.Datasource, exponentialHistogramBuffer))
 	}
 	return err
 }
