@@ -80,11 +80,13 @@ func (c Config) Validate() error {
 		return errors.New("cannot define both exclude_fields and include_fields")
 	}
 
-	if err = c.validateExcludeFields(); err != nil {
+	err = c.validateExcludeFields()
+	if err != nil {
 		return err
 	}
 
-	if err = c.validateIncludeFields(); err != nil {
+	err = c.validateIncludeFields()
+	if err != nil {
 		return err
 	}
 

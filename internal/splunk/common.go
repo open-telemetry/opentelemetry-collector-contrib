@@ -123,13 +123,11 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	case float64:
 		e.Time = t
 	case string:
-		{
-			time, err := strconv.ParseFloat(t, 64)
-			if err != nil {
-				return err
-			}
-			e.Time = time
+		time, err := strconv.ParseFloat(t, 64)
+		if err != nil {
+			return err
 		}
+		e.Time = time
 	}
 	return nil
 }

@@ -219,7 +219,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	}
 }
 
-func createEvent(timestamp pcommon.Timestamp, host string, source string, sourceType string, index string, fields map[string]any) *splunk.Event {
+func createEvent(timestamp pcommon.Timestamp, host, source, sourceType, index string, fields map[string]any) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
 		Host:       host,

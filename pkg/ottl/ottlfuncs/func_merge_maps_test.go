@@ -174,7 +174,7 @@ func Test_MergeMaps_bad_target(t *testing.T) {
 
 func Test_MergeMaps_bad_input(t *testing.T) {
 	input := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return 1, nil
 		},
 	}

@@ -16,7 +16,7 @@ type SpanEventSignalNameChange struct {
 	SignalNameChange migrate.SignalNameChange
 }
 
-func (c SpanEventSignalNameChange) IsMigrator() {}
+func (SpanEventSignalNameChange) IsMigrator() {}
 
 func (c SpanEventSignalNameChange) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	for e := 0; e < span.Events().Len(); e++ {
@@ -32,7 +32,7 @@ type MetricSignalNameChange struct {
 	SignalNameChange migrate.SignalNameChange
 }
 
-func (c MetricSignalNameChange) IsMigrator() {}
+func (MetricSignalNameChange) IsMigrator() {}
 
 func (c MetricSignalNameChange) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
 	c.SignalNameChange.Do(ss, metric)

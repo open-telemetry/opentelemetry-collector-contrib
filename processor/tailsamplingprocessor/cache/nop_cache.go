@@ -13,12 +13,12 @@ func NewNopDecisionCache[V any]() Cache[V] {
 	return &nopDecisionCache[V]{}
 }
 
-func (n *nopDecisionCache[V]) Get(_ pcommon.TraceID) (V, bool) {
+func (*nopDecisionCache[V]) Get(pcommon.TraceID) (V, bool) {
 	var v V
 	return v, false
 }
 
-func (n *nopDecisionCache[V]) Put(_ pcommon.TraceID, _ V) {
+func (*nopDecisionCache[V]) Put(_ pcommon.TraceID, _ V) {
 }
 
-func (n *nopDecisionCache[V]) Delete(_ pcommon.TraceID) {}
+func (*nopDecisionCache[V]) Delete(_ pcommon.TraceID) {}

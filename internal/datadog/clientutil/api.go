@@ -70,7 +70,7 @@ func GetRequestContext(ctx context.Context, apiKey string) context.Context {
 
 // CreateZorkianClient creates a new Zorkian Datadog client
 // Deprecated: CreateZorkianClient returns a Zorkian Datadog client and Zorkian is deprecated. Use CreateAPIClient instead.
-func CreateZorkianClient(apiKey string, endpoint string) *zorkian.Client {
+func CreateZorkianClient(apiKey, endpoint string) *zorkian.Client {
 	client := zorkian.NewClient(apiKey, "")
 	client.SetBaseUrl(endpoint)
 

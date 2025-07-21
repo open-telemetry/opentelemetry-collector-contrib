@@ -3,7 +3,7 @@ type: routing
 status:
   class: processor
   stability:
-    deprecated: [traces, metrics, logs]
+    unmaintained: [traces, metrics, logs]
   deprecation:
     metrics:
       date: "2024-12-05"

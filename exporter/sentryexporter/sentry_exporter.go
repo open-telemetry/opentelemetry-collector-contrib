@@ -294,7 +294,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 //
 // See https://github.com/open-telemetry/opentelemetry-specification/tree/5b78ee1/specification/trace/semantic_conventions
 // for more details about the semantic conventions.
-func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.SpanKind) (op string, description string) {
+func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.SpanKind) (op, description string) {
 	var opBuilder strings.Builder
 	var dBuilder strings.Builder
 

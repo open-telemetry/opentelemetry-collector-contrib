@@ -43,7 +43,7 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability))
 }
 
-func (f *blobReceiverFactory) createDefaultConfig() component.Config {
+func (*blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
 		Logs:           LogsConfig{ContainerName: logsContainerName},
 		Traces:         TracesConfig{ContainerName: tracesContainerName},
@@ -116,7 +116,7 @@ func (f *blobReceiverFactory) getReceiver(
 	return r.Unwrap(), err
 }
 
-func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
+func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
 	var bc blobClient
 	var err error
 

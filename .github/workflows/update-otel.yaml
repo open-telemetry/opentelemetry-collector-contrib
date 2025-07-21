@@ -4,8 +4,14 @@ on:
   schedule:
     - cron: "27 8 * * 5" # Run at 08:27 UTC on Fridays.
 
+permissions:
+  contents: read
+
 jobs:
   update-otel:
+    permissions:
+      contents: write # required for pushing changes
+      issues: write # required for creating failure issues
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
@@ -35,7 +41,7 @@ jobs:
           echo "LAST_COMMIT=$LAST_COMMIT" >> $GITHUB_ENV
           echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}         
+          GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: Gets packages from links with retries
         uses: nick-fields/retry@v3
         with:  

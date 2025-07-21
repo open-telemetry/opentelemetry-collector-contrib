@@ -27,7 +27,7 @@ type SyslogWriter struct {
 
 var _ testbed.LogDataSender = (*SyslogWriter)(nil)
 
-func NewSyslogWriter(network string, host string, port int, batchSize int) *SyslogWriter {
+func NewSyslogWriter(network, host string, port, batchSize int) *SyslogWriter {
 	f := &SyslogWriter{
 		network: network,
 		bufSize: batchSize,
@@ -51,7 +51,7 @@ func (f *SyslogWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (f *SyslogWriter) Capabilities() consumer.Capabilities {
+func (*SyslogWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -125,9 +125,9 @@ func (f *SyslogWriter) SendCheck() error {
 	return nil
 }
 
-func (f *SyslogWriter) Flush() {
+func (*SyslogWriter) Flush() {
 }
 
-func (f *SyslogWriter) ProtocolName() string {
+func (*SyslogWriter) ProtocolName() string {
 	return "syslog"
 }

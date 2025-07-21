@@ -55,7 +55,7 @@ func NewZorkianCount(name string, ts uint64, value float64, tags []string) zorki
 }
 
 // DefaultZorkianMetrics creates built-in metrics to report that an exporter is running
-func DefaultZorkianMetrics(exporterType string, hostname string, timestamp uint64, buildInfo component.BuildInfo) []zorkian.Metric {
+func DefaultZorkianMetrics(exporterType, hostname string, timestamp uint64, buildInfo component.BuildInfo) []zorkian.Metric {
 	var tags []string
 
 	if buildInfo.Version != "" {

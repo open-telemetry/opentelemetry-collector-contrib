@@ -116,7 +116,7 @@ func (wp *wavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	return metric, nil
 }
 
-func (wp *wavefrontParser) injectCollectDLabels(
+func (*wavefrontParser) injectCollectDLabels(
 	metricName string,
 	attributes pcommon.Map,
 ) string {

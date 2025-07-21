@@ -206,7 +206,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	}
 }
 
-func setResourceAttribute(attributes pcommon.Map, key string, val string) {
+func setResourceAttribute(attributes pcommon.Map, key, val string) {
 	attr, found := attributes.Get(key)
 	if !found || attr.AsString() == "" {
 		attributes.PutStr(key, val)

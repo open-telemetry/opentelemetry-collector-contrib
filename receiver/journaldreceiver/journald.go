@@ -19,6 +19,6 @@ func newFactoryAdapter() receiver.Factory {
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.Config {
+func (ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }

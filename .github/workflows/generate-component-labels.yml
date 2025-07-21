@@ -8,8 +8,14 @@ on:
       - ./.github/workflows/scripts/generate-component-labels.sh
     workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   generate-component-labels:
+    permissions:
+      issues: write # required for creating and managing issue labels
+      pull-requests: write # required for creating and managing PR labels
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:

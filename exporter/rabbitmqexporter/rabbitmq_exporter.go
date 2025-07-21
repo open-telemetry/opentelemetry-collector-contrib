@@ -33,7 +33,7 @@ type (
 	tlsFactory       = func(context.Context) (*tls.Config, error)
 )
 
-func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey string, connectionName string) *rabbitmqExporter {
+func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey, connectionName string) *rabbitmqExporter {
 	exporter := &rabbitmqExporter{
 		config:           cfg,
 		settings:         set,

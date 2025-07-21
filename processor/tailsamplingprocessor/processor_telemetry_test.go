@@ -698,7 +698,7 @@ func (tt *testTelemetry) newSettings() processor.Settings {
 	return set
 }
 
-func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {
@@ -710,7 +710,7 @@ func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) 
 	return metricdata.Metrics{}
 }
 
-func (tt *testTelemetry) len(got metricdata.ResourceMetrics) int {
+func (*testTelemetry) len(got metricdata.ResourceMetrics) int {
 	metricsCount := 0
 	for _, sm := range got.ScopeMetrics {
 		metricsCount += len(sm.Metrics)

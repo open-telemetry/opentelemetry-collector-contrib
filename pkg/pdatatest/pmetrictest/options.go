@@ -507,7 +507,7 @@ func maskHistogramSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlic
 }
 
 // MatchMetricAttributeValue is a CompareMetricsOption that transforms a metric attribute value based on a regular expression.
-func MatchMetricAttributeValue(attributeName string, pattern string, metricNames ...string) CompareMetricsOption {
+func MatchMetricAttributeValue(attributeName, pattern string, metricNames ...string) CompareMetricsOption {
 	re := regexp.MustCompile(pattern)
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		matchMetricAttributeValue(expected, attributeName, re, metricNames)
@@ -610,7 +610,7 @@ func matchHistogramDataPointSliceAttributeValues(dataPoints pmetric.HistogramDat
 }
 
 // MatchResourceAttributeValue is a CompareMetricsOption that transforms a resource attribute value based on a regular expression.
-func MatchResourceAttributeValue(attributeName string, pattern string) CompareMetricsOption {
+func MatchResourceAttributeValue(attributeName, pattern string) CompareMetricsOption {
 	re := regexp.MustCompile(pattern)
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		matchResourceAttributeValue(expected, attributeName, re)

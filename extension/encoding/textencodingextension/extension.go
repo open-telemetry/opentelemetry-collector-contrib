@@ -43,6 +43,6 @@ func (e *textExtension) Start(_ context.Context, _ component.Host) error {
 	return err
 }
 
-func (e *textExtension) Shutdown(_ context.Context) error {
+func (*textExtension) Shutdown(context.Context) error {
 	return nil
 }

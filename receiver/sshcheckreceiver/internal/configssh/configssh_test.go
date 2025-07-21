@@ -150,7 +150,7 @@ func Test_Client_Dial(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return &ssh.Client{}, nil
 			},
 			shouldError: false,
@@ -163,7 +163,7 @@ func Test_Client_Dial(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return nil, errors.New("dial")
 			},
 			shouldError: true,
@@ -223,7 +223,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return &ssh.Client{}, nil
 			},
 			shouldError: false,
@@ -236,7 +236,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return nil, errors.New("dial")
 			},
 			shouldError: true,

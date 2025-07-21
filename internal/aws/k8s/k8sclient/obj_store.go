@@ -122,12 +122,12 @@ func (s *ObjStore) ListKeys() []string {
 }
 
 // Get implements the Get method of the store interface.
-func (s *ObjStore) Get(_ any) (item any, exists bool, err error) {
+func (*ObjStore) Get(any) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
 // GetByKey implements the GetByKey method of the store interface.
-func (s *ObjStore) GetByKey(_ string) (item any, exists bool, err error) {
+func (*ObjStore) GetByKey(string) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
@@ -149,6 +149,6 @@ func (s *ObjStore) Replace(list []any, _ string) error {
 }
 
 // Resync implements the Resync method of the store interface.
-func (s *ObjStore) Resync() error {
+func (*ObjStore) Resync() error {
 	return nil
 }

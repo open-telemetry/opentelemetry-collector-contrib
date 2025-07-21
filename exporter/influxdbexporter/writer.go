@@ -202,7 +202,8 @@ func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err = res.Body.Close(); err != nil {
+	err = res.Body.Close()
+	if err != nil {
 		return err
 	}
 	switch {

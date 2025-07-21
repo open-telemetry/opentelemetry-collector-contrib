@@ -390,7 +390,7 @@ func (f *taskFetcher) getAllServices(ctx context.Context) ([]ecstypes.Service, e
 
 // attachService map service to task using deployment id.
 // Each service can have multiple deployment and each task keep track of the deployment in task.StartedBy.
-func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []ecstypes.Service) {
+func (*taskFetcher) attachService(tasks []*taskAnnotated, services []ecstypes.Service) {
 	// Map deployment ID to service name
 	idToService := make(map[string]*ecstypes.Service)
 	for _, svc := range services {

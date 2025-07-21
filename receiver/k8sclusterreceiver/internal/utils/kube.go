@@ -37,7 +37,7 @@ func FindOwnerWithKind(ors []metav1.OwnerReference, kind string) *metav1.OwnerRe
 
 // GetIDForCache returns keys to lookup resources from the cache exposed
 // by shared informers.
-func GetIDForCache(namespace string, resourceName string) string {
+func GetIDForCache(namespace, resourceName string) string {
 	return fmt.Sprintf("%s/%s", namespace, resourceName)
 }
 

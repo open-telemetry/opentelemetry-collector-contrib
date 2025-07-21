@@ -234,7 +234,8 @@ func (c *bigipClient) makeHTTPRequest(req *http.Request, respObj any) (err error
 	}()
 
 	// Check for OK status code
-	if err = c.checkHTTPStatus(resp); err != nil {
+	err = c.checkHTTPStatus(resp)
+	if err != nil {
 		return err
 	}
 
@@ -266,7 +267,7 @@ func (c *bigipClient) checkHTTPStatus(resp *http.Response) (err error) {
 }
 
 // combinePoolMembers takes two PoolMembers and returns an aggregate of them both
-func combinePoolMembers(poolMembersA *models.PoolMembers, poolMembersB *models.PoolMembers) *models.PoolMembers {
+func combinePoolMembers(poolMembersA, poolMembersB *models.PoolMembers) *models.PoolMembers {
 	var aSize int
 	if poolMembersA != nil {
 		aSize = len(poolMembersA.Entries)

@@ -41,7 +41,7 @@ func (c *lruDecisionCache[V]) Put(id pcommon.TraceID, v V) {
 }
 
 // Delete is no-op since LRU relies on least recently used key being evicting automatically
-func (c *lruDecisionCache[V]) Delete(_ pcommon.TraceID) {}
+func (*lruDecisionCache[V]) Delete(pcommon.TraceID) {}
 
 func rightHalfTraceID(id pcommon.TraceID) uint64 {
 	return binary.LittleEndian.Uint64(id[8:])

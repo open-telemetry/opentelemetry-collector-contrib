@@ -70,7 +70,7 @@ func newCloudWatchLogClient(svc cloudWatchClient, logRetention int32, tags map[s
 	return logClient
 }
 
-func newCollectorUserAgent(buildInfo component.BuildInfo, logGroupName string, componentName string, opts ...ClientOption) string {
+func newCollectorUserAgent(buildInfo component.BuildInfo, logGroupName, componentName string, opts ...ClientOption) string {
 	// Loop through each option
 	option := &cwLogClientConfig{
 		userAgentExtras: []string{},

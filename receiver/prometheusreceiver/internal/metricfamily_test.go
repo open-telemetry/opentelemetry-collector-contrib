@@ -26,9 +26,9 @@ func (tmc testMetadataStore) GetMetadata(familyName string) (scrape.MetricMetada
 	return lookup, ok
 }
 
-func (tmc testMetadataStore) ListMetadata() []scrape.MetricMetadata { return nil }
+func (testMetadataStore) ListMetadata() []scrape.MetricMetadata { return nil }
 
-func (tmc testMetadataStore) SizeMetadata() int { return 0 }
+func (testMetadataStore) SizeMetadata() int { return 0 }
 
 func (tmc testMetadataStore) LengthMetadata() int {
 	return len(tmc)

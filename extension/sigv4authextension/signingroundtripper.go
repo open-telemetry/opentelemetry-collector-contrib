@@ -110,7 +110,7 @@ func hashPayload(req *http.Request) (string, error) {
 // inferServiceAndRegion attempts to infer a service
 // and a region from an http.request, and returns either an empty
 // string for both or a valid value for both.
-func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service string, region string) {
+func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service, region string) {
 	service = si.service
 	region = si.region
 

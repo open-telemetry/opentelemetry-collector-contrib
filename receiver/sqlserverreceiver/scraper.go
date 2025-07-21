@@ -153,7 +153,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	return s.lb.Emit(metadata.WithLogsResource(resources)), err
 }
 
-func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
+func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
 	if s.db != nil {
 		return s.db.Close()
 	}
@@ -807,7 +807,7 @@ func (s *sqlServerScraperHelper) retrieveValue(
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
-func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val int64) (bool, int64) {
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column string, val int64) (bool, int64) {
 	if val < 0 {
 		return false, 0
 	}

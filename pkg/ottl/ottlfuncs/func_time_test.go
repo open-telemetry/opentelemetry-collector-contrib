@@ -29,7 +29,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "simple short form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-04-12", nil
 				},
 			},
@@ -39,7 +39,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "simple short form with short year and slashes",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
@@ -49,7 +49,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "month day year",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "02/04/2023", nil
 				},
 			},
@@ -59,7 +59,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "simple long form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "July 31, 1993", nil
 				},
 			},
@@ -69,7 +69,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "date with timestamp",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Mar 14 2023 17:02:59", nil
 				},
 			},
@@ -79,7 +79,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "day of the week long form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Monday, May 01, 2023", nil
 				},
 			},
@@ -89,7 +89,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "short weekday, short month, long format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Sat, May 20, 2023", nil
 				},
 			},
@@ -99,7 +99,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "short months",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Feb 15, 2023", nil
 				},
 			},
@@ -109,7 +109,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "timestamp with time zone offset",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56 HST", nil
 				},
 			},
@@ -119,7 +119,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "short date with timestamp without time zone offset",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26T12:34:56 GMT", nil
 				},
 			},
@@ -129,7 +129,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "RFC 3339 in custom format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2012-11-01T22:08:41+0000 EST", nil
 				},
 			},
@@ -139,7 +139,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "RFC 3339 in custom format before 2000",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "1986-10-01T00:17:33 MST", nil
 				},
 			},
@@ -149,7 +149,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "no location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2022/01/01", nil
 				},
 			},
@@ -159,7 +159,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "with location - America",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56", nil
 				},
 			},
@@ -170,7 +170,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "with location - Asia",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56", nil
 				},
 			},
@@ -181,7 +181,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "RFC 3339 in custom format before 2000, ignore default location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "1986-10-01T00:17:33 MST", nil
 				},
 			},
@@ -192,7 +192,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "with locale",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Febrero 25 lunes, 2002, 02:03:04 p.m.", nil
 				},
 			},
@@ -203,7 +203,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "with locale - date only",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "mercoledì set 4 2024", nil
 				},
 			},
@@ -214,7 +214,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "with locale and location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Febrero 25 lunes, 2002, 02:03:04 p.m.", nil
 				},
 			},
@@ -253,7 +253,7 @@ func Test_TimeError(t *testing.T) {
 		{
 			name: "invalid short format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
@@ -263,7 +263,7 @@ func Test_TimeError(t *testing.T) {
 		{
 			name: "invalid RFC3339 with no time",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -295,7 +295,7 @@ func Test_TimeFormatError(t *testing.T) {
 		{
 			name: "invalid short with no format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
@@ -305,7 +305,7 @@ func Test_TimeFormatError(t *testing.T) {
 		{
 			name: "with unknown location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56", nil
 				},
 			},
@@ -316,7 +316,7 @@ func Test_TimeFormatError(t *testing.T) {
 		{
 			name: "with unsupported locale",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56", nil
 				},
 			},
@@ -355,7 +355,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "simple short form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-04-12", nil
 				},
 			},
@@ -365,7 +365,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "simple short form with short year and slashes",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
@@ -375,7 +375,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "month day year",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "02/04/2023", nil
 				},
 			},
@@ -385,7 +385,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "simple long form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "July 31, 1993", nil
 				},
 			},
@@ -395,7 +395,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "date with timestamp",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Mar 14 2023 17:02:59", nil
 				},
 			},
@@ -405,7 +405,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "day of the week long form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Monday, May 01, 2023", nil
 				},
 			},
@@ -415,7 +415,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "short weekday, short month, long format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Sat, May 20, 2023", nil
 				},
 			},
@@ -425,7 +425,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "short months",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Feb 15, 2023", nil
 				},
 			},
@@ -435,7 +435,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "timestamp with time zone offset",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56 HST", nil
 				},
 			},
@@ -445,7 +445,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "short date with timestamp without time zone offset",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26T12:34:56 GMT", nil
 				},
 			},
@@ -455,7 +455,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "RFC 3339 in custom format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2012-11-01T22:08:41+0000 EST", nil
 				},
 			},
@@ -465,7 +465,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "RFC 3339 in custom format before 2000",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "1986-10-01T00:17:33 MST", nil
 				},
 			},
@@ -475,7 +475,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "no location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2022/01/01", nil
 				},
 			},
@@ -485,7 +485,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "with location - America",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56", nil
 				},
 			},
@@ -496,7 +496,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "with location - Asia",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "2023-05-26 12:34:56", nil
 				},
 			},
@@ -507,7 +507,7 @@ func Benchmark_Time(t *testing.B) {
 		{
 			name: "RFC 3339 in custom format before 2000, ignore default location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "1986-10-01T00:17:33 MST", nil
 				},
 			},

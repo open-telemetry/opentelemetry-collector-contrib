@@ -67,7 +67,7 @@ var (
 		SQLParameter: func(position int) string {
 			return fmt.Sprintf("$%d", position)
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for Postgres
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -94,10 +94,10 @@ var (
 	}
 	MySQL = dbEngineUnderTest{
 		Port: mysqlPort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for MySQL
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -184,7 +184,7 @@ var (
 	}
 	SapASE = dbEngineUnderTest{
 		Port: sapAsePort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
 		CheckCompatibility: func(t *testing.T) {
