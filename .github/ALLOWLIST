@@ -31,10 +31,7 @@ processor/routingprocessor/
 # Start unmaintained components list
 
 exporter/awscloudwatchlogsexporter
-<<<<<<< HEAD
 e2etests
-=======
->>>>>>> main
 exporter/carbonexporter
 exporter/kineticaexporter
 extension/observer/ecstaskobserver
