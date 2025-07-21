@@ -44,12 +44,12 @@ func newNfsScraper(settings scraper.Settings, cfg *Config) *nfsScraper {
 	}
 }
 
-func (s *nfsScraper) start(_ context.Context, _ component.Host) error {
+func (s *nfsScraper) start(context.Context, component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
-func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *nfsScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	var err error
 	var errs scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())

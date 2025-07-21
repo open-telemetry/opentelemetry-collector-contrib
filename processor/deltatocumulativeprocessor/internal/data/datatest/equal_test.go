@@ -51,19 +51,19 @@ func (s structFunc) Get() int {
 	return s.a
 }
 
-func (s structFunc) Func() func() {
+func (structFunc) Func() func() {
 	return func() {}
 }
 
 // iter.Seq is a reflect.Func
-func (s structFunc) Seq() iter.Seq[int] {
-	return func(_ func(v int) bool) {
+func (structFunc) Seq() iter.Seq[int] {
+	return func(func(v int) bool) {
 	}
 }
 
 // iter.Seq2 is a reflect.Func
-func (s structFunc) Seq2() iter.Seq2[int, string] {
-	return func(_ func(k int, v string) bool) {
+func (structFunc) Seq2() iter.Seq2[int, string] {
+	return func(func(k int, v string) bool) {
 	}
 }
 
@@ -81,9 +81,9 @@ type fakeT struct {
 	testing.TB
 }
 
-func (t fakeT) Helper() {}
+func (fakeT) Helper() {}
 
-func (t fakeT) Errorf(format string, args ...any) {
+func (fakeT) Errorf(format string, args ...any) {
 	var from string
 	for i := 0; ; i++ {
 		pc, file, line, ok := runtime.Caller(i)

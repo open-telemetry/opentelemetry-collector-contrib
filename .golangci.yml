@@ -13,6 +13,9 @@ formatters:
         - standard
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+    gofumpt:
+      # Choose whether to use the extra rules.
+      extra-rules: true
 
 issues:
   # Maximum issues count per one linter.
@@ -121,24 +124,16 @@ linters:
         - badRegexp
         - commentedOutCode
         - deferInLoop
-        - equalFold
         - exposedSyncMutex
         - filepathJoin
         - hugeParam
         - importShadow
-        - nestingReduce
-        - paramTypeCombine
         - ptrToRefParam
         - rangeValCopy
         - returnAfterHttpError
-        - sloppyReassign
-        - stringConcatSimplify
         - todoCommentWithoutDetail
         - tooManyResultsChecker
-        - typeAssertChain
-        - typeDefFirst
         - unnamedResult
-        - unnecessaryBlock
         - whyNoLint
 
       enable-all: true
@@ -228,6 +223,8 @@ linters:
         - name: unreachable-code
         # Functions or methods with unused parameters can be a symptom of an unfinished refactoring or a bug.
         - name: unused-parameter
+        # Methods with unused receivers can be a symptom of an unfinished refactoring or a bug.
+        - name: unused-receiver
         # Since Go 1.18, interface{} has an alias: any. This rule proposes to replace instances of interface{} with any.
         - name: use-any
         # identifies calls to fmt.Errorf that can be safely replaced by, the more efficient, errors.New.

@@ -133,7 +133,7 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 }
 
 // forms an *http.Request for use with Splunk built-in API's (like introspection).
-func (c *splunkEntClient) createAPIRequest(eptType string, apiEndpoint string) (req *http.Request, err error) {
+func (c *splunkEntClient) createAPIRequest(eptType, apiEndpoint string) (req *http.Request, err error) {
 	var u string
 	ctx := context.WithValue(context.Background(), endpointType("type"), eptType)
 

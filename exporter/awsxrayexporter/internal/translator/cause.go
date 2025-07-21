@@ -188,7 +188,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	return isError, isFault, isThrottle, filtered, cause
 }
 
-func parseException(exceptionType string, message string, stacktrace string, isRemote bool, language string) []awsxray.Exception {
+func parseException(exceptionType, message, stacktrace string, isRemote bool, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
 	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{

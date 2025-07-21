@@ -72,7 +72,7 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 
 type waitStrategy struct{}
 
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForAll(
 		wait.ForListeningPort(nat.Port(aerospikePort)),
 		wait.ForLog("service ready: soon there will be cake!"),

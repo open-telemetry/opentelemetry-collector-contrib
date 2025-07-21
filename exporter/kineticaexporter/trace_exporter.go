@@ -29,12 +29,12 @@ func newTracesExporter(logger *zap.Logger, _ *Config) *kineticaTracesExporter {
 	return tracesExp
 }
 
-func (e *kineticaTracesExporter) start(_ context.Context, _ component.Host) error {
+func (*kineticaTracesExporter) start(context.Context, component.Host) error {
 	return nil
 }
 
 // shutdown will shut down the exporter.
-func (e *kineticaTracesExporter) shutdown(_ context.Context) error {
+func (*kineticaTracesExporter) shutdown(context.Context) error {
 	return nil
 }
 
@@ -44,6 +44,6 @@ func (e *kineticaTracesExporter) shutdown(_ context.Context) error {
 //	@param ctx
 //	@param td
 //	@return error
-func (e *kineticaTracesExporter) pushTraceData(_ context.Context, _ ptrace.Traces) error {
+func (*kineticaTracesExporter) pushTraceData(context.Context, ptrace.Traces) error {
 	return nil
 }

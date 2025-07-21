@@ -189,7 +189,7 @@ func (p systemMetadataProvider) OSDescription(ctx context.Context) (string, erro
 }
 
 // OSName returns the OS name from host metadata.
-func (p systemMetadataProvider) OSName(ctx context.Context) (string, error) {
+func (systemMetadataProvider) OSName(ctx context.Context) (string, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return "", fmt.Errorf("OSName failed to get platform: %w", err)
@@ -198,7 +198,7 @@ func (p systemMetadataProvider) OSName(ctx context.Context) (string, error) {
 }
 
 // OSBuildID returns the OS build ID based on the platform.
-func (p systemMetadataProvider) OSBuildID(ctx context.Context) (string, error) {
+func (systemMetadataProvider) OSBuildID(ctx context.Context) (string, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return "", fmt.Errorf("OSBuildID failed to get host info: %w", err)
@@ -271,7 +271,7 @@ func (systemMetadataProvider) HostArch() (string, error) {
 	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
 }
 
-func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
+func (systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -304,7 +304,7 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 	return ips, err
 }
 
-func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) {
+func (systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -321,10 +321,10 @@ func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) 
 	return macs, err
 }
 
-func (p systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
+func (systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
 	return cpu.InfoWithContext(ctx)
 }
 
-func (p systemMetadataProvider) HostInterfaces() ([]net.Interface, error) {
+func (systemMetadataProvider) HostInterfaces() ([]net.Interface, error) {
 	return net.Interfaces()
 }

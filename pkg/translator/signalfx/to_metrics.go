@@ -18,7 +18,7 @@ const numMetricTypes = 4
 type ToTranslator struct{}
 
 // ToMetrics converts SignalFx proto data points to pmetric.Metrics.
-func (tt *ToTranslator) ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
+func (*ToTranslator) ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()

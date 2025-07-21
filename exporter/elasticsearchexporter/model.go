@@ -180,7 +180,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	return document.Serialize(buf, false)
 }
 
-func (e ecsModeEncoder) encodeLog(
+func (ecsModeEncoder) encodeLog(
 	ec encodingContext,
 	record plog.LogRecord,
 	idx elasticsearch.Index,
@@ -228,7 +228,7 @@ func (e ecsModeEncoder) encodeLog(
 	return document.Serialize(buf, true)
 }
 
-func (e ecsModeEncoder) encodeSpan(
+func (ecsModeEncoder) encodeSpan(
 	ec encodingContext,
 	span ptrace.Span,
 	idx elasticsearch.Index,
@@ -334,7 +334,7 @@ func (e otelModeEncoder) encodeProfile(
 	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
-func (e bodymapModeEncoder) encodeLog(
+func (bodymapModeEncoder) encodeLog(
 	_ encodingContext,
 	record plog.LogRecord,
 	_ elasticsearch.Index,

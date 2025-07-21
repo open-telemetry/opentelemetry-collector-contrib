@@ -61,7 +61,7 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 	return filteredAttrMap
 }
 
-func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog.Logs {
+func someComplexLogs(withResourceAttrIndex bool, rlCount, illCount int) plog.Logs {
 	logs := plog.NewLogs()
 
 	for i := 0; i < rlCount; i++ {
@@ -80,7 +80,7 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 	return logs
 }
 
-func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) ptrace.Traces {
+func someComplexTraces(withResourceAttrIndex bool, rsCount, ilsCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	for i := 0; i < rsCount; i++ {
@@ -100,7 +100,7 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pt
 	return traces
 }
 
-func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int) pmetric.Metrics {
+func someComplexMetrics(withResourceAttrIndex bool, rmCount, ilmCount, dataPointCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < rmCount; i++ {
@@ -127,7 +127,7 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pmetric.Metrics {
+func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount, ilmCount, dataPointCount, histogramSize int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < rmCount; i++ {
@@ -624,7 +624,7 @@ func TestAttributeGrouping(t *testing.T) {
 	}
 }
 
-func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int) ptrace.Traces {
+func someSpans(attrs pcommon.Map, instrumentationLibraryCount, spanCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -640,7 +640,7 @@ func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int
 	return traces
 }
 
-func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) plog.Logs {
+func someLogs(attrs pcommon.Map, instrumentationLibraryCount, logCount int) plog.Logs {
 	logs := plog.NewLogs()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -655,7 +655,7 @@ func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) 
 	return logs
 }
 
-func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -672,7 +672,7 @@ func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metric
 	return metrics
 }
 
-func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -689,7 +689,7 @@ func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCo
 	return metrics
 }
 
-func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -706,7 +706,7 @@ func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metr
 	return metrics
 }
 
-func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -723,7 +723,7 @@ func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, me
 	return metrics
 }
 
-func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
