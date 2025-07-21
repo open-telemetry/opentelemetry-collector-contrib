@@ -150,6 +150,21 @@ var defaultSQLPlanNormalizeSettings = obfuscate.JSONConfig{
 	},
 }
 
+// defaultSQLPlanObfuscateSettings builds upon sqlPlanNormalizeSettings by including cost & row estimates in the keep
+// list
+var defaultSQLPlanObfuscateSettings = obfuscate.JSONConfig{
+	Enabled: true,
+	KeepValues: append([]string{
+		// mysql section was removed
+		// postgres (original from the datadog library)
+		"Plan Rows",
+		"Plan Width",
+		"Startup Cost",
+		"Total Cost",
+	}, defaultSQLPlanNormalizeSettings.KeepValues...),
+	ObfuscateSQLValues: defaultSQLPlanNormalizeSettings.ObfuscateSQLValues,
+}
+
 type obfuscator obfuscate.Obfuscator
 
 func newObfuscator() *obfuscator {
@@ -169,19 +184,4 @@ func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
 
 func (o *obfuscator) obfuscateSQLExecPlan(plan string) (string, error) {
 	return (*obfuscate.Obfuscator)(o).ObfuscateSQLExecPlan(plan, true)
-}
-
-// defaultSQLPlanObfuscateSettings builds upon sqlPlanNormalizeSettings by including cost & row estimates in the keep
-// list
-var defaultSQLPlanObfuscateSettings = obfuscate.JSONConfig{
-	Enabled: true,
-	KeepValues: append([]string{
-		// mysql section was removed
-		// postgres (original from the datadog library)
-		"Plan Rows",
-		"Plan Width",
-		"Startup Cost",
-		"Total Cost",
-	}, defaultSQLPlanNormalizeSettings.KeepValues...),
-	ObfuscateSQLValues: defaultSQLPlanNormalizeSettings.ObfuscateSQLValues,
 }
