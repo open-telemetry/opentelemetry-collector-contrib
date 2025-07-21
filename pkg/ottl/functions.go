@@ -814,7 +814,7 @@ type LiteralGetter[K, V any, G typedGetter[K, V]] struct {
 	getter G
 }
 
-func (p *LiteralGetter[K, V, G]) getWrappedType() reflect.Type {
+func (_ *LiteralGetter[K, V, G]) getWrappedType() reflect.Type {
 	return reflect.TypeFor[G]()
 }
 

@@ -88,7 +88,7 @@ func (l literal[K]) getLiteral() (any, error) {
 	return l.value, nil
 }
 
-func (l literal[K]) isLiteral() bool {
+func (_ literal[K]) isLiteral() bool {
 	return true
 }
 
