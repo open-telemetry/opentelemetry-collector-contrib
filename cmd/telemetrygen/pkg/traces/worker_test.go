@@ -364,7 +364,7 @@ func (m *mockSyncer) ExportSpans(_ context.Context, spanData []sdktrace.ReadOnly
 	return nil
 }
 
-func (m *mockSyncer) Shutdown(context.Context) error {
+func (*mockSyncer) Shutdown(context.Context) error {
 	panic("implement me")
 }
 

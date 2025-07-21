@@ -34,10 +34,10 @@ func Test_GetSliceValue_Valid(t *testing.T) {
 
 func Test_GetSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -121,10 +121,10 @@ func Test_SetSliceValue_Valid(t *testing.T) {
 
 func Test_SetSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -211,10 +211,10 @@ func Test_GetCommonTypedSliceValue_Valid(t *testing.T) {
 
 func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -298,10 +298,10 @@ func Test_SetCommonTypedSliceValue_Valid(t *testing.T) {
 
 func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -475,10 +475,10 @@ func Test_GetCommonIntSliceValue_Valid(t *testing.T) {
 
 func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -568,10 +568,10 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 
 func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}

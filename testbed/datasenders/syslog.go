@@ -27,7 +27,7 @@ type SyslogWriter struct {
 
 var _ testbed.LogDataSender = (*SyslogWriter)(nil)
 
-func NewSyslogWriter(network string, host string, port int, batchSize int) *SyslogWriter {
+func NewSyslogWriter(network, host string, port, batchSize int) *SyslogWriter {
 	f := &SyslogWriter{
 		network: network,
 		bufSize: batchSize,
@@ -51,7 +51,7 @@ func (f *SyslogWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (f *SyslogWriter) Capabilities() consumer.Capabilities {
+func (*SyslogWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -92,15 +92,15 @@ func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1_000_000_000), int64(lr.Timestamp()%1_000_000_000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
 	if lr.TraceID().String() != "" {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID()))
+		sdid.WriteString(fmt.Sprintf("%s=%q ", "trace_id", lr.TraceID()))
 	}
 	if lr.SpanID().String() != "" {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID()))
+		sdid.WriteString(fmt.Sprintf("%s=%q ", "span_id", lr.SpanID()))
 	}
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
 	for k, v := range lr.Attributes().All() {
 		if v.Str() != "" {
-			sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
+			sdid.WriteString(fmt.Sprintf("%s=%q ", k, v.Str()))
 		}
 	}
 	msg := fmt.Sprintf("<166>1 %s 127.0.0.1 - - - [test@12345 %s] %s\n", ts, strings.TrimSpace(sdid.String()), lr.Body().Str())
@@ -125,9 +125,9 @@ func (f *SyslogWriter) SendCheck() error {
 	return nil
 }
 
-func (f *SyslogWriter) Flush() {
+func (*SyslogWriter) Flush() {
 }
 
-func (f *SyslogWriter) ProtocolName() string {
+func (*SyslogWriter) ProtocolName() string {
 	return "syslog"
 }

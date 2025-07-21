@@ -99,7 +99,7 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
-	if len(tenant) > 0 {
+	if tenant != "" {
 		req.Header.Set("X-Scope-OrgID", tenant)
 	}
 

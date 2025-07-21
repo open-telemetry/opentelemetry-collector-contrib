@@ -222,6 +222,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverBatchSQLRecompilationRate: metricInfo{
 		Name: "sqlserver.batch.sql_recompilation.rate",
 	},
+	SqlserverCPUCount: metricInfo{
+		Name: "sqlserver.cpu.count",
+	},
 	SqlserverDatabaseBackupOrRestoreRate: metricInfo{
 		Name: "sqlserver.database.backup_or_restore.rate",
 	},
@@ -363,6 +366,7 @@ type metricsInfo struct {
 	SqlserverBatchRequestRate                   metricInfo
 	SqlserverBatchSQLCompilationRate            metricInfo
 	SqlserverBatchSQLRecompilationRate          metricInfo
+	SqlserverCPUCount                           metricInfo
 	SqlserverDatabaseBackupOrRestoreRate        metricInfo
 	SqlserverDatabaseCount                      metricInfo
 	SqlserverDatabaseExecutionErrors            metricInfo
@@ -554,6 +558,55 @@ func (m *metricSqlserverBatchSQLRecompilationRate) emit(metrics pmetric.MetricSl
 
 func newMetricSqlserverBatchSQLRecompilationRate(cfg MetricConfig) metricSqlserverBatchSQLRecompilationRate {
 	m := metricSqlserverBatchSQLRecompilationRate{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverCPUCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.cpu.count metric with initial data.
+func (m *metricSqlserverCPUCount) init() {
+	m.data.SetName("sqlserver.cpu.count")
+	m.data.SetDescription("Number of CPUs.")
+	m.data.SetUnit("{CPUs}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverCPUCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverCPUCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverCPUCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverCPUCount(cfg MetricConfig) metricSqlserverCPUCount {
+	m := metricSqlserverCPUCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2836,6 +2889,7 @@ type MetricsBuilder struct {
 	metricSqlserverBatchRequestRate                   metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate            metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate          metricSqlserverBatchSQLRecompilationRate
+	metricSqlserverCPUCount                           metricSqlserverCPUCount
 	metricSqlserverDatabaseBackupOrRestoreRate        metricSqlserverDatabaseBackupOrRestoreRate
 	metricSqlserverDatabaseCount                      metricSqlserverDatabaseCount
 	metricSqlserverDatabaseExecutionErrors            metricSqlserverDatabaseExecutionErrors
@@ -2902,13 +2956,14 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                   mbc,
-		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                settings.BuildInfo,
-		metricSqlserverBatchRequestRate:          newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
-		metricSqlserverBatchSQLCompilationRate:   newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
-		metricSqlserverBatchSQLRecompilationRate: newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		config:                                            mbc,
+		startTime:                                         pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                     pmetric.NewMetrics(),
+		buildInfo:                                         settings.BuildInfo,
+		metricSqlserverBatchRequestRate:                   newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
+		metricSqlserverBatchSQLCompilationRate:            newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
+		metricSqlserverBatchSQLRecompilationRate:          newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverCPUCount:                           newMetricSqlserverCPUCount(mbc.Metrics.SqlserverCPUCount),
 		metricSqlserverDatabaseBackupOrRestoreRate:        newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
 		metricSqlserverDatabaseCount:                      newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
 		metricSqlserverDatabaseExecutionErrors:            newMetricSqlserverDatabaseExecutionErrors(mbc.Metrics.SqlserverDatabaseExecutionErrors),
@@ -3065,6 +3120,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
+	mb.metricSqlserverCPUCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseBackupOrRestoreRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseExecutionErrors.emit(ils.Metrics())
@@ -3154,6 +3210,16 @@ func (mb *MetricsBuilder) RecordSqlserverBatchSQLCompilationRateDataPoint(ts pco
 // RecordSqlserverBatchSQLRecompilationRateDataPoint adds a data point to sqlserver.batch.sql_recompilation.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverCPUCountDataPoint adds a data point to sqlserver.cpu.count metric.
+func (mb *MetricsBuilder) RecordSqlserverCPUCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverCPUCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverCPUCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordSqlserverDatabaseBackupOrRestoreRateDataPoint adds a data point to sqlserver.database.backup_or_restore.rate metric.

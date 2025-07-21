@@ -134,14 +134,14 @@ var mappingModes = func() map[string]MappingMode {
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
 	var multiErr []error
-	if len(cfg.Endpoint) == 0 {
+	if cfg.Endpoint == "" {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
-	if len(cfg.Dataset) == 0 {
+	if cfg.Dataset == "" {
 		multiErr = append(multiErr, errDatasetNoValue)
 	}
-	if len(cfg.Namespace) == 0 {
+	if cfg.Namespace == "" {
 		multiErr = append(multiErr, errNamespaceNoValue)
 	}
 

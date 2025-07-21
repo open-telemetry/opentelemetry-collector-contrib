@@ -49,7 +49,7 @@ func GenerateProfilesTwoProfilesSameResource() pprofile.Profiles {
 }
 
 func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
-	profile.SetStartTime(TestProfileStartTimestamp)
+	profile.SetTime(TestProfileStartTimestamp)
 	profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 
 	profile.AttributeIndices().Append(0)
@@ -63,7 +63,7 @@ func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 }
 
 func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
-	profile.SetStartTime(TestProfileStartTimestamp)
+	profile.SetTime(TestProfileStartTimestamp)
 	profile.SetProfileID([16]byte{0x05, 0x06, 0x07, 0x08})
 
 	profile.AttributeIndices().Append(0)

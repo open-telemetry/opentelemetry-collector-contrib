@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -36,7 +37,7 @@ func TestClientCreation(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -65,7 +66,7 @@ func TestClientCreateRequest(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -120,7 +121,7 @@ func TestClientCreateRequest(t *testing.T) {
 				path := fmt.Sprintf("/services/search/jobs/%s/results", testJobID)
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)
-				req, _ := http.NewRequest(method, url, nil)
+				req, _ := http.NewRequest(method, url, http.NoBody)
 				return req
 			}(),
 		},
@@ -144,7 +145,7 @@ func TestAPIRequestCreate(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -168,7 +169,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	// build the expected request
 	expectedURL := client.clients[typeIdx].endpoint.String() + "/test/endpoint"
-	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
+	expected, _ := http.NewRequest(http.MethodGet, expectedURL, http.NoBody)
 
 	require.Equal(t, expected.URL, req.URL)
 	require.Equal(t, expected.Method, req.Method)

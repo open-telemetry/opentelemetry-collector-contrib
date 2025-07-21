@@ -170,10 +170,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 
 		return strings.Contains(lastEntry.Message, "Failed to split segment header and body") &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
-			strings.Compare(
-				errors.Unwrap(
-					lastEntry.Context[0].Interface.(error)).Error(),
-				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
+			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
 	assertReceiverTraces(t, tt, receiverID, 0, 1)
@@ -245,7 +242,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	randString, _ := uuid.NewRandom()
 	// the header (i.e. the portion before \n) is invalid
 	err := writePacket(t, addr,
-		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
+		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody") //nolint:gocritic //sprintfQuotedString for JSON
 	assert.NoError(t, err, "cannot write packet in the TestJsonInvalidHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
@@ -388,7 +385,7 @@ func (m *mockNetError) Timeout() bool {
 	return m.timeout
 }
 
-func (m *mockNetError) Temporary() bool {
+func (*mockNetError) Temporary() bool {
 	return false
 }
 
@@ -420,7 +417,7 @@ func (m *mockSocketConn) Read(b []byte) (int, error) {
 	return copied, m.expectedError
 }
 
-func (m *mockSocketConn) Close() error { return nil }
+func (*mockSocketConn) Close() error { return nil }
 
 func createAndOptionallyStartPoller(
 	t *testing.T,

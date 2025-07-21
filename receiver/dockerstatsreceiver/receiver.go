@@ -66,7 +66,8 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	if err = r.client.LoadContainerList(ctx); err != nil {
+	err = r.client.LoadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -224,7 +225,7 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 	}
 }
 
-type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
+type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)
 
 func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *ctypes.BlkioStats) {
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
@@ -265,7 +266,7 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	}
 }
 
-func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *ctypes.CPUStats, prevStats *ctypes.CPUStats) {
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats, prevStats *ctypes.CPUStats) {
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))

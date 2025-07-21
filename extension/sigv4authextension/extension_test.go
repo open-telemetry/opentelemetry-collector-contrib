@@ -28,7 +28,7 @@ func TestNewSigv4Extension(t *testing.T) {
 func TestRoundTripper(t *testing.T) {
 	awsCredsProvider := mockCredentials()
 
-	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	base := http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
 	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 
@@ -131,10 +131,10 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 }
 
 func TestCloneRequest(t *testing.T) {
-	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req1, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 
-	req2, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req2, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 	req2.Header.Add("Header1", "val1")
 

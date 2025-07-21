@@ -50,8 +50,9 @@ func TestTranslateFromLogs(t *testing.T) {
 			plogsFile: filepath.Join("testdata", "two-identical-log-records-different-service-name-resource-attribute", "plogs.yaml"),
 			wantPayloads: func() []faroTypes.Payload {
 				payloads := make([]faroTypes.Payload, 0)
-				payloads = append(payloads, PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-1.json"))
-				payloads = append(payloads, PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-2.json"))
+				payloads = append(payloads,
+					PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-1.json"),
+					PayloadFromFile(t, "two-identical-log-records-different-service-name-resource-attribute/payload-2.json"))
 				return payloads
 			}(),
 			wantErr: assert.NoError,
@@ -71,8 +72,9 @@ func TestTranslateFromLogs(t *testing.T) {
 			plogsFile: filepath.Join("testdata", "two-log-records-different-app-release", "plogs.yaml"),
 			wantPayloads: func() []faroTypes.Payload {
 				payloads := make([]faroTypes.Payload, 0)
-				payloads = append(payloads, PayloadFromFile(t, "two-log-records-different-app-release/payload-1.json"))
-				payloads = append(payloads, PayloadFromFile(t, "two-log-records-different-app-release/payload-2.json"))
+				payloads = append(payloads,
+					PayloadFromFile(t, "two-log-records-different-app-release/payload-1.json"),
+					PayloadFromFile(t, "two-log-records-different-app-release/payload-2.json"))
 				return payloads
 			}(),
 			wantErr: assert.NoError,
@@ -389,7 +391,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 			name: "Log record body has kind=log and other fields",
 			lr: func() plog.LogRecord {
 				record := plog.NewLogRecord()
-				record.Body().SetStr("timestamp=2021-09-30T10:46:17.68Z kind=log message=\"opened pricing page\" level=info context_component=AppRoot context_page=Pricing traceID=abcd spanID=def sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
+				record.Body().SetStr("timestamp=2021-09-30T10:46:17.68Z kind=log level=info message=\"opened pricing page\" level=info context_component=AppRoot context_page=Pricing traceID=abcd spanID=def sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
 				return record
 			}(),
 			rl: pcommon.NewResource(),
@@ -432,7 +434,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 			name: "Log record body has kind=event and other fields",
 			lr: func() plog.LogRecord {
 				record := plog.NewLogRecord()
-				record.Body().SetStr("timestamp=2023-11-16T10:00:55.995Z kind=event event_name=faro.performanceEntry event_domain=browser event_data_connectEnd=3656 event_data_connectStart=337 event_data_decodedBodySize=0 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
+				record.Body().SetStr("timestamp=2023-11-16T10:00:55.995Z kind=event level=info event_name=faro.performanceEntry event_domain=browser event_data_connectEnd=3656 event_data_connectStart=337 event_data_decodedBodySize=0 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
 				return record
 			}(),
 			rl: pcommon.NewResource(),
@@ -472,7 +474,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 			name: "Log record body has kind=measurement and other fields",
 			lr: func() plog.LogRecord {
 				record := plog.NewLogRecord()
-				record.Body().SetStr("timestamp=2021-09-30T10:46:17.68Z kind=measurement type=\"page load\" context_hello=world ttfb=14.000000 ttfcp=22.120000 ttfp=20.120000 traceID=abcd spanID=def value_ttfb=14 value_ttfcp=22.12 value_ttfp=20.12 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
+				record.Body().SetStr("timestamp=2021-09-30T10:46:17.68Z kind=measurement level=info type=\"page load\" context_hello=world ttfb=14.000000 ttfcp=22.120000 ttfp=20.120000 traceID=abcd spanID=def value_ttfb=14 value_ttfcp=22.12 value_ttfp=20.12 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
 				return record
 			}(),
 			rl: pcommon.NewResource(),
@@ -518,7 +520,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 			name: "Log record body has kind=exception and other fields",
 			lr: func() plog.LogRecord {
 				record := plog.NewLogRecord()
-				record.Body().SetStr("timestamp=2021-09-30T10:46:17.68Z kind=exception type=Error value=\"Cannot read property 'find' of undefined\" stacktrace=\"Error: Cannot read property 'find' of undefined\\n  at ? (http://fe:3002/static/js/vendors~main.chunk.js:8639:42)\" traceID=abcd spanID=def context_ReactError=\"Annoying Error\" context_component=ReactErrorBoundary sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
+				record.Body().SetStr("timestamp=2021-09-30T10:46:17.68Z kind=exception level=error type=Error value=\"Cannot read property 'find' of undefined\" stacktrace=\"Error: Cannot read property 'find' of undefined\\n  at ? (http://fe:3002/static/js/vendors~main.chunk.js:8639:42)\" traceID=abcd spanID=def context_ReactError=\"Annoying Error\" context_component=ReactErrorBoundary sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar")
 				return record
 			}(),
 			rl: pcommon.NewResource(),

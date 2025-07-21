@@ -445,7 +445,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 		if argVal.Bytes == nil {
 			return nil, errors.New("slice parameter must be a byte slice literal")
 		}
-		return ([]byte)(*argVal.Bytes), nil
+		return []byte(*argVal.Bytes), nil
 	case name == reflect.String.String():
 		arg, err := buildSlice[string](argVal, argType, p.buildArg, name)
 		if err != nil {
@@ -551,9 +551,8 @@ func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
-	case strings.HasPrefix(name, "Setter"):
-		fallthrough
-	case strings.HasPrefix(name, "GetSetter"):
+	case strings.HasPrefix(name, "Setter"),
+		strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal != nil && argVal.Literal.Path != nil {
 			return p.buildGetSetterFromPath(argVal.Literal.Path)
 		}
@@ -731,18 +730,29 @@ type Optional[T any] struct {
 }
 
 // This is called only by reflection.
-func (o Optional[T]) set(val any) reflect.Value {
+func (Optional[T]) set(val any) reflect.Value {
 	return reflect.ValueOf(Optional[T]{
 		val:      val.(T),
 		hasValue: true,
 	})
 }
 
+// IsEmpty returns true if the Optional[T] does not contain a value.
 func (o Optional[T]) IsEmpty() bool {
 	return !o.hasValue
 }
 
+// Get returns the value contained in the Optional[T].
 func (o Optional[T]) Get() T {
+	return o.val
+}
+
+// GetOr returns the value contained in the Optional[T] if it exists,
+// otherwise it returns the default value provided.
+func (o Optional[T]) GetOr(value T) T {
+	if !o.hasValue {
+		return value
+	}
 	return o.val
 }
 

@@ -14,11 +14,11 @@ import (
 
 type mockExporter struct{}
 
-func (m mockExporter) Start(context.Context, component.Host) error {
+func (mockExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m mockExporter) Shutdown(context.Context) error {
+func (mockExporter) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -28,15 +28,15 @@ type mockExporterWithK8sMetadata struct {
 	*consumertest.MetricsSink
 }
 
-func (m mockExporterWithK8sMetadata) Start(context.Context, component.Host) error {
+func (mockExporterWithK8sMetadata) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m mockExporterWithK8sMetadata) Shutdown(context.Context) error {
+func (mockExporterWithK8sMetadata) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m mockExporterWithK8sMetadata) ConsumeMetadata([]*metadata.MetadataUpdate) error {
+func (mockExporterWithK8sMetadata) ConsumeMetadata([]*metadata.MetadataUpdate) error {
 	consumeMetadataInvocation()
 	return nil
 }

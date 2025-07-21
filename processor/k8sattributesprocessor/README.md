@@ -5,6 +5,7 @@
 | Stability     | [development]: profiles   |
 |               | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
@@ -227,12 +228,14 @@ wait_for_metadata_timeout: 10s
 
 ## Extracting attributes from pod labels and annotations
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments and nodes.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/Node annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/nodes and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/StatefulSet/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has only three possible values "pod", "namespace", "deployment" and "node" and defaults to "pod" if none is specified.
+The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset" and "node" and defaults to "pod" if none is specified.
+
+By default, extracting metadata from `Deployments` and `StatefulSets` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
 A few examples to use this config are as follows:
 
@@ -343,7 +346,7 @@ rules:
   resources: ["pods", "namespaces", "nodes"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
-  resources: ["replicasets", "deployments"]
+  resources: ["replicasets", "deployments", "statefulsets"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["extensions"]
   resources: ["replicasets"]
@@ -392,7 +395,7 @@ rules:
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
-  resources: ["replicasets", "deployments"]
+  resources: ["replicasets", "deployments", "statefulsets"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -503,6 +506,12 @@ as tags.
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
+
+## Warnings
+
+- **Memory consumption**: Since the processor fetches and caches the K8s metadata for the resources
+   of the node it is on, it consumes more memory than other processors. That consumption is compounded
+   if users don't filter down to only the metadata for the node the processor is running on.
 
 ## Feature Gate
 

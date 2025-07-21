@@ -20,9 +20,9 @@ func TestUnmarshal(t *testing.T) {
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
-				Name:      "default",
-				Expect:    NewConfig(),
-				ExpectErr: false, // missing protocol, caught later by Config.Validate()
+				Name:               "default",
+				Expect:             NewConfig(),
+				ExpectUnmarshalErr: false, // missing protocol, caught later by Config.Validate()
 			},
 			{
 				Name: "rfc3164",

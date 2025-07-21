@@ -6,7 +6,7 @@ package lru // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"time"
 
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/elastic/go-freelru"
 	"go.opentelemetry.io/ebpf-profiler/libpf/xsync"
 )

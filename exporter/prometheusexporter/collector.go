@@ -14,6 +14,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -35,6 +37,9 @@ type collector struct {
 	constLabels       prometheus.Labels
 	metricFamilies    sync.Map
 	metricExpiration  time.Duration
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
 }
 
 type metricFamily struct {
@@ -43,14 +48,17 @@ type metricFamily struct {
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
+	labelNamer := otlptranslator.LabelNamer{}
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		namespace:         labelNamer.Build(config.Namespace),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
 		metricExpiration:  config.MetricExpiration,
+		metricNamer:       otlptranslator.MetricNamer{WithMetricSuffixes: config.AddMetricSuffixes, Namespace: config.Namespace},
+		labelNamer:        labelNamer,
 	}
 }
 
@@ -63,11 +71,11 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 		exemplarLabels := make(prometheus.Labels, 0)
 
 		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels[prometheustranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
+			exemplarLabels[otlptranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
 		}
 
 		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels[prometheustranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
+			exemplarLabels[otlptranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
 		}
 
 		var value float64
@@ -89,7 +97,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 
 // Describe is a no-op, because the collector dynamically allocates metrics.
 // https://github.com/prometheus/client_golang/blob/v1.9.0/prometheus/collector.go#L28-L40
-func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
+func (*collector) Describe(chan<- *prometheus.Desc) {}
 
 /*
 Processing
@@ -100,7 +108,7 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 
 var errUnknownMetricType = errors.New("unknown metric type")
 
-func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return c.convertGauge(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
@@ -115,8 +123,8 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
+func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
+	name := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -126,12 +134,12 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 
 	for k, v := range attributes.All() {
-		keys = append(keys, prometheustranslator.NormalizeLabel(k))
+		keys = append(keys, c.labelNamer.Build(k))
 		values = append(values, v.AsString())
 	}
 
 	for k, v := range scopeAttributes.All() {
-		keys = append(keys, prometheustranslator.NormalizeLabel("otel_scope_"+k))
+		keys = append(keys, c.labelNamer.Build("otel_scope_"+k))
 		values = append(values, v.AsString())
 	}
 
@@ -154,7 +162,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
-func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_GAUGE.Enum(), ip.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
@@ -185,7 +193,7 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	return m, nil
 }
 
-func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
@@ -236,7 +244,7 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map,
 	return m, nil
 }
 
-func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	// TODO: In the off chance that we have multiple points
 	// within the same metric, how should we handle them?
 	point := metric.Summary().DataPoints().At(0)
@@ -268,7 +276,7 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 	return m, nil
 }
 
-func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), ip.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	if err != nil {
@@ -361,7 +369,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		})
 
 		for k, v := range attributes.All() {
-			finalKey := prometheustranslator.NormalizeLabel(k)
+			finalKey := c.labelNamer.Build(k)
 			if existingVal, ok := labels[finalKey]; ok {
 				labels[finalKey] = existingVal + ";" + v.AsString()
 			} else {
@@ -379,7 +387,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		}
 
 		name := prometheustranslator.TargetInfoMetricName
-		if len(c.namespace) > 0 {
+		if c.namespace != "" {
 			name = c.namespace + "_" + name
 		}
 
@@ -416,7 +424,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", prometheustranslator.TargetInfoMetricName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, err.Error()))
 	}
 	for _, m := range targetMetrics {
 		ch <- m

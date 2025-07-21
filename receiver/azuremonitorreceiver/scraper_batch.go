@@ -16,7 +16,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -311,7 +311,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 	s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	resourceIDs := s.resourceTypes[subscriptionID][resourceType].resourceIDs
-	if len(resourceIDs) == 0 && len(resourceIDs[0]) > 0 {
+	if len(resourceIDs) == 0 && resourceIDs[0] != "" {
 		return
 	}
 
@@ -344,7 +344,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 }
 
 // TODO: duplicate
-func (s *azureBatchScraper) storeMetricsDefinitionByType(subscriptionID string, resourceType string, name string, compositeKey metricsCompositeKey) {
+func (s *azureBatchScraper) storeMetricsDefinitionByType(subscriptionID, resourceType, name string, compositeKey metricsCompositeKey) {
 	if _, ok := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey]; ok {
 		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics = append(
 			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, name,

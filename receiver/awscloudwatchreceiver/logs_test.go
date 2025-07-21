@@ -274,6 +274,284 @@ func TestAutodiscoverLimit(t *testing.T) {
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
 }
 
+func TestShutdownCheckpointer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	mockStorage := newMockStorageClient()
+	logsRcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
+
+	err := logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	require.Nil(t, mockStorage.cache)
+}
+
+func TestShutdownCheckpointerWithError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	// Create a mock storage client that returns an error on Close
+	mockStorage := newMockStorageClient()
+	mockStorage.forceError = true
+
+	cloudwatchCheckpointPersister := newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
+	logsRcvr.cloudwatchCheckpointPersister = cloudwatchCheckpointPersister
+
+	err := logsRcvr.Shutdown(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forced storage error")
+}
+
+func TestShutdownWithoutCheckpointer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	// Don't set a checkpointer (should be nil by default)
+	require.Nil(t, logsRcvr.cloudwatchCheckpointPersister)
+
+	// Call Shutdown and verify it doesn't error when checkpointer is nil
+	err := logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
+func TestDeletedLogGroupContinuesPolling(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			"existing-group": {
+				Names: []*string{aws.String("stream1")},
+			},
+			"deleted-group": {
+				Names: []*string{aws.String("stream2")},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	mc := &mockClient{}
+
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return *input.LogGroupName == "existing-group"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       aws.String("event1"),
+				LogStreamName: aws.String("stream1"),
+				Message:       aws.String("test message"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
+			},
+		},
+		NextToken: nil,
+	}, nil)
+
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return *input.LogGroupName == "deleted-group"
+	}), mock.Anything).Return((*cloudwatchlogs.FilterLogEventsOutput)(nil), &types.ResourceNotFoundException{
+		Message: aws.String("The specified log group does not exist"),
+	})
+
+	logsRcvr.client = mc
+
+	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+	logs := sink.AllLogs()
+	require.Len(t, logs, 1)
+	require.Equal(t, 1, logs[0].LogRecordCount())
+
+	logRecord := logs[0].ResourceLogs().At(0)
+	require.Equal(t, "existing-group", logRecord.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+
+	err = logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Verify all mock expectations were met
+	mc.AssertExpectations(t)
+}
+
+func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:  3,
+			Prefix: "/aws/",
+		},
+	}
+
+	firstPollDone := make(chan struct{}, 1)
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	mc := &mockClient{}
+
+	// First DescribeLogGroups call returns two groups
+	mc.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+		return input.LogGroupNamePrefix != nil && *input.LogGroupNamePrefix == "/aws/"
+	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
+		LogGroups: []types.LogGroup{
+			{
+				LogGroupName: aws.String("/aws/working-group"),
+			},
+			{
+				LogGroupName: aws.String("/aws/delete-group"),
+			},
+			{
+				LogGroupName: aws.String("/aws/third-group"),
+			},
+		},
+		NextToken: nil,
+	}, nil).Once()
+
+	// Second DescribeLogGroups call returns working group plus a new group
+	mc.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+		return input.LogGroupNamePrefix != nil && *input.LogGroupNamePrefix == "/aws/"
+	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
+		LogGroups: []types.LogGroup{
+			{
+				LogGroupName: aws.String("/aws/working-group"),
+			},
+			{
+				LogGroupName: aws.String("/aws/third-group"),
+			},
+		},
+		NextToken: nil,
+	}, nil).Run(func(_ mock.Arguments) {
+		close(firstPollDone)
+	})
+
+	// Setup mock for working-group to return normal logs
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/working-group"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       aws.String("event1"),
+				LogStreamName: aws.String("stream1"),
+				Message:       aws.String("test message"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
+			},
+		},
+		NextToken: nil,
+	}, nil)
+
+	// Setup mock for /aws/delete-group to return ResourceNotFoundException
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/delete-group"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       aws.String("event1"),
+				LogStreamName: aws.String("stream1"),
+				Message:       aws.String("test message"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
+			},
+		},
+		NextToken: aws.String("next"),
+	}, nil).Once()
+
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/delete-group" && input.NextToken != nil && *input.NextToken == "next"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{}, &types.ResourceNotFoundException{
+		Message: aws.String("The specified log group does not exist"),
+	}).Once()
+
+	// Setup mock for /aws/working-group or /aws/third-group to return normal logs
+	mc.On("FilterLogEvents",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+			return input.LogGroupName != nil && (*input.LogGroupName == "/aws/working-group" || *input.LogGroupName == "/aws/third-group")
+		}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       aws.String("event2"),
+				LogStreamName: aws.String("stream2"),
+				Message:       aws.String("test message from group"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
+			},
+		},
+		NextToken: nil,
+	}, nil)
+
+	logsRcvr.client = mc
+
+	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Wait for first poll to complete
+	require.Eventually(t, func() bool {
+		select {
+		case <-firstPollDone:
+			return true
+		default:
+			return false
+		}
+	}, 15*time.Second, 10*time.Millisecond)
+
+	err = logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	groupNames := make([]string, 0, len(logsRcvr.groupRequests))
+	for _, gr := range logsRcvr.groupRequests {
+		groupNames = append(groupNames, gr.groupName())
+	}
+	require.ElementsMatch(t, []string{"/aws/working-group", "/aws/third-group"}, groupNames)
+	logs := sink.AllLogs()
+	require.GreaterOrEqual(t, len(logs), 3)
+
+	firstWorkingGroupLog := logs[0].ResourceLogs().At(0)
+	require.Equal(t, "/aws/working-group", firstWorkingGroupLog.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+	require.Equal(t, 1, firstWorkingGroupLog.ScopeLogs().Len())
+
+	secondWorkingGroupLog := logs[1].ResourceLogs().At(0)
+	require.Equal(t, "/aws/delete-group", secondWorkingGroupLog.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+	require.Equal(t, 1, secondWorkingGroupLog.ScopeLogs().Len())
+
+	thirdWorkingGroupLog := logs[2].ResourceLogs().At(0)
+	require.Equal(t, "/aws/third-group", thirdWorkingGroupLog.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+	require.Equal(t, 1, thirdWorkingGroupLog.ScopeLogs().Len())
+
+	mc.AssertExpectations(t)
+}
+
 func defaultMockClient() client {
 	mc := &mockClient{}
 	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(

@@ -67,7 +67,7 @@ var (
 		SQLParameter: func(position int) string {
 			return fmt.Sprintf("$%d", position)
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for Postgres
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -94,10 +94,10 @@ var (
 	}
 	MySQL = dbEngineUnderTest{
 		Port: mysqlPort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for MySQL
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -184,7 +184,7 @@ var (
 	}
 	SapASE = dbEngineUnderTest{
 		Port: sapAsePort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
 		CheckCompatibility: func(t *testing.T) {
@@ -879,6 +879,109 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreMetricsOrder(),
+		),
+	).Run(t)
+}
+
+func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
+	Postgres.CheckCompatibility(t)
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			Postgres.ContainerRequest),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Driver = Postgres.Driver
+				rCfg.Host = ci.Host(t)
+				rCfg.Port = nat.Port(ci.MappedPort(t, Postgres.Port)).Int()
+				rCfg.Database = "otel"
+				rCfg.Username = "otel"
+				rCfg.Password = "otel"
+				rCfg.AdditionalParams = map[string]any{
+					"sslmode": "disable",
+				}
+				rCfg.Queries = []sqlquery.Query{
+					{
+						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:       "genre.count",
+								ValueColumn:      "count",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:       "genre.imdb",
+								ValueColumn:      "avg",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+					{
+						SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
+							" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:  "a",
+								ValueColumn: "a",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "b",
+								ValueColumn: "b",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "c",
+								ValueColumn: "c",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "d",
+								ValueColumn: "d",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "e",
+								ValueColumn: "e",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "f",
+								ValueColumn: "f",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "g",
+								ValueColumn: "g",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "h",
+								ValueColumn: "h",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+				}
+			}),
+		scraperinttest.WithExpectedFile(
+			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
+		),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
 }

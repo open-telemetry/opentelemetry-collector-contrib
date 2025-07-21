@@ -28,7 +28,7 @@ type KeyValue map[string]any
 
 var _ pflag.Value = (*KeyValue)(nil)
 
-func (v *KeyValue) String() string {
+func (*KeyValue) String() string {
 	return ""
 }
 
@@ -58,7 +58,7 @@ func (v *KeyValue) Set(s string) error {
 	return nil
 }
 
-func (v *KeyValue) Type() string {
+func (*KeyValue) Type() string {
 	return "map[string]any"
 }
 

@@ -278,12 +278,6 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 	}
 
 	mf := t.getOrCreateMetricFamily(*rKey, getScopeID(l), mn)
-
-	// Workaround for https://github.com/prometheus/prometheus/issues/16217
-	if !t.enableNativeHistograms && mf.mtype == pmetric.MetricTypeHistogram && l.Get(model.MetricNameLabel) == mf.name {
-		return 0, nil
-	}
-
 	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
 
 	return 0, nil
@@ -396,7 +390,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (
 	return storage.SeriesRef(seriesRef), nil
 }
 
-func (t *transaction) SetOptions(_ *storage.AppendOptions) {
+func (*transaction) SetOptions(_ *storage.AppendOptions) {
 	// TODO: implement this func
 }
 
@@ -565,11 +559,11 @@ func (t *transaction) Commit() error {
 	return err
 }
 
-func (t *transaction) Rollback() error {
+func (*transaction) Rollback() error {
 	return nil
 }
 
-func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metadata.Metadata) (storage.SeriesRef, error) {
+func (*transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metadata.Metadata) (storage.SeriesRef, error) {
 	// TODO: implement this func
 	return 0, nil
 }

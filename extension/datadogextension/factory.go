@@ -44,7 +44,7 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func (f *factory) createDefaultConfig() component.Config {
+func (*factory) createDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig: confighttp.NewDefaultClientConfig(),
 		API: datadogconfig.APIConfig{

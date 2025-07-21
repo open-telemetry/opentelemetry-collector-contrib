@@ -21,7 +21,7 @@ func Test_toUpperCase(t *testing.T) {
 		{
 			name: "simple",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple", nil
 				},
 			},
@@ -30,7 +30,7 @@ func Test_toUpperCase(t *testing.T) {
 		{
 			name: "already upper",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "SIMPLE", nil
 				},
 			},
@@ -39,7 +39,7 @@ func Test_toUpperCase(t *testing.T) {
 		{
 			name: "complex",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "complex_SET-of.WORDS1234", nil
 				},
 			},
@@ -48,7 +48,7 @@ func Test_toUpperCase(t *testing.T) {
 		{
 			name: "empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -74,7 +74,7 @@ func Test_toUpperCaseRuntimeError(t *testing.T) {
 		{
 			name: "non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 10, nil
 				},
 			},
@@ -83,7 +83,7 @@ func Test_toUpperCaseRuntimeError(t *testing.T) {
 		{
 			name: "nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},

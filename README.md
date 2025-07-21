@@ -86,7 +86,7 @@ For more information about the maintainer role, see the [community repository](h
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
-- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Christos Markou](https://github.com/ChrsMark), Elastic (On leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
@@ -114,8 +114,8 @@ For more information about the triager role, see the [community repository](http
 
 ### Emeritus Maintainers
 
-- [Daniel Jaglowski](https://github.com/djaglowski), Bindplane
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
+- [Daniel Jaglowski](https://github.com/djaglowski)
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).

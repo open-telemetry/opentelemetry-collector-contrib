@@ -15,7 +15,7 @@ import (
 
 type mockRoundTripper struct{}
 
-func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
 	for k, v := range req.Header {
 		resp.Header.Set(k, v[0])
@@ -40,7 +40,7 @@ func TestRoundTripper(t *testing.T) {
 					Metadata: tt.metadata,
 				},
 			)
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", http.NoBody)
 			assert.NoError(t, err)
 			assert.NotNil(t, req)
 

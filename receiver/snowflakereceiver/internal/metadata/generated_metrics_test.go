@@ -1018,8 +1018,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "snowflake.storage.stage_bytes.total":
 					assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
 					validatedMetrics["snowflake.storage.stage_bytes.total"] = true
@@ -1030,8 +1030,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "snowflake.storage.storage_bytes.total":
 					assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
 					validatedMetrics["snowflake.storage.storage_bytes.total"] = true
@@ -1042,8 +1042,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "snowflake.total_elapsed_time.avg":
 					assert.False(t, validatedMetrics["snowflake.total_elapsed_time.avg"], "Found a duplicate in the metrics slice: snowflake.total_elapsed_time.avg")
 					validatedMetrics["snowflake.total_elapsed_time.avg"] = true

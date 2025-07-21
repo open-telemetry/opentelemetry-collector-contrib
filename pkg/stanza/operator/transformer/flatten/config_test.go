@@ -23,7 +23,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Field = entry.NewBodyField("nested")
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "flatten_body_second_level",
@@ -32,7 +32,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Field = entry.NewBodyField("nested", "secondlevel")
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "flatten_resource_one_level",
@@ -41,7 +41,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Field = entry.NewResourceField("nested")
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "flatten_resource_second_level",
@@ -50,7 +50,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Field = entry.NewResourceField("nested", "secondlevel")
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "flatten_attributes_one_level",
@@ -59,7 +59,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Field = entry.NewAttributeField("nested")
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "flatten_attributes_second_level",
@@ -68,7 +68,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Field = entry.NewAttributeField("nested", "secondlevel")
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 		},
 	}.Run(t)

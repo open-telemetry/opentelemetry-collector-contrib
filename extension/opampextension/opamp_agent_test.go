@@ -276,11 +276,11 @@ func newAvailableComponentsHost(t *testing.T) component.Host {
 	}
 }
 
-func (ach *availableComponentsHost) GetFactory(component.Kind, component.Type) component.Factory {
+func (*availableComponentsHost) GetFactory(component.Kind, component.Type) component.Factory {
 	return nil
 }
 
-func (ach *availableComponentsHost) GetExtensions() map[component.ID]component.Component {
+func (*availableComponentsHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
@@ -802,19 +802,19 @@ type mockOpAMPClient struct {
 	setHealthFunc func(health *protobufs.ComponentHealth) error
 }
 
-func (m mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
 	return nil
 }
 
-func (m mockOpAMPClient) Stop(_ context.Context) error {
+func (mockOpAMPClient) Stop(_ context.Context) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
+func (mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
 	return nil
 }
 
-func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
+func (mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return nil
 }
 
@@ -822,33 +822,33 @@ func (m mockOpAMPClient) SetHealth(health *protobufs.ComponentHealth) error {
 	return m.setHealthFunc(health)
 }
 
-func (m mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
+func (mockOpAMPClient) UpdateEffectiveConfig(context.Context) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
+func (mockOpAMPClient) SetRemoteConfigStatus(*protobufs.RemoteConfigStatus) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (m mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error {
+func (mockOpAMPClient) SetCustomCapabilities(*protobufs.CustomCapabilities) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
+func (mockOpAMPClient) SendCustomMessage(*protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
 	return nil, nil
 }
 
-func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
 
-func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) error {
 	return nil
 }
 

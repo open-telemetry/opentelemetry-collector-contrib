@@ -162,10 +162,10 @@ func TestStoreConcurrency(t *testing.T) {
 	close(end)
 }
 
-func noopCallback(_ *Edge) {}
+func noopCallback(*Edge) {}
 
 func countingCallback(counter *int) func(*Edge) {
-	return func(_ *Edge) {
+	return func(*Edge) {
 		*counter++
 	}
 }

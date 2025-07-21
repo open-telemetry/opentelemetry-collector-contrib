@@ -31,7 +31,7 @@ type internalTransform struct {
 }
 
 type internalOperation struct {
-	configOperation     Operation
+	configOperation     operation
 	valueActionsMapping map[string]string
 	labelSetMap         map[string]bool
 	aggregatedValuesSet map[string]bool
@@ -61,7 +61,7 @@ type internalFilterStrict struct {
 	attrMatchers map[string]StringMatcher
 }
 
-func (f internalFilterStrict) getSubexpNames() []string {
+func (internalFilterStrict) getSubexpNames() []string {
 	return nil
 }
 

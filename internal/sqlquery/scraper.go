@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -106,4 +108,66 @@ func (s *Scraper) Shutdown(_ context.Context) error {
 		return s.Db.Close()
 	}
 	return nil
+}
+
+func BuildDataSourceString(config Config) (string, error) {
+	var auth string
+	if config.Username != "" {
+		// MySQL doesn't need URL escaping
+		if config.Driver == DriverMySQL {
+			auth = fmt.Sprintf("%s:%s@", config.Username, string(config.Password))
+		} else {
+			auth = fmt.Sprintf("%s:%s@", url.QueryEscape(config.Username), url.QueryEscape(string(config.Password)))
+		}
+	}
+
+	query := url.Values{}
+	for k, v := range config.AdditionalParams {
+		query.Set(k, fmt.Sprintf("%v", v))
+	}
+
+	var connStr string
+	switch config.Driver {
+	case DriverHDB:
+		// HDB connection string format: hdb://user:pass@host:port?param1=value1
+		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, config.Host, config.Port)
+	case DriverMySQL:
+		// MySQL connection string format: user:pass@tcp(host:port)/db?param1=value1&param2=value2
+		connStr = fmt.Sprintf("%stcp(%s:%d)/%s", auth, config.Host, config.Port, config.Database)
+	case DriverOracle:
+		// Oracle connection string format: oracle://user:pass@host:port/service_name?param1=value1&param2=value2
+		connStr = fmt.Sprintf("oracle://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
+	case DriverPostgres:
+		// PostgreSQL connection string format: postgresql://user:pass@host:port/db?param1=value1&param2=value2
+		connStr = fmt.Sprintf("postgresql://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
+	case DriverSnowflake:
+		// Snowflake connection string format: user:pass@host:port/database?param1=value1&param2=value2
+		connStr = fmt.Sprintf("%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
+	case DriverSQLServer:
+		// SQL Server connection string format: sqlserver://username:password@host:port/instance
+
+		// replace all backslashes with forward slashes
+		host := strings.ReplaceAll(config.Host, "\\", "/")
+		// if host contains a "/", split it into hostname and instance
+		parts := strings.SplitN(host, "/", 2)
+		hostname := parts[0]
+		query.Set("database", config.Database)
+		if len(parts) > 1 {
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, config.Port, parts[1])
+		} else {
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, config.Port)
+		}
+	case DriverTDS:
+		// TDS connection string format: tds://user:pass@host:port/database
+		connStr = fmt.Sprintf("tds://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
+	default:
+		return "", fmt.Errorf("unsupported driver: %s", config.Driver)
+	}
+
+	// Append query parameters if any exist
+	if len(query) > 0 {
+		connStr = fmt.Sprintf("%s?%s", connStr, query.Encode())
+	}
+
+	return connStr, nil
 }

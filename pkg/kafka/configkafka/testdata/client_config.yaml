@@ -22,6 +22,12 @@ kafka/sasl_aws_msk_iam_oauthbearer:
   auth:
     sasl:
       mechanism: AWS_MSK_IAM_OAUTHBEARER
+kafka/sasl_aws_msk_iam_oauthbearer_with_region:
+  auth:
+    sasl:
+      mechanism: AWS_MSK_IAM_OAUTHBEARER
+      aws_msk:
+        region: us-east-1
 kafka/sasl_plain:
   auth:
     sasl:

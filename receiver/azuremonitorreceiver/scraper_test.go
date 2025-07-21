@@ -16,7 +16,7 @@ import (
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -790,7 +790,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			strings.Join([]string{name1, name2}, ","): {
+			name1 + "," + name2: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{

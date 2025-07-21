@@ -160,7 +160,7 @@ func createProfilesExporter(
 		return nil, err
 	}
 
-	return xexporterhelper.NewProfilesExporter(
+	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
