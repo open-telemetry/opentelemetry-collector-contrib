@@ -54,6 +54,10 @@ func TestLoadConfig(t *testing.T) {
 						ObserverType: "histogram",
 						Histogram: protocol.HistogramConfig{
 							MaxSize: 170,
+							ExplicitBuckets: map[string][]float64{
+								"foo.*": {1, 10, 100},
+								"bar.*": {.1, .5, 1},
+							},
 						},
 					},
 					{

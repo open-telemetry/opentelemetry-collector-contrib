@@ -220,19 +220,17 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		switch eachMap.StatsdType {
 		case protocol.HistogramTypeName, protocol.DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
-			if eachMap.Histogram.ExplicitBuckets == nil {
-				p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
-			} else {
+			if eachMap.Histogram.ExplicitBuckets != nil {
 				p.histogramEvents.explicitBuckets = eachMap.Histogram.ExplicitBuckets
 			}
+			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
-			if eachMap.Histogram.ExplicitBuckets == nil {
-				p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
-			} else {
+			if eachMap.Histogram.ExplicitBuckets != nil {
 				p.histogramEvents.explicitBuckets = eachMap.Histogram.ExplicitBuckets
 			}
+			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.CounterTypeName, protocol.GaugeTypeName:
 		}
@@ -406,7 +404,6 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 					agg = existing.agg
 				}
 			} else {
-				hm := histogramMetric{}
 				matchedMetrics := ""
 				if category.explicitBuckets != nil {
 					for key := range category.explicitBuckets {
@@ -422,6 +419,8 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 						}
 					}
 				}
+
+				hm := histogramMetric{}
 				if matchedMetrics != "" {
 					eb = new(explicitBucket)
 					eb.Init(category.explicitBuckets[parsedMetric.description.name])
