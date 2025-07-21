@@ -13,7 +13,7 @@ import (
 
 type ByteSize int64
 
-var byteSizeRegex = regexp.MustCompile(`^([0-9]+\.?[0-9]*)\s*([kKmMgGtTpP]i?[bB])?$`)
+var byteSizeRegex = regexp.MustCompile(`^(\d+\.?\d*)\s*([kKmMgGtTpP]i?[bB])?$`)
 
 func (h *ByteSize) UnmarshalText(text []byte) (err error) {
 	slice := make([]byte, 1, 2+len(text))

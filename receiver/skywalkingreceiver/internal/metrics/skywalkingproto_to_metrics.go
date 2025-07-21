@@ -37,7 +37,7 @@ func SwMetricsToMetrics(collection *agent.JVMMetricCollection) pmetric.Metrics {
 	return md
 }
 
-func jvmMetricToResource(serviceName string, serviceInstance string, resource pcommon.Resource) {
+func jvmMetricToResource(serviceName, serviceInstance string, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.EnsureCapacity(2)
 	attrs.PutStr(string(semconv.ServiceNameKey), serviceName)
@@ -147,7 +147,7 @@ func cpuMetricToMetrics(timestamp int64, cpu *common.CPU, dest pmetric.ScopeMetr
 	fillNumberDataPointDoubleValue(timestamp, cpu.UsagePercent, metricDps.AppendEmpty(), pcommon.NewMap())
 }
 
-func fillNumberDataPointIntValue(timestamp int64, value int64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
+func fillNumberDataPointIntValue(timestamp, value int64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
 	attrs.CopyTo(point.Attributes())
 	point.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(timestamp)))
 	point.SetIntValue(value)

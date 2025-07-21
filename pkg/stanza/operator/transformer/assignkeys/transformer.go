@@ -51,7 +51,7 @@ func (t *Transformer) Transform(entry *entry.Entry) error {
 	return nil
 }
 
-func (t *Transformer) AssignKeys(keys []string, values []any) map[string]any {
+func (*Transformer) AssignKeys(keys []string, values []any) map[string]any {
 	outputMap := make(map[string]any, len(keys))
 	for i, key := range keys {
 		outputMap[key] = values[i]

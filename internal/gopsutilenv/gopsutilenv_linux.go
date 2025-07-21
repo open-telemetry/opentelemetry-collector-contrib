@@ -69,7 +69,7 @@ func SetGlobalRootPath(rootPath string) {
 // copied from gopsutil:
 // GetEnvWithContext retrieves the environment variable key. If it does not exist it returns the default.
 // The context may optionally contain a map superseding os.EnvKey.
-func GetEnvWithContext(ctx context.Context, key string, dfault string, combineWith ...string) string {
+func GetEnvWithContext(ctx context.Context, key, dfault string, combineWith ...string) string {
 	var value string
 	if env, ok := ctx.Value(common.EnvKey).(common.EnvMap); ok {
 		value = env[common.EnvKeyType(key)]

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -184,7 +185,7 @@ func createProfilesExporter(
 		return nil, err
 	}
 
-	return xexporterhelper.NewProfilesExporter(
+	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
@@ -205,15 +206,13 @@ func exporterhelperOptions(
 	}
 	qs := cfg.QueueSettings
 	if cfg.Batcher.enabledSet {
-		qs.Sizer = exporterhelper.RequestSizerTypeItems // TODO: Delete once core dependency updated.
 		if cfg.Batcher.Enabled {
-			qs.Batch = &exporterhelper.BatchConfig{
+			qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
 				FlushTimeout: cfg.Batcher.FlushTimeout,
 				MinSize:      cfg.Batcher.MinSize,
 				MaxSize:      cfg.Batcher.MaxSize,
-				// TODO: Uncomment once core dependency updated.
-				// Sizer:        cfg.Batcher.Sizer,
-			}
+				Sizer:        cfg.Batcher.Sizer,
+			})
 
 			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
 			// behavior of the deprecated batcher.

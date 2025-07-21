@@ -487,7 +487,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
+func (*tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
 	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
@@ -599,7 +599,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 }
 
-func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
+func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

@@ -112,7 +112,7 @@ func spanToEnvelopes(
 	// Record the raw Span status values as properties
 	dataProperties[attributeOtelStatusCode] = traceutil.StatusCodeStr(span.Status().Code())
 	statusMessage := span.Status().Message()
-	if len(statusMessage) > 0 {
+	if statusMessage != "" {
 		dataProperties[attributeOtelStatusDescription] = statusMessage
 	}
 
@@ -753,7 +753,7 @@ func setAttributeValueAsProperty(
 	}
 }
 
-func prefixIfNecessary(s string, prefix string) string {
+func prefixIfNecessary(s, prefix string) string {
 	if strings.HasPrefix(s, prefix) {
 		return s
 	}

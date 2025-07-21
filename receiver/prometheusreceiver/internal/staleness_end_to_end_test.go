@@ -130,7 +130,7 @@ service:
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.NoError(t, err)
 	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(cfg))
+	_, err = confFile.WriteString(cfg)
 	require.NoError(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := otelcol.MakeFactoryMap[receiver.Factory](prometheusreceiver.NewFactory())

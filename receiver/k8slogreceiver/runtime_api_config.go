@@ -74,15 +74,15 @@ type criConfig struct {
 	ContainerdState string `mapstructure:"containerd_state"`
 }
 
-func (c *criConfig) Validate() error {
+func (*criConfig) Validate() error {
 	return nil
 }
 
-func (c *criConfig) Type() string {
+func (*criConfig) Type() string {
 	return "cri"
 }
 
-func (c *criConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
+func (*criConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
 	_ = logger
 	_ = hostRoot
 	// TODO implement me
@@ -105,15 +105,15 @@ type dockerConfig struct {
 	ContainerdAddr string `mapstructure:"containerd_addr"`
 }
 
-func (c *dockerConfig) Validate() error {
+func (*dockerConfig) Validate() error {
 	return nil
 }
 
-func (c *dockerConfig) Type() string {
+func (*dockerConfig) Type() string {
 	return "docker"
 }
 
-func (c *dockerConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
+func (*dockerConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
 	_ = logger
 	_ = hostRoot
 	// TODO implement me
