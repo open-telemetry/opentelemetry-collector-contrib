@@ -37,7 +37,7 @@ type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
 }
 
-func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
+func (*pubsubReceiverFactory) CreateDefaultConfig() component.Config {
 	return &Config{}
 }
 

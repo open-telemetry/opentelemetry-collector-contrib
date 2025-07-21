@@ -380,7 +380,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	if err = prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+	if err := prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
 
@@ -453,7 +453,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	staleNaNSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSum])
 
-	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool, enableSendingRW2 bool) {
+	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker, enableSendingRW2 bool) {
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 
@@ -489,7 +489,7 @@ func Test_PushMetrics(t *testing.T) {
 	tests := []struct {
 		name                       string
 		metrics                    pmetric.Metrics
-		reqTestFunc                func(t *testing.T, r *http.Request, expected int, isStaleMarker bool, enableSendingRW2 bool)
+		reqTestFunc                func(t *testing.T, r *http.Request, expected int, isStaleMarker, enableSendingRW2 bool)
 		expectedTimeSeries         int
 		httpResponseCode           int
 		returnErr                  bool

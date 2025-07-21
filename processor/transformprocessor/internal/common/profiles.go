@@ -25,7 +25,7 @@ type profileStatements struct {
 	expr.BoolExpr[ottlprofile.TransformContext]
 }
 
-func (l profileStatements) Context() ContextID {
+func (profileStatements) Context() ContextID {
 	return Profile
 }
 

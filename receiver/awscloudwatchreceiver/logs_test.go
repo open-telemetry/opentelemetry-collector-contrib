@@ -274,6 +274,68 @@ func TestAutodiscoverLimit(t *testing.T) {
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
 }
 
+func TestShutdownCheckpointer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	mockStorage := newMockStorageClient()
+	logsRcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
+
+	err := logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	require.Nil(t, mockStorage.cache)
+}
+
+func TestShutdownCheckpointerWithError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	// Create a mock storage client that returns an error on Close
+	mockStorage := newMockStorageClient()
+	mockStorage.forceError = true
+
+	cloudwatchCheckpointPersister := newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
+	logsRcvr.cloudwatchCheckpointPersister = cloudwatchCheckpointPersister
+
+	err := logsRcvr.Shutdown(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forced storage error")
+}
+
+func TestShutdownWithoutCheckpointer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	// Don't set a checkpointer (should be nil by default)
+	require.Nil(t, logsRcvr.cloudwatchCheckpointPersister)
+
+	// Call Shutdown and verify it doesn't error when checkpointer is nil
+	err := logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
@@ -471,7 +533,6 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 	for _, gr := range logsRcvr.groupRequests {
 		groupNames = append(groupNames, gr.groupName())
 	}
-	// validate deleted group is not in the groupRequests
 	require.ElementsMatch(t, []string{"/aws/working-group", "/aws/third-group"}, groupNames)
 	logs := sink.AllLogs()
 	require.GreaterOrEqual(t, len(logs), 3)

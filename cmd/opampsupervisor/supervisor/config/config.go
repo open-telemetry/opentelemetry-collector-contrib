@@ -63,7 +63,7 @@ func Load(configFile string) (Supervisor, error) {
 	}
 
 	cfg := DefaultSupervisor()
-	if err = conf.Unmarshal(&cfg); err != nil {
+	if err := conf.Unmarshal(&cfg); err != nil {
 		return Supervisor{}, err
 	}
 

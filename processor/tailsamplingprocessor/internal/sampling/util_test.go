@@ -21,7 +21,7 @@ func TestSetAttrOnScopeSpans_Empty(_ *testing.T) {
 }
 
 func TestSetAttrOnScopeSpans_Many(t *testing.T) {
-	assertAttrExists := func(t *testing.T, attrs pcommon.Map, key string, value string) {
+	assertAttrExists := func(t *testing.T, attrs pcommon.Map, key, value string) {
 		v, ok := attrs.Get(key)
 		assert.True(t, ok)
 		assert.Equal(t, value, v.AsString())

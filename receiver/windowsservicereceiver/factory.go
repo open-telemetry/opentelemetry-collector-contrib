@@ -38,16 +38,16 @@ func createMetricsReceiver(
 	return rcvr, nil
 }
 
-func newMetricsReceiver(_ *Config, _ consumer.Metrics) *windowsServiceReceiver {
+func newMetricsReceiver(*Config, consumer.Metrics) *windowsServiceReceiver {
 	return &windowsServiceReceiver{}
 }
 
 type windowsServiceReceiver struct{}
 
-func (r *windowsServiceReceiver) Start(_ context.Context, _ component.Host) error {
+func (*windowsServiceReceiver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (r *windowsServiceReceiver) Shutdown(_ context.Context) error {
+func (*windowsServiceReceiver) Shutdown(context.Context) error {
 	return nil
 }
