@@ -258,7 +258,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 }
 
 type policyMetrics struct {
-	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
+	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped int64
 }
 
 func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error {
@@ -375,10 +375,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
-		switch decision {
-		case sampling.Sampled:
+		if decision == sampling.Sampled {
 			tsp.releaseSampledTrace(ctx, id, allSpans)
-		case sampling.NotSampled:
+		} else {
 			tsp.releaseNotSampledTrace(id)
 		}
 	}
@@ -392,6 +391,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		zap.Int("batch.len", batchLen),
 		zap.Int64("sampled", metrics.decisionSampled),
 		zap.Int64("notSampled", metrics.decisionNotSampled),
+		zap.Int64("dropped", metrics.decisionDropped),
 		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
@@ -451,7 +451,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 
 	switch {
 	case samplingDecisions[sampling.Dropped] != nil: // Dropped takes precedence
-		finalDecision = sampling.NotSampled
+		finalDecision = sampling.Dropped
 	case samplingDecisions[sampling.InvertNotSampled] != nil: // Then InvertNotSampled
 		finalDecision = sampling.NotSampled
 	case samplingDecisions[sampling.Sampled] != nil:
@@ -471,6 +471,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		metrics.decisionSampled++
 	case sampling.NotSampled:
 		metrics.decisionNotSampled++
+	case sampling.Dropped:
+		metrics.decisionDropped++
 	}
 
 	return finalDecision
