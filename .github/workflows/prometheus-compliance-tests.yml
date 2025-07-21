@@ -11,6 +11,9 @@ on:
       - "**/README.md"
   merge_group:
 
+permissions:
+  contents: read
+
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
