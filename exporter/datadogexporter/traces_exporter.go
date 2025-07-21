@@ -221,7 +221,6 @@ func (exp *traceExporter) consumeTraces(
 					defer func(Body io.ReadCloser) {
 						err := Body.Close()
 						if err != nil {
-
 						}
 					}(resp.Body)
 
