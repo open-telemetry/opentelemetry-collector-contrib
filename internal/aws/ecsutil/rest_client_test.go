@@ -17,7 +17,7 @@ import (
 
 type fakeClient struct{}
 
-func (f *fakeClient) Get(path string) ([]byte, error) {
+func (*fakeClient) Get(path string) ([]byte, error) {
 	return []byte(path), nil
 }
 
@@ -38,7 +38,7 @@ func TestRestClientFromClient(t *testing.T) {
 
 type fakeErrorClient struct{}
 
-func (f *fakeErrorClient) Get(_ string) ([]byte, error) {
+func (*fakeErrorClient) Get(_ string) ([]byte, error) {
 	return nil, errors.New("")
 }
 
@@ -52,7 +52,7 @@ func TestRestClientError(t *testing.T) {
 
 type fakeMetadataErrorClient struct{}
 
-func (f *fakeMetadataErrorClient) Get(_ string) ([]byte, error) {
+func (*fakeMetadataErrorClient) Get(_ string) ([]byte, error) {
 	return nil, errors.New("")
 }
 

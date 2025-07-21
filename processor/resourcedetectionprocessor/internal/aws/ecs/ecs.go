@@ -116,7 +116,7 @@ func constructClusterArn(cluster, region, account string) string {
 
 // Parses ECS Task ARN into subcomponents according to its spec
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
-func parseTaskARN(taskARN string) (region string, account string, taskID string) {
+func parseTaskARN(taskARN string) (region, account, taskID string) {
 	parts := strings.Split(taskARN, ":")
 	if len(parts) >= 5 {
 		region := parts[3]

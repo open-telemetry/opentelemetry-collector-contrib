@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -123,14 +122,11 @@ func (pc *ProjectConfig) populateIncludesAndExcludes() {
 
 var (
 	// Alerts Receiver Errors
-	errNoEndpoint       = errors.New("an endpoint must be specified")
-	errNoSecret         = errors.New("a webhook secret must be specified")
-	errNoCert           = errors.New("tls was configured, but no cert file was specified")
-	errNoKey            = errors.New("tls was configured, but no key file was specified")
-	errNoModeRecognized = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s", strings.Join([]string{
-		alertModeListen,
-		alertModePoll,
-	}, ","))
+	errNoEndpoint        = errors.New("an endpoint must be specified")
+	errNoSecret          = errors.New("a webhook secret must be specified")
+	errNoCert            = errors.New("tls was configured, but no cert file was specified")
+	errNoKey             = errors.New("tls was configured, but no key file was specified")
+	errNoModeRecognized  = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s,%s", alertModeListen, alertModePoll)
 	errPageSizeIncorrect = errors.New("page size must be a value between 1 and 500")
 
 	// Logs Receiver Errors

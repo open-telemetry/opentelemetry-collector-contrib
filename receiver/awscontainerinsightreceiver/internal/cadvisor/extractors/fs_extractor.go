@@ -19,7 +19,7 @@ type FileSystemMetricExtractor struct {
 	logger          *zap.Logger
 }
 
-func (f *FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
+func (*FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasFilesystem
 }
 
@@ -63,7 +63,7 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 	return metrics
 }
 
-func (f *FileSystemMetricExtractor) Shutdown() error {
+func (*FileSystemMetricExtractor) Shutdown() error {
 	return nil
 }
 

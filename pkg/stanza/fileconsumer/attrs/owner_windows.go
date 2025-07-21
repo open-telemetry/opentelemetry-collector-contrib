@@ -10,6 +10,6 @@ import (
 	"os"
 )
 
-func (r *Resolver) addOwnerInfo(_ *os.File, _ map[string]any) error {
+func (*Resolver) addOwnerInfo(_ *os.File, _ map[string]any) error {
 	return errors.New("owner info not implemented for windows")
 }

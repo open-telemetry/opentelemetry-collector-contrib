@@ -64,7 +64,7 @@ func (api *s3ListObjectsAPIImpl) NewListObjectsV2Paginator(params *s3.ListObject
 }
 
 // retrieveS3Object retrieves S3 object content for a given bucket and key
-func retrieveS3Object(ctx context.Context, client GetObjectAPI, bucket string, key string) ([]byte, error) {
+func retrieveS3Object(ctx context.Context, client GetObjectAPI, bucket, key string) ([]byte, error) {
 	params := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,

@@ -507,7 +507,7 @@ func (c *WatchClient) handleStatefulSetDelete(obj any) {
 	}
 }
 
-func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
+func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
 	// in the grace period anymore.
