@@ -38,7 +38,7 @@ func NewZorkianConsumer() *ZorkianConsumer {
 }
 
 // toDataType maps translator datatypes to Zorkian's datatypes.
-func (c *ZorkianConsumer) toDataType(dt metrics.DataType) (out MetricType) {
+func (*ZorkianConsumer) toDataType(dt metrics.DataType) (out MetricType) {
 	out = MetricType("unknown")
 
 	switch dt {

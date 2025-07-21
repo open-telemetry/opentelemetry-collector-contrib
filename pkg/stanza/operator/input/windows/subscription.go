@@ -145,7 +145,7 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, int, error) {
 }
 
 // createFlags will create the necessary subscription flags from the supplied arguments.
-func (s *Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
+func (*Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
 	if bookmark.handle != 0 {
 		return EvtSubscribeStartAfterBookmark
 	}

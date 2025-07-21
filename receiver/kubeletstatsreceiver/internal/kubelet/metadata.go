@@ -197,7 +197,7 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 // getContainerID retrieves container id from metadata for given pod UID and container name,
 // returns an error if no container found in the metadata that matches the requirements
 // or if the apiServer returned a newly created container with empty containerID.
-func (m *Metadata) getContainerID(podUID string, containerName string) (string, error) {
+func (m *Metadata) getContainerID(podUID, containerName string) (string, error) {
 	uid := types.UID(podUID)
 	for _, pod := range m.PodsMetadata.Items {
 		if pod.UID == uid {
@@ -222,7 +222,7 @@ func stripContainerID(id string) string {
 	return containerSchemeRegexp.ReplaceAllString(id, "")
 }
 
-func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, error) {
+func (m *Metadata) getPodVolume(podUID, volumeName string) (v1.Volume, error) {
 	for _, pod := range m.PodsMetadata.Items {
 		if pod.UID == types.UID(podUID) {
 			for _, volume := range pod.Spec.Volumes {

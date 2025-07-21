@@ -40,7 +40,7 @@ type bulkIndexer interface {
 
 type bulkIndexerSession interface {
 	// Add adds a document to the bulk indexing session.
-	Add(ctx context.Context, index string, docID string, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error
+	Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error
 
 	// End must be called on the session object once it is no longer
 	// needed, in order to release any associated resources.
@@ -156,7 +156,7 @@ func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
 }
 
 // Close is a no-op.
-func (s *syncBulkIndexer) Close(context.Context) error {
+func (*syncBulkIndexer) Close(context.Context) error {
 	return nil
 }
 
@@ -166,7 +166,7 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	doc := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
@@ -194,7 +194,7 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 }
 
 // End is a no-op.
-func (s *syncBulkIndexerSession) End() {
+func (*syncBulkIndexerSession) End() {
 	// TODO acquire docappender.BulkIndexer from pool in StartSession, release here
 }
 
@@ -313,7 +313,7 @@ func (a *asyncBulkIndexer) Close(ctx context.Context) error {
 // Add adds an item to the async bulk indexer session.
 //
 // Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+func (s asyncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	item := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
@@ -332,11 +332,11 @@ func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 }
 
 // End is a no-op.
-func (s asyncBulkIndexerSession) End() {
+func (asyncBulkIndexerSession) End() {
 }
 
 // Flush is a no-op.
-func (s asyncBulkIndexerSession) Flush(context.Context) error {
+func (asyncBulkIndexerSession) Flush(context.Context) error {
 	return nil
 }
 
@@ -761,7 +761,7 @@ func (s errBulkIndexerSession) Add(context.Context, string, string, string, io.W
 	return fmt.Errorf("creating bulk indexer session failed, cannot add item: %w", s.err)
 }
 
-func (s errBulkIndexerSession) End() {}
+func (errBulkIndexerSession) End() {}
 
 func (s errBulkIndexerSession) Flush(context.Context) error {
 	return fmt.Errorf("creating bulk indexer session failed, cannot flush: %w", s.err)

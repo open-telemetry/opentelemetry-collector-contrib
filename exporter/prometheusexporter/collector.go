@@ -97,7 +97,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 
 // Describe is a no-op, because the collector dynamically allocates metrics.
 // https://github.com/prometheus/client_golang/blob/v1.9.0/prometheus/collector.go#L28-L40
-func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
+func (*collector) Describe(chan<- *prometheus.Desc) {}
 
 /*
 Processing
@@ -108,7 +108,7 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 
 var errUnknownMetricType = errors.New("unknown metric type")
 
-func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return c.convertGauge(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
@@ -123,7 +123,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
+func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
 	name := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
@@ -162,7 +162,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
-func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_GAUGE.Enum(), ip.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
@@ -193,7 +193,7 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	return m, nil
 }
 
-func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
@@ -244,7 +244,7 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map,
 	return m, nil
 }
 
-func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	// TODO: In the off chance that we have multiple points
 	// within the same metric, how should we handle them?
 	point := metric.Summary().DataPoints().At(0)
@@ -276,7 +276,7 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 	return m, nil
 }
 
-func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), ip.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	if err != nil {

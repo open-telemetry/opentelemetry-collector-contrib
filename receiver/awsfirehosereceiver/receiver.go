@@ -246,7 +246,7 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 }
 
 // getCommonAttributes unmarshalls the common attributes from the request header
-func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
+func (*firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
 	attributes := make(map[string]string)
 	if commonAttributes := r.Header.Get(headerFirehoseCommonAttributes); commonAttributes != "" {
 		var fca firehoseCommonAttributes
