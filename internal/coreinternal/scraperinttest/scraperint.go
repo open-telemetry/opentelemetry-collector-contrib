@@ -262,7 +262,7 @@ func (ci *ContainerInfo) MappedPort(t *testing.T, port string) string {
 	return ci.MappedPortForNamedContainer(t, "", port)
 }
 
-func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName string, port string) string {
+func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName, port string) string {
 	c := ci.container(t, containerName)
 	p, err := c.MappedPort(context.Background(), nat.Port(port))
 	require.NoErrorf(t, err, "get port %q for container %q: %v", port, containerName, err)

@@ -32,7 +32,7 @@ type kubeadmProvider struct {
 	cache               LocalCache
 }
 
-func NewProvider(configMapName string, kubeSystemNamespace string, apiConf k8sconfig.APIConfig) (Provider, error) {
+func NewProvider(configMapName, kubeSystemNamespace string, apiConf k8sconfig.APIConfig) (Provider, error) {
 	k8sAPIClient, err := k8sconfig.MakeClient(apiConf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create K8s API client: %w", err)

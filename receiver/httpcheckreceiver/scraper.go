@@ -35,7 +35,7 @@ type httpcheckScraper struct {
 }
 
 // extractTLSInfo extracts TLS certificate information from the connection state
-func extractTLSInfo(state *tls.ConnectionState) (issuer string, commonName string, sans []any, timeLeft int64) {
+func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans []any, timeLeft int64) {
 	if state == nil || len(state.PeerCertificates) == 0 {
 		return "", "", nil, 0
 	}
