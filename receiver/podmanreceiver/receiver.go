@@ -73,7 +73,8 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	}
 
 	r.scraper = newContainerScraper(podmanClient, r.set.Logger, r.config)
-	if err = r.scraper.loadContainerList(ctx); err != nil {
+	err = r.scraper.loadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 

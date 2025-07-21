@@ -68,7 +68,7 @@ func (je *jaegerGRPCDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, je.GetEndpoint())
 }
 
-func (je *jaegerGRPCDataSender) ProtocolName() string {
+func (*jaegerGRPCDataSender) ProtocolName() string {
 	return "jaeger"
 }
 

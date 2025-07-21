@@ -60,11 +60,21 @@ func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error
 	return err
 }
 
-func (e *tinybirdExporter) pushTraces(_ context.Context, _ ptrace.Traces) error {
-	return errors.New("this component is under development and traces are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
+func (e *tinybirdExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	buffer := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buffer)
+	err := internal.ConvertTraces(td, encoder)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	if buffer.Len() > 0 {
+		return e.export(ctx, e.config.Traces.Datasource, buffer)
+	}
+	return nil
 }
 
-func (e *tinybirdExporter) pushMetrics(_ context.Context, _ pmetric.Metrics) error {
+func (*tinybirdExporter) pushMetrics(context.Context, pmetric.Metrics) error {
 	return errors.New("this component is under development and metrics are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
 }
 

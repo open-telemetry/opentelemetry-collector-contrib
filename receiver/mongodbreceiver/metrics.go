@@ -641,7 +641,7 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 }
 
 // Index Stats
-func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	metricName := "mongodb.index.access.count"
 	var indexAccessTotal int64
 	for _, doc := range documents {

@@ -66,7 +66,7 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 		jsonFormat = "json"
 	)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.endpoint, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

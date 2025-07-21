@@ -30,10 +30,6 @@ import (
 	"text/template"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
-
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -45,6 +41,7 @@ import (
 	"github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -53,6 +50,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // getTestModes returns the test modes for the supervisor tests.
@@ -100,7 +98,7 @@ func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
 }
 
 func defaultConnectingHandler(connectionCallbacks types.ConnectionCallbacks) func(request *http.Request) types.ConnectionResponse {
-	return func(_ *http.Request) types.ConnectionResponse {
+	return func(*http.Request) types.ConnectionResponse {
 		return types.ConnectionResponse{
 			Accept:              true,
 			ConnectionCallbacks: connectionCallbacks,
@@ -333,7 +331,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			connected := atomic.Bool{}
 			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
-				OnConnected: func(_ context.Context, _ types.Connection) {
+				OnConnected: func(context.Context, types.Connection) {
 					connected.Store(true)
 				},
 			})
@@ -1420,10 +1418,10 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		types.ConnectionCallbacks{
-			OnConnected: func(_ context.Context, _ types.Connection) {
+			OnConnected: func(context.Context, types.Connection) {
 				connectedToNewServer.Store(true)
 			},
-			OnMessage: func(_ context.Context, _ types.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
 		})

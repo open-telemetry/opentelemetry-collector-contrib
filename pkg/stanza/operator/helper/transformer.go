@@ -74,11 +74,11 @@ type TransformerOperator struct {
 }
 
 // CanProcess will always return true for a transformer operator.
-func (t *TransformerOperator) CanProcess() bool {
+func (*TransformerOperator) CanProcess() bool {
 	return true
 }
 
-func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
+func (*TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
 	var errs error
 	for i := range entries {
 		errs = multierr.Append(errs, process(ctx, entries[i]))
@@ -144,9 +144,10 @@ func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool,
 
 func zapAttributes(entry *entry.Entry, action string, err error) []zap.Field {
 	logFields := make([]zap.Field, 0, 3+len(entry.Attributes))
-	logFields = append(logFields, zap.Error(err))
-	logFields = append(logFields, zap.String("action", action))
-	logFields = append(logFields, zap.Time("entry.timestamp", entry.Timestamp))
+	logFields = append(logFields,
+		zap.Error(err),
+		zap.String("action", action),
+		zap.Time("entry.timestamp", entry.Timestamp))
 	for attrName, attrValue := range entry.Attributes {
 		logFields = append(logFields, zap.Any(attrName, attrValue))
 	}

@@ -41,7 +41,7 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 		return nil, errors.New("convertExponentialHistToExplicitHistFactory args must be of type *convertExponentialHistToExplicitHistArguments")
 	}
 
-	if len(args.DistributionFn) == 0 {
+	if args.DistributionFn == "" {
 		args.DistributionFn = "random"
 	}
 
