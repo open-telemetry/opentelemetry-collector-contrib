@@ -208,7 +208,7 @@ func TestTCPSyslogExportFail(t *testing.T) {
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
 	assert.True(t, ok)
-	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
+	consumerLogs := consumerErrorLogs.Data()
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())
 	scl := rls.At(0).ScopeLogs()
@@ -299,7 +299,7 @@ func TestUnixSocketExporterFail(t *testing.T) {
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
 	assert.True(t, ok)
-	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
+	consumerLogs := consumerErrorLogs.Data()
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())
 	scl := rls.At(0).ScopeLogs()

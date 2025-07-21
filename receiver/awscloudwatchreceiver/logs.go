@@ -314,7 +314,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
 
-	resourceMap := map[string](map[string]*plog.ResourceLogs){}
+	resourceMap := map[string]map[string]*plog.ResourceLogs{}
 
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
@@ -390,7 +390,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			Limit: aws.Int32(maxLogGroupsPerDiscovery),
 		}
 
-		if len(*nextToken) > 0 {
+		if *nextToken != "" {
 			req.NextToken = nextToken
 		}
 

@@ -138,7 +138,7 @@ func setResourceAttributes(resourceLogs plog.ResourceLogs, webACLID string) erro
 	return nil
 }
 
-func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
+func (*wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 	// timestamp is in milliseconds, so we need to convert it to ns first
 	nanos := log.Timestamp * 1_000_000
 	ts := pcommon.Timestamp(nanos)
@@ -160,7 +160,7 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 		record.Attributes().PutInt(string(conventions.HTTPResponseStatusCodeKey), *log.ResponseCodeSent)
 	}
 
-	putStr := func(name string, value string) {
+	putStr := func(name, value string) {
 		if value != "" {
 			record.Attributes().PutStr(name, value)
 		}

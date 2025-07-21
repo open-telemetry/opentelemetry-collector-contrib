@@ -136,7 +136,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -343,7 +343,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	return nil
 }
 
-func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags bool) (statsDMetric, error) {
+func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) (statsDMetric, error) {
 	result := statsDMetric{}
 
 	nameValue, rest, foundName := strings.Cut(line, "|")
@@ -380,7 +380,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 	var part string
 	part, additionalParts, _ = strings.Cut(additionalParts, "|")
-	for ; len(part) > 0; part, additionalParts, _ = strings.Cut(additionalParts, "|") {
+	for ; part != ""; part, additionalParts, _ = strings.Cut(additionalParts, "|") {
 		switch {
 		case strings.HasPrefix(part, "@"):
 			sampleRateStr := strings.TrimPrefix(part, "@")
@@ -396,13 +396,13 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 			// handle an empty tag set
 			// where the tags part was still sent (some clients do this)
-			if len(tagsStr) == 0 {
+			if tagsStr == "" {
 				continue
 			}
 
 			var tagSet string
 			tagSet, tagsStr, _ = strings.Cut(tagsStr, ",")
-			for ; len(tagSet) > 0; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
+			for ; tagSet != ""; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
 				k, v, _ := strings.Cut(tagSet, ":")
 				if k == "" {
 					return result, fmt.Errorf("invalid tag format: %q", tagSet)

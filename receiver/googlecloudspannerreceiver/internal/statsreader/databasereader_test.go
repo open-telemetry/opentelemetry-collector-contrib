@@ -22,7 +22,7 @@ type mockReader struct {
 	mock.Mock
 }
 
-func (r *mockReader) Name() string {
+func (*mockReader) Name() string {
 	return "mockReader"
 }
 

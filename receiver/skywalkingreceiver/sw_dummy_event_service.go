@@ -11,6 +11,6 @@ type eventService struct {
 	event.UnimplementedEventServiceServer
 }
 
-func (e *eventService) Collect(_ event.EventService_CollectServer) error {
+func (*eventService) Collect(event.EventService_CollectServer) error {
 	return nil
 }

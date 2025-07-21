@@ -161,7 +161,7 @@ func TestScraperScrape(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			if len(tc.endpoint) > 0 {
+			if tc.endpoint != "" {
 				cfg.Targets = []*targetConfig{
 					{
 						ClientConfig: confighttp.ClientConfig{
@@ -345,16 +345,17 @@ func TestScraperMultipleTargets(t *testing.T) {
 	ms2 := newMockServer(t, 404)
 	defer ms2.Close()
 
-	cfg.Targets = append(cfg.Targets, &targetConfig{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: ms1.URL,
+	cfg.Targets = append(cfg.Targets,
+		&targetConfig{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: ms1.URL,
+			},
 		},
-	})
-	cfg.Targets = append(cfg.Targets, &targetConfig{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: ms2.URL,
-		},
-	})
+		&targetConfig{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: ms2.URL,
+			},
+		})
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))

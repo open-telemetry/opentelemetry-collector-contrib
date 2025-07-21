@@ -177,8 +177,8 @@ func (e *oidcExtension) setProviderConfig(ctx context.Context, config *Config) e
 	return err
 }
 
-func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback string) (string, error) {
-	if len(usernameClaim) > 0 {
+func getSubjectFromClaims(claims map[string]any, usernameClaim, fallback string) (string, error) {
+	if usernameClaim != "" {
 		username, found := claims[usernameClaim]
 		if !found {
 			return "", errClaimNotFound
@@ -196,7 +196,7 @@ func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback 
 }
 
 func getGroupsFromClaims(claims map[string]any, groupsClaim string) ([]string, error) {
-	if len(groupsClaim) > 0 {
+	if groupsClaim != "" {
 		var groups []string
 		rawGroup, ok := claims[groupsClaim]
 		if !ok {

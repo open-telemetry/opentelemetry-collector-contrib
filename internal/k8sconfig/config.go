@@ -87,7 +87,7 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	var k8sHost string
 	if authType != AuthTypeKubeConfig {
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-		if len(host) == 0 || len(port) == 0 {
+		if host == "" || port == "" {
 			return nil, errors.New("unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		}
 		k8sHost = "https://" + net.JoinHostPort(host, port)

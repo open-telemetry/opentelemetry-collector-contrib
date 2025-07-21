@@ -176,7 +176,7 @@ func (c *Cadvisor) Shutdown() error {
 	return errs
 }
 
-func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV map[string]string) {
+func (c *Cadvisor) addEbsVolumeInfo(tags, ebsVolumeIDsUsedAsPV map[string]string) {
 	deviceName, ok := tags[ci.DiskDev]
 	if !ok {
 		return
@@ -202,29 +202,30 @@ func (c *Cadvisor) addECSMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
 	}
 
 	for _, cadvisormetric := range cadvisormetrics {
-		if cadvisormetric.GetMetricType() == ci.TypeInstance {
-			metricMap := cadvisormetric.GetFields()
-			cpuReserved := c.ecsInfo.GetCPUReserved()
-			memReserved := c.ecsInfo.GetMemReserved()
-			if cpuReserved == 0 && memReserved == 0 {
-				c.logger.Warn("Can't get mem or cpu reserved!")
-			}
-			cpuLimits, cpuExist := metricMap[ci.MetricName(ci.TypeInstance, ci.CPULimit)]
-			memLimits, memExist := metricMap[ci.MetricName(ci.TypeInstance, ci.MemLimit)]
+		if cadvisormetric.GetMetricType() != ci.TypeInstance {
+			continue
+		}
+		metricMap := cadvisormetric.GetFields()
+		cpuReserved := c.ecsInfo.GetCPUReserved()
+		memReserved := c.ecsInfo.GetMemReserved()
+		if cpuReserved == 0 && memReserved == 0 {
+			c.logger.Warn("Can't get mem or cpu reserved!")
+		}
+		cpuLimits, cpuExist := metricMap[ci.MetricName(ci.TypeInstance, ci.CPULimit)]
+		memLimits, memExist := metricMap[ci.MetricName(ci.TypeInstance, ci.MemLimit)]
 
-			if !cpuExist && !memExist {
-				c.logger.Warn("Can't get mem or cpu limit")
-			} else {
-				// cgroup standard cpulimits should be cadvisor standard * 1.024
-				metricMap[ci.MetricName(ci.TypeInstance, ci.CPUReservedCapacity)] = float64(cpuReserved) / (float64(cpuLimits.(int64)) * 1.024) * 100
-				metricMap[ci.MetricName(ci.TypeInstance, ci.MemReservedCapacity)] = float64(memReserved) / float64(memLimits.(int64)) * 100
-			}
+		if !cpuExist && !memExist {
+			c.logger.Warn("Can't get mem or cpu limit")
+		} else {
+			// cgroup standard cpulimits should be cadvisor standard * 1.024
+			metricMap[ci.MetricName(ci.TypeInstance, ci.CPUReservedCapacity)] = float64(cpuReserved) / (float64(cpuLimits.(int64)) * 1.024) * 100
+			metricMap[ci.MetricName(ci.TypeInstance, ci.MemReservedCapacity)] = float64(memReserved) / float64(memLimits.(int64)) * 100
+		}
 
-			if c.ecsInfo.GetRunningTaskCount() == 0 {
-				c.logger.Warn("Can't get running task number")
-			} else {
-				metricMap[ci.MetricName(ci.TypeInstance, ci.RunningTaskCount)] = c.ecsInfo.GetRunningTaskCount()
-			}
+		if c.ecsInfo.GetRunningTaskCount() == 0 {
+			c.logger.Warn("Can't get running task number")
+		} else {
+			metricMap[ci.MetricName(ci.TypeInstance, ci.RunningTaskCount)] = c.ecsInfo.GetRunningTaskCount()
 		}
 	}
 }
@@ -392,11 +393,12 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 	}
 
 	c.metricsExtractors = make([]extractors.MetricExtractor, 0, 5)
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewCPUMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewMemMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewDiskIOMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewNetMetricExtractor(c.logger))
-	c.metricsExtractors = append(c.metricsExtractors, extractors.NewFileSystemMetricExtractor(c.logger))
+	c.metricsExtractors = append(c.metricsExtractors,
+		extractors.NewCPUMetricExtractor(c.logger),
+		extractors.NewMemMetricExtractor(c.logger),
+		extractors.NewDiskIOMetricExtractor(c.logger),
+		extractors.NewNetMetricExtractor(c.logger),
+		extractors.NewFileSystemMetricExtractor(c.logger))
 
 	return nil
 }

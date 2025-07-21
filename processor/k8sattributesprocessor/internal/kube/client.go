@@ -107,7 +107,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -507,7 +507,7 @@ func (c *WatchClient) handleStatefulSetDelete(obj any) {
 	}
 }
 
-func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
+func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
 	// in the grace period anymore.
@@ -1155,14 +1155,14 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	}
 
 	if pod.Address != "" && !pod.HostNetwork {
-		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromConnection(pod.Address),
-		})
-
-		// k8s.pod.ip is set by passthrough mode
-		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
-		})
+		ids = append(ids,
+			PodIdentifier{
+				PodIdentifierAttributeFromConnection(pod.Address),
+			},
+			// k8s.pod.ip is set by passthrough mode
+			PodIdentifier{
+				PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
+			})
 	}
 
 	return ids
@@ -1261,8 +1261,6 @@ func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, er
 			selectors = append(selectors, fields.OneTermEqualSelector(f.Key, f.Value))
 		case selection.NotEquals:
 			selectors = append(selectors, fields.OneTermNotEqualSelector(f.Key, f.Value))
-		case selection.DoesNotExist, selection.DoubleEquals, selection.In, selection.NotIn, selection.Exists, selection.GreaterThan, selection.LessThan:
-			fallthrough
 		default:
 			return nil, nil, fmt.Errorf("field filters don't support operator: '%s'", f.Op)
 		}

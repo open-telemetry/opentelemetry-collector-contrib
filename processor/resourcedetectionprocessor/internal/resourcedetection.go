@@ -194,7 +194,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 	p.detectedResource.schemaURL = mergedSchemaURL
 }
 
-func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
+func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
 	if currentSchemaURL == "" {
 		return newSchemaURL
 	}

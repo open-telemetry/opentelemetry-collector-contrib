@@ -1403,11 +1403,11 @@ func (f ptraceMarshalerFuncExtension) MarshalTraces(td ptrace.Traces) ([]byte, e
 	return f(td)
 }
 
-func (f ptraceMarshalerFuncExtension) Start(context.Context, component.Host) error {
+func (ptraceMarshalerFuncExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (f ptraceMarshalerFuncExtension) Shutdown(context.Context) error {
+func (ptraceMarshalerFuncExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -1417,11 +1417,11 @@ func (f pmetricMarshalerFuncExtension) MarshalMetrics(td pmetric.Metrics) ([]byt
 	return f(td)
 }
 
-func (f pmetricMarshalerFuncExtension) Start(context.Context, component.Host) error {
+func (pmetricMarshalerFuncExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (f pmetricMarshalerFuncExtension) Shutdown(context.Context) error {
+func (pmetricMarshalerFuncExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -1431,11 +1431,11 @@ func (f plogMarshalerFuncExtension) MarshalLogs(td plog.Logs) ([]byte, error) {
 	return f(td)
 }
 
-func (f plogMarshalerFuncExtension) Start(context.Context, component.Host) error {
+func (plogMarshalerFuncExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (f plogMarshalerFuncExtension) Shutdown(context.Context) error {
+func (plogMarshalerFuncExtension) Shutdown(context.Context) error {
 	return nil
 }
 

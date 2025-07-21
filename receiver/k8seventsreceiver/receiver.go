@@ -118,7 +118,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 // startWatchingNamespace creates an informer and starts
 // watching a specific namespace for the events.
-func (kr *k8seventsReceiver) startWatchingNamespace(
+func (*k8seventsReceiver) startWatchingNamespace(
 	clientset k8s.Interface,
 	handlers cache.ResourceEventHandlerFuncs,
 	ns string,
