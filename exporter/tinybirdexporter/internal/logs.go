@@ -46,6 +46,12 @@ func ConvertLogs(ld plog.Logs, encoder Encoder) error {
 			scopeAttributes := convertAttributes(scope.Attributes())
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				log := sl.LogRecords().At(k)
+
+				timestamp := log.Timestamp()
+				if timestamp == 0 {
+					timestamp = log.ObservedTimestamp()
+				}
+
 				logEntry := logSignal{
 					ResourceSchemaURL:  resourceSchemaURL,
 					ResourceAttributes: resourceAttributes,
@@ -54,7 +60,7 @@ func ConvertLogs(ld plog.Logs, encoder Encoder) error {
 					ScopeVersion:       scopeVersion,
 					ScopeSchemaURL:     scopeSchemaURL,
 					ScopeAttributes:    scopeAttributes,
-					Timestamp:          log.Timestamp().AsTime().Format(time.RFC3339Nano),
+					Timestamp:          timestamp.AsTime().Format(time.RFC3339Nano),
 					SeverityText:       log.SeverityText(),
 					SeverityNumber:     int32(log.SeverityNumber()),
 					LogAttributes:      convertAttributes(log.Attributes()),
