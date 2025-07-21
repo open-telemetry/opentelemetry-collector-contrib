@@ -2506,7 +2506,8 @@ The `UUID` function generates a v4 uuid string.
 The function returns a `pcommon.Slice`. The order of elements in the output `pcommon.Slice` is not guaranteed.
 
 Examples:
-- `Values({"key1": "value1", "key2": "value2",  "key3": 5, "key4": [1,2,3], "key5":{"b1": "c", "b2": "d"} })`
+- `Values(resource.attributes)`
+- `Values({"key1": "value1", "key2": 5, "key3": [1,2], "key4": {"b1": "c"}})`
 
 ### Weekday
 
