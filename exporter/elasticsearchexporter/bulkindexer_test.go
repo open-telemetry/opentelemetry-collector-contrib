@@ -659,7 +659,7 @@ func TestNewBulkIndexer(t *testing.T) {
 			expectSyncBulkIndexer: true,
 		},
 		{
-			name: "sending_queue_disabled_but_queue_configured",
+			name: "sending_queue_disabled_but_batch_configured",
 			config: map[string]any{
 				"sending_queue": map[string]any{
 					"enabled": false,
