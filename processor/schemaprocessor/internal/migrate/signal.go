@@ -20,7 +20,7 @@ type SignalNameChange struct {
 
 // NewSignalNameChange will create a `Signal` that will check the provided mappings if it can update a `alias.NamedSignal`
 // and if no values are provided for `matches`, then all values will be updated.
-func NewSignalNameChange[Key SignalType, Value SignalType](mappings map[Key]Value) SignalNameChange {
+func NewSignalNameChange[Key, Value SignalType](mappings map[Key]Value) SignalNameChange {
 	sig := SignalNameChange{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
@@ -32,7 +32,7 @@ func NewSignalNameChange[Key SignalType, Value SignalType](mappings map[Key]Valu
 	return sig
 }
 
-func (s SignalNameChange) IsMigrator() {}
+func (SignalNameChange) IsMigrator() {}
 
 func (s *SignalNameChange) Do(ss StateSelector, signal alias.NamedSignal) {
 	var (

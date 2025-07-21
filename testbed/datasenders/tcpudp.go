@@ -28,7 +28,7 @@ type TCPUDPWriter struct {
 
 var _ testbed.LogDataSender = (*TCPUDPWriter)(nil)
 
-func NewTCPUDPWriter(network string, host string, port int, batchSize int) *TCPUDPWriter {
+func NewTCPUDPWriter(network, host string, port, batchSize int) *TCPUDPWriter {
 	f := &TCPUDPWriter{
 		network: network,
 		bufSize: batchSize,
@@ -52,7 +52,7 @@ func (f *TCPUDPWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (f *TCPUDPWriter) Capabilities() consumer.Capabilities {
+func (*TCPUDPWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -118,7 +118,7 @@ func (f *TCPUDPWriter) SendCheck() error {
 	return nil
 }
 
-func (f *TCPUDPWriter) Flush() {
+func (*TCPUDPWriter) Flush() {
 }
 
 func (f *TCPUDPWriter) ProtocolName() string {

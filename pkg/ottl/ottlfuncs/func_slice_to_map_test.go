@@ -383,7 +383,7 @@ func Test_SliceToMap(t *testing.T) {
 
 			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.value(), nil
 					},
 				},

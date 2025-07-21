@@ -388,25 +388,25 @@ func TestGetJobNamePrefix(t *testing.T) {
 
 type mockReplicaSetInfo1 struct{}
 
-func (m *mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
+func (*mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
 type mockK8sClient1 struct{}
 
-func (m *mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return &mockReplicaSetInfo1{}
 }
 
 type mockReplicaSetInfo2 struct{}
 
-func (m *mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
+func (*mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{"DeploymentTest-sftrz2785": "DeploymentTest"}
 }
 
 type mockK8sClient2 struct{}
 
-func (m *mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return &mockReplicaSetInfo2{}
 }
 
@@ -571,7 +571,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 
 type mockPodClient struct{}
 
-func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
+func (*mockPodClient) ListPods() ([]corev1.Pod, error) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
 	return podList, nil

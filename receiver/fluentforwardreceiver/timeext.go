@@ -21,7 +21,7 @@ func (*eventTimeExt) ExtensionType() int8 {
 	return 0x00
 }
 
-func (e *eventTimeExt) Len() int {
+func (*eventTimeExt) Len() int {
 	return 8
 }
 
