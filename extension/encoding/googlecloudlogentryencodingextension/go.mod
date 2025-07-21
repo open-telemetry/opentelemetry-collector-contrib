@@ -4,7 +4,6 @@ go 1.23.0
 
 require (
 	cloud.google.com/go/logging v1.13.0
-	github.com/google/go-cmp v0.7.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.129.0
@@ -19,7 +18,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/pdata v1.36.1-0.20250715222903-0a7598ec1e19
 	go.uber.org/goleak v1.3.0
-	go.uber.org/multierr v1.11.0
 	google.golang.org/genproto v0.0.0-20250204164813-702378808489
 	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463
 	google.golang.org/protobuf v1.36.6
@@ -57,6 +55,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.39.0 // indirect
