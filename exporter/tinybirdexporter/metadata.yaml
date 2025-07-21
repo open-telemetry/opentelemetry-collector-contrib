@@ -12,7 +12,14 @@ tests:
   config:
     endpoint: "http://localhost:1234"
     token: "test-token"
-    metrics::datasource: "metrics"
+    metrics:
+      gauge:
+        datasource: "metrics_gauge"
+      sum:
+        datasource: "metrics_sum"
+      histogram:
+        datasource: "metrics_histogram"
+      exponential_histogram:
+        datasource: "metrics_exponential_histogram"
     traces::datasource: "traces"
     logs::datasource: "logs"
-  skip_lifecycle: true
