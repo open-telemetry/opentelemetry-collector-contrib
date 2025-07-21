@@ -317,7 +317,6 @@ func Test_SliceToMap(t *testing.T) {
 		},
 		{
 			name: "nested object with no key path and value path",
-
 			value: func() any {
 				sl := pcommon.NewSlice()
 				thing1 := sl.AppendEmpty().SetEmptyMap()
