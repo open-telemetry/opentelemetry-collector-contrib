@@ -32,12 +32,12 @@ Looking for a quick start? Check out our [Open Telemetry Template](https://githu
 ### Optional settings
 
 - `metrics`: Configuration for different metric types
-  - `gauge.datasource` (default: `gauge`): Name of the gauge metrics datasource
-  - `sum.datasource` (default: `sum`): Name of the sum metrics datasource  
-  - `histogram.datasource` (default: `histogram`): Name of the histogram metrics datasource
-  - `exponential_histogram.datasource` (default: `exponential_histogram`): Name of the exponential histogram metrics datasource
-- `traces.datasource` (default: `traces`): Name of the traces datasource
-- `logs.datasource` (default: `logs`): Name of the logs datasource
+  - `gauge.datasource` (default: `gauge`): Name of the gauge metrics data source
+  - `sum.datasource` (default: `sum`): Name of the sum metrics data source  
+  - `histogram.datasource` (default: `histogram`): Name of the histogram metrics data source
+  - `exponential_histogram.datasource` (default: `exponential_histogram`): Name of the exponential histogram metrics data source
+- `traces.datasource` (default: `traces`): Name of the traces data source
+- `logs.datasource` (default: `logs`): Name of the logs data source
 - `wait` (default: `false`): Whether to wait for data to be ingested before returning a response
 - `retry_on_failure`: Configuration for retry behavior on failures
 - `sending_queue`: Configuration for the sending queue
@@ -85,12 +85,12 @@ exporters:
         max_size: 10000000    # ~10 MB max batch size
 ```
 
-## Datasource Requirements
+## Data Source Requirements
 
-Before using this exporter, you need to create the corresponding datasources in your Tinybird workspace. The datasource names must:
+Before using this exporter, you need to create the corresponding data sources in your Tinybird workspace. The data source names must:
 
 - Only contain letters, numbers, and underscores
-- Match the datasource names specified in your configuration
+- Match the data source names specified in your configuration
 
 
 ## Authentication
