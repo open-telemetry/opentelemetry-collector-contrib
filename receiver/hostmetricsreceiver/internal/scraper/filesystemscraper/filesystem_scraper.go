@@ -175,7 +175,7 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 }
 
 // translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
-func translateMountpoint(ctx context.Context, rootPath string, mountpoint string) string {
+func translateMountpoint(ctx context.Context, rootPath, mountpoint string) string {
 	if env, ok := ctx.Value(common.EnvKey).(common.EnvMap); ok {
 		mountInfo := env[common.EnvKeyType("HOST_PROC_MOUNTINFO")]
 		if mountInfo != "" {

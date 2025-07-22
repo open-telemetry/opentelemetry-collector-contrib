@@ -472,6 +472,6 @@ func (m *mockPublisher) Publish(_ context.Context, request *pb.PublishRequest, _
 	return &pb.PublishResponse{}, nil
 }
 
-func (m *mockPublisher) Close() error {
+func (*mockPublisher) Close() error {
 	return nil
 }

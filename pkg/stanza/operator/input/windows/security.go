@@ -58,6 +58,11 @@ func parseSecurity(message string) (string, map[string]any) {
 	return subject, details
 }
 
+type messageProcessor struct {
+	lines []*parsedLine
+	ptr   int
+}
+
 func (mp *messageProcessor) consumeSubsection(depth int) map[string]any {
 	sub := map[string]any{}
 	for mp.hasNext() {
@@ -98,11 +103,6 @@ func (mp *messageProcessor) consumeSublist(depth int) []string {
 		}
 	}
 	return sublist
-}
-
-type messageProcessor struct {
-	lines []*parsedLine
-	ptr   int
 }
 
 type parsedLine struct {

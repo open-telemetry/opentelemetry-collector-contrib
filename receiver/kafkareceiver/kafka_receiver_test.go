@@ -855,7 +855,7 @@ type statusReporterHost struct {
 	report func(*componentstatus.Event)
 }
 
-func (h *statusReporterHost) GetExtensions() map[component.ID]component.Component {
+func (*statusReporterHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

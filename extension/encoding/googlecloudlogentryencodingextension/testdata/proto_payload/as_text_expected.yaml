@@ -1,0 +1,42 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: |-
+                {
+                        "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+                        "status": {},
+                        "authenticationInfo": {
+                            "principalEmail": "foo@bar.iam.gserviceaccount.com",
+                            "serviceAccountDelegationInfo": [
+                                {
+                                    "firstPartyPrincipal": {
+                                        "principalEmail": "foo@bar.iam.gserviceaccount.com"
+                                    }
+                                }
+                            ],
+                            "principalSubject": "serviceAccount:foo@bar.iam.gserviceaccount.com"
+                        },
+                        "requestMetadata": {
+                            "callerIp": "21.128.18.1",
+                            "callerSuppliedUserAgent": "grpc-go/1.62.2,gzip(gfe)",
+                            "requestAttributes": {},
+                            "destinationAttributes": {}
+                        },
+                        "serviceName": "cloudresourcemanager.googleapis.com",
+                        "methodName": "SearchProjects",
+                        "authorizationInfo": [
+                            {
+                                "resourceAttributes": {}
+                            }
+                        ],
+                        "resourceName": "projects/project-id",
+                        "request": {
+                            "query": "state:active AND NOT projectID:sys-*",
+                            "@type": "type.googleapis.com/google.cloud.resourcemanager.v3.SearchProjectsRequest"
+                        }
+                    }
+            spanId: ""
+            traceId: ""
+        scope: {}

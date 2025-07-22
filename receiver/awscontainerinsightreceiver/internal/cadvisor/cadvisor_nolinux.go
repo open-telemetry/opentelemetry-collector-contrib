@@ -50,10 +50,10 @@ func New(_ string, _ HostInfo, _ *zap.Logger, _ ...Option) (*Cadvisor, error) {
 }
 
 // GetMetrics is a dummy function that always returns empty metrics for windows
-func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
+func (*Cadvisor) GetMetrics() []pmetric.Metrics {
 	return []pmetric.Metrics{}
 }
 
-func (c *Cadvisor) Shutdown() error {
+func (*Cadvisor) Shutdown() error {
 	return nil
 }

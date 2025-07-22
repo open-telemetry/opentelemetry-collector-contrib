@@ -123,7 +123,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost/foo", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost/foo", http.NoBody),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
@@ -151,7 +151,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", http.NoBody)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
@@ -890,11 +890,11 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(_ []byte) (n int, err error) {
+func (badReqBody) Read([]byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 
-func (b badReqBody) Close() error {
+func (badReqBody) Close() error {
 	return nil
 }
 
@@ -914,7 +914,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost/foo", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost/foo", http.NoBody),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
@@ -936,7 +936,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", http.NoBody)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
@@ -1146,7 +1146,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost/ack", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost/ack", http.NoBody),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{}
 			},
@@ -1159,7 +1159,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "no_channel_header",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", http.NoBody)
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1174,7 +1174,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "invalid_channel_header",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", http.NoBody)
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
@@ -1190,7 +1190,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "empty_request_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", http.NoBody)
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1439,11 +1439,11 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						currAckID++
 						return currAckID
 					},
-					ack: func(_ string, _ uint64) {},
+					ack: func(string, uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -1461,11 +1461,11 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						currAckID++
 						return currAckID
 					},
-					ack: func(_ string, _ uint64) {},
+					ack: func(string, uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -1482,11 +1482,11 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						currAckID++
 						return currAckID
 					},
-					ack: func(_ string, _ uint64) {},
+					ack: func(string, uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -1614,10 +1614,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						return uint64(1)
 					},
-					ack: func(_ string, _ uint64) {
+					ack: func(string, uint64) {
 					},
 				}
 			},
@@ -1639,10 +1639,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						return uint64(1)
 					},
-					ack: func(_ string, _ uint64) {
+					ack: func(string, uint64) {
 					},
 				}
 			},
@@ -1663,10 +1663,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						return uint64(1)
 					},
-					ack: func(_ string, _ uint64) {
+					ack: func(string, uint64) {
 					},
 				}
 			},
@@ -1727,7 +1727,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 		assert.NoError(t, rcv.Shutdown(context.Background()))
 	}()
 	w := httptest.NewRecorder()
-	rcv.handleHealthReq(w, httptest.NewRequest(http.MethodGet, "http://localhost/services/collector/health", nil))
+	rcv.handleHealthReq(w, httptest.NewRequest(http.MethodGet, "http://localhost/services/collector/health", http.NoBody))
 
 	resp := w.Result()
 	respBytes, err := io.ReadAll(resp.Body)
@@ -1971,7 +1971,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 		{
 			name: "correct_healthcheck",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "http://localhost:0/services/collector/health", nil)
+				req := httptest.NewRequest(http.MethodGet, "http://localhost:0/services/collector/health", http.NoBody)
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -1982,7 +1982,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 		{
 			name: "correct_healthcheck_v1",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "http://localhost:0/services/collector/health/1.0", nil)
+				req := httptest.NewRequest(http.MethodGet, "http://localhost:0/services/collector/health/1.0", http.NoBody)
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -1993,7 +1993,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 		{
 			name: "incorrect_healthcheck_methods_v1",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost:0/services/collector/health/1.0", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost:0/services/collector/health/1.0", nil) //nolint:gocritic // use nil body on purpose
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -2046,11 +2046,11 @@ type mockAckExtension struct {
 	processEvent func(partitionID string) (ackID uint64)
 }
 
-func (ae *mockAckExtension) Start(_ context.Context, _ component.Host) error {
+func (*mockAckExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (ae *mockAckExtension) Shutdown(_ context.Context) error {
+func (*mockAckExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -2072,7 +2072,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

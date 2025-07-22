@@ -78,7 +78,7 @@ func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 }
 
 // CanProcess will always return false for an input operator.
-func (i *InputOperator) CanProcess() bool {
+func (*InputOperator) CanProcess() bool {
 	return false
 }
 
