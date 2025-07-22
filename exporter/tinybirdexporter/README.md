@@ -37,7 +37,7 @@ Looking for a quick start? Check out our [Open Telemetry Template](https://githu
   - `histogram::datasource` (default: `histogram`): Name of the histogram metrics data source
   - `exponential_histogram::datasource` (default: `exponential_histogram`): Name of the exponential histogram metrics data source
 - `traces::datasource` (default: `traces`): Name of the traces data source
-- `logs.datasource` (default: `logs`): Name of the logs data source
+- `logs:datasource` (default: `logs`): Name of the logs data source
 - `wait` (default: `false`): Whether to wait for data to be ingested before returning a response
 - `retry_on_failure`: Configuration for retry behavior on failures
 - `sending_queue`: Configuration for the sending queue
