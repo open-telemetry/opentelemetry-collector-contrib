@@ -863,7 +863,7 @@ type mockLiteralGetter[K, V any] struct {
 }
 
 func (m mockLiteralGetter[K, V]) Get(_ context.Context, _ K) (V, error) {
-	return m.valueGetter(context.TODO(), *new(K))
+	return m.valueGetter(context.Background(), *new(K))
 }
 
 func (m mockLiteralGetter[K, V]) isLiteral() bool {
@@ -871,7 +871,7 @@ func (m mockLiteralGetter[K, V]) isLiteral() bool {
 }
 
 func (m mockLiteralGetter[K, V]) getLiteral() (any, error) {
-	return m.valueGetter(context.TODO(), *new(K))
+	return m.valueGetter(context.Background(), *new(K))
 }
 
 // NewTestingLiteralGetter allows creating an LiteralGetter with a getter already populated
