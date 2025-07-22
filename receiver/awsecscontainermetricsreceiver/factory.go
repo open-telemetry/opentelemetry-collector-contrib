@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 
 type noOpRestClient struct{}
 
-func (n *noOpRestClient) GetResponse(_ string) ([]byte, error) {
+func (*noOpRestClient) GetResponse(_ string) ([]byte, error) {
 	return nil, nil
 }
 
