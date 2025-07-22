@@ -44,7 +44,7 @@ func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d pdatautil.Dimension, spanAttrs pcommon.Map, eventAttrs pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
+func getDimensionValue(d pdatautil.Dimension, spanAttrs, eventAttrs, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttrs.Get(d.Name); exists {
 		return attr, true

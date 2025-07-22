@@ -79,7 +79,7 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *stefReceiver) Shutdown(_ context.Context) error {
+func (r *stefReceiver) Shutdown(context.Context) error {
 	r.stopping.Store(true)
 
 	if r.serverGRPC != nil {

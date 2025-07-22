@@ -146,7 +146,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	return errs
 }
 
-func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []exporter.Traces, spans ptrace.ResourceSpans) {
+func (*tracesProcessor) group(key string, groups map[string]spanGroup, exporters []exporter.Traces, spans ptrace.ResourceSpans) {
 	group, ok := groups[key]
 	if !ok {
 		group.traces = ptrace.NewTraces()
@@ -192,10 +192,10 @@ func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) 
 	return errs
 }
 
-func (p *tracesProcessor) Capabilities() consumer.Capabilities {
+func (*tracesProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (p *tracesProcessor) Shutdown(context.Context) error {
+func (*tracesProcessor) Shutdown(context.Context) error {
 	return nil
 }

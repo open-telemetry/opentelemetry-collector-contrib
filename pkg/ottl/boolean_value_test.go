@@ -82,7 +82,7 @@ func valueFor(x any) value {
 }
 
 // comparison is a test helper that constructs a comparison object using valueFor
-func comparisonHelper(left any, right any, op string) *comparison {
+func comparisonHelper(left, right any, op string) *comparison {
 	return &comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
@@ -216,13 +216,13 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 }
 
 func True() (ExprFunc[any], error) {
-	return func(_ context.Context, _ any) (any, error) {
+	return func(context.Context, any) (any, error) {
 		return true, nil
 	}, nil
 }
 
 func False() (ExprFunc[any], error) {
-	return func(_ context.Context, _ any) (any, error) {
+	return func(context.Context, any) (any, error) {
 		return false, nil
 	}, nil
 }

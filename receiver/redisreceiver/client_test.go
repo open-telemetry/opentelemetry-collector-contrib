@@ -21,7 +21,7 @@ func newFakeClient() *fakeClient {
 	return &fakeClient{}
 }
 
-func (c fakeClient) delimiter() string {
+func (fakeClient) delimiter() string {
 	if runtime.GOOS == "windows" {
 		return "\r\n"
 	}

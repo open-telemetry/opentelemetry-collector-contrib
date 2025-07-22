@@ -107,7 +107,7 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 	return t, nil
 }
 
-func newTranslator(log *zap.Logger, targetSchemaURL string, schema string) (*translator, error) {
+func newTranslator(log *zap.Logger, targetSchemaURL, schema string) (*translator, error) {
 	schemaFileSchema, err := encoder.Parse(strings.NewReader(schema))
 	if err != nil {
 		return nil, err
@@ -235,11 +235,13 @@ func (t *translator) ApplyScopeSpanChanges(scopeSpans ptrace.ScopeSpans, inSchem
 						return err
 					}
 				}
-				if err = rev.spanEvents.Apply(span); err != nil {
+				err = rev.spanEvents.Apply(span)
+				if err != nil {
 					return err
 				}
 			case Revert:
-				if err = rev.spanEvents.Rollback(span); err != nil {
+				err = rev.spanEvents.Rollback(span)
+				if err != nil {
 					return err
 				}
 				for e := 0; e < span.Events().Len(); e++ {
@@ -275,17 +277,17 @@ func (t *translator) ApplyScopeMetricChanges(scopeMetrics pmetric.ScopeMetrics, 
 			metric := scopeMetrics.Metrics().At(i)
 			switch status {
 			case Update:
-				if err = rev.all.Apply(metric); err != nil {
+				if err := rev.all.Apply(metric); err != nil {
 					return err
 				}
-				if err = rev.metrics.Apply(metric); err != nil {
+				if err := rev.metrics.Apply(metric); err != nil {
 					return err
 				}
 			case Revert:
-				if err = rev.metrics.Rollback(metric); err != nil {
+				if err := rev.metrics.Rollback(metric); err != nil {
 					return err
 				}
-				if err = rev.all.Rollback(metric); err != nil {
+				if err := rev.all.Rollback(metric); err != nil {
 					return err
 				}
 			}

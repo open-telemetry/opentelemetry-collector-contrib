@@ -4,7 +4,7 @@ status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: []
+  distributions: [contrib, k8s]
   codeowners:
     active: [dmitryax, rakesh-garimella]
 

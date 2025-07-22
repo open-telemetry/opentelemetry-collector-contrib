@@ -92,7 +92,7 @@ func (b filterBuilder) handleHighCardinalityGroups(groups []*metadata.MetricsMet
 	return b.constructFiltersForGroups(totalLimitPerMetric, limitPerMetricByTimestamp, groups, remainingTotalLimit, filterByMetric)
 }
 
-func (b filterBuilder) constructFiltersForGroups(totalLimitPerMetric int, limitPerMetricByTimestamp int,
+func (b filterBuilder) constructFiltersForGroups(totalLimitPerMetric, limitPerMetricByTimestamp int,
 	groups []*metadata.MetricsMetadata, remainingTotalLimit int, filterByMetric map[string]filter.ItemFilter,
 ) (int, error) {
 	newTotalLimit := remainingTotalLimit

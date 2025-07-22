@@ -299,7 +299,7 @@ func BenchmarkCompareLTNil(b *testing.B) {
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
 // before adding lt, lte, gte, and gt.
-func compareEq(a any, b any, op compareOp) bool {
+func compareEq(a, b any, op compareOp) bool {
 	switch op {
 	case eq:
 		return a == b

@@ -223,7 +223,7 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 	return nil
 }
 
-func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback string) (string, error) {
+func getSubjectFromClaims(claims map[string]any, usernameClaim, fallback string) (string, error) {
 	if usernameClaim != "" {
 		username, found := claims[usernameClaim]
 		if !found {

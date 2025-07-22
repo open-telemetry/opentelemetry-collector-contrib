@@ -209,7 +209,7 @@ type mockTokenCredential struct {
 
 var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 
-func (m *mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+func (m *mockTokenCredential) GetToken(context.Context, policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	args := m.Called()
 	return args.Get(0).(azcore.AccessToken), args.Error(1)
 }

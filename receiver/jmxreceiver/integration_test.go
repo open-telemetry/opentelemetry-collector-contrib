@@ -102,7 +102,7 @@ func (suite *jmxIntegrationSuite) TestJMXReceiverHappyPath() {
 	}
 }
 
-func integrationTest(version string, jar string, jmxConfig string) func(*testing.T) {
+func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 	return scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(

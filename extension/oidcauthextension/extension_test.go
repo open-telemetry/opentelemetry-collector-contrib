@@ -477,7 +477,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	file, err := os.CreateTemp(os.TempDir(), "cert")
 	require.NoError(t, err)
 	defer os.Remove(file.Name())
-	_, err = file.Write([]byte("foobar"))
+	_, err = file.WriteString("foobar")
 	require.NoError(t, err)
 
 	config := &Config{

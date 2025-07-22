@@ -13,7 +13,7 @@ type udpServer struct {
 }
 
 // Ensure that Server is implemented on UDP Server.
-var _ (Server) = (*udpServer)(nil)
+var _ Server = (*udpServer)(nil)
 
 // NewUDPServer creates a transport.Server using UDP as its transport.
 func NewUDPServer(transport Transport, address string) (Server, error) {

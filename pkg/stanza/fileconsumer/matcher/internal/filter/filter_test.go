@@ -109,7 +109,7 @@ func TestFilter(t *testing.T) {
 
 type removeFirst struct{}
 
-func (o *removeFirst) apply(items []*item) ([]*item, error) {
+func (*removeFirst) apply(items []*item) ([]*item, error) {
 	if len(items) == 0 {
 		return items, nil
 	}
