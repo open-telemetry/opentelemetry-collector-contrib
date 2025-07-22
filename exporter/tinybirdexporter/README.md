@@ -29,7 +29,7 @@ Looking for a quick start? Check out our [Open Telemetry Template](https://githu
 - `endpoint` (no default): The Tinybird API endpoint URL (e.g., `https://api.us-east.aws.tinybird.co`)
 - `token` (no default): Your Tinybird API token used for authentication
 
-The following settings can be optionally configured:
+### Optional settings
 
 - `metrics`: Configuration for different metric types
   - `gauge.datasource` (default: `gauge`): Name of the gauge metrics datasource
