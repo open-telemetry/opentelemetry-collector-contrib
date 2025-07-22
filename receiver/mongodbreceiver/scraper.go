@@ -218,7 +218,7 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 	s.recordOperationTime(now, topStats, errs)
 }
 
-func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	if databaseName == "local" {
 		return
 	}
@@ -269,7 +269,7 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordPageFaults(now, document, errs)
 }
 
-func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }
 

@@ -22,8 +22,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
-// Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
-type Exporter struct {
+// kinesisExporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
+type kinesisExporter struct {
 	producer producer.Batcher
 	batcher  batch.Encoder
 }
@@ -34,7 +34,7 @@ type options struct {
 	NewKinesisClient func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client
 }
 
-func createExporter(ctx context.Context, c component.Config, log *zap.Logger, opts ...func(opt *options)) (*Exporter, error) {
+func createExporter(ctx context.Context, c component.Config, log *zap.Logger, opts ...func(opt *options)) (*kinesisExporter, error) {
 	options := &options{
 		NewKinesisClient: kinesis.NewFromConfig,
 	}
@@ -103,19 +103,19 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		log.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 
-	return &Exporter{
+	return &kinesisExporter{
 		producer: producer,
 		batcher:  encoder,
 	}, nil
 }
 
 // start validates that the Kinesis stream is available.
-func (e Exporter) start(ctx context.Context, _ component.Host) error {
+func (e kinesisExporter) start(ctx context.Context, _ component.Host) error {
 	return e.producer.Ready(ctx)
 }
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
-func (e Exporter) consumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (e kinesisExporter) consumeTraces(ctx context.Context, td ptrace.Traces) error {
 	bt, err := e.batcher.Traces(td)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (e Exporter) consumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return e.producer.Put(ctx, bt)
 }
 
-func (e Exporter) consumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e kinesisExporter) consumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	bt, err := e.batcher.Metrics(md)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (e Exporter) consumeMetrics(ctx context.Context, md pmetric.Metrics) error 
 	return e.producer.Put(ctx, bt)
 }
 
-func (e Exporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e kinesisExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
 	bt, err := e.batcher.Logs(ld)
 	if err != nil {
 		return err

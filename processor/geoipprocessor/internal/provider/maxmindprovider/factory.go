@@ -22,12 +22,12 @@ type Factory struct{}
 var _ provider.GeoIPProviderFactory = (*Factory)(nil)
 
 // CreateDefaultConfig creates the default configuration for the Provider.
-func (f *Factory) CreateDefaultConfig() provider.Config {
+func (*Factory) CreateDefaultConfig() provider.Config {
 	return &Config{}
 }
 
 // CreateGeoIPProvider creates a provider based on this config.
-func (f *Factory) CreateGeoIPProvider(_ context.Context, _ processor.Settings, cfg provider.Config) (provider.GeoIPProvider, error) {
+func (*Factory) CreateGeoIPProvider(_ context.Context, _ processor.Settings, cfg provider.Config) (provider.GeoIPProvider, error) {
 	maxMindConfig := cfg.(*Config)
 	return newMaxMindProvider(maxMindConfig)
 }

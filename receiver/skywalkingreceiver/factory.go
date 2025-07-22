@@ -79,7 +79,8 @@ func createTracesReceiver(
 		return newSkywalkingReceiver(c, set)
 	})
 
-	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+	err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer)
+	if err != nil {
 		return nil, err
 	}
 
@@ -106,7 +107,8 @@ func createMetricsReceiver(
 		return newSkywalkingReceiver(c, set)
 	})
 
-	if err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer); err != nil {
+	err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer)
+	if err != nil {
 		return nil, err
 	}
 

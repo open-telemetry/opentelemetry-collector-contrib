@@ -483,7 +483,7 @@ func (l *testContext) GetSpanEvent() ptrace.SpanEvent {
 	return l.spanEvent
 }
 
-func (l *testContext) GetEventIndex() (int64, error) {
+func (*testContext) GetEventIndex() (int64, error) {
 	return 1, nil
 }
 

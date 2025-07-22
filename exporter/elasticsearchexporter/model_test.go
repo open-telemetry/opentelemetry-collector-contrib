@@ -1175,7 +1175,7 @@ type oTelResource struct {
 
 type oTelSpanID pcommon.SpanID
 
-func (o oTelSpanID) MarshalJSON() ([]byte, error) {
+func (oTelSpanID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
@@ -1190,7 +1190,7 @@ func (o *oTelSpanID) UnmarshalJSON(data []byte) error {
 
 type oTelTraceID pcommon.TraceID
 
-func (o oTelTraceID) MarshalJSON() ([]byte, error) {
+func (oTelTraceID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
