@@ -19,7 +19,12 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // oidcServer is an overly simplified OIDC mock server, good enough to sign the tokens required by the test
@@ -83,6 +88,22 @@ func newOIDCServer() (*oidcServer, error) {
 	}}
 
 	return &oidcServer{server, x509Cert, privateKey}, nil
+}
+
+func newReverseProxy(t *testing.T, dst string) *httptest.Server {
+	remote, err := url.Parse(dst)
+	require.NoError(t, err)
+
+	handler := func(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
+		return func(w http.ResponseWriter, r *http.Request) {
+			r.Host = remote.Host
+			p.ServeHTTP(w, r)
+		}
+	}
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	server := httptest.NewServer(http.HandlerFunc(handler(proxy)))
+	return server
 }
 
 func (s *oidcServer) token(jsonPayload []byte) (string, error) {
