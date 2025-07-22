@@ -16,14 +16,16 @@ func GetEntityEvents(oldMetadata, newMetadata map[metadataPkg.ResourceID]*Kubern
 	out := metadataPkg.NewEntityEventsSlice()
 
 	for id, oldObj := range oldMetadata {
-		if _, ok := newMetadata[id]; !ok {
-			// An object was present, but no longer is. Create a "delete" event.
-			entityEvent := out.AppendEmpty()
-			entityEvent.SetTimestamp(timestamp)
-			entityEvent.ID().PutStr(oldObj.ResourceIDKey, string(oldObj.ResourceID))
-			deleteEvent := entityEvent.SetEntityDelete()
-			deleteEvent.SetEntityType(oldObj.EntityType)
+		_, ok := newMetadata[id]
+		if ok {
+			continue
 		}
+		// An object was present, but no longer is. Create a "delete" event.
+		entityEvent := out.AppendEmpty()
+		entityEvent.SetTimestamp(timestamp)
+		entityEvent.ID().PutStr(oldObj.ResourceIDKey, string(oldObj.ResourceID))
+		deleteEvent := entityEvent.SetEntityDelete()
+		deleteEvent.SetEntityType(oldObj.EntityType)
 	}
 
 	// All "new" are current objects. Create "state" events. "old" state does not matter.

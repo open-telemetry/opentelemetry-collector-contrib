@@ -77,7 +77,7 @@ func (s *Syncer) syncOnResource(res pcommon.Resource) {
 	s.logger.Info("Host metadata synchronized")
 }
 
-func (s *Syncer) prepareMetadataUpdate(props map[string]string, hostID splunk.HostID) *metadata.MetadataUpdate {
+func (*Syncer) prepareMetadataUpdate(props map[string]string, hostID splunk.HostID) *metadata.MetadataUpdate {
 	return &metadata.MetadataUpdate{
 		ResourceIDKey: string(hostID.Key),
 		ResourceID:    metadata.ResourceID(hostID.ID),

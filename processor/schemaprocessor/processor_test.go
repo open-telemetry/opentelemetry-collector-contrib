@@ -35,7 +35,7 @@ versions:%s`, transformations)
 	return data, nil
 }
 
-func newTestSchemaProcessor(t *testing.T, transformations string, targerVerion string) *schemaProcessor {
+func newTestSchemaProcessor(t *testing.T, transformations, targerVerion string) *schemaProcessor {
 	cfg := &Config{
 		Targets: []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targerVerion)},
 	}

@@ -726,7 +726,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	waitWG.Wait()
 }
 
-func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
+func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 	ts, tb := getTelemetryAssets(b)
 	sink := new(consumertest.TracesSink)
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -900,7 +900,7 @@ func (e *mockTracesExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
+func (*mockTracesExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

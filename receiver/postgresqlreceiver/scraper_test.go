@@ -85,7 +85,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
 
-	runTest := func(separateSchemaAttr bool, file string, fileDefault string) {
+	runTest := func(separateSchemaAttr bool, file, fileDefault string) {
 		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
@@ -512,22 +512,22 @@ type (
 )
 
 // explainQuery implements client.
-func (m *mockClient) explainQuery(_ string, _ string, _ *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
 // getTopQuery implements client.
-func (m *mockClient) getTopQuery(_ context.Context, _ int64, _ *zap.Logger) ([]map[string]any, error) {
+func (*mockClient) getTopQuery(context.Context, int64, *zap.Logger) ([]map[string]any, error) {
 	panic("unimplemented")
 }
 
 // close implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) close() error {
+func (mockSimpleClientFactory) close() error {
 	return nil
 }
 
 // getClient implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
+func (m mockSimpleClientFactory) getClient(string) (client, error) {
 	return &postgreSQLClient{
 		client:  m.db,
 		closeFn: m.close,
@@ -535,7 +535,7 @@ func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
 }
 
 // getQuerySamples implements client.
-func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ float64, _ *zap.Logger) ([]map[string]any, float64, error) {
+func (*mockClient) getQuerySamples(context.Context, int64, float64, *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 
@@ -638,7 +638,7 @@ func (m *mockClientFactory) initMocks(databases []string) {
 	}
 }
 
-func (m *mockClient) initMocks(database string, schema string, databases []string, index int) {
+func (m *mockClient) initMocks(database, schema string, databases []string, index int) {
 	m.On("Close").Return(nil)
 
 	if database == defaultPostgreSQLDatabase {

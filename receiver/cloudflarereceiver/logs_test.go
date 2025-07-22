@@ -500,7 +500,7 @@ func TestAttributesWithSeparator(t *testing.T) {
 		},
 	}
 
-	expectedLogs := func(t *testing.T, payload string, separator string) plog.Logs {
+	expectedLogs := func(t *testing.T, payload, separator string) plog.Logs {
 		logs := plog.NewLogs()
 		rl := logs.ResourceLogs().AppendEmpty()
 		sl := rl.ScopeLogs().AppendEmpty()

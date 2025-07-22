@@ -34,7 +34,7 @@ const (
 
 const attrSeparator = "."
 
-func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+func convertAttributesAndMerge(logAttrs, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
 	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {

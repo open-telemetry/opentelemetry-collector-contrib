@@ -191,7 +191,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 	return p.lb.Emit(), nil
 }
 
-func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery int64, topNQuery int64, maxExplainEachInterval int64) (plog.Logs, error) {
+func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
 	var errs errsMux
 
 	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
@@ -229,7 +229,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit int64, topNQuery int64, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
@@ -677,7 +677,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) retrieveBackends(
+func (*postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,

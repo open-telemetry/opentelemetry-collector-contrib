@@ -36,11 +36,11 @@ func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
 
 type MockCPUMemInfo struct{}
 
-func (m MockCPUMemInfo) GetNumCores() int64 {
+func (MockCPUMemInfo) GetNumCores() int64 {
 	return 2
 }
 
-func (m MockCPUMemInfo) GetMemoryCapacity() int64 {
+func (MockCPUMemInfo) GetMemoryCapacity() int64 {
 	return 1073741824
 }
 
@@ -54,22 +54,22 @@ func (m MockHostInfo) GetClusterName() string {
 	return m.ClusterName
 }
 
-func (m MockHostInfo) GetEBSVolumeID(string) string {
+func (MockHostInfo) GetEBSVolumeID(string) string {
 	return "ebs-volume-id"
 }
 
-func (m MockHostInfo) GetInstanceID() string {
+func (MockHostInfo) GetInstanceID() string {
 	return "instance-id"
 }
 
-func (m MockHostInfo) GetInstanceType() string {
+func (MockHostInfo) GetInstanceType() string {
 	return "instance-id"
 }
 
-func (m MockHostInfo) GetAutoScalingGroupName() string {
+func (MockHostInfo) GetAutoScalingGroupName() string {
 	return "asg"
 }
 
-func (m MockHostInfo) ExtractEbsIDsUsedByKubernetes() map[string]string {
+func (MockHostInfo) ExtractEbsIDsUsedByKubernetes() map[string]string {
 	return map[string]string{}
 }

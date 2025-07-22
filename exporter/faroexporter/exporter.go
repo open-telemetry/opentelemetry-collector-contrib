@@ -158,6 +158,6 @@ func (fe *faroExporter) consume(ctx context.Context, fp []faro.Payload) error {
 	return errs
 }
 
-func (fe *faroExporter) Capabilities() consumer.Capabilities {
+func (*faroExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

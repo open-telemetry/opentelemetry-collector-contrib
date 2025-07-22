@@ -23,6 +23,6 @@ var _ kube.Client = (*fakeClient)(nil)
 
 type fakeClient struct{}
 
-func (f *fakeClient) Get(path string) ([]byte, error) {
+func (*fakeClient) Get(path string) ([]byte, error) {
 	return []byte(path), nil
 }

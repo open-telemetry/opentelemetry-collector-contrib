@@ -464,7 +464,7 @@ func (mac *mockAccessLogsClient) GetClusters(ctx context.Context, groupID string
 	return args.Get(0).([]mongodbatlas.Cluster), args.Error(1)
 }
 
-func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
 	args := mac.Called(ctx, groupID, clusterName, opts)
 	return args.Get(0).([]*mongodbatlas.AccessLogs), args.Error(1)
 }

@@ -266,7 +266,7 @@ func (cs *countingSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) er
 	return nil
 }
 
-func (cs *countingSink) Capabilities() consumer.Capabilities {
+func (*countingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 

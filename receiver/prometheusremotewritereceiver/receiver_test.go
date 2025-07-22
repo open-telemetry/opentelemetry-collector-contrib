@@ -1394,7 +1394,7 @@ func TestTranslateV2(t *testing.T) {
 type nonMutatingConsumer struct{}
 
 // Capabilities returns the base consumer capabilities.
-func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
+func (nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

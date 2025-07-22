@@ -12,7 +12,7 @@ import (
 // TODO @constanca-m remove this file once the logic for the remaining categories
 // is added to category_logs.go
 
-func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleFrontDoorAccessLog(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "trackingReference":
 		attrs[string(conventions.AzServiceRequestIDKey)] = value
@@ -73,7 +73,7 @@ func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, att
 	}
 }
 
-func handleFrontDoorHealthProbeLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleFrontDoorHealthProbeLog(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "httpVerb":
 		attrs[string(conventions.HTTPRequestMethodKey)] = value
@@ -102,7 +102,7 @@ func handleFrontDoorHealthProbeLog(field string, value any, attrs map[string]any
 	}
 }
 
-func handleAppServiceAppLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServiceAppLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "ContainerId":
 		attrs[string(conventions.ContainerIDKey)] = value
@@ -121,7 +121,7 @@ func handleAppServiceAppLogs(field string, value any, attrs map[string]any, attr
 	}
 }
 
-func handleAppServiceAuditLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServiceAuditLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "Protocol":
 		attrs[string(conventions.NetworkProtocolNameKey)] = toLower(value)
@@ -134,7 +134,7 @@ func handleAppServiceAuditLogs(field string, value any, attrs map[string]any, at
 	}
 }
 
-func handleAppServiceAuthenticationLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServiceAuthenticationLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "StatusCode":
 		attrs[string(conventions.HTTPResponseStatusCodeKey)] = toInt(value)
@@ -143,7 +143,7 @@ func handleAppServiceAuthenticationLogs(field string, value any, attrs map[strin
 	}
 }
 
-func handleAppServiceConsoleLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServiceConsoleLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "ContainerId":
 		attrs[string(conventions.ContainerIDKey)] = value
@@ -154,7 +154,7 @@ func handleAppServiceConsoleLogs(field string, value any, attrs map[string]any, 
 	}
 }
 
-func handleAppServiceHTTPLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServiceHTTPLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "CIp":
 		attrs["client.address"] = value
@@ -207,7 +207,7 @@ func handleAppServiceHTTPLogs(field string, value any, attrs map[string]any, att
 	}
 }
 
-func handleAppServiceIPSecAuditLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServiceIPSecAuditLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "CIp":
 		attrs["client.address"] = value
@@ -226,7 +226,7 @@ func handleAppServiceIPSecAuditLogs(field string, value any, attrs map[string]an
 	}
 }
 
-func handleAppServicePlatformLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
+func handleAppServicePlatformLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "containerId":
 		attrs[string(conventions.ContainerIDKey)] = value

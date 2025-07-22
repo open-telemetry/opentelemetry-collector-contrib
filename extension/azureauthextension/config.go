@@ -61,7 +61,7 @@ type ServicePrincipal struct {
 
 var _ component.Config = (*Config)(nil)
 
-func (cfg *ManagedIdentity) Validate() error {
+func (*ManagedIdentity) Validate() error {
 	return nil
 }
 

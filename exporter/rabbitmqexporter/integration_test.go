@@ -114,7 +114,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 	}
 }
 
-func startRabbitMQContainer(t *testing.T, image string, port string) testcontainers.Container {
+func startRabbitMQContainer(t *testing.T, image, port string) testcontainers.Container {
 	container, err := testcontainers.GenericContainer(
 		context.Background(),
 		testcontainers.GenericContainerRequest{
@@ -142,7 +142,7 @@ func startRabbitMQContainer(t *testing.T, image string, port string) testcontain
 	return container
 }
 
-func setupQueueConsumer(t *testing.T, queueName string, endpoint string) (*amqp.Connection, *amqp.Channel, <-chan amqp.Delivery) {
+func setupQueueConsumer(t *testing.T, queueName, endpoint string) (*amqp.Connection, *amqp.Channel, <-chan amqp.Delivery) {
 	connection, err := amqp.DialConfig(endpoint, amqp.Config{
 		SASL: []amqp.Authentication{
 			&amqp.PlainAuth{

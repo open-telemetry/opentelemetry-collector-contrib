@@ -71,16 +71,17 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	var containerID string
 	var imageStr string
 	for _, cs := range pod.Status.ContainerStatuses {
-		if cs.Name == c.Name {
-			containerID = cs.ContainerID
-			imageStr = cs.Image
-			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
-			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
-			if cs.LastTerminationState.Terminated != nil {
-				rb.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
-			}
-			break
+		if cs.Name != c.Name {
+			continue
 		}
+		containerID = cs.ContainerID
+		imageStr = cs.Image
+		mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
+		mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
+		if cs.LastTerminationState.Terminated != nil {
+			rb.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
+		}
+		break
 	}
 
 	rb.SetK8sPodUID(string(pod.UID))

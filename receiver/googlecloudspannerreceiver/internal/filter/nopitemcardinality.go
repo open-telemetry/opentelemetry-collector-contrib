@@ -21,19 +21,19 @@ func NewNopItemFilterResolver() ItemFilterResolver {
 	}
 }
 
-func (f *nopItemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
+func (*nopItemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
 	return sourceItems
 }
 
-func (f *nopItemCardinalityFilter) Shutdown() error {
+func (*nopItemCardinalityFilter) Shutdown() error {
 	return nil
 }
 
-func (f *nopItemCardinalityFilter) TotalLimit() int {
+func (*nopItemCardinalityFilter) TotalLimit() int {
 	return 0
 }
 
-func (f *nopItemCardinalityFilter) LimitByTimestamp() int {
+func (*nopItemCardinalityFilter) LimitByTimestamp() int {
 	return 0
 }
 
@@ -41,6 +41,6 @@ func (r *nopItemFilterResolver) Resolve(string) (ItemFilter, error) {
 	return r.nopFilter, nil
 }
 
-func (r *nopItemFilterResolver) Shutdown() error {
+func (*nopItemFilterResolver) Shutdown() error {
 	return nil
 }

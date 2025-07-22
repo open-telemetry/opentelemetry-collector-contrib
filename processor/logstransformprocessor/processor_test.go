@@ -223,7 +223,7 @@ func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
 	return t.Write(ctx, e)
 }
 
-func (t *laggyOperator) CanProcess() bool {
+func (*laggyOperator) CanProcess() bool {
 	return true
 }
 

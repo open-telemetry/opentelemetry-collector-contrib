@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
@@ -77,6 +78,23 @@ func getLogsMarshaler(encoding string, host component.Host) (marshaler.LogsMarsh
 		return marshaler.RawLogsMarshaler{}, nil
 	}
 	return nil, fmt.Errorf("unrecognized logs encoding %q", encoding)
+}
+
+func getProfilesMarshaler(encoding string, host component.Host) (marshaler.ProfilesMarshaler, error) {
+	if m, err := loadEncodingExtension[pprofile.Marshaler](host, encoding, "profiles"); err != nil {
+		if !errors.Is(err, errUnknownEncodingExtension) {
+			return nil, err
+		}
+	} else {
+		return marshaler.NewPdataProfilesMarshaler(m), nil
+	}
+	switch encoding {
+	case "otlp_proto":
+		return marshaler.NewPdataProfilesMarshaler(&pprofile.ProtoMarshaler{}), nil
+	case "otlp_json":
+		return marshaler.NewPdataProfilesMarshaler(&pprofile.JSONMarshaler{}), nil
+	}
+	return nil, fmt.Errorf("unrecognized profiles encoding %q", encoding)
 }
 
 // loadEncodingExtension tries to load an available extension for the given encoding.

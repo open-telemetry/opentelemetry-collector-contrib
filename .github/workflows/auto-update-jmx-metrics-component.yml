@@ -6,6 +6,9 @@ on:
     - cron: '30 1 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   check-versions:
     runs-on: ubuntu-24.04
@@ -48,6 +51,8 @@ jobs:
           echo "already-opened=$already_opened" >> $GITHUB_OUTPUT
 
   update-jmx-metrics-component:
+    permissions:
+      contents: write # required for pushing changes
     runs-on: ubuntu-24.04
     if: |
       needs.check-versions.outputs.already-added != 'true' &&

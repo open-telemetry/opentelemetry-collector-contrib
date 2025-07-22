@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/solarwindscloud/apm-proto/go/collectorpb"
-	"github.com/solarwindscloud/apm-proto/go/collectorpb/mocks"
+	"github.com/solarwinds/apm-proto/go/collectorpb"
+	"github.com/solarwinds/apm-proto/go/collectorpb/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

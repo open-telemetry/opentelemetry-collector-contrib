@@ -19,7 +19,8 @@ func generateIndexWithLogstashFormat(index string, conf *LogstashFormatSettings,
 		if err != nil {
 			return partIndex, err
 		}
-		if err = p.Format(&buf, t); err != nil {
+		err = p.Format(&buf, t)
+		if err != nil {
 			return partIndex, err
 		}
 		index = buf.String()

@@ -305,7 +305,7 @@ func createBasicConditions(template string, input []string) []string {
 	return conditions
 }
 
-func createLibraryConditions(nameTemplate string, versionTemplate string, libraries []filterconfig.InstrumentationLibrary) ([]string, []string) {
+func createLibraryConditions(nameTemplate, versionTemplate string, libraries []filterconfig.InstrumentationLibrary) ([]string, []string) {
 	var scopeNameConditions []string
 	var scopeVersionConditions []string
 	for _, scope := range libraries {
@@ -348,7 +348,7 @@ func createSeverityNumberConditions(severityNumberProperties *filterconfig.LogSe
 	return &severityNumberCondition
 }
 
-func NewMetricSkipExprBridge(include *filterconfig.MetricMatchProperties, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlmetric.TransformContext], error) {
+func NewMetricSkipExprBridge(include, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlmetric.TransformContext], error) {
 	statements := make([]string, 0, 2)
 	if include != nil {
 		statement, err := createMetricStatement(*include)

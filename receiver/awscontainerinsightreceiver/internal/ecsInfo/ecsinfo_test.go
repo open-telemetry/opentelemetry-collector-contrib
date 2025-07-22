@@ -15,15 +15,15 @@ import (
 
 type FakehostInfo struct{}
 
-func (hi *FakehostInfo) GetInstanceIP() string {
+func (*FakehostInfo) GetInstanceIP() string {
 	return "host-ip-address"
 }
 
-func (hi *FakehostInfo) GetClusterName() string {
+func (*FakehostInfo) GetClusterName() string {
 	return ""
 }
 
-func (hi *FakehostInfo) GetInstanceIPReadyC() chan bool {
+func (*FakehostInfo) GetInstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	close(readyC)
 	return readyC
@@ -68,11 +68,11 @@ func (c *MockCgroupScanner) getMemReserved() int64 {
 	return c.memReserved
 }
 
-func (c *MockCgroupScanner) getCPUReservedInTask(_ string, _ string) int64 {
+func (*MockCgroupScanner) getCPUReservedInTask(_, _ string) int64 {
 	return int64(10)
 }
 
-func (c *MockCgroupScanner) getMEMReservedInTask(_ string, _ string, _ []ECSContainer) int64 {
+func (*MockCgroupScanner) getMEMReservedInTask(_, _ string, _ []ECSContainer) int64 {
 	return int64(512)
 }
 

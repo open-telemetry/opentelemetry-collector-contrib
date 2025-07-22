@@ -57,7 +57,7 @@ func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
 // generateParseFunc returns a parse function for a given header, allowing
 // each entry to have a potentially unique set of fields when using dynamic
 // field names retrieved from an entry's attribute
-func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool, ignoreQuotes bool) parseFunc {
+func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes, ignoreQuotes bool) parseFunc {
 	if ignoreQuotes {
 		return generateSplitParseFunc(headers, fieldDelimiter)
 	}
