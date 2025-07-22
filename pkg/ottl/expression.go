@@ -212,7 +212,7 @@ func (l *listGetter[K]) isLiteral() bool {
 }
 
 func (l *listGetter[K]) getLiteral() (any, error) {
-	return l.Get(context.TODO(), *new(K))
+	return l.Get(context.Background(), *new(K))
 }
 
 type mapGetter[K any] struct {
@@ -267,7 +267,7 @@ func (m *mapGetter[K]) isLiteral() bool {
 }
 
 func (m *mapGetter[K]) getLiteral() (any, error) {
-	return m.Get(context.TODO(), *new(K))
+	return m.Get(context.Background(), *new(K))
 }
 
 // PSliceGetter is a Getter that must return a pcommon.Slice.
@@ -355,7 +355,7 @@ func (g StandardPSliceGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardPSliceGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func newPSliceFromIntegers[T constraints.Integer](source []T) (pcommon.Slice, error) {
@@ -435,7 +435,7 @@ func (g StandardStringGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardStringGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 // IntGetter is a Getter that must return an int64.
@@ -492,7 +492,7 @@ func (g StandardIntGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardIntGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 // FloatGetter is a Getter that must return a float64.
@@ -547,7 +547,7 @@ func (g StandardFloatGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardFloatGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 // BoolGetter is a Getter that must return a bool.
@@ -602,7 +602,7 @@ func (g StandardBoolGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardBoolGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 // FunctionGetter uses a function factory to return an instantiated function as an Expr.
@@ -725,7 +725,7 @@ func (g StandardPMapGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardPMapGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardPMapGetter[K]) isLiteral() bool {
@@ -799,7 +799,7 @@ func (g StandardStringLikeGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardStringLikeGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardStringLikeGetter[K]) isLiteral() bool {
@@ -884,7 +884,7 @@ func (g StandardFloatLikeGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardFloatLikeGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardFloatLikeGetter[K]) isLiteral() bool {
@@ -969,7 +969,7 @@ func (g StandardIntLikeGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardIntLikeGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardIntLikeGetter[K]) isLiteral() bool {
@@ -1052,7 +1052,7 @@ func (g StandardByteSliceLikeGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardByteSliceLikeGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardByteSliceLikeGetter[K]) isLiteral() bool {
@@ -1144,7 +1144,7 @@ func (g StandardBoolLikeGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardBoolLikeGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardBoolLikeGetter[K]) isLiteral() bool {
@@ -1278,7 +1278,7 @@ func (g StandardTimeGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardTimeGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardTimeGetter[K]) isLiteral() bool {
@@ -1328,7 +1328,7 @@ func (g StandardDurationGetter[K]) getLiteral() (any, error) {
 	if !g.literal {
 		return nil, errors.New("StandardDurationGetter value is not a literal")
 	}
-	return g.Get(context.TODO(), *new(K))
+	return g.Get(context.Background(), *new(K))
 }
 
 func (g StandardDurationGetter[K]) isLiteral() bool {
