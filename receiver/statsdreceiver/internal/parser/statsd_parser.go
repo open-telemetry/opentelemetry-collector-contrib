@@ -45,10 +45,10 @@ const (
 )
 
 type ObserverCategory struct {
-	method             protocol.ObserverType
-	histogramConfig    structure.Config
-	explicitBuckets    map[string][]float64
-	summaryPercentiles []float64
+	method                protocol.ObserverType
+	histogramConfig       structure.Config
+	explicitBucketConfigs []protocol.ExplicitBucket
+	summaryPercentiles    []float64
 }
 
 var defaultObserverCategory = ObserverCategory{
@@ -221,14 +221,14 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		case protocol.HistogramTypeName, protocol.DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				p.histogramEvents.explicitBuckets = eachMap.Histogram.ExplicitBuckets
+				p.histogramEvents.explicitBucketConfigs = eachMap.Histogram.ExplicitBuckets
 			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				p.histogramEvents.explicitBuckets = eachMap.Histogram.ExplicitBuckets
+				p.histogramEvents.explicitBucketConfigs = eachMap.Histogram.ExplicitBuckets
 			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
@@ -398,32 +398,31 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 			var eb *explicitBucket
 
 			if existing, ok := instrument.histograms[parsedMetric.description]; ok {
-				if category.explicitBuckets != nil {
+				if existing.explicitBucket != nil {
 					eb = existing.explicitBucket
 				} else {
 					agg = existing.agg
 				}
 			} else {
-				matchedMetrics := ""
-				if category.explicitBuckets != nil {
-					for key := range category.explicitBuckets {
-						re, err := regexp.Compile(key)
+				var matchedConfig *protocol.ExplicitBucket
+				if category.explicitBucketConfigs != nil {
+					for _, config := range category.explicitBucketConfigs {
+						re, err := regexp.Compile(config.MatcherPattern)
 						if err != nil {
 							return fmt.Errorf("invalid regexp for explicit buckets: %w", err)
 						}
 
 						if re.MatchString(parsedMetric.description.name) {
-							fmt.Println("Matched explicit buckets for", parsedMetric.description.name, "with key", key)
-							matchedMetrics = key
+							matchedConfig = &config
 							break
 						}
 					}
 				}
 
 				hm := histogramMetric{}
-				if matchedMetrics != "" {
+				if matchedConfig != nil {
 					eb = new(explicitBucket)
-					eb.Init(category.explicitBuckets[parsedMetric.description.name])
+					eb.Init(matchedConfig.Buckets)
 					hm.explicitBucket = eb
 				} else {
 					agg = new(histogramStructure)
