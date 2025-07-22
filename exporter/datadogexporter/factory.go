@@ -172,7 +172,7 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (*factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	mc, err := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag)
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func defaultClientConfig() confighttp.ClientConfig {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func (*factory) createDefaultConfig() component.Config {
+func (f *factory) createDefaultConfig() component.Config {
 	return datadogconfig.CreateDefaultConfig()
 }
 
@@ -227,7 +227,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *datadogconfig.C
 	return cfg
 }
 
-func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion, agentVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		go func() {
@@ -528,6 +528,7 @@ func (f *factory) createTracesExporter(
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithShutdown(stop),
 	)
 }

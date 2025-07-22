@@ -238,6 +238,13 @@ func (exp *traceExporter) consumeTraces(
 					continue
 				}
 			}
+			// remove the RUM spans from the resource so that they are not exported directly to the backend
+			// this is a temporary fix to avoid duplicates, but eventually we should make the necessary changes to
+			// ReceiveResourceSpans in agent to handle the exclusion of RUM events from the resource spans
+			sspan.Spans().RemoveIf(func(span ptrace.Span) bool {
+				_, isRum := span.Attributes().Get("session.id")
+				return isRum
+			})
 		}
 		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
 		switch src.Kind {
