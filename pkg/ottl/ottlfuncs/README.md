@@ -533,6 +533,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
 - [Year](#year)
