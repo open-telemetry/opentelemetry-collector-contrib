@@ -149,7 +149,7 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == "AWS_MSK_IAM_OAUTHBEARER" {
 		saramaConfig.Net.TLS.Config = &tls.Config{}
 		saramaConfig.Net.TLS.Enable = true
-	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == OIDC_FILE {
+	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == OIDCFILE {
 		saramaConfig.Net.TLS.Enable = true
 	}
 	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)

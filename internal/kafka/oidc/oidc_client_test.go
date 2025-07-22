@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package oidc // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+
 import (
 	"context"
 	"crypto/rand"
@@ -10,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,7 +19,6 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +34,7 @@ func (m *MockOAuthProvider) Signin(clientID, scope string, requestedAuthority ..
 	return nil, errors.New("MockSignin function not defined")
 }
 
-func (m *MockOAuthProvider) Name() string {
+func (*MockOAuthProvider) Name() string {
 	return "mock"
 }
 
@@ -49,14 +48,14 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 
 	oidcServerQuit := make(chan any)
 	go func() {
-		oidcServer(oidcServerQuit, clientID, string(clientSecret), 10, 10)
+		oidcServer(oidcServerQuit, clientID, string(clientSecret), 10)
 	}()
 	defer func() {
 		oidcServerQuit <- true
 	}()
 
 	time.Sleep(3 * time.Second) // wait for OIDC to fully start
-	tokenURL := "http://127.0.0.1:3000/oidc"
+	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{"mock-scope"}, 0)
 
@@ -133,42 +132,42 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 // 	assert.NotEqual(t, token1, token2)
 // }
 
-func oidcServer(ch <-chan any, clientID, clientSecret string, accessTTLsecs, refreshTTLsecs int) {
-	// Create RSA Private Key for token signing
-	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+// func OLDoidcServer(ch <-chan any, clientID, clientSecret string, accessTTLsecs, refreshTTLsecs int) {
+// 	// Create RSA Private Key for token signing
+// 	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 
-	m, _ := mockoidc.NewServer(rsaKey)
-	m.ClientID = clientID
-	m.ClientSecret = clientSecret
-	m.AccessTTL = time.Duration(accessTTLsecs) * time.Second
-	m.RefreshTTL = time.Duration(refreshTTLsecs) * time.Second
+// 	m, _ := mockoidc.NewServer(rsaKey)
+// 	m.ClientID = clientID
+// 	m.ClientSecret = clientSecret
+// 	m.AccessTTL = time.Duration(accessTTLsecs) * time.Second
+// 	m.RefreshTTL = time.Duration(refreshTTLsecs) * time.Second
 
-	middleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			fmt.Fprintf(os.Stderr, "\n-------- oidcServer: before next.ServerHTTP(): request URL is %v\n", req.URL)
-			// custom middleware logic here ...
-			next.ServeHTTP(rw, req)
-			fmt.Fprintf(os.Stderr, "\n-------- oidcServer: after next.ServeHTTP(): request URL is %v\n", req.URL)
-			// custom middleware logic here...
-		})
-	}
-	m.AddMiddleware(middleware)
+// 	middleware := func(next http.Handler) http.Handler {
+// 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+// 			fmt.Fprintf(os.Stderr, "\n-------- oidcServer: before next.ServerHTTP(): request URL is %v\n", req.URL)
+// 			// custom middleware logic here ...
+// 			next.ServeHTTP(rw, req)
+// 			fmt.Fprintf(os.Stderr, "\n-------- oidcServer: after next.ServeHTTP(): request URL is %v\n", req.URL)
+// 			// custom middleware logic here...
+// 		})
+// 	}
+// 	m.AddMiddleware(middleware)
 
-	ln, _ := net.Listen("tcp", "127.0.0.1:3000")
+// 	ln, _ := net.Listen("tcp", "127.0.0.1:3000")
 
-	err := m.Start(ln, nil) // specify nil for tlsConfig to use HTTP
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not start server: %v\n", err)
-		os.Exit(1)
-	}
-	defer m.Shutdown()
+// 	err := m.Start(ln, nil) // specify nil for tlsConfig to use HTTP
+// 	if err != nil {
+// 		fmt.Fprintf(os.Stderr, "could not start server: %v\n", err)
+// 		os.Exit(1)
+// 	}
+// 	defer m.Shutdown()
 
-	// cfg := m.Config()
-	// fmt.Printf("%s\n", litter.Sdump(cfg))
+// 	// cfg := m.Config()
+// 	// fmt.Printf("%s\n", litter.Sdump(cfg))
 
-	<-ch
-	fmt.Fprintf(os.Stderr, "oidcServer shutting down\n")
-}
+// 	<-ch
+// 	fmt.Fprintf(os.Stderr, "oidcServer shutting down\n")
+// }
 
 func k8sSecretFile() (string, error) {
 	k8sSAtoken := `eyJhbGciOiJSUzI1NiIsImtpZCI6IjdjdDhhT0pTSXh0Zm0yUVprUVRXaFpTVFpHUlQ0MlFkbDMzQXQ1XzRURkkifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzg0Mzk4Mzk5LCJpYXQiOjE3NTI4NjIzOTksImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiNTE3Zjg4ZDUtOTNjZC00YWIzLWFkZWItY2NiZjExMDdmZGYxIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJ0ZXN0Iiwibm9kZSI6eyJuYW1lIjoia2luZC1jb250cm9sLXBsYW5lIiwidWlkIjoiZThjZTczMWMtMmZjNC00NWZjLWJjNzItMzdhYTgyNDQzN2EwIn0sInBvZCI6eyJuYW1lIjoib2lkYy1zZXJ2ZXIteDU4bm4iLCJ1aWQiOiJmM2Q3YTBkZC04Yzk3LTRkNTgtOGYyYy01ZDRiNThjMmY5NDIifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImRlZmF1bHQiLCJ1aWQiOiIwZjc1MTJhNi00ZjhkLTQxYjAtOTM4NC1mYWE4YzlmZWUxMWYifSwid2FybmFmdGVyIjoxNzUyODY2MDA2fSwibmJmIjoxNzUyODYyMzk5LCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6dGVzdDpkZWZhdWx0In0.A8eDX9Wz6aoAwO-Vrg2ddbxJ5d7r3pdg8J6D4gyHPNQLRmBcZHaWagRKJTZ3gDYvT_u_hCG5RJrHARt9MncftPJ5_gdRyXckbd9a9dcSSRVxFEPzdaUR6GSmTmI2sUwhU33AnWmRqlOlZW_WtslPGXl8tNsfDLfpvabjAuBFJrb7KB8MvzXVNvVcJ8BmM4oglX3e3xIxLBzSSQFkW9OGdmeWFsMh-lNaHpzXQGaZx3W2Wit2SUigbDDSJPCTs_tFMdPv-LW0AH9eRd5yU_j87gEsapu_u5j6qcNku-3g79LcGoIvTqe8QdSI7OeoWVnD05SjfAoyHhR-aoMJtSCOQg`
@@ -204,13 +203,15 @@ type ErrorResponse struct {
 }
 
 const (
-	PORT = 8080
+	PORT = 3000
 )
 
 var (
 	privateKey      *rsa.PrivateKey
 	publicKey       *rsa.PublicKey
 	tokenExpireSecs int
+	clientID        string
+	clientSecret    string
 )
 
 func init() {
@@ -226,68 +227,86 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		err := json.NewEncoder(w).Encode(ErrorResponse{
 			Error:            "invalid_request",
 			ErrorDescription: "Method not allowed",
 		})
+		if err != nil {
+			log.Printf("could not encode error response: %v", err)
+		}
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		err := json.NewEncoder(w).Encode(ErrorResponse{
 			Error:            "invalid_request",
 			ErrorDescription: "Failed to parse form data",
 		})
+		if err != nil {
+			log.Printf("could not encode error response: %v", err)
+		}
 		return
 	}
 
 	grantType := r.FormValue("grant_type")
-	clientID := r.FormValue("client_id")
-	clientSecret := r.FormValue("client_secret")
+	submittedClientID := r.FormValue("client_id")
+	submittedClientSecret := r.FormValue("client_secret")
 	scope := r.FormValue("scope")
 
 	if grantType != "client_credentials" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		err := json.NewEncoder(w).Encode(ErrorResponse{
 			Error:            "unsupported_grant_type",
 			ErrorDescription: "Only client_credentials grant type is supported",
 		})
+		if err != nil {
+			log.Printf("could not encode error response: %v", err)
+		}
 		return
 	}
 
-	if clientID == "" || clientSecret == "" {
+	if submittedClientID == "" || submittedClientSecret == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		err := json.NewEncoder(w).Encode(ErrorResponse{
 			Error:            "invalid_client",
 			ErrorDescription: "Client ID and secret are required",
 		})
+		if err != nil {
+			log.Printf("could not encode error response: %v", err)
+		}
 		return
 	}
 
 	// Simple client validation (in production, use proper authentication)
-	if !validateClient(clientID, clientSecret) {
+	if !validateClient(submittedClientID, submittedClientSecret) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		err := json.NewEncoder(w).Encode(ErrorResponse{
 			Error:            "invalid_client",
 			ErrorDescription: "Invalid client credentials",
 		})
+		if err != nil {
+			log.Printf("could not encode error response: %v", err)
+		}
 		return
 	}
 
 	// Generate JWT token
-	token, err := generateJWTToken(clientID, scope)
+	token, err := generateJWTToken(submittedClientID, scope)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		encodeErr := json.NewEncoder(w).Encode(ErrorResponse{
 			Error:            "server_error",
 			ErrorDescription: "Failed to generate token",
 		})
+		if encodeErr != nil {
+			log.Printf("could not encode error response: %v", encodeErr)
+		}
 		return
 	}
 
@@ -300,15 +319,17 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Printf("could not encode response: %v", err)
+	}
 }
 
 func validateClient(clientID, clientSecret string) bool {
-	// Simple hardcoded validation for demo purposes
-	// In production, validate against a database or external service
 	validClients := map[string]string{
-		"test_client": "test_secret",
-		"demo_client": "demo_secret",
+		clientID: clientSecret,
+		// "test_client": "test_secret",
+		// "demo_client": "demo_secret",
 	}
 
 	expectedSecret, exists := validClients[clientID]
@@ -336,14 +357,33 @@ func generateJWTToken(clientID, scope string) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-func main() {
-	tokenExpireSecs = 3600
-
-	http.HandleFunc("/token", tokenHandler)
+func oidcServer(ch <-chan any, cid, csecret string, accessTTLsecs int) {
+	tokenExpireSecs = accessTTLsecs
+	clientID = cid
+	clientSecret = csecret
 
 	fmt.Printf("OIDC Mock Server starting on :%d\n", PORT)
-	fmt.Printf("Token endpoint: http://localhost:%d/token\n", PORT)
-	fmt.Println("Valid clients: test_client/test_secret, demo_client/demo_secret")
+	// fmt.Printf("Token endpoint: http://localhost:%d/token\n", PORT)
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", PORT), nil))
+	http.HandleFunc("/token", tokenHandler)
+	// log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", PORT), nil))
+
+	s := &http.Server{
+		Addr:              fmt.Sprintf(":%d", PORT),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+	}
+	err := s.ListenAndServe()
+	if err != nil {
+		log.Fatalf("could not start OIDC server: %v", err)
+	}
+	defer func() {
+		err := s.Shutdown(context.Background())
+		if err != nil {
+			log.Fatalf("error shutting down OIDC server: %v", err)
+		}
+	}()
+
+	<-ch
+	fmt.Fprintf(os.Stderr, "oidcServer shutting down\n")
 }
