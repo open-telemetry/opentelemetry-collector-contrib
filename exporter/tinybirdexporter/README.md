@@ -20,7 +20,7 @@ Tinybird is a real-time analytics platform for ingesting, transforming, and serv
 
 ## Quick Start
 
-Looking for a quick start? Check our [Open Telemetry Template](https://github.com/tinybirdco/tinybird-otel-template)! where you will find a ready-to-go template to use the Tinybird Open Telemetry Exporter. 
+Looking for a quick start? Check out our [Open Telemetry Template](https://github.com/tinybirdco/tinybird-otel-template), which provides a ready-to-use example for configuring the Tinybird OpenTelemetry Exporter.
 
 ## Configuration
 
