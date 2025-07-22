@@ -494,7 +494,7 @@ func setAttributes(flatPayload map[string]any, attributes pcommon.Map) {
 			if o, ok := val.(map[string]any); ok {
 				objVal := attributes.PutEmptyMap(meta.OTLPName)
 				for k, v := range o {
-					objVal.PutStr(meta.OTLPName+k, v.(string))
+					objVal.PutStr(k, fmt.Sprintf("%v", v))
 				}
 			}
 		case ArrayAttribute:
