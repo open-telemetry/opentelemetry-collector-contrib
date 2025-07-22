@@ -120,13 +120,21 @@ var signalTestCases = []struct {
 	{
 		name: "with_deprecated_batcher",
 		cfg: map[string]any{
-			"endpoints": []string{"http://test:9200"},
 			"batcher": map[string]any{
 				"enabled": true,
 			},
 		},
 		expectedLogs: []string{
 			"batcher has been deprecated",
+		},
+	},
+	{
+		name: "with_sending_queue",
+		cfg: map[string]any{
+			"sending_queue": map[string]any{
+				"enabled": true,
+				"batch":   map[string]any{},
+			},
 		},
 	},
 	{
