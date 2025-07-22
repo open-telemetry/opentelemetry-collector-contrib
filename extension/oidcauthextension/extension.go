@@ -161,9 +161,7 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 
 func (e *oidcExtension) resolveProvider(issuer string) (*ProviderContainer, error) {
 	if len(e.providerContainers) == 1 {
-		for _, providerContainer := range e.providerContainers {
-			return providerContainer, nil
-		}
+		return e.providerContainers[0], nil
 	}
 	providerContainer, ok := e.providerContainers[issuer]
 	if !ok {
