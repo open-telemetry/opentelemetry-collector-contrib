@@ -279,6 +279,8 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 		Filter: &filter,
 	}
 
+	tagsFilterMap := getTagsFilterMap(s.cfg.AppendTagsAsAttributes)
+
 	pager := clientResources.NewListPager(opts)
 
 	for pager.More() {
@@ -300,7 +302,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 				}
 				s.resources[subscriptionID][*resource.ID] = &azureResource{
 					attributes:   attributes,
-					tags:         filterResourceTags(s.cfg.AppendTagsAsAttributes, resource.Tags),
+					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
 					resourceType: resource.Type,
 				}
 			}
@@ -563,22 +565,27 @@ func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
 	return got, false
 }
 
+// getTagsFilterMap returns a map used to filter tags.
+// Each user-configured tag key is normalized to lowercase and added to the map for case-insensitive lookup.
+func getTagsFilterMap(appendTagsAsAttributes []string) (tagsFilterMap map[string]struct{}) {
+	tagsFilterMap = make(map[string]struct{}, len(appendTagsAsAttributes))
+	for _, v := range appendTagsAsAttributes {
+		tagsFilterMap[strings.ToLower(v)] = struct{}{}
+	}
+	return tagsFilterMap
+}
+
 // filterResourceTags filter out resource tags according to configured tag list (append_tags_as_attributes)
-func filterResourceTags(tagFilterList []string, resourceTags map[string]*string) map[string]*string {
-	// wildcard check. Include all tags if wildcard found
-	for _, tag := range tagFilterList {
-		if strings.EqualFold(tag, "*") {
-			return resourceTags
-		}
+func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[string]*string) map[string]*string {
+	if _, includeAll := tagFilterList["*"]; includeAll {
+		return resourceTags
 	}
 
 	// wildcard not found. include only configured tags
 	includedTags := make(map[string]*string, len(resourceTags))
 	for tagName, value := range resourceTags {
-		for _, tag := range tagFilterList {
-			if strings.EqualFold(tagName, tag) {
-				includedTags[tagName] = value
-			}
+		if _, ok := tagFilterList[strings.ToLower(tagName)]; ok {
+			includedTags[tagName] = value
 		}
 	}
 

@@ -233,6 +233,8 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 		Filter: &filter,
 	}
 
+	tagsFilterMap := getTagsFilterMap(s.cfg.AppendTagsAsAttributes)
+
 	resourceTypes := map[string]*azureType{}
 	pager := clientResources.NewListPager(opts)
 
@@ -256,7 +258,7 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 				}
 				s.resources[subscriptionID][*resource.ID] = &azureResource{
 					attributes:   attributes,
-					tags:         filterResourceTags(s.cfg.AppendTagsAsAttributes, resource.Tags),
+					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
 					resourceType: resource.Type,
 				}
 				if resourceTypes[*resource.Type] == nil {
