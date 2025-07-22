@@ -66,7 +66,6 @@ body:
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
-      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
