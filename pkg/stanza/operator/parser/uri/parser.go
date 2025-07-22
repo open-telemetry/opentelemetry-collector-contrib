@@ -42,7 +42,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a uri from a field and attach it to an entry.
-func (p *Parser) parse(value any) (any, error) {
+func (*Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
 		return parseutils.ParseURI(m, semconvCompliantFeatureGate.IsEnabled())

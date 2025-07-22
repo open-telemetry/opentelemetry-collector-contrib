@@ -152,7 +152,7 @@ func getPromLabels(lbs ...string) []prompb.Label {
 	return pbLbs.Labels
 }
 
-func getLabel(name string, value string) prompb.Label {
+func getLabel(name, value string) prompb.Label {
 	return prompb.Label{
 		Name:  name,
 		Value: value,
@@ -401,7 +401,7 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	return metric
 }
 
-func getQuantiles(bounds []float64, values []float64) pmetric.SummaryDataPointValueAtQuantileSlice {
+func getQuantiles(bounds, values []float64) pmetric.SummaryDataPointValueAtQuantileSlice {
 	quantiles := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	quantiles.EnsureCapacity(len(bounds))
 

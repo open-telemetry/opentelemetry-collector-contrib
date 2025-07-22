@@ -11,7 +11,7 @@ import (
 
 type mockMetadataExporter struct{}
 
-func (m *mockMetadataExporter) ConsumeMetadata(_ []*MetadataUpdate) error {
+func (*mockMetadataExporter) ConsumeMetadata(_ []*MetadataUpdate) error {
 	return nil
 }
 

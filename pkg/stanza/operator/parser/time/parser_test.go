@@ -498,11 +498,11 @@ func makeTestEntry(t *testing.T, field entry.Field, value any) *entry.Entry {
 	return e
 }
 
-func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time) func(*testing.T) {
+func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr, parseErr bool, expected time.Time) func(*testing.T) {
 	return runLossyTimeParseTest(t, cfg, ent, buildErr, parseErr, expected, time.Duration(0))
 }
 
-func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
+func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)

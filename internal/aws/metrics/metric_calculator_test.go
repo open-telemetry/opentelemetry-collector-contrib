@@ -288,7 +288,7 @@ type fakeTicker struct {
 }
 
 func (f *fakeTicker) C() <-chan time.Time { return f.ch }
-func (f *fakeTicker) Stop()               {}
+func (*fakeTicker) Stop()                 {}
 
 func newFakeTicker() (*fakeTicker, func(time.Time)) {
 	ch := make(chan time.Time, 10)

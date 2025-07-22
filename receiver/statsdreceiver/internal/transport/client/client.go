@@ -19,7 +19,7 @@ type StatsD struct {
 
 // NewStatsD creates a new StatsD instance to support the need for testing
 // the statsdreceiver package and is not intended/tested to be used in production.
-func NewStatsD(transport string, address string) (*StatsD, error) {
+func NewStatsD(transport, address string) (*StatsD, error) {
 	statsd := &StatsD{
 		transport: transport,
 		address:   address,

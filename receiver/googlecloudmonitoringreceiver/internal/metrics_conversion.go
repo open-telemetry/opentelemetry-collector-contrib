@@ -226,10 +226,34 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 			continue
 		}
 
-		countTotal := uint64(0)
 		targetBucketCounts := targetDataPoint.BucketCounts()
-		targetBucketCounts.EnsureCapacity(len(sourceBucketCounts))
-		for _, bucketCount := range sourceBucketCounts {
+
+		// The number of elements in bucket_counts array must be by one greater than the number of elements in explicit_bounds array.
+		lenBounds := targetDataPoint.ExplicitBounds().Len()
+		lenCounts := lenBounds + 1
+
+		// The exception to this rule is when the length of bucket_counts is 0, then the length of explicit_bounds must also be 0.
+		// Google says this case should never happen, but you never know...
+		if lenBounds == 0 {
+			// A Histogram without buckets conveys a population in terms of only the sum and count, and may be interpreted as a
+			// histogram with single bucket covering (-Inf, +Inf).
+			targetDataPoint.SetCount(uint64(distributionValue.GetCount()))
+			continue
+		}
+
+		targetBucketCounts.EnsureCapacity(lenCounts)
+		countTotal := uint64(0)
+		for i := range lenCounts {
+			if i >= len(sourceBucketCounts) {
+				// If present, `bucket_counts` should contain N values, where N is the number
+				// of buckets specified in `bucket_options`. If you supply fewer than N
+				// values, the remaining values are assumed to be 0.
+				// (see https://pkg.go.dev/google.golang.org/genproto/googleapis/api/distribution#Distribution)
+				targetBucketCounts.Append(0)
+				continue
+			}
+
+			bucketCount := sourceBucketCounts[i]
 			if bucketCount >= 0 {
 				targetBucketCounts.Append(uint64(bucketCount))
 				countTotal += uint64(bucketCount)
