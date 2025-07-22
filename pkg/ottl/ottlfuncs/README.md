@@ -2513,6 +2513,14 @@ results in
 
 The `UUID` function generates a v4 uuid string.
 
+### UUIDv7
+
+`UUIDv7()`
+
+The `UUIDv7` function generates a version 7 UUID using the current Unix epoch timestamp.
+
+The returned type is `string`.
+
 ### Values
 
 `Values(target)` converts a `pcommon.Map` into a slice containing its values.
