@@ -4,8 +4,8 @@ status:
   disable_codecov_badge: true
   class: extension
   stability:
-    development: [extension]
-  distributions: []
+    alpha: [extension]
+  distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy, atoulme]
 

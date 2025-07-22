@@ -93,6 +93,7 @@ components:
         - pprof
         - redis_storage
         - sigv4auth
+        - text_encoding
     processor:
         - attributes
         - cumulativetodelta
