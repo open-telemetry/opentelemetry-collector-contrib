@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+package oidc // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/oidc"
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-type oidcFileTokenProvider struct {
+type OIDCfileTokenProvider struct {
 	Ctx                  context.Context
 	ClientID             string
 	ClientSecretFilePath string
@@ -41,10 +41,10 @@ type oidcFileTokenProvider struct {
 	AuthStyle      oauth2.AuthStyle
 }
 
-func NewOIDCFileTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
+func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
 	scopes []string, refreshAhead time.Duration,
 ) sarama.AccessTokenProvider {
-	return &oidcFileTokenProvider{
+	return &OIDCfileTokenProvider{
 		Ctx:                  ctx,
 		ClientID:             clientID,
 		ClientSecretFilePath: clientSecretFilePath,
@@ -53,7 +53,7 @@ func NewOIDCFileTokenProvider(ctx context.Context, clientID, clientSecretFilePat
 	}
 }
 
-func (p *oidcFileTokenProvider) Token() (*sarama.AccessToken, error) {
+func (p *OIDCfileTokenProvider) Token() (*sarama.AccessToken, error) {
 	oauthTok, err := p.GetToken()
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (p *oidcFileTokenProvider) Token() (*sarama.AccessToken, error) {
 	return &sarama.AccessToken{Token: oauthTok.AccessToken}, nil
 }
 
-func (p *oidcFileTokenProvider) updateToken() (*oauth2.Token, error) {
+func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -104,7 +104,7 @@ func (p *oidcFileTokenProvider) updateToken() (*oauth2.Token, error) {
 	return oauthTok, nil
 }
 
-func (p *oidcFileTokenProvider) GetToken() (*oauth2.Token, error) {
+func (p *OIDCfileTokenProvider) GetToken() (*oauth2.Token, error) {
 	p.mu.RLock()
 	token := p.cachedToken
 	expires := p.tokenExpiry
@@ -127,7 +127,7 @@ func (p *oidcFileTokenProvider) GetToken() (*oauth2.Token, error) {
 	return newToken, nil
 }
 
-func (p *oidcFileTokenProvider) startBackgroundRefresher() {
+func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 	log.Printf("Will refresh access token for client %s and scope %s, %s before expiry",
 		p.ClientID, p.Scopes[0], p.refreshAhead.String())
 	p.backgroundOnce.Do(func() {

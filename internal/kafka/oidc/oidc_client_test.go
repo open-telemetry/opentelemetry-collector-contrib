@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+package oidc // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 import (
 	"context"
 	"crypto/rand"
@@ -55,7 +55,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	time.Sleep(3 * time.Second) // wait for OIDC to fully start
 	tokenURL := "http://127.0.0.1:3000/oidc"
 
-	oidcProvider := NewOIDCFileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{"mock-scope"}, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{"mock-scope"}, 0)
 
 	token, err := oidcProvider.Token()
 	require.NoError(t, err)
