@@ -855,6 +855,7 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
 		return a.Scope().Name() < b.Scope().Name()
 	})
+
 	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
 	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
 	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
@@ -866,4 +867,12 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
 	require.True(t, found)
 	require.Equal(t, "bear", scopeAttrVal.Str())
+
+	// Check that otel_scope_name and otel_scope_version are dropped from metric data point attributes
+	require.Equal(t, 1, sms.At(0).Metrics().Len())
+	metric := sms.At(0).Metrics().At(0)
+	dp := metric.Gauge().DataPoints().At(0)
+	require.Equal(t, 1, dp.Attributes().Len(), "Should only have 'area' attribute")
+	_, found = dp.Attributes().Get("area")
+	require.True(t, found, "Should only have 'area' attribute")
 }
