@@ -31,11 +31,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
-type MockDetector struct {
+type mockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (p *mockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
@@ -151,7 +151,7 @@ func TestResourceProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := &factory{providers: map[component.ID]*internal.ResourceProvider{}}
 
-			md1 := &MockDetector{}
+			md1 := &mockDetector{}
 			res := pcommon.NewResource()
 			require.NoError(t, res.Attributes().FromRaw(tt.detectedResource))
 			md1.On("Detect").Return(res, tt.detectedError)

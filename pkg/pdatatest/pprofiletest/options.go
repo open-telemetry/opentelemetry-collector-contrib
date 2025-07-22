@@ -120,7 +120,7 @@ func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofil
 	opt.maskProfileTimestampValues(actual)
 }
 
-func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
+func (ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		sls := rls.At(i).ScopeProfiles()
@@ -128,7 +128,7 @@ func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles ppro
 			lrs := sls.At(j).Profiles()
 			for k := 0; k < lrs.Len(); k++ {
 				lr := lrs.At(k)
-				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
+				lr.SetTime(pcommon.NewTimestampFromTime(time.Time{}))
 				lr.SetDuration(pcommon.NewTimestampFromTime(time.Time{}))
 			}
 		}
@@ -188,8 +188,8 @@ func sortProfileSlices(ls pprofile.Profiles) {
 	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
 		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
 			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.Profile) bool {
-				if a.StartTime() != b.StartTime() {
-					return a.StartTime() < b.StartTime()
+				if a.Time() != b.Time() {
+					return a.Time() < b.Time()
 				}
 				if a.Duration() != b.Duration() {
 					return a.Duration() < b.Duration()

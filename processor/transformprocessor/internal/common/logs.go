@@ -25,7 +25,7 @@ type logStatements struct {
 	expr.BoolExpr[ottllog.TransformContext]
 }
 
-func (l logStatements) Context() ContextID {
+func (logStatements) Context() ContextID {
 	return Log
 }
 

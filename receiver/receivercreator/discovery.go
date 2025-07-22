@@ -180,18 +180,23 @@ func getScraperConfFromAnnotations(
 	defaultEndpoint, scopeSuffix string,
 	logger *zap.Logger,
 ) (userConfigMap, error) {
-	conf := userConfigMap{}
-	conf[endpointConfigKey] = defaultEndpoint
-
 	configStr, found := getHintAnnotation(annotations, otelMetricsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {
-		return conf, nil
+		// defaultEndpoint will be added properly later in observerHandler.startReceiver method
+		return userConfigMap{}, nil
 	}
+	conf := userConfigMap{}
 	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
 		return userConfigMap{}, fmt.Errorf("could not unmarshal configuration from hint: %v", zap.Error(err))
 	}
 
-	val := conf[endpointConfigKey]
+	var val any
+	var endpointSet bool
+	if val, endpointSet = conf[endpointConfigKey]; !endpointSet {
+		// skip endpoint's validation if there is no user provided endpoint
+		// defaultEndpoint will be added properly later in observerHandler.startReceiver method
+		return conf, nil
+	}
 	confEndpoint, ok := val.(string)
 	if !ok {
 		logger.Debug("could not extract configured endpoint")
@@ -243,7 +248,7 @@ func createLogsConfig(
 	return defaultConfMap
 }
 
-func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
+func getHintAnnotation(annotations map[string]string, hintBase, hintKey, suffix string) (string, bool) {
 	// try to scope the hint more on container level by suffixing
 	// with .<port> in case of Port event or .<container_name> in case of Pod Container event
 	containerLevelHint, ok := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
@@ -256,7 +261,7 @@ func getHintAnnotation(annotations map[string]string, hintBase string, hintKey s
 	return podLevelHint, ok
 }
 
-func discoveryEnabled(annotations map[string]string, hintBase string, scopeSuffix string) bool {
+func discoveryEnabled(annotations map[string]string, hintBase, scopeSuffix string) bool {
 	enabledHint, found := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
 	if !found {
 		return false

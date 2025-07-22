@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//revive:disable:unused-parameter
+
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
@@ -36,16 +38,16 @@ func createMetricsReceiver(
 	return rcvr, nil
 }
 
-func newMetricsReceiver(_ *Config, _ consumer.Metrics) *windowsServiceReceiver {
+func newMetricsReceiver(*Config, consumer.Metrics) *windowsServiceReceiver {
 	return &windowsServiceReceiver{}
 }
 
 type windowsServiceReceiver struct{}
 
-func (r *windowsServiceReceiver) Start(_ context.Context, _ component.Host) error {
+func (*windowsServiceReceiver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (r *windowsServiceReceiver) Shutdown(_ context.Context) error {
+func (*windowsServiceReceiver) Shutdown(context.Context) error {
 	return nil
 }

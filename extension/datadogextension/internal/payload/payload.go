@@ -75,12 +75,12 @@ func (p *OtelCollectorPayload) MarshalJSON() ([]byte, error) {
 }
 
 // SplitPayload implements marshaler.AbstractMarshaler#SplitPayload.
-func (p *OtelCollectorPayload) SplitPayload(_ int) ([]marshaler.AbstractMarshaler, error) {
+func (*OtelCollectorPayload) SplitPayload(int) ([]marshaler.AbstractMarshaler, error) {
 	return nil, errors.New(payloadSplitErr)
 }
 
-// PrepareOtelCollectorPayload takes metadata from various config values and prepares an OtelCollector payload
-func PrepareOtelCollectorPayload(
+// PrepareOtelCollectorMetadata takes metadata from various config values and prepares an OtelCollector payload
+func PrepareOtelCollectorMetadata(
 	hostname,
 	hostnameSource,
 	extensionUUID,

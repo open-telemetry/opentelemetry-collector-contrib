@@ -26,7 +26,7 @@ func TestPerRPCAuth(t *testing.T) {
 	// test meta data is properly
 	bauth := newBearerTokenAuth(cfg, nil)
 	assert.NotNil(t, bauth)
-	perRPCAuth := &PerRPCAuth{auth: bauth}
+	perRPCAuth := &perRPCAuth{auth: bauth}
 	md, err := perRPCAuth.GetRequestMetadata(context.Background())
 	assert.NoError(t, err)
 	expectedMetadata := map[string]string{
@@ -41,7 +41,7 @@ func TestPerRPCAuth(t *testing.T) {
 
 type mockRoundTripper struct{}
 
-func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
 	for k, v := range req.Header {
 		resp.Header.Set(k, v[0])

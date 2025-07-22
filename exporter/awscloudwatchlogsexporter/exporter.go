@@ -113,7 +113,7 @@ func (e *cwlExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
 	return errs
 }
 
-func (e *cwlExporter) shutdown(_ context.Context) error {
+func (*cwlExporter) shutdown(context.Context) error {
 	return nil
 }
 

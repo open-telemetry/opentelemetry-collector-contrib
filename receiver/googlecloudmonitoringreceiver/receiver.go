@@ -107,7 +107,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
 
 		// Get the filter query for the metric
-		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metricType)
+		filterQuery = fmt.Sprintf(`metric.type = %q`, metricType)
 
 		// Define the request to list time series data
 		tsReq := &monitoringpb.ListTimeSeriesRequest{
@@ -122,7 +122,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 		// Create an iterator for the time series data
 		tsIter := mr.client.ListTimeSeries(ctx, tsReq)
-		mr.logger.Debug("Retrieving time series data")
+		mr.logger.Debug("Retrieving time series data for metric", zap.String("name", metricDesc.Type))
 
 		// Iterate over the time series data
 		for {
@@ -237,7 +237,7 @@ func getFilterQuery(metric MetricConfig) string {
 
 	// see https://cloud.google.com/monitoring/api/v3/filters
 	if metric.MetricName != "" {
-		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metric.MetricName)
+		filterQuery = fmt.Sprintf(`metric.type = %q`, metric.MetricName)
 	} else {
 		filterQuery = metric.MetricDescriptorFilter
 	}
@@ -274,7 +274,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 			}
 			if timeSeries.GetMetadata().GetSystemLabels() != nil {
 				for k, v := range timeSeries.GetMetadata().GetSystemLabels().GetFields() {
-					resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+					resource.Attributes().PutStr(k, v.String())
 				}
 			}
 		}
@@ -282,7 +282,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		// Add metric-specific labels if they are present
 		if len(timeSeries.GetMetric().Labels) > 0 {
 			for k, v := range timeSeries.GetMetric().GetLabels() {
-				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+				resource.Attributes().PutStr(k, v)
 			}
 		}
 
@@ -307,19 +307,28 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 	m.SetDescription(metricDesc.GetDescription())
 	m.SetUnit(metricDesc.Unit)
 
-	// Convert the TimeSeries to the appropriate metric type
-	switch timeSeries.GetMetricKind() {
-	case metric.MetricDescriptor_GAUGE:
-		mr.metricsBuilder.ConvertGaugeToMetrics(timeSeries, m)
-	case metric.MetricDescriptor_CUMULATIVE:
-		mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
-	case metric.MetricDescriptor_DELTA:
-		mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
-	// TODO: Add support for HISTOGRAM
-	// TODO: Add support for EXPONENTIAL_HISTOGRAM
+	switch timeSeries.GetValueType() {
+	case metric.MetricDescriptor_DISTRIBUTION:
+		switch timeSeries.GetMetricKind() {
+		case metric.MetricDescriptor_DELTA:
+			mr.metricsBuilder.ConvertDistributionToMetrics(timeSeries, m)
+		default:
+			metricError := fmt.Sprintf("\n Unsupported distribution metric kind: %v\n", timeSeries.GetMetricKind())
+			mr.logger.Warn(metricError)
+		}
 	default:
-		metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
-		mr.logger.Warn(metricError)
+		// Convert the TimeSeries to the appropriate metric type
+		switch timeSeries.GetMetricKind() {
+		case metric.MetricDescriptor_GAUGE:
+			mr.metricsBuilder.ConvertGaugeToMetrics(timeSeries, m)
+		case metric.MetricDescriptor_CUMULATIVE:
+			mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
+		case metric.MetricDescriptor_DELTA:
+			mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
+		default:
+			metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
+			mr.logger.Warn(metricError)
+		}
 	}
 }
 

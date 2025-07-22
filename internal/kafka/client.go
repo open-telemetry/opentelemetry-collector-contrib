@@ -77,7 +77,7 @@ func NewSaramaConsumerGroup(
 	if rebalanceStrategy != nil {
 		saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
 	}
-	if len(consumerConfig.GroupInstanceID) > 0 {
+	if consumerConfig.GroupInstanceID != "" {
 		saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
 	}
 	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
@@ -120,6 +120,7 @@ func setSaramaProducerConfig(
 // newSaramaClientConfig returns a Sarama client config, based on the given config.
 func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
 	saramaConfig := sarama.NewConfig()
+	saramaConfig.ClientID = config.ClientID
 	saramaConfig.Metadata.Full = config.Metadata.Full
 	saramaConfig.Metadata.RefreshFrequency = config.Metadata.RefreshInterval
 	saramaConfig.Metadata.Retry.Max = config.Metadata.Retry.Max
@@ -147,7 +148,7 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 		}
 	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == "AWS_MSK_IAM_OAUTHBEARER" {
 		saramaConfig.Net.TLS.Config = &tls.Config{}
-		saramaConfig.Net.SASL.Enable = true
+		saramaConfig.Net.TLS.Enable = true
 	}
 	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil

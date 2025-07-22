@@ -12,6 +12,22 @@ metrics:
     enabled: false
 ```
 
+### iis.application_pool.state
+
+The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {state} | Gauge | Int |
+
+### iis.application_pool.uptime
+
+The application pools uptime period since the last restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ms} | Gauge | Int |
+
 ### iis.connection.active
 
 Number of active connections.
@@ -54,9 +70,9 @@ Number of transmitted files.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | false |
 
 ### iis.network.io
 
@@ -68,9 +84,9 @@ Total amount of bytes sent and received.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | false |
 
 ### iis.request.count
 
@@ -82,9 +98,9 @@ Total number of requests of a given type.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` | false |
 
 ### iis.request.queue.age.max
 
@@ -125,32 +141,6 @@ The amount of time the server has been up.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
-### iis.application_pool.state
-
-The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {state} | Gauge | Int |
-
-### iis.application_pool.uptime
-
-The application pools uptime period since the last restart.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ms} | Gauge | Int |
 
 ## Resource Attributes
 

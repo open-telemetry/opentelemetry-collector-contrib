@@ -151,7 +151,7 @@ func TestWAL_persist(t *testing.T) {
 		assert.NoError(t, pwal.stop())
 	})
 
-	require.NoError(t, pwal.persistToWAL(reqL))
+	require.NoError(t, pwal.persistToWAL(ctx, reqL))
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.
@@ -292,6 +292,12 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_write_latency")
+	require.NoError(t, err)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_bytes_written")
+	require.NoError(t, err)
 }
 
 func TestWALRead_Telemetry(t *testing.T) {
@@ -364,6 +370,69 @@ func TestWALRead_Telemetry(t *testing.T) {
 	// Unable to start the WAL cause there is a corrupted entry
 	require.Error(t, err)
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_reads_failures")
+
 	// verify that the metric exists, so it's incremented
+	require.NoError(t, err)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_read_latency")
+	require.NoError(t, err)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_bytes_read")
+	require.NoError(t, err)
+}
+
+func TestWALLag_Telemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background()))
+	})
+	set := metadatatest.NewSettings(tel)
+
+	cfg := &Config{
+		WAL: &WALConfig{
+			Directory:          t.TempDir(),
+			BufferSize:         1,
+			LagRecordFrequency: 10 * time.Millisecond, // Very short interval for testing
+		},
+		TargetInfo:          &TargetInfo{},
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+	}
+
+	// Create a server that will be slow to process requests (to create lag)
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		// Do nothing
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prw, err := newPRWExporter(cfg, set)
+	require.NotNil(t, prw)
+	require.NoError(t, err)
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, prw.Shutdown(context.Background()))
+	})
+
+	// Create test data to write to WAL
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric_1": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric_1"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+
+	// Write multiple metrics to create lag (wIndex will be ahead of rIndex)
+	err = prw.handleExport(context.Background(), metrics, nil)
+	require.NoError(t, err)
+
+	// Wait for lag recording to happen (longer than lagRecordFrequency)
+	time.Sleep(5 * cfg.WAL.LagRecordFrequency)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_lag")
 	require.NoError(t, err)
 }
