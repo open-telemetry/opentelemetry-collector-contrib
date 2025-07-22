@@ -56,9 +56,7 @@ func TestUnmarshalLogs(t *testing.T) {
 				data := readFile(t, "testdata/real_log.json")
 				return bytes.Replace(data, []byte(`"spanId":"3e3a5741b18f0710"`), []byte(`"spanId":"13210305202245662348"`), 1)
 			}(),
-			wantFile: "testdata/invalid_span_expected.yaml",
-			setFlag:  true,
-			cfg:      *createDefaultConfig().(*Config),
+			expectsErr: "failed to handle log entry",
 		},
 	}
 
