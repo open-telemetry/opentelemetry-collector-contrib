@@ -14,7 +14,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/solarwindscloud/apm-proto/go/collectorpb"
+	"github.com/solarwinds/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/extension"
