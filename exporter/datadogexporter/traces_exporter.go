@@ -362,8 +362,10 @@ func buildRumPayload(k string, v pcommon.Value, rumPayload map[string]any) {
 	current := rumPayload
 	for i, part := range parts {
 		if i == len(parts)-1 {
-			if v.Type() == pcommon.ValueTypeSlice || v.Type() == pcommon.ValueTypeMap {
-				current[part] = v.AsString()
+			if v.Type() == pcommon.ValueTypeSlice {
+				current[part] = v.Slice().AsRaw()
+			} else if v.Type() == pcommon.ValueTypeMap {
+				current[part] = v.Map().AsRaw()
 			} else {
 				current[part] = v.AsRaw()
 			}
