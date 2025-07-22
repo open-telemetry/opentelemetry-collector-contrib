@@ -13,9 +13,9 @@
 
 ## Description
 
-The tinybird open telemetry expeorer exports telemetry data to [Tinybird](https://www.tinybird.co/) using the Events API. Tinybird is a real-time analytics platform that allows you to ingest, transform, and serve data at high speed.
+This exporter sends logs, metrics, and traces to [Tinybird](https://www.tinybird.co/) via the [Events API](https://www.tinybird.co/docs/api-reference/events-api).
 
-This exporter supports sending logs, metrics, and traces to Tinybird, where they can be analyzed and queried in real-time.
+Tinybird is a real-time analytics platform for ingesting, transforming, and serving data with low latency and high throughput. Telemetry data sent to Tinybird can be queried and analyzed in real time using SQL.``
 
 
 ## Quick Start
