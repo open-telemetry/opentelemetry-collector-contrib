@@ -502,6 +502,12 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.TracesDynamicIndex.Enabled {
 		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
+	switch {
+	case cfg.Batcher.enabledSet && cfg.QueueBatchConfig.Batch.HasValue():
+		logger.Warn("batcher::enabled and sending_queue::batch both have been set, sending_queue::batch will take preference.")
+	case cfg.Batcher.enabledSet:
+		logger.Warn("batcher has been deprecated, and will be removed in a future version. Use sending_queue instead.")
+	}
 }
 
 func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
