@@ -45,9 +45,9 @@ jobs:
       - name: Gets packages from links with retries
         uses: nick-fields/retry@v3
         with:  
-          retry_wait_seconds: 500
+          retry_wait_seconds: 1800
           timeout_minutes: 120
-          max_attempts: 3
+          max_attempts: 2
           retry_on: error 
           command: |
             cd opentelemetry-collector-contrib
