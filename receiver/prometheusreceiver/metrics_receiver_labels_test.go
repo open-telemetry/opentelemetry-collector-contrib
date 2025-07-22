@@ -825,7 +825,7 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 const targetInstrumentationScopes = `
 # HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
 # TYPE jvm_memory_bytes_used gauge
-jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0"} 100
+jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0"} 100
 jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 100
 jvm_memory_bytes_used{area="heap"} 100
 # TYPE otel_scope_info gauge
@@ -858,17 +858,20 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 
 	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
 	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+	require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sms.At(0).SchemaUrl())
 	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
 	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+	require.Empty(t, sms.At(1).SchemaUrl())
 	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
 	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
 	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+	require.Empty(t, sms.At(2).SchemaUrl())
 	require.Equal(t, 1, sms.At(2).Scope().Attributes().Len())
 	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
 	require.True(t, found)
 	require.Equal(t, "bear", scopeAttrVal.Str())
 
-	// Check that otel_scope_name and otel_scope_version are dropped from metric data point attributes
+	// Check that otel_scope_name, otel_scope_version, and otel_scope_schema_url are dropped from metric data point attributes
 	require.Equal(t, 1, sms.At(0).Metrics().Len())
 	metric := sms.At(0).Metrics().At(0)
 	dp := metric.Gauge().DataPoints().At(0)
