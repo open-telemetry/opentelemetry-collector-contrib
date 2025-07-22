@@ -1,0 +1,83 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: request
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: '@type'
+                            value:
+                              stringValue: type.googleapis.com/google.cloud.resourcemanager.v3.SearchProjectsRequest
+                          - key: query
+                            value:
+                              stringValue: state:active AND NOT projectID:sys-*
+                  - key: status
+                    value:
+                      kvlistValue: {}
+                  - key: serviceName
+                    value:
+                      stringValue: cloudresourcemanager.googleapis.com
+                  - key: resourceName
+                    value:
+                      stringValue: projects/project-id
+                  - key: authenticationInfo
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: principalSubject
+                            value:
+                              stringValue: serviceAccount:foo@bar.iam.gserviceaccount.com
+                          - key: principalEmail
+                            value:
+                              stringValue: foo@bar.iam.gserviceaccount.com
+                          - key: serviceAccountDelegationInfo
+                            value:
+                              arrayValue:
+                                values:
+                                  - kvlistValue:
+                                      values:
+                                        - key: firstPartyPrincipal
+                                          value:
+                                            kvlistValue:
+                                              values:
+                                                - key: principalEmail
+                                                  value:
+                                                    stringValue: foo@bar.iam.gserviceaccount.com
+                  - key: requestMetadata
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: destinationAttributes
+                            value:
+                              kvlistValue: {}
+                          - key: callerIp
+                            value:
+                              stringValue: 21.128.18.1
+                          - key: callerSuppliedUserAgent
+                            value:
+                              stringValue: grpc-go/1.62.2,gzip(gfe)
+                          - key: requestAttributes
+                            value:
+                              kvlistValue: {}
+                  - key: methodName
+                    value:
+                      stringValue: SearchProjects
+                  - key: authorizationInfo
+                    value:
+                      arrayValue:
+                        values:
+                          - kvlistValue:
+                              values:
+                                - key: resourceAttributes
+                                  value:
+                                    kvlistValue: {}
+                  - key: '@type'
+                    value:
+                      stringValue: type.googleapis.com/google.cloud.audit.AuditLog
+            spanId: ""
+            traceId: ""
+        scope: {}

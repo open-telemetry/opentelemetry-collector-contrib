@@ -282,13 +282,15 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 	handler messageHandler[T],
 	attrs attribute.Set,
 ) error {
-	logger.Debug("kafka message received",
-		zap.String("value", string(message.value())),
-		zap.Time("timestamp", message.timestamp()),
-		zap.String("topic", message.topic()),
-		zap.Int32("partition", message.partition()),
-		zap.Int64("offset", message.offset()),
-	)
+	if logger.Core().Enabled(zap.DebugLevel) {
+		logger.Debug("kafka message received",
+			zap.String("value", string(message.value())),
+			zap.Time("timestamp", message.timestamp()),
+			zap.String("topic", message.topic()),
+			zap.Int32("partition", message.partition()),
+			zap.Int64("offset", message.offset()),
+		)
+	}
 
 	ctx = contextWithHeaders(ctx, message.headers())
 
