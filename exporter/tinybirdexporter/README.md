@@ -77,7 +77,7 @@ exporters:
       enabled: true
     sending_queue:
       enabled: true
-      queue_size: 104857600     # 100 MB total queue
+      queue_size: 104857600     # 100 MB total buffer size
       sizer: bytes
       batch:
         flush_timeout: 5s
