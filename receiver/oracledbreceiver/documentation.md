@@ -273,6 +273,14 @@ Number of DML statements that were executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {statements} | Sum | Int | Cumulative | true |
 
+### oracledb.logons
+
+Number of logon operations
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation} | Sum | Int | Cumulative | true |
+
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
@@ -388,6 +396,40 @@ events:
   <event_name>:
     enabled: true
 ```
+
+### db.server.query_sample
+
+sample query
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.query.text | The text of the database query being executed. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| user.name | Database user name under which a session is connected to | Any Str |
+| db.namespace | The database name. | Any Str |
+| client.address | Hostname or address of the client. | Any Str |
+| client.port | TCP port used by the client. | Any Int |
+| network.peer.address | IP address of the peer client. | Any Str |
+| network.peer.port | TCP port used by the peer client. | Any Int |
+| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| oracledb.sql_id | The SQL ID of the query. | Any Str |
+| oracledb.child_number | The child number of the query. | Any Str |
+| oracledb.sid | ID of the Oracle Server session. | Any Str |
+| oracledb.serial | Serial number associated with a session. | Any Str |
+| oracledb.process | The operating system process ID (PID) associated with a session. | Any Str |
+| oracledb.schemaname | Oracle schema under which SQL statements are being executed | Any Str |
+| oracledb.program | Name of the client program or tool that initiated the Oracle database session. | Any Str |
+| oracledb.module | Logical module name of the client application that initiated a query or session. | Any Str |
+| oracledb.status | Execution state or result of a database query or session. | Any Str |
+| oracledb.state | Current state of the query or the session executing it. | Any Str |
+| oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str |
+| oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str |
+| oracledb.object_name | Name of the database object that a query is accessing. | Any Str |
+| oracledb.object_type | Type of the database object that a query is accessing. | Any Str |
+| oracledb.osuser | Name of the operating system user that initiated or is running the Oracle database session. | Any Str |
+| oracledb.duration_sec | Total time taken by a database query to execute. | Any Double |
 
 ### db.server.top_query
 

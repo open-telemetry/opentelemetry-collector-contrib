@@ -184,7 +184,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
 	return cfgFormat + "\n"
 }
 
-func (es *esDataReceiver) ProtocolName() string {
+func (*esDataReceiver) ProtocolName() string {
 	return "elasticsearch"
 }
 

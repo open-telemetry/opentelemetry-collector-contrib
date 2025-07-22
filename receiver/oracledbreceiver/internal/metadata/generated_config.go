@@ -44,6 +44,7 @@ type MetricsConfig struct {
 	OracledbExecutions                            MetricConfig `mapstructure:"oracledb.executions"`
 	OracledbHardParses                            MetricConfig `mapstructure:"oracledb.hard_parses"`
 	OracledbLogicalReads                          MetricConfig `mapstructure:"oracledb.logical_reads"`
+	OracledbLogons                                MetricConfig `mapstructure:"oracledb.logons"`
 	OracledbParallelOperationsDowngraded1To25Pct  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
 	OracledbParallelOperationsDowngraded25To50Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
 	OracledbParallelOperationsDowngraded50To75Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
@@ -120,6 +121,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbLogicalReads: MetricConfig{
 			Enabled: true,
+		},
+		OracledbLogons: MetricConfig{
+			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded1To25Pct: MetricConfig{
 			Enabled: false,
@@ -220,11 +224,15 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for oracledb events.
 type EventsConfig struct {
-	DbServerTopQuery EventConfig `mapstructure:"db.server.top_query"`
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
 		DbServerTopQuery: EventConfig{
 			Enabled: false,
 		},
