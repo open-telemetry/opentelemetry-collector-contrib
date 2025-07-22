@@ -338,6 +338,143 @@ func TestNilClient(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 }
 
+func TestStatusCodeConditionalInclusion(t *testing.T) {
+	// Test that http.status_code is only included when the metric value is 1
+	testCases := []struct {
+		name           string
+		responseCode   int
+		expectedChecks func(t *testing.T, metrics pmetric.Metrics)
+	}{
+		{
+			name:         "200 OK response",
+			responseCode: 200,
+			expectedChecks: func(t *testing.T, metrics pmetric.Metrics) {
+				// Find status metrics
+				rm := metrics.ResourceMetrics().At(0)
+				ilm := rm.ScopeMetrics().At(0)
+
+				statusMetricsFound := 0
+				for i := 0; i < ilm.Metrics().Len(); i++ {
+					metric := ilm.Metrics().At(i)
+					if metric.Name() == "httpcheck.status" {
+						dps := metric.Sum().DataPoints()
+						for j := 0; j < dps.Len(); j++ {
+							dp := dps.At(j)
+							statusClass, _ := dp.Attributes().Get("http.status_class")
+
+							if dp.IntValue() == 1 {
+								// When value is 1, status_code should be present and be 200
+								statusCode, ok := dp.Attributes().Get("http.status_code")
+								assert.True(t, ok, "http.status_code should be present when value is 1")
+								assert.Equal(t, int64(200), statusCode.Int())
+								assert.Equal(t, "2xx", statusClass.Str())
+							} else {
+								// When value is 0, status_code should NOT be present
+								_, ok := dp.Attributes().Get("http.status_code")
+								assert.False(t, ok, "http.status_code should NOT be present when value is 0 for class %s", statusClass.Str())
+							}
+							statusMetricsFound++
+						}
+					}
+				}
+				assert.Equal(t, 5, statusMetricsFound, "Should have 5 status data points (one for each class)")
+			},
+		},
+		{
+			name:         "404 Not Found response",
+			responseCode: 404,
+			expectedChecks: func(t *testing.T, metrics pmetric.Metrics) {
+				rm := metrics.ResourceMetrics().At(0)
+				ilm := rm.ScopeMetrics().At(0)
+
+				statusMetricsFound := 0
+				for i := 0; i < ilm.Metrics().Len(); i++ {
+					metric := ilm.Metrics().At(i)
+					if metric.Name() == "httpcheck.status" {
+						dps := metric.Sum().DataPoints()
+						for j := 0; j < dps.Len(); j++ {
+							dp := dps.At(j)
+							statusClass, _ := dp.Attributes().Get("http.status_class")
+
+							if dp.IntValue() == 1 {
+								// When value is 1, status_code should be present and be 404
+								statusCode, ok := dp.Attributes().Get("http.status_code")
+								assert.True(t, ok, "http.status_code should be present when value is 1")
+								assert.Equal(t, int64(404), statusCode.Int())
+								assert.Equal(t, "4xx", statusClass.Str())
+							} else {
+								// When value is 0, status_code should NOT be present
+								_, ok := dp.Attributes().Get("http.status_code")
+								assert.False(t, ok, "http.status_code should NOT be present when value is 0 for class %s", statusClass.Str())
+							}
+							statusMetricsFound++
+						}
+					}
+				}
+				assert.Equal(t, 5, statusMetricsFound, "Should have 5 status data points (one for each class)")
+			},
+		},
+		{
+			name:         "500 Server Error response",
+			responseCode: 500,
+			expectedChecks: func(t *testing.T, metrics pmetric.Metrics) {
+				rm := metrics.ResourceMetrics().At(0)
+				ilm := rm.ScopeMetrics().At(0)
+
+				statusMetricsFound := 0
+				for i := 0; i < ilm.Metrics().Len(); i++ {
+					metric := ilm.Metrics().At(i)
+					if metric.Name() == "httpcheck.status" {
+						dps := metric.Sum().DataPoints()
+						for j := 0; j < dps.Len(); j++ {
+							dp := dps.At(j)
+							statusClass, _ := dp.Attributes().Get("http.status_class")
+
+							if dp.IntValue() == 1 {
+								// When value is 1, status_code should be present and be 500
+								statusCode, ok := dp.Attributes().Get("http.status_code")
+								assert.True(t, ok, "http.status_code should be present when value is 1")
+								assert.Equal(t, int64(500), statusCode.Int())
+								assert.Equal(t, "5xx", statusClass.Str())
+							} else {
+								// When value is 0, status_code should NOT be present
+								_, ok := dp.Attributes().Get("http.status_code")
+								assert.False(t, ok, "http.status_code should NOT be present when value is 0 for class %s", statusClass.Str())
+							}
+							statusMetricsFound++
+						}
+					}
+				}
+				assert.Equal(t, 5, statusMetricsFound, "Should have 5 status data points (one for each class)")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ms := newMockServer(t, tc.responseCode)
+			defer ms.Close()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Targets = []*targetConfig{
+				{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: ms.URL,
+					},
+				},
+			}
+
+			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+			actualMetrics, err := scraper.scrape(context.Background())
+			require.NoError(t, err)
+
+			tc.expectedChecks(t, actualMetrics)
+		})
+	}
+}
+
 func TestScraperMultipleTargets(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	ms1 := newMockServer(t, 200)
