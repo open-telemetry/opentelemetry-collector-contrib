@@ -220,13 +220,13 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 	// Emit metrics and post-process to remove http.status_code when value is 0
 	metrics := h.mb.Emit()
-	h.removeStatusCodeForZeroValues(metrics)
+	removeStatusCodeForZeroValues(metrics)
 
 	return metrics, nil
 }
 
 // removeStatusCodeForZeroValues removes the http.status_code attribute from httpcheck.status metrics
-func (h *httpcheckScraper) removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
+func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
