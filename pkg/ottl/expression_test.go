@@ -2660,7 +2660,7 @@ func Test_StandardTimeGetter_WrappedError(t *testing.T) {
 
 type mockedGetter[K any] struct{}
 
-func (_ mockedGetter[K]) Get(_ context.Context, _ K) (any, error) {
+func (mockedGetter[K]) Get(_ context.Context, _ K) (any, error) {
 	return nil, nil
 }
 

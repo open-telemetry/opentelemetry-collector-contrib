@@ -88,7 +88,7 @@ func (l literal[K]) getLiteral() (any, error) {
 	return l.value, nil
 }
 
-func (_ literal[K]) isLiteral() bool {
+func (literal[K]) isLiteral() bool {
 	return true
 }
 
@@ -900,9 +900,9 @@ type IntLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*int64, error)
 }
 
-func newStandardIntLikeGetter[K any](getter Getter[K]) *StandardIntLikeGetter[K] {
+func newStandardIntLikeGetter[K any](getter Getter[K]) StandardIntLikeGetter[K] {
 	litGetter, isLiteralGetter := getter.(literalGetter)
-	return &StandardIntLikeGetter[K]{
+	return StandardIntLikeGetter[K]{
 		Getter:  getter.Get,
 		literal: isLiteralGetter && litGetter.isLiteral(),
 	}
