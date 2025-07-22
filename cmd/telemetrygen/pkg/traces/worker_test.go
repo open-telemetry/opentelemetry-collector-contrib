@@ -47,7 +47,7 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	require.NoError(t, run(cfg, zap.NewNop()))
 
 	// verify
-	assert.Len(t, syncer.spans, 2) // each trace has two spans
+	assert.Len(t, syncer.spans, 1) // each trace has two spans
 }
 
 func TestNumberOfSpans(t *testing.T) {
@@ -90,6 +90,7 @@ func TestRateOfSpans(t *testing.T) {
 			TotalDuration: time.Second / 2,
 			WorkerCount:   1,
 		},
+		NumChildSpans: 1,
 	}
 
 	// sanity check
@@ -366,6 +367,7 @@ func configWithNoAttributes(qty int, statusCode string) *Config {
 			TelemetryAttributes: nil,
 		},
 		NumTraces:  qty,
+		NumChildSpans: 1,
 		StatusCode: statusCode,
 	}
 }
@@ -377,6 +379,7 @@ func configWithOneAttribute(qty int, statusCode string) *Config {
 			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
 		NumTraces:  qty,
+		NumChildSpans: 1,
 		StatusCode: statusCode,
 	}
 }
@@ -389,6 +392,7 @@ func configWithMultipleAttributes(qty int, statusCode string) *Config {
 			TelemetryAttributes: kvs,
 		},
 		NumTraces:  qty,
+		NumChildSpans: 1,
 		StatusCode: statusCode,
 	}
 }

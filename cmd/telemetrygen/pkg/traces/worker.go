@@ -75,7 +75,7 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			// simulates getting a request from a client
 			childCtx = otel.GetTextMapPropagator().Extract(childCtx, header)
 		}
-		var endTimestamp trace.SpanEventOption
+		endTimestamp := trace.WithTimestamp(spanEnd)
 
 		for j := 0; j < w.numChildSpans; j++ {
 			if err := limiter.Wait(context.Background()); err != nil {
