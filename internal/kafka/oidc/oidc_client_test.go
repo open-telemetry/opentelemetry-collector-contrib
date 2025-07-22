@@ -6,8 +6,10 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +18,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -177,4 +180,170 @@ func k8sSecretFile() (string, error) {
 	}
 
 	return tokenPath, nil
+}
+
+// An implementation of a very basic OIDC server that supports only
+// the "client_credentials" grant type.
+type TokenRequest struct {
+	GrantType    string `json:"grant_type"`
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Scope        string `json:"scope"`
+}
+
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+	Scope       string `json:"scope,omitempty"`
+}
+
+type ErrorResponse struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description,omitempty"`
+}
+
+const (
+	PORT = 8080
+)
+
+var (
+	privateKey      *rsa.PrivateKey
+	publicKey       *rsa.PublicKey
+	tokenExpireSecs int
+)
+
+func init() {
+	var err error
+	privateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		log.Fatal("Failed to generate RSA key:", err)
+	}
+	publicKey = &privateKey.PublicKey
+}
+
+func tokenHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:            "invalid_request",
+			ErrorDescription: "Method not allowed",
+		})
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:            "invalid_request",
+			ErrorDescription: "Failed to parse form data",
+		})
+		return
+	}
+
+	grantType := r.FormValue("grant_type")
+	clientID := r.FormValue("client_id")
+	clientSecret := r.FormValue("client_secret")
+	scope := r.FormValue("scope")
+
+	if grantType != "client_credentials" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:            "unsupported_grant_type",
+			ErrorDescription: "Only client_credentials grant type is supported",
+		})
+		return
+	}
+
+	if clientID == "" || clientSecret == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:            "invalid_client",
+			ErrorDescription: "Client ID and secret are required",
+		})
+		return
+	}
+
+	// Simple client validation (in production, use proper authentication)
+	if !validateClient(clientID, clientSecret) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:            "invalid_client",
+			ErrorDescription: "Invalid client credentials",
+		})
+		return
+	}
+
+	// Generate JWT token
+	token, err := generateJWTToken(clientID, scope)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:            "server_error",
+			ErrorDescription: "Failed to generate token",
+		})
+		return
+	}
+
+	response := TokenResponse{
+		AccessToken: token,
+		TokenType:   "Bearer",
+		ExpiresIn:   tokenExpireSecs,
+		Scope:       scope,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func validateClient(clientID, clientSecret string) bool {
+	// Simple hardcoded validation for demo purposes
+	// In production, validate against a database or external service
+	validClients := map[string]string{
+		"test_client": "test_secret",
+		"demo_client": "demo_secret",
+	}
+
+	expectedSecret, exists := validClients[clientID]
+	return exists && expectedSecret == clientSecret
+}
+
+func generateJWTToken(clientID, scope string) (string, error) {
+	now := time.Now()
+
+	claims := jwt.MapClaims{
+		"iss":       "oidc-mock-server",
+		"sub":       clientID,
+		"aud":       "api",
+		"exp":       now.Add(time.Duration(tokenExpireSecs) * time.Second).Unix(),
+		"iat":       now.Unix(),
+		"client_id": clientID,
+	}
+
+	if scope != "" {
+		claims["scope"] = scope
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+
+	return token.SignedString(privateKey)
+}
+
+func main() {
+	tokenExpireSecs = 3600
+
+	http.HandleFunc("/token", tokenHandler)
+
+	fmt.Printf("OIDC Mock Server starting on :%d\n", PORT)
+	fmt.Printf("Token endpoint: http://localhost:%d/token\n", PORT)
+	fmt.Println("Valid clients: test_client/test_secret, demo_client/demo_secret")
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", PORT), nil))
 }
