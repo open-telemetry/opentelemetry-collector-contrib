@@ -27,19 +27,25 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for httpcheck metrics.
 type MetricsConfig struct {
-	HttpcheckDNSLookupDuration     MetricConfig `mapstructure:"httpcheck.dns_lookup.duration"`
-	HttpcheckDuration              MetricConfig `mapstructure:"httpcheck.duration"`
-	HttpcheckError                 MetricConfig `mapstructure:"httpcheck.error"`
-	HttpcheckRequestDuration       MetricConfig `mapstructure:"httpcheck.request.duration"`
-	HttpcheckResponseDuration      MetricConfig `mapstructure:"httpcheck.response.duration"`
-	HttpcheckStatus                MetricConfig `mapstructure:"httpcheck.status"`
-	HttpcheckTCPConnectionDuration MetricConfig `mapstructure:"httpcheck.tcp_connection.duration"`
-	HttpcheckTLSCertRemaining      MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
-	HttpcheckTLSHandshakeDuration  MetricConfig `mapstructure:"httpcheck.tls_handshake.duration"`
+	HttpcheckClientConnectionDuration MetricConfig `mapstructure:"httpcheck.client.connection.duration"`
+	HttpcheckClientRequestDuration    MetricConfig `mapstructure:"httpcheck.client.request.duration"`
+	HttpcheckDNSLookupDuration        MetricConfig `mapstructure:"httpcheck.dns.lookup.duration"`
+	HttpcheckDuration                 MetricConfig `mapstructure:"httpcheck.duration"`
+	HttpcheckError                    MetricConfig `mapstructure:"httpcheck.error"`
+	HttpcheckResponseDuration         MetricConfig `mapstructure:"httpcheck.response.duration"`
+	HttpcheckStatus                   MetricConfig `mapstructure:"httpcheck.status"`
+	HttpcheckTLSCertRemaining         MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
+	HttpcheckTLSHandshakeDuration     MetricConfig `mapstructure:"httpcheck.tls.handshake.duration"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		HttpcheckClientConnectionDuration: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckClientRequestDuration: MetricConfig{
+			Enabled: false,
+		},
 		HttpcheckDNSLookupDuration: MetricConfig{
 			Enabled: false,
 		},
@@ -49,17 +55,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		HttpcheckError: MetricConfig{
 			Enabled: true,
 		},
-		HttpcheckRequestDuration: MetricConfig{
-			Enabled: false,
-		},
 		HttpcheckResponseDuration: MetricConfig{
 			Enabled: false,
 		},
 		HttpcheckStatus: MetricConfig{
 			Enabled: true,
-		},
-		HttpcheckTCPConnectionDuration: MetricConfig{
-			Enabled: false,
 		},
 		HttpcheckTLSCertRemaining: MetricConfig{
 			Enabled: false,
