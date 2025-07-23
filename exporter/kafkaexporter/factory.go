@@ -11,18 +11,22 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 const (
-	defaultLogsTopic       = "otlp_logs"
-	defaultLogsEncoding    = "otlp_proto"
-	defaultMetricsTopic    = "otlp_metrics"
-	defaultMetricsEncoding = "otlp_proto"
-	defaultTracesTopic     = "otlp_spans"
-	defaultTracesEncoding  = "otlp_proto"
+	defaultLogsTopic        = "otlp_logs"
+	defaultLogsEncoding     = "otlp_proto"
+	defaultMetricsTopic     = "otlp_metrics"
+	defaultMetricsEncoding  = "otlp_proto"
+	defaultTracesTopic      = "otlp_spans"
+	defaultTracesEncoding   = "otlp_proto"
+	defaultProfilesTopic    = "otlp_profiles"
+	defaultProfilesEncoding = "otlp_proto"
 
 	// partitioning metrics by resource attributes is disabled by default
 	defaultPartitionMetricsByResourceAttributesEnabled = false
@@ -32,12 +36,13 @@ const (
 
 // NewFactory creates Kafka exporter factory.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -59,6 +64,10 @@ func createDefaultConfig() component.Config {
 		Traces: SignalConfig{
 			Topic:    defaultTracesTopic,
 			Encoding: defaultTracesEncoding,
+		},
+		Profiles: SignalConfig{
+			Topic:    defaultProfilesTopic,
+			Encoding: defaultProfilesEncoding,
 		},
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
@@ -119,6 +128,29 @@ func createLogsExporter(
 	oCfg := *(cfg.(*Config)) // Clone the config
 	exp := newLogsExporter(oCfg, set)
 	return exporterhelper.NewLogs(
+		ctx,
+		set,
+		&oCfg,
+		exp.exportData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
+		// and will rely on the sarama Producer Timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Close),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	oCfg := *(cfg.(*Config)) // Clone the config
+	exp := newProfilesExporter(oCfg, set)
+	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
 		&oCfg,
