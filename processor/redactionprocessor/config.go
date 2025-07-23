@@ -46,7 +46,7 @@ type Config struct {
 	// without being changed or removed.
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
-	// RedactAllTypes of attributes, including those that are not string.
+	// RedactAllTypes of attributes, including those that are not string, by converting to a string representation.
 	// By default only string values are redacted.
 	RedactAllTypes bool `mapstructure:"redact_all_types"`
 
