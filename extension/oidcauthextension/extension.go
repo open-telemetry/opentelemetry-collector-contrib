@@ -33,7 +33,7 @@ var (
 	_ extensionauth.Server = (*oidcExtension)(nil)
 )
 
-type ProviderContainer struct {
+type providerContainer struct {
 	providerCfg ProviderCfg
 	provider    *oidc.Provider
 	verifier    *oidc.IDTokenVerifier
@@ -44,7 +44,7 @@ type ProviderContainer struct {
 type oidcExtension struct {
 	cfg *Config
 
-	providerContainers map[string]*ProviderContainer
+	providerContainers map[string]*providerContainer
 	logger             *zap.Logger
 }
 
@@ -67,7 +67,7 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 	return &oidcExtension{
 		cfg:                cfg,
 		logger:             logger,
-		providerContainers: make(map[string]*ProviderContainer),
+		providerContainers: make(map[string]*providerContainer),
 	}
 }
 
@@ -159,7 +159,7 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	return client.NewContext(ctx, cl), nil
 }
 
-func (e *oidcExtension) resolveProvider(issuer string) (*ProviderContainer, error) {
+func (e *oidcExtension) resolveProvider(issuer string) (*providerContainer, error) {
 	if len(e.providerContainers) == 1 {
 		for _, providerContainer := range e.providerContainers {
 			return providerContainer, nil
@@ -173,7 +173,7 @@ func (e *oidcExtension) resolveProvider(issuer string) (*ProviderContainer, erro
 }
 
 func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg) error {
-	providerContainer := ProviderContainer{
+	providerContainer := providerContainer{
 		providerCfg: p,
 	}
 
