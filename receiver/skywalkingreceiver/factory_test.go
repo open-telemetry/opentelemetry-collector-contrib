@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -41,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the skywalking receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -85,7 +86,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -103,17 +104,17 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.ServerConfig{
+		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
@@ -125,14 +126,14 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
-		TLSSetting: &configtls.ServerConfig{
+		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
-		},
+		}),
 	}
 
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -145,7 +146,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
 	}
 	set := receivertest.NewNopSettings(metadata.Type)

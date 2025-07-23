@@ -47,8 +47,8 @@ type Config struct {
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3
 	Scopes []string `mapstructure:"scopes,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration for the underneath client to authorization server.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// TLS struct exposes TLS client configuration for the underneath client to authorization server.
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// Timeout parameter configures `http.Client.Timeout` for the underneath client to authorization
 	// server while fetching and refreshing tokens.

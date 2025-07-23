@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
@@ -76,7 +76,7 @@ func TestExamples(t *testing.T) {
 		require.NotEmpty(t, out.Data.YAML)
 
 		data := []byte(out.Data.YAML)
-		f, err := os.CreateTemp("", "ddexporter-yaml-test-")
+		f, err := os.CreateTemp(t.TempDir(), "ddexporter-yaml-test-")
 		require.NoError(t, err)
 		n, err := f.Write(data)
 		require.NoError(t, err)

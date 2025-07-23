@@ -18,6 +18,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"testing"
 	"text/template"
 	"time"
 
@@ -112,12 +113,12 @@ func WithEnvVar(k, v string) ChildProcessOption {
 	}
 }
 
-func (cp *childProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
+func (cp *childProcessCollector) PrepareConfig(t *testing.T, configStr string) (configCleanup func(), err error) {
 	configCleanup = func() {
 		// NoOp
 	}
 	var file *os.File
-	file, err = os.CreateTemp("", "agent*.yaml")
+	file, err = os.CreateTemp(t.TempDir(), "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
 		return configCleanup, err
@@ -209,8 +210,7 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 				return err
 			}
 		}
-		args = append(args, "--config")
-		args = append(args, cp.configFileName)
+		args = append(args, "--config", cp.configFileName)
 	}
 	// #nosec
 	cp.cmd = exec.Command(exePath, args...)

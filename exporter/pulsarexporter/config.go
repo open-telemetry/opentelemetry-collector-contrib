@@ -16,8 +16,8 @@ import (
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
@@ -89,7 +89,7 @@ type Producer struct {
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
-func (cfg *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
-	if len(cfg.TLSTrustCertsFilePath) > 0 {
+	if cfg.TLSTrustCertsFilePath != "" {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
 

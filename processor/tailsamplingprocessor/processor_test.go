@@ -153,13 +153,13 @@ func TestTraceIntegrity(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 4, mpe1.EvaluationCount)
+	require.Equal(t, 4, mpe1.EvaluationCount)
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -388,7 +388,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
 	tsp := sp.(*tailSamplingSpanProcessor)
-	tsp.idToTrace.Range(func(_ any, _ any) bool {
+	tsp.idToTrace.Range(func(_, _ any) bool {
 		cnt++
 		return true
 	})
@@ -450,7 +450,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIDs {
 		trace := findTrace(t, receivedTraces, traceID)
-		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+		require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIDs[i]
 		got := collectSpanIDs(trace)
@@ -464,7 +464,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			return a < b
 		})
 
-		require.EqualValues(t, expected, got)
+		require.Equal(t, expected, got)
 	}
 }
 
@@ -669,6 +669,39 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
 }
 
+func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "regular-policy",
+					Type: AlwaysSample,
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "drop-policy",
+					Type: Drop,
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(idb),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	tsp := p.(*tailSamplingSpanProcessor)
+	require.GreaterOrEqual(t, len(tsp.policies), 2)
+	assert.Equal(t, "drop-policy", tsp.policies[0].name)
+}
+
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
@@ -778,7 +811,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	return firstBatch, true
 }
 
-func (s *syncIDBatcher) Stop() {
+func (*syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {

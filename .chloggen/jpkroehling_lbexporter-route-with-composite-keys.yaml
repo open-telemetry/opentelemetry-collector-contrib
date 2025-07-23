@@ -1,4 +1,0 @@
-change_type: enhancement
-component: exporter/loadbalancing
-note: Add support for route with composite keys
-issues: [35320]

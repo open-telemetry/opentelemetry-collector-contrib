@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -42,7 +42,7 @@ func newLogsConnector(logger *zap.Logger, config component.Config) *logsConnecto
 }
 
 // Capabilities implements the consumer interface.
-func (c *logsConnector) Capabilities() consumer.Capabilities {
+func (*logsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -53,7 +53,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
-		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
+		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
 		if !ok {
 			continue
 		}
@@ -86,7 +86,7 @@ func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (c *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
+func (*logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	return sl

@@ -4,7 +4,7 @@
 package metrics
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
@@ -20,7 +20,7 @@ func (t *AggregationTemporality) Set(v string) error {
 		*t = AggregationTemporality(metricdata.CumulativeTemporality)
 		return nil
 	default:
-		return fmt.Errorf(`temporality must be one of "delta" or "cumulative"`)
+		return errors.New(`temporality must be one of "delta" or "cumulative"`)
 	}
 }
 
@@ -28,7 +28,7 @@ func (t *AggregationTemporality) String() string {
 	return string(metricdata.Temporality(*t))
 }
 
-func (t *AggregationTemporality) Type() string {
+func (*AggregationTemporality) Type() string {
 	return "temporality"
 }
 

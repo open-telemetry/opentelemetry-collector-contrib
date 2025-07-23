@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	defaultHeader = "Authorization"
 	defaultScheme = "Bearer"
 )
 
@@ -28,6 +29,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		Header: defaultHeader,
 		Scheme: defaultScheme,
 	}
 }

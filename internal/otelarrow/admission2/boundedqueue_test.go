@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc/codes"
-	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
@@ -151,7 +150,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 			timeout:        time.Second,
 			expectErrs: map[string]int{
 				// 20*50=1000 is half of the requests timing out
-				status.Error(grpccodes.Canceled, context.DeadlineExceeded.Error()).Error(): 50,
+				status.Error(codes.Canceled, context.DeadlineExceeded.Error()).Error(): 50,
 			},
 		},
 		{
@@ -263,7 +262,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 	}
 }
 
-func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
+func (bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
 	switch a := m.Data.(type) {
 	case metricdata.Sum[int64]:
 		require.Len(t, a.DataPoints, 1)
@@ -280,7 +279,7 @@ func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
 	return -1
 }
 
-func (bq bqTest) verifyMetrics(t *testing.T) (inflight int64, waiting int64) {
+func (bq bqTest) verifyMetrics(t *testing.T) (inflight, waiting int64) {
 	inflight = -1
 	waiting = -1
 

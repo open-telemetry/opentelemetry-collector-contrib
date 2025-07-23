@@ -27,7 +27,7 @@ func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.Exp
 	args, ok := oArgs.(*ScaleArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("ScaleFactory args must be of type *ScaleArguments[K]")
+		return nil, errors.New("ScaleFactory args must be of type *ScaleArguments[K]")
 	}
 
 	return Scale(*args)

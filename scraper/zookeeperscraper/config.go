@@ -17,6 +17,6 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	_, _, err := net.SplitHostPort(cfg.TCPAddrConfig.Endpoint)
+	_, _, err := net.SplitHostPort(cfg.Endpoint)
 	return err
 }

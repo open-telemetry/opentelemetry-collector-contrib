@@ -109,7 +109,7 @@ func (h *samplingProvider) downloadSamplingStrategies(samplingURL string) ([]byt
 
 	ctx, cx := context.WithTimeout(context.Background(), time.Second)
 	defer cx()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, samplingURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, samplingURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("cannot construct HTTP request: %w", err)
 	}
@@ -221,11 +221,8 @@ func (h *samplingProvider) parseStrategiesDeprecated(strategies *strategies) {
 		newStore.defaultStrategy = h.parseServiceStrategies(strategies.DefaultStrategy)
 	}
 
-	merge := true
-	if newStore.defaultStrategy.OperationSampling == nil ||
-		newStore.defaultStrategy.OperationSampling.PerOperationStrategies == nil {
-		merge = false
-	}
+	merge := newStore.defaultStrategy.OperationSampling != nil &&
+		newStore.defaultStrategy.OperationSampling.PerOperationStrategies != nil
 
 	for _, s := range strategies.ServiceStrategies {
 		newStore.serviceStrategies[s.Service] = h.parseServiceStrategies(s)

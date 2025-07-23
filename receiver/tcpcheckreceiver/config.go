@@ -28,7 +28,10 @@ var (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*confignet.TCPAddrConfig `mapstructure:",targets"`
+	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func validatePort(port string) error {

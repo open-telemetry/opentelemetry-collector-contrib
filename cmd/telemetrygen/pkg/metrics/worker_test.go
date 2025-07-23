@@ -5,6 +5,8 @@ package metrics
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,7 +15,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -29,11 +33,11 @@ type mockExporter struct {
 	rms []*metricdata.ResourceMetrics
 }
 
-func (m *mockExporter) Temporality(_ sdkmetric.InstrumentKind) metricdata.Temporality {
+func (*mockExporter) Temporality(sdkmetric.InstrumentKind) metricdata.Temporality {
 	return metricdata.DeltaTemporality
 }
 
-func (m *mockExporter) Aggregation(_ sdkmetric.InstrumentKind) sdkmetric.Aggregation {
+func (*mockExporter) Aggregation(sdkmetric.InstrumentKind) sdkmetric.Aggregation {
 	return sdkmetric.AggregationDefault{}
 }
 
@@ -42,11 +46,11 @@ func (m *mockExporter) Export(_ context.Context, metrics *metricdata.ResourceMet
 	return nil
 }
 
-func (m *mockExporter) ForceFlush(_ context.Context) error {
+func (*mockExporter) ForceFlush(context.Context) error {
 	return nil
 }
 
-func (m *mockExporter) Shutdown(_ context.Context) error {
+func (mockExporter) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -469,5 +473,130 @@ func configWithMultipleAttributes(metric MetricType, qty int) *Config {
 		},
 		NumMetrics: qty,
 		MetricType: metric,
+	}
+}
+
+func configWithEnabledUnique(metric MetricType, qty int) *Config {
+	return &Config{
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: nil,
+		},
+		EnforceUniqueTimeseries: true,
+		NumMetrics:              qty,
+		MetricName:              "test",
+		MetricType:              metric,
+	}
+}
+
+func TestTemporalityStartTimes(t *testing.T) {
+	tests := []struct {
+		name        string
+		temporality AggregationTemporality
+		checkTimes  func(t *testing.T, firstTime, secondTime time.Time)
+	}{
+		{
+			name:        "Cumulative temporality keeps same start timestamp",
+			temporality: AggregationTemporality(metricdata.CumulativeTemporality),
+			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
+				if !assert.Equal(t, firstTime, secondTime,
+					"cumulative metrics should have same start time") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
+			},
+		},
+		{
+			name:        "Delta temporality has different start timestamps",
+			temporality: AggregationTemporality(metricdata.DeltaTemporality),
+			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
+				if !assert.True(t, secondTime.After(firstTime),
+					"delta metrics should have increasing start times") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			clock := &mockClock{
+				now: time.Now(),
+			}
+
+			running := &atomic.Bool{}
+			running.Store(true)
+
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+
+			w := worker{
+				metricName:             "test_metric",
+				metricType:             MetricTypeSum,
+				aggregationTemporality: tt.temporality,
+				numMetrics:             2,
+				running:                running,
+				limitPerSecond:         rate.Inf,
+				logger:                 zap.NewNop(),
+				wg:                     wg,
+				clock:                  clock,
+			}
+
+			w.simulateMetrics(resource.Default(), m, nil, nil)
+
+			wg.Wait()
+
+			require.GreaterOrEqual(t, len(m.rms), 2, "should have at least 2 metric points")
+
+			firstMetric := m.rms[0].ScopeMetrics[0].Metrics[0]
+			secondMetric := m.rms[1].ScopeMetrics[0].Metrics[0]
+
+			firstStartTime := firstMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
+			secondStartTime := secondMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
+
+			tt.checkTimes(t, firstStartTime, secondStartTime)
+		})
+	}
+}
+
+func logTimestampDiff(t *testing.T, firstTime, secondTime time.Time) {
+	t.Logf("Timestamp debug logging:\n"+
+		"First start time:  %s\n"+
+		"Second start time: %s\n"+
+		"Difference: %v",
+		firstTime.String(),
+		secondTime.String(),
+		secondTime.Sub(firstTime))
+}
+
+func TestUniqueSumTimeseries(t *testing.T) {
+	// arrange
+	qty := 4
+	cfg := configWithEnabledUnique(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	var actualValue attribute.Value
+	var exist bool
+	for i := 0; i < qty; i++ {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 1, attr.Len(), "it must have one attribute here")
+		actualValue, exist = attr.Value(timeBoxAttributeName)
+		assert.True(t, exist, "it should have the timebox attribute")
+		assert.LessOrEqual(t, actualValue.AsInt64(), int64(4), "it should be between 0 and 4")
 	}
 }

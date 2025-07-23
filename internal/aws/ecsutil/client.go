@@ -5,6 +5,7 @@ package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -66,7 +67,7 @@ func defaultClient(
 		return nil, err
 	}
 	if client == nil {
-		return nil, fmt.Errorf("unexpected default client nil value")
+		return nil, errors.New("unexpected default client nil value")
 	}
 	return &clientImpl{
 		baseURL:    baseURL,
@@ -111,7 +112,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 
 func (c *clientImpl) buildReq(path string) (*http.Request, error) {
 	url := c.baseURL.String() + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -35,9 +35,6 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherConfig := exporterbatcher.NewDefaultConfig()
-	batcherConfig.Enabled = false
-
 	return &Config{
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
@@ -63,13 +60,21 @@ func createDefaultConfig() component.Config {
 			Endpoint:    "https://",
 			Compression: configcompression.TypeGzip,
 		},
-		PrivateKey:    "",
-		AppName:       "",
-		BatcherConfig: batcherConfig,
+		PrivateKey: "",
+		AppName:    "",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   false,
+			Threshold: 10,
+			Duration:  time.Minute,
+		},
 	}
 }
 
-func createTraceExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
+func createTraceExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	config component.Config,
+) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newTracesExporter(cfg, set)
@@ -88,81 +93,83 @@ func createTraceExporter(ctx context.Context, set exporter.Settings, config comp
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
 }
 
 func createMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
+	config component.Config,
 ) (exporter.Metrics, error) {
+	cfg := config.(*Config)
+
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
-	oCfg := cfg.(*Config)
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
 	)
 }
 
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
+	config component.Config,
 ) (exporter.Logs, error) {
+	cfg := config.(*Config)
+
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
-	oCfg := cfg.(*Config)
+
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
 	)
 }
 
 func createProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
+	config component.Config,
 ) (xexporter.Profiles, error) {
+	cfg := config.(*Config)
+
 	oce, err := newProfilesExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
-	oCfg := cfg.(*Config)
-	return xexporterhelper.NewProfilesExporter(
+
+	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
 	)
 }

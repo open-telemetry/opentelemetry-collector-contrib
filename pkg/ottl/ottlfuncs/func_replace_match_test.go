@@ -118,7 +118,7 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -147,7 +147,7 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -175,7 +175,7 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -208,7 +208,7 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},

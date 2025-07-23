@@ -16,6 +16,7 @@ exporters:
       enabled: false
     metrics:
       endpoint: ${env:SERVER_URL}
+      instrumentation_scope_metadata_as_tags: true
       sums:
         cumulative_monotonic_mode: raw_value
 

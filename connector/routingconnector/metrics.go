@@ -50,13 +50,13 @@ func newMetricsConnector(
 	}
 
 	return &metricsConnector{
-		logger: set.TelemetrySettings.Logger,
+		logger: set.Logger,
 		config: cfg,
 		router: r,
 	}, nil
 }
 
-func (c *metricsConnector) Capabilities() consumer.Capabilities {
+func (*metricsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

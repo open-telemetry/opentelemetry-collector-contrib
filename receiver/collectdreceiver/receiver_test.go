@@ -166,7 +166,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.ServerConfig.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)
@@ -212,7 +212,7 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	return testMetrics
 }
 
-func assertMetricsAreEqual(t *testing.T, expectedData []pmetric.Metrics, actualData []pmetric.Metrics) {
+func assertMetricsAreEqual(t *testing.T, expectedData, actualData []pmetric.Metrics) {
 	for i := 0; i < len(expectedData); i++ {
 		err := pmetrictest.CompareMetrics(expectedData[i], actualData[i])
 		require.NoError(t, err)

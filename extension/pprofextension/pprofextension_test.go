@@ -114,7 +114,7 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 }
 
 func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "pprof*.yaml")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "pprof*.yaml")
 	require.NoError(t, err)
 	defer func() {
 		os.Remove(tmpFile.Name())

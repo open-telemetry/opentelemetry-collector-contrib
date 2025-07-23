@@ -346,6 +346,72 @@ var MapAttributeTransactionType = map[string]AttributeTransactionType{
 	"write":  AttributeTransactionTypeWrite,
 }
 
+var MetricsInfo = metricsInfo{
+	AerospikeNamespaceDiskAvailable: metricInfo{
+		Name: "aerospike.namespace.disk.available",
+	},
+	AerospikeNamespaceGeojsonRegionQueryCells: metricInfo{
+		Name: "aerospike.namespace.geojson.region_query_cells",
+	},
+	AerospikeNamespaceGeojsonRegionQueryFalsePositive: metricInfo{
+		Name: "aerospike.namespace.geojson.region_query_false_positive",
+	},
+	AerospikeNamespaceGeojsonRegionQueryPoints: metricInfo{
+		Name: "aerospike.namespace.geojson.region_query_points",
+	},
+	AerospikeNamespaceGeojsonRegionQueryRequests: metricInfo{
+		Name: "aerospike.namespace.geojson.region_query_requests",
+	},
+	AerospikeNamespaceMemoryFree: metricInfo{
+		Name: "aerospike.namespace.memory.free",
+	},
+	AerospikeNamespaceMemoryUsage: metricInfo{
+		Name: "aerospike.namespace.memory.usage",
+	},
+	AerospikeNamespaceQueryCount: metricInfo{
+		Name: "aerospike.namespace.query.count",
+	},
+	AerospikeNamespaceScanCount: metricInfo{
+		Name: "aerospike.namespace.scan.count",
+	},
+	AerospikeNamespaceTransactionCount: metricInfo{
+		Name: "aerospike.namespace.transaction.count",
+	},
+	AerospikeNodeConnectionCount: metricInfo{
+		Name: "aerospike.node.connection.count",
+	},
+	AerospikeNodeConnectionOpen: metricInfo{
+		Name: "aerospike.node.connection.open",
+	},
+	AerospikeNodeMemoryFree: metricInfo{
+		Name: "aerospike.node.memory.free",
+	},
+	AerospikeNodeQueryTracked: metricInfo{
+		Name: "aerospike.node.query.tracked",
+	},
+}
+
+type metricsInfo struct {
+	AerospikeNamespaceDiskAvailable                   metricInfo
+	AerospikeNamespaceGeojsonRegionQueryCells         metricInfo
+	AerospikeNamespaceGeojsonRegionQueryFalsePositive metricInfo
+	AerospikeNamespaceGeojsonRegionQueryPoints        metricInfo
+	AerospikeNamespaceGeojsonRegionQueryRequests      metricInfo
+	AerospikeNamespaceMemoryFree                      metricInfo
+	AerospikeNamespaceMemoryUsage                     metricInfo
+	AerospikeNamespaceQueryCount                      metricInfo
+	AerospikeNamespaceScanCount                       metricInfo
+	AerospikeNamespaceTransactionCount                metricInfo
+	AerospikeNodeConnectionCount                      metricInfo
+	AerospikeNodeConnectionOpen                       metricInfo
+	AerospikeNodeMemoryFree                           metricInfo
+	AerospikeNodeQueryTracked                         metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricAerospikeNamespaceDiskAvailable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Our types are bool, int, float, string, Bytes, nil, so we compare all types in both directions.
@@ -24,6 +24,16 @@ var (
 	i64b = int64(2)
 	f64a = float64(1)
 	f64b = float64(2)
+
+	m1 = map[string]any{
+		"test": true,
+	}
+	m2 = map[string]any{
+		"test": false,
+	}
+
+	sl1 = []any{"value1"}
+	sl2 = []any{"value2"}
 )
 
 type testA struct {
@@ -40,7 +50,19 @@ type testB struct {
 // The test is not *quite* exhaustive, but it does attempt to check every basic type against
 // every other basic type, and includes a pretty good set of tests on the pointers to all the
 // basic types as well.
-func Test_compare(t *testing.T) {
+func Test_comparison(t *testing.T) {
+	pm1 := pcommon.NewMap()
+	pm1.PutBool("test", true)
+
+	pm2 := pcommon.NewMap()
+	pm2.PutBool("test", false)
+
+	psl1 := pcommon.NewSlice()
+	psl1.AppendEmpty().SetStr("value1")
+
+	psl2 := pcommon.NewSlice()
+	psl2.AppendEmpty().SetStr("value2")
+
 	tests := []struct {
 		name string
 		a    any
@@ -100,14 +122,63 @@ func Test_compare(t *testing.T) {
 		{"non-prim, diff type", testA{"hi"}, testB{"hi"}, []bool{false, true, false, false, false, false}},
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
+
+		{"maps diff", m1, m2, []bool{false, true, false, false, false, false}},
+		{"maps same", m1, m1, []bool{true, false, false, false, false, false}},
+		{"pmaps diff", pm1, pm2, []bool{false, true, false, false, false, false}},
+		{"pmaps same", pm1, pm1, []bool{true, false, false, false, false, false}},
+		{"mixed map diff pmap", m1, pm2, []bool{false, true, false, false, false, false}},
+		{"mixed pmap diff map", pm2, m1, []bool{false, true, false, false, false, false}},
+		{"mixed map same pmap", m1, pm1, []bool{true, false, false, false, false, false}},
+		{"mixed pmap same map", pm1, m1, []bool{true, false, false, false, false, false}},
+		{"map and other type", m1, sa, []bool{false, true, false, false, false, false}},
+		{"pmap and other type", pm1, sa, []bool{false, true, false, false, false, false}},
+
+		{"slice diff", sl1, sl2, []bool{false, true, false, false, false, false}},
+		{"slice same", sl1, sl1, []bool{true, false, false, false, false, false}},
+		{"pslice diff", psl1, psl2, []bool{false, true, false, false, false, false}},
+		{"pslice same", psl1, psl1, []bool{true, false, false, false, false, false}},
+		{"mixed slice diff pslice", sl1, psl2, []bool{false, true, false, false, false, false}},
+		{"mixed pslice diff slice", psl2, sl1, []bool{false, true, false, false, false, false}},
+		{"mixed slice same pslice", sl1, psl1, []bool{true, false, false, false, false, false}},
+		{"mixed pslice same slice", psl1, sl1, []bool{true, false, false, false, false, false}},
+		{"slice and other type", sl1, sa, []bool{false, true, false, false, false, false}},
+		{"pslice and other type", psl1, sa, []bool{false, true, false, false, false, false}},
 	}
 	ops := []compareOp{eq, ne, lt, lte, gte, gt}
+	comp := NewValueComparator()
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
-				p, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
-				if got := p.compare(tt.a, tt.b, op); got != tt.want[op] {
+				if got := comp.compare(tt.a, tt.b, op); got != tt.want[op] {
 					t.Errorf("compare(%v, %v, %v) = %v, want %v", tt.a, tt.b, op, got, tt.want[op])
+				}
+				var got bool
+				var funcName string
+				switch op {
+				case eq:
+					funcName = "Equal"
+					got = comp.Equal(tt.a, tt.b)
+				case ne:
+					funcName = "NotEqual"
+					got = comp.NotEqual(tt.a, tt.b)
+				case gt:
+					funcName = "Greater"
+					got = comp.Greater(tt.a, tt.b)
+				case gte:
+					funcName = "GreaterEqual"
+					got = comp.GreaterEqual(tt.a, tt.b)
+				case lt:
+					funcName = "Less"
+					got = comp.Less(tt.a, tt.b)
+				case lte:
+					funcName = "LessEqual"
+					got = comp.LessEqual(tt.a, tt.b)
+				default:
+					t.Fatalf("unknown compare operator: %v", op)
+				}
+				if got != tt.want[op] {
+					t.Errorf("%s(%v, %v) = %v, want %v, op %v", funcName, tt.a, tt.b, got, tt.want[op], op)
 				}
 			})
 		}
@@ -119,116 +190,116 @@ func Test_compare(t *testing.T) {
 // The summary is that they're pretty fast; all the calls to compare are 12 ns/op or less on a 2019 intel
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt64(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(i64a, i64b, eq)
+		c.compare(i64a, i64b, eq)
 	}
 }
 
 func BenchmarkCompareEQFloat(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, eq)
+		c.compare(f64a, f64b, eq)
 	}
 }
 
 func BenchmarkCompareEQString(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, eq)
+		c.compare(sa, sb, eq)
 	}
 }
 
 func BenchmarkCompareEQPString(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(&sa, &sb, eq)
+		c.compare(&sa, &sb, eq)
 	}
 }
 
 func BenchmarkCompareEQBytes(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(ba, bb, eq)
+		c.compare(ba, bb, eq)
 	}
 }
 
 func BenchmarkCompareEQNil(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(nil, nil, eq)
+		c.compare(nil, nil, eq)
 	}
 }
 
 func BenchmarkCompareNEInt(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(i64a, i64b, ne)
+		c.compare(i64a, i64b, ne)
 	}
 }
 
 func BenchmarkCompareNEFloat(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, ne)
+		c.compare(f64a, f64b, ne)
 	}
 }
 
 func BenchmarkCompareNEString(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, ne)
+		c.compare(sa, sb, ne)
 	}
 }
 
 func BenchmarkCompareLTFloat(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, lt)
+		c.compare(f64a, f64b, lt)
 	}
 }
 
 func BenchmarkCompareLTString(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, lt)
+		c.compare(sa, sb, lt)
 	}
 }
 
 func BenchmarkCompareLTNil(b *testing.B) {
-	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
+	c := NewValueComparator()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(nil, nil, lt)
+		c.compare(nil, nil, lt)
 	}
 }
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
 // before adding lt, lte, gte, and gt.
-func compareEq(a any, b any, op compareOp) bool {
+func compareEq(a, b any, op compareOp) bool {
 	switch op {
 	case eq:
 		return a == b

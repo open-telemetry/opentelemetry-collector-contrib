@@ -22,7 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -60,20 +62,20 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	t.Cleanup(func() { testServer.Close() })
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = testServer.URL
+	cfg.Endpoint = testServer.URL
 	switch compression {
 	case configcompression.TypeGzip:
-		cfg.ClientConfig.Compression = configcompression.TypeGzip
+		cfg.Compression = configcompression.TypeGzip
 	case configcompression.TypeZstd:
-		cfg.ClientConfig.Compression = configcompression.TypeZstd
+		cfg.Compression = configcompression.TypeZstd
 	case NoCompression:
-		cfg.ClientConfig.Compression = NoCompression
+		cfg.Compression = NoCompression
 	case configcompression.TypeDeflate:
-		cfg.ClientConfig.Compression = configcompression.TypeDeflate
+		cfg.Compression = configcompression.TypeDeflate
 	default:
-		cfg.ClientConfig.Compression = configcompression.TypeGzip
+		cfg.Compression = configcompression.TypeGzip
 	}
-	cfg.ClientConfig.Auth = nil
+	cfg.Auth = configoptional.None[configauth.Config]()
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
 	client, err := httpSettings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
@@ -987,7 +989,7 @@ func TestSendCompressGzip(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1008,7 +1010,7 @@ func TestSendCompressGzipDeprecated(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1029,7 +1031,7 @@ func TestSendCompressZstd(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeZstd(t, req.Body)
@@ -1050,7 +1052,7 @@ func TestSendCompressDeflate(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeZlib(t, req.Body)

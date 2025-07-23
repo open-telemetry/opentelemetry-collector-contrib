@@ -12,6 +12,40 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	SshcheckDuration: metricInfo{
+		Name: "sshcheck.duration",
+	},
+	SshcheckError: metricInfo{
+		Name: "sshcheck.error",
+	},
+	SshcheckSftpDuration: metricInfo{
+		Name: "sshcheck.sftp_duration",
+	},
+	SshcheckSftpError: metricInfo{
+		Name: "sshcheck.sftp_error",
+	},
+	SshcheckSftpStatus: metricInfo{
+		Name: "sshcheck.sftp_status",
+	},
+	SshcheckStatus: metricInfo{
+		Name: "sshcheck.status",
+	},
+}
+
+type metricsInfo struct {
+	SshcheckDuration     metricInfo
+	SshcheckError        metricInfo
+	SshcheckSftpDuration metricInfo
+	SshcheckSftpError    metricInfo
+	SshcheckSftpStatus   metricInfo
+	SshcheckStatus       metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSshcheckDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

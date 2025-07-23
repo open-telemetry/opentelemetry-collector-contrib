@@ -98,23 +98,24 @@ func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 		switch sig {
 		case "trace":
 			if atype, ok := l.Data["meta.annotation_type"]; ok {
-				if atype == "span_event" {
+				switch atype {
+				case "span_event":
 					return "span_event"
-				} else if atype == "link" {
+				case "link":
 					return "span_link"
 				}
-				logger.Warn("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
+				logger.Debug("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
 				return "span"
 			}
 			return "span"
 		case "log":
 			return "log"
 		default:
-			logger.Warn("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
+			logger.Debug("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
 			return "log"
 		}
 	}
-	logger.Warn("missing meta.signal_type and meta.annotation_type")
+	logger.Debug("missing meta.signal_type and meta.annotation_type")
 	return "log"
 }
 
@@ -250,7 +251,7 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		case bool:
 			newLog.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
+			logger.Debug("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
 		}
 	}
 	return nil
@@ -258,7 +259,7 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 
 // GetParentID returns the parent id from the event or an error if it's not found
 func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
-	if pid, ok := l.Data[fieldName]; ok {
+	if pid, ok := l.Data[fieldName]; ok && pid != nil {
 		pid := strings.ReplaceAll(pid.(string), "-", "")
 		pidByteArray, err := hex.DecodeString(pid)
 		if err == nil {
@@ -279,9 +280,11 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	timeNs := l.MsgPackTimestamp.UnixNano()
 	logger.Debug("processing trace with", zap.Int64("timestamp", timeNs))
 
-	var parentID trc.SpanID
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
-		parentID = spanIDFrom(pid.(string))
+		parentID, err := l.GetParentID(cfg.Attributes.ParentID)
+		if err != nil {
+			parentID = spanIDFrom(pid.(string))
+		}
 		newSpan.SetParentSpanID(pcommon.SpanID(parentID))
 	}
 
@@ -292,7 +295,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			break
 		}
 	}
-	endTimestamp := timeNs + (int64(durationMs) * 1000000)
+	endTimestamp := timeNs + int64(durationMs*1000000)
 
 	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
 		tid := strings.ReplaceAll(tid.(string), "-", "")
@@ -377,7 +380,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		case bool:
 			newSpan.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
+			logger.Debug("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
 		}
 	}
 	return nil

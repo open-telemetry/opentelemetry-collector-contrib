@@ -4,11 +4,12 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +30,7 @@ func (s *ServiceConfig) validate() error {
 
 func (s *ServiceConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if s.NamePattern == "" {
-		return nil, fmt.Errorf("name_pattern is empty")
+		return nil, errors.New("name_pattern is empty")
 	}
 
 	nameRegex, err := regexp.Compile(s.NamePattern)
@@ -75,17 +76,17 @@ type serviceMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (s *serviceMatcher) matcherType() matcherType {
+func (*serviceMatcher) matcherType() matcherType {
 	return matcherTypeService
 }
 
-func (s *serviceMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (s *serviceMatcher) matchTargets(t *taskAnnotated, c ecstypes.ContainerDefinition) ([]matchedTarget, error) {
 	// Service info is only attached for tasks whose services are included in config.
 	// However, Match is called on tasks so we need to guard nil pointer.
 	if t.Service == nil {
 		return nil, errNotMatched
 	}
-	if !s.nameRegex.MatchString(aws.StringValue(t.Service.ServiceName)) {
+	if !s.nameRegex.MatchString(aws.ToString(t.Service.ServiceName)) {
 		return nil, errNotMatched
 	}
 	// The rest is same as taskDefinitionMatcher
@@ -96,7 +97,7 @@ func (s *serviceMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefiniti
 func serviceConfigsToFilter(cfgs []ServiceConfig) (serviceNameFilter, error) {
 	// If no service config, don't describe any services
 	if len(cfgs) == 0 {
-		return func(_ string) bool {
+		return func(string) bool {
 			return false
 		}, nil
 	}

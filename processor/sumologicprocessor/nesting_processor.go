@@ -20,7 +20,7 @@ type NestingProcessorConfig struct {
 	SquashSingleValues bool     `mapstructure:"squash_single_values"`
 }
 
-type NestingProcessor struct {
+type nestingProcessor struct {
 	separator          string
 	enabled            bool
 	allowlist          []string
@@ -28,8 +28,8 @@ type NestingProcessor struct {
 	squashSingleValues bool
 }
 
-func newNestingProcessor(config *NestingProcessorConfig) *NestingProcessor {
-	proc := &NestingProcessor{
+func newNestingProcessor(config *NestingProcessorConfig) *nestingProcessor {
+	proc := &nestingProcessor{
 		separator:          config.Separator,
 		enabled:            config.Enabled,
 		allowlist:          config.Include,
@@ -40,7 +40,7 @@ func newNestingProcessor(config *NestingProcessorConfig) *NestingProcessor {
 	return proc
 }
 
-func (proc *NestingProcessor) processLogs(logs plog.Logs) error {
+func (proc *nestingProcessor) processLogs(logs plog.Logs) error {
 	if !proc.enabled {
 		return nil
 	}
@@ -66,7 +66,7 @@ func (proc *NestingProcessor) processLogs(logs plog.Logs) error {
 	return nil
 }
 
-func (proc *NestingProcessor) processMetrics(metrics pmetric.Metrics) error {
+func (proc *nestingProcessor) processMetrics(metrics pmetric.Metrics) error {
 	if !proc.enabled {
 		return nil
 	}
@@ -92,7 +92,7 @@ func (proc *NestingProcessor) processMetrics(metrics pmetric.Metrics) error {
 	return nil
 }
 
-func (proc *NestingProcessor) processTraces(traces ptrace.Traces) error {
+func (proc *nestingProcessor) processTraces(traces ptrace.Traces) error {
 	if !proc.enabled {
 		return nil
 	}
@@ -118,14 +118,14 @@ func (proc *NestingProcessor) processTraces(traces ptrace.Traces) error {
 	return nil
 }
 
-func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
+func (proc *nestingProcessor) processAttributes(attributes pcommon.Map) error {
 	newMap := pcommon.NewMap()
 
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		// If key is not on allow list or is on deny list, skip translating it.
 		if !proc.shouldTranslateKey(k) {
 			v.CopyTo(newMap.PutEmpty(k))
-			return true
+			continue
 		}
 
 		keys := strings.Split(k, proc.separator)
@@ -134,7 +134,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			// set map[""] = v and return
 			newVal := newMap.PutEmpty(k)
 			v.CopyTo(newVal)
-			return true
+			continue
 		}
 
 		prevValue := pcommon.NewValueMap()
@@ -169,10 +169,9 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			// Now check the value we want to copy. If it is a map, we should merge both maps.
 			// Else, just place the value under the key "".
 			if v.Type() == pcommon.ValueTypeMap {
-				v.Map().Range(func(k string, val pcommon.Value) bool {
+				for k, val := range v.Map().All() {
 					val.CopyTo(prevValue.Map().PutEmpty(k))
-					return true
-				})
+				}
 			} else {
 				v.CopyTo(prevValue.Map().PutEmpty(""))
 			}
@@ -181,8 +180,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 		}
 
 		nextMap.CopyTo(newMap)
-		return true
-	})
+	}
 
 	if proc.squashSingleValues {
 		newMap = proc.squash(newMap)
@@ -196,7 +194,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 // Checks if given key fulfills the following conditions:
 // - has a prefix that exists in the allowlist (if it's not empty)
 // - does not have a prefix that exists in the denylist
-func (proc *NestingProcessor) shouldTranslateKey(k string) bool {
+func (proc *nestingProcessor) shouldTranslateKey(k string) bool {
 	if len(proc.allowlist) > 0 {
 		isOk := false
 		for i := 0; i < len(proc.allowlist); i++ {
@@ -223,7 +221,7 @@ func (proc *NestingProcessor) shouldTranslateKey(k string) bool {
 
 // Squashes maps that have single values, eg. map {"a": {"b": {"c": "C", "d": "D"}}}}
 // gets squashes into {"a.b": {"c": "C", "d": "D"}}}
-func (proc *NestingProcessor) squash(attributes pcommon.Map) pcommon.Map {
+func (proc *nestingProcessor) squash(attributes pcommon.Map) pcommon.Map {
 	newMap := pcommon.NewValueMap()
 	attributes.CopyTo(newMap.Map())
 	key := proc.squashAttribute(newMap)
@@ -244,7 +242,7 @@ func (proc *NestingProcessor) squash(attributes pcommon.Map) pcommon.Map {
 // and the key gets replaced if needed, "" is returned.
 //
 // Else, nothing happens and "" is returned.
-func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
+func (proc *nestingProcessor) squashAttribute(value pcommon.Value) string {
 	if value.Type() != pcommon.ValueTypeMap {
 		return ""
 	}
@@ -255,12 +253,11 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 		key := ""
 		val := pcommon.NewValueEmpty()
 		// This will iterate only over one value (the only one)
-		m.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range m.All() {
 			keySuffix := proc.squashAttribute(v)
 			key = proc.squashKey(k, keySuffix)
 			val = v
-			return false
-		})
+		}
 
 		val.CopyTo(value)
 		return key
@@ -268,7 +265,7 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 
 	// This map doesn't get squashed, but its content might have keys replaced.
 	newMap := pcommon.NewMap()
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		keySuffix := proc.squashAttribute(v)
 		// If "" was returned, the value was not a one-element map and did not get squashed.
 		if keySuffix == "" {
@@ -276,25 +273,23 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 		} else {
 			v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
 		}
-
-		return true
-	})
+	}
 	newMap.CopyTo(value.Map())
 
 	return ""
 }
 
-func (proc *NestingProcessor) squashKey(key string, keySuffix string) string {
+func (proc *nestingProcessor) squashKey(key, keySuffix string) string {
 	if keySuffix == "" {
 		return key
 	}
 	return key + proc.separator + keySuffix
 }
 
-func (proc *NestingProcessor) isEnabled() bool {
+func (proc *nestingProcessor) isEnabled() bool {
 	return proc.enabled
 }
 
-func (*NestingProcessor) ConfigPropertyName() string {
+func (*nestingProcessor) ConfigPropertyName() string {
 	return "nest_attributes"
 }

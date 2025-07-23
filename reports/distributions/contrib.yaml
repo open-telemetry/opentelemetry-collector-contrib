@@ -22,6 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
+        - azureblob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -33,6 +34,7 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -43,6 +45,7 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
+        - loki
         - mezmo
         - opencensus
         - opensearch
@@ -63,30 +66,39 @@ components:
     extension:
         - ack
         - asapclient
+        - awscloudwatchmetricstreams_encoding
+        - awslogs_encoding
         - awsproxy
+        - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
         - http_forwarder
         - jaegerremotesampling
+        - k8s_leader_elector
         - k8s_observer
+        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
         - pprof
         - redis_storage
         - sigv4auth
+        - text_encoding
     processor:
         - attributes
         - cumulativetodelta
+        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -97,6 +109,7 @@ components:
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -110,6 +123,7 @@ components:
         - transform
     provider:
         - aes
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:
@@ -138,6 +152,7 @@ components:
         - elasticsearch
         - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
@@ -198,6 +213,7 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
         - tcpcheck
         - tcplog
@@ -218,6 +234,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

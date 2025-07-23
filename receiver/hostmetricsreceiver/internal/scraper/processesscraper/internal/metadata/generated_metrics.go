@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeStatus specifies the value status attribute.
@@ -80,6 +80,24 @@ var MapAttributeStatus = map[string]AttributeStatus{
 	"system":   AttributeStatusSystem,
 	"unknown":  AttributeStatusUnknown,
 	"zombies":  AttributeStatusZombies,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemProcessesCount: metricInfo{
+		Name: "system.processes.count",
+	},
+	SystemProcessesCreated: metricInfo{
+		Name: "system.processes.created",
+	},
+}
+
+type metricsInfo struct {
+	SystemProcessesCount   metricInfo
+	SystemProcessesCreated metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemProcessesCount struct {

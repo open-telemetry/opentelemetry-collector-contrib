@@ -4,10 +4,11 @@
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/scalyr/dataset-go/pkg/buffer"
 	"github.com/scalyr/dataset-go/pkg/buffer_config"
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
@@ -168,8 +169,8 @@ type Config struct {
 	LogsSettings              `mapstructure:"logs"`
 	ServerHostSettings        `mapstructure:"server_host"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:"timeout"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
@@ -184,10 +185,10 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 // If any of the required fields are missing or have invalid values, it returns an error.
 func (c *Config) Validate() error {
 	if c.APIKey == "" {
-		return fmt.Errorf("api_key is required")
+		return errors.New("api_key is required")
 	}
 	if c.DatasetURL == "" {
-		return fmt.Errorf("dataset_url is required")
+		return errors.New("dataset_url is required")
 	}
 
 	return nil
@@ -211,27 +212,27 @@ func (c *Config) String() string {
 	return s
 }
 
-func (c *Config) convert() *ExporterConfig {
-	return &ExporterConfig{
+func (c *Config) convert() *exporterConfig {
+	return &exporterConfig{
 		datasetConfig: &datasetConfig.DataSetConfig{
 			Endpoint: c.DatasetURL,
 			Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
 			BufferSettings: buffer_config.DataSetBufferSettings{
-				MaxLifetime:              c.BufferSettings.MaxLifetime,
-				PurgeOlderThan:           c.BufferSettings.PurgeOlderThan,
+				MaxLifetime:              c.MaxLifetime,
+				PurgeOlderThan:           c.PurgeOlderThan,
 				MaxSize:                  buffer.LimitBufferSize,
-				GroupBy:                  c.BufferSettings.GroupBy,
-				RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,
-				RetryMaxInterval:         c.BufferSettings.RetryMaxInterval,
-				RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
+				GroupBy:                  c.GroupBy,
+				RetryInitialInterval:     c.RetryInitialInterval,
+				RetryMaxInterval:         c.RetryMaxInterval,
+				RetryMaxElapsedTime:      c.RetryMaxElapsedTime,
 				RetryMultiplier:          backoff.DefaultMultiplier,
 				RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
-				RetryShutdownTimeout:     c.BufferSettings.RetryShutdownTimeout,
-				MaxParallelOutgoing:      c.BufferSettings.MaxParallelOutgoing,
+				RetryShutdownTimeout:     c.RetryShutdownTimeout,
+				MaxParallelOutgoing:      c.MaxParallelOutgoing,
 			},
 			ServerHostSettings: server_host_config.DataSetServerHostSettings{
-				UseHostName: c.ServerHostSettings.UseHostName,
-				ServerHost:  c.ServerHostSettings.ServerHost,
+				UseHostName: c.UseHostName,
+				ServerHost:  c.ServerHost,
 			},
 			Debug: c.Debug,
 		},
@@ -241,7 +242,7 @@ func (c *Config) convert() *ExporterConfig {
 	}
 }
 
-type ExporterConfig struct {
+type exporterConfig struct {
 	datasetConfig      *datasetConfig.DataSetConfig
 	tracesSettings     TracesSettings
 	logsSettings       LogsSettings

@@ -4,30 +4,29 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
+	gojson "github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 )
 
 const (
 	// Constants for OpenTelemetry Specs
 	scopeName = "otelcol/azureresourcelogs"
 
-	// Constants for Azure Log Record Attributes
-	// TODO: Remove once these are available in semconv
-	eventName          = "event.name"
-	eventNameValue     = "az.resource.log"
-	networkPeerAddress = "network.peer.address"
+	attributeAzureCategory         = "azure.category"
+	attributeAzureCorrelationID    = "azure.correlation_id"
+	attributeAzureOperationName    = "azure.operation.name"
+	attributeAzureOperationVersion = "azure.operation.version"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -54,23 +53,23 @@ type azureRecords struct {
 // the common schema:
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
 type azureLogRecord struct {
-	Time              string       `json:"time"`
-	Timestamp         string       `json:"timeStamp"`
-	ResourceID        string       `json:"resourceId"`
-	TenantID          *string      `json:"tenantId"`
-	OperationName     string       `json:"operationName"`
-	OperationVersion  *string      `json:"operationVersion"`
-	Category          string       `json:"category"`
-	ResultType        *string      `json:"resultType"`
-	ResultSignature   *string      `json:"resultSignature"`
-	ResultDescription *string      `json:"resultDescription"`
-	DurationMs        *json.Number `json:"durationMs"`
-	CallerIPAddress   *string      `json:"callerIpAddress"`
-	CorrelationID     *string      `json:"correlationId"`
-	Identity          *any         `json:"identity"`
-	Level             *json.Number `json:"Level"`
-	Location          *string      `json:"location"`
-	Properties        *any         `json:"properties"`
+	Time              string          `json:"time"`
+	Timestamp         string          `json:"timeStamp"`
+	ResourceID        string          `json:"resourceId"`
+	TenantID          *string         `json:"tenantId"`
+	OperationName     string          `json:"operationName"`
+	OperationVersion  *string         `json:"operationVersion"`
+	Category          string          `json:"category"`
+	ResultType        *string         `json:"resultType"`
+	ResultSignature   *string         `json:"resultSignature"`
+	ResultDescription *string         `json:"resultDescription"`
+	DurationMs        *json.Number    `json:"durationMs"`
+	CallerIPAddress   *string         `json:"callerIpAddress"`
+	CorrelationID     *string         `json:"correlationId"`
+	Identity          *any            `json:"identity"`
+	Level             *json.Number    `json:"Level"`
+	Location          *string         `json:"location"`
+	Properties        json.RawMessage `json:"properties"`
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -82,57 +81,77 @@ type ResourceLogsUnmarshaler struct {
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	l := plog.NewLogs()
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 
 	var azureLogs azureRecords
-	decoder := jsoniter.NewDecoder(bytes.NewReader(buf))
-	if err := decoder.Decode(&azureLogs); err != nil {
-		return l, err
+	iter.ReadVal(&azureLogs)
+
+	if iter.Error != nil {
+		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	var resourceIDs []string
-	azureResourceLogs := make(map[string][]azureLogRecord)
-	for _, azureLog := range azureLogs.Records {
-		azureResourceLogs[azureLog.ResourceID] = append(azureResourceLogs[azureLog.ResourceID], azureLog)
-		keyExists := slices.Contains(resourceIDs, azureLog.ResourceID)
-		if !keyExists {
-			resourceIDs = append(resourceIDs, azureLog.ResourceID)
+	allResourceScopeLogs := map[string]plog.ScopeLogs{}
+	for _, log := range azureLogs.Records {
+		scopeLogs, found := allResourceScopeLogs[log.ResourceID]
+		if !found {
+			scopeLogs = plog.NewScopeLogs()
+			scopeLogs.Scope().SetName(scopeName)
+			scopeLogs.Scope().SetVersion(r.Version)
+			allResourceScopeLogs[log.ResourceID] = scopeLogs
 		}
-	}
 
-	for _, resourceID := range resourceIDs {
-		logs := azureResourceLogs[resourceID]
-		resourceLogs := l.ResourceLogs().AppendEmpty()
-		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		scopeLogs.Scope().SetName(scopeName)
-		scopeLogs.Scope().SetVersion(r.Version)
-		logRecords := scopeLogs.LogRecords()
+		nanos, err := getTimestamp(log, r.TimeFormats...)
+		if err != nil {
+			r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
+			continue
+		}
 
-		for i := 0; i < len(logs); i++ {
-			log := logs[i]
-			nanos, err := getTimestamp(log, r.TimeFormats...)
-			if err != nil {
-				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
+		lr := scopeLogs.LogRecords().AppendEmpty()
+		lr.SetTimestamp(nanos)
+
+		if log.Level != nil {
+			severity := asSeverity(*log.Level)
+			lr.SetSeverityNumber(severity)
+			lr.SetSeverityText(log.Level.String())
+		}
+
+		err = addRecordAttributes(log.Category, log.Properties, lr)
+		if err != nil {
+			if errors.Is(err, errStillToImplement) || errors.Is(err, errUnsupportedCategory) {
+				// TODO @constanca-m This will be removed once the categories
+				// are properly mapped to the semantic conventions in
+				// category_logs.go
+				err = lr.Body().FromRaw(extractRawAttributes(log))
+				if err != nil {
+					return plog.Logs{}, err
+				}
 				continue
 			}
 
-			lr := logRecords.AppendEmpty()
-			lr.SetTimestamp(nanos)
-
-			if log.Level != nil {
-				severity := asSeverity(*log.Level)
-				lr.SetSeverityNumber(severity)
-				lr.SetSeverityText(log.Level.String())
+			correlationID := "unknown"
+			if log.CorrelationID != nil {
+				correlationID = *log.CorrelationID
 			}
-
-			lr.Attributes().PutStr(conventions.AttributeCloudResourceID, resourceID)
-			lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-			lr.Attributes().PutStr(eventName, eventNameValue)
-
-			if err := lr.Body().FromRaw(extractRawAttributes(log)); err != nil {
-				return l, err
-			}
+			r.Logger.Error(
+				"unable to convert log record",
+				zap.String("category", log.Category),
+				zap.String("resource id", log.ResourceID),
+				zap.String("correlation id", correlationID),
+				zap.Error(err),
+			)
+		} else {
+			addCommonSchema(log, lr)
 		}
+	}
+
+	l := plog.NewLogs()
+	for resourceID, scopeLogs := range allResourceScopeLogs {
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
+		rl.Resource().Attributes().PutStr(string(conventions.EventNameKey), "az.resource.log")
+		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
 	return l, nil
@@ -154,6 +173,7 @@ func getTimestamp(record azureLogRecord, formats ...string) (pcommon.Timestamp, 
 func asTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
 	var err error
 	var t time.Time
+
 	// Try parsing with provided formats first
 	for _, format := range formats {
 		if t, err = time.Parse(format, s); err == nil {
@@ -191,6 +211,20 @@ func asSeverity(number json.Number) plog.SeverityNumber {
 	}
 }
 
+func putStrPtr(field string, value *string, record plog.LogRecord) {
+	if value != nil && *value != "" {
+		record.Attributes().PutStr(field, *value)
+	}
+}
+
+func addCommonSchema(log azureLogRecord, record plog.LogRecord) {
+	record.Attributes().PutStr(attributeAzureCategory, log.Category)
+	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
+	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
+	putStrPtr(attributeAzureOperationVersion, log.OperationVersion, record)
+	// TODO Keep adding other common fields, like tenant ID
+}
+
 func extractRawAttributes(log azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 
@@ -217,42 +251,64 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	setIf(attrs, azureResultType, log.ResultType)
 	setIf(attrs, azureTenantID, log.TenantID)
 
-	setIf(attrs, conventions.AttributeCloudRegion, log.Location)
-	setIf(attrs, networkPeerAddress, log.CallerIPAddress)
+	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
+	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
 	return attrs
 }
 
-func copyPropertiesAndApplySemanticConventions(category string, properties *any, attrs map[string]any) {
-	if properties == nil {
+func copyPropertiesAndApplySemanticConventions(category string, properties []byte, attrs map[string]any) {
+	if len(properties) == 0 {
 		return
 	}
 
-	// TODO: check if this is a valid JSON string and parse it?
-	switch p := (*properties).(type) {
-	case map[string]any:
-		attrsProps := map[string]any{}
-
-		for k, v := range p {
-			// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
-			if complexConversion, ok := tryGetComplexConversion(category, k); ok {
-				if complexConversion(k, v, attrs) {
-					continue
-				}
-			}
-			// Check for an equivalent Semantic Convention key
-			if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
-				attrs[otelKey] = normalizeValue(otelKey, v)
-			} else {
-				attrsProps[k] = v
-			}
+	// TODO @constanca-m: This is a temporary workaround to
+	// this function. This will be removed once category_logs.log
+	// is implemented for all currently supported categories
+	var props map[string]any
+	if err := gojson.Unmarshal(properties, &props); err != nil {
+		var val any
+		if err = json.Unmarshal(properties, &val); err == nil {
+			// Try primitive value
+			attrs[azureProperties] = val
+			return
 		}
+		// Otherwise add it as a string
+		attrs[azureProperties] = string(properties)
+		return
+	}
 
-		if len(attrsProps) > 0 {
-			attrs[azureProperties] = attrsProps
-		}
+	var handleFunc func(string, any, map[string]any, map[string]any)
+	switch category {
+	case categoryFrontDoorAccessLog:
+		handleFunc = handleFrontDoorAccessLog
+	case categoryFrontDoorHealthProbeLog:
+		handleFunc = handleFrontDoorHealthProbeLog
+	case categoryAppServiceAppLogs:
+		handleFunc = handleAppServiceAppLogs
+	case categoryAppServiceAuditLogs:
+		handleFunc = handleAppServiceAuditLogs
+	case categoryAppServiceAuthenticationLogs:
+		handleFunc = handleAppServiceAuthenticationLogs
+	case categoryAppServiceConsoleLogs:
+		handleFunc = handleAppServiceConsoleLogs
+	case categoryAppServiceHTTPLogs:
+		handleFunc = handleAppServiceHTTPLogs
+	case categoryAppServiceIPSecAuditLogs:
+		handleFunc = handleAppServiceIPSecAuditLogs
+	case categoryAppServicePlatformLogs:
+		handleFunc = handleAppServicePlatformLogs
 	default:
-		// otherwise, just add the properties as-is
-		attrs[azureProperties] = *properties
+		handleFunc = func(field string, value any, _, attrsProps map[string]any) {
+			attrsProps[field] = value
+		}
+	}
+
+	attrsProps := map[string]any{}
+	for field, value := range props {
+		handleFunc(field, value, attrs, attrsProps)
+	}
+	if len(attrsProps) > 0 {
+		attrs[azureProperties] = attrsProps
 	}
 }
 

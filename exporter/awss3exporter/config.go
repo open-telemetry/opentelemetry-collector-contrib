@@ -5,11 +5,18 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
+)
+
+const (
+	DefaultRetryMode        = "standard"
+	DefaultRetryMaxAttempts = 3
+	DefaultRetryMaxBackoff  = 20 * time.Second
 )
 
 // S3UploaderConfig contains aws s3 uploader related config to controls things
@@ -40,6 +47,22 @@ type S3UploaderConfig struct {
 	// before uploading to S3.
 	// Valid values are: `gzip` or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
+
+	// RetryMode specifies the retry mode for S3 client, default is "standard".
+	// Valid values are: "standard", "adaptive", or "nop".
+	// "nop" will disable retry by setting the retryer to aws.NopRetryer.
+	RetryMode string `mapstructure:"retry_mode"`
+	// RetryMaxAttempts specifies the maximum number of attempts for S3 client.
+	// Default is 3 (SDK default).
+	RetryMaxAttempts int `mapstructure:"retry_max_attempts"`
+	// RetryMaxBackoff specifies the maximum backoff delay for S3 client.
+	// Default is 20 seconds (SDK default).
+	RetryMaxBackoff time.Duration `mapstructure:"retry_max_backoff"`
+
+	// UniqueKeyFuncName specifies a function to use for generating a unique string as part of the S3 key.
+	// If unspecified, a default function will be used that generates a random string.
+	// Valid values are: "uuidv7"
+	UniqueKeyFuncName string `mapstructure:"unique_key_func_name"`
 }
 
 type MarshalerType string
@@ -51,16 +74,27 @@ const (
 	Body         MarshalerType = "body"
 )
 
+// ResourceAttrsToS3 defines the mapping of S3 uploading configuration values to resource attribute values.
+type ResourceAttrsToS3 struct {
+	// S3Bucket indicates the mapping of the bucket name used for uploading to a specific resource attribute value.
+	S3Bucket string `mapstructure:"s3_bucket"`
+	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
+	S3Prefix string `mapstructure:"s3_prefix"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-
-	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
-	MarshalerName MarshalerType    `mapstructure:"marshaler"`
+	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	S3Uploader      S3UploaderConfig                `mapstructure:"s3uploader"`
+	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
-	Encoding              *component.ID `mapstructure:"encoding"`
-	EncodingFileExtension string        `mapstructure:"encoding_file_extension"`
+	Encoding              *component.ID     `mapstructure:"encoding"`
+	EncodingFileExtension string            `mapstructure:"encoding_file_extension"`
+	ResourceAttrsToS3     ResourceAttrsToS3 `mapstructure:"resource_attrs_to_s3"`
 }
 
 func (c *Config) Validate() error {
@@ -84,6 +118,10 @@ func (c *Config) Validate() error {
 		"bucket-owner-full-control": true,
 	}
 
+	validUniqueKeyFuncs := map[string]bool{
+		"uuidv7": true,
+	}
+
 	if c.S3Uploader.Region == "" {
 		errs = multierr.Append(errs, errors.New("region is required"))
 	}
@@ -95,7 +133,7 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
-	if !validACLs[c.S3Uploader.ACL] {
+	if c.S3Uploader.ACL != "" && !validACLs[c.S3Uploader.ACL] {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 
@@ -108,6 +146,14 @@ func (c *Config) Validate() error {
 		if c.MarshalerName == SumoIC {
 			errs = multierr.Append(errs, errors.New("marshaler does not support compression"))
 		}
+	}
+
+	if c.S3Uploader.RetryMode != "nop" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {
+		errs = multierr.Append(errs, errors.New("invalid retry mode, must be either 'standard', 'adaptive' or 'nop'"))
+	}
+
+	if c.S3Uploader.UniqueKeyFuncName != "" && !validUniqueKeyFuncs[c.S3Uploader.UniqueKeyFuncName] {
+		errs = multierr.Append(errs, errors.New("invalid UniqueKeyFuncName"))
 	}
 	return errs
 }

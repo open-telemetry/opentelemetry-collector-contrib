@@ -64,6 +64,80 @@ var MapAttributeState = map[string]AttributeState{
 	"unsynced": AttributeStateUnsynced,
 }
 
+var MetricsInfo = metricsInfo{
+	ZookeeperConnectionActive: metricInfo{
+		Name: "zookeeper.connection.active",
+	},
+	ZookeeperDataTreeEphemeralNodeCount: metricInfo{
+		Name: "zookeeper.data_tree.ephemeral_node.count",
+	},
+	ZookeeperDataTreeSize: metricInfo{
+		Name: "zookeeper.data_tree.size",
+	},
+	ZookeeperFileDescriptorLimit: metricInfo{
+		Name: "zookeeper.file_descriptor.limit",
+	},
+	ZookeeperFileDescriptorOpen: metricInfo{
+		Name: "zookeeper.file_descriptor.open",
+	},
+	ZookeeperFollowerCount: metricInfo{
+		Name: "zookeeper.follower.count",
+	},
+	ZookeeperFsyncExceededThresholdCount: metricInfo{
+		Name: "zookeeper.fsync.exceeded_threshold.count",
+	},
+	ZookeeperLatencyAvg: metricInfo{
+		Name: "zookeeper.latency.avg",
+	},
+	ZookeeperLatencyMax: metricInfo{
+		Name: "zookeeper.latency.max",
+	},
+	ZookeeperLatencyMin: metricInfo{
+		Name: "zookeeper.latency.min",
+	},
+	ZookeeperPacketCount: metricInfo{
+		Name: "zookeeper.packet.count",
+	},
+	ZookeeperRequestActive: metricInfo{
+		Name: "zookeeper.request.active",
+	},
+	ZookeeperRuok: metricInfo{
+		Name: "zookeeper.ruok",
+	},
+	ZookeeperSyncPending: metricInfo{
+		Name: "zookeeper.sync.pending",
+	},
+	ZookeeperWatchCount: metricInfo{
+		Name: "zookeeper.watch.count",
+	},
+	ZookeeperZnodeCount: metricInfo{
+		Name: "zookeeper.znode.count",
+	},
+}
+
+type metricsInfo struct {
+	ZookeeperConnectionActive            metricInfo
+	ZookeeperDataTreeEphemeralNodeCount  metricInfo
+	ZookeeperDataTreeSize                metricInfo
+	ZookeeperFileDescriptorLimit         metricInfo
+	ZookeeperFileDescriptorOpen          metricInfo
+	ZookeeperFollowerCount               metricInfo
+	ZookeeperFsyncExceededThresholdCount metricInfo
+	ZookeeperLatencyAvg                  metricInfo
+	ZookeeperLatencyMax                  metricInfo
+	ZookeeperLatencyMin                  metricInfo
+	ZookeeperPacketCount                 metricInfo
+	ZookeeperRequestActive               metricInfo
+	ZookeeperRuok                        metricInfo
+	ZookeeperSyncPending                 metricInfo
+	ZookeeperWatchCount                  metricInfo
+	ZookeeperZnodeCount                  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricZookeeperConnectionActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

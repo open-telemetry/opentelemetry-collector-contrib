@@ -62,7 +62,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 	}
 
 	transport := "http"
-	if cfg.TLSSetting != nil {
+	if cfg.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -96,7 +96,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// create listener from config
-	ln, err := er.cfg.ServerConfig.ToListener(ctx)
+	ln, err := er.cfg.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ServerConfig.ToServer(ctx, host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ToServer(ctx, host, er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown function manages receiver shutdown tasks. part of the receiver.Logs interface.
-func (er *eventReceiver) Shutdown(_ context.Context) error {
+func (er *eventReceiver) Shutdown(context.Context) error {
 	// server must exist to be closed.
 	if er.server == nil {
 		return nil
@@ -212,7 +212,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 }
 
 // Simple healthcheck endpoint.
-func (er *eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func (*eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

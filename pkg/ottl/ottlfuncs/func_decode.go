@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,7 +27,7 @@ func NewDecodeFactory[K any]() ottl.Factory[K] {
 func createDecodeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*DecodeArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("DecodeFactory args must be of type *DecodeArguments[K]")
+		return nil, errors.New("DecodeFactory args must be of type *DecodeArguments[K]")
 	}
 
 	return Decode(args.Target, args.Encoding)
@@ -60,13 +61,15 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 		}
 
 		switch encoding {
+		// base64 is not in IANA index, so we have to deal with this encoding separately
 		case "base64":
-			// base64 is not in IANA index, so we have to deal with this encoding separately
-			decodedBytes, err := base64.StdEncoding.DecodeString(stringValue)
-			if err != nil {
-				return nil, fmt.Errorf("could not decode: %w", err)
-			}
-			return string(decodedBytes), nil
+			return decodeBase64(base64.StdEncoding, stringValue)
+		case "base64-raw":
+			return decodeBase64(base64.RawStdEncoding, stringValue)
+		case "base64-url":
+			return decodeBase64(base64.URLEncoding, stringValue)
+		case "base64-raw-url":
+			return decodeBase64(base64.RawURLEncoding, stringValue)
 		default:
 			e, err := textutils.LookupEncoding(encoding)
 			if err != nil {
@@ -81,4 +84,12 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 			return decodedString, nil
 		}
 	}, nil
+}
+
+func decodeBase64(encoding *base64.Encoding, stringValue string) (any, error) {
+	decodedBytes, err := encoding.DecodeString(stringValue)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode: %w", err)
+	}
+	return string(decodedBytes), nil
 }

@@ -49,6 +49,20 @@ var MapAttributeStartupMode = map[string]AttributeStartupMode{
 	"disabled":     AttributeStartupModeDisabled,
 }
 
+var MetricsInfo = metricsInfo{
+	WindowsServiceStatus: metricInfo{
+		Name: "windows.service.status",
+	},
+}
+
+type metricsInfo struct {
+	WindowsServiceStatus metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricWindowsServiceStatus struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

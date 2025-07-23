@@ -190,7 +190,7 @@ func Test_cpuUtilization(t *testing.T) {
 	}
 
 	actualUtilization := cpuUtilization(timeStart, timeEnd)
-	assert.Equal(t, expectedUtilization.CPU, actualUtilization.CPU, 0.00001)
+	assert.Equal(t, expectedUtilization.CPU, actualUtilization.CPU, "%+v", 0.00001)
 	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
 	assert.InDelta(t, expectedUtilization.Idle, actualUtilization.Idle, 0.00001)

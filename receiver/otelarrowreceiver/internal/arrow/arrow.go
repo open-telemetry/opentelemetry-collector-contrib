@@ -12,8 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -94,7 +94,7 @@ func New(
 	bq admission2.Queue,
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
-	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
+	tracer := set.TracerProvider.Tracer("otel-arrow-receiver")
 	return &Receiver{
 		Consumers:    cs,
 		obsrecv:      obsrecv,

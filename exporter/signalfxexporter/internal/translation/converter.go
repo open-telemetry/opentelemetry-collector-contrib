@@ -120,7 +120,7 @@ func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.D
 	return dps
 }
 
-func filterKeyChars(str string, nonAlphanumericDimChars string) string {
+func filterKeyChars(str, nonAlphanumericDimChars string) string {
 	filterMap := func(r rune) rune {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
 			return r
@@ -144,18 +144,17 @@ func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pcommon.Value) bool {
+	for k, val := range res.Attributes().All() {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
-			return true
+			continue
 		}
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
 			Value: val.AsString(),
 		})
-		return true
-	})
+	}
 
 	return dims
 }

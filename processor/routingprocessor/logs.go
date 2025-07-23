@@ -5,7 +5,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -69,7 +69,7 @@ type getExporters interface {
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
 	ge, ok := host.(getExporters)
 	if !ok {
-		return fmt.Errorf("unable to get exporters")
+		return errors.New("unable to get exporters")
 	}
 	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalLogs])
 	if err != nil {
@@ -148,7 +148,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	return errs
 }
 
-func (p *logProcessor) group(
+func (*logProcessor) group(
 	key string,
 	groups map[string]logsGroup,
 	exporters []exporter.Logs,
@@ -199,10 +199,10 @@ func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	return errs
 }
 
-func (p *logProcessor) Shutdown(context.Context) error {
+func (*logProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (p *logProcessor) Capabilities() consumer.Capabilities {
+func (*logProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

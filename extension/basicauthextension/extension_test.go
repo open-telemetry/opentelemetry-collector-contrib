@@ -4,11 +4,13 @@
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,20 +47,21 @@ var credentials = [][]string{
 
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
-	f, err := os.CreateTemp("", ".htpasswd")
-	require.NoError(t, err)
-	defer os.Remove(f.Name())
 
+	var buf bytes.Buffer
 	for _, c := range credentials {
-		_, err = fmt.Fprintf(f, "%s:%s\n", c[0], c[1])
+		_, err := fmt.Fprintf(&buf, "%s:%s\n", c[0], c[1])
 		require.NoError(t, err)
 	}
+	htpasswdFile := filepath.Join(t.TempDir(), ".htpasswd")
+	err := os.WriteFile(htpasswdFile, buf.Bytes(), 0o600)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{
-			File: f.Name(),
+			File: htpasswdFile,
 		},
 	})
 	require.NoError(t, err)
@@ -146,16 +149,14 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 
 func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	t.Parallel()
-	f, err := os.CreateTemp("", ".htpasswd")
-	require.NoError(t, err)
-	defer os.Remove(f.Name())
 
-	_, err = f.WriteString("username:fromfile")
+	htpasswdFile := filepath.Join(t.TempDir(), ".htpasswd")
+	err := os.WriteFile(htpasswdFile, []byte("username:fromfile"), 0o600)
 	require.NoError(t, err)
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{
-			File:   f.Name(),
+			File:   htpasswdFile,
 			Inline: "username:frominline",
 		},
 	})
@@ -217,7 +218,7 @@ func TestPerRPCAuth(t *testing.T) {
 
 type mockRoundTripper struct{}
 
-func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
 	for k, v := range req.Header {
 		resp.Header[k] = v
@@ -226,13 +227,12 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func TestBasicAuth_ClientValid(t *testing.T) {
-	ext, err := newClientAuthExtension(&Config{
+	ext := newClientAuthExtension(&Config{
 		ClientAuth: &ClientAuthSettings{
 			Username: "username",
 			Password: "password",
 		},
 	})
-	require.NoError(t, err)
 	require.NotNil(t, ext)
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
@@ -273,19 +273,18 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 
 func TestBasicAuth_ClientInvalid(t *testing.T) {
 	t.Run("invalid username format", func(t *testing.T) {
-		ext, err := newClientAuthExtension(&Config{
+		ext := newClientAuthExtension(&Config{
 			ClientAuth: &ClientAuthSettings{
 				Username: "user:name",
 				Password: "password",
 			},
 		})
-		require.NoError(t, err)
 		require.NotNil(t, ext)
 
 		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
 		base := &mockRoundTripper{}
-		_, err = ext.RoundTripper(base)
+		_, err := ext.RoundTripper(base)
 		assert.Error(t, err)
 
 		_, err = ext.PerRPCCredentials()

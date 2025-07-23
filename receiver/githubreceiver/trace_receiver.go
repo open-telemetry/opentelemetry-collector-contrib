@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v73/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -47,7 +47,7 @@ func newTracesReceiver(
 	}
 
 	transport := "http"
-	if config.WebHook.TLSSetting != nil {
+	if config.WebHook.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -84,7 +84,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	// create listener from config
-	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 }
 
 // Simple healthcheck endpoint.
-func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
+func (*githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

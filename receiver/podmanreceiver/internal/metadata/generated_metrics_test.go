@@ -195,7 +195,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("core")
 					assert.True(t, ok)
-					assert.EqualValues(t, "core-val", attrVal.Str())
+					assert.Equal(t, "core-val", attrVal.Str())
 				case "container.cpu.usage.system":
 					assert.False(t, validatedMetrics["container.cpu.usage.system"], "Found a duplicate in the metrics slice: container.cpu.usage.system")
 					validatedMetrics["container.cpu.usage.system"] = true

@@ -37,8 +37,43 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:     "mydriver",
+					Driver:     "postgres",
 					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			id:    component.NewIDWithName(metadata.Type, ""),
+			fname: "config-datasource-config.yaml",
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:   "postgres",
+					Host:     "localhost",
+					Port:     5432,
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
 					Queries: []sqlquery.Query{
 						{
 							SQL: "select count(*) as count, type from mytable group by type",
@@ -107,7 +142,51 @@ func TestLoadConfig(t *testing.T) {
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource' cannot be empty",
+			errorMessage: "'datasource' must be specified",
+		},
+		{
+			fname: "config-invalid-missing-datasource-config-port-sql-server.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:   "sqlserver",
+					Host:     "localhost",
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			fname:        "config-invalid-missing-datasource-config-port.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'port' or 'datasource' must be specified",
+		},
+		{
+			fname:        "config-invalid-missing-datasource-config-database.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'database' or 'datasource' must be specified",
 		},
 		{
 			fname: "config-logs.yaml",
@@ -118,8 +197,39 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:     "mydriver",
+					Driver:     "postgres",
 					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Queries: []sqlquery.Query{
+						{
+							SQL:                "select * from test_logs where log_id > ?",
+							TrackingColumn:     "log_id",
+							TrackingStartValue: "10",
+							Logs: []sqlquery.LogsCfg{
+								{
+									BodyColumn:       "log_body",
+									AttributeColumns: []string{"log_attribute_1", "log_attribute_2"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			fname: "config-logs-datasource-config.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:   "postgres",
+					Host:     "localhost",
+					Port:     5432,
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
 					Queries: []sqlquery.Query{
 						{
 							SQL:                "select * from test_logs where log_id > ?",
@@ -145,6 +255,26 @@ func TestLoadConfig(t *testing.T) {
 			fname:        "config-unnecessary-aggregation.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "aggregation=cumulative but data_type=gauge does not support aggregation",
+		},
+		{
+			fname:        "config-both-datasource.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'host' cannot be set when 'datasource' is specified",
+		},
+		{
+			fname:        "config-invalid-driver.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "unsupported driver: invalid_driver",
+		},
+		{
+			fname:        "config-invalid-driver-case-sensitive.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "unsupported driver: POSTGRES",
+		},
+		{
+			fname:        "config-invalid-driver-partial-match.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "unsupported driver: postgre",
 		},
 	}
 
@@ -172,7 +302,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.Config.ControllerConfig.CollectionInterval)
+	assert.Equal(t, 10*time.Second, cfg.CollectionInterval)
 }
 
 func TestConfig_Validate_Multierr(t *testing.T) {
@@ -192,4 +322,31 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")
 	assert.ErrorContains(t, err, "metric config has unsupported data_type: 'xgauge'")
 	assert.ErrorContains(t, err, "metric config has unsupported aggregation: 'xcumulative'")
+}
+
+func TestIsValidDriver(t *testing.T) {
+	tests := []struct {
+		name     string
+		driver   string
+		expected bool
+	}{
+		{"hdb driver", sqlquery.DriverHDB, true},
+		{"mysql driver", sqlquery.DriverMySQL, true},
+		{"oracle driver", sqlquery.DriverOracle, true},
+		{"postgres driver", sqlquery.DriverPostgres, true},
+		{"snowflake driver", sqlquery.DriverSnowflake, true},
+		{"sqlserver driver", sqlquery.DriverSQLServer, true},
+		{"tds driver", sqlquery.DriverTDS, true},
+		{"invalid driver", "invalid", false},
+		{"empty driver", "", false},
+		{"case sensitive", "POSTGRES", false},
+		{"partial match", "postgre", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sqlquery.IsValidDriver(tt.driver)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

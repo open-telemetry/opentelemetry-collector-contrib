@@ -7,9 +7,13 @@ all_set:
       enabled: true
     oracledb.db_block_gets:
       enabled: true
+    oracledb.ddl_statements_parallelized:
+      enabled: true
     oracledb.dml_locks.limit:
       enabled: true
     oracledb.dml_locks.usage:
+      enabled: true
+    oracledb.dml_statements_parallelized:
       enabled: true
     oracledb.enqueue_deadlocks:
       enabled: true
@@ -29,15 +33,41 @@ all_set:
       enabled: true
     oracledb.logical_reads:
       enabled: true
+    oracledb.logons:
+      enabled: true
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: true
+    oracledb.parallel_operations_not_downgraded:
+      enabled: true
     oracledb.parse_calls:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_read_io_requests:
+      enabled: true
     oracledb.physical_reads:
+      enabled: true
+    oracledb.physical_reads_direct:
+      enabled: true
+    oracledb.physical_write_io_requests:
+      enabled: true
+    oracledb.physical_writes:
+      enabled: true
+    oracledb.physical_writes_direct:
       enabled: true
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
+      enabled: true
+    oracledb.queries_parallelized:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -55,7 +85,14 @@ all_set:
       enabled: true
     oracledb.user_rollbacks:
       enabled: true
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
   resource_attributes:
+    host.name:
+      enabled: true
     oracledb.instance.name:
       enabled: true
 none_set:
@@ -66,9 +103,13 @@ none_set:
       enabled: false
     oracledb.db_block_gets:
       enabled: false
+    oracledb.ddl_statements_parallelized:
+      enabled: false
     oracledb.dml_locks.limit:
       enabled: false
     oracledb.dml_locks.usage:
+      enabled: false
+    oracledb.dml_statements_parallelized:
       enabled: false
     oracledb.enqueue_deadlocks:
       enabled: false
@@ -88,15 +129,41 @@ none_set:
       enabled: false
     oracledb.logical_reads:
       enabled: false
+    oracledb.logons:
+      enabled: false
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: false
+    oracledb.parallel_operations_not_downgraded:
+      enabled: false
     oracledb.parse_calls:
       enabled: false
     oracledb.pga_memory:
       enabled: false
+    oracledb.physical_read_io_requests:
+      enabled: false
     oracledb.physical_reads:
+      enabled: false
+    oracledb.physical_reads_direct:
+      enabled: false
+    oracledb.physical_write_io_requests:
+      enabled: false
+    oracledb.physical_writes:
+      enabled: false
+    oracledb.physical_writes_direct:
       enabled: false
     oracledb.processes.limit:
       enabled: false
     oracledb.processes.usage:
+      enabled: false
+    oracledb.queries_parallelized:
       enabled: false
     oracledb.sessions.limit:
       enabled: false
@@ -114,18 +181,41 @@ none_set:
       enabled: false
     oracledb.user_rollbacks:
       enabled: false
+  events:
+    db.server.query_sample:
+      enabled: false
+    db.server.top_query:
+      enabled: false
   resource_attributes:
+    host.name:
+      enabled: false
     oracledb.instance.name:
       enabled: false
 filter_set_include:
   resource_attributes:
+    host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     oracledb.instance.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    host.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.name-val"
+      events_exclude:
+        - strict: "host.name-val"
     oracledb.instance.name:
       enabled: true
       metrics_exclude:
+        - strict: "oracledb.instance.name-val"
+      events_exclude:
         - strict: "oracledb.instance.name-val"

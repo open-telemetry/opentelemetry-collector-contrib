@@ -70,10 +70,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val")
+			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"})
 
 			rb := mb.NewResourceBuilder()
-			rb.SetTlscheckEndpoint("tlscheck.endpoint-val")
+			rb.SetTlscheckTarget("tlscheck.target-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
@@ -110,10 +110,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("tlscheck.x509.issuer")
 					assert.True(t, ok)
-					assert.EqualValues(t, "tlscheck.x509.issuer-val", attrVal.Str())
+					assert.Equal(t, "tlscheck.x509.issuer-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("tlscheck.x509.cn")
 					assert.True(t, ok)
-					assert.EqualValues(t, "tlscheck.x509.cn-val", attrVal.Str())
+					assert.Equal(t, "tlscheck.x509.cn-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tlscheck.x509.san")
+					assert.True(t, ok)
+					assert.Equal(t, []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"}, attrVal.Slice().AsRaw())
 				}
 			}
 		})

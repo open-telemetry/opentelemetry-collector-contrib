@@ -4,13 +4,14 @@
 package metrics
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
@@ -143,10 +144,32 @@ func Test_extractCountMetric(t *testing.T) {
 			},
 		},
 		{
+			name:         "summary custom suffix",
+			input:        getTestSummaryMetric(),
+			monotonicity: true,
+			suffix:       ottl.NewTestingOptional("_custom_suf"),
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
+				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				countMetric.Sum().SetIsMonotonic(true)
+
+				countMetric.SetName("summary_metric_custom_suf")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(summaryMetric.Summary().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
 			name:         "gauge (error)",
 			input:        getTestGaugeMetric(),
 			monotonicity: false,
-			wantErr:      fmt.Errorf("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got Gauge"),
+			wantErr:      errors.New("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got Gauge"),
 		},
 	}
 	for _, tt := range tests {
@@ -154,7 +177,7 @@ func Test_extractCountMetric(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := extractCountMetric(tt.monotonicity)
+			evaluate, err := extractCountMetric(tt.monotonicity, tt.suffix)
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))

@@ -38,11 +38,11 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	return p.ParserOperator.ProcessWith(ctx, entry, p.parse)
+	return p.ProcessWith(ctx, entry, p.parse)
 }
 
 // parse will parse a uri from a field and attach it to an entry.
-func (p *Parser) parse(value any) (any, error) {
+func (*Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
 		return parseutils.ParseURI(m, semconvCompliantFeatureGate.IsEnabled())

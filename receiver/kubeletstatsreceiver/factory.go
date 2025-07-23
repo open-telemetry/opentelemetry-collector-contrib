@@ -25,11 +25,12 @@ const (
 	enableCPUUsageMetricsFeatureFlag = "receiver.kubeletstats.enableCPUUsageMetrics"
 )
 
-var enableCPUUsageMetrics = featuregate.GlobalRegistry().MustRegister(
+var EnableCPUUsageMetrics = featuregate.GlobalRegistry().MustRegister(
 	enableCPUUsageMetricsFeatureFlag,
-	featuregate.StageAlpha,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled the container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics will be replaced by the container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage"),
 	featuregate.WithRegisterFromVersion("v0.110.0"),
+	featuregate.WithRegisterToVersion("v0.131.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885"),
 )
 
@@ -76,31 +77,6 @@ func createMetricsReceiver(
 	rest, err := restClient(set.Logger, cfg)
 	if err != nil {
 		return nil, err
-	}
-
-	if enableCPUUsageMetrics.IsEnabled() {
-		if cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
-			cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled = false
-			cfg.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled = true
-		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled {
-			cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled = false
-			cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUsage.Enabled = true
-		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled {
-			cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled = false
-			cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUsage.Enabled = true
-		}
-	} else {
-		if cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
-			set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
-		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled {
-			set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
-		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled {
-			set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
-		}
 	}
 
 	scrp, err := newKubeletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig, cfg.NodeName)

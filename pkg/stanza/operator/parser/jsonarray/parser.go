@@ -27,7 +27,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry for json array.
 func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
-	return p.ParserOperator.ProcessWith(ctx, e, p.parse)
+	return p.ProcessWith(ctx, e, p.parse)
 }
 
 func generateParseToArrayFunc(pool *fastjson.ParserPool) parseFunc {

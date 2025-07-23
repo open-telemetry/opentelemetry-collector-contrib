@@ -3,10 +3,12 @@ type: awscloudwatchlogs
 status:
   class: exporter
   stability:
-    beta: [logs]
+    unmaintained: [logs]
   distributions: [contrib]
   codeowners:
-    active: [boostchicken, bryan-aguilar, rapphil]
+    active: []
+    emeritus: [bryan-aguilar, boostchicken, rapphil]
+    seeking_new: true
 
 tests:
   config:

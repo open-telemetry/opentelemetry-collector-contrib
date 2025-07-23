@@ -12,6 +12,60 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	ContainerBlockioIoServiceBytesRecursiveRead: metricInfo{
+		Name: "container.blockio.io_service_bytes_recursive.read",
+	},
+	ContainerBlockioIoServiceBytesRecursiveWrite: metricInfo{
+		Name: "container.blockio.io_service_bytes_recursive.write",
+	},
+	ContainerCPUPercent: metricInfo{
+		Name: "container.cpu.percent",
+	},
+	ContainerCPUUsagePercpu: metricInfo{
+		Name: "container.cpu.usage.percpu",
+	},
+	ContainerCPUUsageSystem: metricInfo{
+		Name: "container.cpu.usage.system",
+	},
+	ContainerCPUUsageTotal: metricInfo{
+		Name: "container.cpu.usage.total",
+	},
+	ContainerMemoryPercent: metricInfo{
+		Name: "container.memory.percent",
+	},
+	ContainerMemoryUsageLimit: metricInfo{
+		Name: "container.memory.usage.limit",
+	},
+	ContainerMemoryUsageTotal: metricInfo{
+		Name: "container.memory.usage.total",
+	},
+	ContainerNetworkIoUsageRxBytes: metricInfo{
+		Name: "container.network.io.usage.rx_bytes",
+	},
+	ContainerNetworkIoUsageTxBytes: metricInfo{
+		Name: "container.network.io.usage.tx_bytes",
+	},
+}
+
+type metricsInfo struct {
+	ContainerBlockioIoServiceBytesRecursiveRead  metricInfo
+	ContainerBlockioIoServiceBytesRecursiveWrite metricInfo
+	ContainerCPUPercent                          metricInfo
+	ContainerCPUUsagePercpu                      metricInfo
+	ContainerCPUUsageSystem                      metricInfo
+	ContainerCPUUsageTotal                       metricInfo
+	ContainerMemoryPercent                       metricInfo
+	ContainerMemoryUsageLimit                    metricInfo
+	ContainerMemoryUsageTotal                    metricInfo
+	ContainerNetworkIoUsageRxBytes               metricInfo
+	ContainerNetworkIoUsageTxBytes               metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricContainerBlockioIoServiceBytesRecursiveRead struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

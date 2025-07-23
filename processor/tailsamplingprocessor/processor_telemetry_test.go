@@ -694,11 +694,11 @@ func setupTestTelemetry() testTelemetry {
 func (tt *testTelemetry) newSettings() processor.Settings {
 	set := processortest.NewNopSettings(metadata.Type)
 	set.ID = component.NewID(component.MustNewType("tail_sampling"))
-	set.TelemetrySettings.MeterProvider = tt.meterProvider
+	set.MeterProvider = tt.meterProvider
 	return set
 }
 
-func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {
@@ -710,7 +710,7 @@ func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) 
 	return metricdata.Metrics{}
 }
 
-func (tt *testTelemetry) len(got metricdata.ResourceMetrics) int {
+func (*testTelemetry) len(got metricdata.ResourceMetrics) int {
 	metricsCount := 0
 	for _, sm := range got.ScopeMetrics {
 		metricsCount += len(sm.Metrics)

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -52,6 +52,7 @@ var allMetrics = []string{
 	"system.network.errors",
 	"system.network.io",
 	"system.network.packets",
+	"system.paging.faults",
 	"system.paging.operations",
 	"system.paging.usage",
 }
@@ -64,11 +65,11 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"solaris": {"system.filesystem.inodes.usage", "system.paging.faults"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.processes.count"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.processes.count"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"solaris": {"system.filesystem.inodes.usage"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -128,7 +129,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl(),
+		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
@@ -141,7 +142,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	expectedMetrics := allMetrics
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
-	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
+	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)
 	}
@@ -153,7 +154,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	var expectedResourceMetrics []string
 	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
-	assert.Equal(t, len(expectedResourceMetrics), len(returnedResourceMetrics))
+	assert.Len(t, returnedResourceMetrics, len(expectedResourceMetrics))
 	for _, expected := range expectedResourceMetrics {
 		assert.Contains(t, returnedResourceMetrics, expected)
 	}
@@ -173,7 +174,7 @@ func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 	return metricNames
 }
 
-func appendMapInto(m1 map[string]struct{}, m2 map[string]struct{}) {
+func appendMapInto(m1, m2 map[string]struct{}) {
 	for k, v := range m2 {
 		m1[k] = v
 	}
@@ -220,7 +221,7 @@ type notifyingSink struct {
 	ch              chan int
 }
 
-func (s *notifyingSink) Capabilities() consumer.Capabilities {
+func (*notifyingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

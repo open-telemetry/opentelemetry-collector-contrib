@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		Auth: &Authentication{
 			Type: ConnectionString,
 		},
-		Container: &Container{
+		Container: &TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
@@ -49,7 +49,11 @@ func createDefaultConfig() component.Config {
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
 		},
-		FormatType:    "json",
+		FormatType: formatTypeJSON,
+		AppendBlob: &AppendBlob{
+			Enabled:   false,
+			Separator: "\n",
+		},
 		Encodings:     &Encodings{},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}

@@ -20,7 +20,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	t.Run("NewFactoryCorrectType", func(t *testing.T) {
 		factory := NewFactory()
-		require.EqualValues(t, metadata.Type, factory.Type())
+		require.Equal(t, metadata.Type, factory.Type())
 	})
 }
 

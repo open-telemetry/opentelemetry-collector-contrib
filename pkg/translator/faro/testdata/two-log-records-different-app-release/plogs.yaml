@@ -1,0 +1,13 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: timestamp=2021-09-30T10:46:17.68Z kind=log message="opened pricing page" level=info context_component=AppRoot context_page=Pricing traceID=abcd spanID=def app_name=testapp app_release=1.2.3
+            spanId: ""
+            traceId: ""
+          - body:
+              stringValue: timestamp=2021-09-30T10:46:17.68Z kind=log message="opened pricing page" level=info context_component=AppRoot context_page=Pricing traceID=abcd spanID=def app_name=testapp app_release=4.5.6
+            spanId: ""
+            traceId: ""
+        scope: {}

@@ -12,6 +12,9 @@ import (
 
 // Config specifies how the Per-RPC bearer token based authentication data should be obtained.
 type Config struct {
+	// Header specifies the auth-header for the token. Defaults to "Authorization"
+	Header string `mapstructure:"header,omitempty"`
+
 	// Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
 	Scheme string `mapstructure:"scheme,omitempty"`
 

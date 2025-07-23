@@ -90,8 +90,9 @@ type Config struct {
 }
 
 type DiscoveryConfig struct {
-	Enabled         bool     `mapstructure:"enabled"`
-	IgnoreReceivers []string `mapstructure:"ignore_receivers"`
+	Enabled            bool              `mapstructure:"enabled"`
+	IgnoreReceivers    []string          `mapstructure:"ignore_receivers"`
+	DefaultAnnotations map[string]string `mapstructure:"default_annotations"`
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
@@ -106,7 +107,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	for endpointType := range cfg.ResourceAttributes {
 		switch endpointType {
-		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType:
+		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType, observer.KafkaTopicType:
 		default:
 			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
 		}

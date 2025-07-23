@@ -4,6 +4,7 @@
 package regexreplace // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/regexreplace"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -63,7 +64,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if (c.RegexName == "") == (c.Regex == "") {
-		return nil, fmt.Errorf("either regex or regex_name must be set")
+		return nil, errors.New("either regex or regex_name must be set")
 	}
 
 	regexp, err := c.getRegexp()

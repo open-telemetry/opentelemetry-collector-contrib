@@ -51,31 +51,29 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 	}
 
 	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pcommon.ValueTypeMap {
-		mapVal.Map().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range mapVal.Map().All() {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
-				return true
+				continue
 			}
 
 			event.Properties = append(event.Properties, &sfxpb.Property{
 				Key:   k,
 				Value: val,
 			})
-			return true
-		})
+		}
 	}
 
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
 	resourceAttrsForDimensions := pcommon.NewMap()
-	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range resourceAttrs.All() {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
 			v.CopyTo(resourceAttrsForDimensions.PutEmpty(k))
 		}
-		return true
-	})
+	}
 
 	addDimension := func(k string, v pcommon.Value) bool {
 		// Skip internal attributes
@@ -136,14 +134,6 @@ func attributeValToPropertyVal(v pcommon.Value) (*sfxpb.PropertyValue, error) {
 	case pcommon.ValueTypeStr:
 		asString := v.Str()
 		val.StrValue = &asString
-	case pcommon.ValueTypeEmpty:
-		fallthrough
-	case pcommon.ValueTypeMap:
-		fallthrough
-	case pcommon.ValueTypeSlice:
-		fallthrough
-	case pcommon.ValueTypeBytes:
-		fallthrough
 	default:
 		return nil, fmt.Errorf("attribute value type %q not supported in SignalFx events", v.Type().String())
 	}

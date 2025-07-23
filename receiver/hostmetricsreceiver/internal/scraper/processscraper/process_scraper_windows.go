@@ -7,7 +7,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"path/filepath"
 	"regexp"
 
@@ -30,7 +30,7 @@ func (s *processScraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilizat
 
 func getProcessName(_ context.Context, _ processHandle, exePath string) (string, error) {
 	if exePath == "" {
-		return "", fmt.Errorf("executable path is empty")
+		return "", errors.New("executable path is empty")
 	}
 
 	return filepath.Base(exePath), nil
@@ -50,7 +50,7 @@ func getProcessExecutable(ctx context.Context, proc processHandle) (string, erro
 }
 
 // matches the first argument before an unquoted space or slash
-var cmdRegex = regexp.MustCompile(`^((?:[^"]*?"[^"]*?")*?[^"]*?)(?:[ \/]|$)`)
+var cmdRegex = regexp.MustCompile(`^((?:[^"]*?"[^"]*?")*?[^"]*?)(?:[ /]|$)`)
 
 func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadata, error) {
 	cmdline, err := proc.CmdlineWithContext(ctx)

@@ -21,11 +21,12 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/metric/noop"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 // traceToMetricConnector is the schema for connector
@@ -99,7 +100,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	}, nil
 }
 
-func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
+func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
 	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
@@ -122,10 +123,8 @@ func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator
 	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
-	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
-		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
-	} else {
-		logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention.")
+	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 	}
 	if v := cfg.BucketInterval; v > 0 {
 		acfg.BucketInterval = v
@@ -134,7 +133,7 @@ func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(context.Context, component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
 	go c.run()
@@ -160,11 +159,11 @@ func (c *traceToMetricConnector) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
+func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *traceToMetricConnector) addToCache(containerID string, key string) {
+func (c *traceToMetricConnector) addToCache(containerID, key string) {
 	if tags, ok := c.containerTagCache.Get(containerID); ok {
 		tagList := tags.(*sync.Map)
 		tagList.Store(key, struct{}{})
@@ -180,7 +179,7 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 		rs := traces.ResourceSpans().At(i)
 		attrs := rs.Resource().Attributes()
 
-		containerID, ok := attrs.Get(semconv.AttributeContainerID)
+		containerID, ok := attrs.Get(string(semconv.ContainerIDKey))
 		if !ok {
 			continue
 		}

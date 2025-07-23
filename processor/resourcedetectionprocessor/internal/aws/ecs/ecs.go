@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -60,8 +60,8 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return pcommon.NewResource(), "", fmt.Errorf("unable to fetch task metadata: %w", err)
 	}
 
-	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSECS)
+	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSECS.Value.AsString())
 	d.rb.SetAwsEcsTaskArn(tmdeResp.TaskARN)
 	d.rb.SetAwsEcsTaskFamily(tmdeResp.Family)
 	d.rb.SetAwsEcsTaskRevision(tmdeResp.Revision)
@@ -116,7 +116,7 @@ func constructClusterArn(cluster, region, account string) string {
 
 // Parses ECS Task ARN into subcomponents according to its spec
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
-func parseTaskARN(taskARN string) (region string, account string, taskID string) {
+func parseTaskARN(taskARN string) (region, account, taskID string) {
 	parts := strings.Split(taskARN, ":")
 	if len(parts) >= 5 {
 		region := parts[3]

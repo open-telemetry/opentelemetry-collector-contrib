@@ -16,7 +16,7 @@ import (
 
 type mockEndpoint struct{}
 
-func (m *mockEndpoint) PodKeyToServiceNames() map[string][]string {
+func (*mockEndpoint) PodKeyToServiceNames() map[string][]string {
 	return map[string][]string{
 		"namespace:default,podName:test-pod": {"test-service"},
 	}
@@ -54,5 +54,5 @@ func TestServiceStore(t *testing.T) {
 	kubernetesBlob = map[string]any{}
 	ok = s.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
-	assert.Equal(t, "", metric.GetTag(ci.TypeService))
+	assert.Empty(t, metric.GetTag(ci.TypeService))
 }

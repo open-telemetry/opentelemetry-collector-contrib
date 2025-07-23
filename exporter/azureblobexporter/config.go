@@ -22,16 +22,18 @@ type Encodings struct {
 	Traces  *component.ID `mapstructure:"traces"`
 }
 
-type (
-	Container TelemetryConfig
-)
-
 type BlobNameFormat struct {
-	MetricsFormat  string            `mapstructure:"metrics_format"`
-	LogsFormat     string            `mapstructure:"logs_format"`
-	TracesFormat   string            `mapstructure:"traces_format"`
-	SerialNumRange int64             `mapstructure:"serial_num_range"`
-	Params         map[string]string `mapstructure:"params"`
+	MetricsFormat            string            `mapstructure:"metrics_format"`
+	LogsFormat               string            `mapstructure:"logs_format"`
+	TracesFormat             string            `mapstructure:"traces_format"`
+	SerialNumRange           int64             `mapstructure:"serial_num_range"`
+	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
+	Params                   map[string]string `mapstructure:"params"`
+}
+
+type AppendBlob struct {
+	Enabled   bool   `mapstructure:"enabled"`
+	Separator string `mapstructure:"separator"`
 }
 
 type Authentication struct {
@@ -66,14 +68,17 @@ type Config struct {
 	URL string `mapstructure:"url"`
 
 	// A container organizes a set of blobs, similar to a directory in a file system.
-	Container *Container      `mapstructure:"container"`
-	Auth      *Authentication `mapstructure:"auth"`
+	Container *TelemetryConfig `mapstructure:"container"`
+	Auth      *Authentication  `mapstructure:"auth"`
 
 	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
 	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
 
 	// FormatType is the format of encoded telemetry data. Supported values are json and proto.
 	FormatType string `mapstructure:"format"`
+
+	// AppendBlob configures append blob behavior
+	AppendBlob *AppendBlob `mapstructure:"append_blob"`
 
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings *Encodings `mapstructure:"encodings"`

@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -66,6 +66,7 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 
 			return &http.Response{
 				StatusCode: code,
+				Request:    req,
 				Body:       io.NopCloser(bytes.NewBufferString(body)),
 				Header:     make(http.Header),
 			}
@@ -100,7 +101,7 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	return metrics
 }
 
-func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
+func createTraceData(resourcesNum, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
@@ -128,11 +129,11 @@ func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
 	return traces
 }
 
-func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs {
+func createLogData(numResources, numLibraries, numRecords int) plog.Logs {
 	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
-func repeat(what int, times int) []int {
+func repeat(what, times int) []int {
 	result := make([]int, times)
 	for i := range result {
 		result[i] = what
@@ -170,7 +171,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, "myindex")
-				logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 				logRecord.Attributes().PutStr("custom", "custom")
 				logRecord.SetTimestamp(ts)
 			}
@@ -217,7 +218,7 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	}
 
 	factory := NewFactory()
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
@@ -269,7 +270,7 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
@@ -331,7 +332,7 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 		panic(err)
 	}
 
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -825,7 +826,7 @@ func TestReceiveLogs(t *testing.T) {
 								z.Close()
 								require.NoError(t, err)
 							}
-							if strings.Contains(string(batchBody), fmt.Sprintf(`"%s"`, attrVal.Str())) {
+							if strings.Contains(string(batchBody), fmt.Sprintf(`%q`, attrVal.Str())) {
 								assert.False(t, eventFound, "log event %s found in multiple batches", attrVal.Str())
 								eventFound = true
 								droppedCount--
@@ -1268,7 +1269,7 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 	request, err := runMetricsExport(t, cfg, createMetricsData(1, 100), 2, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "gzip", request[0].headers.Get("Content-Encoding"))
-	assert.NotEqual(t, "", request)
+	assert.NotEmpty(t, request)
 }
 
 func TestErrorReceived(t *testing.T) {
@@ -1291,12 +1292,12 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1316,7 +1317,64 @@ func TestErrorReceived(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Should have received request")
 	}
-	assert.EqualError(t, err, "HTTP 500 \"Internal Server Error\"")
+	errMsg := fmt.Sprintf("HTTP \"/services/collector\" %d %q",
+		http.StatusInternalServerError,
+		http.StatusText(http.StatusInternalServerError),
+	)
+	assert.EqualError(t, err, errMsg)
+}
+
+func TestErrorReceivedForbidden(t *testing.T) {
+	rr := make(chan receivedRequest)
+	capture := capturingData{receivedRequest: rr, statusCode: 403}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	defer s.Close()
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			assert.NoError(t, e)
+		}
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
+	// otherwise we will not see the error.
+	cfg.QueueSettings.Enabled = false
+	// Disable retries to not wait too much time for the return error.
+	cfg.Enabled = false
+	cfg.DisableCompression = true
+	cfg.Token = "1234-1234"
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	td := createTraceData(1, 3)
+
+	err = exporter.ConsumeTraces(context.Background(), td)
+	select {
+	case <-rr:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Should have received request")
+	}
+	errMsg := fmt.Sprintf("Permanent error: HTTP \"/services/collector\" %d %q",
+		http.StatusForbidden,
+		http.StatusText(http.StatusForbidden),
+	)
+	assert.EqualError(t, err, errMsg)
+	assert.True(t, consumererror.IsPermanent(err))
 }
 
 func TestInvalidLogs(t *testing.T) {
@@ -1345,8 +1403,8 @@ func TestInvalidURL(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
-	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
+	cfg.Enabled = false
+	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
@@ -1379,12 +1437,12 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -1394,7 +1452,9 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
-		fmt.Sprintf("%s: heartbeat on startup failed: HTTP 403 \"Forbidden\"", params.ID.String()),
+		fmt.Sprintf("%s: heartbeat on startup failed: Permanent error: HTTP \"/services/collector\" 403 \"Forbidden\"",
+			params.ID.String(),
+		),
 	)
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
@@ -1418,12 +1478,12 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = false
@@ -1453,12 +1513,12 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -1593,7 +1653,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk"}
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
 	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	logs := createLogData(1, 1, 1)
 
@@ -1605,9 +1665,8 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.ErrorContains(t, err, "HTTP/0.0 400")
+	require.EqualError(t, err, "Permanent error: HTTP \"/v1/endpoint\" 400 \"Bad Request\"")
 	// The returned error should contain the response body responseBody.
-	assert.ErrorContains(t, err, responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
@@ -1615,7 +1674,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.ErrorContains(t, err, "HTTP 500")
+	require.EqualError(t, err, "HTTP \"/v1/endpoint\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
 }
@@ -1742,7 +1801,7 @@ func Benchmark_pushLogData_compressed_100_200_5M(b *testing.B) {
 	benchPushLogData(b, 100, 200, 5*1024*1024, true)
 }
 
-func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool) {
+func benchPushLogData(b *testing.B, numResources, numRecords int, bufSize uint, compressionEnabled bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
 	config.DisableCompression = !compressionEnabled
@@ -1891,7 +1950,7 @@ func Benchmark_pushMetricData_compressed_100_200_5M_MultiMetric(b *testing.B) {
 	benchPushMetricData(b, 100, 200, 5*1024*1024, true, true)
 }
 
-func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool, useMultiMetricFormat bool) {
+func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uint, compressionEnabled, useMultiMetricFormat bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthMetrics = bufSize
 	config.DisableCompression = !compressionEnabled

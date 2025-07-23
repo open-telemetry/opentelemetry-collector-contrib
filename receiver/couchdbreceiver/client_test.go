@@ -35,7 +35,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 func TestNewCouchDBClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -175,7 +175,7 @@ func TestGetNodeStats(t *testing.T) {
 
 		actualStats, err := couchdbClient.GetStats("_local")
 		require.NoError(t, err)
-		require.EqualValues(t, expectedStats, actualStats)
+		require.Equal(t, expectedStats, actualStats)
 	})
 }
 

@@ -18,7 +18,7 @@ import (
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
 )
 
-var _ (Client) = &nsxClient{}
+var _ Client = &nsxClient{}
 
 // Client is a way of interacting with the NSX REST API
 type Client interface {
@@ -39,7 +39,7 @@ type nsxClient struct {
 var errUnauthorized = errors.New("STATUS 403, unauthorized")
 
 func newClient(ctx context.Context, c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
-	client, err := c.ClientConfig.ToClient(ctx, host, settings)
+	client, err := c.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -175,21 +175,21 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 	}
 }
 
-func (c *nsxClient) nodeStatusEndpoint(class nodeClass, nodeID string) string {
+func (*nsxClient) nodeStatusEndpoint(class nodeClass, nodeID string) string {
 	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/status", nodeID)
 	}
 	return fmt.Sprintf("/api/v1/cluster/nodes/%s/status", nodeID)
 }
 
-func (c *nsxClient) interfacesEndpoint(class nodeClass, nodeID string) string {
+func (*nsxClient) interfacesEndpoint(class nodeClass, nodeID string) string {
 	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces", nodeID)
 	}
 	return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", nodeID)
 }
 
-func (c *nsxClient) interfaceStatusEndpoint(class nodeClass, nodeID, interfaceID string) string {
+func (*nsxClient) interfaceStatusEndpoint(class nodeClass, nodeID, interfaceID string) string {
 	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 	}

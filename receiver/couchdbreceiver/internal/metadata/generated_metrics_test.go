@@ -166,7 +166,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "writes", attrVal.Str())
+					assert.Equal(t, "writes", attrVal.Str())
 				case "couchdb.file_descriptor.open":
 					assert.False(t, validatedMetrics["couchdb.file_descriptor.open"], "Found a duplicate in the metrics slice: couchdb.file_descriptor.open")
 					validatedMetrics["couchdb.file_descriptor.open"] = true
@@ -211,7 +211,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.method")
 					assert.True(t, ok)
-					assert.EqualValues(t, "COPY", attrVal.Str())
+					assert.Equal(t, "COPY", attrVal.Str())
 				case "couchdb.httpd.responses":
 					assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
 					validatedMetrics["couchdb.httpd.responses"] = true
@@ -228,7 +228,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.status_code")
 					assert.True(t, ok)
-					assert.EqualValues(t, "http.status_code-val", attrVal.Str())
+					assert.Equal(t, "http.status_code-val", attrVal.Str())
 				case "couchdb.httpd.views":
 					assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
 					validatedMetrics["couchdb.httpd.views"] = true
@@ -245,7 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("view")
 					assert.True(t, ok)
-					assert.EqualValues(t, "temporary_view_reads", attrVal.Str())
+					assert.Equal(t, "temporary_view_reads", attrVal.Str())
 				}
 			}
 		})

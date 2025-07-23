@@ -194,7 +194,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 	p.detectedResource.schemaURL = mergedSchemaURL
 }
 
-func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
+func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
 	if currentSchemaURL == "" {
 		return newSchemaURL
 	}
@@ -230,7 +230,7 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	}
 
 	toAttr := to.Attributes()
-	from.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range from.Attributes().All() {
 		if overrideTo {
 			v.CopyTo(toAttr.PutEmpty(k))
 		} else {
@@ -238,8 +238,7 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 				v.CopyTo(toAttr.PutEmpty(k))
 			}
 		}
-		return true
-	})
+	}
 }
 
 func IsEmptyResource(res pcommon.Resource) bool {

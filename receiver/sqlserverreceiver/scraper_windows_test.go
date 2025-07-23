@@ -28,9 +28,19 @@ type mockPerfCounterWatcher struct {
 	mock.Mock
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Close provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) Close() error {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) Close() error {
+	ret := w.Called()
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -43,8 +53,8 @@ func (_m *mockPerfCounterWatcher) Close() error {
 }
 
 // Path provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) Path() string {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) Path() string {
+	ret := w.Called()
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
@@ -57,8 +67,8 @@ func (_m *mockPerfCounterWatcher) Path() string {
 }
 
 // ScrapeData provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
+	ret := w.Called()
 
 	var r0 []winperfcounters.CounterValue
 	if rf, ok := ret.Get(0).(func() []winperfcounters.CounterValue); ok {
@@ -77,7 +87,7 @@ func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, 
 	return r0, r1
 }
 
-func (_m *mockPerfCounterWatcher) Reset() error {
+func (*mockPerfCounterWatcher) Reset() error {
 	return nil
 }
 
@@ -91,7 +101,7 @@ func TestSqlServerScraper(t *testing.T) {
 
 	assert.NoError(t, s.start(context.Background(), nil))
 	assert.Empty(t, s.watcherRecorders)
-	assert.Equal(t, 23, obsLogs.Len())
+	assert.Equal(t, 21, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:General Statistics\\").Len())

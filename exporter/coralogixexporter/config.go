@@ -6,11 +6,11 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -22,7 +22,7 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
@@ -61,9 +61,13 @@ type Config struct {
 	AppName   string `mapstructure:"application_name"`
 	SubSystem string `mapstructure:"subsystem_name"`
 
-	// Reference:
-	// 	https://github.com/open-telemetry/opentelemetry-collector/issues/8122
-	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
+	RateLimiter RateLimiterConfig `mapstructure:"rate_limiter"`
+}
+
+type RateLimiterConfig struct {
+	Enabled   bool          `mapstructure:"enabled"`
+	Threshold int           `mapstructure:"threshold"`
+	Duration  time.Duration `mapstructure:"duration"`
 }
 
 func isEmpty(endpoint string) bool {
@@ -89,12 +93,20 @@ func (c *Config) Validate() error {
 		return errors.New("`application_name` not specified, please fix the configuration")
 	}
 
-	// check if headers exists
-	if len(c.ClientConfig.Headers) == 0 {
-		c.ClientConfig.Headers = make(map[string]configopaque.String)
+	if len(c.Headers) == 0 {
+		c.Headers = make(map[string]configopaque.String)
 	}
-	c.ClientConfig.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.ClientConfig.Headers["appName"] = configopaque.String(c.AppName)
+	c.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.Headers["appName"] = configopaque.String(c.AppName)
+
+	if c.RateLimiter.Enabled {
+		if c.RateLimiter.Threshold <= 0 {
+			return errors.New("`rate_limiter.threshold` must be greater than 0")
+		}
+		if c.RateLimiter.Duration <= 0 {
+			return errors.New("`rate_limiter.duration` must be greater than 0")
+		}
+	}
 	return nil
 }
 

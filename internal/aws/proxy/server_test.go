@@ -36,7 +36,7 @@ func TestHappyCase(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	cfg.ProxyAddress = "https://example.com"
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
@@ -68,7 +68,7 @@ func TestHandlerHappyCase(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -93,7 +93,7 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -122,13 +122,13 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
-		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
+		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", http.NoBody)
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
@@ -146,7 +146,7 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -169,7 +169,7 @@ func TestTCPEndpointInvalid(t *testing.T) {
 	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
-	cfg.TCPAddrConfig.Endpoint = "invalid\n"
+	cfg.Endpoint = "invalid\n"
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
 }
@@ -181,7 +181,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 
 	origSession := newAWSSession
 	defer func() {
@@ -189,7 +189,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	}()
 
 	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
+	newAWSSession = func(string, string, *zap.Logger) (*session.Session, error) {
 		return nil, expectedErr
 	}
 	_, err := NewServer(cfg, logger)
@@ -203,7 +203,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
@@ -217,7 +217,7 @@ func TestAWSEndpointInvalid(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	cfg.AWSEndpoint = "invalid endpoint \n"
 
 	_, err := NewServer(cfg, logger)
@@ -232,7 +232,7 @@ func TestCanCreateTransport(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	cfg.ProxyAddress = "invalid address \n"
 
 	_, err := NewServer(cfg, logger)
@@ -256,6 +256,6 @@ func (m *mockReadCloser) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (m *mockReadCloser) Close() error {
+func (*mockReadCloser) Close() error {
 	return nil
 }

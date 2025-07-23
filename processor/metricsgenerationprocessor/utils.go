@@ -6,7 +6,6 @@ package metricsgenerationprocessor // import "github.com/open-telemetry/opentele
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -72,7 +71,7 @@ func generateCalculatedMetrics(rm pmetric.ResourceMetrics, metric2 pmetric.Metri
 
 // Calculates a new metric based on the calculation-type rule specified. New data points will be generated for each
 // calculation of the input metrics where overlapping attributes have matching values.
-func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) pmetric.Metric {
+func generateMetricFromMatchingAttributes(metric1, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) pmetric.Metric {
 	var metric1DataPoints pmetric.NumberDataPointSlice
 	var toDataPoints pmetric.NumberDataPointSlice
 	to := pmetric.NewMetric()
@@ -119,11 +118,10 @@ func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetri
 					metric1DP.CopyTo(newDP)
 					newDP.SetDoubleValue(val)
 
-					metric2DP.Attributes().Range(func(k string, v pcommon.Value) bool {
+					for k, v := range metric2DP.Attributes().All() {
 						v.CopyTo(newDP.Attributes().PutEmpty(k))
 						// Always return true to ensure iteration over all attributes
-						return true
-					})
+					}
 				}
 			}
 		}
@@ -145,14 +143,12 @@ func dataPointValue(dp pmetric.NumberDataPoint) float64 {
 
 func dataPointAttributesMatch(dp1, dp2 pmetric.NumberDataPoint) bool {
 	attributesMatch := true
-	dp1.Attributes().Range(func(key string, dp1Val pcommon.Value) bool {
+	for key, dp1Val := range dp1.Attributes().All() {
 		dp1Val.Type()
 		if dp2Val, keyExists := dp2.Attributes().Get(key); keyExists && dp1Val.AsRaw() != dp2Val.AsRaw() {
-			attributesMatch = false
 			return false
 		}
-		return true
-	})
+	}
 
 	return attributesMatch
 }
@@ -242,7 +238,7 @@ func appendNewMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, u
 	}
 }
 
-func calculateValue(operand1 float64, operand2 float64, operation string, metricName string) (float64, error) {
+func calculateValue(operand1, operand2 float64, operation, metricName string) (float64, error) {
 	switch operation {
 	case string(add):
 		return operand1 + operand2, nil

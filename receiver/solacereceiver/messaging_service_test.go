@@ -610,7 +610,7 @@ func TestConfigAMQPAuthenticationExternal(t *testing.T) {
 	}()
 	called := false
 	connSASLExternal = func(resp string) amqp.SASLType {
-		assert.Equal(t, "", resp)
+		assert.Empty(t, resp)
 		called = true
 		return nil
 	}
@@ -682,23 +682,23 @@ func (c *connMock) Close() error {
 	return nil
 }
 
-func (c *connMock) LocalAddr() net.Addr {
+func (*connMock) LocalAddr() net.Addr {
 	return nil
 }
 
-func (c *connMock) RemoteAddr() net.Addr {
+func (*connMock) RemoteAddr() net.Addr {
 	return nil
 }
 
-func (c *connMock) SetDeadline(_ time.Time) error {
+func (*connMock) SetDeadline(_ time.Time) error {
 	return nil
 }
 
-func (c *connMock) SetReadDeadline(_ time.Time) error {
+func (*connMock) SetReadDeadline(_ time.Time) error {
 	return nil
 }
 
-func (c *connMock) SetWriteDeadline(_ time.Time) error {
+func (*connMock) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 

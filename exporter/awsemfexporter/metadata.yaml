@@ -6,8 +6,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [Aneurysm9, mxiamxia, bryan-aguilar]
-    emeritus: [shaochengwang]
+    active: [Aneurysm9, mxiamxia]
+    emeritus: [shaochengwang, bryan-aguilar]
 
 tests:
   config:

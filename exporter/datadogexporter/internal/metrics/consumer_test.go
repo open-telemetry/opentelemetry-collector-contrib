@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -48,16 +48,20 @@ func TestRunningMetrics(t *testing.T) {
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
 	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
 	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
 	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-2")
+	addTestMetric(t, rm)
 
-	rms.AppendEmpty()
+	rm = rms.AppendEmpty()
+	addTestMetric(t, rm)
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
@@ -86,22 +90,25 @@ func TestTagsMetrics(t *testing.T) {
 
 	rm := rms.AppendEmpty()
 	baseAttrs := testutil.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
-		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
-		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
-		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
-		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+		string(conventions.CloudProviderKey):      conventions.CloudProviderAWS.Value.AsString(),
+		string(conventions.CloudPlatformKey):      conventions.CloudPlatformAWSECS.Value.AsString(),
+		string(conventions.AWSECSTaskFamilyKey):   "example-task-family",
+		string(conventions.AWSECSTaskRevisionKey): "example-task-revision",
+		string(conventions.AWSECSLaunchtypeKey):   conventions.AWSECSLaunchtypeFargate.Value.AsString(),
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+	rm.Resource().Attributes().PutStr(string(conventions.AWSECSTaskARNKey), "task-arn-1")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+	rm.Resource().Attributes().PutStr(string(conventions.AWSECSTaskARNKey), "task-arn-2")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+	rm.Resource().Attributes().PutStr(string(conventions.AWSECSTaskARNKey), "task-arn-3")
+	addTestMetric(t, rm)
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)

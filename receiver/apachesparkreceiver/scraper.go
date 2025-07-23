@@ -125,7 +125,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), scrapeErrors.Combine()
 }
 
-func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now pcommon.Timestamp, appID, appName string) {
 	if stat, ok := clusterStats.Gauges[appID+".driver.BlockManager.disk.diskSpaceUsed_MB"]; ok {
 		s.mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(now, int64(stat.Value))
 	}
@@ -251,7 +251,7 @@ func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Timestamp, appID, appName string) {
 	for _, stage := range stageStats {
 		switch stage.Status {
 		case "ACTIVE":
@@ -302,7 +302,7 @@ func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Times
 	}
 }
 
-func (s *sparkScraper) recordExecutors(executorStats []models.Executor, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordExecutors(executorStats []models.Executor, now pcommon.Timestamp, appID, appName string) {
 	for _, executor := range executorStats {
 		s.mb.RecordSparkExecutorMemoryUsageDataPoint(now, executor.MemoryUsed)
 		s.mb.RecordSparkExecutorDiskUsageDataPoint(now, executor.DiskUsed)
@@ -330,7 +330,7 @@ func (s *sparkScraper) recordExecutors(executorStats []models.Executor, now pcom
 	}
 }
 
-func (s *sparkScraper) recordJobs(jobStats []models.Job, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordJobs(jobStats []models.Job, now pcommon.Timestamp, appID, appName string) {
 	for _, job := range jobStats {
 		s.mb.RecordSparkJobTaskActiveDataPoint(now, job.NumActiveTasks)
 		s.mb.RecordSparkJobTaskResultDataPoint(now, job.NumCompletedTasks, metadata.AttributeJobResultCompleted)

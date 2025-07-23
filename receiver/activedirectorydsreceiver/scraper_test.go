@@ -140,6 +140,16 @@ type mockPerfCounterWatcher struct {
 	closed    bool
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Reset panics; it should not be called
 func (mockPerfCounterWatcher) Reset() error {
 	panic("mockPerfCounterWatcher::Reset is not implemented")

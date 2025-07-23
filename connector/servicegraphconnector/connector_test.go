@@ -23,9 +23,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -305,7 +305,7 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-service")
+	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
@@ -346,7 +346,7 @@ func incompleteClientTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-client-service")
+	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-client-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -358,7 +358,7 @@ func incompleteClientTraces() ptrace.Traces {
 	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
 	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpanNoServerSpan.Attributes().PutStr(semconv.AttributePeerService, "AuthTokenCache") // Attribute selected as dimension for metrics
+	clientSpanNoServerSpan.Attributes().PutStr(string(semconv.PeerServiceKey), "AuthTokenCache") // Attribute selected as dimension for metrics
 
 	return traces
 }
@@ -370,7 +370,7 @@ func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-server-service")
+	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-server-service")
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
@@ -397,11 +397,11 @@ type mockMetricsExporter struct {
 	md  []pmetric.Metrics
 }
 
-func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
+func (*mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
 
-func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
+func (*mockMetricsExporter) Shutdown(context.Context) error { return nil }
 
-func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (*mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
 func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.mtx.Lock()
@@ -458,7 +458,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.caseStr, func(_ *testing.T) {
+		t.Run(tc.caseStr, func(*testing.T) {
 			p.updateDurationMetrics(metricKey, tc.duration, tc.duration)
 		})
 	}
@@ -602,6 +602,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
+	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39210")
 	extraDimensions := []string{"db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:              extraDimensions,
@@ -679,6 +680,9 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
 	)
 	require.NoError(t, err)
 }

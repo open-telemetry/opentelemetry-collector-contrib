@@ -7,12 +7,11 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
@@ -31,8 +30,6 @@ func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetS
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	case "schema_url":
 		return accessInstrumentationScopeSchemaURLItem[K](), nil
-	case "cache":
-		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}

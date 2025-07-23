@@ -4,6 +4,7 @@
 package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -34,8 +35,9 @@ const (
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
-	logger          *zap.Logger
-	ignoreReceivers map[string]bool
+	logger             *zap.Logger
+	ignoreReceivers    map[string]bool
+	defaultAnnotations map[string]string
 }
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
@@ -44,15 +46,16 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 		ignoreReceivers[r] = true
 	}
 	return k8sHintsBuilder{
-		logger:          logger,
-		ignoreReceivers: ignoreReceivers,
+		logger:             logger,
+		ignoreReceivers:    ignoreReceivers,
+		defaultAnnotations: config.DefaultAnnotations,
 	}
 }
 
 // createReceiverTemplateFromHints creates a receiver configuration based on the provided hints.
 // Hints are extracted from Pod's annotations.
 // Scraper configurations are only created for Port Endpoints.
-// TODO: Log receiver configurations are only created for Pod Container Endpoints.
+// Log receiver configurations are only created for Pod Container Endpoints.
 func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.EndpointEnv) (*receiverTemplate, error) {
 	var pod observer.Pod
 
@@ -76,11 +79,12 @@ func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.End
 		return nil, nil
 	}
 
+	annotations := mergeAnnotations(pod.Annotations, builder.defaultAnnotations)
 	switch endpointType {
 	case string(observer.PortType):
-		return builder.createScraper(pod.Annotations, env)
+		return builder.createScraper(annotations, env)
 	case string(observer.PodContainerType):
-		return builder.createLogsReceiver(pod.Annotations, env)
+		return builder.createLogsReceiver(annotations, env)
 	default:
 		return nil, nil
 	}
@@ -120,7 +124,7 @@ func (builder *k8sHintsBuilder) createScraper(
 	defaultEndpoint := getStringEnv(env, endpointConfigKey)
 	userConfMap, err := getScraperConfFromAnnotations(annotations, defaultEndpoint, fmt.Sprint(port), builder.logger)
 	if err != nil {
-		return nil, fmt.Errorf("could not create receiver configuration: %v", zap.Any("err", err))
+		return nil, fmt.Errorf("could not create receiver configuration: %v", zap.Error(err))
 	}
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, port), userConfMap)
@@ -176,22 +180,27 @@ func getScraperConfFromAnnotations(
 	defaultEndpoint, scopeSuffix string,
 	logger *zap.Logger,
 ) (userConfigMap, error) {
-	conf := userConfigMap{}
-	conf[endpointConfigKey] = defaultEndpoint
-
 	configStr, found := getHintAnnotation(annotations, otelMetricsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {
-		return conf, nil
+		// defaultEndpoint will be added properly later in observerHandler.startReceiver method
+		return userConfigMap{}, nil
 	}
+	conf := userConfigMap{}
 	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
 		return userConfigMap{}, fmt.Errorf("could not unmarshal configuration from hint: %v", zap.Error(err))
 	}
 
-	val := conf[endpointConfigKey]
+	var val any
+	var endpointSet bool
+	if val, endpointSet = conf[endpointConfigKey]; !endpointSet {
+		// skip endpoint's validation if there is no user provided endpoint
+		// defaultEndpoint will be added properly later in observerHandler.startReceiver method
+		return conf, nil
+	}
 	confEndpoint, ok := val.(string)
 	if !ok {
 		logger.Debug("could not extract configured endpoint")
-		return userConfigMap{}, fmt.Errorf("could not extract configured endpoint")
+		return userConfigMap{}, errors.New("could not extract configured endpoint")
 	}
 
 	err := validateEndpoint(confEndpoint, defaultEndpoint)
@@ -239,9 +248,9 @@ func createLogsConfig(
 	return defaultConfMap
 }
 
-func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
+func getHintAnnotation(annotations map[string]string, hintBase, hintKey, suffix string) (string, bool) {
 	// try to scope the hint more on container level by suffixing
-	// with .<port> in case of Port event or # TODO: .<container_name> in case of Pod Container event
+	// with .<port> in case of Port event or .<container_name> in case of Pod Container event
 	containerLevelHint, ok := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
 	if ok {
 		return containerLevelHint, ok
@@ -252,7 +261,7 @@ func getHintAnnotation(annotations map[string]string, hintBase string, hintKey s
 	return podLevelHint, ok
 }
 
-func discoveryEnabled(annotations map[string]string, hintBase string, scopeSuffix string) bool {
+func discoveryEnabled(annotations map[string]string, hintBase, scopeSuffix string) bool {
 	enabledHint, found := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
 	if !found {
 		return false
@@ -281,14 +290,27 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 	if uri == nil {
 		u, err := url.Parse("http://" + endpoint)
 		if err != nil {
-			return fmt.Errorf("could not parse endpoint")
+			return errors.New("could not parse endpoint")
 		}
 		uri = u
 	}
 
 	// configured endpoint should include the target Pod's endpoint
 	if uri.Host != defaultEndpoint {
-		return fmt.Errorf("configured endpoint should include target Pod's endpoint")
+		return errors.New("configured endpoint should include target Pod's endpoint")
 	}
 	return nil
+}
+
+func mergeAnnotations(podAnnotations, defaultAnnotations map[string]string) map[string]string {
+	annotations := make(map[string]string)
+	// Start with defaultAnnotations (lower priority)
+	for k, v := range defaultAnnotations {
+		annotations[k] = v
+	}
+	// Overwrite with podAnnotations (higher priority)
+	for k, v := range podAnnotations {
+		annotations[k] = v
+	}
+	return annotations
 }

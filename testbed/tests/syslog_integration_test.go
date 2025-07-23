@@ -139,7 +139,7 @@ service:
         - syslog/client`
 
 	collector := testbed.NewInProcessCollector(componentFactories(t))
-	_, err := collector.PrepareConfig(fmt.Sprintf(config, rfc, inputPort, rfc, port))
+	_, err := collector.PrepareConfig(t, fmt.Sprintf(config, rfc, inputPort, rfc, port))
 
 	require.NoError(t, err)
 	err = collector.Start(testbed.StartParams{

@@ -15,8 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -47,7 +49,7 @@ type exporterTest struct {
 
 func createTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
-	config.ClientConfig.Compression = NoCompression
+	config.Compression = NoCompression
 	config.LogFormat = TextFormat
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
@@ -80,8 +82,8 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 		)
 	})
 
-	cfg.ClientConfig.Endpoint = testServer.URL
-	cfg.ClientConfig.Auth = nil
+	cfg.Endpoint = testServer.URL
+	cfg.Auth = configoptional.None[configauth.Config]()
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -100,7 +102,7 @@ func TestAllSuccess(t *testing.T) {
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
-			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+			assert.Empty(t, req.Header.Get("X-Sumo-Fields"))
 		},
 	})
 
@@ -239,7 +241,7 @@ func TestPartiallyFailed(t *testing.T) {
 func TestInvalidHTTPClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "test_endpoint"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			MinVersion: "invalid",
 		},
@@ -498,8 +500,8 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		config := createDefaultConfig().(*Config)
 		config.MetricFormat = PrometheusFormat
 		config.LogFormat = TextFormat
-		config.ClientConfig.Auth = nil
-		config.ClientConfig.Compression = configcompression.TypeGzip
+		config.Auth = configoptional.None[configauth.Config]()
+		config.Compression = configcompression.TypeGzip
 		return config
 	}
 
@@ -508,7 +510,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	b.Cleanup(func() { testServer.Close() })
 
 	cfg := createConfig()
-	cfg.ClientConfig.Endpoint = testServer.URL
+	cfg.Endpoint = testServer.URL
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)
@@ -644,6 +646,54 @@ func TestGetSignalURL(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+			require.Equal(t, testCase.expected, actual)
+		})
+	}
+}
+
+func TestNChars(t *testing.T) {
+	s := nchars('*', 10)
+	require.Equal(t, "**********", s)
+	s = nchars(' ', 2)
+	require.Equal(t, "  ", s)
+}
+
+func TestSanitizeURL(t *testing.T) {
+	testCases := []struct {
+		description string
+		urlString   string
+		expected    string
+	}{
+		{
+			description: "sanitized logs url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxxx/v1/logs",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/*****/v1/logs",
+		},
+		{
+			description: "sanitized metrics url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/metrics",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/metrics",
+		},
+		{
+			description: "sanitized traces url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/traces",
+		},
+		{
+			description: "no sanitization required",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+		},
+		{
+			description: "no sanitization required with otlp/ appearing after v1/",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+		},
+	}
+	for _, tC := range testCases {
+		testCase := tC
+		t.Run(tC.description, func(t *testing.T) {
+			actual := sanitizeURL(testCase.urlString)
 			require.Equal(t, testCase.expected, actual)
 		})
 	}

@@ -73,7 +73,7 @@ func (r *streamLoadResponse) duplication() bool {
 	return r.Status == "Label Already Exists"
 }
 
-func streamLoadURL(address string, db string, table string) string {
+func streamLoadURL(address, db, table string) string {
 	return address + "/api/" + db + "/" + table + "/_stream_load"
 }
 
@@ -102,8 +102,8 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	if groupCommit == "" || groupCommit == "off_mode" {
 		req.Header.Set("label", label)
 	}
-	if cfg.ClientConfig.Timeout != 0 {
-		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.ClientConfig.Timeout/time.Second))
+	if cfg.Timeout != 0 {
+		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.Timeout/time.Second))
 	}
 	req.SetBasicAuth(cfg.Username, string(cfg.Password))
 
@@ -111,7 +111,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 }
 
 func createDorisHTTPClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	client, err := cfg.ClientConfig.ToClient(ctx, host, settings)
+	client, err := cfg.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}

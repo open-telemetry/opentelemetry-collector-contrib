@@ -25,18 +25,18 @@ type connectorTraces struct {
 
 // newTracesConnector is a function to create a new connector for traces extraction
 func newTracesConnector(set connector.Settings, config component.Config, tracesConsumer consumer.Traces) *connectorTraces {
-	set.TelemetrySettings.Logger.Info("Building otlpjson connector for traces")
+	set.Logger.Info("Building otlpjson connector for traces")
 	cfg := config.(*Config)
 
 	return &connectorTraces{
 		config:         *cfg,
-		logger:         set.TelemetrySettings.Logger,
+		logger:         set.Logger,
 		tracesConsumer: tracesConsumer,
 	}
 }
 
 // Capabilities implements the consumer interface.
-func (c *connectorTraces) Capabilities() consumer.Capabilities {
+func (*connectorTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

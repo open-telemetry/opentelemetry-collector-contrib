@@ -72,7 +72,7 @@ func (dsb *DataSenderBase) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (dsb *DataSenderBase) Flush() {
+func (*DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
@@ -82,15 +82,15 @@ type otlpHTTPDataSender struct {
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
-	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
+	cfg.ClientConfig.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
-	cfg.Compression = ods.compression
+	cfg.ClientConfig.Compression = ods.compression
 	return cfg
 }
 
@@ -103,7 +103,7 @@ func (ods *otlpHTTPDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *otlpHTTPDataSender) ProtocolName() string {
+func (*otlpHTTPDataSender) ProtocolName() string {
 	return "otlp"
 }
 
@@ -214,12 +214,12 @@ type otlpDataSender struct {
 }
 
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
-	cfg.Endpoint = ods.GetEndpoint().String()
+	cfg.ClientConfig.Endpoint = ods.GetEndpoint().String()
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg
@@ -234,7 +234,7 @@ func (ods *otlpDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *otlpDataSender) ProtocolName() string {
+func (*otlpDataSender) ProtocolName() string {
 	return "otlp"
 }
 

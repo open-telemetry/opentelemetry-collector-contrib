@@ -12,7 +12,8 @@
   ],
   "extends": [
     "config:recommended",
-    "customManagers:githubActionsVersions"
+    "customManagers:githubActionsVersions",
+    "helpers:pinGitHubActionDigests"
   ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
@@ -206,6 +207,24 @@
         "google.golang.org/grpc"
       ],
       "allowedVersions": "!/v1.68.0$/"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/knadh/koanf packages",
+      "matchPackageNames": [
+        "github.com/knadh/koanf{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/splunk/stef packages",
+      "matchPackageNames": [
+        "github.com/splunk/stef{/,}**"
+      ]
     }
   ],
   "ignoreDeps": [

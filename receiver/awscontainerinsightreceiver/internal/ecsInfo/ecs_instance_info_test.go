@@ -19,11 +19,11 @@ import (
 
 type MockHostInfo struct{}
 
-func (mi *MockHostInfo) GetInstanceIP() string {
+func (*MockHostInfo) GetInstanceIP() string {
 	return "0.0.0.0"
 }
 
-func (mi *MockHostInfo) GetInstanceIPReadyC() chan bool {
+func (*MockHostInfo) GetInstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	return readyC
 }
@@ -79,6 +79,6 @@ func TestECSInstanceInfo(t *testing.T) {
 
 	assert.NotNil(t, ecsinstanceinfo)
 
-	assert.Equal(t, "", ecsinstanceinfo.GetClusterName())
-	assert.Equal(t, "", ecsinstanceinfo.GetContainerInstanceID())
+	assert.Empty(t, ecsinstanceinfo.GetClusterName())
+	assert.Empty(t, ecsinstanceinfo.GetContainerInstanceID())
 }

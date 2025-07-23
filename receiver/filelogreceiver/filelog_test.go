@@ -224,7 +224,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
+		_, err := fmt.Fprintf(file, "2020-08-25 %s\n", msg)
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 	}
@@ -368,7 +368,7 @@ func (g *fileLogGenerator) Stop() {
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
 	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
-	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
+	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")
 	require.NoError(g.t, err)

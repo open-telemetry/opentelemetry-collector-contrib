@@ -4,7 +4,7 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 
 import (
-	"go.opentelemetry.io/ebpf-profiler/libpf"
+	"time"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
@@ -27,7 +27,8 @@ type StackPayload struct {
 	StackFrames     []StackFrame
 	Executables     []ExeMetadata
 
-	UnsymbolizedLeafFrames []libpf.FrameID
+	UnsymbolizedLeafFrames  []UnsymbolizedLeafFrame
+	UnsymbolizedExecutables []UnsymbolizedExecutable
 }
 
 // StackTraceEvent represents a stacktrace event serializable into ES.
@@ -45,6 +46,9 @@ type StackTraceEvent struct {
 	ContainerName    string `json:"container.name,omitempty"`
 	K8sNamespaceName string `json:"k8s.namespace.name,omitempty"`
 	ThreadName       string `json:"process.thread.name"`
+	ExecutableName   string `json:"process.executable.name"`
+	ServiceName      string `json:"service.name,omitempty"`
+	Frequency        int64  `json:"Stacktrace.sampling_frequency"`
 	Count            uint16 `json:"Stacktrace.count"`
 }
 
@@ -129,4 +133,26 @@ func NewExeMetadata(docID string, lastSeen uint32, buildID, fileName string) Exe
 			},
 		},
 	}
+}
+
+// UnsymbolizedExecutable represents an array of executable FileIDs written into the
+// executable symbolization queue index.
+type UnsymbolizedExecutable struct {
+	EcsVersion
+	DocID   string    `json:"-"`
+	FileID  []string  `json:"Executable.file.id"`
+	Created time.Time `json:"Time.created"`
+	Next    time.Time `json:"Symbolization.time.next"`
+	Retries int       `json:"Symbolization.retries"`
+}
+
+// UnsymbolizedLeafFrame represents an array of frame IDs written into the
+// leaf frame symbolization queue index.
+type UnsymbolizedLeafFrame struct {
+	EcsVersion
+	DocID   string    `json:"-"`
+	FrameID []string  `json:"Stacktrace.frame.id"`
+	Created time.Time `json:"Time.created"`
+	Next    time.Time `json:"Symbolization.time.next"`
+	Retries int       `json:"Symbolization.retries"`
 }

@@ -24,13 +24,12 @@ func createMetricsTranslator() *MetricsTranslator {
 }
 
 func requireResourceAttributes(t *testing.T, attrs, expectedAttrs pcommon.Map) {
-	expectedAttrs.Range(func(k string, _ pcommon.Value) bool {
+	for k := range expectedAttrs.All() {
 		ev, _ := expectedAttrs.Get(k)
 		av, ok := attrs.Get(k)
 		require.True(t, ok)
 		require.Equal(t, ev, av)
-		return true
-	})
+	}
 }
 
 //nolint:unparam

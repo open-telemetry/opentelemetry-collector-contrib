@@ -9,8 +9,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
+
+var MetricsInfo = metricsInfo{
+	SystemUptime: metricInfo{
+		Name: "system.uptime",
+	},
+}
+
+type metricsInfo struct {
+	SystemUptime metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
 
 type metricSystemUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.

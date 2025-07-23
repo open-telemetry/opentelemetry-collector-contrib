@@ -44,9 +44,27 @@ metrics:
       value_type: double
     attributes: [state]
 
+  system.memory.page_size:
+    enabled: false
+    description: A constant value for the system's configured page size.
+    unit: By
+    gauge:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
   system.linux.memory.available:
     enabled: false
     description: An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.linux.memory.dirty:
+    enabled: false
+    description: The amount of dirty memory according to `/proc/meminfo`.
     unit: By
     sum:
       value_type: int

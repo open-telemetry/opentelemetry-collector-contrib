@@ -4,6 +4,7 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // StrptimeKey is literally "strptime", and is the default layout type
@@ -65,40 +66,40 @@ func (t *TimeParser) IsZero() bool {
 // Validate validates a TimeParser, and reconfigures it if necessary
 func (t *TimeParser) Validate() error {
 	if t.ParseFrom == nil {
-		return fmt.Errorf("missing required parameter 'parse_from'")
+		return errors.New("missing required parameter 'parse_from'")
 	}
 
 	if t.Layout == "" && t.LayoutType != "native" {
-		return errors.NewError("missing required configuration parameter `layout`", "")
+		return stanza_errors.NewError("missing required configuration parameter `layout`", "")
 	}
 
 	switch t.LayoutType {
 	case NativeKey: // ok
 	case GotimeKey:
 		if err := timeutils.ValidateGotime(t.Layout); err != nil {
-			return errors.Wrap(err, "invalid gotime layout")
+			return stanza_errors.Wrap(err, "invalid gotime layout")
 		}
 	case StrptimeKey:
 		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
-			return errors.Wrap(err, "invalid strptime layout")
+			return stanza_errors.Wrap(err, "invalid strptime layout")
 		}
 		var err error
 		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
 		if err != nil {
-			return errors.Wrap(err, "parse strptime layout")
+			return stanza_errors.Wrap(err, "parse strptime layout")
 		}
 		t.LayoutType = GotimeKey
 	case EpochKey:
 		switch t.Layout {
 		case "s", "ms", "us", "ns", "s.ms", "s.us", "s.ns": // ok
 		default:
-			return errors.NewError(
+			return stanza_errors.NewError(
 				"invalid `layout` for `epoch` type",
 				"specify 's', 'ms', 'us', 'ns', 's.ms', 's.us', or 's.ns'",
 			)
 		}
 	default:
-		return errors.NewError(
+		return stanza_errors.NewError(
 			fmt.Sprintf("unsupported layout_type %s", t.LayoutType),
 			"valid values are 'strptime', 'gotime', and 'epoch'",
 		)
@@ -106,7 +107,7 @@ func (t *TimeParser) Validate() error {
 
 	if t.LayoutType == GotimeKey { // also covers StrptimeKey because it was remapped above
 		if err := t.setLocation(); err != nil {
-			return errors.Wrap(err, "invalid 'location'")
+			return stanza_errors.Wrap(err, "invalid 'location'")
 		}
 	}
 
@@ -138,7 +139,7 @@ func (t *TimeParser) setLocation() error {
 func (t *TimeParser) Parse(entry *entry.Entry) error {
 	value, ok := entry.Get(t.ParseFrom)
 	if !ok {
-		return errors.NewError(
+		return stanza_errors.NewError(
 			"log entry does not have the expected parse_from field",
 			"ensure that all entries forwarded to this parser contain the parse_from field",
 			"parse_from", t.ParseFrom.String(),

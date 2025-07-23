@@ -6,7 +6,6 @@ package provider // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -41,7 +40,7 @@ type delayedProvider struct {
 func (p *delayedProvider) Source(ctx context.Context) (source.Source, error) {
 	select {
 	case <-ctx.Done():
-		return source.Source{}, fmt.Errorf("no source provider was available")
+		return source.Source{}, errors.New("no source provider was available")
 	case <-time.After(p.delay):
 		return p.provider.Source(ctx)
 	}

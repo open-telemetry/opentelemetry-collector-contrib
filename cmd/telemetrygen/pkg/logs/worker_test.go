@@ -33,11 +33,11 @@ func (m *mockExporter) Export(_ context.Context, records []sdklog.Record) error 
 	return nil
 }
 
-func (m *mockExporter) Shutdown(_ context.Context) error {
+func (*mockExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *mockExporter) ForceFlush(_ context.Context) error {
+func (*mockExporter) ForceFlush(context.Context) error {
 	return nil
 }
 
@@ -177,7 +177,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 
 		l.WalkAttributes(func(attr log.KeyValue) bool {
 			if attr.Key == telemetryAttrKeyOne {
-				assert.EqualValues(t, telemetryAttrValueOne, attr.Value.AsString())
+				assert.Equal(t, telemetryAttrValueOne, attr.Value.AsString())
 			}
 			return true
 		})

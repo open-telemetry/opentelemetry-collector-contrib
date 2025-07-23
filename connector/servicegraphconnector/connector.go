@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -45,10 +45,10 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
+		string(semconv.PeerServiceKey), string(semconv.DBNameKey), string(semconv.DBSystemKey),
 	}
 
-	defaultDatabaseNameAttribute = semconv.AttributeDBName
+	defaultDatabaseNameAttributes = []string{string(semconv.DBNameKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
@@ -115,8 +115,8 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
-	if pConfig.DatabaseNameAttribute == "" {
-		pConfig.DatabaseNameAttribute = defaultDatabaseNameAttribute
+	if len(pConfig.DatabaseNameAttributes) == 0 {
+		pConfig.DatabaseNameAttributes = defaultDatabaseNameAttributes
 	}
 
 	if pConfig.MetricsFlushInterval == nil {
@@ -151,7 +151,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	}, nil
 }
 
-func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
+func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
@@ -199,13 +199,13 @@ func (p *serviceGraphConnector) flushMetrics(ctx context.Context) error {
 	return p.metricsConsumer.ConsumeMetrics(ctx, md)
 }
 
-func (p *serviceGraphConnector) Shutdown(_ context.Context) error {
+func (p *serviceGraphConnector) Shutdown(context.Context) error {
 	p.logger.Info("Shutting down servicegraphconnector")
 	close(p.shutdownCh)
 	return nil
 }
 
-func (p *serviceGraphConnector) Capabilities() consumer.Capabilities {
+func (*serviceGraphConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -273,7 +273,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
-						if dbName, ok := pdatautil.GetAttributeValue(p.config.DatabaseNameAttribute, rAttributes, span.Attributes()); ok {
+						if dbName, ok := getFirstMatchingValue(p.config.DatabaseNameAttributes, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
 							e.ServerLatencySec = spanDuration(span)
@@ -319,7 +319,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 	return nil
 }
 
-func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
+func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]string, resourceAttr, spanAttr pcommon.Map) {
 	for _, dim := range p.config.Dimensions {
 		if v, ok := pdatautil.GetAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
@@ -327,7 +327,7 @@ func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]strin
 	}
 }
 
-func (p *serviceGraphConnector) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
+func (*serviceGraphConnector) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
 	for _, s := range m {
 		if v, ok := pdatautil.GetAttributeValue(s, spanAttr); ok {
 			peers[s] = v
@@ -360,7 +360,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
-		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
+		if e.ClientService == "" && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
 			if p.config.VirtualNodeExtraLabel {
 				e.VirtualNodeLabel = store.ClientVirtualNode
@@ -368,7 +368,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 			p.onComplete(e)
 		}
 
-		if len(e.ServerService) == 0 {
+		if e.ServerService == "" {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
 			if p.config.VirtualNodeExtraLabel {
 				e.VirtualNodeLabel = store.ServerVirtualNode
@@ -544,7 +544,7 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	if len(p.reqServerDurationSecondsCount) > 0 {
+	if len(p.reqClientDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_client")
 		mDuration.SetUnit(secondsUnit)
@@ -555,7 +555,7 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-		for key := range p.reqServerDurationSecondsCount {
+		for key := range p.reqClientDurationSecondsCount {
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
@@ -614,11 +614,13 @@ func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectio
 	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
-		dim, ok := edgeDimensions[dimName]
-		if !ok {
-			continue
+		for _, kind := range []string{clientKind, serverKind} {
+			dim, ok := edgeDimensions[kind+"_"+dimName]
+			if !ok {
+				continue
+			}
+			metricKey.WriteString(metricKeySeparator + kind + "_" + dimName + "_" + dim)
 		}
-		metricKey.WriteString(metricKeySeparator + dim)
 	}
 
 	return metricKey.String()
@@ -637,7 +639,7 @@ func (p *serviceGraphConnector) storeExpirationLoop(d time.Duration) {
 	}
 }
 
-func (p *serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
+func (*serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
 	peerStr := "unknown"
 	for _, s := range m {
 		if peer, ok := peers[s]; ok {

@@ -10,11 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -46,15 +45,14 @@ type emfExporter struct {
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
-func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error) {
+func newEmfExporter(ctx context.Context, config *Config, set exporter.Settings) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
 
 	config.logger = set.Logger
 
-	// create AWS session
-	awsConfig, session, err := awsutil.GetAWSConfigSession(set.Logger, &awsutil.Conn{}, &config.AWSSessionSettings)
+	awsConfig, err := awsutil.GetAWSConfig(ctx, set.Logger, &config.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +69,6 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		config.LogGroupName,
 		config.LogRetention,
 		config.Tags,
-		session,
 		metadata.Type.String(),
 		cwlogs.WithUserAgentExtras(userAgentExtras...),
 	)
@@ -84,7 +81,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
 		metricTranslator: newMetricTranslator(*config),
-		retryCnt:         *awsConfig.MaxRetries,
+		retryCnt:         awsConfig.RetryMaxAttempts,
 		collectorID:      collectorIdentifier.String(),
 		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
 	}
@@ -96,17 +93,16 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 	return emfExporter, nil
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
+func (emf *emfExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	rms := md.ResourceMetrics()
 	labels := map[string]string{}
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
-			am.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range am.All() {
 				labels[k] = v.Str()
-				return true
-			})
+			}
 		}
 	}
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
@@ -130,14 +126,13 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
 			if putLogEvent != nil &&
-				putLogEvent.InputLogEvent != nil &&
 				putLogEvent.InputLogEvent.Message != nil {
 				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 			emfPusher := emf.getPusher(putLogEvent.StreamKey)
 			if emfPusher != nil {
-				returnError := emfPusher.AddLogEntry(putLogEvent)
+				returnError := emfPusher.AddLogEntry(ctx, putLogEvent)
 				if returnError != nil {
 					return wrapErrorIfBadRequest(returnError)
 				}
@@ -147,7 +142,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 
 	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 		for _, emfPusher := range emf.listPushers() {
-			returnError := emfPusher.ForceFlush()
+			returnError := emfPusher.ForceFlush(ctx)
 			if returnError != nil {
 				// TODO now we only have one logPusher, so it's ok to return after first error occurred
 				err := wrapErrorIfBadRequest(returnError)
@@ -184,9 +179,9 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 }
 
 // shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) shutdown(_ context.Context) error {
+func (emf *emfExporter) shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
-		returnError := emfPusher.ForceFlush()
+		returnError := emfPusher.ForceFlush(ctx)
 		if returnError != nil {
 			err := wrapErrorIfBadRequest(returnError)
 			if err != nil {
@@ -199,9 +194,11 @@ func (emf *emfExporter) shutdown(_ context.Context) error {
 }
 
 func wrapErrorIfBadRequest(err error) error {
-	var rfErr awserr.RequestFailure
-	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
-		return consumererror.NewPermanent(err)
+	var ae smithy.APIError
+	if errors.As(err, &ae) {
+		if ae.ErrorFault() == smithy.FaultClient || ae.ErrorFault() == smithy.FaultUnknown {
+			return consumererror.NewPermanent(err)
+		}
 	}
 	return err
 }

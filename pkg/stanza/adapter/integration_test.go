@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -26,8 +25,6 @@ import (
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zap.NewNop()
-
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{

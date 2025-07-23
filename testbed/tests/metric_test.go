@@ -73,6 +73,15 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 98,
 			},
 		},
+		{
+			name:     "STEF",
+			sender:   datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 150,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -116,7 +125,7 @@ func TestMetricsFromFile(t *testing.T) {
 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 

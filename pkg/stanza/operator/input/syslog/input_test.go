@@ -132,23 +132,23 @@ func TestInput(t *testing.T) {
 	t.Run("TCPWithMetadata", func(t *testing.T) {
 		cfg := NewConfigWithTCP(&withMetadataCfg)
 		cfg.IdentifierConfig = helper.NewIdentifierConfig()
-		cfg.IdentifierConfig.Resource["service.name"] = helper.ExprStringConfig("apache_server")
+		cfg.Resource["service.name"] = helper.ExprStringConfig("apache_server")
 		cfg.AttributerConfig = helper.NewAttributerConfig()
-		cfg.AttributerConfig.Attributes["foo"] = helper.ExprStringConfig("bar")
+		cfg.Attributes["foo"] = helper.ExprStringConfig("bar")
 		InputTest(t, WithMetadata, cfg, map[string]any{"service.name": "apache_server"}, map[string]any{"foo": "bar"})
 	})
 
 	t.Run("UDPWithMetadata", func(t *testing.T) {
 		cfg := NewConfigWithUDP(&withMetadataCfg)
 		cfg.IdentifierConfig = helper.NewIdentifierConfig()
-		cfg.IdentifierConfig.Resource["service.name"] = helper.ExprStringConfig("apache_server")
+		cfg.Resource["service.name"] = helper.ExprStringConfig("apache_server")
 		cfg.AttributerConfig = helper.NewAttributerConfig()
-		cfg.AttributerConfig.Attributes["foo"] = helper.ExprStringConfig("bar")
+		cfg.Attributes["foo"] = helper.ExprStringConfig("bar")
 		InputTest(t, WithMetadata, cfg, map[string]any{"service.name": "apache_server"}, map[string]any{"foo": "bar"})
 	})
 }
 
-func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
+func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc, attr map[string]any) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)

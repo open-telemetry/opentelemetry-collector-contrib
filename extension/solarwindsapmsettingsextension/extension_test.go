@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/solarwindscloud/apm-proto/go/collectorpb"
-	"github.com/solarwindscloud/apm-proto/go/collectorpb/mocks"
+	"github.com/solarwinds/apm-proto/go/collectorpb"
+	"github.com/solarwinds/apm-proto/go/collectorpb/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -249,7 +249,7 @@ func TestRefresh(t *testing.T) {
 			mockTraceCollectorClient.On("GetSettings", mock.Anything, mock.Anything).Return(tt.reply, nil)
 			observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 			settings := newNopSettings()
-			settings.TelemetrySettings.Logger = zap.New(observedZapCore)
+			settings.Logger = zap.New(observedZapCore)
 			settingsExtension := &solarwindsapmSettingsExtension{
 				config:            tt.cfg,
 				telemetrySettings: settings.TelemetrySettings,

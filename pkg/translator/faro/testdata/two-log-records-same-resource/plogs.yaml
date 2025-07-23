@@ -1,0 +1,17 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: testapp
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: timestamp=2021-09-30T10:46:17.68Z kind=log message="opened pricing page" level=info context_component=AppRoot context_page=Pricing traceID=abcd spanID=def app_name=testapp
+            spanId: ""
+            traceId: ""
+          - body:
+              stringValue: timestamp=2021-09-30T10:46:17.68Z kind=log message="loading price list" level=trace context_component=AppRoot context_page=Pricing traceID=abcd spanID=ghj app_name=testapp
+            spanId: ""
+            traceId: ""
+        scope: {}

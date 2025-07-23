@@ -22,7 +22,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, "localhost:8080", libhoneyCfg.HTTP.Endpoint)
 	assert.Equal(t, []string{"/events", "/event", "/batch"}, libhoneyCfg.HTTP.TracesURLPaths)
-	assert.Equal(t, "", libhoneyCfg.AuthAPI)
+	assert.Empty(t, libhoneyCfg.AuthAPI)
 	assert.Equal(t, "service.name", libhoneyCfg.FieldMapConfig.Resources.ServiceName)
 	assert.Equal(t, "library.name", libhoneyCfg.FieldMapConfig.Scopes.LibraryName)
 	assert.Equal(t, []string{"duration_ms"}, libhoneyCfg.FieldMapConfig.Attributes.DurationFields)

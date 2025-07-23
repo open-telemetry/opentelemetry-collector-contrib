@@ -75,6 +75,20 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Context: "profile",
+						Statements: []string{
+							`set(original_payload_format, "bear") where original_payload_format == "/animal"`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -108,6 +122,15 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Context:    "profile",
+						Conditions: []string{`original_payload_format == "/animal"`},
+						Statements: []string{
+							`set(original_payload_format, "bear")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -122,8 +145,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements: []common.ContextStatements{},
-				LogStatements:    []common.ContextStatements{},
+				MetricStatements:  []common.ContextStatements{},
+				LogStatements:     []common.ContextStatements{},
+				ProfileStatements: []common.ContextStatements{},
 			},
 		},
 		{
@@ -143,6 +167,12 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_profile"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "unknown_function_profile"),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
@@ -172,6 +202,12 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Context:    "log",
 						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Context:    "profile",
+						Statements: []string{`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`},
 					},
 				},
 			},
@@ -204,6 +240,14 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -212,98 +256,34 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				TraceStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+						Statements: []string{
+							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
 					},
 				},
 				MetricStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+						Statements: []string{
+							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
 					},
 				},
 				LogStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(resource.attributes["name"], "bear")`},
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "mixed_configuration_styles"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				TraceStatements: []common.ContextStatements{
-					{
-						SharedCache: true,
-						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
-					},
-					{
-						Context: "span",
 						Statements: []string{
-							`set(attributes["name"], "bear")`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
+							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
 						},
 					},
-					{
-						Statements: []string{`set(span.attributes["name"], "lion")`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(span.name, "lion") where span.attributes["http.path"] == "/animal"`},
-					},
 				},
-				MetricStatements: []common.ContextStatements{
+				ProfileStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
-					},
-					{
-						Context: "resource",
 						Statements: []string{
-							`set(attributes["name"], "bear")`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
+							`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
 						},
-					},
-					{
-						Statements: []string{`set(metric.name, "lion")`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"`},
-					},
-				},
-				LogStatements: []common.ContextStatements{
-					{
-						SharedCache: true,
-						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
-					},
-					{
-						Context: "resource",
-						Statements: []string{
-							`set(attributes["name"], "bear")`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					{
-						Statements: []string{`set(log.attributes["name"], "lion")`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(log.body, "lion") where log.attributes["http.path"] == "/animal"`},
 					},
 				},
 			},
@@ -342,6 +322,16 @@ func TestLoadConfig(t *testing.T) {
 						ErrorMode:  "",
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
 			},
 		},
 	}
@@ -368,7 +358,8 @@ func TestLoadConfig(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
-				assert.Equal(t, tt.expected, cfg)
+				assert.EqualExportedValues(t, tt.expected, cfg)
+				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
 		})
 	}
@@ -400,4 +391,16 @@ func Test_UnknownErrorMode(t *testing.T) {
 	sub, err := cm.Sub(id.String())
 	assert.NoError(t, err)
 	assert.Error(t, sub.Unmarshal(cfg))
+}
+
+func Test_MixedConfigurationStyles(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_configuration_styles").String())
+	assert.NoError(t, err)
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
 }

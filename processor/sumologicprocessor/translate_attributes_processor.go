@@ -70,7 +70,7 @@ func (proc *translateAttributesProcessor) processMetrics(metrics pmetric.Metrics
 	return nil
 }
 
-func (proc *translateAttributesProcessor) processTraces(_ ptrace.Traces) error {
+func (*translateAttributesProcessor) processTraces(ptrace.Traces) error {
 	// No-op. Traces should not be translated.
 	return nil
 }
@@ -87,7 +87,7 @@ func translateAttributes(attributes pcommon.Map) {
 	result := pcommon.NewMap()
 	result.EnsureCapacity(attributes.Len())
 
-	attributes.Range(func(otKey string, value pcommon.Value) bool {
+	for otKey, value := range attributes.All() {
 		if sumoKey, ok := attributeTranslations[otKey]; ok {
 			// Only insert if it doesn't exist yet to prevent overwriting.
 			// We have to do it this way since the final return value is not
@@ -106,8 +106,7 @@ func translateAttributes(attributes pcommon.Map) {
 				value.CopyTo(result.PutEmpty(otKey))
 			}
 		}
-		return true
-	})
+	}
 
 	result.CopyTo(attributes)
 }

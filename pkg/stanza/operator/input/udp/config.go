@@ -4,6 +4,7 @@
 package udp // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -82,7 +83,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.ListenAddress == "" {
-		return nil, fmt.Errorf("missing required parameter 'listen_address'")
+		return nil, errors.New("missing required parameter 'listen_address'")
 	}
 
 	address, err := net.ResolveUDPAddr("udp", c.ListenAddress)

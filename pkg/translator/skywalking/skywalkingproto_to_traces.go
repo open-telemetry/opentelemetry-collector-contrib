@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -32,11 +32,11 @@ const (
 )
 
 var otSpanTagsMapping = map[string]string{
-	"url":         conventions.AttributeHTTPURL,
-	"status_code": conventions.AttributeHTTPStatusCode,
-	"db.type":     conventions.AttributeDBSystem,
-	"db.instance": conventions.AttributeDBName,
-	"mq.broker":   conventions.AttributeNetPeerName,
+	"url":         string(conventions.HTTPURLKey),
+	"status_code": string(conventions.HTTPStatusCodeKey),
+	"db.type":     string(conventions.DBSystemKey),
+	"db.instance": string(conventions.DBNameKey),
+	"mq.broker":   string(conventions.NetPeerNameKey),
 }
 
 // ProtoToTraces converts multiple skywalking proto batches to internal traces
@@ -55,8 +55,8 @@ func ProtoToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().PutStr(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().PutStr(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().PutStr(string(conventions.ServiceNameKey), segment.GetService())
+	rs.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), segment.GetServiceInstance())
 	rs.Attributes().PutStr(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
@@ -86,7 +86,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	}
 }
 
-func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
+func swSpansToSpanSlice(traceID, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
@@ -100,7 +100,7 @@ func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanO
 	}
 }
 
-func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
+func swSpanToSpan(traceID, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
 	dest.SetTraceID(swTraceIDToTraceID(traceID))
 	// skywalking defines segmentId + spanId as unique identifier
 	// so use segmentId to convert to an unique otel-span
@@ -133,9 +133,10 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 
 	switch {
 	case span.SpanLayer == agentV3.SpanLayer_MQ:
-		if span.SpanType == agentV3.SpanType_Entry {
+		switch span.SpanType {
+		case agentV3.SpanType_Entry:
 			dest.SetKind(ptrace.SpanKindConsumer)
-		} else if span.SpanType == agentV3.SpanType_Exit {
+		case agentV3.SpanType_Exit:
 			dest.SetKind(ptrace.SpanKindProducer)
 		}
 	case span.GetSpanType() == agentV3.SpanType_Exit:

@@ -152,7 +152,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("file.permissions")
 					assert.True(t, ok)
-					assert.EqualValues(t, "file.permissions-val", attrVal.Str())
+					assert.Equal(t, "file.permissions-val", attrVal.Str())
 				case "file.mtime":
 					assert.False(t, validatedMetrics["file.mtime"], "Found a duplicate in the metrics slice: file.mtime")
 					validatedMetrics["file.mtime"] = true

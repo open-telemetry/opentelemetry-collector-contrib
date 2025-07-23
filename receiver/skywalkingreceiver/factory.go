@@ -79,7 +79,8 @@ func createTracesReceiver(
 		return newSkywalkingReceiver(c, set)
 	})
 
-	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+	err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer)
+	if err != nil {
 		return nil, err
 	}
 
@@ -106,7 +107,8 @@ func createMetricsReceiver(
 		return newSkywalkingReceiver(c, set)
 	})
 
-	if err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer); err != nil {
+	err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer)
+	if err != nil {
 		return nil, err
 	}
 
@@ -118,16 +120,16 @@ func createConfiguration(rCfg *Config) (*configuration, error) {
 	var err error
 	var c configuration
 	// Set ports
-	if rCfg.Protocols.GRPC != nil {
-		c.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
-		if c.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint); err != nil {
+	if rCfg.GRPC != nil {
+		c.CollectorGRPCServerSettings = *rCfg.GRPC
+		if c.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.GRPC.NetAddr.Endpoint); err != nil {
 			return nil, fmt.Errorf("unable to extract port for the gRPC endpoint: %w", err)
 		}
 	}
 
-	if rCfg.Protocols.HTTP != nil {
-		c.CollectorHTTPSettings = *rCfg.Protocols.HTTP
-		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.HTTP.Endpoint); err != nil {
+	if rCfg.HTTP != nil {
+		c.CollectorHTTPSettings = *rCfg.HTTP
+		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.HTTP.Endpoint); err != nil {
 			return nil, fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}

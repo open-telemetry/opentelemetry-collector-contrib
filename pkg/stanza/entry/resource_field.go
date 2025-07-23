@@ -5,6 +5,7 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -96,7 +97,7 @@ func (f ResourceField) Set(entry *Entry, value any) error {
 	}
 
 	if f.isRoot() {
-		return fmt.Errorf("cannot set resource root")
+		return errors.New("cannot set resource root")
 	}
 
 	currentMap := entry.Resource

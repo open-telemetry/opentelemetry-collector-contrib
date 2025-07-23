@@ -29,12 +29,12 @@ func createDefaultConfig() component.Config {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
+func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*JournaldConfig).BaseConfig
 }
 
@@ -42,9 +42,12 @@ func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
 	InputConfig        journald.Config `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*JournaldConfig).InputConfig)
 }

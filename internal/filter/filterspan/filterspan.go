@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -134,12 +134,12 @@ func (mp *propertiesMatcher) Eval(_ context.Context, tCtx ottlspan.TransformCont
 		return false, nil
 	}
 
-	return mp.PropertiesMatcher.Match(tCtx.GetSpan().Attributes(), tCtx.GetResource(), tCtx.GetInstrumentationScope()), nil
+	return mp.Match(tCtx.GetSpan().Attributes(), tCtx.GetResource(), tCtx.GetInstrumentationScope()), nil
 }
 
 // serviceNameForResource gets the service name for a specified Resource.
 func serviceNameForResource(resource pcommon.Resource) string {
-	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
+	service, found := resource.Attributes().Get(string(conventions.ServiceNameKey))
 	if !found {
 		return "<nil-service-name>"
 	}

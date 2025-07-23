@@ -57,9 +57,14 @@ type eventRecord struct {
 	NextStartTime *time.Time `mapstructure:"next_start_time"`
 }
 
-func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) *eventsReceiver {
+func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) (*eventsReceiver, error) {
+	client, err := internal.NewMongoDBAtlasClient(c.BaseURL, c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client for events receiver: %w", err)
+	}
+
 	r := &eventsReceiver{
-		client:        internal.NewMongoDBAtlasClient(c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger),
+		client:        client,
 		cfg:           c,
 		logger:        settings.Logger,
 		consumer:      consumer,
@@ -82,7 +87,7 @@ func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs
 		r.pollInterval = time.Minute
 	}
 
-	return r
+	return r, nil
 }
 
 func (er *eventsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
@@ -101,8 +106,7 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.wg.Wait()
 
 	var err []error
-	err = append(err, er.client.Shutdown())
-	err = append(err, er.checkpoint(ctx))
+	err = append(err, er.client.Shutdown(), er.checkpoint(ctx))
 
 	return errors.Join(err...)
 }

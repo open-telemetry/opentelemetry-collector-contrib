@@ -3,8 +3,8 @@ type: metricstarttime
 status:
   class: processor
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [dashpole, ridwanmsharif]
 

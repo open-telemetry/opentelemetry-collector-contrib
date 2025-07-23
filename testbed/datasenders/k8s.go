@@ -70,11 +70,11 @@ func NewFileLogK8sWriter(config string) *FileLogK8sWriter {
 	return f
 }
 
-func (f *FileLogK8sWriter) Capabilities() consumer.Capabilities {
+func (*FileLogK8sWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (f *FileLogK8sWriter) Start() error {
+func (*FileLogK8sWriter) Start() error {
 	return nil
 }
 
@@ -93,7 +93,7 @@ func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error 
 	return nil
 }
 
-func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
+func (*FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -108,7 +108,7 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		sb.WriteString(lr.Body().Str())
 	}
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
@@ -124,8 +124,7 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 
 	return []byte(sb.String())
 }
@@ -141,11 +140,11 @@ func (f *FileLogK8sWriter) GenConfigYAMLStr() string {
 	return fmt.Sprintf(f.config, f.file.Name())
 }
 
-func (f *FileLogK8sWriter) ProtocolName() string {
+func (*FileLogK8sWriter) ProtocolName() string {
 	return "filelog"
 }
 
-func (f *FileLogK8sWriter) GetEndpoint() net.Addr {
+func (*FileLogK8sWriter) GetEndpoint() net.Addr {
 	return nil
 }
 

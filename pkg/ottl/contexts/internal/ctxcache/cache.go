@@ -12,7 +12,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-func PathExpressionParser[K any](cacheGetter func(K) pcommon.Map) ottl.PathExpressionParser[K] {
+const Name = "cache"
+
+type Getter[K any] func(K) pcommon.Map
+
+func PathExpressionParser[K any](cacheGetter Getter[K]) ottl.PathExpressionParser[K] {
 	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		if path.Keys() == nil {
 			return accessCache(cacheGetter), nil
@@ -21,7 +25,7 @@ func PathExpressionParser[K any](cacheGetter func(K) pcommon.Map) ottl.PathExpre
 	}
 }
 
-func accessCache[K any](cacheGetter func(K) pcommon.Map) ottl.StandardGetSetter[K] {
+func accessCache[K any](cacheGetter Getter[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return cacheGetter(tCtx), nil
@@ -32,7 +36,7 @@ func accessCache[K any](cacheGetter func(K) pcommon.Map) ottl.StandardGetSetter[
 	}
 }
 
-func accessCacheKey[K any](cacheGetter func(K) pcommon.Map, key []ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessCacheKey[K any](cacheGetter Getter[K], key []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return ctxutil.GetMapValue(ctx, tCtx, cacheGetter(tCtx), key)

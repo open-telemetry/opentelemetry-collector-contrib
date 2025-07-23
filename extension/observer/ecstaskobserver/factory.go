@@ -63,7 +63,7 @@ func createExtension(
 	e.Extension = baseExtension{
 		ShutdownFunc: e.Shutdown,
 	}
-	e.EndpointsWatcher = endpointswatcher.New(e, obsCfg.RefreshInterval, params.TelemetrySettings.Logger)
+	e.EndpointsWatcher = endpointswatcher.New(e, obsCfg.RefreshInterval, params.Logger)
 
 	return e, nil
 }

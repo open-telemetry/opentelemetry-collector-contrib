@@ -5,7 +5,6 @@ package aesprovider
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -95,11 +94,8 @@ func TestAESCredentialProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Clearenv()
 			for k, v := range tt.envVars {
-				if err := os.Setenv(k, v); err != nil {
-					t.Fatalf("Failed to set env var %s: %v", k, err)
-				}
+				t.Setenv(k, v)
 			}
 
 			p := NewFactory().Create(confmap.ProviderSettings{})

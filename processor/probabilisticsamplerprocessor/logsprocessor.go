@@ -55,7 +55,7 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 	carrier := &recordCarrier{
 		record: l,
 	}
-	if tvalue := carrier.get("sampling.threshold"); len(tvalue) != 0 {
+	if tvalue := carrier.get("sampling.threshold"); tvalue != "" {
 		th, err := sampling.TValueToThreshold(tvalue)
 		if err != nil {
 			ret = errors.Join(err, ret)
@@ -64,7 +64,7 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 			carrier.parsed.threshold = th
 		}
 	}
-	if rvalue := carrier.get("sampling.randomness"); len(rvalue) != 0 {
+	if rvalue := carrier.get("sampling.randomness"); rvalue != "" {
 		rnd, err := sampling.RValueToRandomness(rvalue)
 		if err != nil {
 			ret = errors.Join(err, ret)
@@ -77,11 +77,11 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 }
 
 func (rc *recordCarrier) threshold() (sampling.Threshold, bool) {
-	return rc.parsed.threshold, len(rc.parsed.tvalue) != 0
+	return rc.parsed.threshold, rc.parsed.tvalue != ""
 }
 
 func (rc *recordCarrier) explicitRandomness() (randomnessNamer, bool) {
-	if len(rc.parsed.rvalue) == 0 {
+	if rc.parsed.rvalue == "" {
 		return newMissingRandomnessMethod(), false
 	}
 	return newSamplingRandomnessMethod(rc.parsed.randomness), true
@@ -108,7 +108,7 @@ func (rc *recordCarrier) clearThreshold() {
 	rc.record.Attributes().Remove("sampling.threshold")
 }
 
-func (rc *recordCarrier) reserialize() error {
+func (*recordCarrier) reserialize() error {
 	return nil
 }
 
@@ -167,7 +167,7 @@ func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (random
 
 // randomnessFromLogRecord (hashingSampler) uses OTEP 235 semantic
 // conventions basing its decision only on the TraceID.
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+func (*consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	lrc, err := newLogRecordCarrier(logRec)
 	rnd := newMissingRandomnessMethod()
 
@@ -240,12 +240,8 @@ func (lsp *logsProcessor) priorityFunc(logRec plog.LogRecord, rnd randomnessName
 	// Note: in logs, unlike traces, the sampling priority
 	// attribute is interpreted as a request to be sampled.
 	if lsp.samplingPriority != "" {
-		priorityThreshold := lsp.logRecordToPriorityThreshold(logRec)
-
-		if priorityThreshold == sampling.NeverSampleThreshold {
-			threshold = priorityThreshold
-			rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
-		} else if sampling.ThresholdLessThan(priorityThreshold, threshold) {
+		priorityThreshold, has := lsp.logRecordToPriorityThreshold(logRec)
+		if has {
 			threshold = priorityThreshold
 			rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
 		}
@@ -253,7 +249,7 @@ func (lsp *logsProcessor) priorityFunc(logRec plog.LogRecord, rnd randomnessName
 	return rnd, threshold
 }
 
-func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sampling.Threshold {
+func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) (sampling.Threshold, bool) {
 	if localPriority, ok := logRec.Attributes().Get(lsp.samplingPriority); ok {
 		// Potentially raise the sampling probability to minProb
 		minProb := 0.0
@@ -266,9 +262,9 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sa
 		if minProb != 0 {
 			if th, err := sampling.ProbabilityToThresholdWithPrecision(minProb, lsp.precision); err == nil {
 				// The record has supplied a valid alternative sampling probability
-				return th
+				return th, true
 			}
 		}
 	}
-	return sampling.NeverSampleThreshold
+	return sampling.NeverSampleThreshold, false
 }

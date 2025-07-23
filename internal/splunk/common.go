@@ -35,7 +35,7 @@ const (
 
 	// https://docs.splunk.com/Documentation/Splunk/9.2.1/Metrics/Overview#What_is_a_metric_data_point.3F
 	// metric name can contain letters, numbers, underscore, dot or colon. cannot start with number or underscore, or contain metric_name
-	metricNamePattern = "^metric_name:([A-Za-z\\.:][A-Za-z0-9_\\.:]*)$"
+	metricNamePattern = `^metric_name:([A-Za-z.:][A-Za-z0-9_.:]*)$`
 )
 
 var metricNameRegexp = regexp.MustCompile(metricNamePattern)
@@ -66,7 +66,7 @@ type Event struct {
 
 // IsMetric returns true if the Splunk event is a metric.
 func (e *Event) IsMetric() bool {
-	return e.Event == HecEventMetricType || (e.Event == nil && len(e.GetMetricValues()) > 0)
+	return e.Event == HecEventMetricType || len(e.GetMetricValues()) > 0
 }
 
 // checks if the field name matches the requirements for a metric datapoint field,
@@ -123,13 +123,11 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	case float64:
 		e.Time = t
 	case string:
-		{
-			time, err := strconv.ParseFloat(t, 64)
-			if err != nil {
-				return err
-			}
-			e.Time = time
+		time, err := strconv.ParseFloat(t, 64)
+		if err != nil {
+			return err
 		}
+		e.Time = time
 	}
 	return nil
 }

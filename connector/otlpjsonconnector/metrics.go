@@ -25,18 +25,18 @@ type connectorMetrics struct {
 
 // newMetricsConnector is a function to create a new connector for metrics extraction
 func newMetricsConnector(set connector.Settings, config component.Config, metricsConsumer consumer.Metrics) *connectorMetrics {
-	set.TelemetrySettings.Logger.Info("Building otlpjson connector for metrics")
+	set.Logger.Info("Building otlpjson connector for metrics")
 	cfg := config.(*Config)
 
 	return &connectorMetrics{
 		config:          *cfg,
-		logger:          set.TelemetrySettings.Logger,
+		logger:          set.Logger,
 		metricsConsumer: metricsConsumer,
 	}
 }
 
 // Capabilities implements the consumer interface.
-func (c *connectorMetrics) Capabilities() consumer.Capabilities {
+func (*connectorMetrics) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

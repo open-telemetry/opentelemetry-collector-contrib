@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,6 +24,7 @@ var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	BaseURL                        string                        `mapstructure:"base_url"`
 	PublicKey                      string                        `mapstructure:"public_key"`
 	PrivateKey                     configopaque.String           `mapstructure:"private_key"`
 	Granularity                    string                        `mapstructure:"granularity"`
@@ -53,6 +54,9 @@ type AlertConfig struct {
 type LogConfig struct {
 	Enabled  bool                 `mapstructure:"enabled"`
 	Projects []*LogsProjectConfig `mapstructure:"projects"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // EventsConfig is the configuration options for events collection
@@ -71,6 +75,9 @@ type LogsProjectConfig struct {
 	EnableAuditLogs bool              `mapstructure:"collect_audit_logs"`
 	EnableHostLogs  *bool             `mapstructure:"collect_host_logs"`
 	AccessLogs      *AccessLogsConfig `mapstructure:"access_logs"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AccessLogsConfig struct {
@@ -96,6 +103,9 @@ type ProjectConfig struct {
 
 type OrgConfig struct {
 	ID string `mapstructure:"id"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() {
@@ -112,14 +122,11 @@ func (pc *ProjectConfig) populateIncludesAndExcludes() {
 
 var (
 	// Alerts Receiver Errors
-	errNoEndpoint       = errors.New("an endpoint must be specified")
-	errNoSecret         = errors.New("a webhook secret must be specified")
-	errNoCert           = errors.New("tls was configured, but no cert file was specified")
-	errNoKey            = errors.New("tls was configured, but no key file was specified")
-	errNoModeRecognized = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s", strings.Join([]string{
-		alertModeListen,
-		alertModePoll,
-	}, ","))
+	errNoEndpoint        = errors.New("an endpoint must be specified")
+	errNoSecret          = errors.New("a webhook secret must be specified")
+	errNoCert            = errors.New("tls was configured, but no cert file was specified")
+	errNoKey             = errors.New("tls was configured, but no key file was specified")
+	errNoModeRecognized  = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s,%s", alertModeListen, alertModePoll)
 	errPageSizeIncorrect = errors.New("page size must be a value between 1 and 500")
 
 	// Logs Receiver Errors
@@ -129,10 +136,17 @@ var (
 
 	// Access Logs Errors
 	errMaxPageSize = errors.New("the maximum value for 'page_size' is 20000")
+
+	// Config Errors
+	errConfigEmptyEndpoint = errors.New("baseurl must not be empty")
 )
 
 func (c *Config) Validate() error {
 	var errs error
+
+	if err := validateEndpoint(c.BaseURL); err != nil {
+		return fmt.Errorf("invalid base_url %q: %w", c.BaseURL, err)
+	}
 
 	for _, project := range c.Projects {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
@@ -240,6 +254,26 @@ func (a AlertConfig) validateListenConfig() error {
 func (e EventsConfig) validate() error {
 	if len(e.Projects) == 0 && len(e.Organizations) == 0 {
 		return errNoEvents
+	}
+	return nil
+}
+
+func validateEndpoint(endpoint string) error {
+	if endpoint == "" {
+		return errConfigEmptyEndpoint
+	}
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		return fmt.Errorf(`invalid scheme %q, expected "http" or "https"`, u.Scheme)
+	}
+	if u.Host == "" {
+		return errors.New("host must not be empty")
 	}
 	return nil
 }

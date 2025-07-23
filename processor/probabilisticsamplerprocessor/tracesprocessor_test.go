@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -890,10 +890,10 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				} else {
 					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
-					require.Equal(t, "", expectTS)
+					require.Empty(t, expectTS)
 				}
 
-				if len(tt.log) == 0 {
+				if tt.log == "" {
 					require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				} else {
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
@@ -1104,7 +1104,8 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 				require.True(t, hasR)
 				require.True(t, threshold.ShouldSample(rnd))
 
-				if found++; find == found {
+				found++
+				if find == found {
 					break
 				}
 			}
@@ -1150,7 +1151,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
+				span.Attributes().PutInt(string(conventions.HTTPStatusCodeKey), 404)
 				span.Attributes().PutStr("http.status_text", "Not Found")
 			}
 		}
@@ -1170,7 +1171,7 @@ type assertTraces struct {
 
 var _ consumer.Traces = &assertTraces{}
 
-func (a *assertTraces) Capabilities() consumer.Capabilities {
+func (*assertTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
@@ -1373,7 +1374,7 @@ func TestHashingFunction(t *testing.T) {
 
 // makeSingleSpanWithAttrib is used to construct test data with
 // a specific TraceID and a single attribute.
-func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts, key string, attribValue pcommon.Value) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.TraceState().FromRaw(ts)

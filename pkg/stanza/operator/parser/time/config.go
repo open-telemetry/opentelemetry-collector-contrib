@@ -47,7 +47,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	if err := c.TimeParser.Validate(); err != nil {
+	if err := c.Validate(); err != nil {
 		return nil, err
 	}
 

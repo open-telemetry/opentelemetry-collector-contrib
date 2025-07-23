@@ -19,7 +19,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.Equal(t, 3*time.Minute, cfg.(*Config).ControllerConfig.CollectionInterval)
+	require.Equal(t, 3*time.Minute, cfg.(*Config).CollectionInterval)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

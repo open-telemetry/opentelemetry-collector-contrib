@@ -144,6 +144,103 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 			s.processAttrs(ctx, log.Attributes())
+			s.processLogBody(ctx, log.Body(), log.Attributes())
+		}
+	}
+}
+
+func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attributes pcommon.Map) {
+	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
+
+	switch body.Type() {
+	case pcommon.ValueTypeMap:
+		var redactedBodyKeys []string
+		body.Map().Range(func(k string, v pcommon.Value) bool {
+			if s.shouldIgnoreKey(k) {
+				ignoredKeys = append(ignoredKeys, k)
+				return true
+			}
+			if s.shouldRedactKey(k) {
+				redactedBodyKeys = append(redactedBodyKeys, k)
+				return true
+			}
+			if s.shouldMaskKey(k) {
+				maskedKeys = append(maskedKeys, k)
+				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				return true
+			}
+			s.redactLogBodyRecursive(ctx, k, v, &redactedKeys, &maskedKeys, &allowedKeys, &ignoredKeys)
+			return true
+		})
+		for _, k := range redactedBodyKeys {
+			body.Map().Remove(k)
+			redactedKeys = append(redactedKeys, k)
+		}
+	case pcommon.ValueTypeSlice:
+		for i := 0; i < body.Slice().Len(); i++ {
+			s.redactLogBodyRecursive(ctx, fmt.Sprintf("[%d]", i), body.Slice().At(i), &redactedKeys, &maskedKeys, &allowedKeys, &ignoredKeys)
+		}
+	default:
+		strVal := body.AsString()
+		if s.shouldAllowValue(strVal) {
+			allowedKeys = append(allowedKeys, "body")
+			return
+		}
+		processedValue := s.processStringValue(strVal)
+		if strVal != processedValue {
+			maskedKeys = append(maskedKeys, "body")
+			body.SetStr(processedValue)
+		}
+	}
+
+	s.addMetaAttrs(redactedKeys, attributes, redactionBodyRedactedKeys, redactionBodyRedactedCount)
+	s.addMetaAttrs(maskedKeys, attributes, redactionBodyMaskedKeys, redactionBodyMaskedCount)
+	s.addMetaAttrs(allowedKeys, attributes, redactionBodyAllowedKeys, redactionBodyAllowedCount)
+	s.addMetaAttrs(ignoredKeys, attributes, "", redactionBodyIgnoredCount)
+}
+
+func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, value pcommon.Value, redactedKeys, maskedKeys, allowedKeys, ignoredKeys *[]string) {
+	switch value.Type() {
+	case pcommon.ValueTypeMap:
+		var redactedCurrentValueKeys []string
+		value.Map().Range(func(k string, v pcommon.Value) bool {
+			keyWithPath := fmt.Sprintf("%s.%s", key, k)
+			if s.shouldIgnoreKey(k) {
+				*ignoredKeys = append(*ignoredKeys, keyWithPath)
+				return true
+			}
+			if s.shouldRedactKey(k) {
+				redactedCurrentValueKeys = append(redactedCurrentValueKeys, k)
+				return true
+			}
+			if s.shouldMaskKey(k) {
+				*maskedKeys = append(*maskedKeys, keyWithPath)
+				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				return true
+			}
+			s.redactLogBodyRecursive(ctx, keyWithPath, v, redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
+			return true
+		})
+		for _, k := range redactedCurrentValueKeys {
+			value.Map().Remove(k)
+			keyWithPath := fmt.Sprintf("%s.%s", key, k)
+			*redactedKeys = append(*redactedKeys, keyWithPath)
+		}
+	case pcommon.ValueTypeSlice:
+		for i := 0; i < value.Slice().Len(); i++ {
+			keyWithPath := fmt.Sprintf("%s.[%d]", key, i)
+			s.redactLogBodyRecursive(ctx, keyWithPath, value.Slice().At(i), redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
+		}
+	default:
+		strVal := value.AsString()
+		if s.shouldAllowValue(strVal) {
+			*allowedKeys = append(*allowedKeys, key)
+			return
+		}
+		processedValue := s.processStringValue(strVal)
+		if strVal != processedValue {
+			*maskedKeys = append(*maskedKeys, key)
+			value.SetStr(processedValue)
 		}
 	}
 }
@@ -192,10 +289,7 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 // processAttrs redacts the attributes of a resource span or a span
 func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
-	var toDelete []string
-	var toBlock []string
-	var allowed []string
-	var ignoring []string
+	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
 
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
@@ -205,72 +299,46 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// This sequence satisfies these performance constraints:
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
-	attributes.Range(func(k string, value pcommon.Value) bool {
-		// don't delete or redact the attribute if it should be ignored
-		if _, ignored := s.ignoreList[k]; ignored {
-			ignoring = append(ignoring, k)
-			// Skip to the next attribute
-			return true
+	for k, value := range attributes.All() {
+		if s.shouldIgnoreKey(k) {
+			ignoredKeys = append(ignoredKeys, k)
+			continue
 		}
-
-		// Make a list of attribute keys to redact
-		if !s.config.AllowAllKeys {
-			if _, allowed := s.allowList[k]; !allowed {
-				toDelete = append(toDelete, k)
-				// Skip to the next attribute
-				return true
-			}
+		if s.shouldRedactKey(k) {
+			redactedKeys = append(redactedKeys, k)
+			continue
 		}
-
 		strVal := value.Str()
 		if s.config.RedactAllTypes {
 			strVal = value.AsString()
 		}
 
-		// Allow any values matching the allowed list regex
-		for _, compiledRE := range s.allowRegexList {
-			if match := compiledRE.MatchString(strVal); match {
-				allowed = append(allowed, k)
-				return true
-			}
+		if s.shouldAllowValue(strVal) {
+			allowedKeys = append(allowedKeys, k)
+			continue
 		}
-
-		// Mask any blocked keys for the other attributes
-		for _, compiledRE := range s.blockKeyRegexList {
-			if match := compiledRE.MatchString(k); match {
-				toBlock = append(toBlock, k)
-				maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
-				value.SetStr(maskedValue)
-				return true
-			}
+		if s.shouldMaskKey(k) {
+			maskedKeys = append(maskedKeys, k)
+			maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
+			value.SetStr(maskedValue)
+			continue
 		}
-
-		// Mask any blocked values for the other attributes
-		var matched bool
-		for _, compiledRE := range s.blockRegexList {
-			if compiledRE.MatchString(strVal) {
-				if !matched {
-					matched = true
-					toBlock = append(toBlock, k)
-				}
-
-				maskedValue := s.maskValue(strVal, compiledRE)
-				value.SetStr(maskedValue)
-				strVal = maskedValue
-			}
+		processedString := s.processStringValue(strVal)
+		if processedString != strVal {
+			maskedKeys = append(maskedKeys, k)
+			value.SetStr(processedString)
 		}
-		return true
-	})
+	}
 
 	// Delete the attributes on the redaction list
-	for _, k := range toDelete {
+	for _, k := range redactedKeys {
 		attributes.Remove(k)
 	}
 	// Add diagnostic information to the span
-	s.addMetaAttrs(toDelete, attributes, redactedKeys, redactedKeyCount)
-	s.addMetaAttrs(toBlock, attributes, maskedValues, maskedValueCount)
-	s.addMetaAttrs(allowed, attributes, allowedValues, allowedValueCount)
-	s.addMetaAttrs(ignoring, attributes, "", ignoredKeyCount)
+	s.addMetaAttrs(redactedKeys, attributes, redactionRedactedKeys, redactionRedactedCount)
+	s.addMetaAttrs(maskedKeys, attributes, redactionMaskedKeys, redactionMaskedCount)
+	s.addMetaAttrs(allowedKeys, attributes, redactionAllowedKeys, redactionAllowedCount)
+	s.addMetaAttrs(ignoredKeys, attributes, "", redactionIgnoredCount)
 }
 
 //nolint:gosec
@@ -303,7 +371,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 
 	// Record summary as span attributes, empty string for ignored items
-	if s.config.Summary == debug && len(valuesAttr) > 0 {
+	if s.config.Summary == debug && valuesAttr != "" {
 		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
 			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
 		}
@@ -318,16 +386,70 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
+func (s *redaction) processStringValue(strVal string) string {
+	// Mask any blocked values for the other attributes
+	for _, compiledRE := range s.blockRegexList {
+		match := compiledRE.MatchString(strVal)
+		if match {
+			strVal = s.maskValue(strVal, compiledRE)
+		}
+	}
+	return strVal
+}
+
+func (s *redaction) shouldMaskKey(k string) bool {
+	// Mask any blocked keys for the other attributes
+	for _, compiledRE := range s.blockKeyRegexList {
+		if match := compiledRE.MatchString(k); match {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *redaction) shouldAllowValue(strVal string) bool {
+	// Allow any values matching the allowed list regex
+	for _, compiledRE := range s.allowRegexList {
+		if match := compiledRE.MatchString(strVal); match {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *redaction) shouldIgnoreKey(k string) bool {
+	if _, ignored := s.ignoreList[k]; ignored {
+		return true
+	}
+	return false
+}
+
+func (s *redaction) shouldRedactKey(k string) bool {
+	if !s.config.AllowAllKeys {
+		if _, found := s.allowList[k]; !found {
+			return true
+		}
+	}
+	return false
+}
+
 const (
-	debug             = "debug"
-	info              = "info"
-	redactedKeys      = "redaction.redacted.keys"
-	redactedKeyCount  = "redaction.redacted.count"
-	maskedValues      = "redaction.masked.keys"
-	maskedValueCount  = "redaction.masked.count"
-	allowedValues     = "redaction.allowed.keys"
-	allowedValueCount = "redaction.allowed.count"
-	ignoredKeyCount   = "redaction.ignored.count"
+	debug                      = "debug"
+	info                       = "info"
+	redactionRedactedKeys      = "redaction.redacted.keys"
+	redactionRedactedCount     = "redaction.redacted.count"
+	redactionMaskedKeys        = "redaction.masked.keys"
+	redactionMaskedCount       = "redaction.masked.count"
+	redactionAllowedKeys       = "redaction.allowed.keys"
+	redactionAllowedCount      = "redaction.allowed.count"
+	redactionIgnoredCount      = "redaction.ignored.count"
+	redactionBodyRedactedKeys  = "redaction.body.redacted.keys"
+	redactionBodyRedactedCount = "redaction.body.redacted.count"
+	redactionBodyMaskedKeys    = "redaction.body.masked.keys"
+	redactionBodyMaskedCount   = "redaction.body.masked.count"
+	redactionBodyAllowedKeys   = "redaction.body.allowed.keys"
+	redactionBodyAllowedCount  = "redaction.body.allowed.count"
+	redactionBodyIgnoredCount  = "redaction.body.ignored.count"
 )
 
 // makeAllowList sets up a lookup table of allowed span attribute keys
@@ -342,7 +464,7 @@ func makeAllowList(c *Config) map[string]string {
 	// span attributes (e.g. `notes`, `description`), then it will those
 	// attribute keys in `redaction.masked.keys` and set the
 	// `redaction.masked.count` to 2
-	redactionKeys := []string{redactedKeys, redactedKeyCount, maskedValues, maskedValueCount, ignoredKeyCount}
+	redactionKeys := []string{redactionRedactedKeys, redactionRedactedCount, redactionMaskedKeys, redactionMaskedCount, redactionIgnoredCount}
 	// allowList consists of the keys explicitly allowed by the configuration
 	// as well as of the new span attributes that the processor creates to
 	// summarize its changes

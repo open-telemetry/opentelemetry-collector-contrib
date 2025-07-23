@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -13,7 +13,7 @@ import (
 )
 
 type KeepKeysArguments[K any] struct {
-	Target ottl.PMapGetter[K]
+	Target ottl.PMapGetSetter[K]
 	Keys   []string
 }
 
@@ -25,13 +25,13 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	args, ok := oArgs.(*KeepKeysArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("KeepKeysFactory args must be of type *KeepKeysArguments[K]")
+		return nil, errors.New("KeepKeysFactory args must be of type *KeepKeysArguments[K]")
 	}
 
 	return keepKeys(args.Target, args.Keys), nil
 }
 
-func keepKeys[K any](target ottl.PMapGetter[K], keys []string) ottl.ExprFunc[K] {
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys []string) ottl.ExprFunc[K] {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
@@ -49,6 +49,6 @@ func keepKeys[K any](target ottl.PMapGetter[K], keys []string) ottl.ExprFunc[K] 
 		if val.Len() == 0 {
 			val.Clear()
 		}
-		return nil, nil
+		return nil, target.Set(ctx, tCtx, val)
 	}
 }

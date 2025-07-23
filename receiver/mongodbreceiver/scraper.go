@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
@@ -219,7 +218,7 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 	s.recordOperationTime(now, topStats, errs)
 }
 
-func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	if databaseName == "local" {
 		return
 	}
@@ -270,7 +269,7 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordPageFaults(now, document, errs)
 }
 
-func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }
 
@@ -301,7 +300,7 @@ func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, erro
 		return nil, fmt.Errorf("failed to get replica set status: %w", err)
 	}
 
-	members, ok := result["members"].(primitive.A)
+	members, ok := result["members"].(bson.A)
 	if !ok {
 		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
 	}

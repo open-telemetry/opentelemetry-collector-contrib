@@ -157,7 +157,7 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 
 // getRedisVersion retrieves version string from 'redis_version' Redis info key-value pairs
 // e.g. "redis_version:5.0.7"
-func (rs *redisScraper) getRedisVersion(inf info) string {
+func (*redisScraper) getRedisVersion(inf info) string {
 	if str, ok := inf["redis_version"]; ok {
 		return str
 	}
@@ -209,9 +209,10 @@ func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val str
 		if err != nil { // skip bad items
 			continue
 		}
-		if subParts[0] == "calls" {
+		switch subParts[0] {
+		case "calls":
 			rs.mb.RecordRedisCmdCallsDataPoint(ts, parsed, cmd)
-		} else if subParts[0] == "usec" {
+		case "usec":
 			rs.mb.RecordRedisCmdUsecDataPoint(ts, parsed, cmd)
 		}
 	}

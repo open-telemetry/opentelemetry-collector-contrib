@@ -6,6 +6,7 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fgeoip%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fgeoip) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fgeoip%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fgeoip) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_geoip)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_geoip&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel), [@michalpristas](https://www.github.com/michalpristas), [@rogercoll](https://www.github.com/rogercoll) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -20,19 +21,17 @@ The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or 
 
 The following [resource attributes](./internal/convention/attributes.go) will be added if the corresponding information is found:
 
-```
-  * geo.city_name
-  * geo.postal_code
-  * geo.country_name
-  * geo.country_iso_code
-  * geo.continent_name
-  * geo.continent_code
-  * geo.region_name
-  * geo.region_iso_code
-  * geo.timezone
-  * geo.location.lat
-  * geo.location.lon
-```
+  - geo.city_name
+  - [geo.postal_code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L71)
+  - geo.country_name
+  - [geo.country.iso_code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L53)
+  - geo.continent_name
+  - [geo.continent.code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L19)
+  - geo.region_name
+  - [geo.region.iso_code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L78)
+  - geo.timezone
+  - [geo.location.lat](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L65)
+  - [geo.location.lon](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L59)
 
 ## Configuration
 

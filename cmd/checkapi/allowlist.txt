@@ -1,3 +1,0 @@
-extension/observer
-extension/opampcustommessages
-processor/tailsamplingprocessor

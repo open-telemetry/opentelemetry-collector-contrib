@@ -47,11 +47,88 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 	}, nil
 }
 
-func (t schemaProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	for rt := 0; rt < ld.ResourceLogs().Len(); rt++ {
+		rLogs := ld.ResourceLogs().At(rt)
+		resourceSchemaURL := rLogs.SchemaUrl()
+		if resourceSchemaURL != "" {
+			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
+			tr, err := t.manager.
+				RequestTranslation(ctx, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return ld, err
+			}
+			err = tr.ApplyAllResourceChanges(rLogs, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply resource changes", zap.Error(err))
+				return ld, err
+			}
+		}
+		for ss := 0; ss < rLogs.ScopeLogs().Len(); ss++ {
+			logs := rLogs.ScopeLogs().At(ss)
+			logsSchemaURL := logs.SchemaUrl()
+			if logsSchemaURL == "" {
+				logsSchemaURL = resourceSchemaURL
+			}
+			if logsSchemaURL == "" {
+				continue
+			}
+			tr, err := t.manager.
+				RequestTranslation(ctx, logsSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				continue
+			}
+			err = tr.ApplyScopeLogChanges(logs, logsSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply scope log changes", zap.Error(err))
+			}
+		}
+	}
 	return ld, nil
 }
 
-func (t schemaProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	for mt := 0; mt < md.ResourceMetrics().Len(); mt++ {
+		rMetric := md.ResourceMetrics().At(mt)
+		resourceSchemaURL := rMetric.SchemaUrl()
+		if resourceSchemaURL != "" {
+			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
+			tr, err := t.manager.RequestTranslation(context.Background(), resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return md, err
+			}
+			err = tr.ApplyAllResourceChanges(rMetric, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply resource changes", zap.Error(err))
+				return md, err
+			}
+		}
+		for sm := 0; sm < rMetric.ScopeMetrics().Len(); sm++ {
+			metric := rMetric.ScopeMetrics().At(sm)
+			metricSchemaURL := metric.SchemaUrl()
+			if metricSchemaURL == "" {
+				metricSchemaURL = resourceSchemaURL
+			}
+			if metricSchemaURL == "" {
+				continue
+			}
+			tr, err := t.manager.
+				RequestTranslation(ctx, metricSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return md, err
+			}
+			err = tr.ApplyScopeMetricChanges(metric, metricSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply scope metric changes", zap.Error(err))
+				return md, err
+			}
+		}
+	}
+
 	return md, nil
 }
 

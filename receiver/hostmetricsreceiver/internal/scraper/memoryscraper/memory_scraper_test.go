@@ -52,7 +52,13 @@ func TestScrape(t *testing.T) {
 						SystemMemoryUsage: metadata.MetricConfig{
 							Enabled: true,
 						},
+						SystemMemoryPageSize: metadata.MetricConfig{
+							Enabled: true,
+						},
 						SystemLinuxMemoryAvailable: metadata.MetricConfig{
+							Enabled: true,
+						},
+						SystemLinuxMemoryDirty: metadata.MetricConfig{
 							Enabled: true,
 						},
 					},
@@ -60,9 +66,9 @@ func TestScrape(t *testing.T) {
 			},
 			expectedMetricCount: func() int {
 				if runtime.GOOS == "linux" {
-					return 3
+					return 5
 				}
-				return 2
+				return 3
 			}(),
 		},
 		{

@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"gopkg.in/yaml.v2"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -50,8 +50,8 @@ const (
 	signal1Attr3Value = true
 	signal1Attr4Key   = "sigattr4k"
 	signal1Attr4Value = 3.3
-	serviceName1      = "service-name-1"
-	serviceName2      = "service-name-2"
+	serviceName1      = "service-name-01"
+	serviceName2      = "service-name-02"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
@@ -186,7 +186,7 @@ func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 	return expectedOutput
 }
 
-func compareMetricsMaps(t *testing.T, expected map[string]pmetric.Metrics, actual map[string]pmetric.Metrics) {
+func compareMetricsMaps(t *testing.T, expected, actual map[string]pmetric.Metrics) {
 	expectedKeys := make([]string, 0, len(expected))
 	for key := range expected {
 		expectedKeys = append(expectedKeys, key)
@@ -832,7 +832,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	require.Positive(t, counter2.Load())
 }
 
-func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpCount int) pmetric.Metrics {
+func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	timeStamp := pcommon.Timestamp(rand.IntN(256))
@@ -841,7 +841,7 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 	for i := 0; i < rmCount; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
-			conventions.AttributeServiceName: fmt.Sprintf("service-%d", rand.IntN(512)),
+			string(conventions.ServiceNameKey): fmt.Sprintf("service-%d", rand.IntN(512)),
 		})
 		require.NoError(t, err)
 
@@ -884,7 +884,7 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 	return md
 }
 
-func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount int, rmCount int, smCount int, mCount int, dpCount int) {
+func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCount, smCount, mCount, dpCount int) {
 	ts, tb := getTelemetryAssets(b)
 
 	sink := new(consumertest.MetricsSink)
@@ -1000,7 +1000,7 @@ func simpleMetricsWithServiceName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
+	rmetrics.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
 	return metrics
 }
@@ -1009,7 +1009,7 @@ func simpleMetricsWithResource() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
+	rmetrics.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
 	rmetrics.Resource().Attributes().PutStr(keyAttr1, valueAttr1)
 	rmetrics.Resource().Attributes().PutInt(keyAttr2, valueAttr2)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
@@ -1020,10 +1020,10 @@ func twoServicesWithSameMetricName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(2)
 	rs1 := metrics.ResourceMetrics().AppendEmpty()
-	rs1.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
+	rs1.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
 	appendSimpleMetricWithID(rs1, signal1Name)
 	rs2 := metrics.ResourceMetrics().AppendEmpty()
-	rs2.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName2)
+	rs2.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName2)
 	appendSimpleMetricWithID(rs2, signal1Name)
 	return metrics
 }
@@ -1049,7 +1049,7 @@ func newNopMockMetricsExporter() exporter.Metrics {
 	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
-func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
+func (*mockMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

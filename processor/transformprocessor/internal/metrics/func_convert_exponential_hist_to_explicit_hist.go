@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -37,10 +38,10 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 	args, ok := oArgs.(*convertExponentialHistToExplicitHistArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("convertExponentialHistToExplicitHistFactory args must be of type *convertExponentialHistToExplicitHistArguments")
+		return nil, errors.New("convertExponentialHistToExplicitHistFactory args must be of type *convertExponentialHistToExplicitHistArguments")
 	}
 
-	if len(args.DistributionFn) == 0 {
+	if args.DistributionFn == "" {
 		args.DistributionFn = "random"
 	}
 

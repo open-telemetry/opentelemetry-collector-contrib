@@ -247,7 +247,7 @@ func buildDoubleMetric(
 ) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(name)
-	var dp pmetric.NumberDataPoint = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	_ = dp.Attributes().FromRaw(attributes)
 	dp.SetDoubleValue(value)

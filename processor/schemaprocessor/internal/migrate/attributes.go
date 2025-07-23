@@ -36,14 +36,14 @@ func NewAttributeChangeSet(mappings map[string]string) AttributeChangeSet {
 	return attr
 }
 
-func (a AttributeChangeSet) IsMigrator() {}
+func (AttributeChangeSet) IsMigrator() {}
 
 func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	var (
 		updated = make(map[string]struct{})
 		results = pcommon.NewMap()
 	)
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrs.All() {
 		var (
 			key     string
 			matched bool
@@ -63,12 +63,11 @@ func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error
 			//       entry's value, not the existing value.
 			if _, overridden := updated[k]; overridden {
 				errs = multierr.Append(errs, fmt.Errorf("value %q already exists", k))
-				return true
+				continue
 			}
 		}
 		v.CopyTo(results.PutEmpty(k))
-		return true
-	})
+	}
 	results.CopyTo(attrs)
 	return errs
 }

@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -24,6 +26,9 @@ var (
 	StartTimestamp = pcommon.NewTimestampFromTime(StartTime)
 	TestTime       = time.Date(2021, 3, 12, 21, 27, 13, 322, time.UTC)
 	TestTimeStamp  = pcommon.NewTimestampFromTime(StartTime)
+
+	DefaultMetricFunctions    = MetricFunctions()
+	DefaultDataPointFunctions = DataPointFunctions()
 )
 
 func Test_ProcessMetrics_ResourceContext(t *testing.T) {
@@ -39,7 +44,7 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -53,7 +58,7 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -80,7 +85,7 @@ func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(resource.attributes["test"], "pass") where resource.attributes["host.name"] == "wrong"`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -94,7 +99,7 @@ func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -121,7 +126,7 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -135,7 +140,7 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -162,7 +167,7 @@ func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(scope.attributes["test"], "pass") where scope.version == 2`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -176,7 +181,7 @@ func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -351,7 +356,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -531,7 +536,7 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 			}
 
 			td := constructMetrics()
-			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -895,7 +900,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{`set(attributes["test"], Substring(attributes["total.string"], 3, 3))`},
@@ -915,7 +920,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{
@@ -958,8 +963,8 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		{
 			statements: []string{`limit(attributes, 0, []) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -974,7 +979,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -1338,7 +1343,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(datapoint.attributes["test"], Split(datapoint.attributes["not_exist"], "|"))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["total.string"], 3, 3))`},
@@ -1358,7 +1363,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["not_exist"], 3, 3))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{
@@ -1401,8 +1406,8 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 		{
 			statements: []string{`limit(datapoint.attributes, 0, []) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -1422,7 +1427,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 				contextStatements = append(contextStatements, common.ContextStatements{Context: "", Statements: []string{statement}})
 			}
 
-			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -1560,7 +1565,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -1600,7 +1605,7 @@ func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -1703,7 +1708,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 			_, err = processor.ProcessMetrics(context.Background(), td)
 			if tt.wantErrorWith != "" {
@@ -1730,8 +1735,10 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "resource:resource.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
+				{Statements: []string{
+					`set(resource.cache["test"], "pass")`,
+					`set(resource.attributes["test"], resource.cache["test"])`,
+				}},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("test", "pass")
@@ -1755,8 +1762,10 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "scope:scope.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
+				{Statements: []string{
+					`set(scope.cache["test"], "pass")`,
+					`set(scope.attributes["test"], scope.cache["test"])`,
+				}},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("test", "pass")
@@ -1778,8 +1787,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "metric:metric.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(metric.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(metric.name, metric.cache["test"]) where metric.name == "operationB"`}, SharedCache: true},
+				{Statements: []string{`set(metric.cache["test"], "pass")`, `set(metric.name, metric.cache["test"]) where metric.name == "operationB"`}},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("pass")
@@ -1799,14 +1807,49 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 			},
 		},
 		{
+			name: "metric:metric.cache multiple entries",
+			statements: []common.ContextStatements{
+				{
+					Statements: []string{
+						`set(metric.cache["test"], Concat([metric.name, "cache"], "-"))`,
+						`set(metric.name, metric.cache["test"])`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("operationA-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("operationB-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("operationC-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetName("operationD-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).SetName("operationE-cache")
+			},
+		},
+		{
 			name: "datapoint:datapoint.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(datapoint.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`}, SharedCache: true},
+				{Statements: []string{
+					`set(datapoint.cache["test"], "pass")`,
+					`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`,
+				}},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "datapoint:datapoint.cache multiple entries",
+			statements: []common.ContextStatements{
+				{
+					Statements: []string{
+						`set(datapoint.cache["test"], datapoint.value_double)`,
+						`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutDouble("test", 1.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutDouble("test", 3.7)
 			},
 		},
 		{
@@ -1823,46 +1866,61 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
 			},
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td pmetric.Metrics)
+	}{
 		{
-			name: "cache isolation",
-			statements: []common.ContextStatements{
+			name: "inferring from statements",
+			contextStatements: []common.ContextStatements{
 				{
-					Statements:  []string{`set(datapoint.cache["shared"], "pass")`},
-					SharedCache: true,
-				},
-				{
-					Statements: []string{
-						`set(datapoint.cache["test"], "fail")`,
-						`set(datapoint.attributes["test"], datapoint.cache["test"])`,
-						`set(datapoint.cache["shared"], "fail")`,
-					},
-					Conditions: []string{
-						`metric.name == "operationA"`,
-					},
-				},
-				{
-					Context: common.DataPoint,
-					Statements: []string{
-						`set(attributes["extra"], cache["test"]) where cache["test"] != nil`,
-						`set(cache["test"], "fail")`,
-						`set(attributes["test"], cache["test"])`,
-						`set(cache["shared"], "fail")`,
-					},
-					Conditions: []string{
-						`metric.name == "operationA"`,
-					},
-				},
-				{
-					Statements:  []string{`set(datapoint.attributes["test"], "pass") where datapoint.cache["shared"] == "pass"`},
-					SharedCache: true,
-					Conditions: []string{
-						`metric.name == "operationA"`,
-					},
+					Conditions: []string{`resource.attributes["test"] == nil`},
+					Statements: []string{`set(metric.name, Concat([metric.name, "pass"], "-"))`},
 				},
 			},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+				for _, v := range td.ResourceMetrics().All() {
+					for _, m := range v.ScopeMetrics().All() {
+						for _, mm := range m.Metrics().All() {
+							mm.SetName(mm.Name() + "-pass")
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "inferring from conditions",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`metric.name != nil`},
+					Statements: []string{`set(resource.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				for _, v := range td.ResourceMetrics().All() {
+					v.Resource().Attributes().PutStr("test", "pass")
+				}
 			},
 		},
 	}
@@ -1870,7 +1928,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -1932,7 +1990,6 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
 				},
-				wantErrorWith: fmt.Sprintf(`segment "%s" from path "%[1]s.cache[test]" is not a valid path`, ctx),
 			},
 		}
 	}
@@ -1941,7 +1998,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		t.Run(ctx, func(t *testing.T) {
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
-					_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+					_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
 					if tt.wantErrorWith != "" {
 						if err == nil {
 							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1952,6 +2009,101 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 					require.NoError(t, err)
 				})
 			}
+		})
+	}
+}
+
+type TestFuncArguments[K any] struct{}
+
+func createTestFunc[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(context.Context, K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+func NewTestMetricFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestMetricFunc", &TestFuncArguments[K]{}, createTestFunc[K])
+}
+
+func NewTestDataPointFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestDataPointFunc", &TestFuncArguments[K]{}, createTestFunc[K])
+}
+
+func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
+	type testCase struct {
+		name               string
+		statements         []common.ContextStatements
+		wantErrorWith      string
+		metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
+		dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
+	}
+
+	tests := []testCase{
+		{
+			name: "metric functions : statement with added metric func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("metric"),
+					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
+				},
+			},
+			metricFunctions: map[string]ottl.Factory[ottlmetric.TransformContext]{
+				"set":            DefaultMetricFunctions["set"],
+				"TestMetricFunc": NewTestMetricFuncFactory[ottlmetric.TransformContext](),
+			},
+			dataPointFunctions: DefaultDataPointFunctions,
+		},
+		{
+			name: "metric functions : statement with missing metric func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("metric"),
+					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
+				},
+			},
+			wantErrorWith:      `undefined function "TestMetricFunc"`,
+			metricFunctions:    DefaultMetricFunctions,
+			dataPointFunctions: DefaultDataPointFunctions,
+		},
+		{
+			name: "data point functions : statement with added data point func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
+				},
+			},
+			metricFunctions: DefaultMetricFunctions,
+			dataPointFunctions: map[string]ottl.Factory[ottldatapoint.TransformContext]{
+				"set":               DefaultDataPointFunctions["set"],
+				"TestDataPointFunc": NewTestDataPointFuncFactory[ottldatapoint.TransformContext](),
+			},
+		},
+		{
+			name: "data point functions : statement with missing data point func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
+				},
+			},
+			wantErrorWith:      `undefined function "TestDataPointFunc"`,
+			metricFunctions:    DefaultMetricFunctions,
+			dataPointFunctions: DefaultDataPointFunctions,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.metricFunctions, tt.dataPointFunctions)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

@@ -11,9 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -52,14 +51,23 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
+func (r *metricsReceiver) clientOptions() []client.Opt {
+	var opts []client.Opt
+	if r.config.Endpoint == "" {
+		opts = append(opts, client.WithHostFromEnv())
+	}
+	return opts
+}
+
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, r.clientOptions()...)
 	if err != nil {
 		return err
 	}
 
-	if err = r.client.LoadContainerList(ctx); err != nil {
+	err = r.client.LoadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -217,7 +225,7 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 	}
 }
 
-type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
+type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)
 
 func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *ctypes.BlkioStats) {
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
@@ -258,7 +266,7 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	}
 }
 
-func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *ctypes.CPUStats, prevStats *ctypes.CPUStats) {
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats, prevStats *ctypes.CPUStats) {
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
@@ -284,7 +292,7 @@ func (r *metricsReceiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *ct
 	}
 }
 
-func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) error {
+func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.ContainerJSONBase) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid
@@ -296,7 +304,7 @@ func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *types.C
 	return nil
 }
 
-func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) error {
+func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *ctypes.InspectResponse) error {
 	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
 
 	cpuLimit, err := calculateCPULimit(containerJSON.HostConfig)

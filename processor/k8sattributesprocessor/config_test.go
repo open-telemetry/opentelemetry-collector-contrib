@@ -20,8 +20,6 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -173,6 +171,8 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
+			// Set "K8S_NODE" to pass validation.
+			t.Setenv("K8S_NODE", "ip-111.us-west-2.compute.internal")
 			if tt.expected == nil {
 				err = xconfmap.Validate(cfg)
 				assert.Error(t, err)
@@ -182,4 +182,14 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestFilterConfigInvalidEnvVar(t *testing.T) {
+	f := FilterConfig{
+		Namespace:      "ns2",
+		NodeFromEnvVar: "K8S_NODE",
+		Labels:         []FieldFilterConfig{},
+		Fields:         []FieldFilterConfig{},
+	}
+	assert.Error(t, xconfmap.Validate(f))
 }

@@ -7,6 +7,7 @@ exporters:
       enabled: true
       num_consumers: 23
       queue_size: 42
+    timeout: 8
 
     s3uploader:
         region: 'us-east-1'

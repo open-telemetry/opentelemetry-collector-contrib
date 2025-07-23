@@ -16,12 +16,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
-// queuePath is the path to queues endpoint
-const queuePath = "/api/queues"
+const (
+	// queuePath is the endpoint for RabbitMQ queues.
+	queuePath = "/api/queues"
+
+	// nodePath is the endpoint for RabbitMQ nodes.
+	nodePath = "/api/nodes"
+)
 
 type client interface {
 	// GetQueues calls "/api/queues" endpoint to get list of queues for the target node
 	GetQueues(ctx context.Context) ([]*models.Queue, error)
+	// GetNodes calls "/api/nodes" endpoint to get list of nodes for the target node
+	GetNodes(ctx context.Context) ([]*models.Node, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -64,6 +71,17 @@ func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*models.Queue, error)
 	}
 
 	return queues, nil
+}
+
+func (c *rabbitmqClient) GetNodes(ctx context.Context) ([]*models.Node, error) {
+	var nodes []*models.Node
+
+	if err := c.get(ctx, nodePath, &nodes); err != nil {
+		c.logger.Debug("Failed to retrieve nodes", zap.Error(err))
+		return nil, err
+	}
+
+	return nodes, nil
 }
 
 func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {

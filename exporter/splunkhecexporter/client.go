@@ -637,7 +637,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 }
 
 func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), http.NoBody)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -658,7 +658,7 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.ClientConfig.Compression = ""
+	config.Compression = ""
 	return config.ToClient(ctx, host, telemetrySettings)
 }
 

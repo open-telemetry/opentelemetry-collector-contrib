@@ -4,6 +4,7 @@
 package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +30,7 @@ type Config struct {
 	Markers []Marker `mapstructure:"markers"`
 
 	confighttp.ClientConfig   `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
@@ -55,17 +56,20 @@ type Marker struct {
 type Rules struct {
 	// LogConditions is the list of ottllog conditions that determine a match
 	LogConditions []string `mapstructure:"log_conditions"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
 	if cfg.APIKey == "" {
-		return fmt.Errorf("invalid API Key")
+		return errors.New("invalid API Key")
 	}
 
 	if len(cfg.Markers) == 0 {
-		return fmt.Errorf("no markers supplied")
+		return errors.New("no markers supplied")
 	}
 	for _, m := range cfg.Markers {
 		if m.Type == "" {

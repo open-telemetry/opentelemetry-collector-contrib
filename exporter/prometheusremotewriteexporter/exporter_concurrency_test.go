@@ -16,6 +16,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,17 +73,18 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ts := wr.Timeseries[0]
 		foundLabel := false
 		for _, label := range ts.Labels {
-			if label.Name == testIDKey {
-				id, err := strconv.Atoi(label.Value)
-				assert.NoError(t, err)
-				mu.Lock()
-				_, ok := received[id]
-				assert.False(t, ok) // fail if we already saw it
-				received[id] = ts
-				mu.Unlock()
-				foundLabel = true
-				break
+			if label.Name != testIDKey {
+				continue
 			}
+			id, err := strconv.Atoi(label.Value)
+			assert.NoError(t, err)
+			mu.Lock()
+			_, ok := received[id]
+			assert.False(t, ok) // fail if we already saw it
+			received[id] = ts
+			mu.Unlock()
+			foundLabel = true
+			break
 		}
 		assert.True(t, foundLabel)
 		w.WriteHeader(http.StatusOK)
@@ -109,10 +111,8 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
-		BackOffConfig: retrySettings,
+		BackOffConfig:       retrySettings,
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 	}
 
 	assert.NotNil(t, cfg)

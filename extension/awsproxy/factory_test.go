@@ -54,7 +54,7 @@ func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	address := testutil.GetAvailableLocalAddress(t)
 	cfg.ProxyConfig.AWSEndpoint = backend.URL
-	cfg.ProxyConfig.TCPAddrConfig.Endpoint = address
+	cfg.ProxyConfig.Endpoint = address
 	cfg.ProxyConfig.Region = "us-east-2"
 
 	// Simplest way to get SDK to use fake credentials
@@ -100,7 +100,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

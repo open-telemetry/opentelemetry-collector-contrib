@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -287,7 +287,7 @@ func generateMetricsBatch(size int) pmetric.Metrics {
 	ts := time.Now()
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "carbon")
+	rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "carbon")
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i := 0; i < size; i++ {
@@ -311,7 +311,7 @@ type carbonServer struct {
 	expectedContainsValue string
 }
 
-func newCarbonServer(t *testing.T, addr string, expectedContainsValue string) *carbonServer {
+func newCarbonServer(t *testing.T, addr, expectedContainsValue string) *carbonServer {
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)
 	ln, err := net.ListenTCP("tcp", laddr)

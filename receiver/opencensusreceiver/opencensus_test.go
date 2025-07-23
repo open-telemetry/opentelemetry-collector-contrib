@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -144,7 +145,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	assert.True(t, proto.Equal(wantResource, gotResource))
 	require.Len(t, wantSpans, 1)
 	require.Len(t, gotSpans, 1)
-	assert.EqualValues(t, wantSpans[0], gotSpans[0])
+	assert.Equal(t, wantSpans[0], gotSpans[0])
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
@@ -207,8 +208,8 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	verifyCorsResp(t, url, "disallowed-origin.com", http.StatusNoContent, false)
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest(http.MethodOptions, url, nil)
+func verifyCorsResp(t *testing.T, url, origin string, wantStatus int, wantAllowed bool) {
+	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
@@ -389,7 +390,7 @@ func TestStartListenerClosed(t *testing.T) {
 }
 
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "sock")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
@@ -836,11 +837,11 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := Config{
 		ServerConfig: configgrpc.ServerConfig{
-			TLSSetting: &configtls.ServerConfig{
+			TLS: configoptional.Some(configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "willfail",
 				},
-			},
+			}),
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: "tcp",
@@ -894,7 +895,7 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.consumeError = err
 }
 
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+func (*errOrSinkConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -942,7 +943,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

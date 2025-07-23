@@ -37,10 +37,6 @@ coralogix/all:
   application_name: "APP_NAME"
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
-  batcher:
-    enabled: true
-    flush_timeout: 3s
-    min_size: 8888
 
 
 coralogix/domain:

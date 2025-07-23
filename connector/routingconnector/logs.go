@@ -49,13 +49,13 @@ func newLogsConnector(
 	}
 
 	return &logsConnector{
-		logger: set.TelemetrySettings.Logger,
+		logger: set.Logger,
 		config: cfg,
 		router: r,
 	}, nil
 }
 
-func (c *logsConnector) Capabilities() consumer.Capabilities {
+func (*logsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

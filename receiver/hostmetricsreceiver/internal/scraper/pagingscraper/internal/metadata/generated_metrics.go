@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeDirection specifies the value direction attribute.
@@ -92,6 +92,32 @@ func (av AttributeType) String() string {
 var MapAttributeType = map[string]AttributeType{
 	"major": AttributeTypeMajor,
 	"minor": AttributeTypeMinor,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemPagingFaults: metricInfo{
+		Name: "system.paging.faults",
+	},
+	SystemPagingOperations: metricInfo{
+		Name: "system.paging.operations",
+	},
+	SystemPagingUsage: metricInfo{
+		Name: "system.paging.usage",
+	},
+	SystemPagingUtilization: metricInfo{
+		Name: "system.paging.utilization",
+	},
+}
+
+type metricsInfo struct {
+	SystemPagingFaults      metricInfo
+	SystemPagingOperations  metricInfo
+	SystemPagingUsage       metricInfo
+	SystemPagingUtilization metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemPagingFaults struct {

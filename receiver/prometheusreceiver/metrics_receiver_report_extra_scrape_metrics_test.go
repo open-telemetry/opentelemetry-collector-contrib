@@ -30,19 +30,21 @@ foo_gauge_total{method="get",port="6380"} 13
 
 // TestReportExtraScrapeMetrics validates 3 extra scrape metrics are reported when flag is set to true.
 func TestReportExtraScrapeMetrics(t *testing.T) {
-	targets := []*testData{
-		{
+	target := func(reportExtraScrapeMetrics bool) *testData {
+		return &testData{
 			name: "target1",
 			pages: []mockPrometheusResponse{
 				{code: 200, data: metricSet, useOpenMetrics: true},
 			},
 			normalizedName: false,
-			validateFunc:   verifyMetrics,
-		},
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				verifyMetrics(t, td, result, reportExtraScrapeMetrics)
+			},
+		}
 	}
 
-	testScraperMetrics(t, targets, false) // extraScrapeMetrics flag is false
-	testScraperMetrics(t, targets, true)  // extraScrapeMetrics flag is true
+	testScraperMetrics(t, []*testData{target(false)}, false) // extraScrapeMetrics flag is false
+	testScraperMetrics(t, []*testData{target(true)}, true)   // extraScrapeMetrics flag is true
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
@@ -53,12 +55,13 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 		PrometheusConfig:         cfg,
 		UseStartTimeMetric:       false,
 		StartTimeMetricRegex:     "",
 		ReportExtraScrapeMetrics: reportExtraScrapeMetrics,
 	}, cms)
+	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
@@ -110,7 +113,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 	}
 }
 
-func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics, reportExtraScrapeMetrics bool) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -118,10 +121,11 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("http_connected_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"http_connected_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -137,10 +141,13 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 						compareAttributes(map[string]string{"method": "get", "port": "6380"}),
 					},
 				},
-			}),
-		assertMetricPresent("foo_gauge_total",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"foo_gauge_total",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -156,7 +163,36 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 						compareAttributes(map[string]string{"method": "get", "port": "6380"}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
+
+	if reportExtraScrapeMetrics {
+		e1 = append(e1, []metricExpectation{
+			{
+				"scrape_body_size_bytes",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"scrape_sample_limit",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"scrape_timeout_seconds",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+		}...)
+	}
+
 	doCompare(t, "scrape-reportExtraScrapeMetrics-1", wantAttributes, m1, e1)
 }

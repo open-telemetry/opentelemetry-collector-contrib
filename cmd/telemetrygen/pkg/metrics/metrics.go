@@ -11,12 +11,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.13.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -32,7 +32,7 @@ func Start(cfg *Config) error {
 
 	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
-	if err = run(cfg, exporterFactory(cfg, logger), logger); err != nil {
+	if err := run(cfg, exporterFactory(cfg, logger), logger); err != nil {
 		return err
 	}
 
@@ -60,6 +60,9 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	wg := sync.WaitGroup{}
 	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
 
+	tb := newTimeBox(c.EnforceUniqueTimeseries, c.UniqueTimelimit)
+	defer tb.shutdown()
+
 	running := &atomic.Bool{}
 	running.Store(true)
 
@@ -67,6 +70,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numMetrics:             c.NumMetrics,
+			enforceUnique:          c.EnforceUniqueTimeseries,
 			metricName:             c.MetricName,
 			metricType:             c.MetricType,
 			aggregationTemporality: c.AggregationTemporality,
@@ -77,6 +81,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			wg:                     &wg,
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
+			clock:                  &realClock{},
 		}
 		exp, err := expF()
 		if err != nil {
@@ -91,7 +96,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			}
 		}()
 
-		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
+		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes(), tb)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

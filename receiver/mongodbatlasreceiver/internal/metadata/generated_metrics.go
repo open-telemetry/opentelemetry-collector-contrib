@@ -762,6 +762,276 @@ var MapAttributeTicketType = map[string]AttributeTicketType{
 	"available_writes": AttributeTicketTypeAvailableWrites,
 }
 
+var MetricsInfo = metricsInfo{
+	MongodbatlasDbCounts: metricInfo{
+		Name: "mongodbatlas.db.counts",
+	},
+	MongodbatlasDbSize: metricInfo{
+		Name: "mongodbatlas.db.size",
+	},
+	MongodbatlasDiskPartitionIopsAverage: metricInfo{
+		Name: "mongodbatlas.disk.partition.iops.average",
+	},
+	MongodbatlasDiskPartitionIopsMax: metricInfo{
+		Name: "mongodbatlas.disk.partition.iops.max",
+	},
+	MongodbatlasDiskPartitionLatencyAverage: metricInfo{
+		Name: "mongodbatlas.disk.partition.latency.average",
+	},
+	MongodbatlasDiskPartitionLatencyMax: metricInfo{
+		Name: "mongodbatlas.disk.partition.latency.max",
+	},
+	MongodbatlasDiskPartitionQueueDepth: metricInfo{
+		Name: "mongodbatlas.disk.partition.queue.depth",
+	},
+	MongodbatlasDiskPartitionSpaceAverage: metricInfo{
+		Name: "mongodbatlas.disk.partition.space.average",
+	},
+	MongodbatlasDiskPartitionSpaceMax: metricInfo{
+		Name: "mongodbatlas.disk.partition.space.max",
+	},
+	MongodbatlasDiskPartitionThroughput: metricInfo{
+		Name: "mongodbatlas.disk.partition.throughput",
+	},
+	MongodbatlasDiskPartitionUsageAverage: metricInfo{
+		Name: "mongodbatlas.disk.partition.usage.average",
+	},
+	MongodbatlasDiskPartitionUsageMax: metricInfo{
+		Name: "mongodbatlas.disk.partition.usage.max",
+	},
+	MongodbatlasDiskPartitionUtilizationAverage: metricInfo{
+		Name: "mongodbatlas.disk.partition.utilization.average",
+	},
+	MongodbatlasDiskPartitionUtilizationMax: metricInfo{
+		Name: "mongodbatlas.disk.partition.utilization.max",
+	},
+	MongodbatlasProcessAsserts: metricInfo{
+		Name: "mongodbatlas.process.asserts",
+	},
+	MongodbatlasProcessBackgroundFlush: metricInfo{
+		Name: "mongodbatlas.process.background_flush",
+	},
+	MongodbatlasProcessCacheIo: metricInfo{
+		Name: "mongodbatlas.process.cache.io",
+	},
+	MongodbatlasProcessCacheRatio: metricInfo{
+		Name: "mongodbatlas.process.cache.ratio",
+	},
+	MongodbatlasProcessCacheSize: metricInfo{
+		Name: "mongodbatlas.process.cache.size",
+	},
+	MongodbatlasProcessConnections: metricInfo{
+		Name: "mongodbatlas.process.connections",
+	},
+	MongodbatlasProcessCPUChildrenNormalizedUsageAverage: metricInfo{
+		Name: "mongodbatlas.process.cpu.children.normalized.usage.average",
+	},
+	MongodbatlasProcessCPUChildrenNormalizedUsageMax: metricInfo{
+		Name: "mongodbatlas.process.cpu.children.normalized.usage.max",
+	},
+	MongodbatlasProcessCPUChildrenUsageAverage: metricInfo{
+		Name: "mongodbatlas.process.cpu.children.usage.average",
+	},
+	MongodbatlasProcessCPUChildrenUsageMax: metricInfo{
+		Name: "mongodbatlas.process.cpu.children.usage.max",
+	},
+	MongodbatlasProcessCPUNormalizedUsageAverage: metricInfo{
+		Name: "mongodbatlas.process.cpu.normalized.usage.average",
+	},
+	MongodbatlasProcessCPUNormalizedUsageMax: metricInfo{
+		Name: "mongodbatlas.process.cpu.normalized.usage.max",
+	},
+	MongodbatlasProcessCPUUsageAverage: metricInfo{
+		Name: "mongodbatlas.process.cpu.usage.average",
+	},
+	MongodbatlasProcessCPUUsageMax: metricInfo{
+		Name: "mongodbatlas.process.cpu.usage.max",
+	},
+	MongodbatlasProcessCursors: metricInfo{
+		Name: "mongodbatlas.process.cursors",
+	},
+	MongodbatlasProcessDbDocumentRate: metricInfo{
+		Name: "mongodbatlas.process.db.document.rate",
+	},
+	MongodbatlasProcessDbOperationsRate: metricInfo{
+		Name: "mongodbatlas.process.db.operations.rate",
+	},
+	MongodbatlasProcessDbOperationsTime: metricInfo{
+		Name: "mongodbatlas.process.db.operations.time",
+	},
+	MongodbatlasProcessDbQueryExecutorScanned: metricInfo{
+		Name: "mongodbatlas.process.db.query_executor.scanned",
+	},
+	MongodbatlasProcessDbQueryTargetingScannedPerReturned: metricInfo{
+		Name: "mongodbatlas.process.db.query_targeting.scanned_per_returned",
+	},
+	MongodbatlasProcessDbStorage: metricInfo{
+		Name: "mongodbatlas.process.db.storage",
+	},
+	MongodbatlasProcessGlobalLock: metricInfo{
+		Name: "mongodbatlas.process.global_lock",
+	},
+	MongodbatlasProcessIndexBtreeMissRatio: metricInfo{
+		Name: "mongodbatlas.process.index.btree_miss_ratio",
+	},
+	MongodbatlasProcessIndexCounters: metricInfo{
+		Name: "mongodbatlas.process.index.counters",
+	},
+	MongodbatlasProcessJournalingCommits: metricInfo{
+		Name: "mongodbatlas.process.journaling.commits",
+	},
+	MongodbatlasProcessJournalingDataFiles: metricInfo{
+		Name: "mongodbatlas.process.journaling.data_files",
+	},
+	MongodbatlasProcessJournalingWritten: metricInfo{
+		Name: "mongodbatlas.process.journaling.written",
+	},
+	MongodbatlasProcessMemoryUsage: metricInfo{
+		Name: "mongodbatlas.process.memory.usage",
+	},
+	MongodbatlasProcessNetworkIo: metricInfo{
+		Name: "mongodbatlas.process.network.io",
+	},
+	MongodbatlasProcessNetworkRequests: metricInfo{
+		Name: "mongodbatlas.process.network.requests",
+	},
+	MongodbatlasProcessOplogRate: metricInfo{
+		Name: "mongodbatlas.process.oplog.rate",
+	},
+	MongodbatlasProcessOplogTime: metricInfo{
+		Name: "mongodbatlas.process.oplog.time",
+	},
+	MongodbatlasProcessPageFaults: metricInfo{
+		Name: "mongodbatlas.process.page_faults",
+	},
+	MongodbatlasProcessRestarts: metricInfo{
+		Name: "mongodbatlas.process.restarts",
+	},
+	MongodbatlasProcessTickets: metricInfo{
+		Name: "mongodbatlas.process.tickets",
+	},
+	MongodbatlasSystemCPUNormalizedUsageAverage: metricInfo{
+		Name: "mongodbatlas.system.cpu.normalized.usage.average",
+	},
+	MongodbatlasSystemCPUNormalizedUsageMax: metricInfo{
+		Name: "mongodbatlas.system.cpu.normalized.usage.max",
+	},
+	MongodbatlasSystemCPUUsageAverage: metricInfo{
+		Name: "mongodbatlas.system.cpu.usage.average",
+	},
+	MongodbatlasSystemCPUUsageMax: metricInfo{
+		Name: "mongodbatlas.system.cpu.usage.max",
+	},
+	MongodbatlasSystemFtsCPUNormalizedUsage: metricInfo{
+		Name: "mongodbatlas.system.fts.cpu.normalized.usage",
+	},
+	MongodbatlasSystemFtsCPUUsage: metricInfo{
+		Name: "mongodbatlas.system.fts.cpu.usage",
+	},
+	MongodbatlasSystemFtsDiskUsed: metricInfo{
+		Name: "mongodbatlas.system.fts.disk.used",
+	},
+	MongodbatlasSystemFtsMemoryUsage: metricInfo{
+		Name: "mongodbatlas.system.fts.memory.usage",
+	},
+	MongodbatlasSystemMemoryUsageAverage: metricInfo{
+		Name: "mongodbatlas.system.memory.usage.average",
+	},
+	MongodbatlasSystemMemoryUsageMax: metricInfo{
+		Name: "mongodbatlas.system.memory.usage.max",
+	},
+	MongodbatlasSystemNetworkIoAverage: metricInfo{
+		Name: "mongodbatlas.system.network.io.average",
+	},
+	MongodbatlasSystemNetworkIoMax: metricInfo{
+		Name: "mongodbatlas.system.network.io.max",
+	},
+	MongodbatlasSystemPagingIoAverage: metricInfo{
+		Name: "mongodbatlas.system.paging.io.average",
+	},
+	MongodbatlasSystemPagingIoMax: metricInfo{
+		Name: "mongodbatlas.system.paging.io.max",
+	},
+	MongodbatlasSystemPagingUsageAverage: metricInfo{
+		Name: "mongodbatlas.system.paging.usage.average",
+	},
+	MongodbatlasSystemPagingUsageMax: metricInfo{
+		Name: "mongodbatlas.system.paging.usage.max",
+	},
+}
+
+type metricsInfo struct {
+	MongodbatlasDbCounts                                  metricInfo
+	MongodbatlasDbSize                                    metricInfo
+	MongodbatlasDiskPartitionIopsAverage                  metricInfo
+	MongodbatlasDiskPartitionIopsMax                      metricInfo
+	MongodbatlasDiskPartitionLatencyAverage               metricInfo
+	MongodbatlasDiskPartitionLatencyMax                   metricInfo
+	MongodbatlasDiskPartitionQueueDepth                   metricInfo
+	MongodbatlasDiskPartitionSpaceAverage                 metricInfo
+	MongodbatlasDiskPartitionSpaceMax                     metricInfo
+	MongodbatlasDiskPartitionThroughput                   metricInfo
+	MongodbatlasDiskPartitionUsageAverage                 metricInfo
+	MongodbatlasDiskPartitionUsageMax                     metricInfo
+	MongodbatlasDiskPartitionUtilizationAverage           metricInfo
+	MongodbatlasDiskPartitionUtilizationMax               metricInfo
+	MongodbatlasProcessAsserts                            metricInfo
+	MongodbatlasProcessBackgroundFlush                    metricInfo
+	MongodbatlasProcessCacheIo                            metricInfo
+	MongodbatlasProcessCacheRatio                         metricInfo
+	MongodbatlasProcessCacheSize                          metricInfo
+	MongodbatlasProcessConnections                        metricInfo
+	MongodbatlasProcessCPUChildrenNormalizedUsageAverage  metricInfo
+	MongodbatlasProcessCPUChildrenNormalizedUsageMax      metricInfo
+	MongodbatlasProcessCPUChildrenUsageAverage            metricInfo
+	MongodbatlasProcessCPUChildrenUsageMax                metricInfo
+	MongodbatlasProcessCPUNormalizedUsageAverage          metricInfo
+	MongodbatlasProcessCPUNormalizedUsageMax              metricInfo
+	MongodbatlasProcessCPUUsageAverage                    metricInfo
+	MongodbatlasProcessCPUUsageMax                        metricInfo
+	MongodbatlasProcessCursors                            metricInfo
+	MongodbatlasProcessDbDocumentRate                     metricInfo
+	MongodbatlasProcessDbOperationsRate                   metricInfo
+	MongodbatlasProcessDbOperationsTime                   metricInfo
+	MongodbatlasProcessDbQueryExecutorScanned             metricInfo
+	MongodbatlasProcessDbQueryTargetingScannedPerReturned metricInfo
+	MongodbatlasProcessDbStorage                          metricInfo
+	MongodbatlasProcessGlobalLock                         metricInfo
+	MongodbatlasProcessIndexBtreeMissRatio                metricInfo
+	MongodbatlasProcessIndexCounters                      metricInfo
+	MongodbatlasProcessJournalingCommits                  metricInfo
+	MongodbatlasProcessJournalingDataFiles                metricInfo
+	MongodbatlasProcessJournalingWritten                  metricInfo
+	MongodbatlasProcessMemoryUsage                        metricInfo
+	MongodbatlasProcessNetworkIo                          metricInfo
+	MongodbatlasProcessNetworkRequests                    metricInfo
+	MongodbatlasProcessOplogRate                          metricInfo
+	MongodbatlasProcessOplogTime                          metricInfo
+	MongodbatlasProcessPageFaults                         metricInfo
+	MongodbatlasProcessRestarts                           metricInfo
+	MongodbatlasProcessTickets                            metricInfo
+	MongodbatlasSystemCPUNormalizedUsageAverage           metricInfo
+	MongodbatlasSystemCPUNormalizedUsageMax               metricInfo
+	MongodbatlasSystemCPUUsageAverage                     metricInfo
+	MongodbatlasSystemCPUUsageMax                         metricInfo
+	MongodbatlasSystemFtsCPUNormalizedUsage               metricInfo
+	MongodbatlasSystemFtsCPUUsage                         metricInfo
+	MongodbatlasSystemFtsDiskUsed                         metricInfo
+	MongodbatlasSystemFtsMemoryUsage                      metricInfo
+	MongodbatlasSystemMemoryUsageAverage                  metricInfo
+	MongodbatlasSystemMemoryUsageMax                      metricInfo
+	MongodbatlasSystemNetworkIoAverage                    metricInfo
+	MongodbatlasSystemNetworkIoMax                        metricInfo
+	MongodbatlasSystemPagingIoAverage                     metricInfo
+	MongodbatlasSystemPagingIoMax                         metricInfo
+	MongodbatlasSystemPagingUsageAverage                  metricInfo
+	MongodbatlasSystemPagingUsageMax                      metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricMongodbatlasDbCounts struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

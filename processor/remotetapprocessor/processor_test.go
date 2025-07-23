@@ -5,6 +5,7 @@ package remotetapprocessor
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -19,6 +20,9 @@ import (
 )
 
 func TestConsumeMetrics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32967")
+	}
 	metric := pmetric.NewMetrics()
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 
@@ -67,6 +71,9 @@ func TestConsumeMetrics(t *testing.T) {
 }
 
 func TestConsumeLogs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32967")
+	}
 	log := plog.NewLogs()
 	log.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("foo")
 
@@ -116,6 +123,10 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32967")
+	}
+
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 

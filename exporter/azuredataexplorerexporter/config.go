@@ -16,8 +16,8 @@ import (
 
 // Config defines configuration for Azure Data Explorer Exporter
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	ClusterURI                string              `mapstructure:"cluster_uri"`
 	ApplicationID             string              `mapstructure:"application_id"`
@@ -66,7 +66,7 @@ func (adxCfg *Config) Validate() error {
 		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`)
 	}
 
-	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {
+	if adxCfg.IngestionType != managedIngestType && adxCfg.IngestionType != queuedIngestTest && !isEmpty(adxCfg.IngestionType) {
 		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedIngestType, queuedIngestTest, adxCfg.IngestionType)
 	}
 	// Validate managed identity ID. Use system for system assigned managed identity or UserManagedIdentityID (objectID) for user assigned managed identity

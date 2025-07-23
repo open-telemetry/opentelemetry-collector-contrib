@@ -28,3 +28,7 @@ health_check/invalidpath:
     enabled: false
     interval: "5m"
     exporter_failure_threshold: 5
+health_check/response-body:
+  response_body:
+    healthy: I'm OK
+    unhealthy: I'm not well

@@ -14,7 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +59,7 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 		}
 
 		for _, ddlTemplate := range ddls {
-			ddl := fmt.Sprintf(ddlTemplate, e.cfg.Table.Metrics, e.cfg.propertiesStr())
+			ddl := fmt.Sprintf(ddlTemplate, e.cfg.Metrics, e.cfg.propertiesStr())
 			_, err = conn.ExecContext(ctx, ddl)
 			if err != nil {
 				return err
@@ -75,7 +75,7 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 		}
 
 		for _, model := range models {
-			table := e.cfg.Table.Metrics + model.tableSuffix()
+			table := e.cfg.Metrics + model.tableSuffix()
 			view := fmt.Sprintf(metricsView, table, table)
 			_, err = conn.ExecContext(ctx, view)
 			if err != nil {
@@ -175,12 +175,12 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 		resource := resourceMetric.Resource()
 		resourceAttributes := resource.Attributes()
 		serviceName := ""
-		v, ok := resourceAttributes.Get(semconv.AttributeServiceName)
+		v, ok := resourceAttributes.Get(string(semconv.ServiceNameKey))
 		if ok {
 			serviceName = v.AsString()
 		}
 		serviceInstance := ""
-		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		v, ok = resourceAttributes.Get(string(semconv.ServiceInstanceIDKey))
 		if ok {
 			serviceInstance = v.AsString()
 		}
@@ -247,7 +247,7 @@ func (e *metricsExporter) pushMetricDataInternal(ctx context.Context, metrics me
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Metrics+metrics.tableSuffix(), marshal, metrics.label())
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Metrics+metrics.tableSuffix(), marshal, metrics.label())
 	if err != nil {
 		return err
 	}
@@ -319,5 +319,5 @@ func (e *metricsExporter) getExemplarValue(ep pmetric.Exemplar) float64 {
 }
 
 func (e *metricsExporter) generateMetricLabel(m metricModel) string {
-	return generateLabel(e.cfg, e.cfg.Table.Metrics+m.tableSuffix())
+	return generateLabel(e.cfg, e.cfg.Metrics+m.tableSuffix())
 }

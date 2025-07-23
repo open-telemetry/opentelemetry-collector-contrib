@@ -1,3 +1,0 @@
-{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"test","logStream":"test","subscriptionFilters":["test"],"logEvents":[{"id":"38480917865042697267627490045603633139480491071049695232","timestamp":1725544035523,"message":"Hello world, here is our first log message!"}]}
-{"CHANGE":1.96,"PRICE":57.53,"TICKER_SYMBOL":"SAC","SECTOR":"ENERGY"}
-{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"test","logStream":"test","subscriptionFilters":["test"],"logEvents":[{"id":"38480917865042697267627490045603633139480491071049695233","timestamp":1725554035523,"message":"Hello world, here is our second log message!"}]}

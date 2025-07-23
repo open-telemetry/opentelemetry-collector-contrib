@@ -4,7 +4,7 @@
 package common
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	errFormatOTLPAttributes       = fmt.Errorf("value should be in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>")
-	errDoubleQuotesOTLPAttributes = fmt.Errorf("value should be a string wrapped in double quotes")
+	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>")
+	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
 )
 
 const (
@@ -28,7 +28,7 @@ type KeyValue map[string]any
 
 var _ pflag.Value = (*KeyValue)(nil)
 
-func (v *KeyValue) String() string {
+func (*KeyValue) String() string {
 	return ""
 }
 
@@ -58,7 +58,7 @@ func (v *KeyValue) Set(s string) error {
 	return nil
 }
 
-func (v *KeyValue) Type() string {
+func (*KeyValue) Type() string {
 	return "map[string]any"
 }
 

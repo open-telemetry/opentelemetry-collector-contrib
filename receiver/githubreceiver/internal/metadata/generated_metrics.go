@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 // AttributeVcsChangeState specifies the value vcs.change.state attribute.
@@ -115,6 +115,56 @@ func (av AttributeVcsRevisionDeltaDirection) String() string {
 var MapAttributeVcsRevisionDeltaDirection = map[string]AttributeVcsRevisionDeltaDirection{
 	"ahead":  AttributeVcsRevisionDeltaDirectionAhead,
 	"behind": AttributeVcsRevisionDeltaDirectionBehind,
+}
+
+var MetricsInfo = metricsInfo{
+	VcsChangeCount: metricInfo{
+		Name: "vcs.change.count",
+	},
+	VcsChangeDuration: metricInfo{
+		Name: "vcs.change.duration",
+	},
+	VcsChangeTimeToApproval: metricInfo{
+		Name: "vcs.change.time_to_approval",
+	},
+	VcsChangeTimeToMerge: metricInfo{
+		Name: "vcs.change.time_to_merge",
+	},
+	VcsContributorCount: metricInfo{
+		Name: "vcs.contributor.count",
+	},
+	VcsRefCount: metricInfo{
+		Name: "vcs.ref.count",
+	},
+	VcsRefLinesDelta: metricInfo{
+		Name: "vcs.ref.lines_delta",
+	},
+	VcsRefRevisionsDelta: metricInfo{
+		Name: "vcs.ref.revisions_delta",
+	},
+	VcsRefTime: metricInfo{
+		Name: "vcs.ref.time",
+	},
+	VcsRepositoryCount: metricInfo{
+		Name: "vcs.repository.count",
+	},
+}
+
+type metricsInfo struct {
+	VcsChangeCount          metricInfo
+	VcsChangeDuration       metricInfo
+	VcsChangeTimeToApproval metricInfo
+	VcsChangeTimeToMerge    metricInfo
+	VcsContributorCount     metricInfo
+	VcsRefCount             metricInfo
+	VcsRefLinesDelta        metricInfo
+	VcsRefRevisionsDelta    metricInfo
+	VcsRefTime              metricInfo
+	VcsRepositoryCount      metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricVcsChangeCount struct {

@@ -158,6 +158,64 @@ var MapAttributeWorkersState = map[string]AttributeWorkersState{
 	"idle": AttributeWorkersStateIdle,
 }
 
+var MetricsInfo = metricsInfo{
+	ApacheCPULoad: metricInfo{
+		Name: "apache.cpu.load",
+	},
+	ApacheCPUTime: metricInfo{
+		Name: "apache.cpu.time",
+	},
+	ApacheCurrentConnections: metricInfo{
+		Name: "apache.current_connections",
+	},
+	ApacheLoad1: metricInfo{
+		Name: "apache.load.1",
+	},
+	ApacheLoad15: metricInfo{
+		Name: "apache.load.15",
+	},
+	ApacheLoad5: metricInfo{
+		Name: "apache.load.5",
+	},
+	ApacheRequestTime: metricInfo{
+		Name: "apache.request.time",
+	},
+	ApacheRequests: metricInfo{
+		Name: "apache.requests",
+	},
+	ApacheScoreboard: metricInfo{
+		Name: "apache.scoreboard",
+	},
+	ApacheTraffic: metricInfo{
+		Name: "apache.traffic",
+	},
+	ApacheUptime: metricInfo{
+		Name: "apache.uptime",
+	},
+	ApacheWorkers: metricInfo{
+		Name: "apache.workers",
+	},
+}
+
+type metricsInfo struct {
+	ApacheCPULoad            metricInfo
+	ApacheCPUTime            metricInfo
+	ApacheCurrentConnections metricInfo
+	ApacheLoad1              metricInfo
+	ApacheLoad15             metricInfo
+	ApacheLoad5              metricInfo
+	ApacheRequestTime        metricInfo
+	ApacheRequests           metricInfo
+	ApacheScoreboard         metricInfo
+	ApacheTraffic            metricInfo
+	ApacheUptime             metricInfo
+	ApacheWorkers            metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricApacheCPULoad struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
-func SerializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, idx elasticsearch.Index, buf *bytes.Buffer) {
+func (*Serializer) SerializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, idx elasticsearch.Index, buf *bytes.Buffer) {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -41,7 +41,7 @@ func SerializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	_ = v.OnObjectFinished()
 }
 
-func SerializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, idx elasticsearch.Index, buf *bytes.Buffer) error {
+func (*Serializer) SerializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, idx elasticsearch.Index, buf *bytes.Buffer) error {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -72,7 +72,9 @@ func writeStatus(v *json.Visitor, status ptrace.Status) {
 	_ = v.OnKey("status")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	writeStringFieldSkipDefault(v, "message", status.Message())
-	writeStringFieldSkipDefault(v, "code", status.Code().String())
+	if code := status.Code(); code != ptrace.StatusCodeUnset {
+		writeStringFieldSkipDefault(v, "code", code.String())
+	}
 	_ = v.OnObjectFinished()
 }
 

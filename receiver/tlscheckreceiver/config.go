@@ -5,10 +5,6 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
-	"fmt"
-	"net"
-	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -20,46 +16,34 @@ import (
 // Predefined error responses for configuration validation failures
 var errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <hostname>:<port>`)
 
+// CertificateTarget represents a target for certificate checking, which can be either
+// a network endpoint or a local file
+type CertificateTarget struct {
+	confignet.TCPAddrConfig `mapstructure:",squash"`
+	FilePath                string `mapstructure:"file_path"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
+	Targets                        []*CertificateTarget `mapstructure:"targets"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-func validatePort(port string) error {
-	portNum, err := strconv.Atoi(port)
-	if err != nil {
-		return fmt.Errorf("provided port is not a number: %s", port)
+func validateTarget(ct *CertificateTarget) error {
+	if ct.Endpoint != "" && ct.FilePath != "" {
+		return errors.New("cannot specify both endpoint and file_path")
 	}
-	if portNum < 1 || portNum > 65535 {
-		return fmt.Errorf("provided port is out of valid range (1-65535): %d", portNum)
+	if ct.Endpoint == "" && ct.FilePath == "" {
+		return errors.New("must specify either endpoint or file_path")
 	}
 	return nil
-}
-
-func validateTarget(cfg *confignet.TCPAddrConfig) error {
-	var err error
-
-	if cfg.Endpoint == "" {
-		return errMissingTargets
-	}
-
-	if strings.Contains(cfg.Endpoint, "://") {
-		return fmt.Errorf("endpoint contains a scheme, which is not allowed: %s", cfg.Endpoint)
-	}
-
-	_, port, parseErr := net.SplitHostPort(cfg.Endpoint)
-	if parseErr != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
-	}
-
-	portParseErr := validatePort(port)
-	if portParseErr != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), portParseErr)
-	}
-
-	return err
 }
 
 func (cfg *Config) Validate() error {

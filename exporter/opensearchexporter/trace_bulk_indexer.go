@@ -26,7 +26,7 @@ type traceBulkIndexer struct {
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(dataset string, namespace string, bulkAction string, model mappingModel) *traceBulkIndexer {
+func newTraceBulkIndexer(dataset, namespace, bulkAction string, model mappingModel) *traceBulkIndexer {
 	return &traceBulkIndexer{dataset, namespace, bulkAction, model, nil, nil}
 }
 
@@ -120,10 +120,9 @@ func responseAsError(item opensearchutil.BulkIndexerResponseItem) error {
 
 func attributesToMapString(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		m[k] = v.AsString()
-		return true
-	})
+	}
 	return m
 }
 

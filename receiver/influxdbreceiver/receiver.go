@@ -41,7 +41,7 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(config *Config, settings receiver.Settings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
-	influxLogger := newZapInfluxLogger(settings.TelemetrySettings.Logger)
+	influxLogger := newZapInfluxLogger(settings.Logger)
 	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
 	if err != nil {
 		return nil, err
@@ -204,6 +204,6 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (r *metricsReceiver) handlePing(w http.ResponseWriter, _ *http.Request) {
+func (*metricsReceiver) handlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -25,10 +25,11 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -187,11 +188,11 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "willfail",
 					},
-				},
+				}),
 			},
 		},
 	}
@@ -337,7 +338,7 @@ func TestStandardShutdown(t *testing.T) {
 
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
-	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+	assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
 func TestOTelArrowShutdown(t *testing.T) {
@@ -355,17 +356,19 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// Create OTelArrow receiver
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-				ServerParameters: &configgrpc.KeepaliveServerParameters{},
-			}
+			cfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+				ServerParameters: configoptional.None[configgrpc.KeepaliveServerParameters](),
+			})
 			if !cooperative {
-				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAge = time.Second
-				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
+				cfg.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
+					MaxConnectionAge:      time.Second,
+					MaxConnectionAgeGrace: 5 * time.Second,
+				})
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
-			set.TelemetrySettings.Logger = zap.New(core)
+			set.Logger = zap.New(core)
 
 			set.ID = testReceiverID
 			r, err := NewFactory().CreateTraces(
@@ -443,7 +446,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 
 			// The last, additional trace should not be received by sink, so the number of spans in
 			// the sink should not change.
-			assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+			assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 
 			shutdownCause := ""
 		scanLogs:
@@ -505,7 +508,7 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.consumeError = err
 }
 
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+func (*errOrSinkConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -649,7 +652,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	assert.Equal(t, expectTraces, sink.AllTraces())
 
-	assert.Equal(t, len(expectMDs), len(sink.Metadatas()))
+	assert.Len(t, sink.Metadatas(), len(expectMDs))
 	// gRPC adds its own metadata keys, so we check for only the
 	// expected ones below:
 	for idx := range expectMDs {
@@ -675,7 +678,7 @@ func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Componen
 	return h.exts
 }
 
-func newTestAuthExtension(t *testing.T, authFunc func(ctx context.Context, hdrs map[string][]string) (context.Context, error)) extensionauth.Server {
+func newTestAuthExtension(t *testing.T, authFunc func(ctx context.Context, hdrs map[string][]string) (context.Context, error)) extension.Extension {
 	ctrl := gomock.NewController(t)
 	as := mock.NewMockServer(ctrl)
 	as.EXPECT().Authenticate(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(authFunc)
@@ -692,9 +695,9 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	cfg.GRPC.Auth = &configauth.Authentication{
+	cfg.GRPC.Auth = configoptional.Some(configauth.Config{
 		AuthenticatorID: authID,
-	}
+	})
 	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
@@ -855,9 +858,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-		ServerParameters: &configgrpc.KeepaliveServerParameters{},
-	}
+	cfg.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)

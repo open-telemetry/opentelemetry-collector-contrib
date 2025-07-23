@@ -4,13 +4,14 @@
 package container // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/container"
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -62,7 +63,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		switch c.Format {
 		case dockerFormat, crioFormat, containerdFormat:
 		default:
-			return &Parser{}, errors.NewError(
+			return &Parser{}, stanza_errors.NewError(
 				"operator config has an invalid `format` field.",
 				"ensure that the `format` field is set to one of `docker`, `crio`, `containerd`.",
 				"format", c.OnError,
@@ -110,7 +111,7 @@ func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *hel
 	// set the LogEmmiter as the output of the recombine parser
 	recombineParser.SetOutputIDs([]string{cLogEmitter.OperatorID})
 	if err := recombineParser.SetOutputs([]operator.Operator{cLogEmitter}); err != nil {
-		return nil, fmt.Errorf("failed to set outputs of internal recombine")
+		return nil, errors.New("failed to set outputs of internal recombine")
 	}
 
 	return recombineParser, nil

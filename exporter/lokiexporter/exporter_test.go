@@ -5,6 +5,7 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -276,7 +277,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
 			// end of the test function
-			assert.Equal(t, len(actualPushRequestPerTenant), len(tC.expected))
+			assert.Len(t, actualPushRequestPerTenant, len(tC.expected))
 			for tenant, request := range actualPushRequestPerTenant {
 				pr, ok := tC.expected[tenant]
 				assert.True(t, ok)
@@ -334,9 +335,9 @@ type badProtoForCoverage struct {
 	Foo string `protobuf:"bytes,1,opt,name=labels,proto3" json:"foo"`
 }
 
-func (p *badProtoForCoverage) Reset()         {}
-func (p *badProtoForCoverage) String() string { return "" }
-func (p *badProtoForCoverage) ProtoMessage()  {}
-func (p *badProtoForCoverage) Marshal() (dAtA []byte, err error) {
-	return nil, fmt.Errorf("this is a bad proto")
+func (*badProtoForCoverage) Reset()         {}
+func (*badProtoForCoverage) String() string { return "" }
+func (*badProtoForCoverage) ProtoMessage()  {}
+func (*badProtoForCoverage) Marshal() (dAtA []byte, err error) {
+	return nil, errors.New("this is a bad proto")
 }

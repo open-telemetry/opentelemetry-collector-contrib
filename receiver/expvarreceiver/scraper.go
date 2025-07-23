@@ -42,7 +42,7 @@ func newExpVarScraper(cfg *Config, set receiver.Settings) *expVarScraper {
 }
 
 func (e *expVarScraper) start(ctx context.Context, host component.Host) error {
-	client, err := e.cfg.ClientConfig.ToClient(ctx, host, e.set.TelemetrySettings)
+	client, err := e.cfg.ToClient(ctx, host, e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (e *expVarScraper) start(ctx context.Context, host component.Host) error {
 
 func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	emptyMetrics := pmetric.NewMetrics()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.cfg.Endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.cfg.Endpoint, http.NoBody)
 	if err != nil {
 		return emptyMetrics, err
 	}

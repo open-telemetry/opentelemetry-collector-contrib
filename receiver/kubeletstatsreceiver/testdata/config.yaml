@@ -52,3 +52,9 @@ kubeletstats/pod_memory_node_utilization:
   metrics:
     k8s.pod.memory.node.utilization:
       enabled: true
+kubeletstats/all_network_interfaces_metrics:
+  collection_interval: 10s
+  metric_groups: [ container, pod, node ]
+  collect_all_network_interfaces:
+    pod: true
+    node: true

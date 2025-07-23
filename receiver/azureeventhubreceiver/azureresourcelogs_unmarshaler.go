@@ -17,13 +17,13 @@ type logsUnmarshaler interface {
 	UnmarshalLogs([]byte) (plog.Logs, error)
 }
 
-type AzureResourceLogsEventUnmarshaler struct {
+type azureResourceLogsEventUnmarshaler struct {
 	unmarshaler logsUnmarshaler
 }
 
 func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool, timeFormat []string) eventLogsUnmarshaler {
 	if applySemanticConventions {
-		return AzureResourceLogsEventUnmarshaler{
+		return azureResourceLogsEventUnmarshaler{
 			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
 				Version:     buildInfo.Version,
 				Logger:      logger,
@@ -31,7 +31,7 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 			},
 		}
 	}
-	return AzureResourceLogsEventUnmarshaler{
+	return azureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
 			Version:     buildInfo.Version,
 			Logger:      logger,
@@ -46,6 +46,6 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
+func (r azureResourceLogsEventUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
 	return r.unmarshaler.UnmarshalLogs(event.Data)
 }

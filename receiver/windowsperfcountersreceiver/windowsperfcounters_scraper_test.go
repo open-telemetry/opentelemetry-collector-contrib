@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -36,6 +35,16 @@ type mockPerfCounter struct {
 	scrapeErr     error
 	closeErr      error
 	resetErr      error
+}
+
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounter) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
 }
 
 func (w *mockPerfCounter) Reset() error {
@@ -226,8 +235,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
-			actualMetrics, err := scraper.scrape(context.Background())
-			require.NoError(t, err)
+			var actualMetrics pmetric.Metrics
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				actualMetrics, err = scraper.scrape(context.Background())
+				assert.NoError(c, err)
+			}, 20*time.Second, 1*time.Second)
 
 			err = scraper.shutdown(context.Background())
 
@@ -549,19 +561,18 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
-						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
+						expectedAttributeLen := len(counterCfg.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
 						}
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
-						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
+						for k, v := range dps.At(dpIdx).Attributes().All() {
 							if k == instanceLabelName {
 								assert.Equal(t, val.InstanceName, v.Str())
-								return true
+								continue
 							}
-							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
-							return true
-						})
+							assert.Equal(t, counterCfg.Attributes[k], v.Str())
+						}
 					}
 					curMetricsNum++
 				}
