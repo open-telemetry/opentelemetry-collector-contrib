@@ -160,7 +160,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	c.obsrecv = obsrecv
 
 	var hooks kgo.Hook = c
-	if c.config.ReportRecordsDelay {
+	if c.config.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled {
 		hooks = franzConsumerWithOptionalHooks{c}
 	}
 

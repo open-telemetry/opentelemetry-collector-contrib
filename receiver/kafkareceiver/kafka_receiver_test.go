@@ -829,7 +829,7 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	cfg.ClientConfig = clientConfig
 	cfg.InitialOffset = "earliest"
 	cfg.MaxFetchWait = 10 * time.Millisecond
-	cfg.ReportRecordsDelay = true
+	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	return kafkaClient, cfg
 }
 
