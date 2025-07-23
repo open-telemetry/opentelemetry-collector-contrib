@@ -31,7 +31,12 @@ The following settings can be optionally configured:
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
-- `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled.
+- `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead when the `exporter.prometheusexporter.UseTranslationStrategy` feature gate is enabled.
+- `translation_strategy`: (default = `UnderscoreEscapingWithSuffixes`): Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Only used when the `exporter.prometheusexporter.UseTranslationStrategy` feature gate is enabled. Available options:
+  - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
+  - `UnderscoreEscapingWithoutSuffixes`: Metric names will continue to escape special characters to `_`, but suffixes won't be attached.
+  - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.
+  - `NoTranslation`: Bypasses all metric and label name translation, passing them through unaltered.
 
 Example:
 
@@ -50,7 +55,10 @@ exporters:
     send_timestamps: true
     metric_expiration: 180m
     enable_open_metrics: true
+    # Legacy configuration - deprecated when feature gate is enabled
     add_metric_suffixes: false
+    # New configuration - requires exporter.prometheusexporter.UseTranslationStrategy feature gate
+    translation_strategy: "UnderscoreEscapingWithoutSuffixes"
     resource_to_telemetry_conversion:
       enabled: true
 ```
@@ -59,7 +67,9 @@ Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 ## Metric names and labels normalization
 
-OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
+By Default, OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in Prometheus compatibility spec](WIP, waiting for merge in spec repo).
+
+Optionally, users can set different `translation_strategy` options to control how metrics are exposed. Please be aware that Prometheus itself uses content negotiation to decide how to ingest metrics, and underscore escaping might be applied even though this exporter is configured to keep UTF-8 character. For more details, read [Prometheus' Content Negotiation documentation](https://prometheus.io/docs/instrumenting/content_negotiation/).
 
 ## Setting resource attributes as metric labels
 
