@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -298,6 +299,38 @@ func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]by
 				return
 			}
 		}
+	}
+}
+
+func newProfilesExporter(config Config, set exporter.Settings) *kafkaExporter[pprofile.Profiles] {
+	return newKafkaExporter(config, set, func(host component.Host) (messenger[pprofile.Profiles], error) {
+		marshaler, err := getProfilesMarshaler(config.Profiles.Encoding, host)
+		if err != nil {
+			return nil, err
+		}
+		return &kafkaProfilesMessenger{
+			config:    config,
+			marshaler: marshaler,
+		}, nil
+	})
+}
+
+type kafkaProfilesMessenger struct {
+	config    Config
+	marshaler marshaler.ProfilesMarshaler
+}
+
+func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles) ([]marshaler.Message, error) {
+	return e.marshaler.MarshalProfiles(ld)
+}
+
+func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profiles) string {
+	return getTopic(ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
+}
+
+func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
+	return func(yield func([]byte, pprofile.Profiles) bool) {
+		yield(nil, ld)
 	}
 }
 
