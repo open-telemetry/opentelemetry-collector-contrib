@@ -7,6 +7,8 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.computer.uptime:
+      enabled: true
     sqlserver.cpu.count:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
@@ -124,6 +126,8 @@ none_set:
     sqlserver.batch.sql_compilation.rate:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
+      enabled: false
+    sqlserver.computer.uptime:
       enabled: false
     sqlserver.cpu.count:
       enabled: false
