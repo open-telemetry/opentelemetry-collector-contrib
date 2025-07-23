@@ -519,6 +519,16 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			expected: instrumentationScope.Name(),
 		},
 		{
+			name:     "scope",
+			path:     &pathtest.Path[TransformContext]{N: "scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "scope with context",
+			path:     &pathtest.Path[TransformContext]{C: "scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
+		{
 			name:     "span",
 			path:     &pathtest.Path[TransformContext]{N: "span", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
 			expected: span.Name(),

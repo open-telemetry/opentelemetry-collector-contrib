@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -36,13 +37,15 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
-	tests := []struct {
+	type testCase struct {
 		name     string
 		path     ottl.Path[TransformContext]
 		orig     any
 		newVal   any
 		modified func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
-	}{
+	}
+
+	tests := []testCase{
 		{
 			name: "cache",
 			path: &pathtest.Path[TransformContext]{
@@ -387,14 +390,22 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
 	// It ensures all exiting field access also work when the path context is set.
-	for _, tt := range slices.Clone(tests) {
-		testWithContext := tt
-		testWithContext.name = "with_path_context:" + tt.name
-		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+	copyTestCase := func(test testCase, prefix, contextName string) testCase {
+		testWithContext := test
+		testWithContext.name = prefix + test.name
+		pathWithContext := *test.path.(*pathtest.Path[TransformContext])
+		pathWithContext.C = contextName
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
-		tests = append(tests, testWithContext)
+		return testWithContext
 	}
+
+	for _, tt := range slices.Clone(tests) {
+		tests = append(tests, copyTestCase(tt, "with_path_context:", ContextName))
+		if tt.path.Name() != "cache" {
+			tests = append(tests, copyTestCase(tt, "with_legacy_path_context:", ctxscope.LegacyName))
+		}
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testCache := pcommon.NewMap()
