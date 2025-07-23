@@ -648,8 +648,9 @@ func TestRequestBodySupport(t *testing.T) {
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: server.URL,
 					},
-					Method: tc.method,
-					Body:   tc.body,
+					Method:          tc.method,
+					Body:            tc.body,
+					AutoContentType: true,
 				},
 			}
 
