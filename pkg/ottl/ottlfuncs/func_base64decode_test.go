@@ -29,6 +29,11 @@ func Test_Base64Decode(t *testing.T) {
 			value:    "",
 			expected: "",
 		},
+		{
+			name:     "byte array of base64 string",
+			value:    []byte("aGVsbG8gd29ybGQ="),
+			expected: "hello world",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

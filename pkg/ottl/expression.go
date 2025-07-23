@@ -335,6 +335,8 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 	switch v := val.(type) {
 	case string:
 		return v, nil
+	case []byte:
+		return string(v), nil
 	case pcommon.Value:
 		if v.Type() == pcommon.ValueTypeStr {
 			return v.Str(), nil
