@@ -562,16 +562,16 @@ func (f *factory) createLogsExporter(
 			cancel()
 			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 		}
+		f.onceMetadata.Do(func() {
+			attrs := pcommon.NewMap()
+			go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
+		})
 	}
 
 	switch {
 	case cfg.OnlyMetadata:
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
-			f.onceMetadata.Do(func() {
-				attrs := pcommon.NewMap()
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
-			})
 			for i := 0; i < td.ResourceLogs().Len(); i++ {
 				res := td.ResourceLogs().At(i).Resource()
 				consumeResource(metadataReporter, res, set.Logger)
