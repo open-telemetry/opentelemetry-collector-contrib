@@ -231,7 +231,7 @@ The number of received records.
 
 The time in seconds between producing and receiving a batch of records.
 
-Optional, only reported when report_records_delay is enabled in config.
+Optional, only reported when enabled via config.
 Note that this metric may slow down high-volume consuming.
 Only produced when franz-go is enabled.
 This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
