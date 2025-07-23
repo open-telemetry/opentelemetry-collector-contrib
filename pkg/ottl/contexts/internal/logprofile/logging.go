@@ -22,7 +22,8 @@ func getMapping(dict pprofile.ProfilesDictionary, idx int32) (mapping, error) {
 }
 
 func getLocations(dict pprofile.ProfilesDictionary, locIdxs []int32,
-	start, length int32) (locations, error) {
+	start, length int32,
+) (locations, error) {
 	if start >= int32(len(locIdxs)) {
 		return locations{}, fmt.Errorf("location start index out of bounds: %d", start)
 	}
