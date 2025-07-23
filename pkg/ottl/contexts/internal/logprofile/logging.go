@@ -92,18 +92,24 @@ func (p Profile) getLink(idx int32) (link, error) {
 }
 
 func (p Profile) getLocations(start, length int32) (locations, error) {
-	locTable := p.Dictionary.LocationTable()
-	if start >= int32(locTable.Len()) {
+	locIndices := p.LocationIndices()
+	if start >= int32(locIndices.Len()) {
 		return locations{}, fmt.Errorf("location start index out of bounds: %d", start)
 	}
-	if start+length > int32(locTable.Len()) {
+	if start+length > int32(locIndices.Len()) {
 		return locations{}, fmt.Errorf("location end index out of bounds: %d", start+length)
 	}
 
 	var joinedErr error
 	ls := make(locations, 0, length)
+	locTable := p.Dictionary.LocationTable()
 	for i := range length {
-		l, err := newLocation(p, locTable.At(int(start+i)))
+		locIndex := int(locIndices.At(int(start + i)))
+		if locIndex >= locTable.Len() {
+			joinedErr = errors.Join(fmt.Errorf("location index out of bounds: %d", locIndex))
+			continue
+		}
+		l, err := newLocation(p, locTable.At(locIndex))
 		joinedErr = errors.Join(joinedErr, err)
 		ls = append(ls, l)
 	}
