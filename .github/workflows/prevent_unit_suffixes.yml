@@ -1,0 +1,21 @@
+name: 'Prevent Unit Suffixes in Metric Names'
+on:
+  pull_request:
+    paths:
+      - '**/metadata.yaml'
+      - ./.github/workflows/prevent_unit_suffixes.yml
+      - ./.github/workflows/scripts/prevent_unit_suffixes.sh
+    
+
+permissions:
+  contents: read
+
+jobs:
+  prevent-unit-suffixes:
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Prevent Unit Suffixes in Metric Names
+        run: ./.github/workflows/scripts/prevent_unit_suffixes.sh
