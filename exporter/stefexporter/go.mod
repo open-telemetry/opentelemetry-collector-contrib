@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.130.1-0.20250715222903-0a7598ec1e19
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.73.0
+	google.golang.org/grpc v1.74.2
 )
 
 require (

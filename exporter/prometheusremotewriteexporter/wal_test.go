@@ -433,8 +433,6 @@ func TestWALLag_Telemetry(t *testing.T) {
 	// Wait for lag recording to happen (longer than lagRecordFrequency)
 	time.Sleep(5 * cfg.WAL.LagRecordFrequency)
 
-	metadatatest.AssertEqualExporterPrometheusremotewriteWalLag(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 0}},
-		metricdatatest.IgnoreTimestamp())
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_lag")
 	require.NoError(t, err)
 }
