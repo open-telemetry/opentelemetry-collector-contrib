@@ -54,7 +54,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 		oidcServerQuit <- true
 	}()
 
-	time.Sleep(3 * time.Second) // wait for OIDC to fully start
+	time.Sleep(500 * time.Millisecond) // wait for OIDC server to fully start
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{"mock-scope"}, 0)
@@ -362,28 +362,26 @@ func oidcServer(ch <-chan any, cid, csecret string, accessTTLsecs int) {
 	clientID = cid
 	clientSecret = csecret
 
-	fmt.Printf("OIDC Mock Server starting on :%d\n", PORT)
-	// fmt.Printf("Token endpoint: http://localhost:%d/token\n", PORT)
-
 	http.HandleFunc("/token", tokenHandler)
-	// log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", PORT), nil))
-
 	s := &http.Server{
 		Addr:              fmt.Sprintf(":%d", PORT),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       10 * time.Second,
 	}
-	err := s.ListenAndServe()
-	if err != nil {
-		log.Fatalf("could not start OIDC server: %v", err)
-	}
-	defer func() {
-		err := s.Shutdown(context.Background())
+
+	go func() {
+		fmt.Printf("OIDC Mock Server starting on :%d\n", PORT)
+		err := s.ListenAndServe()
 		if err != nil {
-			log.Fatalf("error shutting down OIDC server: %v", err)
+			log.Fatalf("could not start OIDC server: %v", err)
 		}
 	}()
 
 	<-ch
-	fmt.Fprintf(os.Stderr, "oidcServer shutting down\n")
+	fmt.Printf("OIDC server shutting down\n")
+	err := s.Shutdown(context.Background())
+	if err != nil {
+		log.Fatalf("error shutting down OIDC server: %v", err)
+	}
+
 }

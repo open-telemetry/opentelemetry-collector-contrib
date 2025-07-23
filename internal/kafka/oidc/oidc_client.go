@@ -82,11 +82,10 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("failed to read client secret: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "updateToken(): p.TokenURL = %v\n", p.TokenURL)
 	oauthTok, err := (&clientcredentials.Config{
 		ClientID:     p.ClientID,
 		ClientSecret: string(clientSecret),
-		TokenURL:     p.TokenURL + "/token",
+		TokenURL:     p.TokenURL,
 		Scopes:       p.Scopes,
 	}).Token(p.Ctx)
 
