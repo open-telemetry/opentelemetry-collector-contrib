@@ -143,6 +143,19 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		if err != nil {
 			return fmt.Errorf("failed to create client with user managed identity: %w", err)
 		}
+	case WorkloadIdentity:
+		cred, err := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
+			ClientID:      e.config.Auth.ClientID,
+			TenantID:      e.config.Auth.TenantID,
+			TokenFilePath: e.config.Auth.FederatedTokenFile,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create workload identity credential: %w", err)
+		}
+		azblobClient.client, err = azblob.NewClient(e.config.URL, cred, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create client with workload identity: %w", err)
+		}
 	default:
 		return fmt.Errorf("unsupported authentication type: %s", authType)
 	}
