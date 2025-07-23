@@ -71,7 +71,7 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 	return ""
 }
 
-func (dp Number) DocCount() uint64 {
+func (Number) DocCount() uint64 {
 	return 1
 }
 

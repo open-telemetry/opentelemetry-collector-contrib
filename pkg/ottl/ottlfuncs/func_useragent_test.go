@@ -139,7 +139,7 @@ func TestUserAgentParser(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			source := &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tt.UAString, nil
 				},
 			}

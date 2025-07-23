@@ -30,6 +30,22 @@ type callBackFuncs struct {
 	onStopLeading  StopCallback
 }
 
+// leaderElectionExtension is the main struct implementing the extension's behavior.
+type leaderElectionExtension struct {
+	config        *Config
+	client        kubernetes.Interface
+	logger        *zap.Logger
+	leaseHolderID string
+	cancel        context.CancelFunc
+	waitGroup     sync.WaitGroup
+
+	callBackFuncs []callBackFuncs
+
+	isLeader bool
+
+	mu sync.Mutex
+}
+
 // SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
 func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
 	// Have a write lock while setting the callbacks.
@@ -46,22 +62,6 @@ func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallbac
 		// Immediately invoke the callback since we are already leader
 		onStartLeading(context.Background())
 	}
-}
-
-// leaderElectionExtension is the main struct implementing the extension's behavior.
-type leaderElectionExtension struct {
-	config        *Config
-	client        kubernetes.Interface
-	logger        *zap.Logger
-	leaseHolderID string
-	cancel        context.CancelFunc
-	waitGroup     sync.WaitGroup
-
-	callBackFuncs []callBackFuncs
-
-	isLeader bool
-
-	mu sync.Mutex
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election

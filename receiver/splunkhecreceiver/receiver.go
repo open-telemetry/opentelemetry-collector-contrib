@@ -206,7 +206,7 @@ func (r *splunkReceiver) processSuccessResponseWithAck(resp http.ResponseWriter,
 	return r.processSuccessResponse(resp, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
 }
 
-func (r *splunkReceiver) processSuccessResponse(resp http.ResponseWriter, bodyContent []byte) error {
+func (*splunkReceiver) processSuccessResponse(resp http.ResponseWriter, bodyContent []byte) error {
 	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
 	resp.WriteHeader(http.StatusOK)
 	_, err := resp.Write(bodyContent)
@@ -330,7 +330,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, consumerErr)
 	} else {
 		var ackErr error
-		if len(channelID) > 0 && r.ackExt != nil {
+		if channelID != "" && r.ackExt != nil {
 			ackErr = r.processSuccessResponseWithAck(resp, channelID)
 		} else {
 			ackErr = r.processSuccessResponse(resp, okRespBody)
@@ -343,7 +343,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
+func (*splunkReceiver) extractChannel(req *http.Request) (string, bool) {
 	// check header
 	for k, v := range req.Header {
 		if strings.EqualFold(k, splunk.HTTPSplunkChannelHeader) {
@@ -360,8 +360,8 @@ func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
 	return "", false
 }
 
-func (r *splunkReceiver) validateChannelHeader(channelID string) error {
-	if len(channelID) == 0 {
+func (*splunkReceiver) validateChannelHeader(channelID string) error {
+	if channelID == "" {
 		return errors.New(responseErrDataChannelMissing)
 	}
 
@@ -485,7 +485,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	var ackErr error
-	if len(channelID) > 0 && r.ackExt != nil {
+	if channelID != "" && r.ackExt != nil {
 		ackErr = r.processSuccessResponseWithAck(resp, channelID)
 	} else {
 		ackErr = r.processSuccessResponse(resp, okRespBody)
@@ -535,7 +535,7 @@ func (r *splunkReceiver) failRequest(
 	}
 }
 
-func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
+func (*splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(responseHecHealthy))

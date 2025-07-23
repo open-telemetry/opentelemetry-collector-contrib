@@ -24,12 +24,12 @@ func Test_TruncateTime(t *testing.T) {
 		{
 			name: "truncate to 1s",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					d, _ := time.ParseDuration("1s")
 					return d, nil
 				},
@@ -39,12 +39,12 @@ func Test_TruncateTime(t *testing.T) {
 		{
 			name: "truncate to 1ms",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					d, _ := time.ParseDuration("1ms")
 					return d, nil
 				},
@@ -54,12 +54,12 @@ func Test_TruncateTime(t *testing.T) {
 		{
 			name: "truncate old time",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(1980, 9, 9, 9, 59, 59, 999999999, time.UTC), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					d, _ := time.ParseDuration("1h")
 					return d, nil
 				},
@@ -88,12 +88,12 @@ func Test_TruncateTimeError(t *testing.T) {
 		{
 			name: "not a time",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					d, _ := time.ParseDuration("1ms")
 					return d, nil
 				},
@@ -103,12 +103,12 @@ func Test_TruncateTimeError(t *testing.T) {
 		{
 			name: "not a duration",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Now(), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "string", nil
 				},
 			},

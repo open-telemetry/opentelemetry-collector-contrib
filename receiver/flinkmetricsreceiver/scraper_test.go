@@ -113,28 +113,30 @@ func TestScraperScrape(t *testing.T) {
 	}
 
 	var taskmanagerMetricsInstances []*models.TaskmanagerMetrics
-	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
-		Host:          "mock-host",
-		TaskmanagerID: "mock-taskmanager-id",
-		Metrics:       *taskmanagerMetricsResponse,
-	})
-	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
-		Host:          "mock-host2",
-		TaskmanagerID: "mock-taskmanager-id2",
-		Metrics:       *taskmanagerMetricsResponse,
-	})
+	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances,
+		&models.TaskmanagerMetrics{
+			Host:          "mock-host",
+			TaskmanagerID: "mock-taskmanager-id",
+			Metrics:       *taskmanagerMetricsResponse,
+		},
+		&models.TaskmanagerMetrics{
+			Host:          "mock-host2",
+			TaskmanagerID: "mock-taskmanager-id2",
+			Metrics:       *taskmanagerMetricsResponse,
+		})
 
 	var jobsMetricsInstances []*models.JobMetrics
-	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
-		Host:    "mock-host",
-		JobName: "mock-job-name",
-		Metrics: *jobsMetricsResponse,
-	})
-	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
-		Host:    "mock-host2",
-		JobName: "mock-job-name2",
-		Metrics: *jobsMetricsResponse,
-	})
+	jobsMetricsInstances = append(jobsMetricsInstances,
+		&models.JobMetrics{
+			Host:    "mock-host",
+			JobName: "mock-job-name",
+			Metrics: *jobsMetricsResponse,
+		},
+		&models.JobMetrics{
+			Host:    "mock-host2",
+			JobName: "mock-job-name2",
+			Metrics: *jobsMetricsResponse,
+		})
 
 	var subtaskMetricsInstances []*models.SubtaskMetrics
 	subtaskMetricsInstances = append(subtaskMetricsInstances, &models.SubtaskMetrics{

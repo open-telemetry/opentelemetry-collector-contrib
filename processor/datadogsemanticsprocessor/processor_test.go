@@ -105,7 +105,7 @@ func TestNilBatch(t *testing.T) {
 	m.assertBatchesLen(1)
 }
 
-func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key string, expected string) {
+func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key, expected string) {
 	v, ok := attr.Get(key)
 	require.True(t, ok)
 	require.Equal(t, expected, v.AsString())
@@ -440,7 +440,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
