@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/sanity-io/litter"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -93,12 +94,13 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
 
+	log.Print(fmt.Sprintf("oauthTok = %s", litter.Sdump(oauthTok)))
 	expiresIn := time.Duration(oauthTok.ExpiresIn) * time.Second
 	p.cachedToken = oauthTok
 	p.tokenExpiry = now.Add(expiresIn)
 	p.lastRefreshTime = now
-	log.Printf("Token refreshed for %s, will expire after %s at %s", p.ClientID,
-		expiresIn.String(), p.tokenExpiry.String())
+	// log.Printf("Token refreshed for %s, will expire after %s at %s", p.ClientID,
+	// expiresIn.String(), p.tokenExpiry.String())
 
 	return oauthTok, nil
 }

@@ -54,7 +54,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 		oidcServerQuit <- true
 	}()
 
-	time.Sleep(500 * time.Millisecond) // wait for OIDC server to fully start
+	time.Sleep(100 * time.Millisecond) // wait for OIDC server to fully start
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{"mock-scope"}, 0)
@@ -383,5 +383,4 @@ func oidcServer(ch <-chan any, cid, csecret string, accessTTLsecs int) {
 	if err != nil {
 		log.Fatalf("error shutting down OIDC server: %v", err)
 	}
-
 }
