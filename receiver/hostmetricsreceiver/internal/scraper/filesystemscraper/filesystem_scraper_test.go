@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/shirou/gopsutil/v4/common"
@@ -526,11 +527,5 @@ func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric 
 }
 
 func isUnix() bool {
-	for _, unixOS := range []string{"linux", "darwin", "freebsd", "openbsd", "solaris"} {
-		if runtime.GOOS == unixOS {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains([]string{"linux", "darwin", "freebsd", "openbsd", "solaris"}, runtime.GOOS)
 }
