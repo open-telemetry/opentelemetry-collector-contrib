@@ -54,7 +54,7 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 		if er.cfg.SplitLogsAtNewLine {
 			lines = strings.Split(sc.Text(), "\n")
 		} else if er.cfg.ShouldSplitLogsAtJSONBoundary() {
-			lines = splitJSONObjectsDecoder(sc.Text())
+			lines = splitJSONObjects(sc.Text())
 		}
 
 		for _, line := range lines {
@@ -98,32 +98,6 @@ func headerAttributeKey(header string) string {
 }
 
 func splitJSONObjects(data string) []string {
-	// Use regex to find boundaries between JSON objects
-	re := regexp.MustCompile(`}\s*{`)
-
-	// Find all matches
-	indices := re.FindAllStringIndex(data, -1)
-	if len(indices) == 0 {
-		return []string{data}
-	}
-
-	// Split the data at each boundary
-	var result []string
-	lastIdx := 0
-	for _, idx := range indices {
-		// Add the object up to the end of the closing brace
-		result = append(result, data[lastIdx:idx[0]+1])
-		// Start next object from the opening brace
-		lastIdx = idx[1] - 1
-	}
-	// Add the last object
-	result = append(result, data[lastIdx:])
-
-	return result
-}
-
-// splitJSONObjectsDecoder uses json.Decoder to properly parse concatenated JSON objects
-func splitJSONObjectsDecoder(data string) []string {
 	var result []string
 	decoder := json.NewDecoder(bytes.NewReader([]byte(data)))
 
