@@ -521,8 +521,8 @@ func TestTimingMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	// Enable timing breakdown metrics
 	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
-	cfg.Metrics.HttpcheckTCPConnectionDuration.Enabled = true
-	cfg.Metrics.HttpcheckRequestDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
 	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
 
 	cfg.Targets = []*targetConfig{
@@ -556,8 +556,8 @@ func TestTimingMetrics(t *testing.T) {
 	assert.True(t, foundMetrics["httpcheck.status"])
 
 	// Check that timing breakdown metrics are present when enabled
-	assert.True(t, foundMetrics["httpcheck.dns_lookup.duration"])
-	assert.True(t, foundMetrics["httpcheck.tcp_connection.duration"])
-	assert.True(t, foundMetrics["httpcheck.request.duration"])
+	assert.True(t, foundMetrics["httpcheck.dns.lookup.duration"])
+	assert.True(t, foundMetrics["httpcheck.client.connection.duration"])
+	assert.True(t, foundMetrics["httpcheck.client.request.duration"])
 	assert.True(t, foundMetrics["httpcheck.response.duration"])
 }

@@ -36,6 +36,9 @@ attributes:
   http.tls.san:
     description: The Subject Alternative Name of the certificate.
     type: slice
+  network.transport:
+    description: OSI transport layer or inter-process communication method.
+    type: string
 
 metrics:
   httpcheck.status:
@@ -70,28 +73,28 @@ metrics:
       value_type: int
     unit: "s"
     attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]
-  httpcheck.dns_lookup.duration:
+  httpcheck.dns.lookup.duration:
     description: Time spent performing DNS lookup for the endpoint.
     enabled: false
     gauge:
       value_type: int
     unit: ms
     attributes: [http.url]
-  httpcheck.tcp_connection.duration:
+  httpcheck.client.connection.duration:
     description: Time spent establishing TCP connection to the endpoint.
     enabled: false
     gauge:
       value_type: int
     unit: ms
-    attributes: [http.url]
-  httpcheck.tls_handshake.duration:
+    attributes: [http.url, network.transport]
+  httpcheck.tls.handshake.duration:
     description: Time spent performing TLS handshake with the endpoint.
     enabled: false
     gauge:
       value_type: int
     unit: ms
     attributes: [http.url]
-  httpcheck.request.duration:
+  httpcheck.client.request.duration:
     description: Time spent sending the HTTP request to the endpoint.
     enabled: false
     gauge:

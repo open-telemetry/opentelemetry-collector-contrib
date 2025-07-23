@@ -258,9 +258,9 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Record detailed timing metrics if enabled
 			// Always record timing metrics regardless of value for enabled metrics
 			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsMs, endpoint)
-			h.mb.RecordHttpcheckTCPConnectionDurationDataPoint(now, tcpMs, endpoint)
+			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpMs, endpoint, "tcp")
 			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsMs, endpoint)
-			h.mb.RecordHttpcheckRequestDurationDataPoint(now, requestMs, endpoint)
+			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestMs, endpoint)
 			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseMs, endpoint)
 
 			// Check if TLS metric is enabled and this is an HTTPS endpoint
