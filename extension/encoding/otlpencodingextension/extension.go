@@ -114,10 +114,10 @@ func (ex *otlpExtension) MarshalProfiles(profiles pprofile.Profiles) ([]byte, er
 	return ex.profileMarshaler.MarshalProfiles(profiles)
 }
 
-func (ex *otlpExtension) Start(_ context.Context, _ component.Host) error {
+func (*otlpExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (ex *otlpExtension) Shutdown(_ context.Context) error {
+func (*otlpExtension) Shutdown(context.Context) error {
 	return nil
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/cenkalti/backoff/v5"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
@@ -33,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -42,6 +42,9 @@ type prwTelemetry interface {
 	recordTranslatedTimeSeries(ctx context.Context, numTS int)
 	recordRemoteWriteSentBatch(ctx context.Context)
 	setNumberConsumer(ctx context.Context, n int64)
+	recordWrittenSamples(ctx context.Context, numSamples int64)
+	recordWrittenHistograms(ctx context.Context, numHistograms int64)
+	recordWrittenExemplars(ctx context.Context, numExemplars int64)
 }
 
 type prwTelemetryOtel struct {
@@ -63,6 +66,18 @@ func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
 
 func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS int) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordWrittenSamples(ctx context.Context, numSamples int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenSamples.Add(ctx, numSamples, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordWrittenHistograms(ctx context.Context, numHistograms int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenHistograms.Add(ctx, numHistograms, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordWrittenExemplars(ctx context.Context, numExemplars int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenExemplars.Add(ctx, numExemplars, metric.WithAttributes(p.otelAttrs...))
 }
 
 type buffer struct {
@@ -136,7 +151,8 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	if err = config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
+	err = cfg.RemoteWriteProtoMsg.Validate()
+	if err != nil {
 		return nil, err
 	}
 
@@ -261,12 +277,13 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
+	namer := otlptranslator.LabelNamer{}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
 			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
+		sanitizedLabels[namer.Build(key)] = value
 	}
 
 	return sanitizedLabels, nil
@@ -421,13 +438,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// implementation is not compliant with the specification. Reference:
 		// https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
 		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
-			samplesWritten := resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written")
-			if samplesWritten == "" {
-				prwe.settings.Logger.Warn(
-					"X-Prometheus-Remote-Write-Samples-Written header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
-					zap.String("url", resp.Request.URL.String()),
-				)
-			}
+			prwe.handleWrittenHeaders(ctx, resp)
 		}
 
 		// 2xx status code is considered a success

@@ -129,6 +129,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordOracledbLogonsDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -217,6 +220,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
+			rb.SetHostName("host.name-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
@@ -445,6 +449,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of logical reads", ms.At(i).Description())
 					assert.Equal(t, "{reads}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.logons":
+					assert.False(t, validatedMetrics["oracledb.logons"], "Found a duplicate in the metrics slice: oracledb.logons")
+					validatedMetrics["oracledb.logons"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of logon operations", ms.At(i).Description())
+					assert.Equal(t, "{operation}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

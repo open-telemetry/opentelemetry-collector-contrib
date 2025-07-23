@@ -6,6 +6,8 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"math"
+	"net/http"
+	"strconv"
 	"sync"
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -103,4 +105,42 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 	// TODO implement WAl support, can be done after #15277 is fixed
 
 	return prwe.exportV2(ctx, requests)
+}
+
+func (prwe *prwExporter) handleHeader(ctx context.Context, resp *http.Response, headerName, metricType string, recordFunc func(context.Context, int64)) {
+	headerValue := resp.Header.Get(headerName)
+	if headerValue == "" {
+		prwe.settings.Logger.Warn(
+			headerName+" header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
+			zap.String("url", resp.Request.URL.String()),
+		)
+		return
+	}
+
+	value, err := strconv.ParseInt(headerValue, 10, 64)
+	if err != nil {
+		prwe.settings.Logger.Warn(
+			"Failed to convert "+headerName+" header to int64, not counting "+metricType+" written",
+			zap.String("url", resp.Request.URL.String()),
+		)
+		return
+	}
+	recordFunc(ctx, value)
+}
+
+func (prwe *prwExporter) handleWrittenHeaders(ctx context.Context, resp *http.Response) {
+	prwe.handleHeader(ctx, resp,
+		"X-Prometheus-Remote-Write-Samples-Written",
+		"samples",
+		prwe.telemetry.recordWrittenSamples)
+
+	prwe.handleHeader(ctx, resp,
+		"X-Prometheus-Remote-Write-Histograms-Written",
+		"histograms",
+		prwe.telemetry.recordWrittenHistograms)
+
+	prwe.handleHeader(ctx, resp,
+		"X-Prometheus-Remote-Write-Exemplars-Written",
+		"exemplars",
+		prwe.telemetry.recordWrittenExemplars)
 }

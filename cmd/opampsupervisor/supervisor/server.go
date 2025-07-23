@@ -50,7 +50,7 @@ func (fs flattenedSettings) OnConnecting(request *http.Request) serverTypes.Conn
 	}
 }
 
-func (fs flattenedSettings) OnConnected(_ context.Context, _ serverTypes.Connection) {}
+func (flattenedSettings) OnConnected(context.Context, serverTypes.Connection) {}
 
 func (fs flattenedSettings) OnMessage(_ context.Context, conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 	if fs.onMessage != nil {

@@ -18,7 +18,7 @@ const numMetricTypes = 4
 type ToTranslator struct{}
 
 // ToMetrics converts SignalFx proto data points to pmetric.Metrics.
-func (tt *ToTranslator) ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
+func (*ToTranslator) ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()
@@ -56,13 +56,10 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 		case pmetric.MetricTypeSum:
 			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
-		case pmetric.MetricTypeHistogram:
-			fallthrough
-		case pmetric.MetricTypeExponentialHistogram:
-			fallthrough
-		case pmetric.MetricTypeSummary:
-			fallthrough
-		case pmetric.MetricTypeEmpty:
+		case pmetric.MetricTypeHistogram,
+			pmetric.MetricTypeExponentialHistogram,
+			pmetric.MetricTypeSummary,
+			pmetric.MetricTypeEmpty:
 			return fmt.Errorf("unsupported metric type: %v", m.Type())
 		}
 		return nil

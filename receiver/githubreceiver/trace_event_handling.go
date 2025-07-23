@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v73/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
@@ -173,7 +173,7 @@ func (gtr *githubTracesReceiver) createRootSpan(
 
 // createParentSpan creates a parent span based on the provided event, associated
 // with the deterministic traceID.
-func (gtr *githubTracesReceiver) createParentSpan(
+func (*githubTracesReceiver) createParentSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
@@ -288,7 +288,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 
 // createStepSpan creates a span with a deterministic spandID for the provided
 // step.
-func (gtr *githubTracesReceiver) createStepSpan(
+func (*githubTracesReceiver) createStepSpan(
 	resourceSpans ptrace.ResourceSpans,
 	traceID pcommon.TraceID,
 	parentSpanID pcommon.SpanID,
@@ -345,7 +345,7 @@ func (gtr *githubTracesReceiver) createStepSpan(
 
 // newStepSpanID creates a deterministic Step Span ID based on the provided
 // inputs.
-func newStepSpanID(runID int64, runAttempt int, jobName string, stepName string, number int) (pcommon.SpanID, error) {
+func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s%s%d", runID, runAttempt, jobName, stepName, number)
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
@@ -361,7 +361,7 @@ func newStepSpanID(runID int64, runAttempt int, jobName string, stepName string,
 
 // createJobQueueSpan creates a span for the job queue based on the provided
 // event by using the delta between the job created and completed times.
-func (gtr *githubTracesReceiver) createJobQueueSpan(
+func (*githubTracesReceiver) createJobQueueSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,

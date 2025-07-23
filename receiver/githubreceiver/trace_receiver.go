@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v73/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -188,7 +188,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 }
 
 // Simple healthcheck endpoint.
-func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
+func (*githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

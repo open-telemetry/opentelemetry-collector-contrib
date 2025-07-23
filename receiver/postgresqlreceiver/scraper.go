@@ -162,6 +162,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
+		p.collectFunctions(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -190,7 +191,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 	return p.lb.Emit(), nil
 }
 
-func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery int64, topNQuery int64, maxExplainEachInterval int64) (plog.Logs, error) {
+func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
 	var errs errsMux
 
 	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
@@ -228,7 +229,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit int64, topNQuery int64, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
@@ -492,6 +493,30 @@ func (p *postgreSQLScraper) collectIndexes(
 	}
 }
 
+func (p *postgreSQLScraper) collectFunctions(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	funcStats, err := client.getFunctionStats(ctx, database)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+
+	for _, stat := range funcStats {
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function)
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(database)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(stat.schema)
+		}
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
 func (p *postgreSQLScraper) collectBGWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -652,7 +677,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) retrieveBackends(
+func (*postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,

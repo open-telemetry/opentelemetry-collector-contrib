@@ -48,7 +48,7 @@ func newSQLServerPCScraper(params receiver.Settings, cfg *Config) *sqlServerPCSc
 }
 
 // start creates and sets the watchers for the scraper.
-func (s *sqlServerPCScraper) start(_ context.Context, _ component.Host) error {
+func (s *sqlServerPCScraper) start(context.Context, component.Host) error {
 	s.watcherRecorders = []watcherRecorder{}
 
 	for _, pcr := range perfCounterRecorders {
@@ -72,7 +72,7 @@ func (s *sqlServerPCScraper) start(_ context.Context, _ component.Host) error {
 }
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
-func (s *sqlServerPCScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerPCScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
 
 	for dbName, recorders := range recordersByDatabase {
@@ -133,7 +133,7 @@ func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databa
 }
 
 // shutdown stops all of the watchers for the scraper.
-func (s sqlServerPCScraper) shutdown(_ context.Context) error {
+func (s sqlServerPCScraper) shutdown(context.Context) error {
 	var errs error
 	for _, wr := range s.watcherRecorders {
 		err := wr.watcher.Close()
