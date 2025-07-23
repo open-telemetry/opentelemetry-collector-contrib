@@ -127,6 +127,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 					Value: 1,
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -147,6 +148,14 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
 				{Value: 43}, // hard-coding the flush bytes since the input is fixed
 			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "success"),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		})
 	}
 }
@@ -162,6 +171,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 		wantESBulkReqs      *metricdata.DataPoint[int64]
 		wantESDocsProcessed *metricdata.DataPoint[int64]
 		wantESDocsRetried   *metricdata.DataPoint[int64]
+		wantESLatency       *metricdata.HistogramDataPoint[float64]
 	}{
 		{
 			name: "500",
@@ -182,6 +192,12 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "failed_server"),
+					semconv.HTTPResponseStatusCode(500),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
 					semconv.HTTPResponseStatusCode(500),
@@ -212,6 +228,12 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					semconv.HTTPResponseStatusCode(429),
 				),
 			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "too_many"),
+					semconv.HTTPResponseStatusCode(429),
+				),
+			},
 		},
 		{
 			name: "429/with_retry",
@@ -228,9 +250,16 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsRetried: &metricdata.DataPoint[int64]{Value: 1},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
+				),
+			},
 		},
 		{
 			name: "500/doc_level",
@@ -246,12 +275,19 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 		},
@@ -265,12 +301,20 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 		},
@@ -290,12 +334,19 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 		},
@@ -321,12 +372,19 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 		},
@@ -395,6 +453,14 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					t, ct,
 					[]metricdata.DataPoint[int64]{*tt.wantESDocsRetried},
 					metricdatatest.IgnoreTimestamp(),
+				)
+			}
+			if tt.wantESLatency != nil {
+				metadatatest.AssertEqualElasticsearchBulkRequestsLatency(
+					t, ct,
+					[]metricdata.HistogramDataPoint[float64]{*tt.wantESLatency},
+					metricdatatest.IgnoreTimestamp(),
+					metricdatatest.IgnoreValue(),
 				)
 			}
 		})
@@ -489,6 +555,7 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("outcome", "success"),
+				semconv.HTTPResponseStatusCode(http.StatusOK),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
@@ -559,6 +626,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			Attributes: attribute.NewSet(
 				attribute.String("outcome", "success"),
 				attribute.StringSlice("x-test", []string{"test"}),
+				semconv.HTTPResponseStatusCode(http.StatusOK),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
