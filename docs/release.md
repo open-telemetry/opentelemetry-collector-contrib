@@ -13,14 +13,14 @@ For general information about all Collector repositories release procedures, see
 0. Ensure that the [opentelemetry-collector release procedure][1] has been followed and a new
    opentelemetry-collector version has been released. The opentelemetry-collector-contrib release
    should be done after the opentelemetry-collector release.
-1. Manually run the action [Automation - Prepare
-   Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml).
-   When prompted, enter the version numbers of the current and new beta versions, but do not include
-   a leading `v`. This action will create a pull request to update the changelog and version numbers
-   in the repo. **While this PR is open all merging in Contrib should be halted**.
-   - If the PR needs updated in any way you can make the changes in a fork and PR those changes into
-     the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this
-     prep-to-prep PR.
+1. Run the ["Automation - Prepare
+   Release"](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml)
+   action. Enter the version numbers without a leading `v`.
+   This creates a pull request to update the changelog and version numbers in the repo. **While this
+   PR is open all merging in Contrib should be halted**.
+   - To update the PR needs make the changes in a fork and PR those changes into the
+     `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep
+     PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
 2. Check out main and ensure it has the "Prepare release" commit in your local copy by pulling in
@@ -45,8 +45,7 @@ For general information about all Collector repositories release procedures, see
 4. Wait for the new tag build to pass successfully. A new `v0.85.0` release should be automatically
    created on Github by now, with the description containing the changelog for the new release.
 
-5. Manually edit the release description, and add a section listing the unmaintained components at
-   the top
+5. Add a section at the top of the release description listing the unmaintained components
    ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)).
    The list of unmaintained components can be found by [searching for issues with the "unmaintained"
    label](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue%20state%3Aopen%20label%3Aunmaintained).
