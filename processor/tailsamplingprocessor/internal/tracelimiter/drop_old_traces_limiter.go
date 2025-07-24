@@ -1,4 +1,4 @@
-package tracelimiter
+package tracelimiter // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tracelimiter"
 
 import (
 	"context"
