@@ -528,6 +528,7 @@ func (f *factory) createTracesExporter(
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithShutdown(stop),
 	)
 }
