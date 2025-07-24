@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -142,6 +143,12 @@ func (f *filterProcessorFactory) createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
+	if f.defaultDataPointFunctionsOverridden || f.defaultMetricFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"filter\" processor",
+			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
+			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
+		)
+	}
 	fp, err := newFilterMetricProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
@@ -161,6 +168,9 @@ func (f *filterProcessorFactory) createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
+	if f.defaultLogFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL log functions have been registered in the \"filter\" processor", zap.Bool("log", f.defaultLogFunctionsOverridden))
+	}
 	fp, err := newFilterLogsProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
@@ -180,6 +190,12 @@ func (f *filterProcessorFactory) createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
+	if f.defaultSpanEventFunctionsOverridden || f.defaultSpanFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"filter\" processor",
+			zap.Bool("span", f.defaultSpanFunctionsOverridden),
+			zap.Bool("spanevent", f.defaultSpanEventFunctionsOverridden),
+		)
+	}
 	fp, err := newFilterSpansProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
