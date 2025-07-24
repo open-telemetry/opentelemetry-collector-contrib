@@ -3,5 +3,6 @@ target_allocator:
   timeout: 5s
   tls:
     cert_file: "client.crt"
+    key_file: "client.key"
   interval: 30s
   collector_id: collector-1
