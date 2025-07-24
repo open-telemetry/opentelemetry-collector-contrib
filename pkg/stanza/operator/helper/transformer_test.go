@@ -329,7 +329,7 @@ func TestTransformerProcessBatchSplitsBatches(t *testing.T) {
 	testEntry3 := entry.New()
 	testEntries := []*entry.Entry{testEntry, testEntry2, testEntry3}
 	process := func(ctx context.Context, entries *entry.Entry) error {
-		return transformer.ProcessWith(ctx, entries, func(e *entry.Entry) error {
+		return transformer.ProcessWith(ctx, entries, func(*entry.Entry) error {
 			return nil
 		})
 	}
