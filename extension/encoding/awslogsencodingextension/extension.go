@@ -78,8 +78,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		}, nil
 	case formatELBAccessLog:
 		return &encodingExtension{
-			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(settings.BuildInfo),
-			format:      formatELBAccessLog,
+			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
+				settings.BuildInfo,
+				settings.Logger,
+			),
+			format: formatELBAccessLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
