@@ -600,7 +600,8 @@ target_info{instance="test-instance",job="test-service"} 1
 # HELP "this/one/there(where)" Extra ones
 # TYPE "this/one/there(where)" counter
 "this/one/there(where)"{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-"this/one/there(where)"{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""}`,
+"this/one/there(where)"{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
 		},
 		{
 			name:               "NoTranslation/escaping=underscores",
@@ -617,7 +618,8 @@ target_info{instance="test-instance",job="test-service"} 1
 # HELP this_one_there_where_ Extra ones
 # TYPE this_one_there_where_ counter
 this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""}`,
+this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
 		},
 	}
 
