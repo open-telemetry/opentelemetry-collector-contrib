@@ -207,6 +207,7 @@ github.com/zorkian/go-datadog-api v2.30.0+incompatible h1:R4ryGocppDqZZbnNc5EDR8
 github.com/zorkian/go-datadog-api v2.30.0+incompatible/go.mod h1:PkXwHX9CUQa/FpB9ZwAD45N1uhCW4MT/Wj7m36PbKss=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
+go.opentelemetry.io/collector v0.130.0 h1:XDqQkOOQcVynjzTPFjKxNTopuo9zX404CuLGvB1nSn4=
 go.opentelemetry.io/collector/client v1.36.1-0.20250715222903-0a7598ec1e19 h1:dTwLFlJAiY/6FikCg4fzzlbPSaVZgVUP20jGxFua3+0=
 go.opentelemetry.io/collector/client v1.36.1-0.20250715222903-0a7598ec1e19/go.mod h1:9CIj0lMuOIizyhwoK96+sTdrrzBYfoPA2boBZS8vEN4=
 go.opentelemetry.io/collector/component v1.36.1-0.20250715222903-0a7598ec1e19 h1:vmXO2TlNokGbxp8Xjc3JZzdbs/rbg2LLI2EE5Ubxjn8=
