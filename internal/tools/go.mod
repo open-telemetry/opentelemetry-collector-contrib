@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.23.1
 	go.opentelemetry.io/build-tools/githubgen v0.23.1
 	go.opentelemetry.io/build-tools/issuegenerator v0.23.1
-	go.opentelemetry.io/build-tools/multimod v0.24.0
+	go.opentelemetry.io/build-tools/multimod v0.25.0
 	go.opentelemetry.io/collector/cmd/builder v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/cmd/mdatagen v0.130.1-0.20250715222903-0a7598ec1e19
 	go.uber.org/goleak v1.3.0
@@ -188,7 +188,7 @@ require (
 	github.com/nunnatsa/ginkgolinter v0.19.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
-	github.com/pjbgf/sha1cd v0.3.2 // indirect
+	github.com/pjbgf/sha1cd v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polyfloyd/go-errorlint v1.8.0 // indirect
 	github.com/prometheus/client_golang v1.20.3 // indirect
@@ -221,7 +221,7 @@ require (
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.9.2 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.2.0 // indirect
@@ -250,7 +250,7 @@ require (
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/build-tools v0.24.0 // indirect
+	go.opentelemetry.io/build-tools v0.25.0 // indirect
 	go.opentelemetry.io/collector/component v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/confmap v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
