@@ -31,11 +31,30 @@ type Config struct {
 	_ struct{}
 }
 
+// validationConfig defines configuration for response validation
+type validationConfig struct {
+	// String matching
+	Contains    string `mapstructure:"contains"`
+	NotContains string `mapstructure:"not_contains"`
+
+	// JSON path validation
+	JSONPath string `mapstructure:"json_path"`
+	Equals   string `mapstructure:"equals"`
+
+	// Size validation
+	MaxSize *int64 `mapstructure:"max_size"`
+	MinSize *int64 `mapstructure:"min_size"`
+
+	// Regex validation
+	Regex string `mapstructure:"regex"`
+}
+
 // targetConfig defines configuration for individual HTTP checks.
 type targetConfig struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
-	Method                  string   `mapstructure:"method"`
-	Endpoints               []string `mapstructure:"endpoints"` // Field for a list of endpoints
+	Method                  string             `mapstructure:"method"`
+	Endpoints               []string           `mapstructure:"endpoints"`   // Field for a list of endpoints
+	Validations             []validationConfig `mapstructure:"validations"` // Response validation rules
 }
 
 // Validate validates an individual targetConfig.

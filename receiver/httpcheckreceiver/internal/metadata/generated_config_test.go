@@ -29,8 +29,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					HttpcheckDuration:         MetricConfig{Enabled: true},
 					HttpcheckError:            MetricConfig{Enabled: true},
+					HttpcheckResponseSize:     MetricConfig{Enabled: true},
 					HttpcheckStatus:           MetricConfig{Enabled: true},
 					HttpcheckTLSCertRemaining: MetricConfig{Enabled: true},
+					HttpcheckValidationFailed: MetricConfig{Enabled: true},
+					HttpcheckValidationPassed: MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -40,8 +43,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					HttpcheckDuration:         MetricConfig{Enabled: false},
 					HttpcheckError:            MetricConfig{Enabled: false},
+					HttpcheckResponseSize:     MetricConfig{Enabled: false},
 					HttpcheckStatus:           MetricConfig{Enabled: false},
 					HttpcheckTLSCertRemaining: MetricConfig{Enabled: false},
+					HttpcheckValidationFailed: MetricConfig{Enabled: false},
+					HttpcheckValidationPassed: MetricConfig{Enabled: false},
 				},
 			},
 		},
