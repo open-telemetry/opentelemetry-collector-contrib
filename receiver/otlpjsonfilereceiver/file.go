@@ -39,11 +39,11 @@ func NewFactory() receiver.Factory {
 }
 
 type Config struct {
-	fileconsumer.Config `mapstructure:",squash"`
-	StorageID           *component.ID `mapstructure:"storage"`
-	ReplayFile          bool          `mapstructure:"replay_file"`
-	IncludeFileRecordNumber bool      `mapstructure:"include_file_record_number"`
-	IncludeFileRecordOffset bool      `mapstructure:"include_file_record_offset"`
+	fileconsumer.Config     `mapstructure:",squash"`
+	StorageID               *component.ID `mapstructure:"storage"`
+	ReplayFile              bool          `mapstructure:"replay_file"`
+	IncludeFileRecordNumber bool          `mapstructure:"include_file_record_number"`
+	IncludeFileRecordOffset bool          `mapstructure:"include_file_record_offset"`
 }
 
 func createDefaultConfig() component.Config {
@@ -81,11 +81,15 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	
+
 	// Pass offset configuration to fileconsumer
 	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
 	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-	
+
+	// Capture config values to avoid race conditions in goroutines
+	includeOffset := cfg.IncludeFileRecordOffset
+	includeRecordNumber := cfg.IncludeFileRecordNumber
+
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
@@ -94,9 +98,9 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 		for i, token := range tokens {
 			ctx = obsrecv.StartLogsOp(ctx)
 			var l plog.Logs
-			l, err = logsUnmarshaler.UnmarshalLogs(token)
-			if err != nil {
-				obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
+			l, unmarshalErr := logsUnmarshaler.UnmarshalLogs(token)
+			if unmarshalErr != nil {
+				obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, unmarshalErr)
 			} else {
 				logRecordCount := l.LogRecordCount()
 				if logRecordCount != 0 {
@@ -109,18 +113,20 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 								logRecord := scopeLog.LogRecords().At(m)
 								appendToMap(attributes, logRecord.Attributes())
 								// Add offset information as attributes only if enabled
-								if cfg.IncludeFileRecordOffset && i < len(offsets) {
+								if includeOffset && i < len(offsets) {
 									logRecord.Attributes().PutInt("log.file.record_offset", offsets[i])
 								}
-								if cfg.IncludeFileRecordNumber {
+								if includeRecordNumber {
 									logRecord.Attributes().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
 								}
 							}
 						}
 					}
-					err = logs.ConsumeLogs(ctx, l)
+					consumeErr := logs.ConsumeLogs(ctx, l)
+					obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, consumeErr)
+				} else {
+					obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, nil)
 				}
-				obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 			}
 		}
 		return nil
@@ -143,11 +149,15 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	
+
 	// Pass offset configuration to fileconsumer
 	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
 	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-	
+
+	// Capture config values to avoid race conditions in goroutines
+	includeOffset := cfg.IncludeFileRecordOffset
+	includeRecordNumber := cfg.IncludeFileRecordNumber
+
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
@@ -156,9 +166,9 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 		for i, token := range tokens {
 			ctx = obsrecv.StartMetricsOp(ctx)
 			var m pmetric.Metrics
-			m, err = metricsUnmarshaler.UnmarshalMetrics(token)
-			if err != nil {
-				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
+			m, unmarshalErr := metricsUnmarshaler.UnmarshalMetrics(token)
+			if unmarshalErr != nil {
+				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, unmarshalErr)
 			} else {
 				if m.ResourceMetrics().Len() != 0 {
 					// Appends token.Attributes and offset information
@@ -170,18 +180,20 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 								metric := scopeMetric.Metrics().At(l)
 								appendToMap(attributes, metric.Metadata())
 								// Add offset information as attributes only if enabled
-								if cfg.IncludeFileRecordOffset && i < len(offsets) {
+								if includeOffset && i < len(offsets) {
 									metric.Metadata().PutInt("log.file.record_offset", offsets[i])
 								}
-								if cfg.IncludeFileRecordNumber {
+								if includeRecordNumber {
 									metric.Metadata().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
 								}
 							}
 						}
 					}
-					err = metrics.ConsumeMetrics(ctx, m)
+					consumeErr := metrics.ConsumeMetrics(ctx, m)
+					obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), consumeErr)
+				} else {
+					obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), nil)
 				}
-				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), err)
 			}
 		}
 		return nil
@@ -204,11 +216,15 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	
+
 	// Pass offset configuration to fileconsumer
 	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
 	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-	
+
+	// Capture config values to avoid race conditions in goroutines
+	includeOffset := cfg.IncludeFileRecordOffset
+	includeRecordNumber := cfg.IncludeFileRecordNumber
+
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
@@ -217,9 +233,9 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 		for i, token := range tokens {
 			ctx = obsrecv.StartTracesOp(ctx)
 			var t ptrace.Traces
-			t, err = tracesUnmarshaler.UnmarshalTraces(token)
-			if err != nil {
-				obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
+			t, unmarshalErr := tracesUnmarshaler.UnmarshalTraces(token)
+			if unmarshalErr != nil {
+				obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, unmarshalErr)
 			} else {
 				if t.ResourceSpans().Len() != 0 {
 					// Appends token.Attributes and offset information
@@ -231,18 +247,20 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 								span := scopeSpan.Spans().At(l)
 								appendToMap(attributes, span.Attributes())
 								// Add offset information as attributes only if enabled
-								if cfg.IncludeFileRecordOffset && i < len(offsets) {
+								if includeOffset && i < len(offsets) {
 									span.Attributes().PutInt("log.file.record_offset", offsets[i])
 								}
-								if cfg.IncludeFileRecordNumber {
+								if includeRecordNumber {
 									span.Attributes().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
 								}
 							}
 						}
 					}
-					err = traces.ConsumeTraces(ctx, t)
+					consumeErr := traces.ConsumeTraces(ctx, t)
+					obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), consumeErr)
+				} else {
+					obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), nil)
 				}
-				obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
 			}
 		}
 		return nil
@@ -257,28 +275,36 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles xconsumer.Profiles) (xreceiver.Profiles, error) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	cfg := configuration.(*Config)
-	
+
 	// Pass offset configuration to fileconsumer
 	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
 	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-	
+
+	// Capture config values to avoid race conditions in goroutines
+	includeOffset := cfg.IncludeFileRecordOffset
+	includeRecordNumber := cfg.IncludeFileRecordNumber
+
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, recordNum int64, offsets []int64) error {
+	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, _ map[string]any, recordNum int64, offsets []int64) error {
 		for i, token := range tokens {
-			p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
-			// TODO: Add proper error handling
+			// avoiding using shared variable to fix race condition issue
+			p, unmarshalErr := profilesUnmarshaler.UnmarshalProfiles(token)
+			if unmarshalErr != nil {
+				// TODO: Add proper error handling
+				continue
+			}
 			if p.ResourceProfiles().Len() != 0 {
 				// Add offset information to resource attributes only if enabled
 				for j := 0; j < p.ResourceProfiles().Len(); j++ {
 					resourceProfile := p.ResourceProfiles().At(j)
 					// Add offset information as resource attributes only if enabled
-					if cfg.IncludeFileRecordOffset && i < len(offsets) {
+					if includeOffset && i < len(offsets) {
 						resourceProfile.Resource().Attributes().PutInt("log.file.record_offset", offsets[i])
 					}
-					if cfg.IncludeFileRecordNumber {
+					if includeRecordNumber {
 						resourceProfile.Resource().Attributes().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
 					}
 				}

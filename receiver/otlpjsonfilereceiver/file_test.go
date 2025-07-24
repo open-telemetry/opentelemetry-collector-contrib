@@ -59,17 +59,17 @@ func TestFileProfilesReceiver(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllProfiles(), 1)
-	
+
 	// Verify offset attributes are NOT present by default (backward compatibility)
 	profiles := sink.AllProfiles()[0]
 	resourceProfile := profiles.ResourceProfiles().At(0)
-	
+
 	_, offsetExists := resourceProfile.Resource().Attributes().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist by default")
-	
+
 	_, recordNumExists := resourceProfile.Resource().Attributes().Get("log.file.record_number")
 	assert.False(t, recordNumExists, "log.file.record_number should not exist by default")
-	
+
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -96,23 +96,23 @@ func TestFileTracesReceiver(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllTraces(), 1)
-	
+
 	// Verify default behavior: only file name, no offset attributes
 	traces := sink.AllTraces()[0]
 	span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	
+
 	// include_file_name is true by default
 	fileNameVal, exists := span.Attributes().Get("log.file.name")
 	assert.True(t, exists, "log.file.name should exist")
 	assert.Equal(t, "traces.json", fileNameVal.Str())
-	
+
 	// Offset attributes should NOT be present by default (backward compatibility)
 	_, offsetExists := span.Attributes().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist by default")
-	
+
 	_, recordNumExists := span.Attributes().Get("log.file.record_number")
 	assert.False(t, recordNumExists, "log.file.record_number should not exist by default")
-	
+
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -139,23 +139,23 @@ func TestFileMetricsReceiver(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllMetrics(), 1)
-	
+
 	// Verify default behavior: only file name, no offset attributes
 	metrics := sink.AllMetrics()[0]
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	
+
 	// include_file_name is true by default
 	fileNameVal, exists := metric.Metadata().Get("log.file.name")
 	assert.True(t, exists, "log.file.name should exist")
 	assert.Equal(t, "metrics.json", fileNameVal.Str())
-	
+
 	// Offset attributes should NOT be present by default (backward compatibility)
 	_, offsetExists := metric.Metadata().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist by default")
-	
+
 	_, recordNumExists := metric.Metadata().Get("log.file.record_number")
 	assert.False(t, recordNumExists, "log.file.record_number should not exist by default")
-	
+
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -187,14 +187,14 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	// Wait for the first poll to complete.
 	time.Sleep(cfg.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
-	
+
 	// Verify no offset attributes by default (file name disabled)
 	metrics := sink.AllMetrics()[0]
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	
+
 	_, offsetExists := metric.Metadata().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist by default")
-	
+
 	_, recordNumExists := metric.Metadata().Get("log.file.record_number")
 	assert.False(t, recordNumExists, "log.file.record_number should not exist by default")
 
@@ -202,11 +202,11 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	sink.Reset()
 	time.Sleep(cfg.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
-	
+
 	// Verify no offset attributes after replay
 	replayedMetrics := sink.AllMetrics()[0]
 	replayedMetric := replayedMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	
+
 	_, offsetExists = replayedMetric.Metadata().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist after replay by default")
 
@@ -236,20 +236,20 @@ func TestFileLogsReceiver(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllLogs(), 1)
-	
+
 	// Verify default behavior: only file name, no offset attributes
 	logs := sink.AllLogs()[0]
 	logRecord := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	
+
 	// include_file_name is true by default
 	fileNameVal, exists := logRecord.Attributes().Get("log.file.name")
 	assert.True(t, exists, "log.file.name should exist")
 	assert.Equal(t, "logs.json", fileNameVal.Str())
-	
+
 	// Offset attributes should NOT be present by default (backward compatibility)
 	_, offsetExists := logRecord.Attributes().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist by default")
-	
+
 	_, recordNumExists := logRecord.Attributes().Get("log.file.record_number")
 	assert.False(t, recordNumExists, "log.file.record_number should not exist by default")
 
@@ -355,17 +355,17 @@ func TestFileMixedSignals(t *testing.T) {
 	require.Len(t, ts.AllTraces(), 1)
 	require.Len(t, ls.AllLogs(), 1)
 	require.Len(t, ps.AllProfiles(), 1)
-	
+
 	// Verify no offset attributes by default (backward compatibility)
 	metrics := ms.AllMetrics()[0]
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	
+
 	_, offsetExists := metric.Metadata().Get("log.file.record_offset")
 	assert.False(t, offsetExists, "log.file.record_offset should not exist by default")
-	
+
 	_, recordNumExists := metric.Metadata().Get("log.file.record_number")
 	assert.False(t, recordNumExists, "log.file.record_number should not exist by default")
-	
+
 	err = mr.Shutdown(context.Background())
 	assert.NoError(t, err)
 	err = tr.Shutdown(context.Background())
@@ -454,43 +454,45 @@ func TestOffsetInformation(t *testing.T) {
 		ld1 := testdata.GenerateLogs(1)
 		ld2 := testdata.GenerateLogs(1)
 		marshaler := &plog.JSONMarshaler{}
-		
+
 		b1, err := marshaler.MarshalLogs(ld1)
 		assert.NoError(t, err)
 		b2, err := marshaler.MarshalLogs(ld2)
 		assert.NoError(t, err)
-		
+
 		// Write two separate log entries
-		content := append(b1, '\n')
+		content := make([]byte, 0, len(b1)+len(b2)+2)
+		content = append(content, b1...)
+		content = append(content, '\n')
 		content = append(content, b2...)
 		content = append(content, '\n')
-		
+
 		err = os.WriteFile(filepath.Join(tempFolder, "logs_with_offset.json"), content, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
 		require.Len(t, sink.AllLogs(), 2)
-		
+
 		// Verify first log entry has offset attributes
 		firstLog := sink.AllLogs()[0]
 		firstRecord := firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-		
+
 		offsetVal, exists := firstRecord.Attributes().Get("log.file.record_offset")
 		assert.True(t, exists, "log.file.record_offset should exist")
 		assert.Equal(t, int64(0), offsetVal.Int(), "First record should start at offset 0")
-		
+
 		recordNumVal, exists := firstRecord.Attributes().Get("log.file.record_number")
 		assert.True(t, exists, "log.file.record_number should exist")
 		assert.Equal(t, int64(1), recordNumVal.Int(), "First record should have record number 1")
-		
+
 		// Verify second log entry has different offset
 		secondLog := sink.AllLogs()[1]
 		secondRecord := secondLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-		
+
 		secondOffsetVal, exists := secondRecord.Attributes().Get("log.file.record_offset")
 		assert.True(t, exists, "log.file.record_offset should exist for second record")
-		assert.Greater(t, secondOffsetVal.Int(), int64(0), "Second record should have offset > 0")
-		
+		assert.Positive(t, secondOffsetVal.Int(), "Second record should have offset > 0")
+
 		secondRecordNumVal, exists := secondRecord.Attributes().Get("log.file.record_number")
 		assert.True(t, exists, "log.file.record_number should exist for second record")
 		assert.Equal(t, int64(2), secondRecordNumVal.Int(), "Second record should have record number 2")
@@ -511,21 +513,21 @@ func TestOffsetInformation(t *testing.T) {
 		b, err := marshaler.MarshalTraces(td)
 		assert.NoError(t, err)
 		b = append(b, '\n')
-		
+
 		err = os.WriteFile(filepath.Join(tempFolder, "traces_with_offset.json"), b, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
 		require.Len(t, sink.AllTraces(), 1)
-		
+
 		// Verify trace has offset attributes
 		traces := sink.AllTraces()[0]
 		span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		
+
 		offsetVal, exists := span.Attributes().Get("log.file.record_offset")
 		assert.True(t, exists, "log.file.record_offset should exist")
 		assert.Equal(t, int64(0), offsetVal.Int(), "First trace record should start at offset 0")
-		
+
 		recordNumVal, exists := span.Attributes().Get("log.file.record_number")
 		assert.True(t, exists, "log.file.record_number should exist")
 		assert.Equal(t, int64(1), recordNumVal.Int(), "First trace record should have record number 1")
@@ -546,21 +548,21 @@ func TestOffsetInformation(t *testing.T) {
 		b, err := marshaler.MarshalMetrics(md)
 		assert.NoError(t, err)
 		b = append(b, '\n')
-		
+
 		err = os.WriteFile(filepath.Join(tempFolder, "metrics_with_offset.json"), b, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
 		require.Len(t, sink.AllMetrics(), 1)
-		
+
 		// Verify metric has offset attributes
 		metrics := sink.AllMetrics()[0]
 		metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-		
+
 		offsetVal, exists := metric.Metadata().Get("log.file.record_offset")
 		assert.True(t, exists, "log.file.record_offset should exist")
 		assert.Equal(t, int64(0), offsetVal.Int(), "First metric record should start at offset 0")
-		
+
 		recordNumVal, exists := metric.Metadata().Get("log.file.record_number")
 		assert.True(t, exists, "log.file.record_number should exist")
 		assert.Equal(t, int64(1), recordNumVal.Int(), "First metric record should have record number 1")
@@ -581,21 +583,21 @@ func TestOffsetInformation(t *testing.T) {
 		b, err := marshaler.MarshalProfiles(pd)
 		assert.NoError(t, err)
 		b = append(b, '\n')
-		
+
 		err = os.WriteFile(filepath.Join(tempFolder, "profiles_with_offset.json"), b, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
 		require.Len(t, sink.AllProfiles(), 1)
-		
+
 		// Verify profile has offset attributes
 		profiles := sink.AllProfiles()[0]
 		resourceProfile := profiles.ResourceProfiles().At(0)
-		
+
 		offsetVal, exists := resourceProfile.Resource().Attributes().Get("log.file.record_offset")
 		assert.True(t, exists, "log.file.record_offset should exist")
 		assert.Equal(t, int64(0), offsetVal.Int(), "First profile record should start at offset 0")
-		
+
 		recordNumVal, exists := resourceProfile.Resource().Attributes().Get("log.file.record_number")
 		assert.True(t, exists, "log.file.record_number should exist")
 		assert.Equal(t, int64(1), recordNumVal.Int(), "First profile record should have record number 1")
