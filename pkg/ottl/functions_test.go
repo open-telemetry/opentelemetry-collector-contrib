@@ -1195,6 +1195,28 @@ func Test_NewFunctionCall(t *testing.T) {
 			wantError: "StandardPMapGetter value is not a literal",
 		},
 		{
+			name: "optional literal getter with value",
+			inv: editor{
+				Function: "testing_literalstringoptional",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("foo"),
+						},
+					},
+				},
+			},
+			want: "foo",
+		},
+		{
+			name: "optional literal getter without value",
+			inv: editor{
+				Function:  "testing_literalstringoptional",
+				Arguments: []argument{},
+			},
+			want: "",
+		},
+		{
 			name: "pslicegetter slice arg",
 			inv: editor{
 				Function: "testing_pslicegetter_slice",
@@ -2577,6 +2599,17 @@ func functionWithLiteralPMapGetter(getter LiteralGetter[any, pcommon.Map, PMapGe
 	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
 }
 
+type literalStringGetterOptionalArguments struct {
+	Optional[LiteralGetter[any, string, StringGetter[any]]]
+}
+
+func functionWithLiteralStringOptionalGetter(getter Optional[LiteralGetter[any, string, StringGetter[any]]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		val := getter.Get()
+		return val.GetLiteral()
+	}, nil
+}
+
 type stringArguments struct {
 	StringArg string
 }
@@ -2907,6 +2940,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_literalpmapgetter",
 			&literalPMapGetterArguments{},
 			functionWithLiteralPMapGetter,
+		),
+		createFactory[any](
+			"testing_literalstringoptional",
+			&literalStringGetterOptionalArguments{},
+			functionWithLiteralStringOptionalGetter,
 		),
 		createFactory[any](
 			"testing_string",
