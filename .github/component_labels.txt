@@ -318,7 +318,6 @@ reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
-exporter/kineticaexporter exporter/kinetica
 extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 processor/groupbytraceprocessor processor/groupbytrace
