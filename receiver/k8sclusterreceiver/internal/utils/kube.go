@@ -55,24 +55,16 @@ func StripContainerID(id string) string {
 // first, the object is attempted to be retrieved from the store for all namespaces,
 // and if it is not found there, the namespace-specific store is used
 func GetObjectFromStore(namespace, objName string, stores map[string]cache.Store) (any, error) {
-	var obj any
-	exists := false
-	var err error
-	// first, check if there is a store for all namespaces
-	if store, ok := stores[metadata.ClusterWideInformerKey]; ok {
-		obj, exists, err = store.GetByKey(GetIDForCache(namespace, objName))
-		if err != nil {
-			return nil, err
-		}
-	}
-	if !exists {
-		// check if there is a store for the namespace object
-		if store, ok := stores[namespace]; ok {
-			obj, _, err = store.GetByKey(GetIDForCache(namespace, objName))
+	for _, storeKey := range [2]string{metadata.ClusterWideInformerKey, namespace} {
+		if store, ok := stores[storeKey]; ok {
+			obj, exists, err := store.GetByKey(GetIDForCache(namespace, objName))
 			if err != nil {
 				return nil, err
 			}
+			if exists {
+				return obj, nil
+			}
 		}
 	}
-	return obj, nil
+	return nil, nil
 }
