@@ -337,7 +337,7 @@ jobs:
           else
             echo "Tests passed or were skipped. Continuing."
           fi
-          
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
@@ -544,6 +544,7 @@ jobs:
           - arm
           - arm64
           - ppc64le
+          - riscv64
           - s390x
         include:
           - os: linux
@@ -557,6 +558,8 @@ jobs:
           - os: darwin
             arch: ppc64le
           - os: darwin
+            arch: riscv64
+          - os: darwin
             arch: s390x
           - os: windows
             arch: arm
@@ -564,6 +567,8 @@ jobs:
             arch: arm64
           - os: windows
             arch: ppc64le
+          - os: windows
+            arch: riscv64
           - os: windows
             arch: s390x
     steps:
