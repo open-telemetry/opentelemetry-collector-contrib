@@ -35,7 +35,7 @@ connector/failoverconnector/                                     @open-telemetry
 connector/grafanacloudconnector/                                 @open-telemetry/collector-contrib-approvers @rlankfo @jcreixell
 connector/otlpjsonconnector/                                     @open-telemetry/collector-contrib-approvers @ChrsMark
 connector/roundrobinconnector/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu
-connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @mwear
+connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @mwear @TylerHelmuth @evan-bradley @edmocosta
 connector/servicegraphconnector/                                 @open-telemetry/collector-contrib-approvers @mapno @JaredTan95
 connector/signaltometricsconnector/                              @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
 connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen @iblancasa
@@ -109,7 +109,7 @@ extension/encoding/textencodingextension/                        @open-telemetry
 extension/encoding/zipkinencodingextension/                      @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/googleclientauthextension/                             @open-telemetry/collector-contrib-approvers @dashpole @aabmass @braydonk @jsuereth @psx95 @ridwanmsharif
 extension/headerssetterextension/                                @open-telemetry/collector-contrib-approvers @VihasMakwana
-extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @mwear
+extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @mwear @evan-bradley
 extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
@@ -359,7 +359,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers
-exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers
 extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
 processor/groupbytraceprocessor/                                 @open-telemetry/collector-contrib-approvers
