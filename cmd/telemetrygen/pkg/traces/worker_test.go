@@ -366,9 +366,9 @@ func configWithNoAttributes(qty int, statusCode string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: nil,
 		},
-		NumTraces:  qty,
+		NumTraces:     qty,
 		NumChildSpans: 1,
-		StatusCode: statusCode,
+		StatusCode:    statusCode,
 	}
 }
 
@@ -378,9 +378,9 @@ func configWithOneAttribute(qty int, statusCode string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
-		NumTraces:  qty,
+		NumTraces:     qty,
 		NumChildSpans: 1,
-		StatusCode: statusCode,
+		StatusCode:    statusCode,
 	}
 }
 
@@ -391,8 +391,8 @@ func configWithMultipleAttributes(qty int, statusCode string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: kvs,
 		},
-		NumTraces:  qty,
+		NumTraces:     qty,
 		NumChildSpans: 1,
-		StatusCode: statusCode,
+		StatusCode:    statusCode,
 	}
 }
