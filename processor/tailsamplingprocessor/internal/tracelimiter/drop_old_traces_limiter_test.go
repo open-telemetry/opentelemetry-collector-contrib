@@ -16,7 +16,7 @@ func TestDropOldTracesLimiter(t *testing.T) {
 		dropped = append(dropped, id)
 	}
 
-	numTraces := 2
+	numTraces := uint64(2)
 	limiter := NewDropOldTracesLimiter(numTraces, dropTrace)
 
 	id1 := pcommon.TraceID([16]byte{1})
