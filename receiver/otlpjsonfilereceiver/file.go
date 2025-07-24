@@ -42,6 +42,8 @@ type Config struct {
 	fileconsumer.Config `mapstructure:",squash"`
 	StorageID           *component.ID `mapstructure:"storage"`
 	ReplayFile          bool          `mapstructure:"replay_file"`
+	IncludeFileRecordNumber bool      `mapstructure:"include_file_record_number"`
+	IncludeFileRecordOffset bool      `mapstructure:"include_file_record_offset"`
 }
 
 func createDefaultConfig() component.Config {
@@ -79,12 +81,17 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 		return nil, err
 	}
 	cfg := configuration.(*Config)
+	
+	// Pass offset configuration to fileconsumer
+	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
+	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
+	
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
-		for _, token := range tokens {
+	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, recordNum int64, offsets []int64) error {
+		for i, token := range tokens {
 			ctx = obsrecv.StartLogsOp(ctx)
 			var l plog.Logs
 			l, err = logsUnmarshaler.UnmarshalLogs(token)
@@ -93,14 +100,21 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 			} else {
 				logRecordCount := l.LogRecordCount()
 				if logRecordCount != 0 {
-					// Appends token.Attributes
-					for i := 0; i < l.ResourceLogs().Len(); i++ {
-						resourceLog := l.ResourceLogs().At(i)
-						for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
-							scopeLog := resourceLog.ScopeLogs().At(j)
-							for k := 0; k < scopeLog.LogRecords().Len(); k++ {
-								LogRecords := scopeLog.LogRecords().At(k)
-								appendToMap(attributes, LogRecords.Attributes())
+					// Appends token.Attributes and offset information
+					for j := 0; j < l.ResourceLogs().Len(); j++ {
+						resourceLog := l.ResourceLogs().At(j)
+						for k := 0; k < resourceLog.ScopeLogs().Len(); k++ {
+							scopeLog := resourceLog.ScopeLogs().At(k)
+							for m := 0; m < scopeLog.LogRecords().Len(); m++ {
+								logRecord := scopeLog.LogRecords().At(m)
+								appendToMap(attributes, logRecord.Attributes())
+								// Add offset information as attributes only if enabled
+								if cfg.IncludeFileRecordOffset && i < len(offsets) {
+									logRecord.Attributes().PutInt("log.file.record_offset", offsets[i])
+								}
+								if cfg.IncludeFileRecordNumber {
+									logRecord.Attributes().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
+								}
 							}
 						}
 					}
@@ -129,12 +143,17 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 		return nil, err
 	}
 	cfg := configuration.(*Config)
+	
+	// Pass offset configuration to fileconsumer
+	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
+	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
+	
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
-		for _, token := range tokens {
+	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, recordNum int64, offsets []int64) error {
+		for i, token := range tokens {
 			ctx = obsrecv.StartMetricsOp(ctx)
 			var m pmetric.Metrics
 			m, err = metricsUnmarshaler.UnmarshalMetrics(token)
@@ -142,14 +161,21 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 			} else {
 				if m.ResourceMetrics().Len() != 0 {
-					// Appends token.Attributes
-					for i := 0; i < m.ResourceMetrics().Len(); i++ {
-						resourceMetric := m.ResourceMetrics().At(i)
-						for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
-							ScopeMetric := resourceMetric.ScopeMetrics().At(j)
-							for k := 0; k < ScopeMetric.Metrics().Len(); k++ {
-								metric := ScopeMetric.Metrics().At(k)
+					// Appends token.Attributes and offset information
+					for j := 0; j < m.ResourceMetrics().Len(); j++ {
+						resourceMetric := m.ResourceMetrics().At(j)
+						for k := 0; k < resourceMetric.ScopeMetrics().Len(); k++ {
+							scopeMetric := resourceMetric.ScopeMetrics().At(k)
+							for l := 0; l < scopeMetric.Metrics().Len(); l++ {
+								metric := scopeMetric.Metrics().At(l)
 								appendToMap(attributes, metric.Metadata())
+								// Add offset information as attributes only if enabled
+								if cfg.IncludeFileRecordOffset && i < len(offsets) {
+									metric.Metadata().PutInt("log.file.record_offset", offsets[i])
+								}
+								if cfg.IncludeFileRecordNumber {
+									metric.Metadata().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
+								}
 							}
 						}
 					}
@@ -178,12 +204,17 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 		return nil, err
 	}
 	cfg := configuration.(*Config)
+	
+	// Pass offset configuration to fileconsumer
+	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
+	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
+	
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
-		for _, token := range tokens {
+	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, recordNum int64, offsets []int64) error {
+		for i, token := range tokens {
 			ctx = obsrecv.StartTracesOp(ctx)
 			var t ptrace.Traces
 			t, err = tracesUnmarshaler.UnmarshalTraces(token)
@@ -191,14 +222,21 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 				obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 			} else {
 				if t.ResourceSpans().Len() != 0 {
-					// Appends token.Attributes
-					for i := 0; i < t.ResourceSpans().Len(); i++ {
-						resourceSpan := t.ResourceSpans().At(i)
-						for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
-							scopeSpan := resourceSpan.ScopeSpans().At(j)
-							for k := 0; k < scopeSpan.Spans().Len(); k++ {
-								spans := scopeSpan.Spans().At(k)
-								appendToMap(attributes, spans.Attributes())
+					// Appends token.Attributes and offset information
+					for j := 0; j < t.ResourceSpans().Len(); j++ {
+						resourceSpan := t.ResourceSpans().At(j)
+						for k := 0; k < resourceSpan.ScopeSpans().Len(); k++ {
+							scopeSpan := resourceSpan.ScopeSpans().At(k)
+							for l := 0; l < scopeSpan.Spans().Len(); l++ {
+								span := scopeSpan.Spans().At(l)
+								appendToMap(attributes, span.Attributes())
+								// Add offset information as attributes only if enabled
+								if cfg.IncludeFileRecordOffset && i < len(offsets) {
+									span.Attributes().PutInt("log.file.record_offset", offsets[i])
+								}
+								if cfg.IncludeFileRecordNumber {
+									span.Attributes().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
+								}
 							}
 						}
 					}
@@ -219,15 +257,31 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles xconsumer.Profiles) (xreceiver.Profiles, error) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	cfg := configuration.(*Config)
+	
+	// Pass offset configuration to fileconsumer
+	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
+	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
+	
 	opts := make([]fileconsumer.Option, 0)
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
-		for _, token := range tokens {
+	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, recordNum int64, offsets []int64) error {
+		for i, token := range tokens {
 			p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
-			// TODO Append token.Attributes
+			// TODO: Add proper error handling
 			if p.ResourceProfiles().Len() != 0 {
+				// Add offset information to resource attributes only if enabled
+				for j := 0; j < p.ResourceProfiles().Len(); j++ {
+					resourceProfile := p.ResourceProfiles().At(j)
+					// Add offset information as resource attributes only if enabled
+					if cfg.IncludeFileRecordOffset && i < len(offsets) {
+						resourceProfile.Resource().Attributes().PutInt("log.file.record_offset", offsets[i])
+					}
+					if cfg.IncludeFileRecordNumber {
+						resourceProfile.Resource().Attributes().PutInt("log.file.record_number", recordNum-int64(len(tokens))+int64(i)+1)
+					}
+				}
 				_ = profiles.ConsumeProfiles(ctx, p)
 			}
 		}
