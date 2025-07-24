@@ -130,6 +130,7 @@ type HeaderExtraction struct {
 
 type TelemetryConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
+	_       struct{}      // avoids unkeyed_literal_initialization
 }
 
 // MetricsConfig provides config for optional receiver metrics.
@@ -139,9 +140,11 @@ type MetricsConfig struct {
 	// will be reported or not. This metric is not reported by default because
 	// it may slow down high-volume consuming.
 	KafkaReceiverRecordsDelay MetricConfig `mapstructure:"kafka_receiver_records_delay"`
+	_                         struct{}     // avoids unkeyed_literal_initialization
 }
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool     `mapstructure:"enabled"`
+	_       struct{} // avoids unkeyed_literal_initialization
 }
