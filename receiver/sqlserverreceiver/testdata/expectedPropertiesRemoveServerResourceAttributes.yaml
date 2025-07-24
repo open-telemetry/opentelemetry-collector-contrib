@@ -9,6 +9,14 @@ resourceMetrics:
             stringValue: ad8fb2b53dce
     scopeMetrics:
       - metrics:
+          - description: Computer uptime.
+            gauge:
+              dataPoints:
+                - asInt: "17394"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.computer.uptime
+            unit: '{seconds}'
           - description: Number of CPUs.
             gauge:
               dataPoints:
