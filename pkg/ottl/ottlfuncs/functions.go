@@ -22,6 +22,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewReplaceAllPatternsFactory[K](),
 		NewReplaceMatchFactory[K](),
 		NewReplacePatternFactory[K](),
+		NewSanitizeDBStatementFactory[K](),
 		NewSetFactory[K](),
 		NewTruncateAllFactory[K](),
 	}
