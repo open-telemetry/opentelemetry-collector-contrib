@@ -14,21 +14,38 @@ import (
 // Please use getSQLServerDatabaseIOQuery
 const sqlServerDatabaseIOQuery = `
 SET DEADLOCK_PRIORITY -10;
-IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4) BEGIN /*NOT IN Standard,Enterprise,Express*/
-	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard,Enterprise or Express. This query is only supported on these editions.';
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
 	RAISERROR (@ErrorMessage,11,1)
 	RETURN
 END
 
 DECLARE
 	 @SqlStatement AS nvarchar(max)
+	,@EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
 	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int) * 100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
 	,@Columns AS nvarchar(max) = ''
 	,@Tables AS nvarchar(max) = ''
+	,@JoinClause AS nvarchar(max) = ''
 IF @MajorMinorVersion > 1100 BEGIN
 	SET @Columns += N'
 	,vfs.[io_stall_queued_read_ms] AS [rg_read_stall_ms]
 	,vfs.[io_stall_queued_write_ms] AS [rg_write_stall_ms]'
+END
+
+IF @EngineEdition = 5 -- Azure SQL Database (Database-as-a-Service)
+BEGIN
+    -- For Azure SQL Database, use sys.database_files
+    SET @JoinClause = N'
+INNER JOIN sys.database_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = DB_ID() AND vfs.[file_id] = mf.[file_id]';
+END
+ELSE -- All other editions
+BEGIN
+    -- For instance-level editions, use sys.master_files
+    SET @JoinClause = N'
+INNER JOIN sys.master_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = mf.[database_id] AND vfs.[file_id] = mf.[file_id]';
 END
 
 SET @SqlStatement = N'
@@ -47,9 +64,8 @@ SELECT
 	,vfs.[num_of_writes] AS [writes]
 	,vfs.[num_of_bytes_written] AS [write_bytes]'
 	+ @Columns + N'
-FROM sys.dm_io_virtual_file_stats(NULL, NULL) AS vfs
-INNER JOIN sys.master_files AS mf WITH (NOLOCK)
-	ON vfs.[database_id] = mf.[database_id] AND vfs.[file_id] = mf.[file_id]
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) AS vfs'
++ @JoinClause + N'
 %s'
 + @Tables;
 
@@ -67,8 +83,8 @@ func getSQLServerDatabaseIOQuery(instanceName string) string {
 
 const sqlServerPerformanceCountersQuery string = `
 SET DEADLOCK_PRIORITY -10;
-IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4) BEGIN /*NOT IN Standard,Enterprise,Express*/
-	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise or Express. This query is only supported on these editions.';
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
 	RAISERROR (@ErrorMessage,11,1)
 	RETURN
 END
@@ -343,7 +359,8 @@ SELECT
 	,dbs.[db_recovering]
 	,dbs.[db_recoveryPending]
 	,dbs.[db_suspect]
-	,dbs.[db_offline]'
+	,dbs.[db_offline]
+	,(si.[ms_ticks]/1000) AS [computer_uptime]'
 	+ @Columns + N'
 	FROM sys.[dm_os_sys_info] AS si
 	CROSS APPLY (

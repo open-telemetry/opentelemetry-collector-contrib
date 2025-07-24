@@ -290,16 +290,15 @@ func TestStackPayloads(t *testing.T) {
 		libpf.NewFrameID(buildID, address),
 		libpf.NewFrameID(buildID2, address2),
 	})
-	for _, tt := range []struct {
-		name                  string
+	for name, tt := range map[string]struct {
 		buildDictionary       func() pprofile.ProfilesDictionary
 		buildResourceProfiles func() pprofile.ResourceProfiles
 
 		wantPayload []StackPayload
 		wantErr     error
 	}{
-		{ //nolint:dupl
-			name: "with a single indexed sample",
+		//nolint:dupl
+		"with a single indexed sample": {
 			buildDictionary: func() pprofile.ProfilesDictionary {
 				dic := pprofile.NewProfilesDictionary()
 				dic.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so")
@@ -409,8 +408,7 @@ func TestStackPayloads(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "with a duplicated sample",
+		"with a duplicated sample": {
 			buildDictionary: func() pprofile.ProfilesDictionary {
 				dic := pprofile.NewProfilesDictionary()
 				dic.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so")
@@ -526,8 +524,120 @@ func TestStackPayloads(t *testing.T) {
 				},
 			},
 		},
+		"with a mapping without BuildID": {
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so", "no_build_id_binary")
+
+				a := dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildIDEncoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildID2Encoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
+
+				l := dic.LocationTable().AppendEmpty()
+				l.SetMappingIndex(0)
+				l.SetAddress(address)
+				l.AttributeIndices().Append(2)
+				l = dic.LocationTable().AppendEmpty()
+				l.SetMappingIndex(1)
+				l.SetAddress(address2)
+				l.AttributeIndices().Append(2)
+
+				m := dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(0)
+				m.SetFilenameStrindex(1)
+				m = dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(1)
+				m.SetFilenameStrindex(2)
+				m = dic.MappingTable().AppendEmpty()
+				// No build ID attribute for this mapping
+				m.SetFilenameStrindex(3)
+
+				return dic
+			},
+			buildResourceProfiles: func() pprofile.ResourceProfiles {
+				rp := pprofile.NewResourceProfiles()
+
+				sp := rp.ScopeProfiles().AppendEmpty()
+				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
+				p.SetPeriod(1e9 / 20)
+
+				s := p.Sample().AppendEmpty()
+				s.TimestampsUnixNano().Append(1)
+				s.Value().Append(1)
+				s.SetLocationsLength(2)
+				s.SetLocationsStartIndex(0)
+
+				return rp
+			},
+
+			wantPayload: []StackPayload{
+				{
+					StackTrace: StackTrace{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
+						Types: frameTypesToString([]libpf.FrameType{
+							libpf.FrameType(3),
+							libpf.FrameType(3),
+						}),
+					},
+					StackFrames: []StackFrame{},
+					Executables: []ExeMetadata{
+						NewExeMetadata(
+							buildIDBase64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildIDBase64,
+							"firefox",
+						),
+						NewExeMetadata(
+							buildID2Base64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildID2Base64,
+							"libc.so",
+						),
+						// Note: no ExeMetadata for the third mapping since it has no BuildID
+					},
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
+						// Note: no unsymbolized executable for the mapping without build ID
+					},
+				},
+				{
+					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
+						TimeStamp:    1000000000,
+						StackTraceID: wantedTraceID,
+						Frequency:    20,
+						Count:        1,
+					},
+				},
+			},
+		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			dic := tt.buildDictionary()
 			rp := tt.buildResourceProfiles()
 			sp := rp.ScopeProfiles().At(0)
@@ -732,15 +842,15 @@ func TestStackTrace(t *testing.T) {
 				)
 
 				l := dic.LocationTable().AppendEmpty()
-				l.SetMappingIndex(0)
+				l.SetMappingIndex(1)
 				l.SetAddress(address)
 				l.AttributeIndices().Append(0)
 				l = dic.LocationTable().AppendEmpty()
-				l.SetMappingIndex(1)
+				l.SetMappingIndex(2)
 				l.SetAddress(address2)
 				l.AttributeIndices().Append(1)
 				l = dic.LocationTable().AppendEmpty()
-				l.SetMappingIndex(2)
+				l.SetMappingIndex(3)
 				l.SetAddress(address3)
 				l.AttributeIndices().Append(2)
 
@@ -749,6 +859,19 @@ func TestStackTrace(t *testing.T) {
 				li = l.Line().AppendEmpty()
 				li.SetLine(3)
 
+				// Create a location without build ID
+				f := dic.FunctionTable().AppendEmpty()
+				dic.StringTable().Append("fibonacci")
+				f.SetNameStrindex(int32(dic.StringTable().Len() - 1))
+				dic.StringTable().Append("myApp")
+				f.SetFilenameStrindex(int32(dic.StringTable().Len() - 1))
+				locWithoutBuildID := dic.LocationTable().AppendEmpty()
+				locWithoutBuildID.SetMappingIndex(0)
+				locWithoutBuildID.AttributeIndices().Append(0)
+				li = locWithoutBuildID.Line().AppendEmpty()
+				li.SetLine(99)
+
+				dic.MappingTable().AppendEmpty() // empty default mapping at pos 0
 				m := dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(3)
 				m = dic.MappingTable().AppendEmpty()
@@ -760,21 +883,23 @@ func TestStackTrace(t *testing.T) {
 			},
 			buildProfile: func() pprofile.Profile {
 				p := pprofile.NewProfile()
-				p.LocationIndices().FromRaw([]int32{0, 1, 2})
+				p.LocationIndices().FromRaw([]int32{0, 1, 2, 3})
 
 				s := p.Sample().AppendEmpty()
-				s.SetLocationsLength(3)
+				s.SetLocationsStartIndex(0)
+				s.SetLocationsLength(4)
 
 				return p
 			},
 
 			wantTrace: StackTrace{
 				EcsVersion: EcsVersion{V: EcsVersionString},
-				FrameIDs:   frameID3Base64 + frameID2Base64 + frameIDBase64,
+				FrameIDs:   "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,
 					libpf.NativeFrame,
+					libpf.KernelFrame,
 				}),
 			},
 		},

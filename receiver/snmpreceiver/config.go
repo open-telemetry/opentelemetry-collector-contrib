@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -258,7 +259,7 @@ func (cfg *Config) Validate() error {
 
 	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
 	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
-	if strings.ToUpper(cfg.Version) == "V3" {
+	if strings.EqualFold(cfg.Version, "V3") {
 		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
 	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
@@ -458,7 +459,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 			}
 
 			if len(attrCfg.Enum) > 0 {
-				if !contains(attrCfg.Enum, attribute.Value) {
+				if !slices.Contains(attrCfg.Enum, attribute.Value) {
 					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
 				}
 				continue
@@ -536,7 +537,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 			continue
 		}
 
-		if !contains(attrCfg.Enum, attribute.Value) {
+		if !slices.Contains(attrCfg.Enum, attribute.Value) {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarAttributeBadValue, metricName, attribute.Name, attribute.Value))
 		}
 	}
@@ -634,14 +635,4 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		}
 	}
 	return combinedErr
-}
-
-// contains checks if string slice contains a string value
-func contains(elements []string, value string) bool {
-	for _, element := range elements {
-		if value == element {
-			return true
-		}
-	}
-	return false
 }

@@ -27,11 +27,11 @@ func newNfsScraper(_ context.Context, settings scraper.Settings, cfg *Config) *n
 	return &nfsScraper{settings: settings, config: cfg}
 }
 
-func (s *nfsScraper) start(_ context.Context, _ component.Host) error {
+func (s *nfsScraper) start(context.Context, component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
-func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (*nfsScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return pmetric.NewMetrics(), nil
 }

@@ -655,11 +655,20 @@ metrics:
     gauge:
       value_type: int
       input_type: string
+  sqlserver.computer.uptime:
+    enabled: false
+    description: Computer uptime.
+    unit: "{seconds}"
+    gauge:
+      value_type: int
+      input_type: string
 tests:
   config:
   goleak:
     ignore:
-      any: "github.com/godbus/dbus.(*Conn).inWorker"
+      any:
+        - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue" # see https://github.com/cihub/seelog/issues/182
+        - "github.com/godbus/dbus.(*Conn).inWorker"
       top:
         # Can be removed once the following issue is resolved:
         # https://github.com/snowflakedb/gosnowflake/issues/1369

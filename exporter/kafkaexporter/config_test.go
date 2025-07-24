@@ -72,6 +72,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: SignalConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
 				Topic:                                "spans",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
@@ -99,6 +103,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "legacy_topic",
 					Encoding: "otlp_proto",
 				},
+				Profiles: SignalConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
 				Topic: "legacy_topic",
 			},
 		},
@@ -120,6 +128,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: SignalConfig{
 					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Profiles: SignalConfig{
+					Topic:    "otlp_profiles",
 					Encoding: "legacy_encoding",
 				},
 				Encoding: "legacy_encoding",

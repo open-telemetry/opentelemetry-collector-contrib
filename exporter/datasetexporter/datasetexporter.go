@@ -20,15 +20,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type DatasetExporter struct {
+type datasetExporter struct {
 	client      *client.DataSetClient
 	logger      *zap.Logger
 	session     string
-	exporterCfg *ExporterConfig
+	exporterCfg *exporterConfig
 	serverHost  string
 }
 
-func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*DatasetExporter, error) {
+func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*datasetExporter, error) {
 	logger := set.Logger
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
@@ -63,7 +63,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
 	}
 
-	return &DatasetExporter{
+	return &datasetExporter{
 		client:      client,
 		session:     uuid.New().String(),
 		logger:      logger,
@@ -72,7 +72,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*
 	}, nil
 }
 
-func (e *DatasetExporter) shutdown(context.Context) error {
+func (e *datasetExporter) shutdown(context.Context) error {
 	return e.client.Shutdown()
 }
 
@@ -80,36 +80,36 @@ func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) e
 	return client.AddEvents(events)
 }
 
-func buildKey(prefix string, separator string, key string, depth int) string {
+func buildKey(prefix, separator, key string, depth int) string {
 	res := prefix
-	if depth > 0 && len(prefix) > 0 {
+	if depth > 0 && prefix != "" {
 		res += separator
 	}
 	res += key
 	return res
 }
 
-func updateWithPrefixedValuesMap(target map[string]any, prefix string, separator string, suffix string, source map[string]any, depth int) {
+func updateWithPrefixedValuesMap(target map[string]any, prefix, separator, suffix string, source map[string]any, depth int) {
 	for k, v := range source {
 		key := buildKey(prefix, separator, k, depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValuesArray(target map[string]any, prefix string, separator string, suffix string, source []any, depth int) {
+func updateWithPrefixedValuesArray(target map[string]any, prefix, separator, suffix string, source []any, depth int) {
 	for i, v := range source {
 		key := buildKey(prefix, separator, strconv.FormatInt(int64(i), 10), depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValues(target map[string]any, prefix string, separator string, suffix string, source any, depth int) {
+func updateWithPrefixedValues(target map[string]any, prefix, separator, suffix string, source any, depth int) {
 	setValue := func() {
 		for {
 			// now the last value wins
 			// Should the first value win?
 			_, found := target[prefix]
-			if !found || len(suffix) == 0 {
+			if !found || suffix == "" {
 				target[prefix] = source
 				break
 			}
@@ -141,7 +141,7 @@ func inferServerHost(
 	valA, okA := attrs[add_events.AttrServerHost]
 	if okA {
 		host := fmt.Sprintf("%v", valA)
-		if len(host) > 0 {
+		if host != "" {
 			return host
 		}
 	}
@@ -151,7 +151,7 @@ func inferServerHost(
 		valR, okR := resource.Attributes().Get(resKey)
 		if okR {
 			host := valR.AsString()
-			if len(host) > 0 {
+			if host != "" {
 				return host
 			}
 		}

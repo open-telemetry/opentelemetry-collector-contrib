@@ -13,7 +13,7 @@ import (
 )
 
 type blobClient interface {
-	readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
+	readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error)
 }
 
 type azureBlobClient struct {
@@ -23,7 +23,7 @@ type azureBlobClient struct {
 
 var _ blobClient = (*azureBlobClient)(nil)
 
-func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
+func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
 	defer func() {
 		_, blobDeleteErr := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
 		if blobDeleteErr != nil {

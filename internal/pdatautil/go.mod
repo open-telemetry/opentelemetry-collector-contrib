@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatau
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.129.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.130.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.35.1-0.20250708151327-74cb2f311035
+	go.opentelemetry.io/collector/pdata v1.36.1-0.20250715222903-0a7598ec1e19
 )
 
 require (
