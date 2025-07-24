@@ -6,6 +6,7 @@ package serializeprofiles // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -362,6 +363,10 @@ type attributable interface {
 	AttributeIndices() pcommon.Int32Slice
 }
 
+// errMissingAttribute allows to differentiate errors handling the AttributeTable
+// and indicates that a attribute was not included in the AttributeTable.
+var errMissingAttribute = errors.New("missing attribute")
+
 // getStringFromAttribute returns a string from one of attrIndices from the attribute table
 // of the profile if the attribute key matches the expected attrKey.
 func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable, attrKey string) (string, error) {
@@ -379,17 +384,24 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 		}
 	}
 
-	return "", fmt.Errorf("failed to get '%s' from indices %v", attrKey, record.AttributeIndices().AsRaw())
+	return "", fmt.Errorf("failed to get '%s' from indices %v: %w",
+		attrKey, record.AttributeIndices().AsRaw(), errMissingAttribute)
 }
 
-// getBuildID returns the Build ID for the given mapping.
+// getBuildID returns the Build ID for the given mapping. It checks for both
+// old-style Build ID (stored with the mapping) and Build ID as attribute.
+// If the build ID attribute is missing, returns a zero FileID and no error.
 func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libpf.FileID, error) {
 	// Fetch build ID from profiles.attribute_table.
 	buildIDStr, err := getStringFromAttribute(dic, mapping, "process.executable.build_id.htlhash")
-	if err != nil {
+	switch {
+	case err == nil:
+		return libpf.FileIDFromString(buildIDStr)
+	case errors.Is(err, errMissingAttribute):
+		return libpf.NewFileID(0, 0), nil
+	default:
 		return libpf.FileID{}, err
 	}
-	return libpf.FileIDFromString(buildIDStr)
 }
 
 func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
