@@ -18,8 +18,10 @@ import (
 )
 
 func setBodyFromProto(logRecord plog.LogRecord, value stdjson.RawMessage) error {
-	err := translateInto(logRecord.Body().SetEmptyMap(), (&anypb.Any{}).ProtoReflect().Descriptor(), value)
-	return err
+	if err := translateInto(logRecord.Body().SetEmptyMap(), (&anypb.Any{}).ProtoReflect().Descriptor(), value); err != nil {
+		return fmt.Errorf("failed to set body from proto payload: %w", err)
+	}
+	return nil
 }
 
 func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protoreflect.FieldDescriptor, src stdjson.RawMessage) error {

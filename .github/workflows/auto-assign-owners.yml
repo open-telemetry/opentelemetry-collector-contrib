@@ -5,12 +5,17 @@ on:
       - opened
       - ready_for_review
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
   add-owner:
+    permissions:
+      pull-requests: write # required for assigning reviewers to PRs
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.draft == false }}
     steps:
