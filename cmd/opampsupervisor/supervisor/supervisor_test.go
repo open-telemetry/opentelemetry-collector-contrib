@@ -2096,6 +2096,18 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
 	})
 
+	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
+		newSupervisor := &Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			cfgState:          &atomic.Value{},
+			doneChan:          make(chan struct{}),
+		}
+		err = newSupervisor.startHealthCheckServer()
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to listen on port 23233")
+	})
+
 	t.Run("Health check server shutdown is handled gracefully in Supervisor.Shutdown", func(t *testing.T) {
 		resp, err := sendHealthCheckRequest()
 		require.NoError(t, err)

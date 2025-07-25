@@ -727,9 +727,14 @@ func (s *Supervisor) startHealthCheckServer() error {
 		Handler: mux,
 	}
 
+	listener, err := net.Listen("tcp", s.healthCheckServer.Addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
+	}
+
 	go func() {
 		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int("port", healthCheckServerPort))
-		if err := s.healthCheckServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.healthCheckServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
 		}
 	}()
