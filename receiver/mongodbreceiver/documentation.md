@@ -484,6 +484,30 @@ The number of bytes read into the WiredTiger cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | true |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+### mongodb.query.sample
+
+A sample of a MongoDB query.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| mongodb.namespace | The namespace of the MongoDB operation (database.collection). | Any Str |
+| mongodb.obfuscated_command | The obfuscated MongoDB command statement. | Any Str |
+| mongodb.query.signature | A unique signature for the MongoDB query. | Any Str |
+| mongodb.duration_micros | The duration of the MongoDB operation in microseconds. | Any Int |
+| mongodb.explain_plan | The query plan for the query to be executed. | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

@@ -86,6 +86,10 @@ func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M)
 	return result, args.Error(1)
 }
 
+func (fc *fakeClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
+	return nil, nil
+}
+
 func TestListDatabaseNames(t *testing.T) {
 	mont := drivertest.NewMockDeployment()
 	mont.AddResponses(bson.D{

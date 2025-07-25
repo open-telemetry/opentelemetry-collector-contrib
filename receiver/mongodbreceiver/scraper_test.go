@@ -458,3 +458,138 @@ func TestServerAddressAndPort(t *testing.T) {
 		})
 	}
 }
+
+func Test_obfuscateExplainPlan(t *testing.T) {
+	tests := []struct {
+		name     string
+		plan     interface{}
+		expected interface{}
+	}{
+		{
+			name: "simple explain plan with filter",
+			plan: bson.M{
+				"queryPlanner": bson.M{
+					"filter": bson.M{
+						"field1": "value1",
+					},
+				},
+			},
+			expected: bson.M{
+				"queryPlanner": bson.M{
+					"filter": bson.M{
+						"field1": "?",
+					},
+				},
+			},
+		},
+		{
+			name: "simple explain plan with parsedQuery",
+			plan: bson.M{
+				"queryPlanner": bson.M{
+					"parsedQuery": bson.M{
+						"field1": "value1",
+					},
+				},
+			},
+			expected: bson.M{
+				"queryPlanner": bson.M{
+					"parsedQuery": bson.M{
+						"field1": "?",
+					},
+				},
+			},
+		},
+		{
+			name: "simple explain plan with indexBounds",
+			plan: bson.M{
+				"queryPlanner": bson.M{
+					"indexBounds": bson.M{
+						"field1": "value1",
+					},
+				},
+			},
+			expected: bson.M{
+				"queryPlanner": bson.M{
+					"indexBounds": bson.M{
+						"field1": "?",
+					},
+				},
+			},
+		},
+		{
+			name: "nested explain plan",
+			plan: bson.M{
+				"queryPlanner": bson.M{
+					"winningPlan": bson.M{
+						"inputStage": bson.M{
+							"filter": bson.M{
+								"field1": "value1",
+							},
+						},
+					},
+				},
+			},
+			expected: bson.M{
+				"queryPlanner": bson.M{
+					"winningPlan": bson.M{
+						"inputStage": bson.M{
+							"filter": bson.M{
+								"field1": "?",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "explain plan with different data types",
+			plan: bson.M{
+				"queryPlanner": bson.M{
+					"filter": bson.M{
+						"field1": "value1",
+						"field2": 123,
+						"field3": true,
+					},
+				},
+			},
+			expected: bson.M{
+				"queryPlanner": bson.M{
+					"filter": bson.M{
+						"field1": "?",
+						"field2": "?",
+						"field3": "?",
+					},
+				},
+			},
+		},
+		{
+			name:     "empty explain plan",
+			plan:     bson.M{},
+			expected: bson.M{},
+		},
+		{
+			name: "explain plan with no fields to obfuscate",
+			plan: bson.M{
+				"queryPlanner": bson.M{
+					"winningPlan": bson.M{
+						"stage": "COLLSCAN",
+					},
+				},
+			},
+			expected: bson.M{
+				"queryPlanner": bson.M{
+					"winningPlan": bson.M{
+						"stage": "COLLSCAN",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &mongodbScraper{}
+			got := s.obfuscateExplainPlan(tt.plan)
+			require.Equal(t, tt.expected, got)
+		})
+	}
+}

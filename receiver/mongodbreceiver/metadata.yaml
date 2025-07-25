@@ -3,7 +3,7 @@ type: mongodb
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    beta: [metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [justinianvoss22]
@@ -86,6 +86,32 @@ attributes:
       - exclusive
       - intent_shared
       - intent_exclusive
+  mongodb.namespace:
+    description: The namespace of the MongoDB operation (database.collection).
+    type: string
+  mongodb.obfuscated_command:
+    description: The obfuscated MongoDB command statement.
+    type: string
+  mongodb.query.signature:
+    description: A unique signature for the MongoDB query.
+    type: string
+  mongodb.duration_micros:
+    description: The duration of the MongoDB operation in microseconds.
+    type: int
+  mongodb.explain_plan:
+    description: The query plan for the query to be executed.
+    type: string
+
+events:
+  mongodb.query.sample:
+    description: A sample of a MongoDB query.
+    enabled: true
+    attributes:
+      - mongodb.namespace
+      - mongodb.obfuscated_command
+      - mongodb.query.signature
+      - mongodb.duration_micros
+      - mongodb.explain_plan
 
 metrics:
   mongodb.cache.operations:
@@ -501,3 +527,7 @@ metrics:
 tests:
   config:
     timeout: 1ms
+  goleak:
+    ignore:
+      top:
+        - sync.runtime_notifyListWait

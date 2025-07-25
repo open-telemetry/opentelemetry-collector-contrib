@@ -5,6 +5,9 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -12,11 +15,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -44,19 +49,25 @@ type mongodbScraper struct {
 	secondaryClients   []client
 	mongoVersion       *version.Version
 	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
+	cache              *lru.Cache[string, int64]
 	prevReplTimestamp  pcommon.Timestamp
 	prevReplCounts     map[string]int64
 	prevTimestamp      pcommon.Timestamp
 	prevFlushTimestamp pcommon.Timestamp
 	prevCounts         map[string]int64
 	prevFlushCount     int64
+	obfuscator         *obfuscator
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
+	cache, _ := lru.New[string, int64](1024)
 	return &mongodbScraper{
 		logger:             settings.Logger,
 		config:             config,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                 metadata.NewLogsBuilder(metadata.DefaultLogsBuilderConfig(), settings),
+		cache:              cache,
 		mongoVersion:       unknownVersion(),
 		prevReplTimestamp:  pcommon.Timestamp(0),
 		prevReplCounts:     make(map[string]int64),
@@ -141,7 +152,424 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	errs := &scrapererror.ScrapeErrors{}
 	s.collectMetrics(ctx, errs)
+
 	return s.mb.Emit(), errs.Combine()
+}
+
+func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	if !s.config.QuerySettings.Enabled {
+		return plog.NewLogs(), nil
+	}
+
+	operations, err := s.client.CurrentOp(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current operations", zap.Error(err))
+		return plog.NewLogs(), err
+	}
+
+	s.processCurrentOp(ctx, operations)
+
+	serverStatus, err := s.client.ServerStatus(ctx, "admin")
+	if err != nil {
+		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
+		return s.lb.Emit(), nil
+	}
+
+	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	if err != nil {
+		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
+		return s.lb.Emit(), nil
+	}
+
+	rb := s.lb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+
+	return s.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+}
+
+func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	queryCount := 0
+
+	for _, op := range operations {
+		// Filter out irrelevant operations (e.g., internal operations, operations without commands)
+		if !s.shouldIncludeOperation(op) {
+			continue
+		}
+
+		// Limit the number of queries processed
+		if queryCount >= s.config.QuerySettings.MaxQueries {
+			s.logger.Debug("Reached maximum query limit", zap.Int("max_queries", s.config.QuerySettings.MaxQueries))
+			break
+		}
+
+		namespace := getValue[string](op, "ns")
+		command := getValue[bson.M](op, "command")
+		opType := getValue[string](op, "op")
+		durationMicros := getValue[int64](op, "microsecs_running")
+		application := getValue[string](op, "appName")
+		client := getValue[string](op, "client")
+
+		obfuscatedStatement := s.obfuscateCommand(command)
+		querySignature := s.generateQuerySignature(obfuscatedStatement)
+
+		// Get explain plan for supported operations
+		explainPlan := ""
+		dbName := s.getDBFromNamespace(namespace)
+		if dbName != "" && len(command) > 0 && s.shouldExplainOperation(namespace, opType, command) {
+			plan, err := s.getExplainPlan(ctx, dbName, command)
+			if err != nil {
+				s.logger.Debug("Failed to get explain plan",
+					zap.String("namespace", namespace),
+					zap.String("op", opType),
+					zap.Error(err))
+			} else {
+				explainPlan = plan
+			}
+		}
+
+		s.logger.Debug("Processing MongoDB operation",
+			zap.String("namespace", namespace),
+			zap.String("op", opType),
+			zap.Int64("duration_micros", durationMicros),
+			zap.String("application", application),
+			zap.String("client", client),
+			zap.String("query_signature", querySignature),
+			zap.Bool("has_explain_plan", explainPlan != ""))
+
+		// Record the query sample event using the generated logs builder method
+		s.lb.RecordMongodbQuerySampleEvent(
+			ctx,
+			now,
+			namespace,
+			obfuscatedStatement,
+			querySignature,
+			durationMicros,
+			explainPlan,
+		)
+
+		queryCount++
+	}
+
+	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)), zap.Int("processed_queries", queryCount))
+}
+
+// shouldExplainOperation determines if we should try to get an explain plan for this operation
+func (s *mongodbScraper) shouldExplainOperation(namespace, opType string, command bson.M) bool {
+	// Skip operations that are not queries
+	if opType == "" || opType == "none" {
+		return false
+	}
+
+	// Skip non-query operations
+	if opType == "insert" || opType == "update" || opType == "getmore" || opType == "killcursors" || opType == "remove" {
+		return false
+	}
+
+	// Check for unexplainable commands
+	unexplainableCommands := map[string]bool{
+		"getMore":         true,
+		"insert":          true,
+		"update":          true,
+		"delete":          true,
+		"explain":         true,
+		"profile":         true,
+		"listCollections": true,
+		"listDatabases":   true,
+		"dbStats":         true,
+		"createIndexes":   true,
+		"shardCollection": true,
+	}
+
+	for cmdName := range command {
+		if unexplainableCommands[cmdName] {
+			return false
+		}
+	}
+
+	// Check for unexplainable pipeline stages in aggregation
+	if pipeline, ok := command["pipeline"]; ok {
+		if pipelineArray, ok := pipeline.(bson.A); ok {
+			unexplainablePipelineStages := map[string]bool{
+				"$collStats":               true,
+				"$currentOp":               true,
+				"$indexStats":              true,
+				"$listSearchIndexes":       true,
+				"$sample":                  true,
+				"$shardedDataDistribution": true,
+				"$mergeCursors":            true,
+			}
+
+			for _, stage := range pipelineArray {
+				if stageDoc, ok := stage.(bson.M); ok {
+					for stageName := range stageDoc {
+						if unexplainablePipelineStages[stageName] {
+							return false
+						}
+					}
+				}
+			}
+		}
+	}
+	return true
+}
+
+func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
+	// Skip operations without a namespace
+	if ns := getValue[string](op, "ns"); ns == "" {
+		s.logger.Debug("Skipping operation without namespace", zap.Any("operation", op))
+		return false
+	}
+
+	// Skip operations for admin database
+	if db := s.getDBFromNamespace(getValue[string](op, "ns")); db == "admin" {
+		s.logger.Debug("Skipping operation for admin database", zap.Any("operation", op))
+		return false
+	}
+
+	// Skip operations without a command
+	if command := getValue[bson.M](op, "command"); len(command) == 0 {
+		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
+		return false
+	}
+
+	// Skip "hello" operations
+	if command := getValue[bson.M](op, "command"); command["hello"] != nil && getValue[string](op, "op") == "command" {
+		s.logger.Debug("Skipping hello operation", zap.Any("operation", op))
+		return false
+	}
+
+	return true
+}
+
+// getValue extracts a value from a BSON document with type assertion
+func getValue[T any](doc bson.M, key string) T {
+	var zero T
+	if val, ok := doc[key]; ok {
+		if typedVal, ok := val.(T); ok {
+			return typedVal
+		}
+	}
+	return zero
+}
+
+// getValueWithDefault extracts a value from a BSON document with a default fallback
+func getValueWithDefault[T any](doc bson.M, key string, defaultVal T) T {
+	if val, ok := doc[key]; ok {
+		if typedVal, ok := val.(T); ok {
+			return typedVal
+		}
+	}
+	return defaultVal
+}
+
+func (s *mongodbScraper) getDBFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return ""
+}
+
+// getExplainPlan executes the explain command for a given command and database
+func (s *mongodbScraper) getExplainPlan(ctx context.Context, dbname string, command bson.M) (string, error) {
+	// Create a clean copy of the command for explain
+	explainableCommand := s.prepareCommandForExplain(command)
+	if len(explainableCommand) == 0 {
+		return "", fmt.Errorf("command cannot be explained")
+	}
+
+	explainCommand := bson.M{
+		"explain": explainableCommand,
+	}
+
+	result, err := s.client.RunCommand(ctx, dbname, explainCommand)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute explain command: %w", err)
+	}
+
+	// Clean the explain plan result by removing unnecessary server info
+	cleanedResult := s.cleanExplainPlan(result)
+
+	// Obfuscate sensitive data in the explain plan
+	obfuscatedResult := s.obfuscateExplainPlan(cleanedResult)
+
+	// Convert the BSON result to a JSON string for storage
+	jsonBytes, err := json.Marshal(obfuscatedResult)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal explain plan to JSON: %w", err)
+	}
+
+	return string(jsonBytes), nil
+}
+
+// prepareCommandForExplain prepares a command to be explainable by removing
+func (s *mongodbScraper) prepareCommandForExplain(command bson.M) bson.M {
+	explainableCommand := make(bson.M)
+
+	excludeKeys := map[string]bool{
+		"$db":                    true,
+		"readConcern":            true,
+		"writeConcern":           true,
+		"needsMerge":             true,
+		"fromMongos":             true,
+		"let":                    true,
+		"mayBypassWriteBlocking": true,
+	}
+
+	for k, v := range command {
+		if !excludeKeys[k] {
+			explainableCommand[k] = v
+		}
+	}
+
+	return explainableCommand
+}
+
+// cleanExplainPlan removes unnecessary keys from the explain plan result
+func (s *mongodbScraper) cleanExplainPlan(explainResult bson.M) bson.M {
+	cleaned := make(bson.M)
+
+	// Keys to remove from explain plan result
+	removeKeys := map[string]bool{
+		"serverInfo":          true,
+		"serverParameters":    true,
+		"command":             true,
+		"ok":                  true,
+		"$clusterTime":        true,
+		"operationTime":       true,
+		"$configServerState":  true,
+		"lastCommittedOpTime": true,
+		"$gleStats":           true,
+	}
+
+	for k, v := range explainResult {
+		if !removeKeys[k] {
+			cleaned[k] = v
+		}
+	}
+
+	return cleaned
+}
+
+// serializeCommand converts a command to a string representation
+func (s *mongodbScraper) serializeCommand(command bson.M) string {
+	// Using json.Marshal for a more standard and readable format
+	data, err := json.Marshal(command)
+	if err != nil {
+		s.logger.Debug("Failed to serialize command", zap.Error(err))
+		// Fallback to BSON's extended JSON format if json.Marshal fails
+		data, err := bson.MarshalExtJSON(command, false, false)
+		if err != nil {
+			return command.String()
+		}
+		return string(data)
+	}
+	return string(data)
+}
+
+// obfuscateCommand removes sensitive data from commands
+func (s *mongodbScraper) obfuscateCommand(command bson.M) string {
+	// Parse the JSON statement back to a map for proper obfuscation
+	var commandCopied bson.M
+
+	keysToRemove := map[string]bool{
+		"comment":      true, // Comment field should not contribute to query signature
+		"lsid":         true, // Session ID is unique identifier
+		"$clusterTime": true, // Cluster time is used for operation ordering
+	}
+	for k, v := range command {
+		if _, ok := keysToRemove[k]; ok {
+			continue
+		}
+		commandCopied[k] = v
+	}
+	return s.obfuscator.obfuscateSQLString(commandCopied.String())
+}
+
+// obfuscateLiterals recursively obfuscates literal values while preserving structure
+func (s *mongodbScraper) obfuscateLiterals(value interface{}) interface{} {
+	switch v := value.(type) {
+	case bson.M:
+		obfuscated := make(bson.M)
+		for k, val := range v {
+			obfuscated[k] = s.obfuscateLiterals(val)
+		}
+		return obfuscated
+	case map[string]interface{}:
+		obfuscated := make(map[string]interface{})
+		for k, val := range v {
+			obfuscated[k] = s.obfuscateLiterals(val)
+		}
+		return obfuscated
+	case bson.A:
+		obfuscated := make(bson.A, len(v))
+		for i, val := range v {
+			obfuscated[i] = s.obfuscateLiterals(val)
+		}
+		return obfuscated
+	case []interface{}:
+		obfuscated := make([]interface{}, len(v))
+		for i, val := range v {
+			obfuscated[i] = s.obfuscateLiterals(val)
+		}
+		return obfuscated
+	case string, int, int32, int64, float32, float64, bool:
+		// Replace literal values with placeholder
+		return "?"
+	default:
+		// For other types (ObjectId, Date, etc.), keep the type but obfuscate
+		return value
+	}
+}
+
+// obfuscateExplainPlan obfuscates sensitive data in explain plans
+func (s *mongodbScraper) obfuscateExplainPlan(plan interface{}) interface{} {
+	switch p := plan.(type) {
+	case bson.M:
+		obfuscated := make(bson.M)
+		for key, value := range p {
+			// Obfuscate specific fields that contain query predicates
+			if key == "filter" || key == "parsedQuery" || key == "indexBounds" {
+				obfuscated[key] = s.obfuscateLiterals(value)
+			} else {
+				obfuscated[key] = s.obfuscateExplainPlan(value)
+			}
+		}
+		return obfuscated
+	case map[string]interface{}:
+		obfuscated := make(map[string]interface{})
+		for key, value := range p {
+			// Obfuscate specific fields that contain query predicates
+			if key == "filter" || key == "parsedQuery" || key == "indexBounds" {
+				obfuscated[key] = s.obfuscateLiterals(value)
+			} else {
+				obfuscated[key] = s.obfuscateExplainPlan(value)
+			}
+		}
+		return obfuscated
+	case bson.A:
+		obfuscated := make(bson.A, len(p))
+		for i, value := range p {
+			obfuscated[i] = s.obfuscateExplainPlan(value)
+		}
+		return obfuscated
+	case []interface{}:
+		obfuscated := make([]interface{}, len(p))
+		for i, value := range p {
+			obfuscated[i] = s.obfuscateExplainPlan(value)
+		}
+		return obfuscated
+	default:
+		return p
+	}
+}
+
+// generateQuerySignature creates a unique signature for the query
+func (s *mongodbScraper) generateQuerySignature(obfuscatedStatement string) string {
+	hash := sha256.Sum256([]byte(obfuscatedStatement))
+	return hex.EncodeToString(hash[:8]) // Use first 8 bytes for shorter signature
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
