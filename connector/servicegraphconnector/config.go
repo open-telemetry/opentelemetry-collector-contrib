@@ -50,6 +50,12 @@ type Config struct {
 	// DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
 	// The default value is {"db.name"}.
 	DatabaseNameAttributes []string `mapstructure:"database_name_attributes"`
+
+	// MetricsTimestampOffset is the offset to subtract from metric timestamps.
+	// If set to a positive duration, metric timestamps will be set to (current time - offset),
+	// effectively shifting metrics to appear as if they were generated in the past.
+	// Default is 0, which means no offset is applied.
+	MetricsTimestampOffset time.Duration `mapstructure:"metrics_timestamp_offset"`
 }
 
 type StoreConfig struct {
