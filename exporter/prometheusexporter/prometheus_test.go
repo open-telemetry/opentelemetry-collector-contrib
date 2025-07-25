@@ -654,7 +654,7 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 			// Scrape metrics, with the Accept header set to the value specified in the test case
-			req, err := http.NewRequest("GET", "http://"+addr+"/metrics", nil)
+			req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/metrics", http.NoBody)
 			require.NoError(t, err)
 			for k, v := range tt.extraHeaders {
 				req.Header.Set(k, v)
@@ -667,7 +667,7 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			_ = res.Body.Close()
 			output := string(blob)
 
-			assert.Equal(t, output, tt.want)
+			assert.Equal(t, tt.want, output)
 		})
 	}
 }

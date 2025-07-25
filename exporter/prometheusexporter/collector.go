@@ -81,23 +81,23 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 // getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
 // Returns (withSuffixes, allowUTF8)
 func getTranslationConfiguration(config *Config) (bool, bool) {
-	if translationStrategyFeatureGate.IsEnabled() {
-		switch config.TranslationStrategy {
-		case underscoreEscapingWithSuffixes:
-			return true, false
-		case underscoreEscapingWithoutSuffixes:
-			return false, false
-		case noUTF8EscapingWithSuffixes:
-			return true, true
-		case noTranslation:
-			return false, true
-		default:
-			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
-			return true, false
-		}
-	} else {
+	if !translationStrategyFeatureGate.IsEnabled() {
 		// Legacy behavior using AddMetricSuffixes, UTF-8 escaped to underscores.
 		return config.AddMetricSuffixes, false
+	}
+
+	switch config.TranslationStrategy {
+	case underscoreEscapingWithSuffixes:
+		return true, false
+	case underscoreEscapingWithoutSuffixes:
+		return false, false
+	case noUTF8EscapingWithSuffixes:
+		return true, true
+	case noTranslation:
+		return false, true
+	default:
+		// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
+		return true, false
 	}
 }
 
