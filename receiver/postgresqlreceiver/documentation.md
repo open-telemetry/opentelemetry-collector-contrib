@@ -315,6 +315,14 @@ The number of sequential scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {sequential_scan} | Sum | Int | Cumulative | true |
 
+### postgresql.temp.io
+
+Total amount of data written to temporary files by queries.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
 ### postgresql.temp_files
 
 The number of temp files.

@@ -339,6 +339,9 @@ var MetricsInfo = metricsInfo{
 	PostgresqlTableVacuumCount: metricInfo{
 		Name: "postgresql.table.vacuum.count",
 	},
+	PostgresqlTempIo: metricInfo{
+		Name: "postgresql.temp.io",
+	},
 	PostgresqlTempFiles: metricInfo{
 		Name: "postgresql.temp_files",
 	},
@@ -395,6 +398,7 @@ type metricsInfo struct {
 	PostgresqlTableCount               metricInfo
 	PostgresqlTableSize                metricInfo
 	PostgresqlTableVacuumCount         metricInfo
+	PostgresqlTempIo                   metricInfo
 	PostgresqlTempFiles                metricInfo
 	PostgresqlTupDeleted               metricInfo
 	PostgresqlTupFetched               metricInfo
@@ -1748,6 +1752,57 @@ func newMetricPostgresqlTableVacuumCount(cfg MetricConfig) metricPostgresqlTable
 	return m
 }
 
+type metricPostgresqlTempIo struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.temp.io metric with initial data.
+func (m *metricPostgresqlTempIo) init() {
+	m.data.SetName("postgresql.temp.io")
+	m.data.SetDescription("Total amount of data written to temporary files by queries.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTempIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTempIo) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTempIo) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTempIo(cfg MetricConfig) metricPostgresqlTempIo {
+	m := metricPostgresqlTempIo{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlTempFiles struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2243,6 +2298,7 @@ type MetricsBuilder struct {
 	metricPostgresqlTableCount               metricPostgresqlTableCount
 	metricPostgresqlTableSize                metricPostgresqlTableSize
 	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
+	metricPostgresqlTempIo                   metricPostgresqlTempIo
 	metricPostgresqlTempFiles                metricPostgresqlTempFiles
 	metricPostgresqlTupDeleted               metricPostgresqlTupDeleted
 	metricPostgresqlTupFetched               metricPostgresqlTupFetched
@@ -2303,6 +2359,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
 		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
 		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
+		metricPostgresqlTempIo:                   newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
 		metricPostgresqlTempFiles:                newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
 		metricPostgresqlTupDeleted:               newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
 		metricPostgresqlTupFetched:               newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
@@ -2434,6 +2491,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlTableCount.emit(ils.Metrics())
 	mb.metricPostgresqlTableSize.emit(ils.Metrics())
 	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
+	mb.metricPostgresqlTempIo.emit(ils.Metrics())
 	mb.metricPostgresqlTempFiles.emit(ils.Metrics())
 	mb.metricPostgresqlTupDeleted.emit(ils.Metrics())
 	mb.metricPostgresqlTupFetched.emit(ils.Metrics())
@@ -2602,6 +2660,11 @@ func (mb *MetricsBuilder) RecordPostgresqlTableSizeDataPoint(ts pcommon.Timestam
 // RecordPostgresqlTableVacuumCountDataPoint adds a data point to postgresql.table.vacuum.count metric.
 func (mb *MetricsBuilder) RecordPostgresqlTableVacuumCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlTableVacuumCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTempIoDataPoint adds a data point to postgresql.temp.io metric.
+func (mb *MetricsBuilder) RecordPostgresqlTempIoDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTempIo.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlTempFilesDataPoint adds a data point to postgresql.temp_files metric.

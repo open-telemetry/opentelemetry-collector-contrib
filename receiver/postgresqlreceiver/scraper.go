@@ -405,6 +405,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
 		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
+		p.mb.RecordPostgresqlTempIoDataPoint(now, stats.tempIo)
 		p.mb.RecordPostgresqlTupUpdatedDataPoint(now, stats.tupUpdated)
 		p.mb.RecordPostgresqlTupReturnedDataPoint(now, stats.tupReturned)
 		p.mb.RecordPostgresqlTupFetchedDataPoint(now, stats.tupFetched)

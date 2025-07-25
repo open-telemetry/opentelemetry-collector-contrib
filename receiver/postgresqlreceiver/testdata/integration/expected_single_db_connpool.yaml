@@ -403,6 +403,16 @@ resourceMetrics:
                   startTimeUnixNano: "1706802337738657906"
                   timeUnixNano: "1706802396744882628"
             unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The number of temp files.
             name: postgresql.temp_files
             sum:

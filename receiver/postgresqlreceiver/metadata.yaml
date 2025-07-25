@@ -411,6 +411,14 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.temp.io:
+    enabled: false
+    description: Total amount of data written to temporary files by queries.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |
