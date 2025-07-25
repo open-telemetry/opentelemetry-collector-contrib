@@ -67,9 +67,9 @@ Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 ## Metric names and labels normalization
 
-By Default, OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in Prometheus compatibility spec](WIP, waiting for merge in spec repo).
+By Default, OpenTelemetry metric names and attributes are normalized to be compliant with [Prometheus naming rules](https://prometheus.io/docs/practices/naming/).
 
-Optionally, users can set different `translation_strategy` options to control how metrics are exposed. Please be aware that Prometheus itself uses content negotiation to decide how to ingest metrics, and underscore escaping might be applied even though this exporter is configured to keep UTF-8 character. For more details, read [Prometheus' Content Negotiation documentation](https://prometheus.io/docs/instrumenting/content_negotiation/).
+Optionally, users can set different `translation_strategy` options to control how metrics are exposed. Please be aware that Prometheus itself uses content negotiation to decide how to ingest metrics, and underscore escaping might be applied even though this exporter is configured to keep UTF-8 characters. For more details, read [Prometheus' Content Negotiation documentation](https://prometheus.io/docs/instrumenting/content_negotiation/).
 
 ## Setting resource attributes as metric labels
 
