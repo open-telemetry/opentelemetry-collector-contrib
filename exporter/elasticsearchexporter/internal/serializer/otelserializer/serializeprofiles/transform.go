@@ -292,7 +292,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 
 		frameTypeStr, err := getStringFromAttribute(dic, location, "profile.frame.type")
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, fmt.Errorf("profile.frame.type: %w", err)
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
@@ -384,8 +384,7 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 		}
 	}
 
-	return "", fmt.Errorf("failed to get '%s' from indices %v: %w",
-		attrKey, record.AttributeIndices().AsRaw(), errMissingAttribute)
+	return "", errMissingAttribute
 }
 
 // getBuildID returns the Build ID for the given mapping. It checks for both
