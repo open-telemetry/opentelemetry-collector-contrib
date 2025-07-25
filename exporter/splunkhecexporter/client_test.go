@@ -1611,7 +1611,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 
 	err := c.pushLogData(context.Background(), logs)
 
-	assert.Error(t, err, "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
+	assert.Error(t, err, "Permanent error: unsupported value: +Inf")
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
