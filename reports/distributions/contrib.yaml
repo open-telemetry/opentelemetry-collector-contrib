@@ -202,6 +202,7 @@ components:
         - receiver_creator
         - redis
         - riak
+        - saphana
         - sapm
         - signalfx
         - skywalking
