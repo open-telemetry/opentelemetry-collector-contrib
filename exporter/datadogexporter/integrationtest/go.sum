@@ -217,8 +217,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.67.0 h1:as8nOTMEeifcLCeHN+o
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.67.0/go.mod h1:2l1nTFRygeIQkYr8E1tHuO/ZMjxPt0VgJ1wW14F2Fb4=
 github.com/DataDog/datadog-agent/pkg/version v0.68.0 h1:O9K/SxuDrKJp+juA724SS1STQxw7meylHWTHjlHs+rM=
 github.com/DataDog/datadog-agent/pkg/version v0.68.0/go.mod h1:zpRXbtsHTgxP3vMyL6hsKQt/c590KDDaFtDQqPPEezo=
-github.com/DataDog/datadog-api-client-go/v2 v2.42.0 h1:0L03LqChbOf7IaaiBUZpXi1Ss6PseGGhQEQrNqD9nU8=
-github.com/DataDog/datadog-api-client-go/v2 v2.42.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.43.0 h1:HiRaKLfMe9qnoZ1r6Gm0dHg30i9wi1YqdYPVJ8/Fkgc=
+github.com/DataDog/datadog-api-client-go/v2 v2.43.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEUqFvRDw=
 github.com/DataDog/datadog-go/v5 v5.6.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 h1:RoH7VLzTnxHEugRPIgnGlxwDFszFGI7b3WZZUtWuPRM=
@@ -235,10 +235,10 @@ github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1 h1:La4jmC3
 github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1/go.mod h1:7g86HsKmsUkON9d8LfiPZRZiS1+ucuvVB3SEwPuuF3c=
 github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.29.1 h1:NqX7omAjyRNL/enAnOWWzICfKgf3yog2eNCBQ5zDhdI=
 github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.29.1/go.mod h1:xQ8SuoIm/0lZcUeotR9caLqF5vFp76Dy1mNgn0yBWxs=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1 h1:RoHver8/fv4qKZtmb11TJ/zcOMd0SqOKT8H9ZQIjjPA=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1/go.mod h1:yN8VBQrExGN/nbIpn8E2jrMJn94e69mnq8a5PDCKY/g=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.29.1 h1:tReynpBu9BjMgzkjTtnbacA+0E8SxQLVLma+vpP7NjA=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.29.1/go.mod h1:eDQbpGqM/DDRPTSgcr0jG4ELFKbBN9m61vh8tmhJJbw=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.30.0 h1:b71BcFwBz8QiUwey9f/poQ5gRb8JJdyWpQb2ig5I+9M=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.30.0/go.mod h1:A3oj/VbBPuJ0ssrZS3B7hv0IuF7hy854TQ2XMjHwPnw=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.30.0 h1:D6rFXEPrpECmt2Ytx3QAzeUbNGtFcxd0G3Nqgac5BCU=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.30.0/go.mod h1:YAiCi5iX8Nt8xKDRdyHf6yp+kUccURT8TgVK7llX3p8=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1 h1:09ZcUlY2cnvs3cypm1TaG8geVDairCSYoc3uIkg4tvk=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1/go.mod h1:g+Otgp3EZTMXAy54cRHZ9YqjjxA0el1BU2lf5g5VThA=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.1 h1:SEbgPBj9d30CLV6pg4d2K5uDxLEExPy2ozNoLCM5PTI=
@@ -247,8 +247,8 @@ github.com/DataDog/sketches-go v1.4.7 h1:eHs5/0i2Sdf20Zkj0udVFWuCrXGRFig2Dcfm5rt
 github.com/DataDog/sketches-go v1.4.7/go.mod h1:eAmQ/EBmtSO+nQp7IZMZVRPT4BQTmIc5RZQ+deGlTPM=
 github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 h1:PwqhnH1ln2EjGm9XZGUF4RTCwLt0Jt4cebbZBTe+BnA=
 github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4/go.mod h1:wDdUVJ2SHaMaPrCZrlRCObwkubsX8j5sme3LaR/SGTc=
-github.com/DataDog/zstd v1.5.6 h1:LbEglqepa/ipmmQJUDnSsfvA8e8IStVcGaFWDuxvGOY=
-github.com/DataDog/zstd v1.5.6/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
+github.com/DataDog/zstd v1.5.7 h1:ybO8RBeh29qrxIhCA9E8gKY6xfONU9T6G6aP9DTKfLE=
+github.com/DataDog/zstd v1.5.7/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/DataDog/zstd_0 v0.0.0-20210310093942-586c1286621f h1:5Vuo4niPKFkfwW55jV4vY0ih3VQ9RaQqeqY67fvRn8A=
 github.com/DataDog/zstd_0 v0.0.0-20210310093942-586c1286621f/go.mod h1:oXfOhM/Kr8OvqS6tVqJwxPBornV0yrx3bc+l0BDr7PQ=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 h1:UQUsRi8WTzhZntp5313l+CHIAT95ojUI2lpP/ExlZa4=
@@ -1320,8 +1320,8 @@ google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55/go.mod h1:DMBHOl98
 google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c/go.mod h1:IbNlFCBrqXvoKpeg0TB2l7cyZUmoaFKYIwrEpbDKLA8=
 google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 h1:oWVWY3NzT7KJppx2UKhKmzPq4SRe0LdCijVRwvGeikY=
 google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822/go.mod h1:h3c4v36UTKzUiuaOKQ6gr3S+0hovBtUrXzTG/i3+XEc=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 h1:fc6jSaCT0vBduLYZHYrBBNY4dsWuvgyff9noRNDdBeE=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 h1:qJW29YvkiJmXOYMu5Tf8lyrTp3dOS+K4z6IixtLaCf8=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.21.0/go.mod h1:oYelfM1adQP15Ek0mdvEgi9Df8B9CZIaU1084ijfRaM=
 google.golang.org/grpc v1.23.0/go.mod h1:Y5yQAOtifL1yxbo5wqy6BxZv8vAUGQwXBOALyacEbxg=
