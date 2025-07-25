@@ -352,6 +352,8 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	// Get the partioner key from the context
+	// Decode the key to get the info
 	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
 		return err

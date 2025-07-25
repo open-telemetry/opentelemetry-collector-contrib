@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -663,4 +664,132 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestNewBulkIndexer(t *testing.T) {
+	for _, tc := range []struct {
+		name                  string
+		config                map[string]any
+		expectSyncBulkIndexer bool
+	}{
+		{
+			name: "batcher_enabled_unset",
+			config: map[string]any{
+				"batcher": map[string]any{
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
+			name: "batcher_enabled=true",
+			config: map[string]any{
+				"batcher": map[string]any{
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "batcher_enabled=true",
+			config: map[string]any{
+				"batcher": map[string]any{
+					"enabled":  false,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_enabled_without_batcher",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
+			name: "sending_queue__with_batch_enabled",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_disabled_but_batch_configured",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": false,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+				"batcher": map[string]any{
+					// no enabled set
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
+			name: "sending_queue_overrides_batcher",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+				"batcher": map[string]any{
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_without_batch_with_batcher_enabled",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+				},
+				"batcher": map[string]any{
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, err := elasticsearch.NewDefaultClient()
+			require.NoError(t, err)
+			cfg := createDefaultConfig()
+			cm := confmap.NewFromStringMap(tc.config)
+			require.NoError(t, cm.Unmarshal(cfg))
+
+			bi, err := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
+			require.NoError(t, err)
+			t.Cleanup(func() { bi.Close(context.Background()) })
+
+			_, ok := bi.(*syncBulkIndexer)
+			assert.Equal(t, tc.expectSyncBulkIndexer, ok)
+		})
+	}
 }
