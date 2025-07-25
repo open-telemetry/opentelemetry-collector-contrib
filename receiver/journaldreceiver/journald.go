@@ -6,7 +6,6 @@
 package journaldreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -16,9 +15,4 @@ import (
 // newFactoryAdapter creates a factory for journald receiver
 func newFactoryAdapter() receiver.Factory {
 	return adapter.NewFactory(receiverType{}, metadata.LogsStability)
-}
-
-// CreateDefaultConfig creates a config with type and version
-func (f receiverType) CreateDefaultConfig() component.Config {
-	return createDefaultConfig()
 }
