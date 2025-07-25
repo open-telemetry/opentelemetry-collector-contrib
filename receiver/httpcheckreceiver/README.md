@@ -44,7 +44,13 @@ Each target has the following properties:
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
-To enable TLS certificate collection for HTTPS endpoints, configure the metrics section:
+### Optional Metrics
+
+The receiver provides optional metrics that are disabled by default and can be enabled in the configuration:
+
+#### TLS Certificate Monitoring
+
+For HTTPS endpoints, TLS certificate metrics can be enabled:
 
 ```yaml
 receivers:
@@ -54,14 +60,51 @@ receivers:
         enabled: true
 ```
 
+#### Timing Breakdown Metrics
+
+For detailed performance analysis, timing breakdown metrics are available:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.dns_lookup.duration:
+        enabled: true
+      httpcheck.tcp_connection.duration:
+        enabled: true
+      httpcheck.tls_handshake.duration:
+        enabled: true
+      httpcheck.request.duration:
+        enabled: true
+      httpcheck.response.duration:
+        enabled: true
+```
+
+These metrics provide detailed timing information for different phases of the HTTP request:
+- `dns_lookup.duration`: Time spent performing DNS lookup
+- `tcp_connection.duration`: Time spent establishing TCP connection
+- `tls_handshake.duration`: Time spent performing TLS handshake (HTTPS only)
+- `request.duration`: Time spent sending the HTTP request
+- `response.duration`: Time spent receiving the HTTP response
+
 ### Example Configuration
 
 ```yaml
 receivers:
   httpcheck:
     collection_interval: 30s
-    # Enable TLS certificate monitoring (disabled by default)
+    # Optional: Enable timing breakdown metrics
     metrics:
+      httpcheck.dns_lookup.duration:
+        enabled: true
+      httpcheck.tcp_connection.duration:
+        enabled: true
+      httpcheck.tls_handshake.duration:
+        enabled: true
+      httpcheck.request.duration:
+        enabled: true
+      httpcheck.response.duration:
+        enabled: true
       httpcheck.tls.cert_remaining:
         enabled: true
     targets:
