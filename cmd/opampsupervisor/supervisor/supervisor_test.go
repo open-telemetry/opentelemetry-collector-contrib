@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -2006,4 +2008,103 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 			require.Equal(t, tc.expectedConfigFiles, supervisor.config.Agent.ConfigFiles)
 		})
 	}
+}
+
+func TestSupervisor_HealthCheckServer(t *testing.T) {
+	var err error
+	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+	s := &Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		persistentState:   &persistentState{InstanceID: testUUID},
+		cfgState:          &atomic.Value{},
+		doneChan:          make(chan struct{}),
+	}
+
+	healthyConfig := &configState{
+		mergedConfig:     "test-config",
+		configMapIsEmpty: false,
+	}
+	s.cfgState.Store(healthyConfig)
+
+	err = s.startHealthCheckServer()
+	require.NoError(t, err)
+	require.NotNil(t, s.healthCheckServer)
+
+	addr := s.healthCheckServer.Addr
+	require.NotEmpty(t, addr)
+
+	sendHealthCheckRequest := func() (*http.Response, error) {
+		return http.Get("http://localhost" + addr + "/health")
+	}
+
+	t.Run("Health check server startup", func(t *testing.T) {
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equalf(t, http.StatusOK, resp.StatusCode, "expected %d, got %d, response body: %s", http.StatusOK, resp.StatusCode, string(body))
+	})
+
+	t.Run("/health endpoint returns OK when healthy", func(t *testing.T) {
+		s.cfgState.Store(healthyConfig)
+		s.persistentState = &persistentState{InstanceID: testUUID}
+
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 412 when persistent state is nil", func(t *testing.T) {
+		originalState := s.persistentState
+		t.Cleanup(func() {
+			s.persistentState = originalState
+		})
+		s.persistentState = nil
+
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 412 when config state is not loaded", func(t *testing.T) {
+		originalCfgState := s.cfgState.Load()
+		t.Cleanup(func() {
+			s.cfgState.Store(originalCfgState)
+		})
+		s.cfgState = &atomic.Value{}
+
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 412 when config state is nil", func(t *testing.T) {
+		originalCfgState := s.cfgState.Load()
+		t.Cleanup(func() {
+			s.cfgState.Store(originalCfgState)
+		})
+		s.cfgState = &atomic.Value{}
+
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
+	})
+
+	t.Run("Health check server shutdown is handled gracefully in Supervisor.Shutdown", func(t *testing.T) {
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		s.Shutdown()
+
+		_, err = sendHealthCheckRequest()
+		assert.Error(t, err)
+	})
 }
