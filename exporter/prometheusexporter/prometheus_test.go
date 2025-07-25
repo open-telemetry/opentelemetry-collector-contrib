@@ -556,15 +556,15 @@ this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="
 				TranslationStrategy: noUTF8EscapingWithSuffixes,
 			},
 			extraHeaders: map[string]string{
-				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf8;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=allow-utf8;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
 target_info{instance="test-instance",job="test-service"} 1
 # HELP "this/one/there(where)_bytes_total" Extra ones
 # TYPE "this/one/there(where)_bytes_total" counter
-"this/one/there(where)_bytes_total"{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-"this/one/there(where)_bytes_total"{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+{"this/one/there(where)_bytes_total",arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+{"this/one/there(where)_bytes_total",arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
 `,
 		},
 		{
@@ -579,10 +579,10 @@ target_info{instance="test-instance",job="test-service"} 1
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
 target_info{instance="test-instance",job="test-service"} 1
-# HELP this_one_there_where_bytes_total Extra ones
-# TYPE this_one_there_where_bytes_total counter
-this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+# HELP this_one_there_where__bytes_total Extra ones
+# TYPE this_one_there_where__bytes_total counter
+this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
 `,
 		},
 		{
@@ -592,15 +592,15 @@ this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-s
 				TranslationStrategy: noTranslation,
 			},
 			extraHeaders: map[string]string{
-				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf8;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=allow-utf8;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
 target_info{instance="test-instance",job="test-service"} 1
 # HELP "this/one/there(where)" Extra ones
 # TYPE "this/one/there(where)" counter
-"this/one/there(where)"{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-"this/one/there(where)"{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+{"this/one/there(where)",arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+{"this/one/there(where)",arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
 `,
 		},
 		{
