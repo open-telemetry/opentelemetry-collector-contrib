@@ -19,8 +19,10 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/golang-jwt/jwt/v5"
+	// "github.com/sanity-io/litter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 type MockOAuthProvider struct {
@@ -39,7 +41,10 @@ func (*MockOAuthProvider) Name() string {
 }
 
 func TestOIDCProvider_GetToken_Success(t *testing.T) {
-	clientID := "mock-client-id"
+	const clientID = "mock-client-id"
+	const timeOutSecs = 60
+	const scope = "mock-scope"
+
 	secretFile, err := k8sSecretFile()
 	assert.NoError(t, err)
 
@@ -48,21 +53,34 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 
 	oidcServerQuit := make(chan any)
 	go func() {
-		oidcServer(oidcServerQuit, clientID, string(clientSecret), 10)
+		oidcServer(oidcServerQuit, clientID, string(clientSecret), timeOutSecs)
 	}()
 	defer func() {
 		oidcServerQuit <- true
 	}()
 
-	time.Sleep(100 * time.Millisecond) // wait for OIDC server to fully start
+	time.Sleep(50 * time.Millisecond) // wait for OIDC server to fully start
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{"mock-scope"}, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{scope}, 0)
 
-	token, err := oidcProvider.Token()
+	saramaToken, err := oidcProvider.Token()
 	require.NoError(t, err)
-	assert.NotNil(t, token)
-	assert.NotEmpty(t, token.Token)
+	assert.NotNil(t, saramaToken)
+	assert.NotEmpty(t, saramaToken.Token)
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	tokenObj, err := parser.Parse(saramaToken.Token, func(token *jwt.Token) (any, error) {
+		return publicKey, nil
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, tokenObj)
+	claims := tokenObj.Claims.(jwt.MapClaims)
+	assert.Equal(t, clientID, claims["client_id"])
+	assert.Equal(t, scope, claims["scope"])
+
+	assert.WithinDuration(t, time.Now(), time.Unix(int64(claims["iat"].(float64)), 0), 2*time.Second)
+	assert.WithinDuration(t, time.Now().Add(timeOutSecs*time.Second), time.Unix(int64(claims["exp"].(float64)), 0), 2*time.Second)
 }
 
 // func TestOIDCProvider_GetToken_Error(t *testing.T) {
@@ -190,13 +208,6 @@ type TokenRequest struct {
 	Scope        string `json:"scope"`
 }
 
-type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"`
-	Scope       string `json:"scope,omitempty"`
-}
-
 type ErrorResponse struct {
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description,omitempty"`
@@ -281,7 +292,6 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Simple client validation (in production, use proper authentication)
 	if !validateClient(submittedClientID, submittedClientSecret) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -295,7 +305,6 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT token
 	token, err := generateJWTToken(submittedClientID, scope)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -310,12 +319,17 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := TokenResponse{
+	// log.Printf("tokenHandler(): tokenExpireSecs = %v", tokenExpireSecs)
+
+	response := oauth2.Token{
 		AccessToken: token,
 		TokenType:   "Bearer",
-		ExpiresIn:   tokenExpireSecs,
-		Scope:       scope,
+		// Note that `expiry` is not an official field in the OIDC or OAuth2 specs
+		Expiry:    time.Now().Add(time.Duration(tokenExpireSecs) * time.Second),
+		ExpiresIn: int64(tokenExpireSecs),
 	}
+
+	// log.Printf("SERVER tokenHandler(): response token = %s\n", DumpOauth2Token(&response))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -370,7 +384,7 @@ func oidcServer(ch <-chan any, cid, csecret string, accessTTLsecs int) {
 	}
 
 	go func() {
-		fmt.Printf("OIDC Mock Server starting on :%d\n", PORT)
+		fmt.Printf("OIDC Mock Server starting\n")
 		err := s.ListenAndServe()
 		if err != nil {
 			log.Fatalf("could not start OIDC server: %v", err)

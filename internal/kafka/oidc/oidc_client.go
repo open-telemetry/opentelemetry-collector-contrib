@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/sanity-io/litter"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -94,10 +93,19 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
 
-	log.Print(fmt.Sprintf("oauthTok = %s", litter.Sdump(oauthTok)))
-	expiresIn := time.Duration(oauthTok.ExpiresIn) * time.Second
+	// log.Printf("CLIENT updateToken(): oauthTok = %s", DumpOauth2Token(oauthTok))
+
+	// oauth2.Token() in golang.org/x/oauth2 v0.30.0 appears not to populate the `ExpiresIn` field(?) from
+	// the server response.  The Expiry/`expiry` field is not standard in the OIDC or Oauth2 specs.
+	var expiresIn int64
+	if oauthTok.ExpiresIn != 0 {
+		expiresIn = oauthTok.ExpiresIn
+	} else {
+		expiresIn = (oauthTok.Expiry.UnixMilli() - time.Now().UnixMilli()) / 1000
+	}
+
 	p.cachedToken = oauthTok
-	p.tokenExpiry = now.Add(expiresIn)
+	p.tokenExpiry = now.Add(time.Duration(expiresIn) * time.Second)
 	p.lastRefreshTime = now
 	// log.Printf("Token refreshed for %s, will expire after %s at %s", p.ClientID,
 	// expiresIn.String(), p.tokenExpiry.String())
@@ -153,4 +161,10 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 			}
 		}()
 	})
+}
+
+func DumpOauth2Token(tok *oauth2.Token) string {
+	return fmt.Sprintf("\nAccessToken: %s...%s\nTokenType: %s\nRefreshToken: %s\nExpiry: %s\nExpiresIn: %d\n",
+		tok.AccessToken[0:8], tok.AccessToken[len(tok.AccessToken)-8:], tok.TokenType,
+		tok.RefreshToken, tok.Expiry.Format(time.RFC3339), tok.ExpiresIn)
 }
