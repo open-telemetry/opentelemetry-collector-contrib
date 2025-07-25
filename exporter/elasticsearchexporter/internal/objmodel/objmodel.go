@@ -196,8 +196,7 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 
 // AddEvents converts and adds span events to the document.
 func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
-	for i := 0; i < events.Len(); i++ {
-		e := events.At(i)
+	for _, e := range events.All() {
 		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
 		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
 	}
@@ -210,8 +209,7 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 	}
 
 	linkValues := make([]Value, links.Len())
-	for i := 0; i < links.Len(); i++ {
-		link := links.At(i)
+	for i, link := range links.All() {
 		linkObj := Document{}
 		linkObj.AddTraceID("trace_id", link.TraceID())
 		linkObj.AddSpanID("span_id", link.SpanID())
@@ -573,8 +571,8 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 	}
 
 	values := make([]Value, aa.Len())
-	for i := 0; i < aa.Len(); i++ {
-		values[i] = ValueFromAttribute(aa.At(i))
+	for i, a := range aa.All() {
+		values[i] = ValueFromAttribute(a)
 	}
 	return values
 }
