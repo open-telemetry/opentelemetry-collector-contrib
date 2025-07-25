@@ -23,13 +23,11 @@ func TestDefaultConfig(t *testing.T) {
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
-	includeInitialState := true
 	assert.Equal(t, &Config{
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 		ErrorMode:          PropagateError,
-		IncludeInitialState: &includeInitialState,
 	}, rCfg)
 }
 

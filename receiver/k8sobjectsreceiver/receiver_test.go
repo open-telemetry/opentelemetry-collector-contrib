@@ -73,8 +73,7 @@ func TestErrorModes(t *testing.T) {
 			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 			rCfg.makeDiscoveryClient = getMockDiscoveryClient
 			rCfg.ErrorMode = tt.errorMode
-			includeInitialState := false
-			rCfg.IncludeInitialState = &includeInitialState
+			// include_initial_state defaults to false, no override needed
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: tt.objectName,
@@ -116,8 +115,6 @@ func TestNewReceiver(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-	includeInitialState := false
-	rCfg.IncludeInitialState = &includeInitialState
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -157,9 +154,6 @@ func TestPullObject(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-	includeInitialState := false
-	rCfg.IncludeInitialState = &includeInitialState
-
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:          "pods",
@@ -198,9 +192,6 @@ func TestWatchObject(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-	includeInitialState := false
-	rCfg.IncludeInitialState = &includeInitialState
-
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
@@ -274,9 +265,9 @@ func TestIncludeInitialState(t *testing.T) {
 			expectedWatchLogs:   1, // 1 new pod created during watch
 		},
 		{
-			desc:                "include_initial_state nil defaults to true",
+			desc:                "include_initial_state nil defaults to false",
 			includeInitialState: nil,
-			expectedInitialLogs: 2, // 2 pods created initially
+			expectedInitialLogs: 0, // default is false now
 			expectedWatchLogs:   1, // 1 new pod created during watch
 		},
 	}
@@ -378,6 +369,7 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	includeInitialState := true
 	rCfg.IncludeInitialState = &includeInitialState
+	rCfg.ErrorMode = PropagateError
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
@@ -409,9 +401,6 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-	includeInitialState := false
-	rCfg.IncludeInitialState = &includeInitialState
-
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
@@ -463,8 +452,6 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-	includeInitialState := false
-	rCfg.IncludeInitialState = &includeInitialState
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",

@@ -1,7 +1,7 @@
 receivers:
   k8sobjects:
     error_mode: ignore  # Can be "propagate", "ignore", or "silent"
-    include_initial_state: true  # Send initial state as Added events before watching starts (default: true for watch mode)
+    include_initial_state: true  # Send initial state as Added events before watching starts (false by default)
     objects:
       - name: pods
         mode: watch

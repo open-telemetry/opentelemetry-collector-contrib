@@ -48,6 +48,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
   - `propagate` will propagate the error to the collector as an Error.
   - `ignore` will log and ignore the error and continue.
   - `silent` will ignore the error and continue without logging.
+- `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
@@ -246,4 +247,3 @@ If receiver returns error similar to below, make sure that resource is added to 
 ```
 {"kind": "receiver", "name": "k8sobjects", "pipeline": "logs", "resource": "events.k8s.io/v1, Resource=events", "error": "unknown"}
 ```
-

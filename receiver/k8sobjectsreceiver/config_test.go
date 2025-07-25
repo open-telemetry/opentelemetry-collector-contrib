@@ -253,10 +253,8 @@ func TestDeepCopy(t *testing.T) {
 
 func TestCreateDefaultConfigIncludeInitialState(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-
-	// Verify that IncludeInitialState defaults to true
-	assert.NotNil(t, cfg.IncludeInitialState)
-	assert.True(t, *cfg.IncludeInitialState)
+	// Verify that IncludeInitialState defaults to nil/false
+	assert.Nil(t, cfg.IncludeInitialState)
 }
 
 func TestConfigValidationIncludeInitialState(t *testing.T) {
@@ -308,7 +306,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 			expectedErr: "include_initial_state can only be used with watch mode",
 		},
 		{
-			desc: "include_initial_state nil with watch mode is valid (will be set to true)",
+			desc: "include_initial_state nil with watch mode is valid (defaults to false)",
 			cfg: &Config{
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
