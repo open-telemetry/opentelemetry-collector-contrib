@@ -58,6 +58,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
 				Topic: "spans",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
@@ -78,6 +82,10 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
 					Topic:    "legacy_topic",
 					Encoding: "otlp_proto",
 				},
@@ -102,6 +110,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: TopicEncodingConfig{
 					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
 					Encoding: "legacy_encoding",
 				},
 				Encoding: "legacy_encoding",
@@ -151,6 +163,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "otlp_spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,
@@ -180,6 +196,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: TopicEncodingConfig{
 					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
 					Encoding: "otlp_proto",
 				},
 				ErrorBackOff: configretry.BackOffConfig{

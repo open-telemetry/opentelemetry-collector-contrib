@@ -27,6 +27,9 @@ type Config struct {
 	// Traces holds configuration about how traces should be consumed.
 	Traces TopicEncodingConfig `mapstructure:"traces"`
 
+	// Profiles holds configuration about how profiles should be consumed.
+	Profiles TopicEncodingConfig `mapstructure:"profiles"`
+
 	// Topic holds the name of the Kafka topic from which to consume data.
 	//
 	// Topic has no default. If explicitly specified, it will take precedence
@@ -77,6 +80,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		if zeroConfig.Traces.Topic == "" {
 			c.Traces.Topic = c.Topic
 		}
+		if zeroConfig.Profiles.Topic == "" {
+			c.Profiles.Topic = c.Topic
+		}
 	}
 	if c.Encoding != "" {
 		if zeroConfig.Logs.Encoding == "" {
@@ -87,6 +93,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 		if zeroConfig.Traces.Encoding == "" {
 			c.Traces.Encoding = c.Encoding
+		}
+		if zeroConfig.Profiles.Encoding == "" {
+			c.Profiles.Encoding = c.Encoding
 		}
 	}
 	return conf.Unmarshal(c)
@@ -101,6 +110,7 @@ type TopicEncodingConfig struct {
 	//  - "otlp_spans" for traces
 	//  - "otlp_metrics" for metrics
 	//  - "otlp_logs" for logs
+	//  - "otlp_profiles" for profiles
 	Topic string `mapstructure:"topic"`
 
 	// Encoding holds the expected encoding of messages for the signal type

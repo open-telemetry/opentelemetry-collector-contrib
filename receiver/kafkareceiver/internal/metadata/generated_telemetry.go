@@ -39,6 +39,7 @@ type TelemetryBuilder struct {
 	KafkaReceiverPartitionStart              metric.Int64Counter
 	KafkaReceiverUnmarshalFailedLogRecords   metric.Int64Counter
 	KafkaReceiverUnmarshalFailedMetricPoints metric.Int64Counter
+	KafkaReceiverUnmarshalFailedProfiles     metric.Int64Counter
 	KafkaReceiverUnmarshalFailedSpans        metric.Int64Counter
 }
 
@@ -146,6 +147,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.KafkaReceiverUnmarshalFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_kafka_receiver_unmarshal_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be unmarshaled"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.KafkaReceiverUnmarshalFailedProfiles, err = builder.meter.Int64Counter(
+		"otelcol_kafka_receiver_unmarshal_failed_profiles",
+		metric.WithDescription("Number of profiles failed to be unmarshaled"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
