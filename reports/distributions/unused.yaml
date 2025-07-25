@@ -1,0 +1,42 @@
+name: unused
+url: ""
+maintainers: []
+components:
+    cmd:
+        - codecovgen
+        - golden
+        - opampsupervisor
+        - otelcontribcol
+        - oteltestbedcol
+        - telemetrygen
+    exporter:
+        - alertmanager
+        - sematext
+    extension:
+        - avro_log_encoding
+        - cfgarden_observer
+        - googleclientauth
+        - healthcheckv2
+        - jaeger_encoding
+        - json_log_encoding
+        - otlp_encoding
+        - remotetap
+        - skywalking_encoding
+        - solarwindsapmsettings
+        - sumologic
+        - zipkin_encoding
+    processor:
+        - coralogix
+        - dnslookup
+        - dynatracedetector
+        - logstransform
+        - schema
+    receiver:
+        - awscloudwatchmetrics
+        - gitlab
+        - huaweicloudcesreceiver
+        - k8slog
+        - osquery
+        - pprof
+        - prometheusremotewrite
+        - systemd
