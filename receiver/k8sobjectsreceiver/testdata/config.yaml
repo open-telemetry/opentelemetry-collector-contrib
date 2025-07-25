@@ -1,4 +1,5 @@
 k8sobjects:
+  include_initial_state: false
   objects:
     - name: pods
       mode: pull
@@ -11,6 +12,7 @@ k8sobjects:
       namespaces: [default]
       exclude_watch_type: [DELETED]
 k8sobjects/pull_with_resource:
+  include_initial_state: false
   objects:
     - name: pods
       mode: pull
@@ -52,6 +54,7 @@ k8sobjects/invalid_resource:
     - name: fake_resource
       mode: watch
 k8sobjects/exclude_deleted_with_pull:
+  include_initial_state: false
   objects:
     - name: events
       mode: pull

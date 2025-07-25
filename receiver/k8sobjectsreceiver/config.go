@@ -92,7 +92,6 @@ func (c *Config) Validate() error {
 			return errors.New("the Exclude config can only be used with watch mode")
 		}
 
-		// Validate that IncludeInitialState is only used with watch mode
 		if object.Mode == PullMode && c.IncludeInitialState != nil && *c.IncludeInitialState {
 			return errors.New("include_initial_state can only be used with watch mode")
 		}

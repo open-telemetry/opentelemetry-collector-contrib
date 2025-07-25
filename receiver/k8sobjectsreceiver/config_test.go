@@ -250,3 +250,85 @@ func TestDeepCopy(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateDefaultConfigIncludeInitialState(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	// Verify that IncludeInitialState defaults to true
+	assert.NotNil(t, cfg.IncludeInitialState)
+	assert.True(t, *cfg.IncludeInitialState)
+}
+
+func TestConfigValidationIncludeInitialState(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			desc: "include_initial_state true with watch mode is valid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: func() *bool { b := true; return &b }(),
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+		{
+			desc: "include_initial_state false with watch mode is valid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: func() *bool { b := false; return &b }(),
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+		{
+			desc: "include_initial_state true with pull mode is invalid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: func() *bool { b := true; return &b }(),
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: PullMode,
+					},
+				},
+			},
+			expectedErr: "include_initial_state can only be used with watch mode",
+		},
+		{
+			desc: "include_initial_state nil with watch mode is valid (will be set to true)",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
