@@ -39,11 +39,9 @@ func NewFactory() receiver.Factory {
 }
 
 type Config struct {
-	fileconsumer.Config     `mapstructure:",squash"`
-	StorageID               *component.ID `mapstructure:"storage"`
-	ReplayFile              bool          `mapstructure:"replay_file"`
-	IncludeFileRecordNumber bool          `mapstructure:"include_file_record_number"`
-	IncludeFileRecordOffset bool          `mapstructure:"include_file_record_offset"`
+	fileconsumer.Config `mapstructure:",squash"`
+	StorageID           *component.ID `mapstructure:"storage"`
+	ReplayFile          bool          `mapstructure:"replay_file"`
 }
 
 func createDefaultConfig() component.Config {
@@ -81,10 +79,6 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-
-	// Pass offset configuration to fileconsumer
-	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
-	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
 
 	// Capture config values to avoid race conditions in goroutines
 	includeOffset := cfg.IncludeFileRecordOffset
@@ -150,10 +144,6 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	}
 	cfg := configuration.(*Config)
 
-	// Pass offset configuration to fileconsumer
-	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
-	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-
 	// Capture config values to avoid race conditions in goroutines
 	includeOffset := cfg.IncludeFileRecordOffset
 	includeRecordNumber := cfg.IncludeFileRecordNumber
@@ -217,10 +207,6 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	}
 	cfg := configuration.(*Config)
 
-	// Pass offset configuration to fileconsumer
-	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
-	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-
 	// Capture config values to avoid race conditions in goroutines
 	includeOffset := cfg.IncludeFileRecordOffset
 	includeRecordNumber := cfg.IncludeFileRecordNumber
@@ -276,10 +262,6 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	cfg := configuration.(*Config)
 
-	// Pass offset configuration to fileconsumer
-	cfg.Config.IncludeFileRecordNumber = cfg.IncludeFileRecordNumber
-	cfg.Config.IncludeFileRecordOffset = cfg.IncludeFileRecordOffset
-
 	// Capture config values to avoid race conditions in goroutines
 	includeOffset := cfg.IncludeFileRecordOffset
 	includeRecordNumber := cfg.IncludeFileRecordNumber
@@ -290,7 +272,6 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	}
 	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, _ map[string]any, recordNum int64, offsets []int64) error {
 		for i, token := range tokens {
-			// avoiding using shared variable to fix race condition issue
 			p, unmarshalErr := profilesUnmarshaler.UnmarshalProfiles(token)
 			if unmarshalErr != nil {
 				// TODO: Add proper error handling

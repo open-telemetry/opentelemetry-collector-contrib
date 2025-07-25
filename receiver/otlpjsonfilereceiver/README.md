@@ -41,92 +41,14 @@ receivers:
       - "/var/log/*.log"
     exclude:
       - "/var/log/example.log"
-```
-
-## Offset Support (Optional)
-
-The OTLP JSON File Receiver supports optional file offset tracking for enhanced data lineage and debugging capabilities. **By default, offset tracking is disabled to maintain backward compatibility.**
-
-### Configuration
-
-To enable offset tracking, add these configuration options:
-
-```yaml
-receivers:
-  otlpjsonfile:
-    include:
-      - "/var/log/*.log"
-    # Enable offset tracking (optional)
-    include_file_record_offset: true    # Add byte offset information
-    include_file_record_number: true    # Add record number information
-```
-
-### Offset Attributes
-
-When enabled, the following attributes are automatically added to each record:
-
-- **`log.file.record_offset`**: The byte offset in the file where this specific record starts
-- **`log.file.record_number`**: A sequential number indicating the order in which records were processed from the file
-
-These attributes are added to:
-- **Logs**: Added to each `LogRecord`'s attributes
-- **Traces**: Added to each `Span`'s attributes
-- **Metrics**: Added to each `Metric`'s metadata
-- **Profiles**: Added to each `ResourceProfile`'s resource attributes
-
-### Restart Behavior
-
-The receiver uses the underlying fileconsumer infrastructure which provides:
-
-- **Automatic restart recovery**: When the collector restarts, it resumes reading from the last known offset
-- **Persistent state**: Offset information is stored using the configured storage extension
-- **File rotation handling**: Seamlessly handles log rotation, file moves, and deletions
-- **No data loss**: Ensures all data is processed exactly once, even across restarts
-
-### Configuration with Storage
-
-To enable persistent offset tracking across restarts, configure a storage extension:
-
-```yaml
-extensions:
-  file_storage:
-    directory: ./storage
-
-receivers:
-  otlpjsonfile:
-    include:
-      - "/var/log/*.log"
-    storage: file_storage
-    # Enable offset tracking
+    # Optional: add file record attributes  
     include_file_record_offset: true
     include_file_record_number: true
-
-service:
-  extensions: [file_storage]
-  pipelines:
-    logs:
-      receivers: [otlpjsonfile]
 ```
 
-Without a storage extension, the receiver will track offsets in memory but will restart from the beginning when the collector restarts.
+The following settings are available:
 
-### Example Output
-
-With offset support enabled, your telemetry data will include offset information:
-
-```json
-{
-  "resourceLogs": [{
-    "scopeLogs": [{
-      "logRecords": [{
-        "body": "example log message",
-        "attributes": {
-          "log.file.record_offset": 0,
-          "log.file.record_number": 1,
-          "other.attribute": "value"
-        }
-      }]
-    }]
-  }]
-}
-```
+- `include`: A list of file glob patterns that match the file paths to be read.
+- `exclude`: A list of file glob patterns to exclude from reading.
+- `include_file_record_number` (default: `false`): Whether to add the record number in the file as the attribute `log.file.record_number`.
+- `include_file_record_offset` (default: `false`): Whether to add the record offset in the file as the attribute `log.file.record_offset`.
