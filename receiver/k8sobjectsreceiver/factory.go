@@ -26,11 +26,13 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	includeInitialState := true
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
-		ErrorMode: PropagateError,
+		ErrorMode:          PropagateError,
+		IncludeInitialState: &includeInitialState,
 	}
 }
 
