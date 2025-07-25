@@ -28,9 +28,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -129,9 +126,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -158,9 +152,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -213,9 +204,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -242,9 +230,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -271,9 +256,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -300,9 +282,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -384,9 +363,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -471,9 +447,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -500,9 +473,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -584,9 +554,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -613,9 +580,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -769,9 +733,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -798,9 +759,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
@@ -827,9 +785,6 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                    - key: tags_tagName2
-                      value:
-                        stringValue: tagValue2
                     - key: type
                       value:
                         stringValue: type1
