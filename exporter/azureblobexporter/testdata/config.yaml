@@ -36,6 +36,17 @@ azureblob/conn-string:
     metrics: "test"
     logs: "test"
     traces: "test"
+azureblob/wif:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "workload_identity"
+    client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+    tenant_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+    federated_token_file: "/path/to/federated/token/file"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
 azureblob/err1:
   auth:
     type: "system_managed_identity"
@@ -57,3 +68,9 @@ azureblob/err5:
   auth:
     type: "system_managed_identity"
   format: "custom"
+azureblob/err6:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "workload_identity"
+    client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+    tenant_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
