@@ -2035,7 +2035,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	require.NotEmpty(t, addr)
 
 	sendHealthCheckRequest := func() (*http.Response, error) {
-		return http.Get("http://localhost" + addr + "/health")
+		return http.Get("http://localhost:23233/health")
 	}
 
 	t.Run("Health check server startup", func(t *testing.T) {

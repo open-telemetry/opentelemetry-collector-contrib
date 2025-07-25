@@ -698,11 +698,6 @@ func (s *Supervisor) startOpAMPClient() error {
 }
 
 func (s *Supervisor) startHealthCheckServer() error {
-	port, err := s.findRandomPort()
-	if err != nil {
-		return fmt.Errorf("failed to find random port for health check server: %w", err)
-	}
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if s.persistentState == nil {
@@ -726,13 +721,14 @@ func (s *Supervisor) startHealthCheckServer() error {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	healthCheckServerPort := 23233
 	s.healthCheckServer = &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
+		Addr:    fmt.Sprintf(":%d", healthCheckServerPort),
 		Handler: mux,
 	}
 
 	go func() {
-		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int("port", port))
+		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int("port", healthCheckServerPort))
 		if err := s.healthCheckServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
 		}
