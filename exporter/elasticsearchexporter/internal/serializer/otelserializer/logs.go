@@ -60,10 +60,9 @@ func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	case pcommon.ValueTypeSlice:
 		// output must be an array of objects due to ES limitations
 		// otherwise, wrap the array in an object
-		s := body.Slice()
 		allMaps := true
-		for i := 0; i < s.Len(); i++ {
-			if s.At(i).Type() != pcommon.ValueTypeMap {
+		for _, o := range body.Slice().All() {
+			if o.Type() != pcommon.ValueTypeMap {
 				allMaps = false
 			}
 		}

@@ -68,8 +68,7 @@ func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pco
 
 	values.EnsureCapacity(bucketCounts.Len())
 	counts.EnsureCapacity(bucketCounts.Len())
-	for i := 0; i < bucketCounts.Len(); i++ {
-		count := bucketCounts.At(i)
+	for i, count := range bucketCounts.All() {
 		if count == 0 {
 			continue
 		}
