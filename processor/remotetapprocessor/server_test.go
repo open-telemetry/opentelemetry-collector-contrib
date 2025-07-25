@@ -51,8 +51,8 @@ func TestSocketConnectionLogs(t *testing.T) {
 		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 107
-	}, 1*time.Second, 10*time.Millisecond, "received message")
-	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"}]}]}]}`, string(buf[0:107]))
+	}, 1*time.Second, 100*time.Millisecond, "received message")
+	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"}}]}]}]}`, string(buf[0:107]))
 
 	err = processor.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -87,7 +87,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 94
-	}, 1*time.Second, 10*time.Millisecond, "received message")
+	}, 1*time.Second, 100*time.Millisecond, "received message")
 	require.JSONEq(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
 
 	err = processor.Shutdown(context.Background())
@@ -123,7 +123,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 100
-	}, 1*time.Second, 10*time.Millisecond, "received message")
+	}, 1*time.Second, 100*time.Millisecond, "received message")
 	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
 
 	err = processor.Shutdown(context.Background())
