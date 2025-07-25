@@ -6,6 +6,7 @@ package matcher // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"time"
 
@@ -241,7 +242,7 @@ func (m Matcher) MatchFiles() ([]string, error) {
 
 	//topN will be 0 in case of orderingCriteria.sortBy is not provided.
 	//This means filteropts has only filtering and no sorting. In this case we should not filter topN files.
-	if m.topN > 0 {
+	if m.topN > 0 && os.Getenv("OTEL_K8S_AGENT") == "TRUE" {
 		files = files[:m.topN]
 	}
 
