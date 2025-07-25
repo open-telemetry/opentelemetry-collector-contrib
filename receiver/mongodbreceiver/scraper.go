@@ -217,7 +217,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		// Get explain plan for supported operations
 		explainPlan := ""
 		dbName := s.getDBFromNamespace(namespace)
-		if dbName != "" && len(command) > 0 && s.shouldExplainOperation(namespace, opType, command) {
+		if dbName != "" && len(command) > 0 && s.shouldExplainOperation(opType, command) {
 			plan, err := s.getExplainPlan(ctx, dbName, command)
 			if err != nil {
 				s.logger.Debug("Failed to get explain plan",
@@ -256,7 +256,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 }
 
 // shouldExplainOperation determines if we should try to get an explain plan for this operation
-func (s *mongodbScraper) shouldExplainOperation(namespace, opType string, command bson.M) bool {
+func (*mongodbScraper) shouldExplainOperation(opType string, command bson.M) bool {
 	// Skip operations that are not queries
 	if opType == "" || opType == "none" {
 		return false
@@ -354,17 +354,7 @@ func getValue[T any](doc bson.M, key string) T {
 	return zero
 }
 
-// getValueWithDefault extracts a value from a BSON document with a default fallback
-func getValueWithDefault[T any](doc bson.M, key string, defaultVal T) T {
-	if val, ok := doc[key]; ok {
-		if typedVal, ok := val.(T); ok {
-			return typedVal
-		}
-	}
-	return defaultVal
-}
-
-func (s *mongodbScraper) getDBFromNamespace(namespace string) string {
+func (*mongodbScraper) getDBFromNamespace(namespace string) string {
 	parts := strings.SplitN(namespace, ".", 2)
 	if len(parts) > 0 {
 		return parts[0]
@@ -377,7 +367,7 @@ func (s *mongodbScraper) getExplainPlan(ctx context.Context, dbname string, comm
 	// Create a clean copy of the command for explain
 	explainableCommand := s.prepareCommandForExplain(command)
 	if len(explainableCommand) == 0 {
-		return "", fmt.Errorf("command cannot be explained")
+		return "", errors.New("command cannot be explained")
 	}
 
 	explainCommand := bson.M{
@@ -405,7 +395,7 @@ func (s *mongodbScraper) getExplainPlan(ctx context.Context, dbname string, comm
 }
 
 // prepareCommandForExplain prepares a command to be explainable by removing
-func (s *mongodbScraper) prepareCommandForExplain(command bson.M) bson.M {
+func (*mongodbScraper) prepareCommandForExplain(command bson.M) bson.M {
 	explainableCommand := make(bson.M)
 
 	excludeKeys := map[string]bool{
@@ -428,7 +418,7 @@ func (s *mongodbScraper) prepareCommandForExplain(command bson.M) bson.M {
 }
 
 // cleanExplainPlan removes unnecessary keys from the explain plan result
-func (s *mongodbScraper) cleanExplainPlan(explainResult bson.M) bson.M {
+func (*mongodbScraper) cleanExplainPlan(explainResult bson.M) bson.M {
 	cleaned := make(bson.M)
 
 	// Keys to remove from explain plan result
@@ -453,26 +443,10 @@ func (s *mongodbScraper) cleanExplainPlan(explainResult bson.M) bson.M {
 	return cleaned
 }
 
-// serializeCommand converts a command to a string representation
-func (s *mongodbScraper) serializeCommand(command bson.M) string {
-	// Using json.Marshal for a more standard and readable format
-	data, err := json.Marshal(command)
-	if err != nil {
-		s.logger.Debug("Failed to serialize command", zap.Error(err))
-		// Fallback to BSON's extended JSON format if json.Marshal fails
-		data, err := bson.MarshalExtJSON(command, false, false)
-		if err != nil {
-			return command.String()
-		}
-		return string(data)
-	}
-	return string(data)
-}
-
 // obfuscateCommand removes sensitive data from commands
 func (s *mongodbScraper) obfuscateCommand(command bson.M) string {
 	// Parse the JSON statement back to a map for proper obfuscation
-	var commandCopied bson.M
+	commandCopied := make(bson.M)
 
 	keysToRemove := map[string]bool{
 		"comment":      true, // Comment field should not contribute to query signature
@@ -489,7 +463,7 @@ func (s *mongodbScraper) obfuscateCommand(command bson.M) string {
 }
 
 // obfuscateLiterals recursively obfuscates literal values while preserving structure
-func (s *mongodbScraper) obfuscateLiterals(value interface{}) interface{} {
+func (s *mongodbScraper) obfuscateLiterals(value any) any {
 	switch v := value.(type) {
 	case bson.M:
 		obfuscated := make(bson.M)
@@ -497,8 +471,8 @@ func (s *mongodbScraper) obfuscateLiterals(value interface{}) interface{} {
 			obfuscated[k] = s.obfuscateLiterals(val)
 		}
 		return obfuscated
-	case map[string]interface{}:
-		obfuscated := make(map[string]interface{})
+	case map[string]any:
+		obfuscated := make(map[string]any)
 		for k, val := range v {
 			obfuscated[k] = s.obfuscateLiterals(val)
 		}
@@ -509,8 +483,8 @@ func (s *mongodbScraper) obfuscateLiterals(value interface{}) interface{} {
 			obfuscated[i] = s.obfuscateLiterals(val)
 		}
 		return obfuscated
-	case []interface{}:
-		obfuscated := make([]interface{}, len(v))
+	case []any:
+		obfuscated := make([]any, len(v))
 		for i, val := range v {
 			obfuscated[i] = s.obfuscateLiterals(val)
 		}
@@ -525,7 +499,7 @@ func (s *mongodbScraper) obfuscateLiterals(value interface{}) interface{} {
 }
 
 // obfuscateExplainPlan obfuscates sensitive data in explain plans
-func (s *mongodbScraper) obfuscateExplainPlan(plan interface{}) interface{} {
+func (s *mongodbScraper) obfuscateExplainPlan(plan any) any {
 	switch p := plan.(type) {
 	case bson.M:
 		obfuscated := make(bson.M)
@@ -538,8 +512,8 @@ func (s *mongodbScraper) obfuscateExplainPlan(plan interface{}) interface{} {
 			}
 		}
 		return obfuscated
-	case map[string]interface{}:
-		obfuscated := make(map[string]interface{})
+	case map[string]any:
+		obfuscated := make(map[string]any)
 		for key, value := range p {
 			// Obfuscate specific fields that contain query predicates
 			if key == "filter" || key == "parsedQuery" || key == "indexBounds" {
@@ -555,8 +529,8 @@ func (s *mongodbScraper) obfuscateExplainPlan(plan interface{}) interface{} {
 			obfuscated[i] = s.obfuscateExplainPlan(value)
 		}
 		return obfuscated
-	case []interface{}:
-		obfuscated := make([]interface{}, len(p))
+	case []any:
+		obfuscated := make([]any, len(p))
 		for i, value := range p {
 			obfuscated[i] = s.obfuscateExplainPlan(value)
 		}
@@ -567,7 +541,7 @@ func (s *mongodbScraper) obfuscateExplainPlan(plan interface{}) interface{} {
 }
 
 // generateQuerySignature creates a unique signature for the query
-func (s *mongodbScraper) generateQuerySignature(obfuscatedStatement string) string {
+func (*mongodbScraper) generateQuerySignature(obfuscatedStatement string) string {
 	hash := sha256.Sum256([]byte(obfuscatedStatement))
 	return hex.EncodeToString(hash[:8]) // Use first 8 bytes for shorter signature
 }

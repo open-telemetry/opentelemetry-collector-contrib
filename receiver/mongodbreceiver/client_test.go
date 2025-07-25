@@ -86,7 +86,7 @@ func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M)
 	return result, args.Error(1)
 }
 
-func (fc *fakeClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
+func (*fakeClient) CurrentOp(_ context.Context) ([]bson.M, error) {
 	return nil, nil
 }
 

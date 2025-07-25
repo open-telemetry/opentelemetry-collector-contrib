@@ -7,16 +7,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 )
 
-var (
-	xmlPlanObfuscationAttrs = []string{
-		"StatementText",
-		"ConstValue",
-		"ScalarString",
-		"ParameterCompiledValue",
-	}
-	obfuscateSQLConfig = obfuscate.SQLConfig{DBMS: "mssql"}
-)
-
 type obfuscator obfuscate.Obfuscator
 
 func newObfuscator() *obfuscator {

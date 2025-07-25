@@ -462,8 +462,8 @@ func TestServerAddressAndPort(t *testing.T) {
 func Test_obfuscateExplainPlan(t *testing.T) {
 	tests := []struct {
 		name     string
-		plan     interface{}
-		expected interface{}
+		plan     any
+		expected any
 	}{
 		{
 			name: "simple explain plan with filter",
