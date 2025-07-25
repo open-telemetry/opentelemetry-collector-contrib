@@ -3,8 +3,8 @@ type: tinybird
 status:
   class: exporter
   stability:
-    development: [logs, metrics, traces]
-  distributions: []
+    alpha: [logs, metrics, traces]
+  distributions: [contrib]
   codeowners:
     active: [mx-psi, jordivilaseca, MoreraAlejandro]
 
