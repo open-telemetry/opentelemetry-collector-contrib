@@ -7,8 +7,9 @@ files=(
     bin/otelcontribcol_darwin_arm64
     bin/otelcontribcol_darwin_amd64
     bin/otelcontribcol_linux_arm64
-    bin/otelcontribcol_linux_ppc64le
     bin/otelcontribcol_linux_amd64
+    bin/otelcontribcol_linux_ppc64le
+    bin/otelcontribcol_linux_riscv64
     bin/otelcontribcol_linux_s390x
     bin/otelcontribcol_windows_amd64.exe
     # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
