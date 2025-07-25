@@ -94,6 +94,7 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	for _, s := range samples.All() {
 		joinedErr = errors.Join(joinedErr, encoder.AddObject("sample", ProfileSample{
 			s,
+			p.Profile,
 			p.Dictionary,
 		}))
 	}
@@ -130,23 +131,14 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 
 type ProfileSample struct {
 	pprofile.Sample
+	Profile    pprofile.Profile
 	Dictionary pprofile.ProfilesDictionary
-}
-
-type samples []sample
-
-func (ss samples) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
-	var joinedErr error
-	for _, s := range ss {
-		joinedErr = errors.Join(joinedErr, encoder.AppendObject(s))
-	}
-	return joinedErr
 }
 
 func (s ProfileSample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	var joinedErr error
 
-	locs, err := getLocations(s.Dictionary, s.LocationsStartIndex(), s.LocationsLength())
+	locs, err := getLocations(s.Dictionary, s.Profile.LocationIndices().AsRaw(), s.LocationsStartIndex(), s.LocationsLength())
 	joinedErr = errors.Join(joinedErr, err)
 	joinedErr = errors.Join(joinedErr, encoder.AddArray("locations", locs))
 

@@ -50,6 +50,17 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 								SpanID: pcommon.SpanID{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7},
 							},
 						},
+						{
+							Locations: []pprofiletest.Location{
+								{
+									Address: 0x43,
+								},
+							},
+							Value: []int64{74},
+							Attributes: []pprofiletest.Attribute{
+								{Key: "sample2", Value: "value2"},
+							},
+						},
 					},
 					Attributes: []pprofiletest.Attribute{{Key: "container-attr1", Value: "value1"}},
 					Comment:    []string{"comment1", "comment2"},
