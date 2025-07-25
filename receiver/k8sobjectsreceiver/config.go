@@ -59,9 +59,9 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects            []*K8sObjectsConfig `mapstructure:"objects"`
-	ErrorMode          ErrorMode           `mapstructure:"error_mode"`
-	IncludeInitialState *bool              `mapstructure:"include_initial_state"`
+	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
+	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
+	IncludeInitialState *bool               `mapstructure:"include_initial_state"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 

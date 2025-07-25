@@ -10,15 +10,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestErrorModes(t *testing.T) {
@@ -336,7 +338,7 @@ func TestIncludeInitialState(t *testing.T) {
 						for k := 0; k < sl.LogRecords().Len(); k++ {
 							record := sl.LogRecords().At(k)
 							body := record.Body()
-							assert.True(t, body.Type() == pcommon.ValueTypeMap)
+							assert.Equal(t, pcommon.ValueTypeMap, body.Type())
 
 							bodyMap := body.Map()
 							// Verify consistent structure: should have "type" and "object" fields
