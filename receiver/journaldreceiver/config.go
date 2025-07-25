@@ -51,3 +51,8 @@ type JournaldConfig struct {
 func (f receiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*JournaldConfig).InputConfig)
 }
+
+// CreateDefaultConfig creates a config with type and version
+func (f receiverType) CreateDefaultConfig() component.Config {
+	return createDefaultConfig()
+}
