@@ -62,6 +62,7 @@ components:
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
