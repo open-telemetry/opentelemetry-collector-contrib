@@ -2438,7 +2438,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	t.Run("profiles", func(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
 		// the metadata is picked up and an invalid mode is rejected.
-		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
+		exporter := newTestProfilesExporter(context.Background(), t, "https://testing.invalid", setAllowedMappingModes)
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
 			`invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
@@ -2560,7 +2560,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	return exp
 }
 
-func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xexporter.Profiles {
+func newTestProfilesExporter(ctx context.Context, t *testing.T, url string, fns ...func(*Config)) xexporter.Profiles {
 	f := NewFactory().(xexporter.Factory)
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
@@ -2568,13 +2568,13 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateProfiles(ctx, exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(ctx))
 	})
 	return exp
 }

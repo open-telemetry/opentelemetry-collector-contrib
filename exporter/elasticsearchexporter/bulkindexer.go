@@ -65,6 +65,7 @@ type bulkIndexerSession interface {
 const defaultMaxRetries = 2
 
 func newBulkIndexer(
+	ctx context.Context,
 	client esapi.Transport,
 	config *Config,
 	requireDataStream bool,
@@ -74,7 +75,7 @@ func newBulkIndexer(
 	if config.Batcher.enabledSet {
 		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
 	}
-	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
+	return newAsyncBulkIndexer(ctx, client, config, requireDataStream, tb, logger)
 }
 
 func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
@@ -238,6 +239,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 }
 
 func newAsyncBulkIndexer(
+	ctx context.Context,
 	client esapi.Transport,
 	config *Config,
 	requireDataStream bool,
@@ -271,10 +273,10 @@ func newAsyncBulkIndexer(
 			logger:                logger,
 			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
 		}
-		go func() {
+		go func(ctx context.Context) {
 			defer pool.wg.Done()
-			w.run()
-		}()
+			w.run(ctx)
+		}(ctx)
 	}
 	return pool, nil
 }
@@ -352,7 +354,7 @@ type asyncBulkIndexerWorker struct {
 	telemetryBuilder      *metadata.TelemetryBuilder
 }
 
-func (w *asyncBulkIndexerWorker) run() {
+func (w *asyncBulkIndexerWorker) run(ctx context.Context) {
 	flushTick := time.NewTicker(w.flushInterval)
 	defer flushTick.Stop()
 	for {
@@ -360,7 +362,7 @@ func (w *asyncBulkIndexerWorker) run() {
 		case item, ok := <-w.items:
 			// if channel is closed, flush and return
 			if !ok {
-				w.flush()
+				w.flush(ctx)
 				return
 			}
 
@@ -371,20 +373,18 @@ func (w *asyncBulkIndexerWorker) run() {
 			// flush bytes should operate on uncompressed length
 			// as Elasticsearch http.max_content_length measures uncompressed length.
 			if w.indexer.UncompressedLen() >= w.flushBytes {
-				w.flush()
+				w.flush(ctx)
 				flushTick.Reset(w.flushInterval)
 			}
 		case <-flushTick.C:
 			// bulk indexer needs to be flushed every flush interval because
 			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			w.flush()
+			w.flush(ctx)
 		}
 	}
 }
 
-func (w *asyncBulkIndexerWorker) flush() {
-	// TODO (lahsivjar): Should use proper context else client metadata will not be accessible
-	ctx := context.Background()
+func (w *asyncBulkIndexerWorker) flush(ctx context.Context) {
 	// ignore error as we they should be already logged and for async we don't propagate errors
 	_ = flushBulkIndexer(
 		ctx,
@@ -662,32 +662,32 @@ func (b *bulkIndexers) start(
 
 	for _, mode := range allowedMappingModes {
 		var bi bulkIndexer
-		bi, err = newBulkIndexer(esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
+		bi, err = newBulkIndexer(ctx, esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
 		if err != nil {
 			return err
 		}
 		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
 	}
 
-	profilingEvents, err := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger)
+	profilingEvents, err := newBulkIndexer(ctx, esClient, cfg, true, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}
 	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
 
-	profilingStackTraces, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
+	profilingStackTraces, err := newBulkIndexer(ctx, esClient, cfg, false, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}
 	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
 
-	profilingStackFrames, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
+	profilingStackFrames, err := newBulkIndexer(ctx, esClient, cfg, false, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}
 	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
 
-	profilingExecutables, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
+	profilingExecutables, err := newBulkIndexer(ctx, esClient, cfg, false, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}

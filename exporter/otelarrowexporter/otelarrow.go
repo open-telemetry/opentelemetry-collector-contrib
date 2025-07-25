@@ -135,7 +135,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 
 	if !e.config.Arrow.Disabled {
 		// Note this sets static outgoing context for all future stream requests.
-		ctx := e.enhanceContext(context.Background())
+		ctx = e.enhanceContext(ctx)
 
 		var perRPCCreds credentials.PerRPCCredentials
 		if e.config.Auth.HasValue() {

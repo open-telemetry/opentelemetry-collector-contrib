@@ -26,8 +26,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 	return &tracesExporter{logger: logger, cfg: cfg}
 }
 
-func initializeTraceKernel(cfg *Config) error {
-	ctx := context.Background()
+func initializeTraceKernel(ctx context.Context, cfg *Config) error {
 	cluster, err := newCluster(cfg)
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func parseCreateDatabaseSQL(cfg *Config) string {
 	return fmt.Sprintf(createDatabaseSQL, cfg.Keyspace, cfg.Replication.Class, cfg.Replication.ReplicationFactor)
 }
 
-func (e *tracesExporter) Start(_ context.Context, _ component.Host) error {
+func (e *tracesExporter) Start(ctx context.Context, _ component.Host) error {
 	cluster, err := newCluster(e.cfg)
 	if err != nil {
 		return err
@@ -94,7 +93,7 @@ func (e *tracesExporter) Start(_ context.Context, _ component.Host) error {
 		return err
 	}
 	e.client = session
-	initializeErr := initializeTraceKernel(e.cfg)
+	initializeErr := initializeTraceKernel(ctx, e.cfg)
 	return initializeErr
 }
 

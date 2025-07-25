@@ -75,7 +75,7 @@ func TestAsyncBulkIndexer_flushOnClose(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	runBulkIndexerOnce(t, &cfg, client)
+	runBulkIndexerOnce(context.Background(), t, &cfg, client)
 }
 
 func TestAsyncBulkIndexer_flush(t *testing.T) {
@@ -111,7 +111,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 				metadatatest.NewSettings(ct).TelemetrySettings,
 			)
 			require.NoError(t, err)
-			bulkIndexer, err := newAsyncBulkIndexer(client, &tt.config, false, tb, zap.NewNop())
+			bulkIndexer, err := newAsyncBulkIndexer(context.Background(), client, &tt.config, false, tb, zap.NewNop())
 			require.NoError(t, err)
 
 			session := bulkIndexer.StartSession(context.Background())
@@ -413,7 +413,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				metadatatest.NewSettings(ct).TelemetrySettings,
 			)
 			require.NoError(t, err)
-			bulkIndexer, err := newAsyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+			bulkIndexer, err := newAsyncBulkIndexer(context.Background(), esClient, &cfg, false, tb, zap.New(core))
 			require.NoError(t, err)
 			defer bulkIndexer.Close(context.Background())
 
@@ -523,7 +523,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			runBulkIndexerOnce(t, &tt.config, client)
+			runBulkIndexerOnce(context.Background(), t, &tt.config, client)
 
 			records := logObserver.AllUntimed()
 			require.Len(t, records, 1)
@@ -535,20 +535,20 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 	}
 }
 
-func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
+func runBulkIndexerOnce(ctx context.Context, t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
 	ct := componenttest.NewTelemetry()
 	tb, err := metadata.NewTelemetryBuilder(
 		metadatatest.NewSettings(ct).TelemetrySettings,
 	)
 	require.NoError(t, err)
-	bulkIndexer, err := newAsyncBulkIndexer(client, config, false, tb, zap.NewNop())
+	bulkIndexer, err := newAsyncBulkIndexer(ctx, client, config, false, tb, zap.NewNop())
 	require.NoError(t, err)
 
-	session := bulkIndexer.StartSession(context.Background())
-	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-	assert.NoError(t, session.Flush(context.Background()))
+	session := bulkIndexer.StartSession(ctx)
+	assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	assert.NoError(t, session.Flush(ctx))
 	session.End()
-	assert.NoError(t, bulkIndexer.Close(context.Background()))
+	assert.NoError(t, bulkIndexer.Close(ctx))
 	// Assert internal telemetry metrics
 	metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
 		{

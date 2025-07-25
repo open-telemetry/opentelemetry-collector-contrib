@@ -35,7 +35,7 @@ func getMetricsName(overrides map[string]string, metricName string) string {
 	return metricName
 }
 
-func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error, meter metric.Meter) *heartbeater {
+func newHeartbeater(ctx context.Context, config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error, meter metric.Meter) *heartbeater {
 	interval := config.Heartbeat.Interval
 	if interval == 0 {
 		return nil
@@ -82,7 +82,7 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 			case <-hbter.hbDoneChan:
 				return
 			case <-ticker.C:
-				err := hbter.sendHeartbeat(config, buildInfo, pushLogFn)
+				err := hbter.sendHeartbeat(ctx, config, buildInfo, pushLogFn)
 				if config.Telemetry.Enabled {
 					observe(heartbeatsSent, heartbeatsFailed, attrs, err)
 				}
@@ -96,8 +96,8 @@ func (h *heartbeater) shutdown() {
 	close(h.hbDoneChan)
 }
 
-func (*heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
-	return pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
+func (*heartbeater) sendHeartbeat(ctx context.Context, config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
+	return pushLogFn(ctx, generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
 }
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.

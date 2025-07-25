@@ -211,7 +211,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
 
-	prwe, err := newPRWExporter(cfg, set)
+	prwe, err := newPRWExporter(context.Background(), cfg, set)
 	assert.NoError(t, err)
 	assert.NotNil(t, prwe)
 	err = prwe.Start(context.Background(), componenttest.NewNopHost())
@@ -257,7 +257,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
 
-	prw, err := newPRWExporter(cfg, set)
+	prw, err := newPRWExporter(context.Background(), cfg, set)
 	require.NotNil(t, prw)
 	require.NoError(t, err)
 
@@ -329,7 +329,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
 
-	prw, err := newPRWExporter(cfg, set)
+	prw, err := newPRWExporter(context.Background(), cfg, set)
 	require.NotNil(t, prw)
 	require.NoError(t, err)
 
@@ -408,7 +408,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
 
-	prw, err := newPRWExporter(cfg, set)
+	prw, err := newPRWExporter(context.Background(), cfg, set)
 	require.NotNil(t, prw)
 	require.NoError(t, err)
 

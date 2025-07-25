@@ -197,7 +197,7 @@ func TestExportErrors(tester *testing.T) {
 
 func TestNullTracesExporterConfig(tester *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := newLogzioTracesExporter(nil, params)
+	_, err := newLogzioTracesExporter(context.Background(), nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 

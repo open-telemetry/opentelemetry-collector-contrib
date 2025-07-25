@@ -42,7 +42,7 @@ type loadBalancer struct {
 }
 
 // Create new load balancer
-func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory componentFactory, telemetry *metadata.TelemetryBuilder) (*loadBalancer, error) {
+func newLoadBalancer(ctx context.Context, logger *zap.Logger, cfg component.Config, factory componentFactory, telemetry *metadata.TelemetryBuilder) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
 	count := 0
@@ -97,6 +97,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			return nil, err
 		}
 		res, err = newK8sResolver(
+			ctx,
 			clt,
 			k8sLogger,
 			oCfg.Resolver.K8sSvc.Service,
@@ -114,6 +115,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 		awsCloudMapLogger := logger.With(zap.String("resolver", "aws_cloud_map"))
 		var err error
 		res, err = newCloudMapResolver(
+			ctx,
 			awsCloudMapLogger,
 			&oCfg.Resolver.AWSCloudMap.NamespaceName,
 			&oCfg.Resolver.AWSCloudMap.ServiceName,

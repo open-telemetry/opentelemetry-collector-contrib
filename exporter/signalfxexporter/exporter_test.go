@@ -1419,7 +1419,7 @@ func TestConsumeMetadata(t *testing.T) {
 					MetricsConverter:  *converter,
 					ExcludeProperties: tt.excludeProperties,
 				})
-			dimClient.Start()
+			dimClient.Start(context.Background())
 
 			se := &signalfxExporter{
 				dimClient: dimClient,
@@ -1782,7 +1782,7 @@ func TestTLSAPIConnection(t *testing.T) {
 					MetricsConverter: *converter,
 					APITLSConfig:     apiTLSCfg,
 				})
-			dimClient.Start()
+			dimClient.Start(context.Background())
 			defer func() { dimClient.Shutdown() }()
 
 			se := &signalfxExporter{

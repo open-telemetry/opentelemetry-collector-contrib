@@ -4,6 +4,7 @@
 package dimensions
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -116,7 +117,7 @@ func setupTestClientServer(t *testing.T) (*DimensionClient, *testServer) {
 			SendDelay:   100 * time.Millisecond,
 			MaxBuffered: 10,
 		})
-	client.Start()
+	client.Start(context.Background())
 
 	return client, ts
 }

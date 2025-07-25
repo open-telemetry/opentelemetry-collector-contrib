@@ -41,7 +41,7 @@ func createTestConfig(metricsOverrides map[string]string, enableMetrics bool) *C
 
 func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMetrics bool, consumeFn func(ctx context.Context, ld plog.Logs) error, mp *sdkmetric.MeterProvider) {
 	config := createTestConfig(metricsOverrides, enableMetrics)
-	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, mp.Meter("test"))
+	hbter := newHeartbeater(context.Background(), config, component.NewDefaultBuildInfo(), consumeFn, mp.Meter("test"))
 	t.Cleanup(func() {
 		hbter.shutdown()
 	})
@@ -85,7 +85,7 @@ func getAttributes(reader *sdkmetric.ManualReader, name string) ([]attribute.Set
 func Test_newHeartbeater_disabled(t *testing.T) {
 	config := createTestConfig(map[string]string{}, false)
 	config.Heartbeat.Interval = 0
-	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
+	hb := newHeartbeater(context.Background(), config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
 		return nil
 	}, metricnoop.NewMeterProvider().Meter("test"))
 	assert.Nil(t, hb)

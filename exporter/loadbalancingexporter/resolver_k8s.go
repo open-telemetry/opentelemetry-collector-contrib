@@ -71,7 +71,8 @@ type k8sResolver struct {
 	telemetry *metadata.TelemetryBuilder
 }
 
-func newK8sResolver(clt kubernetes.Interface,
+func newK8sResolver(ctx context.Context,
+	clt kubernetes.Interface,
 	logger *zap.Logger,
 	service string,
 	ports []int32,
@@ -106,12 +107,12 @@ func newK8sResolver(clt kubernetes.Interface,
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = epsSelector
 			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).List(context.Background(), options)
+			return clt.CoreV1().Endpoints(namespace).List(ctx, options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			options.FieldSelector = epsSelector
 			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).Watch(context.Background(), options)
+			return clt.CoreV1().Endpoints(namespace).Watch(ctx, options)
 		},
 	}
 
