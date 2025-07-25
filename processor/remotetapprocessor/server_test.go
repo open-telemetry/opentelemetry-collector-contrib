@@ -124,7 +124,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 		n, _ := wsConn.Read(buf)
 		return n == 100
 	}, 1*time.Second, 10*time.Millisecond, "received message")
-	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
+	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
 
 	err = processor.Shutdown(context.Background())
 	require.NoError(t, err)
