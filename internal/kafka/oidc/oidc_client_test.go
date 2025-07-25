@@ -19,10 +19,16 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/golang-jwt/jwt/v5"
-	// "github.com/sanity-io/litter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+)
+
+const (
+	PORT            = 3000
+	testClientID    = "mock-client-id"
+	testScope       = "mock-scope"
+	tokenExpireSecs = 60
 )
 
 type MockOAuthProvider struct {
@@ -41,19 +47,15 @@ func (*MockOAuthProvider) Name() string {
 }
 
 func TestOIDCProvider_GetToken_Success(t *testing.T) {
-	const clientID = "mock-client-id"
-	const timeOutSecs = 60
-	const scope = "mock-scope"
-
 	secretFile, err := k8sSecretFile()
 	assert.NoError(t, err)
 
-	clientSecret, err := os.ReadFile(secretFile)
+	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
 	oidcServerQuit := make(chan any)
 	go func() {
-		oidcServer(oidcServerQuit, clientID, string(clientSecret), timeOutSecs)
+		oidcServer(oidcServerQuit)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -62,7 +64,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	time.Sleep(50 * time.Millisecond) // wait for OIDC server to fully start
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), clientID, secretFile, tokenURL, []string{scope}, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
 
 	saramaToken, err := oidcProvider.Token()
 	require.NoError(t, err)
@@ -76,11 +78,39 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, tokenObj)
 	claims := tokenObj.Claims.(jwt.MapClaims)
-	assert.Equal(t, clientID, claims["client_id"])
-	assert.Equal(t, scope, claims["scope"])
+	assert.Equal(t, testClientID, claims["client_id"])
+	assert.Equal(t, testScope, claims["scope"])
 
 	assert.WithinDuration(t, time.Now(), time.Unix(int64(claims["iat"].(float64)), 0), 2*time.Second)
-	assert.WithinDuration(t, time.Now().Add(timeOutSecs*time.Second), time.Unix(int64(claims["exp"].(float64)), 0), 2*time.Second)
+	expectedTimeout := time.Now().Add(tokenExpireSecs * time.Second)
+	actualTimeout := time.Unix(int64(claims["exp"].(float64)), 0)
+	assert.WithinDuration(t, expectedTimeout, actualTimeout, 2*time.Second)
+}
+
+func TestOIDCProvider_GetToken_Error(t *testing.T) {
+	secretFile, err := k8sSecretFile()
+	assert.NoError(t, err)
+
+	testClientSecret, err = os.ReadFile(secretFile)
+	assert.NoError(t, err)
+
+	oidcServerQuit := make(chan any)
+	go func() {
+		oidcServer(oidcServerQuit)
+	}()
+	defer func() {
+		oidcServerQuit <- true
+	}()
+
+	time.Sleep(50 * time.Millisecond) // wait for OIDC server to fully start
+	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
+
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), "wrong-client-id", secretFile,
+		tokenURL, []string{testScope}, 0)
+
+	saramaToken, err := oidcProvider.Token()
+	require.Error(t, err)
+	assert.Nil(t, saramaToken)
 }
 
 // func TestOIDCProvider_GetToken_Error(t *testing.T) {
@@ -150,43 +180,6 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 // 	assert.NotEqual(t, token1, token2)
 // }
 
-// func OLDoidcServer(ch <-chan any, clientID, clientSecret string, accessTTLsecs, refreshTTLsecs int) {
-// 	// Create RSA Private Key for token signing
-// 	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-
-// 	m, _ := mockoidc.NewServer(rsaKey)
-// 	m.ClientID = clientID
-// 	m.ClientSecret = clientSecret
-// 	m.AccessTTL = time.Duration(accessTTLsecs) * time.Second
-// 	m.RefreshTTL = time.Duration(refreshTTLsecs) * time.Second
-
-// 	middleware := func(next http.Handler) http.Handler {
-// 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-// 			fmt.Fprintf(os.Stderr, "\n-------- oidcServer: before next.ServerHTTP(): request URL is %v\n", req.URL)
-// 			// custom middleware logic here ...
-// 			next.ServeHTTP(rw, req)
-// 			fmt.Fprintf(os.Stderr, "\n-------- oidcServer: after next.ServeHTTP(): request URL is %v\n", req.URL)
-// 			// custom middleware logic here...
-// 		})
-// 	}
-// 	m.AddMiddleware(middleware)
-
-// 	ln, _ := net.Listen("tcp", "127.0.0.1:3000")
-
-// 	err := m.Start(ln, nil) // specify nil for tlsConfig to use HTTP
-// 	if err != nil {
-// 		fmt.Fprintf(os.Stderr, "could not start server: %v\n", err)
-// 		os.Exit(1)
-// 	}
-// 	defer m.Shutdown()
-
-// 	// cfg := m.Config()
-// 	// fmt.Printf("%s\n", litter.Sdump(cfg))
-
-// 	<-ch
-// 	fmt.Fprintf(os.Stderr, "oidcServer shutting down\n")
-// }
-
 func k8sSecretFile() (string, error) {
 	k8sSAtoken := `eyJhbGciOiJSUzI1NiIsImtpZCI6IjdjdDhhT0pTSXh0Zm0yUVprUVRXaFpTVFpHUlQ0MlFkbDMzQXQ1XzRURkkifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzg0Mzk4Mzk5LCJpYXQiOjE3NTI4NjIzOTksImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiNTE3Zjg4ZDUtOTNjZC00YWIzLWFkZWItY2NiZjExMDdmZGYxIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJ0ZXN0Iiwibm9kZSI6eyJuYW1lIjoia2luZC1jb250cm9sLXBsYW5lIiwidWlkIjoiZThjZTczMWMtMmZjNC00NWZjLWJjNzItMzdhYTgyNDQzN2EwIn0sInBvZCI6eyJuYW1lIjoib2lkYy1zZXJ2ZXIteDU4bm4iLCJ1aWQiOiJmM2Q3YTBkZC04Yzk3LTRkNTgtOGYyYy01ZDRiNThjMmY5NDIifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImRlZmF1bHQiLCJ1aWQiOiIwZjc1MTJhNi00ZjhkLTQxYjAtOTM4NC1mYWE4YzlmZWUxMWYifSwid2FybmFmdGVyIjoxNzUyODY2MDA2fSwibmJmIjoxNzUyODYyMzk5LCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6dGVzdDpkZWZhdWx0In0.A8eDX9Wz6aoAwO-Vrg2ddbxJ5d7r3pdg8J6D4gyHPNQLRmBcZHaWagRKJTZ3gDYvT_u_hCG5RJrHARt9MncftPJ5_gdRyXckbd9a9dcSSRVxFEPzdaUR6GSmTmI2sUwhU33AnWmRqlOlZW_WtslPGXl8tNsfDLfpvabjAuBFJrb7KB8MvzXVNvVcJ8BmM4oglX3e3xIxLBzSSQFkW9OGdmeWFsMh-lNaHpzXQGaZx3W2Wit2SUigbDDSJPCTs_tFMdPv-LW0AH9eRd5yU_j87gEsapu_u5j6qcNku-3g79LcGoIvTqe8QdSI7OeoWVnD05SjfAoyHhR-aoMJtSCOQg`
 
@@ -213,16 +206,10 @@ type ErrorResponse struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-const (
-	PORT = 3000
-)
-
 var (
-	privateKey      *rsa.PrivateKey
-	publicKey       *rsa.PublicKey
-	tokenExpireSecs int
-	clientID        string
-	clientSecret    string
+	privateKey       *rsa.PrivateKey
+	publicKey        *rsa.PublicKey
+	testClientSecret []byte
 )
 
 func init() {
@@ -341,7 +328,7 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 
 func validateClient(clientID, clientSecret string) bool {
 	validClients := map[string]string{
-		clientID: clientSecret,
+		testClientID: string(testClientSecret),
 		// "test_client": "test_secret",
 		// "demo_client": "demo_secret",
 	}
@@ -371,11 +358,7 @@ func generateJWTToken(clientID, scope string) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-func oidcServer(ch <-chan any, cid, csecret string, accessTTLsecs int) {
-	tokenExpireSecs = accessTTLsecs
-	clientID = cid
-	clientSecret = csecret
-
+func oidcServer(ch <-chan any) {
 	http.HandleFunc("/token", tokenHandler)
 	s := &http.Server{
 		Addr:              fmt.Sprintf(":%d", PORT),
@@ -396,5 +379,9 @@ func oidcServer(ch <-chan any, cid, csecret string, accessTTLsecs int) {
 	err := s.Shutdown(context.Background())
 	if err != nil {
 		log.Fatalf("error shutting down OIDC server: %v", err)
+	}
+	err = s.Close()
+	if err != nil {
+		log.Fatalf("error closing OIDC socket: %v", err)
 	}
 }
