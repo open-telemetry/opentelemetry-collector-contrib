@@ -591,8 +591,8 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/build-tools v0.25.0 h1:A7FSPk06ugkf4HuWtxDJlkMC2DkuKf2Bu7EKSbd/nEo=
 go.opentelemetry.io/build-tools v0.25.0/go.mod h1:jNTizn3nCttVe/F8xFQsZmIWAF+RhOhcq9xqImVkDAs=
-go.opentelemetry.io/build-tools/checkapi v0.23.1 h1:BT4ftWALLp310C4qidIH2f7loNAdcRMrbTo3tmU0JYs=
-go.opentelemetry.io/build-tools/checkapi v0.23.1/go.mod h1:J7KC/+bPtDVUhRWk7eGd61Uxhn3UvuOQuynJ5W6dW5c=
+go.opentelemetry.io/build-tools/checkapi v0.24.0 h1:wu7tO9BqMLUvzvbqXAZWAIFkKcAAX0J6Nygpft3ReXQ=
+go.opentelemetry.io/build-tools/checkapi v0.24.0/go.mod h1:J7KC/+bPtDVUhRWk7eGd61Uxhn3UvuOQuynJ5W6dW5c=
 go.opentelemetry.io/build-tools/checkfile v0.23.1 h1:o/tIpAr4ACKOYPFZV8VVHyz+ikDHVRI45KTsE8QOrwc=
 go.opentelemetry.io/build-tools/checkfile v0.23.1/go.mod h1:cJr2PBIQbubYHFE9bvbRWzAAHdQdFMVdI5VD9ETycvw=
 go.opentelemetry.io/build-tools/chloggen v0.23.1 h1:vc7BCQ43OtEr9onDU/0igWwM08ocn8AzxX+0BXG9OPo=
