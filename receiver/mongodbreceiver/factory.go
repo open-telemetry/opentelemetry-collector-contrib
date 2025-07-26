@@ -43,7 +43,6 @@ func createDefaultConfig() component.Config {
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ClientConfig:         configtls.ClientConfig{},
-		QuerySettings:        DefaultQuerySettings(),
 	}
 }
 

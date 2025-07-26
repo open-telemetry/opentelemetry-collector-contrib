@@ -31,8 +31,54 @@ import (
 )
 
 var (
-	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
-
+	unknownVersion              = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+	unexplainablePipelineStages = map[string]bool{
+		"$collStats":               true,
+		"$currentOp":               true,
+		"$indexStats":              true,
+		"$listSearchIndexes":       true,
+		"$sample":                  true,
+		"$shardedDataDistribution": true,
+		"$mergeCursors":            true,
+	}
+	unexplainableCommands = map[string]bool{
+		"getMore":         true,
+		"insert":          true,
+		"update":          true,
+		"delete":          true,
+		"explain":         true,
+		"profile":         true,
+		"listCollections": true,
+		"listDatabases":   true,
+		"dbStats":         true,
+		"createIndexes":   true,
+		"shardCollection": true,
+	}
+	keysToRemoveFromExplainPlan = map[string]bool{
+		"serverInfo":          true,
+		"serverParameters":    true,
+		"command":             true,
+		"ok":                  true,
+		"$clusterTime":        true,
+		"operationTime":       true,
+		"$configServerState":  true,
+		"lastCommittedOpTime": true,
+		"$gleStats":           true,
+	}
+	keysToCleanFromCommand = map[string]bool{
+		"comment":      true, // Comment field should not contribute to query signature
+		"lsid":         true, // Session ID is unique identifier
+		"$clusterTime": true, // Cluster time is used for operation ordering
+	}
+	keysToRemoveFromCommandForExplain = map[string]bool{
+		"$db":                    true,
+		"readConcern":            true,
+		"writeConcern":           true,
+		"needsMerge":             true,
+		"fromMongos":             true,
+		"let":                    true,
+		"mayBypassWriteBlocking": true,
+	}
 	_ = featuregate.GlobalRegistry().MustRegister(
 		"receiver.mongodb.removeDatabaseAttr",
 		featuregate.StageStable,
@@ -75,6 +121,7 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		prevFlushTimestamp: pcommon.Timestamp(0),
 		prevCounts:         make(map[string]int64),
 		prevFlushCount:     0,
+		obfuscator:         newObfuscator(),
 	}
 }
 
@@ -157,11 +204,10 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
-	if !s.config.QuerySettings.Enabled {
-		return plog.NewLogs(), nil
-	}
-
 	operations, err := s.client.CurrentOp(ctx)
+	if len(operations) > 6 {
+		fmt.Println("dddd")
+	}
 	if err != nil {
 		s.logger.Error("Failed to get current operations", zap.Error(err))
 		return plog.NewLogs(), err
@@ -198,27 +244,21 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			continue
 		}
 
-		// Limit the number of queries processed
-		if queryCount >= s.config.QuerySettings.MaxQueries {
-			s.logger.Debug("Reached maximum query limit", zap.Int("max_queries", s.config.QuerySettings.MaxQueries))
-			break
-		}
-
 		namespace := getValue[string](op, "ns")
-		command := getValue[bson.M](op, "command")
+		command := getValue[bson.D](op, "command")
 		opType := getValue[string](op, "op")
 		durationMicros := getValue[int64](op, "microsecs_running")
 		application := getValue[string](op, "appName")
 		client := getValue[string](op, "client")
-
-		obfuscatedStatement := s.obfuscateCommand(command)
+		cleanedCommand := s.cleanCommand(command)
+		obfuscatedStatement := s.obfuscateCommand(cleanedCommand)
 		querySignature := s.generateQuerySignature(obfuscatedStatement)
 
 		// Get explain plan for supported operations
 		explainPlan := ""
 		dbName := s.getDBFromNamespace(namespace)
-		if dbName != "" && len(command) > 0 && s.shouldExplainOperation(opType, command) {
-			plan, err := s.getExplainPlan(ctx, dbName, command)
+		if dbName != "" && len(command) > 0 && s.shouldExplainOperation(opType, cleanedCommand) {
+			plan, err := s.getExplainPlan(ctx, dbName, cleanedCommand)
 			if err != nil {
 				s.logger.Debug("Failed to get explain plan",
 					zap.String("namespace", namespace),
@@ -242,7 +282,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		s.lb.RecordMongodbQuerySampleEvent(
 			ctx,
 			now,
-			namespace,
+			dbName,
 			obfuscatedStatement,
 			querySignature,
 			durationMicros,
@@ -256,7 +296,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 }
 
 // shouldExplainOperation determines if we should try to get an explain plan for this operation
-func (*mongodbScraper) shouldExplainOperation(opType string, command bson.M) bool {
+func (*mongodbScraper) shouldExplainOperation(opType string, command bson.D) bool {
 	// Skip operations that are not queries
 	if opType == "" || opType == "none" {
 		return false
@@ -268,39 +308,20 @@ func (*mongodbScraper) shouldExplainOperation(opType string, command bson.M) boo
 	}
 
 	// Check for unexplainable commands
-	unexplainableCommands := map[string]bool{
-		"getMore":         true,
-		"insert":          true,
-		"update":          true,
-		"delete":          true,
-		"explain":         true,
-		"profile":         true,
-		"listCollections": true,
-		"listDatabases":   true,
-		"dbStats":         true,
-		"createIndexes":   true,
-		"shardCollection": true,
-	}
 
-	for cmdName := range command {
-		if unexplainableCommands[cmdName] {
+	for _, cmd := range command {
+		if unexplainableCommands[cmd.Key] {
 			return false
 		}
 	}
 
 	// Check for unexplainable pipeline stages in aggregation
-	if pipeline, ok := command["pipeline"]; ok {
-		if pipelineArray, ok := pipeline.(bson.A); ok {
-			unexplainablePipelineStages := map[string]bool{
-				"$collStats":               true,
-				"$currentOp":               true,
-				"$indexStats":              true,
-				"$listSearchIndexes":       true,
-				"$sample":                  true,
-				"$shardedDataDistribution": true,
-				"$mergeCursors":            true,
+	for _, v := range command {
+		if v.Key == "pipeline" {
+			pipelineArray, ok := v.Value.(bson.A)
+			if !ok {
+				continue
 			}
-
 			for _, stage := range pipelineArray {
 				if stageDoc, ok := stage.(bson.M); ok {
 					for stageName := range stageDoc {
@@ -312,6 +333,7 @@ func (*mongodbScraper) shouldExplainOperation(opType string, command bson.M) boo
 			}
 		}
 	}
+
 	return true
 }
 
@@ -329,15 +351,18 @@ func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
 	}
 
 	// Skip operations without a command
-	if command := getValue[bson.M](op, "command"); len(command) == 0 {
+	command := getValue[bson.D](op, "command")
+	if len(command) == 0 {
 		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
 		return false
 	}
 
 	// Skip "hello" operations
-	if command := getValue[bson.M](op, "command"); command["hello"] != nil && getValue[string](op, "op") == "command" {
-		s.logger.Debug("Skipping hello operation", zap.Any("operation", op))
-		return false
+	for _, v := range command {
+		if v.Key == "hello" {
+			s.logger.Debug("Skipping hello operation", zap.Any("operation", op))
+			return false
+		}
 	}
 
 	return true
@@ -363,7 +388,7 @@ func (*mongodbScraper) getDBFromNamespace(namespace string) string {
 }
 
 // getExplainPlan executes the explain command for a given command and database
-func (s *mongodbScraper) getExplainPlan(ctx context.Context, dbname string, command bson.M) (string, error) {
+func (s *mongodbScraper) getExplainPlan(ctx context.Context, dbname string, command bson.D) (string, error) {
 	// Create a clean copy of the command for explain
 	explainableCommand := s.prepareCommandForExplain(command)
 	if len(explainableCommand) == 0 {
@@ -395,26 +420,23 @@ func (s *mongodbScraper) getExplainPlan(ctx context.Context, dbname string, comm
 }
 
 // prepareCommandForExplain prepares a command to be explainable by removing
-func (*mongodbScraper) prepareCommandForExplain(command bson.M) bson.M {
-	explainableCommand := make(bson.M)
+func (*mongodbScraper) prepareCommandForExplain(command bson.D) bson.D {
+	explainableCommand := make(bson.D, len(command))
 
-	excludeKeys := map[string]bool{
-		"$db":                    true,
-		"readConcern":            true,
-		"writeConcern":           true,
-		"needsMerge":             true,
-		"fromMongos":             true,
-		"let":                    true,
-		"mayBypassWriteBlocking": true,
-	}
+	finalLen := 0
 
-	for k, v := range command {
-		if !excludeKeys[k] {
-			explainableCommand[k] = v
+	for _, v := range command {
+		if v.Key == "" {
+			continue
+		}
+		if !keysToRemoveFromCommandForExplain[v.Key] {
+			explainableCommand[finalLen] = v
+			finalLen++
 		}
 	}
-
-	return explainableCommand
+	cleaned := make(bson.D, finalLen)
+	copy(cleaned, command)
+	return cleaned
 }
 
 // cleanExplainPlan removes unnecessary keys from the explain plan result
@@ -422,20 +444,9 @@ func (*mongodbScraper) cleanExplainPlan(explainResult bson.M) bson.M {
 	cleaned := make(bson.M)
 
 	// Keys to remove from explain plan result
-	removeKeys := map[string]bool{
-		"serverInfo":          true,
-		"serverParameters":    true,
-		"command":             true,
-		"ok":                  true,
-		"$clusterTime":        true,
-		"operationTime":       true,
-		"$configServerState":  true,
-		"lastCommittedOpTime": true,
-		"$gleStats":           true,
-	}
 
 	for k, v := range explainResult {
-		if !removeKeys[k] {
+		if !keysToRemoveFromExplainPlan[k] {
 			cleaned[k] = v
 		}
 	}
@@ -444,22 +455,29 @@ func (*mongodbScraper) cleanExplainPlan(explainResult bson.M) bson.M {
 }
 
 // obfuscateCommand removes sensitive data from commands
-func (s *mongodbScraper) obfuscateCommand(command bson.M) string {
-	// Parse the JSON statement back to a map for proper obfuscation
-	commandCopied := make(bson.M)
+func (s *mongodbScraper) obfuscateCommand(command bson.D) string {
+	cleanedCommand := s.cleanCommand(command)
+	return s.obfuscator.obfuscateSQLString(cleanedCommand.String())
+}
 
-	keysToRemove := map[string]bool{
-		"comment":      true, // Comment field should not contribute to query signature
-		"lsid":         true, // Session ID is unique identifier
-		"$clusterTime": true, // Cluster time is used for operation ordering
-	}
-	for k, v := range command {
-		if _, ok := keysToRemove[k]; ok {
+func (*mongodbScraper) cleanCommand(command bson.D) bson.D {
+	// Parse the JSON statement back to a map for proper obfuscation
+	commandCopied := make(bson.D, len(command))
+
+	finalLen := 0
+	for _, v := range command {
+		if v.Key == "" {
 			continue
 		}
-		commandCopied[k] = v
+		if _, ok := keysToCleanFromCommand[v.Key]; ok {
+			continue
+		}
+		commandCopied[finalLen] = v
+		finalLen++
 	}
-	return s.obfuscator.obfuscateSQLString(commandCopied.String())
+	cleaned := make(bson.D, finalLen)
+	copy(cleaned, commandCopied)
+	return cleaned
 }
 
 // obfuscateLiterals recursively obfuscates literal values while preserving structure

@@ -47,7 +47,6 @@ type Config struct {
 	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
 	Timeout          time.Duration             `mapstructure:"timeout"`
 	DirectConnection bool                      `mapstructure:"direct_connection"`
-	QuerySettings    QuerySettings             `mapstructure:"query_settings"`
 }
 
 func (c *Config) Validate() error {
