@@ -49,7 +49,6 @@ exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
-exporter/lokiexporter exporter/loki
 exporter/mezmoexporter exporter/mezmo
 exporter/opencensusexporter exporter/opencensus
 exporter/opensearchexporter exporter/opensearch
