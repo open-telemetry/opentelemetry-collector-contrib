@@ -41,4 +41,14 @@ receivers:
       - "/var/log/*.log"
     exclude:
       - "/var/log/example.log"
+    # Optional: add file record attributes  
+    include_file_record_offset: true
+    include_file_record_number: true
 ```
+
+The following settings are available:
+
+- `include`: A list of file glob patterns that match the file paths to be read.
+- `exclude`: A list of file glob patterns to exclude from reading.
+- `include_file_record_number` (default: `false`): Whether to add the record number in the file as the attribute `log.file.record_number`.
+- `include_file_record_offset` (default: `false`): Whether to add the record offset in the file as the attribute `log.file.record_offset`.
