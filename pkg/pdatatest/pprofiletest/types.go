@@ -15,6 +15,13 @@ type Profiles struct {
 
 func (p Profiles) Transform() pprofile.Profiles {
 	pp := pprofile.NewProfiles()
+
+	dic := pp.ProfilesDictionary()
+	// initialize the must-have default table entries
+	dic.LinkTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.StringTable().Append("")
+
 	for _, rp := range p.ResourceProfiles {
 		rp.Transform(pp)
 	}
@@ -104,7 +111,7 @@ func (p *Profile) Transform(dic pprofile.ProfilesDictionary, psp pprofile.ScopeP
 	pp := psp.Profiles().AppendEmpty()
 
 	// Avoids that 0 (default) string indices point to nowhere.
-	addString(dic, "")
+	// addString(dic, "")
 
 	// If valueTypes are not set, set them to the default value.
 	defaultValueType := ValueType{Typ: "samples", Unit: "count", AggregationTemporality: pprofile.AggregationTemporalityDelta}
