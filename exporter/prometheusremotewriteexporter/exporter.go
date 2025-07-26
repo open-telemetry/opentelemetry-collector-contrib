@@ -135,7 +135,7 @@ func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry,
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
+func newPRWExporter(ctx context.Context, cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	}
 
 	// Set the desired number of consumers as a metric for the exporter.
-	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
+	telemetry.setNumberConsumer(ctx, int64(concurrency))
 
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,

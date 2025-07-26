@@ -47,7 +47,7 @@ func TestNewLogsExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), tt.config)
+			_, err := newLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -65,7 +65,7 @@ func TestLogExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *logExporterImp {
-				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
+				p, _ := newLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -74,9 +74,9 @@ func TestLogExporterStart(t *testing.T) {
 			"error",
 			func() *logExporterImp {
 				// prepare
-				lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
+				lb, err := newLoadBalancer(context.Background(), ts.Logger, simpleConfig(), nil, tb)
 				require.NoError(t, err)
-				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
+				p, _ := newLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), simpleConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -106,7 +106,7 @@ func TestLogExporterStart(t *testing.T) {
 }
 
 func TestLogExporterShutdown(t *testing.T) {
-	p, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
+	p, err := newLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -123,11 +123,11 @@ func TestConsumeLogs(t *testing.T) {
 		return newNopMockLogsExporter(), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(context.Background(), ts.Logger, simpleConfig(), componentFactory, tb)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(ts, simpleConfig())
+	p, err := newLogsExporter(context.Background(), ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -160,11 +160,11 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	}
 	ts, tb := getTelemetryAssets(t)
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(context.Background(), ts.Logger, simpleConfig(), componentFactory, tb)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(ts, simpleConfig())
+	p, err := newLogsExporter(context.Background(), ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -199,11 +199,11 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(context.Background(), ts.Logger, simpleConfig(), componentFactory, tb)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(ts, simpleConfig())
+	p, err := newLogsExporter(context.Background(), ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -272,11 +272,11 @@ func TestLogsWithoutTraceID(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(context.Background(), ts.Logger, simpleConfig(), componentFactory, tb)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(ts, simpleConfig())
+	p, err := newLogsExporter(context.Background(), ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -314,11 +314,11 @@ func TestConsumeLogs_ConcurrentResolverChange(t *testing.T) {
 		}
 		return te, nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(context.Background(), ts.Logger, simpleConfig(), componentFactory, tb)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(ts, simpleConfig())
+	p, err := newLogsExporter(context.Background(), ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -406,11 +406,11 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(context.Background(), ts.Logger, cfg, componentFactory, tb)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), cfg)
+	p, err := newLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

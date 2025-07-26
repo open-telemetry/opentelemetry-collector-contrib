@@ -107,7 +107,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
 func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
-	discoveryCtx, cancel := context.WithCancel(context.Background())
+	discoveryCtx, cancel := context.WithCancel(ctx)
 	r.cancelFunc = cancel
 
 	logger := slog.New(zapslog.NewHandler(r.settings.Logger.Core()))

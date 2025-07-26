@@ -56,7 +56,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	}
 
 	healthpb.RegisterHealthServer(s.grpcServer, s)
-	ln, err := s.config.NetAddr.Listen(context.Background())
+	ln, err := s.config.NetAddr.Listen(ctx)
 	if err != nil {
 		return err
 	}

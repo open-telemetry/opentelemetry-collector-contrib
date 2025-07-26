@@ -89,10 +89,8 @@ func (lee *leaderElectionExtension) stoppedLeading() {
 }
 
 // Start begins the extension's processing.
-func (lee *leaderElectionExtension) Start(_ context.Context, _ component.Host) error {
+func (lee *leaderElectionExtension) Start(ctx context.Context, _ component.Host) error {
 	lee.logger.Info("Starting k8s leader elector with UUID", zap.String("UUID", lee.leaseHolderID))
-
-	ctx := context.Background()
 	ctx, lee.cancel = context.WithCancel(ctx)
 
 	// Create the K8s leader elector

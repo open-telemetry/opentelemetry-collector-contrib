@@ -154,7 +154,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
 			Timeout:             se.config.DimensionClient.Timeout,
 		})
-	dimClient.Start()
+	dimClient.Start(ctx)
 
 	var hms *hostmetadata.Syncer
 	if se.config.SyncHostMetadata {

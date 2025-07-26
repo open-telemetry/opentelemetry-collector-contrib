@@ -49,7 +49,7 @@ func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
 			t.Parallel()
 
 			cfg := &Config{Endpoint: tc.endpoint}
-			receiver, err := newAerospikeReceiver(receiver.Settings{}, cfg, cs)
+			receiver, err := newAerospikeReceiver(context.Background(), receiver.Settings{}, cfg, cs)
 			require.ErrorContains(t, err, tc.errMsg)
 			require.Nil(t, receiver)
 		})

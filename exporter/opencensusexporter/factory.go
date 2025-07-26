@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	oCfg := cfg.(*Config)
-	oce, err := newTracesExporter(ctx, oCfg, set.TelemetrySettings)
+	oce, err := newTracesExporter(oCfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
 	oCfg := cfg.(*Config)
-	oce, err := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
+	oce, err := newMetricsExporter(oCfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}

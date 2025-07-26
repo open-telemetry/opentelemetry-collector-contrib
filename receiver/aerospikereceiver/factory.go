@@ -33,13 +33,13 @@ func NewFactory() receiver.Factory {
 
 // createMetricsReceiver creates a new MetricsReceiver using scraperhelper
 func createMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	r, err := newAerospikeReceiver(params, cfg, consumer)
+	r, err := newAerospikeReceiver(ctx, params, cfg, consumer)
 	if err != nil {
 		return nil, err
 	}

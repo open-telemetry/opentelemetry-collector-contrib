@@ -144,7 +144,7 @@ func (m *Manager) poll(ctx context.Context) {
 	if m.persister != nil {
 		metadata := m.tracker.GetMetadata()
 		if metadata != nil {
-			if err := checkpoint.Save(context.Background(), m.persister, metadata); err != nil {
+			if err := checkpoint.Save(ctx, m.persister, metadata); err != nil {
 				m.set.Logger.Error("save offsets", zap.Error(err))
 			}
 		}

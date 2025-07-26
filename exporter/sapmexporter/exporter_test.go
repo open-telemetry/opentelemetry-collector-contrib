@@ -40,7 +40,7 @@ func TestCreateTraces(t *testing.T) {
 	}
 	params := exportertest.NewNopSettings(metadata.Type)
 
-	te, err := newSAPMTracesExporter(cfg, params)
+	te, err := newSAPMTracesExporter(context.Background(), cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 

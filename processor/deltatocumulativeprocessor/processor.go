@@ -38,8 +38,8 @@ type deltaToCumulativeProcessor struct {
 	tel   telemetry.Metrics
 }
 
-func newProcessor(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *deltaToCumulativeProcessor {
-	ctx, cancel := context.WithCancel(context.Background())
+func newProcessor(ctx context.Context, cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *deltaToCumulativeProcessor {
+	ctx, cancel := context.WithCancel(ctx)
 
 	limit := maps.Limit(int64(cfg.MaxStreams))
 	proc := deltaToCumulativeProcessor{
@@ -60,7 +60,7 @@ func newProcessor(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *de
 	}
 
 	tel.WithTracked(proc.last.Size)
-	cfg.Metrics(tel)
+	cfg.Metrics(ctx, tel)
 
 	return &proc
 }

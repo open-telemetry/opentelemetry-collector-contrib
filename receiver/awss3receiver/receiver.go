@@ -101,7 +101,7 @@ func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	var cancelCtx context.Context
-	cancelCtx, r.cancel = context.WithCancel(context.Background())
+	cancelCtx, r.cancel = context.WithCancel(ctx)
 	go func() {
 		_ = r.reader.readAll(cancelCtx, r.telemetryType, r.receiveBytes)
 	}()

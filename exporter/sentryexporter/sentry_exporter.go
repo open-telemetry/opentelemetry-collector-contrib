@@ -478,7 +478,7 @@ func generateEventID() sentry.EventID {
 }
 
 // createSentryExporter returns a new Sentry Exporter.
-func createSentryExporter(config *Config, set exporter.Settings) (exporter.Traces, error) {
+func createSentryExporter(ctx context.Context, config *Config, set exporter.Settings) (exporter.Traces, error) {
 	transport := newSentryTransport()
 
 	clientOptions := sentry.ClientOptions{
@@ -498,7 +498,7 @@ func createSentryExporter(config *Config, set exporter.Settings) (exporter.Trace
 	}
 
 	return exporterhelper.NewTraces(
-		context.TODO(),
+		ctx,
 		set,
 		config,
 		s.pushTraceData,

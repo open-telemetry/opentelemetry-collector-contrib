@@ -465,11 +465,11 @@ func (t *testInputOperator) Start(_ operator.Persister) error {
 			case <-t.nextIteration:
 				if writeBatches {
 					for i := 0; i < t.numberOfLogEntries; i += len(entries) {
-						_ = t.WriteBatch(context.Background(), entries)
+						_ = t.WriteBatch(ctx, entries)
 					}
 				} else {
 					for i := 0; i < t.numberOfLogEntries; i++ {
-						_ = t.Write(context.Background(), e)
+						_ = t.Write(ctx, e)
 					}
 				}
 			case <-ctx.Done():

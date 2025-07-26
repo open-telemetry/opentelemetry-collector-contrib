@@ -286,7 +286,7 @@ func newExtension(
 		API:          cfg.API,
 		ClientConfig: cfg.ClientConfig,
 	}
-	host, err := hostProvider.Source(context.Background())
+	host, err := hostProvider.Source(ctx)
 	if err != nil {
 		return nil, err
 	}

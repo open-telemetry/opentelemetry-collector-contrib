@@ -71,8 +71,8 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshalers map[st
 	}, nil
 }
 
-func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *pulsarTracesConsumer) Start(ctx context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(ctx)
 	c.cancel = cancel
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
@@ -117,7 +117,7 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 			_ = c.consumer.Ack(message)
 			return err
 		}
-		err = traceConsumer.ConsumeTraces(context.Background(), traces)
+		err = traceConsumer.ConsumeTraces(ctx, traces)
 		if err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
@@ -184,8 +184,8 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshalers map[s
 	}, nil
 }
 
-func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *pulsarMetricsConsumer) Start(ctx context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(ctx)
 	c.cancel = cancel
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
@@ -232,7 +232,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			_ = c.consumer.Ack(message)
 			return err
 		}
-		err = metricsConsumer.ConsumeMetrics(context.Background(), metrics)
+		err = metricsConsumer.ConsumeMetrics(ctx, metrics)
 		if err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
@@ -301,8 +301,8 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshalers map[stri
 	}, nil
 }
 
-func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *pulsarLogsConsumer) Start(ctx context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(ctx)
 	c.cancel = cancel
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
@@ -346,7 +346,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 			_ = c.consumer.Ack(message)
 			return err
 		}
-		err = logsConsumer.ConsumeLogs(context.Background(), logs)
+		err = logsConsumer.ConsumeLogs(ctx, logs)
 		if err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}

@@ -4,6 +4,7 @@
 package system
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 func TestGetHostInfo(t *testing.T) {
 	logger := zap.NewNop()
 
-	hostInfo := GetHostInfo(logger)
+	hostInfo := GetHostInfo(context.Background(), logger)
 	require.NotNil(t, hostInfo)
 
 	osHostname, err := os.Hostname()

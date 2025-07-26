@@ -254,7 +254,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 		t.Run(test.name, func(*testing.T) {
 			params := receivertest.NewNopSettings(metadata.Type)
 			jmxReceiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
-			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
+			otlpReceiver, err := jmxReceiver.buildOTLPReceiver(context.Background())
 			require.ErrorContains(t, err, test.expectedErr)
 			require.Nil(t, otlpReceiver)
 		})

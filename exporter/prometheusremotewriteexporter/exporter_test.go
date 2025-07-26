@@ -124,7 +124,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
-			prwe, err := newPRWExporter(cfg, tt.set)
+			prwe, err := newPRWExporter(context.Background(), cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -215,7 +215,7 @@ func Test_Start(t *testing.T) {
 			cfg.ClientConfig = tt.clientSettings
 			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 
-			prwe, err := newPRWExporter(cfg, tt.set)
+			prwe, err := newPRWExporter(context.Background(), cfg, tt.set)
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -375,7 +375,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := newPRWExporter(cfg, set)
+	prwe, err := newPRWExporter(context.Background(), cfg, set)
 	if err != nil {
 		return err
 	}
@@ -781,7 +781,7 @@ func Test_PushMetrics(t *testing.T) {
 						Version:     "1.0",
 					}
 
-					prwe, nErr := newPRWExporter(cfg, set)
+					prwe, nErr := newPRWExporter(context.Background(), cfg, set)
 
 					require.NoError(t, nErr)
 					ctx, cancel := context.WithCancel(context.Background())
@@ -984,7 +984,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	prwe, perr := newPRWExporter(cfg, set)
+	prwe, perr := newPRWExporter(context.Background(), cfg, set)
 	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
@@ -1062,7 +1062,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// 4. Finally, ensure that the bytes that were uploaded to the
 	// Prometheus Remote Write endpoint are exactly as were saved in the WAL.
 	// Read from that same WAL, export to the RWExporter server.
-	prwe2, err := newPRWExporter(cfg, set)
+	prwe2, err := newPRWExporter(context.Background(), cfg, set)
 	assert.NoError(t, err)
 	require.NoError(t, prwe2.Start(ctx, nopHost))
 	t.Cleanup(func() {
@@ -1353,7 +1353,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		BackOffConfig:     retrySettings,
 		TargetInfo:        &TargetInfo{Enabled: true},
 	}
-	exporter, err := newPRWExporter(cfg, set)
+	exporter, err := newPRWExporter(context.Background(), cfg, set)
 	require.NoError(b, err)
 
 	var metrics []pmetric.Metrics

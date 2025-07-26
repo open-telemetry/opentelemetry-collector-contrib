@@ -268,7 +268,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 }
 
 func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) error {
-	err := l.ensureSession()
+	err := l.ensureSession(ctx)
 	if err != nil {
 		return err
 	}
@@ -374,7 +374,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
 	l.settings.Logger.Debug("attempting to discover log groups.", zap.Int("limit", auto.Limit))
 	groups := []groupRequest{}
-	err := l.ensureSession()
+	err := l.ensureSession(ctx)
 	if err != nil {
 		return groups, fmt.Errorf("unable to establish a session to auto discover log groups: %w", err)
 	}
@@ -432,7 +432,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 	return groups, nil
 }
 
-func (l *logsReceiver) ensureSession() error {
+func (l *logsReceiver) ensureSession(ctx context.Context) error {
 	if l.client != nil {
 		return nil
 	}
@@ -449,7 +449,7 @@ func (l *logsReceiver) ensureSession() error {
 		cfgOptions = append(cfgOptions, config.WithSharedConfigProfile(l.profile))
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
+	cfg, err := config.LoadDefaultConfig(ctx, cfgOptions...)
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
 	return err
 }

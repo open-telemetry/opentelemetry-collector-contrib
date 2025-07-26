@@ -121,9 +121,7 @@ func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.Ob
 	return tset, obslogs, exp
 }
 
-func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
-	ctx := context.Background()
-
+func basicTestConfig(ctx context.Context, t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
 	efact := otelarrowexporter.NewFactory()
 	rfact := otelarrowreceiver.NewFactory()
 
@@ -187,7 +185,7 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfgf CfgFunc, mkgen MkGen, errf ConsumerErrFunc, endf EndFunc) {
 	host := componenttest.NewNopHost()
 
-	testCon, exporter, receiver := basicTestConfig(t, tp, cfgf)
+	testCon, exporter, receiver := basicTestConfig(ctx, t, tp, cfgf)
 
 	var startWG sync.WaitGroup
 	var exporterShutdownWG sync.WaitGroup

@@ -37,9 +37,9 @@ var (
 	awsResolverFailureAttrSet = attribute.NewSet(awsResolverAttr, attribute.Bool("success", false))
 )
 
-func createDiscoveryFunction(client *servicediscovery.Client) func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
+func createDiscoveryFunction(ctx context.Context, client *servicediscovery.Client) func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 	return func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
-		return client.DiscoverInstances(context.TODO(), params)
+		return client.DiscoverInstances(ctx, params)
 	}
 }
 
@@ -65,6 +65,7 @@ type cloudMapResolver struct {
 }
 
 func newCloudMapResolver(
+	ctx context.Context,
 	logger *zap.Logger,
 	namespaceName *string,
 	serviceName *string,
@@ -76,7 +77,7 @@ func newCloudMapResolver(
 ) (*cloudMapResolver, error) { // Using the SDK's default configuration, loading additional config
 	// and credentials values from the environment variables, shared
 	// credentials, and shared configuration files
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithDefaultRegion("us-east-1"))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithDefaultRegion("us-east-1"))
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 		return nil, err
@@ -114,7 +115,7 @@ func newCloudMapResolver(
 		resInterval:   interval,
 		resTimeout:    timeout,
 		stopCh:        make(chan struct{}),
-		discoveryFn:   createDiscoveryFunction(svc),
+		discoveryFn:   createDiscoveryFunction(ctx, svc),
 		telemetry:     tb,
 	}, nil
 }
@@ -124,7 +125,7 @@ func (r *cloudMapResolver) start(ctx context.Context) error {
 		r.logger.Warn("failed initial resolve", zap.Error(err))
 	}
 
-	go r.periodicallyResolve()
+	go r.periodicallyResolve(ctx)
 
 	r.logger.Info("AWS CloudMap resolver started",
 		zap.Stringp("service_name", r.serviceName),
@@ -145,14 +146,14 @@ func (r *cloudMapResolver) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (r *cloudMapResolver) periodicallyResolve() {
+func (r *cloudMapResolver) periodicallyResolve(ctx context.Context) {
 	ticker := time.NewTicker(r.resInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
-			if _, err := r.resolve(ctx); err != nil {
+			localCtx, cancel := context.WithTimeout(ctx, r.resTimeout)
+			if _, err := r.resolve(localCtx); err != nil {
 				r.logger.Warn("failed to resolve", zap.Error(err))
 			} else {
 				r.logger.Debug("resolved successfully")

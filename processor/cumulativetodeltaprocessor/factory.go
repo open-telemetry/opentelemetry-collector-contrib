@@ -40,7 +40,7 @@ func createMetricsProcessor(
 		return nil, errors.New("configuration parsing error")
 	}
 
-	metricsProcessor, err := newCumulativeToDeltaProcessor(processorConfig, set.Logger)
+	metricsProcessor, err := newCumulativeToDeltaProcessor(ctx, processorConfig, set.Logger)
 	if err != nil {
 		return nil, err
 	}

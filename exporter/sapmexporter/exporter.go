@@ -55,14 +55,14 @@ func newSAPMExporter(cfg *Config, params exporter.Settings) (sapmExporter, error
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, set exporter.Settings) (exporter.Traces, error) {
+func newSAPMTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings) (exporter.Traces, error) {
 	se, err := newSAPMExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	te, err := exporterhelper.NewTraces(
-		context.TODO(),
+		ctx,
 		set,
 		cfg,
 		se.pushTraceData,

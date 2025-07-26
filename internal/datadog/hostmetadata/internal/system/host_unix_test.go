@@ -5,6 +5,7 @@
 package system
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 
 func TestGetSystemFQDN(t *testing.T) {
 	hostnamePath = "/nonexistent"
-	_, err := getSystemFQDN()
+	_, err := getSystemFQDN(context.Background())
 
 	// Fail silently when not available
 	require.NoError(t, err)

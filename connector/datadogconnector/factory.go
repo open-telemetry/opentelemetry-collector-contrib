@@ -59,7 +59,7 @@ func createDefaultConfig() component.Config {
 
 // defines the consumer type of the connector
 // we want to consume traces and export metrics therefore define nextConsumer as metrics, consumer is the next component in the pipeline
-func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
+func createTracesToMetricsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
 	metricsClient, err := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ConnectorSourceTag)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func createTracesToMetricsConnector(_ context.Context, params connector.Settings
 		c, err = newTraceToMetricConnectorNative(params.TelemetrySettings, cfg, nextConsumer, metricsClient)
 	} else {
 		params.Logger.Info("Datadog connector using the old processing pipelines to ingest OTel spans and produce APM stats.")
-		c, err = newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timing.New(metricsClient))
+		c, err = newTraceToMetricConnector(ctx, params.TelemetrySettings, cfg, nextConsumer, metricsClient, timing.New(metricsClient))
 	}
 	if err != nil {
 		return nil, err

@@ -565,9 +565,9 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	case err = <-done:
 		if errors.Is(err, errNonMatchingInstanceUID) {
 			// try to report the issue to the OpAMP server
-			if startOpAMPErr := s.startOpAMPClient(); startOpAMPErr == nil {
+			if startOpAMPErr := s.startOpAMPClient(context.Background()); startOpAMPErr == nil {
 				defer func(s *Supervisor) {
-					if stopErr := s.stopOpAMPClient(); stopErr != nil {
+					if stopErr := s.stopOpAMPClient(context.Background()); stopErr != nil {
 						s.telemetrySettings.Logger.Error("Could not stop OpAmp client", zap.Error(stopErr))
 					}
 				}(s)
@@ -592,7 +592,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 }
 
 func (s *Supervisor) startOpAMP() error {
-	if err := s.startOpAMPClient(); err != nil {
+	if err := s.startOpAMPClient(context.Background()); err != nil {
 		return err
 	}
 
@@ -603,7 +603,7 @@ func (s *Supervisor) startOpAMP() error {
 	return nil
 }
 
-func (s *Supervisor) startOpAMPClient() error {
+func (s *Supervisor) startOpAMPClient(ctx context.Context) error {
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
 	parsedURL, err := url.Parse(s.config.Server.Endpoint)
@@ -611,7 +611,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("parse server endpoint: %w", err)
 	}
 	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
-		tlsConfig, err = s.config.Server.TLS.LoadTLSConfig(context.Background())
+		tlsConfig, err = s.config.Server.TLS.LoadTLSConfig(ctx)
 		if err != nil {
 			return err
 		}
@@ -649,10 +649,10 @@ func (s *Supervisor) startOpAMPClient() error {
 				go s.onOpampConnectionSettings(ctx, settings)
 				return nil
 			},
-			OnCommand: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
+			OnCommand: func(ctx context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-					return s.handleRestartCommand()
+					return s.handleRestartCommand(ctx)
 				}
 				return nil
 			},
@@ -681,7 +681,7 @@ func (s *Supervisor) startOpAMPClient() error {
 	}
 
 	s.telemetrySettings.Logger.Debug("Starting OpAMP client...")
-	if err := s.opampClient.Start(context.Background(), settings); err != nil {
+	if err := s.opampClient.Start(ctx, settings); err != nil {
 		return err
 	}
 	s.telemetrySettings.Logger.Debug("OpAMP client started.")
@@ -860,9 +860,9 @@ func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyVa
 	return kvOut
 }
 
-func (s *Supervisor) stopOpAMPClient() error {
+func (s *Supervisor) stopOpAMPClient(ctx context.Context) error {
 	s.telemetrySettings.Logger.Debug("Stopping OpAMP client...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	err := s.opampClient.Stop(ctx)
 	// TODO(srikanthccv): remove context.DeadlineExceeded after https://github.com/open-telemetry/opamp-go/pull/213
@@ -882,7 +882,7 @@ func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.
 	return headers
 }
 
-func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 	if settings == nil {
 		s.telemetrySettings.Logger.Debug("Received ConnectionSettings request with nil settings")
 		return nil
@@ -916,7 +916,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return err
 	}
 
-	if err := s.stopOpAMPClient(); err != nil {
+	if err := s.stopOpAMPClient(ctx); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot stop the OpAMP client", zap.Error(err))
 		return err
 	}
@@ -926,12 +926,12 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	// update the OpAMP server config
 	s.config.Server = newServerConfig
 
-	if err := s.startOpAMPClient(); err != nil {
+	if err := s.startOpAMPClient(ctx); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
 		// revert the OpAMP server config
 		s.config.Server = oldServerConfig
 		// start the OpAMP client with the old settings
-		if err := s.startOpAMPClient(); err != nil {
+		if err := s.startOpAMPClient(ctx); err != nil {
 			s.telemetrySettings.Logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
 			return err
 		}
@@ -1345,11 +1345,11 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	return configChanged, nil
 }
 
-func (s *Supervisor) handleRestartCommand() error {
+func (s *Supervisor) handleRestartCommand(ctx context.Context) error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 	s.telemetrySettings.Logger.Debug("Received restart command")
-	err := s.commander.Restart(context.Background())
+	err := s.commander.Restart(ctx)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
@@ -1649,7 +1649,7 @@ func (s *Supervisor) Shutdown() {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 
-		err = s.stopOpAMPClient()
+		err = s.stopOpAMPClient(context.Background())
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}

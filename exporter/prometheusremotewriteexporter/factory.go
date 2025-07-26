@@ -61,7 +61,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		set.Logger.Warn("`remote_write_queue.num_consumers` will be used to configure processing parallelism, rather than request parallelism in a future release. This may cause out-of-order issues unless you take action. Please migrate to using `max_batch_request_parallelism` to keep the your existing behavior.")
 	}
 
-	prwe, err := newPRWExporter(prwCfg, set)
+	prwe, err := newPRWExporter(ctx, prwCfg, set)
 	if err != nil {
 		return nil, err
 	}

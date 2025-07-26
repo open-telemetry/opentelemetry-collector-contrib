@@ -80,7 +80,7 @@ func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config
 
 func createTracesExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	c := cfg.(*Config)
-	exp, err := newTracesExporter(params, cfg)
+	exp, err := newTracesExporter(ctx, params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure loadbalancing traces exporter: %w", err)
 	}
@@ -102,7 +102,7 @@ func createTracesExporter(ctx context.Context, params exporter.Settings, cfg com
 
 func createLogsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	c := cfg.(*Config)
-	exporter, err := newLogsExporter(params, cfg)
+	exporter, err := newLogsExporter(ctx, params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure loadbalancing logs exporter: %w", err)
 	}
@@ -124,7 +124,7 @@ func createLogsExporter(ctx context.Context, params exporter.Settings, cfg compo
 
 func createMetricsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
 	c := cfg.(*Config)
-	exporter, err := newMetricsExporter(params, cfg)
+	exporter, err := newMetricsExporter(ctx, params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure loadbalancing metrics exporter: %w", err)
 	}

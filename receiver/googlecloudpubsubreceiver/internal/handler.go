@@ -202,7 +202,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 		if err == nil {
 			for _, message := range resp.ReceivedMessages {
 				// handle all the messages in the response, could be one or more
-				err = handler.pushMessage(context.Background(), message)
+				err = handler.pushMessage(ctx, message)
 				if err == nil {
 					// When sending a message though the pipeline fails, we ignore the error. We'll let Pubsub
 					// handle the flow control.

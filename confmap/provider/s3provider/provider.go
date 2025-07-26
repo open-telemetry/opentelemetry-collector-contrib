@@ -59,7 +59,7 @@ func newWithSettings(confmap.ProviderSettings) confmap.Provider {
 func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	// initialize the s3 client in the first call of Retrieve
 	if fmp.client == nil {
-		cfg, err := config.LoadDefaultConfig(context.Background())
+		cfg, err := config.LoadDefaultConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
 		}

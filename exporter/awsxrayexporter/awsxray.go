@@ -44,7 +44,7 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 		opts = append(opts, telemetry.WithLogger(set.Logger))
 		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}
-	return exporterhelper.NewTraces(context.Background(), set, cfg,
+	return exporterhelper.NewTraces(ctx, set, cfg,
 		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))

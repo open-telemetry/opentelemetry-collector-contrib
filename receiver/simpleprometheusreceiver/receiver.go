@@ -38,7 +38,7 @@ func newPrometheusReceiverWrapper(params receiver.Settings, cfg *Config, consume
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfigWrapper(prw.config, prw.params)
+	pConfig, err := getPrometheusConfigWrapper(ctx, prw.config, prw.params)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
@@ -58,7 +58,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 }
 
 // Deprecated: [v0.55.0] Use getPrometheusConfig instead.
-func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
+func getPrometheusConfigWrapper(ctx context.Context, cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
 		cfg.TLS = configtls.ClientConfig{
@@ -71,10 +71,10 @@ func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometh
 			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
 		}
 	}
-	return getPrometheusConfig(cfg)
+	return getPrometheusConfig(ctx, cfg)
 }
 
-func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
+func getPrometheusConfig(ctx context.Context, cfg *Config) (*prometheusreceiver.Config, error) {
 	var bearerToken string
 	if cfg.UseServiceAccount {
 		restConfig, err := rest.InClusterConfig()
@@ -92,7 +92,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	tlsConfig, err := cfg.TLS.LoadTLSConfig(context.Background())
+	tlsConfig, err := cfg.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("tls config is not valid: %w", err)
 	}

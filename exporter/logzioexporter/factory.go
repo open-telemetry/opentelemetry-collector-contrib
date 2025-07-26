@@ -73,12 +73,12 @@ func generateEndpoint(cfg *Config, dataType string) (string, error) {
 	}
 }
 
-func createTracesExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	exporterConfig := cfg.(*Config)
-	return newLogzioTracesExporter(exporterConfig, params)
+	return newLogzioTracesExporter(ctx, exporterConfig, params)
 }
 
-func createLogsExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	exporterConfig := cfg.(*Config)
-	return newLogzioLogsExporter(exporterConfig, params)
+	return newLogzioLogsExporter(ctx, exporterConfig, params)
 }

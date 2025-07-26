@@ -26,7 +26,7 @@ func TestNewLoadBalancerNoResolver(t *testing.T) {
 	cfg := &Config{}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	require.Nil(t, p)
@@ -43,7 +43,7 @@ func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	require.Nil(t, p)
@@ -62,7 +62,7 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	require.Nil(t, p)
@@ -81,7 +81,7 @@ func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	assert.Nil(t, p)
@@ -93,7 +93,7 @@ func TestLoadBalancerStart(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -117,7 +117,7 @@ func TestWithDNSResolver(t *testing.T) {
 		},
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -140,7 +140,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 		},
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -169,7 +169,7 @@ func TestMultipleResolvers(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	assert.Nil(t, p)
@@ -181,7 +181,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -202,7 +202,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), cfg)
+	p, err := newTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -221,7 +221,7 @@ func TestOnBackendChanges(t *testing.T) {
 		return newNopMockExporter(), nil
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, componentFactory, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -245,7 +245,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 		return newNopMockExporter(), nil
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, componentFactory, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -279,7 +279,7 @@ func TestAddMissingExporters(t *testing.T) {
 		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(exporterFactory.Type()), &oCfg)
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, fn, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -314,7 +314,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), &oCfg)
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, fn, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -380,7 +380,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, componentFactory, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -424,7 +424,7 @@ func TestNewLoadBalancerInvalidNamespaceAwsResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	assert.Nil(t, p)
@@ -444,7 +444,7 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(context.Background(), ts.Logger, cfg, nil, tb)
 
 	// verify
 	assert.Nil(t, p)

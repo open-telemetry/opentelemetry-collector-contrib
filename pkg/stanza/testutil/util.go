@@ -48,16 +48,16 @@ func (p *mockPersister) Delete(_ context.Context, k string) error {
 	return nil
 }
 
-func (p *mockPersister) Batch(_ context.Context, ops ...*storage.Operation) error {
+func (p *mockPersister) Batch(ctx context.Context, ops ...*storage.Operation) error {
 	var err error
 	for _, op := range ops {
 		switch op.Type {
 		case storage.Get:
-			op.Value, err = p.Get(context.Background(), op.Key)
+			op.Value, err = p.Get(ctx, op.Key)
 		case storage.Set:
-			err = p.Set(context.Background(), op.Key, op.Value)
+			err = p.Set(ctx, op.Key, op.Value)
 		case storage.Delete:
-			err = p.Delete(context.Background(), op.Key)
+			err = p.Delete(ctx, op.Key)
 		}
 		if err != nil {
 			return err

@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 }
 
 func CreateTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
@@ -45,12 +45,12 @@ func CreateTracesExporter(
 	}
 
 	dd := createExporter(c)
-	err := dd.start(context.Background(), componenttest.NewNopHost())
+	err := dd.start(ctx, componenttest.NewNopHost())
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewTraces(
-		context.Background(),
+		ctx,
 		set,
 		dd.pushTraces,
 		consumer.ConsumeTracesFunc(dd.pushTraces),

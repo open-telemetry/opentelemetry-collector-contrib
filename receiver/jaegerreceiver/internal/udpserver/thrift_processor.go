@@ -61,7 +61,7 @@ func NewThriftProcessor(
 	res.processing.Add(res.numProcessors)
 	for i := 0; i < res.numProcessors; i++ {
 		go func() {
-			res.processBuffer()
+			res.processBuffer(context.Background())
 			res.processing.Done()
 		}()
 	}
@@ -87,7 +87,7 @@ func (s *ThriftProcessor) Stop() {
 
 // processBuffer reads data off the channel and puts it into a custom transport for
 // the processor to process
-func (s *ThriftProcessor) processBuffer() {
+func (s *ThriftProcessor) processBuffer(ctx context.Context) {
 	for buf := range s.server.DataChan() {
 		protocol := s.protocolPool.Get().(thrift.TProtocol)
 		_, _ = buf.WriteTo(protocol.Transport()) // writes to memory transport don't fail
@@ -95,7 +95,7 @@ func (s *ThriftProcessor) processBuffer() {
 
 		// NB: oddly, thrift-gen/agent/agent.go:L156 does this: `return true, thrift.WrapTException(err2)`
 		// So we check for both OK and error.
-		if ok, err := s.handler.Process(context.Background(), protocol, protocol); !ok || err != nil {
+		if ok, err := s.handler.Process(ctx, protocol, protocol); !ok || err != nil {
 			s.logger.Error("Processor failed", zap.Error(err))
 		}
 		s.protocolPool.Put(protocol)

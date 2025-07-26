@@ -54,13 +54,13 @@ func (*testHarness) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pmetric.Metrics) error {
+func (h *testHarness) ConsumeMetrics(ctx context.Context, pdm pmetric.Metrics) error {
 	h.compare(pdm)
 	if h.metricIndex.allReceived() {
 		close(h.allMetricsReceived)
 	}
 	if !h.outOfMetrics {
-		h.sendNextMetric()
+		h.sendNextMetric(ctx)
 	}
 	return nil
 }
@@ -92,11 +92,11 @@ func (h *testHarness) compare(pdm pmetric.Metrics) {
 	}
 }
 
-func (h *testHarness) sendNextMetric() {
+func (h *testHarness) sendNextMetric(ctx context.Context) {
 	h.currPDM, h.outOfMetrics = h.metricSupplier.nextMetrics()
 	if h.outOfMetrics {
 		return
 	}
-	err := h.sender.ConsumeMetrics(context.Background(), h.currPDM)
+	err := h.sender.ConsumeMetrics(ctx, h.currPDM)
 	require.NoError(h.t, err)
 }

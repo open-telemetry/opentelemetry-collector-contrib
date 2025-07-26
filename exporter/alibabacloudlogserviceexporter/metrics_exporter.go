@@ -14,7 +14,7 @@ import (
 )
 
 // newMetricsExporter return a new LogService metrics exporter.
-func newMetricsExporter(set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+func newMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
 	l := &logServiceMetricsSender{
 		logger: set.Logger,
 	}
@@ -25,7 +25,7 @@ func newMetricsExporter(set exporter.Settings, cfg component.Config) (exporter.M
 	}
 
 	return exporterhelper.NewMetrics(
-		context.TODO(),
+		ctx,
 		set,
 		cfg,
 		l.pushMetricsData)

@@ -58,7 +58,7 @@ func newLogzioExporter(cfg *Config, params exporter.Settings) (*logzioExporter, 
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Traces, error) {
+func newLogzioTracesExporter(ctx context.Context, config *Config, set exporter.Settings) (exporter.Traces, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewTraces(
-		context.Background(),
+		ctx,
 		set,
 		config,
 		exporter.pushTraceData,
@@ -81,7 +81,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	)
 }
 
-func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs, error) {
+func newLogzioLogsExporter(ctx context.Context, config *Config, set exporter.Settings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewLogs(
-		context.TODO(),
+		ctx,
 		set,
 		config,
 		exporter.pushLogData,

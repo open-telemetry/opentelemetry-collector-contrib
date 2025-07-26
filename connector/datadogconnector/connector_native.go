@@ -100,11 +100,11 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnectorNative) Start(context.Context, component.Host) error {
+func (c *traceToMetricConnectorNative) Start(ctx context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
 	c.wg.Add(1)
-	go c.run()
+	go c.run(ctx)
 	c.isStarted = true
 	return nil
 }
@@ -142,7 +142,7 @@ func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces p
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *traceToMetricConnectorNative) run() {
+func (c *traceToMetricConnectorNative) run(ctx context.Context) {
 	defer c.wg.Done()
 	for {
 		select {
@@ -161,8 +161,6 @@ func (c *traceToMetricConnectorNative) run() {
 				continue
 			}
 			// APM stats as metrics
-			ctx := context.TODO()
-
 			// send metrics to the consumer or next component in pipeline
 			if err := c.metricsConsumer.ConsumeMetrics(ctx, mx); err != nil {
 				c.logger.Error("Failed ConsumeMetrics", zap.Error(err))

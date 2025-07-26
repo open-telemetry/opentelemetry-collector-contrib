@@ -54,7 +54,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 	ctx, jmx.cancel = context.WithCancel(ctx)
 
 	var err error
-	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
+	jmx.otlpReceiver, err = jmx.buildOTLPReceiver(ctx)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func InsertDefault[T any](opt *configoptional.Optional[T]) error {
 	return empty.Unmarshal(opt)
 }
 
-func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
+func (jmx *jmxMetricReceiver) buildOTLPReceiver(ctx context.Context) (receiver.Metrics, error) {
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
@@ -178,5 +178,5 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 		TelemetrySettings: jmx.params.TelemetrySettings,
 		BuildInfo:         jmx.params.BuildInfo,
 	}
-	return factory.CreateMetrics(context.Background(), params, config, jmx.nextConsumer)
+	return factory.CreateMetrics(ctx, params, config, jmx.nextConsumer)
 }

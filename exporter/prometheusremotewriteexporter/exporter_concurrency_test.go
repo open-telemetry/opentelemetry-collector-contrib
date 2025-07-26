@@ -117,7 +117,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 
 	assert.NotNil(t, cfg)
 	set := exportertest.NewNopSettings(metadata.Type)
-	prwe, nErr := newPRWExporter(cfg, set)
+	prwe, nErr := newPRWExporter(context.Background(), cfg, set)
 
 	require.NoError(t, nErr)
 	ctx, cancel := context.WithCancel(context.Background())

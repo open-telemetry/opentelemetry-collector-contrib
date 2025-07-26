@@ -28,8 +28,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 	return &logsExporter{logger: logger, cfg: cfg}
 }
 
-func initializeLogKernel(cfg *Config) error {
-	ctx := context.Background()
+func initializeLogKernel(ctx context.Context, cfg *Config) error {
 	cluster, err := newCluster(cfg)
 	if err != nil {
 		return err
@@ -76,7 +75,7 @@ func newCluster(cfg *Config) (*gocql.ClusterConfig, error) {
 	return cluster, nil
 }
 
-func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
+func (e *logsExporter) Start(ctx context.Context, _ component.Host) error {
 	cluster, err := newCluster(e.cfg)
 	if err != nil {
 		return err
@@ -91,7 +90,7 @@ func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
 		return err
 	}
 	e.client = session
-	initializeErr := initializeLogKernel(e.cfg)
+	initializeErr := initializeLogKernel(ctx, e.cfg)
 	return initializeErr
 }
 
