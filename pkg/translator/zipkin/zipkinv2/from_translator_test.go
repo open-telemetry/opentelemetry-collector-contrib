@@ -106,7 +106,7 @@ func TestExtractScopeTags(t *testing.T) {
 				il.Attributes().PutStr("custom.key", "custom.val")
 			},
 			res: map[string]string{
-				"custom.key":         "custom.val",
+				"custom.key":           "custom.val",
 				"otel.library.name":    "otel-lib",
 				"otel.library.version": "v1.2.3",
 			},
