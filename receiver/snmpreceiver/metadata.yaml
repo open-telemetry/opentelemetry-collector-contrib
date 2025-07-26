@@ -6,7 +6,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [StefanKurek, tamir-michaeli]
+    active: [tamir-michaeli]
+    emeritus: [StefanKurek]
 
 tests:
   config:
