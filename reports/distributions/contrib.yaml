@@ -45,7 +45,6 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
         - opencensus
         - opensearch
@@ -202,6 +201,7 @@ components:
         - receiver_creator
         - redis
         - riak
+        - saphana
         - sapm
         - signalfx
         - skywalking
