@@ -212,10 +212,6 @@ component_management:
     name: exporter_logzio
     paths:
     - exporter/logzioexporter/**
-  - component_id: exporter_loki
-    name: exporter_loki
-    paths:
-    - exporter/lokiexporter/**
   - component_id: exporter_mezmo
     name: exporter_mezmo
     paths:
