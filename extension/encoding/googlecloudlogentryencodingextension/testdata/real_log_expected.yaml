@@ -69,6 +69,8 @@ resourceLogs:
                 value:
                   stringValue: 663760330006df7c63521728
             body: {}
+            flags: 1
+            observedTimeUnixNano: "1714905139455706870"
             severityNumber: 17
             severityText: ERROR
             spanId: 3e3a5741b18f0710
