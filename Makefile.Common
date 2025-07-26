@@ -213,12 +213,13 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 
 .PHONY: generate
 generate: install-tools
+ifeq ($(CURDIR),$(SRC_ROOT))
+	PATH="$(TOOLS_BIN_DIR):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) gofmt
+else
 	PATH="$(TOOLS_BIN_DIR):$$PATH" $(GOCMD) generate ./...
 	$(MAKE) fmt
-
-.PHONY: gotidy
-gotidy: 
-	rm -rf go.sum && $(GOCMD) mod tidy -compat=1.23.0 && $(GOCMD) get toolchain@none
+endif
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell

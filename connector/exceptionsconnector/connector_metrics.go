@@ -66,7 +66,7 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsCo
 }
 
 // Capabilities implements the consumer interface.
-func (c *metricsConnector) Capabilities() consumer.Capabilities {
+func (*metricsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

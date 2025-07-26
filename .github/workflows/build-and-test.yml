@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -85,7 +85,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -154,7 +154,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -178,7 +178,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -249,7 +249,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["~1.24", "~1.23"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: [stable, oldstable]
         runner: [ubuntu-24.04]
         group:
           - receiver-0
@@ -306,7 +306,7 @@ jobs:
       # - On main, with the go version that we didn't run the JUnit tests with.
       - name: Run Unit Tests
         id: tests
-        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, '~1.23' )
+        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, 'oldstable' )
         run: make gotest GROUP=${{ matrix.group }}
 
       # JUnit tests are super long, so we only run them for one go version.
@@ -314,16 +314,16 @@ jobs:
       # merged to main, so we don't run them on every PR.
       - name: Run Unit Tests With JUnit and Coverage
         id: tests-with-junit
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: internal/tools/testresults/
@@ -337,7 +337,7 @@ jobs:
           else
             echo "Tests passed or were skipped. Continuing."
           fi
-          
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
@@ -394,7 +394,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -427,7 +427,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -471,7 +471,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -498,7 +498,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -544,6 +544,7 @@ jobs:
           - arm
           - arm64
           - ppc64le
+          - riscv64
           - s390x
         include:
           - os: linux
@@ -557,6 +558,8 @@ jobs:
           - os: darwin
             arch: ppc64le
           - os: darwin
+            arch: riscv64
+          - os: darwin
             arch: s390x
           - os: windows
             arch: arm
@@ -565,12 +568,14 @@ jobs:
           - os: windows
             arch: ppc64le
           - os: windows
+            arch: riscv64
+          - os: windows
             arch: s390x
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -620,7 +625,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Mkdir bin and dist
         run: |
@@ -725,6 +730,8 @@ jobs:
     # This job updates the "next release" milestone
     # to the latest released version and creates a new milestone
     # named "next release" in its place
+    permissions:
+      issues: write # required for managing milestones
     runs-on: ubuntu-24.04
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
@@ -764,7 +771,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache

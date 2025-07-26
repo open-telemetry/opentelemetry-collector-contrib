@@ -666,22 +666,22 @@ func (s *Supervisor) startOpAMPClient() error {
 		Capabilities: s.config.Capabilities.SupportedCapabilities(),
 	}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
-	if err = s.opampClient.SetAgentDescription(ad); err != nil {
+	if err := s.opampClient.SetAgentDescription(ad); err != nil {
 		return err
 	}
 
-	if err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+	if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
 		return err
 	}
 
 	if ac, ok := s.availableComponents.Load().(*protobufs.AvailableComponents); ok && ac != nil {
-		if err = s.opampClient.SetAvailableComponents(ac); err != nil {
+		if err := s.opampClient.SetAvailableComponents(ac); err != nil {
 			return err
 		}
 	}
 
 	s.telemetrySettings.Logger.Debug("Starting OpAMP client...")
-	if err = s.opampClient.Start(context.Background(), settings); err != nil {
+	if err := s.opampClient.Start(context.Background(), settings); err != nil {
 		return err
 	}
 	s.telemetrySettings.Logger.Debug("OpAMP client started.")
@@ -874,7 +874,7 @@ func (s *Supervisor) stopOpAMPClient() error {
 	return nil
 }
 
-func (s *Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.Header {
+func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.Header {
 	headers := make(http.Header)
 	for _, header := range protoHeaders.Headers {
 		headers.Add(header.Key, header.Value)
@@ -1025,10 +1025,10 @@ func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = k.Load(rawbytes.Provider(cfg), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	if err := k.Load(rawbytes.Provider(cfg), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return nil, err
 	}
-	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return nil, err
 	}
 
@@ -1247,7 +1247,7 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	return cfg
 }
 
-func (s *Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
+func (*Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
 	if settings == nil || settings.DestinationEndpoint == "" {
 		return data
 	}
@@ -1316,7 +1316,8 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 		return false, err
 	}
 
-	if err = k.Load(rawbytes.Provider(agentConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	err = k.Load(rawbytes.Provider(agentConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+	if err != nil {
 		return false, err
 	}
 
@@ -1893,7 +1894,7 @@ func (s *Supervisor) isFeatureGateSupported(gate string) bool {
 	return ok
 }
 
-func (s *Supervisor) findRandomPort() (int, error) {
+func (*Supervisor) findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return 0, err

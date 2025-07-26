@@ -62,6 +62,7 @@ components:
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
@@ -85,6 +86,7 @@ components:
         - host_observer
         - http_forwarder
         - jaegerremotesampling
+        - k8s_leader_elector
         - k8s_observer
         - kafkatopics_observer
         - oauth2client
@@ -93,6 +95,7 @@ components:
         - pprof
         - redis_storage
         - sigv4auth
+        - text_encoding
     processor:
         - attributes
         - cumulativetodelta
@@ -199,6 +202,7 @@ components:
         - receiver_creator
         - redis
         - riak
+        - saphana
         - sapm
         - signalfx
         - skywalking

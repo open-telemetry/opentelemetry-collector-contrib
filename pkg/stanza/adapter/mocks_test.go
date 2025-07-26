@@ -46,16 +46,16 @@ func (c *UnstartableConfig) Build(set component.TelemetrySettings) (operator.Ope
 }
 
 // Start will return an error
-func (o *UnstartableOperator) Start(_ operator.Persister) error {
+func (*UnstartableOperator) Start(_ operator.Persister) error {
 	return errors.New("something very unusual happened")
 }
 
-func (o *UnstartableOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
+func (*UnstartableOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
 	return nil
 }
 
 // Process will return nil
-func (o *UnstartableOperator) Process(_ context.Context, _ *entry.Entry) error {
+func (*UnstartableOperator) Process(_ context.Context, _ *entry.Entry) error {
 	return nil
 }
 
@@ -69,11 +69,11 @@ type TestConfig struct {
 }
 type TestReceiverType struct{}
 
-func (f TestReceiverType) Type() component.Type {
+func (TestReceiverType) Type() component.Type {
 	return testType
 }
 
-func (f TestReceiverType) CreateDefaultConfig() component.Config {
+func (TestReceiverType) CreateDefaultConfig() component.Config {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
 			Operators: []operator.Config{},
@@ -82,10 +82,10 @@ func (f TestReceiverType) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (f TestReceiverType) BaseConfig(cfg component.Config) BaseConfig {
+func (TestReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (TestReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return cfg.(*TestConfig).Input
 }

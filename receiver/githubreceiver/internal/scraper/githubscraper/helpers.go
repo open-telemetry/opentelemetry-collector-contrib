@@ -22,7 +22,7 @@ const (
 	defaultReturnItems = 100
 )
 
-func (ghs *githubScraper) getRepos(
+func (*githubScraper) getRepos(
 	ctx context.Context,
 	client graphql.Client,
 	searchQuery string,

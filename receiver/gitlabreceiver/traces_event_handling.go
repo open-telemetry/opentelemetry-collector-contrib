@@ -113,7 +113,7 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 	return nil
 }
 
-func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e GitlabEvent, traceID pcommon.TraceID, spanID pcommon.SpanID) error {
+func (*gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e GitlabEvent, traceID pcommon.TraceID, spanID pcommon.SpanID) error {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
@@ -243,7 +243,7 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 }
 
 // setStageTime determines stage start/finish times by finding the earliest start and latest finish time
-func (gtr *gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipelineJob) error {
+func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipelineJob) error {
 	// Handle start time
 	if stage.StartedAt == "" {
 		stage.StartedAt = job.StartedAt

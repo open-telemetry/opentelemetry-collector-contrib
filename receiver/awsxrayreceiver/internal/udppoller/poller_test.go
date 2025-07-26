@@ -385,7 +385,7 @@ func (m *mockNetError) Timeout() bool {
 	return m.timeout
 }
 
-func (m *mockNetError) Temporary() bool {
+func (*mockNetError) Temporary() bool {
 	return false
 }
 
@@ -417,7 +417,7 @@ func (m *mockSocketConn) Read(b []byte) (int, error) {
 	return copied, m.expectedError
 }
 
-func (m *mockSocketConn) Close() error { return nil }
+func (*mockSocketConn) Close() error { return nil }
 
 func createAndOptionallyStartPoller(
 	t *testing.T,
