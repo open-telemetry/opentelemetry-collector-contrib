@@ -507,6 +507,7 @@ Available Converters:
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
 - [RemoveXML](#removexml)
+- [SanitizeDBStatement](#sanitizedbstatement)
 - [Second](#second)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
@@ -1897,6 +1898,28 @@ Delete all comments
 Delete text from nodes that contain the word "sensitive"
 
 - `RemoveXML(log.body, "//*[contains(text(), 'sensitive')]")`
+
+### SanitizeDBStatement
+
+`SanitizeDBStatement(target)`
+
+The `SanitizeDBStatement` Converter takes a SQL statement string and returns a sanitized version with literals replaced by placeholders.
+
+`target` is a string containing a SQL statement. If `target` is not a string or is empty, the function returns an error.
+
+The function performs the following sanitization:
+- Replaces numeric literals with `?`
+- Replaces string literals with `?`
+- Preserves SQL keywords, identifiers, and operators
+- Preserves comments
+- Normalizes whitespace
+- Handles special cases like `IN` clauses and hex numbers
+
+Examples:
+
+- `SanitizeDBStatement("SELECT * FROM users WHERE id = 123")` returns `SELECT * FROM users WHERE id = ?`
+- `SanitizeDBStatement("INSERT INTO users (name, age) VALUES ('John', 30)")` returns `INSERT INTO users (name, age) VALUES (?, ?)`
+- `SanitizeDBStatement("SELECT * FROM users WHERE status IN (1, 2, 3)")` returns `SELECT * FROM users WHERE status IN (?)`
 
 ### Second
 
