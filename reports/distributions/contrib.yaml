@@ -92,6 +92,7 @@ components:
         - oauth2client
         - oidc
         - opamp
+        - otlp_encoding
         - pprof
         - redis_storage
         - sigv4auth
