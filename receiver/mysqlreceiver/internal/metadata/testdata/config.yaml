@@ -47,6 +47,8 @@ all_set:
       enabled: true
     mysql.page_operations:
       enabled: true
+    mysql.page_size:
+      enabled: true
     mysql.prepared_statements:
       enabled: true
     mysql.query.client.count:
@@ -148,6 +150,8 @@ none_set:
     mysql.operations:
       enabled: false
     mysql.page_operations:
+      enabled: false
+    mysql.page_size:
       enabled: false
     mysql.prepared_statements:
       enabled: false

@@ -692,3 +692,12 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+  mysql.page_size:
+    enabled: false
+    description: InnoDB page size.
+    unit: By
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
