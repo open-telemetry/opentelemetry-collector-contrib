@@ -173,6 +173,9 @@ type Supervisor struct {
 	opampServer     server.OpAMPServer
 	opampServerPort int
 
+	// The HTTP server for health check endpoint
+	healthCheckServer *http.Server
+
 	telemetrySettings telemetrySettings
 
 	featureGates map[string]struct{}
@@ -304,6 +307,11 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 
 func (s *Supervisor) Start() error {
 	var err error
+
+	if err = s.startHealthCheckServer(); err != nil {
+		return fmt.Errorf("failed to start health check server: %w", err)
+	}
+
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.telemetrySettings.Logger)
 	if err != nil {
 		return err
@@ -685,6 +693,51 @@ func (s *Supervisor) startOpAMPClient() error {
 		return err
 	}
 	s.telemetrySettings.Logger.Debug("OpAMP client started.")
+
+	return nil
+}
+
+func (s *Supervisor) startHealthCheckServer() error {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if s.persistentState == nil {
+			w.WriteHeader(http.StatusPreconditionFailed)
+			_, _ = w.Write([]byte("persistent state is nil"))
+			return
+		}
+
+		cfg, ok := s.cfgState.Load().(*configState)
+		if !ok {
+			w.WriteHeader(http.StatusPreconditionFailed)
+			_, _ = w.Write([]byte("config state is nil"))
+			return
+		}
+		if cfg == nil {
+			w.WriteHeader(http.StatusPreconditionFailed)
+			_, _ = w.Write([]byte("config state is nil"))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	})
+
+	healthCheckServerPort := 23233
+	s.healthCheckServer = &http.Server{
+		Addr:    fmt.Sprintf(":%d", healthCheckServerPort),
+		Handler: mux,
+	}
+
+	listener, err := net.Listen("tcp", s.healthCheckServer.Addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
+	}
+
+	go func() {
+		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int("port", healthCheckServerPort))
+		if err := s.healthCheckServer.Serve(listener); err != nil && err != http.ErrServerClosed {
+			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
+		}
+	}()
 
 	return nil
 }
@@ -1636,6 +1689,19 @@ func (s *Supervisor) Shutdown() {
 			s.telemetrySettings.Logger.Error("Could not stop the OpAMP Server")
 		} else {
 			s.telemetrySettings.Logger.Debug("OpAMP server stopped.")
+		}
+	}
+
+	if s.healthCheckServer != nil {
+		s.telemetrySettings.Logger.Debug("Stopping health check server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := s.healthCheckServer.Shutdown(ctx)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not stop the health check server", zap.Error(err))
+		} else {
+			s.telemetrySettings.Logger.Debug("Health check server stopped.")
 		}
 	}
 
