@@ -38,11 +38,11 @@ type Config struct {
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
-	// Deprecated: Use TranslationStrategy instead when exporter.prometheusexporter.UseTranslationStrategy feature gate is enabled.
+	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
-	// Only used when exporter.prometheusexporter.UseTranslationStrategy feature gate is enabled.
+	// When set, this takes precedence over AddMetricSuffixes.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
 }
 
@@ -50,7 +50,8 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if translationStrategyFeatureGate.IsEnabled() {
+	// Validate translation strategy if set
+	if cfg.TranslationStrategy != "" {
 		switch cfg.TranslationStrategy {
 		case underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation:
 		default:
@@ -77,9 +78,9 @@ const (
 	noTranslation translationStrategy = "NoTranslation"
 )
 
-var translationStrategyFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusexporter.UseTranslationStrategy",
+var disableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusexporter.DisableAddMetricSuffixes",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus exporter uses the new translation_strategy configuration instead of add_metric_suffixes"),
+	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 )

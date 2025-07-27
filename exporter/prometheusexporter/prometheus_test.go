@@ -490,7 +490,7 @@ func TestPrometheusExporter_TranslationStrategies(t *testing.T) {
 		want               string
 	}{
 		{
-			name:               "Deprecated AddMetricSuffixes=true",
+			name:               "Legacy AddMetricSuffixes=true (no translation_strategy set)",
 			featureGateEnabled: false,
 			config: &Config{
 				AddMetricSuffixes: true,
@@ -505,7 +505,7 @@ this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-s
 `,
 		},
 		{
-			name:               "Deprecated AddMetricSuffixes=false",
+			name:               "Legacy AddMetricSuffixes=false (no translation_strategy set)",
 			featureGateEnabled: false,
 			config: &Config{
 				AddMetricSuffixes: false,
@@ -520,8 +520,38 @@ this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="
 `,
 		},
 		{
-			name:               "UnderscoreEscapingWithSuffixes",
+			name:               "Legacy AddMetricSuffixes=true with feature gate enabled (no translation_strategy set)",
 			featureGateEnabled: true,
+			config: &Config{
+				AddMetricSuffixes: true, // Should be ignored and default 'translation_strategy' is used (UnderscoreEscapingWithSuffixes).
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "TranslationStrategy takes precedence over AddMetricSuffixes (feature gate disabled)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes:   true, // This should be ignored
+				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "UnderscoreEscapingWithSuffixes",
 			config: &Config{
 				TranslationStrategy: underscoreEscapingWithSuffixes,
 			},
@@ -535,8 +565,7 @@ this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-s
 `,
 		},
 		{
-			name:               "UnderscoreEscapingWithoutSuffixes",
-			featureGateEnabled: true,
+			name: "UnderscoreEscapingWithoutSuffixes",
 			config: &Config{
 				TranslationStrategy: underscoreEscapingWithoutSuffixes,
 			},
@@ -550,8 +579,7 @@ this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="
 `,
 		},
 		{
-			name:               "NoUTF8EscapingWithSuffixes/escaping=allow-utf-8",
-			featureGateEnabled: true,
+			name: "NoUTF8EscapingWithSuffixes/escaping=allow-utf-8",
 			config: &Config{
 				TranslationStrategy: noUTF8EscapingWithSuffixes,
 			},
@@ -568,8 +596,7 @@ target_info{instance="test-instance",job="test-service"} 1
 `,
 		},
 		{
-			name:               "NoUTF8EscapingWithSuffixes/escaping=underscores",
-			featureGateEnabled: true,
+			name: "NoUTF8EscapingWithSuffixes/escaping=underscores",
 			config: &Config{
 				TranslationStrategy: noUTF8EscapingWithSuffixes,
 			},
@@ -605,7 +632,6 @@ target_info{instance="test-instance",job="test-service"} 1
 		},
 		{
 			name:               "NoTranslation/escaping=underscores",
-			featureGateEnabled: true,
 			config: &Config{
 				TranslationStrategy: noTranslation,
 			},
@@ -626,9 +652,9 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for this test
-			originalState := translationStrategyFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, translationStrategyFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, translationStrategyFeatureGate, originalState)
+			originalState := disableAddMetricSuffixesFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
+			defer testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, originalState)
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)

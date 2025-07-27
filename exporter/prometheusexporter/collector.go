@@ -81,24 +81,31 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 // getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
 // Returns (withSuffixes, allowUTF8)
 func getTranslationConfiguration(config *Config) (bool, bool) {
-	if !translationStrategyFeatureGate.IsEnabled() {
-		// Legacy behavior using AddMetricSuffixes, UTF-8 escaped to underscores.
-		return config.AddMetricSuffixes, false
+	// If TranslationStrategy is explicitly set, use it (takes precedence)
+	if config.TranslationStrategy != "" {
+		switch config.TranslationStrategy {
+		case underscoreEscapingWithSuffixes:
+			return true, false
+		case underscoreEscapingWithoutSuffixes:
+			return false, false
+		case noUTF8EscapingWithSuffixes:
+			return true, true
+		case noTranslation:
+			return false, true
+		default:
+			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
+			return true, false
+		}
 	}
 
-	switch config.TranslationStrategy {
-	case underscoreEscapingWithSuffixes:
-		return true, false
-	case underscoreEscapingWithoutSuffixes:
-		return false, false
-	case noUTF8EscapingWithSuffixes:
-		return true, true
-	case noTranslation:
-		return false, true
-	default:
-		// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
+	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
+	if disableAddMetricSuffixesFeatureGate.IsEnabled() {
+		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
 		return true, false
 	}
+
+	// Fall back to legacy AddMetricSuffixes behavior, UTF-8 escaped to underscores.
+	return config.AddMetricSuffixes, false
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
