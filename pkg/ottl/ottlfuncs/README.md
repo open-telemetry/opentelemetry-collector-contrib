@@ -610,19 +610,28 @@ Examples:
 
 ### Contains
 
-`Contains(target, substring, case_sensitive)`
+`Contains(target, substrings, case_sensitive)`
 
-The `Contains` Converter checks if a string contains a substring. It returns `true` if the substring is found, and `false` otherwise. This function uses Go's native string contains functionality which provides better performance compared to regex-based approaches like `IsMatch`.
+The `Contains` Converter checks if a string contains any of the specified substrings. It returns `true` if any substring is found, and `false` otherwise. This function uses Go's native string contains functionality which provides better performance compared to regex-based approaches like `IsMatch`.
 
-`target` is a string to search within.
-`substring` is the string to search for.
-`case_sensitive` is an boolean parameter that determines if the search should be case-sensitive.
+**Parameters:**
+- `target` is a string to search within. If `target` is not a string or is nil, the function will return an error.
+- `substrings` is an array of strings to search for. The function returns `true` if ANY of the substrings are found in the target string.
+- `case_sensitive` is a boolean parameter that determines if the search should be case-sensitive (`true` for case-sensitive, `false` for case-insensitive).
 
-Examples:
+**Returns:** `true` if any substring is found, `false` if no substrings are found, or an error if the target is not a string.
 
-- `Contains(attributes["message"], ["error", "warn"], false)`
-- `Contains("hello world", "world", true)`
-- `Contains("Hello World", "hello", false)`
+**Examples:**
+
+Basic usage:
+- `Contains(attributes["message"], ["error", "warn"], false)` - Check if message contains "error" or "warn" (case-insensitive)
+- `Contains("hello world", ["world"], true)` - Check if "hello world" contains "world" (case-sensitive)
+- `Contains("Hello World", ["hello"], false)` - Check if "Hello World" contains "hello" (case-insensitive)
+
+Real-world scenarios:
+- `Contains(span.attributes["http.method"], ["GET", "POST"], true)` - Check if HTTP method is GET or POST
+- `Contains(log.attributes["level"], ["ERROR", "FATAL"], false)` - Check if log level is error or fatal (case-insensitive)
+- `Contains(metric.attributes["service.name"], ["frontend", "api"], false)` - Check if service name contains frontend or api
 
 ### ConvertCase
 
