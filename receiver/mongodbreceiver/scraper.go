@@ -264,7 +264,11 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordHealth(now, document, errs)
 	s.recordActiveWrites(now, document, errs)
 	s.recordActiveReads(now, document, errs)
-	s.recordFlushesPerSecond(now, document, errs)
+
+	if s.config.Metrics.MongodbFlushesRate.Enabled {
+		s.recordFlushesPerSecond(now, document, errs)
+	}
+
 	s.recordWTCacheBytes(now, document, errs)
 	s.recordPageFaults(now, document, errs)
 }
