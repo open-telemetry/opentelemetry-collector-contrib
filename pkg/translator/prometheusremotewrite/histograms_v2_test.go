@@ -5,10 +5,10 @@ package prometheusremotewrite
 
 import (
 	"fmt"
-	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"testing"
 	"time"
 
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"

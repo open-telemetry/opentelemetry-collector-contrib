@@ -61,11 +61,9 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 		c.unique[timeSeriesSignature(lbls)] = &ts
 
 		// TODO handle exemplars
-
 	}
 
 	return nil
-
 }
 
 // exponentialToNativeHistogramV2 translates OTel Exponential Histogram data point
