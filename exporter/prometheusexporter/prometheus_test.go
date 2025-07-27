@@ -631,7 +631,7 @@ target_info{instance="test-instance",job="test-service"} 1
 `,
 		},
 		{
-			name:               "NoTranslation/escaping=underscores",
+			name: "NoTranslation/escaping=underscores",
 			config: &Config{
 				TranslationStrategy: noTranslation,
 			},
