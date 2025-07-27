@@ -244,12 +244,12 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for mongodb events.
 type EventsConfig struct {
-	MongodbQuerySample EventConfig `mapstructure:"mongodb.query.sample"`
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
-		MongodbQuerySample: EventConfig{
+		DbServerQuerySample: EventConfig{
 			Enabled: true,
 		},
 	}

@@ -131,7 +131,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordMongodbQuerySampleEvent(ctx, timestamp, "mongodb.namespace-val", "mongodb.obfuscated_command-val", "mongodb.query.signature-val", 23, "mongodb.explain_plan-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMongodb, "db.collection.name-val", "db.operation.name-val", "db.query.text-val", "mongodb.query.signature-val", 26, "mongodb.query.plan-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetDatabase("database-val")
@@ -159,28 +159,34 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
-				case "mongodb.query.sample":
-					assert.False(t, validatedEvents["mongodb.query.sample"], "Found a duplicate in the events slice: mongodb.query.sample")
-					validatedEvents["mongodb.query.sample"] = true
+				case "db.server.query_sample":
+					assert.False(t, validatedEvents["db.server.query_sample"], "Found a duplicate in the events slice: db.server.query_sample")
+					validatedEvents["db.server.query_sample"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
 					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
 					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
-					attrVal, ok := lr.Attributes().Get("mongodb.namespace")
+					attrVal, ok := lr.Attributes().Get("db.system.name")
 					assert.True(t, ok)
-					assert.Equal(t, "mongodb.namespace-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.obfuscated_command")
+					assert.Equal(t, "mongodb", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.collection.name")
 					assert.True(t, ok)
-					assert.Equal(t, "mongodb.obfuscated_command-val", attrVal.Str())
+					assert.Equal(t, "db.collection.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.operation.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.operation.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.text")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mongodb.query.signature")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.query.signature-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.duration_micros")
+					attrVal, ok = lr.Attributes().Get("mongodb.operation.duration")
 					assert.True(t, ok)
-					assert.EqualValues(t, 23, attrVal.Int())
-					attrVal, ok = lr.Attributes().Get("mongodb.explain_plan")
+					assert.EqualValues(t, 26, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("mongodb.query.plan")
 					assert.True(t, ok)
-					assert.Equal(t, "mongodb.explain_plan-val", attrVal.Str())
+					assert.Equal(t, "mongodb.query.plan-val", attrVal.Str())
 				}
 			}
 		})

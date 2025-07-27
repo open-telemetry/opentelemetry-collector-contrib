@@ -96,7 +96,7 @@ all_set:
     mongodb.wtcache.bytes.read:
       enabled: true
   events:
-    mongodb.query.sample:
+    db.server.query_sample:
       enabled: true
   resource_attributes:
     database:
@@ -202,7 +202,7 @@ none_set:
     mongodb.wtcache.bytes.read:
       enabled: false
   events:
-    mongodb.query.sample:
+    db.server.query_sample:
       enabled: false
   resource_attributes:
     database:

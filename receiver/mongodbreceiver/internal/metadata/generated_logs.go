@@ -13,40 +13,42 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type eventMongodbQuerySample struct {
+type eventDbServerQuerySample struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventMongodbQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, mongodbNamespaceAttributeValue string, mongodbObfuscatedCommandAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbDurationMicrosAttributeValue int64, mongodbExplainPlanAttributeValue string) {
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbOperationDurationAttributeValue int64, mongodbQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
 	dp := e.data.AppendEmpty()
-	dp.SetEventName("mongodb.query.sample")
+	dp.SetEventName("db.server.query_sample")
 	dp.SetTimestamp(timestamp)
 
 	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
 		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
 		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
-	dp.Attributes().PutStr("mongodb.namespace", mongodbNamespaceAttributeValue)
-	dp.Attributes().PutStr("mongodb.obfuscated_command", mongodbObfuscatedCommandAttributeValue)
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	dp.Attributes().PutStr("db.operation.name", dbOperationNameAttributeValue)
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	dp.Attributes().PutStr("mongodb.query.signature", mongodbQuerySignatureAttributeValue)
-	dp.Attributes().PutInt("mongodb.duration_micros", mongodbDurationMicrosAttributeValue)
-	dp.Attributes().PutStr("mongodb.explain_plan", mongodbExplainPlanAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.duration", mongodbOperationDurationAttributeValue)
+	dp.Attributes().PutStr("mongodb.query.plan", mongodbQueryPlanAttributeValue)
 
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
-func (e *eventMongodbQuerySample) emit(lrs plog.LogRecordSlice) {
+func (e *eventDbServerQuerySample) emit(lrs plog.LogRecordSlice) {
 	if e.config.Enabled && e.data.Len() > 0 {
 		e.data.MoveAndAppendTo(lrs)
 	}
 }
 
-func newEventMongodbQuerySample(cfg EventConfig) eventMongodbQuerySample {
-	e := eventMongodbQuerySample{config: cfg}
+func newEventDbServerQuerySample(cfg EventConfig) eventDbServerQuerySample {
+	e := eventDbServerQuerySample{config: cfg}
 	if cfg.Enabled {
 		e.data = plog.NewLogRecordSlice()
 	}
@@ -62,7 +64,7 @@ type LogsBuilder struct {
 	buildInfo                      component.BuildInfo // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
-	eventMongodbQuerySample        eventMongodbQuerySample
+	eventDbServerQuerySample       eventDbServerQuerySample
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -76,7 +78,7 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		logsBuffer:                     plog.NewLogs(),
 		logRecordsBuffer:               plog.NewLogRecordSlice(),
 		buildInfo:                      settings.BuildInfo,
-		eventMongodbQuerySample:        newEventMongodbQuerySample(lbc.Events.MongodbQuerySample),
+		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -141,7 +143,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
-	lb.eventMongodbQuerySample.emit(ils.LogRecords())
+	lb.eventDbServerQuerySample.emit(ils.LogRecords())
 
 	for _, op := range options {
 		op.apply(rl)
@@ -178,7 +180,7 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	return logs
 }
 
-// RecordMongodbQuerySampleEvent adds a log record of mongodb.query.sample event.
-func (lb *LogsBuilder) RecordMongodbQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, mongodbNamespaceAttributeValue string, mongodbObfuscatedCommandAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbDurationMicrosAttributeValue int64, mongodbExplainPlanAttributeValue string) {
-	lb.eventMongodbQuerySample.recordEvent(ctx, timestamp, mongodbNamespaceAttributeValue, mongodbObfuscatedCommandAttributeValue, mongodbQuerySignatureAttributeValue, mongodbDurationMicrosAttributeValue, mongodbExplainPlanAttributeValue)
+// RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbOperationDurationAttributeValue int64, mongodbQueryPlanAttributeValue string) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbCollectionNameAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, mongodbQuerySignatureAttributeValue, mongodbOperationDurationAttributeValue, mongodbQueryPlanAttributeValue)
 }

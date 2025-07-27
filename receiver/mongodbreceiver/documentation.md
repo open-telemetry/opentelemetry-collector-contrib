@@ -494,19 +494,21 @@ events:
     enabled: false
 ```
 
-### mongodb.query.sample
+### db.server.query_sample
 
-A sample of a MongoDB query.
+query sample
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| mongodb.namespace | The namespace of the MongoDB operation (database.collection). | Any Str |
-| mongodb.obfuscated_command | The obfuscated MongoDB command statement. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` |
+| db.collection.name | The namespace of the MongoDB operation (database.collection). | Any Str |
+| db.operation.name | The name of the MongoDB command being executed. | Any Str |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str |
 | mongodb.query.signature | A unique signature for the MongoDB query. | Any Str |
-| mongodb.duration_micros | The duration of the MongoDB operation in microseconds. | Any Int |
-| mongodb.explain_plan | The query plan for the query to be executed. | Any Str |
+| mongodb.operation.duration | The duration of the MongoDB operation in microseconds. | Any Int |
+| mongodb.query.plan | The query plan for the query to be executed. | Any Str |
 
 ## Resource Attributes
 
