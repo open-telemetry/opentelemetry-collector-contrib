@@ -1,11 +1,11 @@
-// Create database and collections
-db = db.getSiblingDB('sample_db');
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-// Create a collection
-db.createCollection('users');
+db.getSiblingDB('sample_db').createCollection('users');
 
-// Create a user with read/write access to the database
-db.createUser({
+// Switch to admin db to create users
+db.getSiblingDB('admin')
+.createUser({
   user: 'app_user',
   pwd: 'app_password',
   roles: [{
@@ -14,4 +14,16 @@ db.createUser({
   }]
 });
 
-// TODO: CREATE A OTEL USER
+db.getSiblingDB("admin").createUser({
+  user: "otel-user",
+  pwd: "otel-password",
+  roles: [
+    { role: "read", db: "admin" },
+    { role: "read", db: "local" },
+    { role: "clusterMonitor", db: "admin" }
+  ]
+})
+
+db.getSiblingDB("admin").grantRolesToUser("otel-user", [
+  { role: "readAnyDatabase", db: "admin" }
+])

@@ -86,8 +86,9 @@ func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M)
 	return result, args.Error(1)
 }
 
-func (*fakeClient) CurrentOp(_ context.Context) ([]bson.M, error) {
-	return nil, nil
+func (fc *fakeClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).([]bson.M), args.Error(1)
 }
 
 func TestListDatabaseNames(t *testing.T) {

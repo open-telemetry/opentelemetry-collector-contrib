@@ -23,8 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -34,16 +32,6 @@ import (
 )
 
 const mongoPort = "27017"
-
-type mockLogsConsumer struct {
-	consumer.Logs
-	logs []plog.Logs
-}
-
-func (m *mockLogsConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	m.logs = append(m.logs, ld)
-	return nil
-}
 
 func TestIntegration(t *testing.T) {
 	t.Run("4.0", integrationTest("4_0", []string{"/setup.sh"}, func(*Config) {}))
@@ -131,7 +119,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	p, err := container.MappedPort(ctx, mongoPort)
 	require.NoError(t, err)
 
-	connStr := fmt.Sprintf("mongodb://admin:admin@localhost:%s", p.Port())
+	connStr := fmt.Sprintf("mongodb://app_user:app_password@localhost:%s", p.Port())
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -144,10 +132,10 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 			Endpoint: net.JoinHostPort("localhost", p.Port()),
 		},
 	}
-	cfg.Username = "admin"
-	cfg.Password = "admin"
-	cfg.ClientConfig.Insecure = true
-	cfg.ClientConfig.InsecureSkipVerify = true
+	cfg.Username = "otel-user"
+	cfg.Password = "otel-password"
+	cfg.Insecure = true
+	cfg.InsecureSkipVerify = true
 	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
 
@@ -171,16 +159,14 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 			select {
 			case <-ticker.C:
 				// Mimic the query from .tools/query-mongo.sh
-				_, err := coll.Find(queryCtx, bson.M{"$where": "sleep(100); return true;"})
-				if err != nil {
-					return // context cancelled
-				}
+				_, err := coll.Find(queryCtx, bson.M{"$where": "sleep(500); return true;"})
+				assert.NoError(t, err)
 			case <-queryCtx.Done():
 				return
 			}
 		}
 	}()
-	scraper.start(context.Background(), nil)
+	assert.NoError(t, scraper.start(context.Background(), nil))
 	defer func() {
 		assert.NoError(t, scraper.shutdown(context.Background()))
 	}()
@@ -205,11 +191,11 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 				continue
 			}
 
-			if attributes["db.collection.name"].(string) == "sampler_db" && strings.Contains(queryAttribute.(string), `{"find":"?"`) {
+			if attributes["db.collection.name"].(string) == "users" && strings.Contains(queryAttribute.(string), `{"find":"?"`) && attributes["mongodb.query.plan"].(string) != "" {
 				return true
 			}
 		}
 
 		return false
-	}, 60*time.Second, 1*time.Second, "failed to find expected log record")
+	}, 60*time.Second, 150*time.Millisecond, "failed to find expected log record")
 }

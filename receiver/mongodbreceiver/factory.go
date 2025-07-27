@@ -78,6 +78,7 @@ func createLogsReceiver(
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
 
+	// TODO: BASED ON CONFIG
 	s, err := scraper.NewLogs(
 		ms.scrapeLogs,
 		scraper.WithStart(ms.start),
