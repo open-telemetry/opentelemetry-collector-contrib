@@ -26,31 +26,31 @@ func TestFromContext(t *testing.T) {
 				return context.Background()
 			},
 			want: nil,
-			key:  "saw_metrics_tenant_id",
+			key:  "tenant_id",
 		},
 		{
-			name: "metadata with valid saw_metrics_tenant_id key",
+			name: "metadata with valid tenant_id key",
 			ctx: func() context.Context {
 				cl := client.FromContext(context.Background())
 				cl.Metadata = client.NewMetadata(
-					map[string][]string{"saw_metrics_tenant_id": {"1548451"}},
+					map[string][]string{"tenant_id": {"1548451"}},
 				)
 				return client.NewContext(context.Background(), cl)
 			},
 			want: "1548451",
-			key:  "saw_metrics_tenant_id",
+			key:  "tenant_id",
 		},
 		{
-			name: "metadata with multiple values to saw_metrics_tenant_id key",
+			name: "metadata with multiple values to tenant_id key",
 			ctx: func() context.Context {
 				cl := client.FromContext(context.Background())
 				cl.Metadata = client.NewMetadata(
-					map[string][]string{"saw_metrics_tenant_id": {"1548451", "1548452"}},
+					map[string][]string{"tenant_id": {"1548451", "1548452"}},
 				)
 				return client.NewContext(context.Background(), cl)
 			},
 			want: nil,
-			key:  "saw_metrics_tenant_id",
+			key:  "tenant_id",
 		},
 	}
 
