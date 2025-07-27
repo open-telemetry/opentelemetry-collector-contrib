@@ -6,7 +6,6 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"fmt"
 	"math"
-	"sort"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/value"
@@ -21,9 +20,6 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
-		// TODO: Implement conversion of ExponentialHistogram to Prometheus native histogram
-		// This is a placeholder for the conversion logic.
-		// For now, we will just create labels and not convert the histogram.
 		histogram, err := exponentialToNativeHistogramV2(pt)
 		if err != nil {
 			return err
@@ -31,34 +27,9 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 
 		lbls := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer, model.MetricNameLabel, name)
 
-		// TODO fix code duplication from addSample
-
-		// TODO consider how to accommodate metadata in the symbol table when allocating the buffer, given not all metrics might have metadata.
-		buf := make([]uint32, 0, len(lbls)*2)
-
-		// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
-		sort.Slice(lbls, func(i, j int) bool {
-			return lbls[i].Name < lbls[j].Name
-		})
-
-		var off uint32
-		for _, l := range lbls {
-			off = c.symbolTable.Symbolize(l.Name)
-			buf = append(buf, off)
-			off = c.symbolTable.Symbolize(l.Value)
-			buf = append(buf, off)
-		}
-
-		ts := writev2.TimeSeries{
-			LabelsRefs: buf,
-			Histograms: []writev2.Histogram{histogram},
-			Metadata: writev2.Metadata{
-				Type:    metadata.Type,
-				HelpRef: c.symbolTable.Symbolize(metadata.Help),
-				UnitRef: c.symbolTable.Symbolize(metadata.Unit),
-			},
-		}
-		c.unique[timeSeriesSignature(lbls)] = &ts
+		ts := c.createTimeSeries(lbls, metadata)
+		ts.Histograms = []writev2.Histogram{histogram}
+		c.unique[timeSeriesSignature(lbls)] = ts
 
 		// TODO handle exemplars
 	}

@@ -5,6 +5,7 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"math"
+	"sort"
 	"strconv"
 
 	"github.com/prometheus/common/model"
@@ -144,5 +145,33 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
 
 		// TODO implement exemplars support
+	}
+}
+
+// createTimeSeries creates a TimeSeries with processed labels and metadata, but without samples or histograms
+func (c *prometheusConverterV2) createTimeSeries(lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {
+	// TODO consider how to accommodate metadata in the symbol table when allocating the buffer, given not all metrics might have metadata.
+	buf := make([]uint32, 0, len(lbls)*2)
+
+	// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
+	sort.Slice(lbls, func(i, j int) bool {
+		return lbls[i].Name < lbls[j].Name
+	})
+
+	var off uint32
+	for _, l := range lbls {
+		off = c.symbolTable.Symbolize(l.Name)
+		buf = append(buf, off)
+		off = c.symbolTable.Symbolize(l.Value)
+		buf = append(buf, off)
+	}
+
+	return &writev2.TimeSeries{
+		LabelsRefs: buf,
+		Metadata: writev2.Metadata{
+			Type:    metadata.Type,
+			HelpRef: c.symbolTable.Symbolize(metadata.Help),
+			UnitRef: c.symbolTable.Symbolize(metadata.Unit),
+		},
 	}
 }
