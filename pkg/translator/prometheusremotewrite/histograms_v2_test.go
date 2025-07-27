@@ -8,7 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -592,4 +596,169 @@ func validateNativeHistogramCountV2(t *testing.T, h writev2.Histogram) {
 		actualCount += uint64(prevBucket)
 	}
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
+}
+
+func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
+	tests := []struct {
+		name       string
+		metric     func() pmetric.Metric
+		wantSeries func() map[uint64]*writev2.TimeSeries
+	}{
+		// TDOO disabled failing test until https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39570 is merged.
+		/*
+			{
+				name: "histogram data points with same labels",
+				metric: func() pmetric.Metric {
+					metric := pmetric.NewMetric()
+					metric.SetName("test_hist")
+					metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+					pt := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+					pt.SetCount(7)
+					pt.SetScale(1)
+					pt.Positive().SetOffset(-1)
+					pt.Positive().BucketCounts().FromRaw([]uint64{4, 2})
+					pt.Exemplars().AppendEmpty().SetDoubleValue(1)
+					pt.Attributes().PutStr("attr", "test_attr")
+
+					pt = metric.ExponentialHistogram().DataPoints().AppendEmpty()
+					pt.SetCount(4)
+					pt.SetScale(1)
+					pt.Positive().SetOffset(-1)
+					pt.Positive().BucketCounts().FromRaw([]uint64{4, 2, 1})
+					pt.Exemplars().AppendEmpty().SetDoubleValue(2)
+					pt.Attributes().PutStr("attr", "test_attr")
+
+					return metric
+				},
+				wantSeries: func() map[uint64]*writev2.TimeSeries {
+					labels := []prompb.Label{
+						{Name: model.MetricNameLabel, Value: "test_hist"},
+						{Name: "attr", Value: "test_attr"},
+					}
+					return map[uint64]*writev2.TimeSeries{
+						timeSeriesSignature(labels): {
+							LabelsRefs: []uint32{1, 2, 3, 4},
+							Histograms: []writev2.Histogram{
+								{
+									Count:          &writev2.Histogram_CountInt{CountInt: 7},
+									Schema:         1,
+									ZeroThreshold:  defaultZeroThreshold,
+									ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 0},
+									PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+									PositiveDeltas: []int64{4, -2},
+								},
+								{
+									Count:          &writev2.Histogram_CountInt{CountInt: 4},
+									Schema:         1,
+									ZeroThreshold:  defaultZeroThreshold,
+									ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 0},
+									PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+									PositiveDeltas: []int64{4, -2, -1},
+								},
+							},
+							Metadata: writev2.Metadata{
+								Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							},
+						},
+					}
+				},
+			}, */
+		{
+			name: "histogram data points with different labels",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+				pt.SetCount(7)
+				pt.SetScale(1)
+				pt.Positive().SetOffset(-1)
+				pt.Positive().BucketCounts().FromRaw([]uint64{4, 2})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(1)
+				pt.Attributes().PutStr("attr", "test_attr")
+
+				pt = metric.ExponentialHistogram().DataPoints().AppendEmpty()
+				pt.SetCount(4)
+				pt.SetScale(1)
+				pt.Negative().SetOffset(-1)
+				pt.Negative().BucketCounts().FromRaw([]uint64{4, 2, 1})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(2)
+				pt.Attributes().PutStr("attr", "test_attr_two")
+
+				return metric
+			},
+			wantSeries: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist"},
+					{Name: "attr", Value: "test_attr"},
+				}
+				labelsAnother := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist"},
+					{Name: "attr", Value: "test_attr_two"},
+				}
+
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 7},
+								Schema:         1,
+								ZeroThreshold:  defaultZeroThreshold,
+								ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{4, -2},
+							},
+						},
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+					},
+					timeSeriesSignature(labelsAnother): {
+						LabelsRefs: []uint32{1, 2, 3, 5},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 4},
+								Schema:         1,
+								ZeroThreshold:  defaultZeroThreshold,
+								ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 0},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								NegativeDeltas: []int64{4, -2, -1},
+							},
+						},
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+			unitNamer := otlptranslator.UnitNamer{}
+			m := metadata{
+				Type: otelMetricTypeToPromMetricTypeV2(metric),
+				Help: metric.Description(),
+				Unit: unitNamer.Build(metric.Unit()),
+			}
+			converter := newPrometheusConverterV2(Settings{})
+			metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
+			require.NoError(t, converter.addExponentialHistogramDataPoints(
+				metric.ExponentialHistogram().DataPoints(),
+				pcommon.NewResource(),
+				Settings{},
+				metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
+				m,
+			))
+
+			x := tt.wantSeries()
+			assert.Equal(t, x, converter.unique)
+			// TODO check when conflicts handling is implemented
+			// assert.Empty(t, converter.conflicts)
+		})
+	}
 }
