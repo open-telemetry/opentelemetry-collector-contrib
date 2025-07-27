@@ -457,6 +457,7 @@ Available Converters:
 - [Decode](#decode)
 - [Concat](#concat)
 - [ContainsValue](#containsvalue)
+- [Contains](#contains)
 - [ConvertCase](#convertcase)
 - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
 - [ConvertTextToElementsXML](#converttexttoelementsxml)
@@ -606,6 +607,37 @@ Examples:
 - `ContainsValue([1, 2, 3, 4, 5], 3)`
 - `ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`
 - `ContainsValue(["GET", "PUT", "POST"], "GET")`
+
+### Contains
+
+`Contains(target, substring, case_sensitive)`
+
+The `Contains` Converter checks if a string contains a substring. It returns `true` if the substring is found, and `false` otherwise. This function uses Go's native string contains functionality which provides better performance compared to regex-based approaches like `IsMatch`.
+
+`target` is a string to search within.
+`substring` is the string to search for.
+`case_sensitive` is an boolean parameter that determines if the search should be case-sensitive.
+
+Examples:
+
+- `Contains(attributes["message"], ["error", "warn"], false)`
+- `Contains("hello world", "world", true)`
+- `Contains("Hello World", "hello", false)`
+
+### ContainsAny 
+
+`ContainsAny(target, chars)`
+
+The `ContainsAny` Converter checks if a string contains any of the specified characters. It returns `true` if any character from `chars` is found in `target`, and `false` otherwise. Like `Contains`, this function uses Go's native string functionality for optimal performance.
+
+`target` is a string to search within.
+`chars` is a string containing characters to search for.
+
+Examples:
+
+- `ContainsAny(attributes["id"], "0123456789")`
+- `ContainsAny("hello world", "abcd")`
+
 
 ### ConvertCase
 
