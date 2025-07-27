@@ -624,21 +624,6 @@ Examples:
 - `Contains("hello world", "world", true)`
 - `Contains("Hello World", "hello", false)`
 
-### ContainsAny 
-
-`ContainsAny(target, chars)`
-
-The `ContainsAny` Converter checks if a string contains any of the specified characters. It returns `true` if any character from `chars` is found in `target`, and `false` otherwise. Like `Contains`, this function uses Go's native string functionality for optimal performance.
-
-`target` is a string to search within.
-`chars` is a string containing characters to search for.
-
-Examples:
-
-- `ContainsAny(attributes["id"], "0123456789")`
-- `ContainsAny("hello world", "abcd")`
-
-
 ### ConvertCase
 
 `ConvertCase(target, toCase)`
