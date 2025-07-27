@@ -18,7 +18,7 @@ type eventDbServerQuerySample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbOperationDurationAttributeValue int64, mongodbQueryPlanAttributeValue string) {
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbApplicationNameAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbOperationDurationAttributeValue float64, mongodbQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -30,12 +30,15 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
 		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("client.address", clientAddressAttributeValue)
+	dp.Attributes().PutInt("client.port", clientPortAttributeValue)
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 	dp.Attributes().PutStr("db.operation.name", dbOperationNameAttributeValue)
 	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("mongodb.application.name", mongodbApplicationNameAttributeValue)
 	dp.Attributes().PutStr("mongodb.query.signature", mongodbQuerySignatureAttributeValue)
-	dp.Attributes().PutInt("mongodb.operation.duration", mongodbOperationDurationAttributeValue)
+	dp.Attributes().PutDouble("mongodb.operation.duration", mongodbOperationDurationAttributeValue)
 	dp.Attributes().PutStr("mongodb.query.plan", mongodbQueryPlanAttributeValue)
 
 }
@@ -181,6 +184,6 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
-func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbOperationDurationAttributeValue int64, mongodbQueryPlanAttributeValue string) {
-	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbCollectionNameAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, mongodbQuerySignatureAttributeValue, mongodbOperationDurationAttributeValue, mongodbQueryPlanAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue AttributeDbSystemName, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbApplicationNameAttributeValue string, mongodbQuerySignatureAttributeValue string, mongodbOperationDurationAttributeValue float64, mongodbQueryPlanAttributeValue string) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, clientAddressAttributeValue, clientPortAttributeValue, dbSystemNameAttributeValue.String(), dbCollectionNameAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, mongodbApplicationNameAttributeValue, mongodbQuerySignatureAttributeValue, mongodbOperationDurationAttributeValue, mongodbQueryPlanAttributeValue)
 }

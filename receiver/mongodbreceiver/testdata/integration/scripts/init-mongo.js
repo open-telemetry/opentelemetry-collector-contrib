@@ -13,3 +13,5 @@ db.createUser({
     db: 'sample_db'
   }]
 });
+
+// TODO: CREATE A OTEL USER

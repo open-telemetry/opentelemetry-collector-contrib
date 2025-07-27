@@ -88,6 +88,15 @@ var (
 		featuregate.WithRegisterToVersion("v0.104.0"))
 )
 
+const (
+	namespaceKey       = "ns"
+	commandKey         = "command"
+	opKey              = "op"
+	durationMicrosKey  = "microsecs_running"
+	clientKey          = "client"
+	applicationNameKey = "appName"
+)
+
 type mongodbScraper struct {
 	logger             *zap.Logger
 	config             *Config
@@ -205,9 +214,6 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	operations, err := s.client.CurrentOp(ctx)
-	if len(operations) > 6 {
-		fmt.Println("dddd")
-	}
 	if err != nil {
 		s.logger.Error("Failed to get current operations", zap.Error(err))
 		return plog.NewLogs(), err
@@ -244,25 +250,36 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			continue
 		}
 
-		namespace := getValue[string](op, "ns")
-		command := getValue[bson.D](op, "command")
-		opType := getValue[string](op, "op")
-		durationMicros := getValue[int64](op, "microsecs_running")
-		application := getValue[string](op, "appName")
-		client := getValue[string](op, "client")
+		namespace := getValue[string](op, namespaceKey)
+		command := getValue[bson.D](op, commandKey)
+		opType := getValue[string](op, opKey)
+		commandType := command[0].Key
+		durationMicros := float64(getValue[int64](op, durationMicrosKey)) / 1_000_000.0
+		client := getValue[string](op, clientKey)
+		applicationName := getValue[string](op, applicationNameKey)
+		port := 0
+		server := ""
+		if client != "" {
+			clientSplit := strings.Split(client, ":")
+			server = clientSplit[0]
+			if p, err := strconv.Atoi(clientSplit[1]); err == nil {
+				port = p
+			}
+		}
 		cleanedCommand := s.cleanCommand(command)
 		obfuscatedStatement := s.obfuscateCommand(cleanedCommand)
 		querySignature := s.generateQuerySignature(obfuscatedStatement)
 
 		// Get explain plan for supported operations
 		explainPlan := ""
-		dbName := s.getDBFromNamespace(namespace)
-		if dbName != "" && len(command) > 0 && s.shouldExplainOperation(opType, cleanedCommand) {
-			plan, err := s.getExplainPlan(ctx, dbName, cleanedCommand)
+		collectionName := s.getDBFromNamespace(namespace)
+		if collectionName != "" && len(command) > 0 && s.shouldExplainOperation(opType, cleanedCommand) {
+			plan, err := s.getExplainPlan(ctx, collectionName, cleanedCommand)
 			if err != nil {
 				s.logger.Debug("Failed to get explain plan",
 					zap.String("namespace", namespace),
 					zap.String("op", opType),
+					zap.String("appName", applicationName),
 					zap.Error(err))
 			} else {
 				explainPlan = plan
@@ -271,19 +288,24 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 
 		s.logger.Debug("Processing MongoDB operation",
 			zap.String("namespace", namespace),
-			zap.String("op", opType),
-			zap.Int64("duration_micros", durationMicros),
-			zap.String("application", application),
+			zap.String("commandType", commandType),
+			zap.Float64("duration_micros", durationMicros),
 			zap.String("client", client),
+			zap.String("appName", applicationName),
 			zap.String("query_signature", querySignature),
 			zap.Bool("has_explain_plan", explainPlan != ""))
 
 		// Record the query sample event using the generated logs builder method
-		s.lb.RecordMongodbQuerySampleEvent(
+		s.lb.RecordDbServerQuerySampleEvent(
 			ctx,
 			now,
-			dbName,
+			server,
+			int64(port),
+			metadata.AttributeDbSystemNameMongodb,
+			collectionName,
+			commandType,
 			obfuscatedStatement,
+			applicationName,
 			querySignature,
 			durationMicros,
 			explainPlan,
@@ -339,19 +361,19 @@ func (*mongodbScraper) shouldExplainOperation(opType string, command bson.D) boo
 
 func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
 	// Skip operations without a namespace
-	if ns := getValue[string](op, "ns"); ns == "" {
+	if ns := getValue[string](op, namespaceKey); ns == "" {
 		s.logger.Debug("Skipping operation without namespace", zap.Any("operation", op))
 		return false
 	}
 
 	// Skip operations for admin database
-	if db := s.getDBFromNamespace(getValue[string](op, "ns")); db == "admin" {
+	if db := s.getDBFromNamespace(getValue[string](op, namespaceKey)); db == "admin" {
 		s.logger.Debug("Skipping operation for admin database", zap.Any("operation", op))
 		return false
 	}
 
 	// Skip operations without a command
-	command := getValue[bson.D](op, "command")
+	command := getValue[bson.D](op, commandKey)
 	if len(command) == 0 {
 		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
 		return false
