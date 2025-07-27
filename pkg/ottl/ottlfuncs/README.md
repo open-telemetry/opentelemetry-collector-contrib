@@ -536,6 +536,7 @@ Available Converters:
 - [Values](#values)
 - [Weekday](#weekday)
 - [Year](#year)
+- [FromContext] (#fromcontext)
 
 ### Base64Decode (Deprecated)
 
@@ -2554,3 +2555,18 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
+
+### FromContext
+
+`FromContext(key)`
+
+The `FromContext` retrieves a value from the context metadata using the specified key.
+
+`key` is a string that represents the metadata key to look up.
+
+The function returns the value associated with the key if it exists and is a single value. If the key does not exist or has multiple values, nil is returned.
+
+Examples:
+
+- `FromContext("tenant_id")`
+

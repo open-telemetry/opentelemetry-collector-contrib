@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -1700,6 +1701,23 @@ func Test_ProcessSpanEvents(t *testing.T) {
 	}
 }
 
+func createContextWithMetadata() context.Context {
+	cl := client.FromContext(context.Background())
+	cl.Metadata = client.NewMetadata(map[string][]string{
+		"tenant_id":        {"1548451"},
+		"user_id":          {"user123"},
+		"environment":      {"production"},
+		"service.name":     {"my-service"},
+		"x-correlation-id": {"corr-12345"},
+		"api-version":      {"v1"},
+		"x-request-id":     {"req-67890"},
+		"x-forwarded-for":  {"192.168.1.100"},
+		"authorization":    {"Bearer abc123"},
+		"x-custom-header":  {"custom-value"},
+	})
+	return client.NewContext(context.Background(), cl)
+}
+
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parserWithoutPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
@@ -1977,4 +1995,66 @@ func Benchmark_XML_Functions(b *testing.B) {
 
 	// Ensure correctness
 	assert.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
+}
+
+func Test_e2e_fromcontext(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      func(tCtx ottllog.TransformContext)
+	}{
+		{
+			name:      "extract tenant ID from context metadata",
+			statement: `set(attributes["tenant_id"], FromContext("tenant_id"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("tenant_id", "1548451")
+			},
+		},
+		{
+			name:      "extract missing key from context metadata",
+			statement: `set(attributes["missing_key"], FromContext("non-existent-key"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				// Should not set anything for missing key
+			},
+		},
+		{
+			name:      "extract tenant ID and use in condition",
+			statement: `set(attributes["is_production"], "true") where FromContext("environment") == "production"`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("is_production", "true")
+			},
+		},
+		{
+			name:      "extract user ID and concatenate with prefix",
+			statement: `set(attributes["user_info"], Concat(["user:", FromContext("user_id")], ""))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("user_info", "user:user123")
+			},
+		},
+		{
+			name:      "extract API version and validate format",
+			statement: `set(attributes["api_version_valid"], "true") where HasPrefix(FromContext("api-version"), "v")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("api_version_valid", "true")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
+			assert.NoError(t, err)
+
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContext()
+				ctx := createContextWithMetadata()
+				_, _, _ = statement.Execute(ctx, tCtx)
+
+				exTCtx := constructLogTransformContext()
+				tt.want(exTCtx)
+
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			}
+		})
+	}
 }
