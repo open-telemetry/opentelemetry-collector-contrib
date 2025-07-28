@@ -55,7 +55,7 @@ type transform struct {
 
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
-	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
+	MetricIncludeFilter filterConfig `mapstructure:",squash"`
 
 	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---
 
@@ -84,10 +84,10 @@ type transform struct {
 	SubmatchCase submatchCase `mapstructure:"submatch_case"`
 
 	// Operations contains a list of operations that will be performed on the resulting metric(s).
-	Operations []Operation `mapstructure:"operations"`
+	Operations []operation `mapstructure:"operations"`
 }
 
-type FilterConfig struct {
+type filterConfig struct {
 	// Include specifies the metric(s) to operate on.
 	Include string `mapstructure:"include"`
 
@@ -102,8 +102,8 @@ type FilterConfig struct {
 	_ struct{}
 }
 
-// Operation defines the specific operation performed on the selected metrics.
-type Operation struct {
+// operation defines the specific operation performed on the selected metrics.
+type operation struct {
 	// Action specifies the action performed for this operation.
 	// REQUIRED
 	Action operationAction `mapstructure:"action"`
@@ -127,7 +127,7 @@ type Operation struct {
 	NewValue string `mapstructure:"new_value"`
 
 	// ValueActions is a list of renaming actions for label values.
-	ValueActions []ValueAction `mapstructure:"value_actions"`
+	ValueActions []valueAction `mapstructure:"value_actions"`
 
 	// Scale is a scalar to multiply the values with.
 	Scale float64 `mapstructure:"experimental_scale"`
@@ -136,8 +136,8 @@ type Operation struct {
 	LabelValue string `mapstructure:"label_value"`
 }
 
-// ValueAction renames label values.
-type ValueAction struct {
+// valueAction renames label values.
+type valueAction struct {
 	// Value specifies the current label value.
 	Value string `mapstructure:"value"`
 
@@ -182,7 +182,7 @@ type operationAction string
 
 const (
 	// addLabel adds a new label to an existing metric.
-	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// Metric has to match the filterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
 	addLabel operationAction = "add_label"
 
@@ -190,7 +190,7 @@ const (
 	updateLabel operationAction = "update_label"
 
 	// deleteLabelValue deletes a label value by also removing all the points associated with this label value
-	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// Metric has to match the filterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
 	deleteLabelValue operationAction = "delete_label_value"
 
@@ -202,13 +202,13 @@ const (
 
 	// aggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
-	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// Metric has to match the filterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
 	aggregateLabels operationAction = "aggregate_labels"
 
 	// aggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType.
-	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// Metric has to match the filterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
 	aggregateLabelValues operationAction = "aggregate_label_values"
 )

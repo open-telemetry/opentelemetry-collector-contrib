@@ -127,6 +127,13 @@ resourceMetrics:
                         stringValue: misc
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "235"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of bytes in the InnoDB buffer pool.
             name: mysql.buffer_pool.usage
@@ -681,6 +688,13 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "256"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1759,3 +1773,4 @@ resourceMetrics:
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest
+        

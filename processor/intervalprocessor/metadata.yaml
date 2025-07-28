@@ -7,6 +7,6 @@ status:
   distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
-    active: [RichieSams, sh0rez]
+    active: [RichieSams, tombrk]
 tests:
   config:

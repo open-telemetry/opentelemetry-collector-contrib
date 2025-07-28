@@ -36,7 +36,7 @@ type sum struct {
 	logsMetricDefs       map[string]metricDef[ottllog.TransformContext]
 }
 
-func (c *sum) Capabilities() consumer.Capabilities {
+func (*sum) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

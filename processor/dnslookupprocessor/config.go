@@ -6,6 +6,6 @@ package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-co
 // Config holds the configuration for the DnsLookup processor.
 type Config struct{}
 
-func (cfg *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }

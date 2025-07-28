@@ -44,7 +44,7 @@ func (p *Provider) ClusterName(ctx context.Context) (string, error) {
 	// Code comes from https://github.com/DataDog/datadog-agent/blob/1b4afdd6a/pkg/util/cloudproviders/azure/azure.go#L72
 	// It expects the resource group name to have the format (MC|mc)_resource-group_cluster-name_zone.
 	splitAll := strings.Split(metadata.ResourceGroupName, "_")
-	if len(splitAll) < 4 || strings.ToLower(splitAll[0]) != "mc" {
+	if len(splitAll) < 4 || !strings.EqualFold(splitAll[0], "mc") {
 		return "", fmt.Errorf("cannot parse the clustername from resource group name: %s", metadata.ResourceGroupName)
 	}
 

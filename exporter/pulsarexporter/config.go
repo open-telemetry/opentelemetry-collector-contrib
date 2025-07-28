@@ -89,7 +89,7 @@ type Producer struct {
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
-func (cfg *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
-	if len(cfg.TLSTrustCertsFilePath) > 0 {
+	if cfg.TLSTrustCertsFilePath != "" {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
 
