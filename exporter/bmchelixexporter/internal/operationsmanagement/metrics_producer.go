@@ -29,13 +29,15 @@ type BMCHelixOMSample struct {
 
 // MetricsProducer is responsible for converting OpenTelemetry metrics into BMC Helix Operations Management metrics
 type MetricsProducer struct {
-	logger *zap.Logger
+	logger          *zap.Logger
+	previousCounters map[string]BMCHelixOMSample
 }
 
 // NewMetricsProducer creates a new MetricsProducer
 func NewMetricsProducer(logger *zap.Logger) *MetricsProducer {
 	return &MetricsProducer{
 		logger: logger,
+		previousCounters: make(map[string]BMCHelixOMSample),
 	}
 }
 
@@ -149,6 +151,15 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 				continue
 			}
 			helixMetrics = append(helixMetrics, *metricPayload)
+
+			// If the metric is a counter, compute the rate metric
+			if metric.Sum().IsMonotonic() {
+				// Compute rate metric
+				rateMetric := mp.computeRateMetricFromCounter(*metricPayload)
+				if rateMetric != nil {
+					helixMetrics = append(helixMetrics, *rateMetric)
+				}
+			}
 		}
 	case pmetric.MetricTypeGauge:
 		sliceLen := metric.Gauge().DataPoints().Len()
@@ -171,6 +182,9 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 	// across the metrics with the same entityId and metricName
 	// This is done to ensure that the metric names are unique and meaningful in the BMC Helix Operations Management payload
 	helixMetrics = enrichMetricNamesWithAttributes(helixMetrics)
+
+	// Add percentage variants for ratio metrics (unit "1")
+	helixMetrics = addPercentageVariants(helixMetrics)
 
 	return helixMetrics, nil
 }
@@ -387,4 +401,106 @@ func insertSorted(keys []string, key string) []string {
 	copy(keys[idx+1:], keys[idx:])       // shift right to make room
 	keys[idx] = key                      // insert the new key
 	return keys
+}
+
+// addPercentageVariants adds percentage variants of metrics that are ratios (unit "1")
+// This is done to ensure that the BMC Helix Operations Management payload contains both the original
+// ratio metric and its percentage variant, which is often useful for visualization and analysis.
+func addPercentageVariants(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
+	final := make([]BMCHelixOMMetric, 0, len(metrics)*2)
+
+	for _, m := range metrics {
+		final = append(final, m)
+
+		unit := strings.ToLower(m.Labels["unit"])
+		if unit != "1" {
+			continue // Not a ratio
+		}
+
+		// Clone the original
+		percentLabels := make(map[string]string, len(m.Labels))
+		for k, v := range m.Labels {
+			percentLabels[k] = v
+		}
+
+		// Rename metricName
+		originalName := percentLabels["metricName"]
+
+		percentLabels["metricName"] = toPercentMetricName(originalName)
+		percentLabels["unit"] = "percent"
+
+		// Convert sample value
+		percentSamples := make([]BMCHelixOMSample, len(m.Samples))
+		for i, s := range m.Samples {
+			percentSamples[i] = BMCHelixOMSample{
+				Value:     s.Value * 100,
+				Timestamp: s.Timestamp,
+			}
+		}
+
+		final = append(final, BMCHelixOMMetric{
+			Labels:  percentLabels,
+			Samples: percentSamples,
+		})
+	}
+
+	return final
+}
+
+// toPercentMetricName converts a metric name to its percentage variant
+func toPercentMetricName(originalName string) string {
+	if strings.HasSuffix(originalName, ".percent") {
+		return originalName // already transformed
+	}
+
+	if strings.HasSuffix(originalName, "ratio") {
+		return strings.TrimSuffix(originalName, "ratio") + "percent"
+	}
+
+	return originalName + ".percent"
+}
+
+// computeRateMetricFromCounter computes a rate metric from a counter metric
+func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric) *BMCHelixOMMetric {
+	if len(metric.Samples) != 1 {
+		return nil
+	}
+
+	sample := metric.Samples[0]
+	key := metric.Labels["entityId"] + ":" + metric.Labels["metricName"]
+
+	prev, ok := mp.previousCounters[key]
+	mp.previousCounters[key] = sample
+
+	if !ok || sample.Timestamp <= prev.Timestamp {
+		return nil // not enough data
+	}
+
+	deltaValue := sample.Value - prev.Value
+	if deltaValue < 0 {
+		mp.logger.Debug("Negative delta value, skipping rate calculation", zap.String("key", key), zap.Float64("deltaValue", deltaValue))
+    	return nil
+	}
+
+	deltaTime := float64(sample.Timestamp - prev.Timestamp) / 1000.0 // ms to sec
+
+	if deltaTime <= 0 {
+		mp.logger.Debug("Zero or negative delta time, skipping rate calculation", zap.String("key", key), zap.Float64("deltaTime", deltaTime))
+		return nil
+	}
+
+	rate := deltaValue / deltaTime
+
+	// Clone labels
+	rateLabels := make(map[string]string, len(metric.Labels))
+	for k, v := range metric.Labels {
+		rateLabels[k] = v
+	}
+	rateLabels["metricName"] = rateLabels["metricName"] + ".rate"
+	rateLabels["unit"] = rateLabels["unit"] + ".per_second"
+
+	return &BMCHelixOMMetric{
+		Labels:  rateLabels,
+		Samples: []BMCHelixOMSample{{Value: rate, Timestamp: sample.Timestamp}},
+	}
 }
