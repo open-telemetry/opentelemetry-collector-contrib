@@ -40,7 +40,7 @@ func TestGenerateQuerySignature(t *testing.T) {
 	require.Len(t, sig1, 16) // 8 bytes hex encoded
 }
 
-func Test_obfuscateExplainPlan(t *testing.T) {
+func TestObfuscateExplainPlan(t *testing.T) {
 	tests := []struct {
 		name     string
 		plan     any

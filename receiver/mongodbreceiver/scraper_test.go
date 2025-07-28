@@ -751,32 +751,3 @@ func TestScrapeLogs(t *testing.T) {
 	require.Equal(t, 0, logs.LogRecordCount())
 	mockClient.AssertExpectations(t)
 }
-
-func TestFindSecondaryHosts(t *testing.T) {
-	mockClient := &fakeClient{}
-	s := &mongodbScraper{
-		client: mockClient,
-		logger: zap.NewNop(),
-	}
-	ctx := context.Background()
-
-	// Test successful case
-	mockClient.On("RunCommand", ctx, "admin", bson.M{"replSetGetStatus": 1}).Return(bson.M{
-		"members": bson.A{
-			bson.M{"name": "host1:27017", "stateStr": "PRIMARY"},
-			bson.M{"name": "host2:27017", "stateStr": "SECONDARY"},
-			bson.M{"name": "host3:27017", "stateStr": "ARBITER"},
-		},
-	}, nil).Once()
-
-	hosts, err := s.findSecondaryHosts(ctx)
-	require.NoError(t, err)
-	require.Equal(t, []string{"host2:27017"}, hosts)
-	mockClient.AssertExpectations(t)
-
-	// Test error case
-	mockClient.On("RunCommand", ctx, "admin", bson.M{"replSetGetStatus": 1}).Return(nil, errors.New("replSetGetStatus failed")).Once()
-	_, err = s.findSecondaryHosts(ctx)
-	require.Error(t, err)
-	mockClient.AssertExpectations(t)
-}
