@@ -10,7 +10,7 @@ status:
     active: [JaredTan95, carsonip, lahsivjar]
 
 attributes:
-  http_status_code:
+  http.response.status_code:
     description: HTTP status code.
     type: int
   outcome:
@@ -34,7 +34,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [outcome, http_status_code]
+      attributes: [outcome, http.response.status_code]
     elasticsearch.docs.received:
       prefix: otelcol.
       stability:
@@ -55,7 +55,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [outcome, http_status_code, failure_store]
+      attributes: [outcome, http.response.status_code, failure_store]
     elasticsearch.docs.retried:
       prefix: otelcol.
       stability:
@@ -87,6 +87,17 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    elasticsearch.bulk_requests.latency:
+      prefix: otelcol.
+      stability:
+        level: alpha
+      enabled: true
+      description: Latency of Elasticsearch bulk operations in seconds.
+      unit: s
+      histogram:
+        value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]
+      attributes: [outcome, http.response.status_code]
 
 tests:
   config:

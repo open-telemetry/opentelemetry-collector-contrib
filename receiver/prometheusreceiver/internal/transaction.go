@@ -74,8 +74,9 @@ type transaction struct {
 var emptyScopeID scopeID
 
 type scopeID struct {
-	name    string
-	version string
+	name      string
+	version   string
+	schemaURL string
 }
 
 func newTransaction(
@@ -431,6 +432,9 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 				// Otherwise, use the scope that was provided with the metrics.
 				ils.Scope().SetName(scope.name)
 				ils.Scope().SetVersion(scope.version)
+				if scope.schemaURL != "" {
+					ils.SetSchemaUrl(scope.schemaURL)
+				}
 				// If we got an otel_scope_info metric for that scope, get scope
 				// attributes from it.
 				if scopeAttributes, ok := t.scopeAttributes[rKey]; ok {
@@ -471,6 +475,9 @@ func getScopeID(ls labels.Labels) scopeID {
 		}
 		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
+		}
+		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
+			scope.schemaURL = lbl.Value
 		}
 	})
 	return scope
@@ -595,6 +602,10 @@ func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 		}
 		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
+			return
+		}
+		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
+			scope.schemaURL = lbl.Value
 			return
 		}
 		attrs.PutStr(lbl.Name, lbl.Value)
