@@ -60,3 +60,11 @@ func (rb *ResourceBuilder) SetManagedInstanceGroup(detect func() (gcp.ManagedIns
 	}
 	return nil
 }
+
+func (rb *ResourceBuilder) SetMyCustomMetadata(attrs map[string]interface{}) error {
+	for k,v := range attrs {
+		key := "service." + k
+		rb.res.Attributes().PutStr(key, fmt.Sprintf("%v", v))
+	}
+	return nil
+}
