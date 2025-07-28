@@ -51,13 +51,16 @@ func TestParseRequest_Encodings(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			jsonData := `{"streams":[{"stream":{"foo":"bar"},"values":[["1680000000000000000","log line"]]}]}`
-
 			var body string
+
 			if tc.compressData {
-				if tc.contentEncoding == "gzip" {
+				switch tc.contentEncoding {
+				case "gzip":
 					body, _ = compressGzip(jsonData)
-				} else if tc.contentEncoding == "deflate" {
+				case "deflate":
 					body, _ = compressDeflate(jsonData)
+				default:
+					t.Fatalf("unsupported compression for encoding: %q", tc.contentEncoding)
 				}
 			} else {
 				body = jsonData
@@ -66,13 +69,18 @@ func TestParseRequest_Encodings(t *testing.T) {
 			req := createTestRequest(body, "application/json", tc.contentEncoding)
 
 			pushReq, err := ParseRequest(req)
-			if tc.expectError && err == nil {
-				t.Error("expected error, got nil")
+			if tc.expectError {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				return
 			}
-			if !tc.expectError && err != nil {
+
+			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if !tc.expectError && len(pushReq.Streams) != 1 {
+
+			if len(pushReq.Streams) != 1 {
 				t.Errorf("expected 1 stream, got %d", len(pushReq.Streams))
 			}
 		})
