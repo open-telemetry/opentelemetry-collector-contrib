@@ -55,9 +55,9 @@ func TestParseRequest_Encodings(t *testing.T) {
 			var body string
 			if tc.compressData {
 				if tc.contentEncoding == "gzip" {
-					body = compressGzip(jsonData)
+					body, _ = compressGzip(jsonData)
 				} else if tc.contentEncoding == "deflate" {
-					body = compressDeflate(jsonData)
+					body, _ = compressDeflate(jsonData)
 				}
 			} else {
 				body = jsonData
@@ -134,20 +134,37 @@ func createTestRequest(body, contentType, contentEncoding string) *http.Request 
 	return req
 }
 
-func compressGzip(data string) string {
+func compressGzip(data string) (string, error) {
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
-	gw.Write([]byte(data))
-	gw.Close()
-	return buf.String()
+
+	if _, err := gw.Write([]byte(data)); err != nil {
+		return "", err
+	}
+
+	if err := gw.Close(); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
-func compressDeflate(data string) string {
+func compressDeflate(data string) (string, error) {
 	var buf bytes.Buffer
-	fw, _ := flate.NewWriter(&buf, flate.DefaultCompression)
-	fw.Write([]byte(data))
-	fw.Close()
-	return buf.String()
+	fw, err := flate.NewWriter(&buf, flate.DefaultCompression)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := fw.Write([]byte(data)); err != nil {
+		return "", err
+	}
+
+	if err := fw.Close(); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func createTestProtobuf() string {
