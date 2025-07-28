@@ -31,7 +31,6 @@ resourceProfiles:
             periodType:
               typeStrindex: 2
               unitStrindex: 3
-            profileId: ""
             sample:
               - locationsLength: 1
                 timestampsUnixNano:
