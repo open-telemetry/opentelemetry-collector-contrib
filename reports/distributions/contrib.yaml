@@ -85,6 +85,7 @@ components:
         - host_observer
         - http_forwarder
         - jaegerremotesampling
+        - json_log_encoding
         - k8s_leader_elector
         - k8s_observer
         - kafkatopics_observer
