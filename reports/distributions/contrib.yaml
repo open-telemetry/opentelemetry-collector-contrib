@@ -96,6 +96,7 @@ components:
         - redis_storage
         - sigv4auth
         - text_encoding
+        - zipkin_encoding
     processor:
         - attributes
         - cumulativetodelta
