@@ -71,7 +71,7 @@ type client interface {
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
-	explainQuery(query string, queryID string, logger *zap.Logger) (string, error)
+	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
@@ -80,7 +80,7 @@ type postgreSQLClient struct {
 }
 
 // explainQuery implements client.
-func (c *postgreSQLClient) explainQuery(query string, queryID string, logger *zap.Logger) (string, error) {
+func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 	var queryBuilder strings.Builder
 	var nulls []string
@@ -190,6 +190,7 @@ type databaseStats struct {
 	transactionCommitted int64
 	transactionRollback  int64
 	deadlocks            int64
+	tempIo               int64
 	tempFiles            int64
 	tupUpdated           int64
 	tupReturned          int64
@@ -202,7 +203,7 @@ type databaseStats struct {
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
 	query := filterQueryByDatabases(
-		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
+		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, temp_bytes, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
 		databases,
 		false,
 	)
@@ -217,8 +218,8 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
+		var transactionCommitted, transactionRollback, deadlocks, tempIo, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tempIo, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -228,6 +229,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionCommitted: transactionCommitted,
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
+				tempIo:               tempIo,
 				tempFiles:            tempFiles,
 				tupUpdated:           tupUpdated,
 				tupReturned:          tupReturned,
@@ -594,7 +596,7 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 
 		row := c.client.QueryRowContext(ctx, query)
 
-		if err = row.Scan(
+		if err := row.Scan(
 			&checkpointsReq,
 			&checkpointsScheduled,
 			&checkpointWriteTime,
@@ -634,7 +636,7 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 
 	row := c.client.QueryRowContext(ctx, query)
 
-	if err = row.Scan(
+	if err := row.Scan(
 		&checkpointsReq,
 		&checkpointsScheduled,
 		&checkpointWriteTime,
@@ -945,7 +947,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 	return finalAttributes, newestQueryTimestamp, errors.Join(errs...)
 }
 
-func convertMillisecondToSecond(column string, value string, logger *zap.Logger) (any, error) {
+func convertMillisecondToSecond(column, value string, logger *zap.Logger) (any, error) {
 	result := float64(0)
 	var err error
 	if value != "" {
@@ -957,7 +959,7 @@ func convertMillisecondToSecond(column string, value string, logger *zap.Logger)
 	return result / 1000.0, err
 }
 
-func convertToInt(column string, value string, logger *zap.Logger) (any, error) {
+func convertToInt(column, value string, logger *zap.Logger) (any, error) {
 	result := 0
 	var err error
 	if value != "" {
@@ -1019,7 +1021,7 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 			tempBlksWrittenColumnName:   convertToInt,
 			totalExecTimeColumnName:     convertMillisecondToSecond,
 			totalPlanTimeColumnName:     convertMillisecondToSecond,
-			"query": func(_ string, val string, logger *zap.Logger) (any, error) {
+			"query": func(_, val string, logger *zap.Logger) (any, error) {
 				// TODO: check if it is truncated.
 				result, err := obfuscateSQL(val)
 				if err != nil {

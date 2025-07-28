@@ -117,7 +117,7 @@ var (
 	// validFlagRegexp is a regular expression to validate codecov flags.
 	// It is mentioned here: https://docs.codecov.com/docs/flags
 	// It's unclear if components fit this pattern, but they seem to work with it.
-	validFlagRegexp = regexp.MustCompile(`^[\w\.\-]{1,45}$`)
+	validFlagRegexp = regexp.MustCompile(`^[\w.\-]{1,45}$`)
 
 	// defaultSuffixList is a list of suffixes to remove from the module name.
 	// We remove the suffixes so that the component ID is shorter.

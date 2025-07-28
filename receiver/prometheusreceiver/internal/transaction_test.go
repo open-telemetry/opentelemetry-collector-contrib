@@ -2058,7 +2058,7 @@ func (ea *errorAdjuster) AdjustMetrics(pmetric.Metrics) error {
 
 type nopAdjuster struct{}
 
-func (n *nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
+func (*nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
 	return nil
 }
 

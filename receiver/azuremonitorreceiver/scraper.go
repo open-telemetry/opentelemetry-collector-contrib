@@ -317,7 +317,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 }
 
 func getResourceGroupFromID(id string) string {
-	s := regexp.MustCompile(`\/resourcegroups/([^\/]+)\/`)
+	s := regexp.MustCompile(`/resourcegroups/([^/]+)/`)
 	match := s.FindStringSubmatch(strings.ToLower(id))
 
 	if len(match) == 2 {
@@ -438,24 +438,25 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 
 			for _, metric := range result.Value {
 				for _, timeseriesElement := range metric.Timeseries {
-					if timeseriesElement.Data != nil {
-						attributes := map[string]*string{}
-						for name, value := range res.attributes {
+					if timeseriesElement.Data == nil {
+						continue
+					}
+					attributes := map[string]*string{}
+					for name, value := range res.attributes {
+						attributes[name] = value
+					}
+					for _, value := range timeseriesElement.Metadatavalues {
+						name := metadataPrefix + *value.Name.Value
+						attributes[name] = value.Value
+					}
+					if s.cfg.AppendTagsAsAttributes {
+						for tagName, value := range res.tags {
+							name := tagPrefix + tagName
 							attributes[name] = value
 						}
-						for _, value := range timeseriesElement.Metadatavalues {
-							name := metadataPrefix + *value.Name.Value
-							attributes[name] = value.Value
-						}
-						if s.cfg.AppendTagsAsAttributes {
-							for tagName, value := range res.tags {
-								name := tagPrefix + tagName
-								attributes[name] = value
-							}
-						}
-						for _, metricValue := range timeseriesElement.Data {
-							s.processTimeseriesData(resourceID, metric, metricValue, attributes)
-						}
+					}
+					for _, metricValue := range timeseriesElement.Data {
+						s.processTimeseriesData(resourceID, metric, metricValue, attributes)
 					}
 				}
 			}

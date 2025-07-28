@@ -8,10 +8,9 @@ import (
 
 	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type PushRequest struct {
@@ -148,10 +147,11 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	}
 
 	labels := model.LabelSet{}
+	namer := otlptranslator.LabelNamer{}
 	for label := range mergedLabels {
 		// Loki doesn't support dots in label names
 		// labelName is normalized label name to follow Prometheus label names standard
-		labelName := prometheustranslator.NormalizeLabel(string(label))
+		labelName := namer.Build(string(label))
 		labels[model.LabelName(labelName)] = mergedLabels[label]
 	}
 
@@ -161,7 +161,7 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	}, nil
 }
 
-func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func getFormatFromFormatHint(logAttr, resourceAttr pcommon.Map) string {
 	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
 	if !found {
@@ -177,7 +177,7 @@ func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 // GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {

@@ -253,7 +253,7 @@ func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	}
 }
 
-func newTraceStringAttrs(nodeAttrs map[string]any, spanAttrKey string, spanAttrValue string) *TraceData {
+func newTraceStringAttrs(nodeAttrs map[string]any, spanAttrKey, spanAttrValue string) *TraceData {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	//nolint:errcheck

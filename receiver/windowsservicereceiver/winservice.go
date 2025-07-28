@@ -29,11 +29,11 @@ func getService(mgr *serviceManager, sname string) (*winService, error) {
 }
 
 //nolint:unused
-func (w *winService) getStatus() error {
+func (*winService) getStatus() error {
 	return nil
 }
 
 //nolint:unused
-func (w *winService) getConfig() error {
+func (*winService) getConfig() error {
 	return nil
 }

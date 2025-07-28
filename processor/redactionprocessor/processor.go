@@ -299,26 +299,29 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// This sequence satisfies these performance constraints:
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
-AttributeLoop:
 	for k, value := range attributes.All() {
 		if s.shouldIgnoreKey(k) {
 			ignoredKeys = append(ignoredKeys, k)
-			continue AttributeLoop
+			continue
 		}
 		if s.shouldRedactKey(k) {
 			redactedKeys = append(redactedKeys, k)
-			continue AttributeLoop
+			continue
 		}
 		strVal := value.Str()
+		if s.config.RedactAllTypes {
+			strVal = value.AsString()
+		}
+
 		if s.shouldAllowValue(strVal) {
 			allowedKeys = append(allowedKeys, k)
-			continue AttributeLoop
+			continue
 		}
 		if s.shouldMaskKey(k) {
 			maskedKeys = append(maskedKeys, k)
 			maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
 			value.SetStr(maskedValue)
-			continue AttributeLoop
+			continue
 		}
 		processedString := s.processStringValue(strVal)
 		if processedString != strVal {

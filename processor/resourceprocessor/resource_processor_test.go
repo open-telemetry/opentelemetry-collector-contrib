@@ -196,7 +196,7 @@ func generateProfileData(attributes map[string]string) pprofile.Profiles {
 	return p
 }
 
-func compareProfileAttributes(t *testing.T, expected pprofile.Profiles, got pprofile.Profiles) {
+func compareProfileAttributes(t *testing.T, expected, got pprofile.Profiles) {
 	require.Equal(t, expected.ResourceProfiles().Len(), got.ResourceProfiles().Len())
 
 	for i := 0; i < expected.ResourceProfiles().Len(); i++ {

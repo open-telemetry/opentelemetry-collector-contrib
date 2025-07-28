@@ -189,7 +189,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	}()
 
 	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
+	newAWSSession = func(string, string, *zap.Logger) (*session.Session, error) {
 		return nil, expectedErr
 	}
 	_, err := NewServer(cfg, logger)
@@ -256,6 +256,6 @@ func (m *mockReadCloser) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (m *mockReadCloser) Close() error {
+func (*mockReadCloser) Close() error {
 	return nil
 }

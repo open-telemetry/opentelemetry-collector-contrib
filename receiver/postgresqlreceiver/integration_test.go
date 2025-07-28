@@ -96,6 +96,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Insecure = true
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.Metrics.PostgresqlTempIo.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
 				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
 				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
@@ -110,7 +111,41 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricValues(
+				"postgresql.backends",
+				"postgresql.bgwriter.buffers.allocated",
+				"postgresql.bgwriter.buffers.writes",
+				"postgresql.bgwriter.checkpoint.count",
+				"postgresql.bgwriter.duration",
+				"postgresql.bgwriter.maxwritten",
+				"postgresql.blks_hit",
+				"postgresql.blks_read",
+				"postgresql.blocks_read",
+				"postgresql.commits",
+				"postgresql.connection.max",
+				"postgresql.database.count",
+				"postgresql.database.locks",
+				"postgresql.db_size",
+				"postgresql.deadlocks",
+				"postgresql.index.scans",
+				"postgresql.index.size",
+				"postgresql.operations",
+				"postgresql.replication.data_delay",
+				"postgresql.rollbacks",
+				"postgresql.rows",
+				"postgresql.sequential_scans",
+				"postgresql.table.count",
+				"postgresql.table.size",
+				"postgresql.table.vacuum.count",
+				"postgresql.tup_deleted",
+				"postgresql.tup_fetched",
+				"postgresql.tup_inserted",
+				"postgresql.tup_returned",
+				"postgresql.tup_updated",
+				"postgresql.wal.age",
+				"postgresql.wal.delay",
+				"postgresql.wal.lag",
+			),
 			pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
@@ -163,7 +198,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	db, err := sql.Open("postgres", connStr)
 	assert.NoError(t, err)
 
-	_, err = db.Query("Select * from test2 where id = 67")
+	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 	defer db.Close()
 
@@ -240,7 +275,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	}
 	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
 
-	_, err = db.Query("Select * from test2 where id = 67")
+	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
 	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)

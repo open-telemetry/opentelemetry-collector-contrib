@@ -120,7 +120,7 @@ func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.D
 	return dps
 }
 
-func filterKeyChars(str string, nonAlphanumericDimChars string) string {
+func filterKeyChars(str, nonAlphanumericDimChars string) string {
 	filterMap := func(r rune) rune {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
 			return r

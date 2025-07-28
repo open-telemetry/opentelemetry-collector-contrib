@@ -54,6 +54,7 @@ type MetricsConfig struct {
 	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempIo                   MetricConfig `mapstructure:"postgresql.temp.io"`
 	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
 	PostgresqlTupDeleted               MetricConfig `mapstructure:"postgresql.tup_deleted"`
 	PostgresqlTupFetched               MetricConfig `mapstructure:"postgresql.tup_fetched"`
@@ -144,6 +145,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlTableVacuumCount: MetricConfig{
 			Enabled: true,
+		},
+		PostgresqlTempIo: MetricConfig{
+			Enabled: false,
 		},
 		PostgresqlTempFiles: MetricConfig{
 			Enabled: false,

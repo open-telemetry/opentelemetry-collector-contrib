@@ -26,7 +26,7 @@ type resourceStatements struct {
 	expr.BoolExpr[ottlresource.TransformContext]
 }
 
-func (r resourceStatements) Context() ContextID {
+func (resourceStatements) Context() ContextID {
 	return Resource
 }
 
@@ -105,7 +105,7 @@ type scopeStatements struct {
 	expr.BoolExpr[ottlscope.TransformContext]
 }
 
-func (s scopeStatements) Context() ContextID {
+func (scopeStatements) Context() ContextID {
 	return Scope
 }
 
@@ -239,7 +239,7 @@ func parseResourceContextStatements[R any](
 		return *new(R), errGlobalBoolExpr
 	}
 	rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.Settings, ottlresource.WithStatementSequenceErrorMode(errorMode))
-	result := (baseContext)(resourceStatements{rStatements, globalExpr})
+	result := baseContext(resourceStatements{rStatements, globalExpr})
 	return result.(R), nil
 }
 
@@ -265,11 +265,11 @@ func parseScopeContextStatements[R any](
 		return *new(R), errGlobalBoolExpr
 	}
 	sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.Settings, ottlscope.WithStatementSequenceErrorMode(errorMode))
-	result := (baseContext)(scopeStatements{sStatements, globalExpr})
+	result := baseContext(scopeStatements{sStatements, globalExpr})
 	return result.(R), nil
 }
 
-func parseGlobalExpr[K any, O any](
+func parseGlobalExpr[K, O any](
 	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings, []O) (*ottl.ConditionSequence[K], error),
 	conditions []string,
 	errorMode ottl.ErrorMode,

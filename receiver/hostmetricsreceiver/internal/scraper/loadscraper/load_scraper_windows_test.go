@@ -43,7 +43,7 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 		perfCounterFactory = originalPerfCounterFactory
 	}()
 
-	perfCounterFactory = func(_ string, _ string, _ string) (winperfcounters.PerfCounterWatcher, error) {
+	perfCounterFactory = func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 		return nil, errors.New("error creating perf counter watcher")
 	}
 

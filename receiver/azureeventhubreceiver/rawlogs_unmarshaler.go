@@ -22,7 +22,7 @@ func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
 	}
 }
 
-func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
+func (rawLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()

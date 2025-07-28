@@ -74,9 +74,6 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 				case pmetric.MetricTypeExponentialHistogram:
 					a.adjustMetricExponentialHistogram(tsm, metric)
 
-				case pmetric.MetricTypeEmpty:
-					fallthrough
-
 				default:
 					// this shouldn't happen
 					a.set.Logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
@@ -88,7 +85,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	return metrics, nil
 }
 
-func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -127,7 +124,7 @@ func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, cu
 	}
 }
 
-func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -166,7 +163,7 @@ func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timese
 	}
 }
 
-func (a *Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
@@ -199,7 +196,7 @@ func (a *Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current 
 	}
 }
 
-func (a *Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Summary().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {

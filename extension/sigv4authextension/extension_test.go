@@ -28,7 +28,7 @@ func TestNewSigv4Extension(t *testing.T) {
 func TestRoundTripper(t *testing.T) {
 	awsCredsProvider := mockCredentials()
 
-	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	base := http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
 	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 

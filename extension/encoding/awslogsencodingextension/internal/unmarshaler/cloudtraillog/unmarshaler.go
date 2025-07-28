@@ -105,7 +105,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	return logs, nil
 }
 
-func (u *CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+func (*CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attrs.PutStr(string(conventions.CloudRegionKey), record.AwsRegion)
 	attrs.PutStr(string(conventions.CloudAccountIDKey), record.RecipientAccountID)
@@ -121,7 +121,7 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 	return nil
 }
 
-func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)

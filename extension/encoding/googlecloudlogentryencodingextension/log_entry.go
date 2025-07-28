@@ -24,17 +24,13 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-var (
-	invalidTraceID      = [16]byte{}
-	invalidSpanID       = [8]byte{}
-	errorParsingLogItem = errors.New("error parsing log item")
-)
-
 func cloudLoggingTraceToTraceIDBytes(trace string) ([16]byte, error) {
 	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095
 	lastSlashIdx := strings.LastIndex(trace, "/")
 	if lastSlashIdx == -1 {
-		return invalidTraceID, errorParsingLogItem
+		return [16]byte{}, fmt.Errorf(
+			"invalid trace format: expected 'projects/{project}/traces/{trace_id}' but got %q", trace,
+		)
 	}
 	traceIDStr := trace[lastSlashIdx+1:]
 
@@ -44,21 +40,24 @@ func cloudLoggingTraceToTraceIDBytes(trace string) ([16]byte, error) {
 func traceIDStrToTraceIDBytes(traceIDStr string) ([16]byte, error) {
 	decoded, err := hex.DecodeString(traceIDStr)
 	if err != nil {
-		return invalidTraceID, err
+		return [16]byte{}, fmt.Errorf("failed to decode trace id to hexadecimal string: %w", err)
 	}
 	if len(decoded) != 16 {
-		return invalidTraceID, errorParsingLogItem
+		return [16]byte{}, fmt.Errorf("expected trace ID hex length to be 16, got %d", len(decoded))
 	}
 	return [16]byte(decoded), nil
 }
 
 func spanIDStrToSpanIDBytes(spanIDStr string) ([8]byte, error) {
+	// TODO cloud Run sends invalid span id's, make sure we're not crashing,
+	// see https://issuetracker.google.com/issues/338634230?pli=1
+
 	decoded, err := hex.DecodeString(spanIDStr)
 	if err != nil {
-		return invalidSpanID, err
+		return [8]byte{}, fmt.Errorf("failed to decode span id to hexadecimal string: %w", err)
 	}
 	if len(decoded) != 8 {
-		return invalidSpanID, errorParsingLogItem
+		return [8]byte{}, fmt.Errorf("expected span ID hex length to be 8, got %d", len(decoded))
 	}
 	return [8]byte(decoded), nil
 }
@@ -175,7 +174,7 @@ func handleTextPayload(_ pcommon.Map, logRecord plog.LogRecord, _ pcommon.Map, _
 	var textPayload string
 	err := json.Unmarshal(value, &textPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal text payload: %w", err)
 	}
 	return setBodyFromText(logRecord, textPayload)
 }
@@ -185,7 +184,7 @@ func setBodyFromJSON(logRecord plog.LogRecord, value stdjson.RawMessage) error {
 	var payload any
 	err := json.Unmarshal(value, &payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal JSON payload: %w", err)
 	}
 	// Note: json.Unmarshal will turn a bare string into a
 	// go string, so this call will correctly set the body
@@ -201,7 +200,7 @@ func handleJSONPayload(_ pcommon.Map, logRecord plog.LogRecord, _ pcommon.Map, _
 	case HandleAsText:
 		return setBodyFromText(logRecord, string(value))
 	default:
-		return errors.New("unrecognized proto payload type")
+		return errors.New("unrecognized JSON payload type")
 	}
 }
 

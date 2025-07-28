@@ -87,43 +87,43 @@ func newBenchmarkOutput(totalLogs int, doneChan chan<- struct{}) *benchmarkOutpu
 }
 
 // CanOutput implements operator.Operator.
-func (o *benchmarkOutput) CanOutput() bool { return false }
+func (*benchmarkOutput) CanOutput() bool { return false }
 
 // CanProcess implements operator.Operator.
-func (o *benchmarkOutput) CanProcess() bool { return true }
+func (*benchmarkOutput) CanProcess() bool { return true }
 
 // GetOutputIDs implements operator.Operator.
-func (o *benchmarkOutput) GetOutputIDs() []string { return nil }
+func (*benchmarkOutput) GetOutputIDs() []string { return nil }
 
 const benchmarkOutputID = "benchmark"
 
 // ID implements operator.Operator.
-func (o *benchmarkOutput) ID() string { return benchmarkOutputID }
+func (*benchmarkOutput) ID() string { return benchmarkOutputID }
 
 // Logger implements operator.Operator.
-func (o *benchmarkOutput) Logger() *zap.Logger { return nil }
+func (*benchmarkOutput) Logger() *zap.Logger { return nil }
 
 // Outputs implements operator.Operator.
-func (o *benchmarkOutput) Outputs() []operator.Operator { return nil }
+func (*benchmarkOutput) Outputs() []operator.Operator { return nil }
 
 // SetOutputIDs implements operator.Operator.
-func (o *benchmarkOutput) SetOutputIDs([]string) {}
+func (*benchmarkOutput) SetOutputIDs([]string) {}
 
 // SetOutputs implements operator.Operator.
-func (o *benchmarkOutput) SetOutputs([]operator.Operator) error { return nil }
+func (*benchmarkOutput) SetOutputs([]operator.Operator) error { return nil }
 
 // Start implements operator.Operator.
-func (o *benchmarkOutput) Start(operator.Persister) error {
+func (*benchmarkOutput) Start(operator.Persister) error {
 	return nil
 }
 
 // Stop implements operator.Operator.
-func (o *benchmarkOutput) Stop() error {
+func (*benchmarkOutput) Stop() error {
 	return nil
 }
 
 // Type implements operator.Operator.
-func (o *benchmarkOutput) Type() string { return "benchmark_output" }
+func (*benchmarkOutput) Type() string { return "benchmark_output" }
 
 func (o *benchmarkOutput) Process(_ context.Context, _ *entry.Entry) error {
 	o.logsReceived++

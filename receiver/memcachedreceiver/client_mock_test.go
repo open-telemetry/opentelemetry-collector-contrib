@@ -15,7 +15,7 @@ type fakeClient struct{}
 
 var _ client = (*fakeClient)(nil)
 
-func (c *fakeClient) Stats() (map[net.Addr]memcache.Stats, error) {
+func (*fakeClient) Stats() (map[net.Addr]memcache.Stats, error) {
 	bytes, err := os.ReadFile("./testdata/fake_stats.json")
 	if err != nil {
 		return nil, err

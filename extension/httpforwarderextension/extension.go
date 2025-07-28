@@ -113,7 +113,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	}
 }
 
-func addViaHeader(header http.Header, protocol string, host string) {
+func addViaHeader(header http.Header, protocol, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 

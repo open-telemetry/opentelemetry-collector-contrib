@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-var priRegex = regexp.MustCompile(`\<\d{1,3}\>`)
+var priRegex = regexp.MustCompile(`<\d{1,3}>`)
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
@@ -175,7 +175,7 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
-func (p *Parser) toSafeMap(message map[string]any) (map[string]any, error) {
+func (*Parser) toSafeMap(message map[string]any) (map[string]any, error) {
 	for key, val := range message {
 		switch v := val.(type) {
 		case *string:

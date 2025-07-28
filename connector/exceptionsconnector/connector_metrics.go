@@ -66,7 +66,7 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsCo
 }
 
 // Capabilities implements the consumer interface.
-func (c *metricsConnector) Capabilities() consumer.Capabilities {
+func (*metricsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -176,7 +176,7 @@ func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, 
 	e.SetDoubleValue(float64(exc.count))
 }
 
-func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) pcommon.Map {
+func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, span ptrace.Span, eventAttrs, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(3 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
@@ -196,7 +196,7 @@ func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, spa
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) {
+func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, eventAttrs, resourceAttrs pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
 	concatDimensionValue(dest, span.Name(), true)
 	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)

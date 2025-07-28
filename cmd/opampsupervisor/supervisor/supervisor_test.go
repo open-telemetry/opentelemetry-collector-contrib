@@ -571,7 +571,7 @@ service:
 				)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -672,7 +672,7 @@ service:
 				)
 				return errors.New("unexpected error")
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -740,7 +740,7 @@ service:
 				assert.NotEmpty(t, rcs.ErrorMessage)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -829,7 +829,7 @@ service:
 
 		remoteConfigStatusUpdated := false
 		mc := &mockOpAMPClient{
-			setRemoteConfigStatusFunc: func(_ *protobufs.RemoteConfigStatus) error {
+			setRemoteConfigStatusFunc: func(*protobufs.RemoteConfigStatus) error {
 				remoteConfigStatusUpdated = true
 				return nil
 			},
@@ -942,7 +942,7 @@ service:
 				)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -1087,7 +1087,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
@@ -1126,7 +1126,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient; client returns error", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return errors.New("unexpected error")
 			},
@@ -1165,7 +1165,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config message contains an empty config", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
@@ -1201,7 +1201,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
 		healthSet := false
 		mc := &mockOpAMPClient{
-			setHealthFunc: func(_ *protobufs.ComponentHealth) {
+			setHealthFunc: func(*protobufs.ComponentHealth) {
 				healthSet = true
 			},
 		}
@@ -1367,11 +1367,11 @@ type mockOpAMPClient struct {
 	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
-func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+func (mockOpAMPClient) Start(context.Context, types.StartSettings) error {
 	return nil
 }
 
-func (mockOpAMPClient) Stop(_ context.Context) error {
+func (mockOpAMPClient) Stop(context.Context) error {
 	return nil
 }
 
@@ -1397,11 +1397,11 @@ func (m mockOpAMPClient) SetRemoteConfigStatus(rcs *protobufs.RemoteConfigStatus
 	return m.setRemoteConfigStatusFunc(rcs)
 }
 
-func (mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
@@ -1422,11 +1422,11 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 	return msgChan, nil
 }
 
-func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) (err error) {
+func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) (err error) {
 	return nil
 }
 
-func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
 
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
@@ -1554,7 +1554,7 @@ service:
 		got = strings.ReplaceAll(got, "\r\n", "\n")
 
 		// replace the port because that changes on each run
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replaced := portRegex.ReplaceAll([]byte(got), []byte(":55555"))
 		assert.Equal(t, expectedOwnMetricsSection, string(replaced))
 	})
@@ -1730,7 +1730,7 @@ service:
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
 		// replace random port numbers
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
 		assert.Equal(t, expectedMergedConfig, string(replacedMergedConfig))
 	})

@@ -86,7 +86,7 @@ type eventMachine struct {
 	closed       bool
 }
 
-func newEventMachine(logger *zap.Logger, bufferSize int, numWorkers int, numTraces int, telemetry *metadata.TelemetryBuilder) *eventMachine {
+func newEventMachine(logger *zap.Logger, bufferSize, numWorkers, numTraces int, telemetry *metadata.TelemetryBuilder) *eventMachine {
 	em := &eventMachine{
 		logger:                    logger,
 		telemetry:                 telemetry,

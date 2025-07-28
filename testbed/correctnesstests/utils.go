@@ -248,7 +248,7 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	return receiver
 }
 
-func ConstructConnector(t *testing.T, connector string, receiverType string) testbed.DataConnector {
+func ConstructConnector(t *testing.T, connector, receiverType string) testbed.DataConnector {
 	var dataconnector testbed.DataConnector
 	switch connector {
 	case "spanmetrics":

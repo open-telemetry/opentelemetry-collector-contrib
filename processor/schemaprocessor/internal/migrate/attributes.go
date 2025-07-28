@@ -36,7 +36,7 @@ func NewAttributeChangeSet(mappings map[string]string) AttributeChangeSet {
 	return attr
 }
 
-func (a AttributeChangeSet) IsMigrator() {}
+func (AttributeChangeSet) IsMigrator() {}
 
 func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	var (

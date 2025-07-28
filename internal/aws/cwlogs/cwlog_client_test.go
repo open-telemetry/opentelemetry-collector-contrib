@@ -383,19 +383,19 @@ type UnknownError struct {
 	otherField string
 }
 
-func (err *UnknownError) Error() string {
+func (*UnknownError) Error() string {
 	return "Error"
 }
 
-func (err *UnknownError) Code() string {
+func (*UnknownError) Code() string {
 	return "Code"
 }
 
-func (err *UnknownError) Message() string {
+func (*UnknownError) Message() string {
 	return "Message"
 }
 
-func (err *UnknownError) OrigErr() error {
+func (*UnknownError) OrigErr() error {
 	return errors.New("OrigErr")
 }
 

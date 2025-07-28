@@ -23,7 +23,7 @@ var _ PolicyEvaluator = (*booleanAttributeFilter)(nil)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.
-func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value bool, invertMatch bool) PolicyEvaluator {
+func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value, invertMatch bool) PolicyEvaluator {
 	return &booleanAttributeFilter{
 		key:         key,
 		value:       value,

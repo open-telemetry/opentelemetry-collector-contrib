@@ -81,7 +81,8 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 		netReporter:  netReporter,
 		boundedQueue: bq,
 	}
-	if err = zstd.SetDecoderConfig(cfg.Arrow.Zstd); err != nil {
+	err = zstd.SetDecoderConfig(cfg.Arrow.Zstd)
+	if err != nil {
 		return nil, err
 	}
 

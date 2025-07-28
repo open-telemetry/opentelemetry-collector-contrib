@@ -145,7 +145,7 @@ func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 		if cfg.DropRoutingResourceAttribute {
 			s.WriteString(
 				fmt.Sprintf(
-					"delete_key(resource.attributes, \"%s\")",
+					"delete_key(resource.attributes, %q)",
 					cfg.FromAttribute,
 				),
 			)
@@ -154,7 +154,7 @@ func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 		}
 		s.WriteString(
 			fmt.Sprintf(
-				" where resource.attributes[\"%s\"] == \"%s\"",
+				" where resource.attributes[%q] == %q",
 				cfg.FromAttribute,
 				e.Value,
 			),

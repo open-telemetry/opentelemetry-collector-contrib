@@ -1261,7 +1261,7 @@ var standardTests = []metricsTransformTest{
 		name: "combine_single_match",
 		transforms: []internalTransform{
 			{
-				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^([mM]etric)(?P<namedsubmatch>[1])$")},
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile(`^([mM]etric)(?P<namedsubmatch>1)$`)},
 				Action:              Combine,
 				NewName:             "new",
 				SubmatchCase:        "upper",

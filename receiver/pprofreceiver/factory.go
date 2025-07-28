@@ -30,20 +30,20 @@ func createDefaultConfig() component.Config {
 }
 
 func createProfilesReceiver(
-	_ context.Context,
-	_ receiver.Settings,
-	_ component.Config,
-	_ xconsumer.Profiles,
+	context.Context,
+	receiver.Settings,
+	component.Config,
+	xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
 	return &rcvr{}, errors.New("not implemented")
 }
 
 type rcvr struct{}
 
-func (p rcvr) Start(_ context.Context, _ component.Host) error {
+func (rcvr) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (p rcvr) Shutdown(_ context.Context) error {
+func (rcvr) Shutdown(context.Context) error {
 	return nil
 }

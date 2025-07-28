@@ -1104,7 +1104,8 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 				require.True(t, hasR)
 				require.True(t, threshold.ShouldSample(rnd))
 
-				if found++; find == found {
+				found++
+				if find == found {
 					break
 				}
 			}
@@ -1170,7 +1171,7 @@ type assertTraces struct {
 
 var _ consumer.Traces = &assertTraces{}
 
-func (a *assertTraces) Capabilities() consumer.Capabilities {
+func (*assertTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
@@ -1373,7 +1374,7 @@ func TestHashingFunction(t *testing.T) {
 
 // makeSingleSpanWithAttrib is used to construct test data with
 // a specific TraceID and a single attribute.
-func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts, key string, attribValue pcommon.Value) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.TraceState().FromRaw(ts)

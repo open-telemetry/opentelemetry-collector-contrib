@@ -47,7 +47,7 @@ func (m *mockDetector) GCEHostName() (string, error) {
 	return m.instanceName, nil
 }
 
-func (m *mockDetector) GKEClusterName() (string, error) {
+func (*mockDetector) GKEClusterName() (string, error) {
 	return "", errors.New("not available")
 }
 
