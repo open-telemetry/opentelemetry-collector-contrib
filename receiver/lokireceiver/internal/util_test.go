@@ -18,7 +18,7 @@ type dummyProto struct {
 
 func (d *dummyProto) Reset()         { *d = dummyProto{} }
 func (d *dummyProto) String() string { return d.Value }
-func (d *dummyProto) ProtoMessage()  {}
+func (_ *dummyProto) ProtoMessage()  {}
 func (d *dummyProto) Unmarshal(b []byte) error {
 	if string(b) == "fail" {
 		return errors.New("unmarshal error")
@@ -33,7 +33,7 @@ type bareProto struct {
 
 func (b *bareProto) Reset()         { *b = bareProto{} }
 func (b *bareProto) String() string { return b.Value }
-func (b *bareProto) ProtoMessage()  {}
+func (_ *bareProto) ProtoMessage()  {}
 
 type bufReader struct{ *bytes.Buffer }
 
@@ -41,7 +41,7 @@ func (b *bufReader) BytesBuffer() *bytes.Buffer { return b.Buffer }
 
 type errorReader struct{}
 
-func (e *errorReader) Read(p []byte) (int, error) { return 0, errors.New("read error") }
+func (_ *errorReader) Read(p []byte) (int, error) { return 0, errors.New("read error") }
 
 func TestParseProtoReader_Success(t *testing.T) {
 	msg := &dummyProto{}

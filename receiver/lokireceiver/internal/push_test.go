@@ -123,7 +123,7 @@ func TestParseRequest_ProtobufContentType(t *testing.T) {
 
 // Helper functions
 func createTestRequest(body, contentType, contentEncoding string) *http.Request {
-	req, _ := http.NewRequest("POST", "/test", bytes.NewReader([]byte(body)))
+	req, _ := http.NewRequest(http.MethodPost, "/test", bytes.NewReader([]byte(body)))
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
