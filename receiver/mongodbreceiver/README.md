@@ -69,17 +69,9 @@ receivers:
     tls:
       insecure: true
       insecure_skip_verify: true
-    query_sampling:
-      enabled: true
-      collection_interval: 30s
-      max_operations: 50
-      include_databases:
-        - "myapp"
-        - "analytics"
-      exclude_databases:
-        - "admin"
-        - "local"
-        - "config"
+    events:
+      db.server.query_sample:
+        enabled: true
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
@@ -92,32 +84,16 @@ The following metric are available with versions:
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
-## Query Sampling (Logs)
+## Query Samples (Events)
 
-When `query_sampling.enabled` is set to `true`, the receiver will also collect MongoDB query samples as logs. This feature monitors currently executing operations on the MongoDB instance using the `$currentOp` command and provides insights into:
+When `query_sampling` is enabled, the receiver will periodically run an aggregation pipeline with a `$currentOp` stage against the `admin` database to retrieve a snapshot of current database operations. These operations are then processed and emitted as log records, providing insight into the queries being executed on the MongoDB server.
 
-- Currently running queries and operations
-- Query patterns and frequency
-- Query performance (execution time)
-- Client applications and connection information
-- Database and collection access patterns
-
-### Query Sample Log Attributes
-
-Each query sample log record includes the following attributes:
-
-- `mongodb.database`: Database name
-- `mongodb.collection`: Collection name  
-- `mongodb.namespace`: Full namespace (database.collection)
-- `mongodb.operation`: Operation type (query, insert, update, delete, command, etc.)
-- `mongodb.statement`: Raw command/query statement
-- `mongodb.obfuscated_statement`: Obfuscated statement with sensitive data removed
-- `mongodb.query_signature`: Unique signature for grouping similar queries
-- `mongodb.duration_micros`: Operation execution time in microseconds
-- `mongodb.client`: Client connection information
-- `mongodb.app_name`: Application name if provided
-- `mongodb.plan_summary`: Query execution plan summary
-- `mongodb.operation_id`: MongoDB operation identifier
+Each log record represents a sampled query and includes the following information:
+- **Obfuscated Statement**: The query, with sensitive values removed.
+- **Duration**: The execution time of the operation.
+- **Client Information**: The client's IP address and port.
+- **Application Name**: The name of the application that executed the query.
+- **Explain Plan**: A JSON representation of the query's execution plan (for supported operations).
 
 ### Security and Privacy
 

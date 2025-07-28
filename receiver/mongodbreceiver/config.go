@@ -21,20 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-// QuerySettings holds configuration for query sampling
-type QuerySettings struct {
-	Enabled    bool `mapstructure:"enabled"`
-	MaxQueries int  `mapstructure:"max_queries"`
-}
-
-// DefaultQuerySettings returns the default configuration for query sampling
-func DefaultQuerySettings() QuerySettings {
-	return QuerySettings{
-		Enabled:    false,
-		MaxQueries: 100,
-	}
-}
-
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
