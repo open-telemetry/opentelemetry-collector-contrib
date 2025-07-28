@@ -71,7 +71,7 @@ func TestNew_ELBAcessLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to get reader for "elb_access_log" logs`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "elb_access_log" format`)
 }
 
 func TestNew_Unimplemented(t *testing.T) {

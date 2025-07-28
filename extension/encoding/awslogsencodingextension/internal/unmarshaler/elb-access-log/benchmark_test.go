@@ -43,7 +43,7 @@ func createELBAccessLogContent(b *testing.B, filename string, nLogs int) []byte 
 	for i := 0; i < nLogs; i++ {
 		buf.Write(data)
 		if i != nLogs-1 {
-			buf.Write([]byte("\n"))
+			buf.WriteString("\n")
 		}
 	}
 

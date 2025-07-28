@@ -131,9 +131,8 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 		if len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b {
 			reader, err := e.getGzipReader(buf)
 			return gzipEncoding, reader, err
-		} else {
-			return bytesEncoding, bytes.NewReader(buf), nil
 		}
+		return bytesEncoding, bytes.NewReader(buf), nil
 	case formatVPCFlowLog:
 		switch e.vpcFormat {
 		case fileFormatParquet:

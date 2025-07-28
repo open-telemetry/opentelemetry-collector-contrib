@@ -28,9 +28,9 @@ const (
 type ClbAccessLogRecord struct {
 	Time                   string  // Timestamp the load balancer received the request from the client, in ISO 8601 format
 	ELB                    string  // The name of the load balancer
-	ClientIp               string  // Client IP
+	ClientIP               string  // Client IP
 	ClientPort             int64   // Client  port
-	BackendIpPort          string  // The IP address and port of the registered instance that processed this request, or -
+	BackendIPPort          string  // The IP address and port of the registered instance that processed this request, or -
 	RequestProcessingTime  float64 // Time taken to process the request in seconds (HTTP/TCP)
 	BackendProcessingTime  float64 // Time taken for the registered instance to respond
 	ResponseProcessingTime float64 // Time taken to send the response to the client
@@ -59,7 +59,7 @@ func convertTextToClbAccessLogRecord(fields []string) (ClbAccessLogRecord, error
 	record := ClbAccessLogRecord{
 		Time:              fields[0],  // Timestamp
 		ELB:               fields[1],  // Load balancer name
-		BackendIpPort:     fields[3],  // Backend IP:Port
+		BackendIPPort:     fields[3],  // Backend IP:Port
 		ELBStatusCode:     0,          // Placeholder for ELB status code
 		BackendStatusCode: 0,          // Placeholder for Backend status code
 		UserAgent:         fields[12], // User-Agent
@@ -68,7 +68,7 @@ func convertTextToClbAccessLogRecord(fields []string) (ClbAccessLogRecord, error
 	}
 
 	// Process the fields for numerical values (convenient to parse from string)
-	record.ClientIp = strings.Split(fields[2], ":")[0]
+	record.ClientIP = strings.Split(fields[2], ":")[0]
 	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[2], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
@@ -119,9 +119,9 @@ type NlbAccessLogRecord struct {
 	Time                      string // Timestamp the load balancer generated a response to the client in ISO 8601 format
 	ELB                       string // Load balancer resource ID
 	Listener                  string // Resource ID of the TLS listener for the connection
-	ClientIp                  string // Client IP
+	ClientIP                  string // Client IP
 	ClientPort                int64  // Client  port
-	DestinationIpPort         string // The destination IP and port of the target
+	DestinationIPPort         string // The destination IP and port of the target
 	ConnectionTime            int64  // Total time for the connection to complete, in milliseconds
 	TLSHandshakeTime          int64  // Time for the TLS handshake to complete, in milliseconds, or -
 	ReceivedBytes             int64  // Count of bytes received by the load balancer from the client, after decryption
@@ -156,7 +156,7 @@ func convertTextToNlbAccessLogRecord(fields []string) (NlbAccessLogRecord, error
 		Time:                      fields[2],  // Timestamp
 		ELB:                       fields[3],  // Load balancer resource ID
 		Listener:                  fields[4],  // Listener ID
-		DestinationIpPort:         fields[6],  // Destination IP and port
+		DestinationIPPort:         fields[6],  // Destination IP and port
 		TLSHandshakeTime:          0,          // TLSHandshakeTime placeholder value
 		IncomingTLSAlert:          fields[11], // Incoming TLS alert
 		ChosenCertARN:             fields[12], // Chosen certificate ARN
@@ -172,7 +172,7 @@ func convertTextToNlbAccessLogRecord(fields []string) (NlbAccessLogRecord, error
 	}
 
 	// Processing additional fields if applicable
-	record.ClientIp = strings.Split(fields[5], ":")[0]
+	record.ClientIP = strings.Split(fields[5], ":")[0]
 	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[5], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
@@ -203,9 +203,9 @@ type AlbAccessLogRecord struct {
 	Type                   string // Type of request (http, https, etc.)
 	Time                   string // Timestamp the load balancer generated a response to the client in ISO 8601 format
 	ELB                    string // Load balancer resource ID
-	ClientIp               string // Client IP
+	ClientIP               string // Client IP
 	ClientPort             int64  // Client  port
-	TargetIpPort           string // Target IP and port
+	TargetIPPort           string // Target IP and port
 	RequestProcessingTime  string // Time taken to process the request in seconds
 	TargetProcessingTime   string // Time taken for the target to process the request in seconds
 	ResponseProcessingTime string // Time taken to send the response to the client in seconds
@@ -246,7 +246,7 @@ func convertTextToAlbAccessLogRecord(fields []string) (AlbAccessLogRecord, error
 		Type:                   fields[0],
 		Time:                   fields[1],
 		ELB:                    fields[2],
-		TargetIpPort:           fields[4],
+		TargetIPPort:           fields[4],
 		RequestProcessingTime:  fields[5],
 		TargetProcessingTime:   fields[6],
 		ResponseProcessingTime: fields[7],
@@ -268,7 +268,7 @@ func convertTextToAlbAccessLogRecord(fields []string) (AlbAccessLogRecord, error
 		Classification:         fields[27],
 		ClassificationReason:   fields[28],
 	}
-	record.ClientIp = strings.Split(fields[3], ":")[0]
+	record.ClientIP = strings.Split(fields[3], ":")[0]
 	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[3], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
@@ -379,7 +379,7 @@ func scanField(logLine string) (string, string, error) {
 	}
 
 	// Remove space after closing quote if present
-	if len(remaining) > 0 && remaining[0] == ' ' {
+	if remaining != "" && remaining[0] == ' ' {
 		remaining = remaining[1:]
 	}
 

@@ -6,5 +6,5 @@ package elbaccesslogs // import "github.com/open-telemetry/opentelemetry-collect
 const (
 	AttributeELBStatusCode         = "aws.elb.status.code"              // int
 	AttributeELBBackendStatusCode  = "aws.elb.backend.status.code"      // int
-	AttributeTlsListenerResourceID = "aws.elb.tls.listener.resource_id" // string
+	AttributeTLSListenerResourceID = "aws.elb.tls.listener.resource_id" // string
 )

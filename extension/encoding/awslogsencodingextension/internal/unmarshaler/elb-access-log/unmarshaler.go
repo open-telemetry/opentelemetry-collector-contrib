@@ -5,6 +5,7 @@ package elbaccesslogs // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -32,7 +33,7 @@ func NewELBAccessLogUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logge
 }
 
 type resourceAttributes struct {
-	resourceId string
+	resourceID string
 }
 
 // UnmarshalAWSLogs processes a file containing ELB access logs.
@@ -47,7 +48,7 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 
 	// Read first line to determine format
 	if !scanner.Scan() {
-		return plog.Logs{}, fmt.Errorf("no log lines found")
+		return plog.Logs{}, errors.New("no log lines found")
 	}
 	line = scanner.Text()
 
@@ -74,23 +75,17 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 		// Process lines based on determined syntax
 		switch syntax {
 		case albAccessLogs:
-			record, err := convertTextToAlbAccessLogRecord(fields)
-			if err != nil {
-				return plog.Logs{}, fmt.Errorf("unable to convert log line to ALB record: %w", err)
+			if err := f.handleAlbAccessLogs(fields, resourceAttr, scopeLogs); err != nil {
+				return plog.Logs{}, err
 			}
-			f.addToAlbAccessLogs(resourceAttr, scopeLogs, record)
 		case nlbAccessLogs:
-			record, err := convertTextToNlbAccessLogRecord(fields)
-			if err != nil {
-				return plog.Logs{}, fmt.Errorf("unable to convert log line to NLB record: %w", err)
+			if err := f.handleNlbAccessLogs(fields, resourceAttr, scopeLogs); err != nil {
+				return plog.Logs{}, err
 			}
-			f.addToNlbAccessLogs(resourceAttr, scopeLogs, record)
 		case clbAccessLogs:
-			record, err := convertTextToClbAccessLogRecord(fields)
-			if err != nil {
-				return plog.Logs{}, fmt.Errorf("unable to convert log line to NLB record: %w", err)
+			if err := f.handleClbAccessLogs(fields, resourceAttr, scopeLogs); err != nil {
+				return plog.Logs{}, err
 			}
-			f.addToClbAccessLogs(resourceAttr, scopeLogs, record)
 		default:
 			return plog.Logs{}, fmt.Errorf("unsupported log syntax: %s", syntax)
 		}
@@ -102,6 +97,9 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 
 		line = scanner.Text()
 		fields, err = extractFields(line)
+		if err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
+		}
 		if len(fields) == 0 {
 			return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
 		}
@@ -127,10 +125,20 @@ func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, pl
 }
 
 // setResourceAttributes based on the resourceAttributes
-func (f *elbAccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
+func (*elbAccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
 	attr := logs.Resource().Attributes()
 	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-	attr.PutStr(string(conventions.CloudResourceIDKey), r.resourceId)
+	attr.PutStr(string(conventions.CloudResourceIDKey), r.resourceID)
+}
+
+// handleClbAccessLogs handles clb access logs
+func (f *elbAccessLogUnmarshaler) handleClbAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+	record, err := convertTextToClbAccessLogRecord(fields)
+	if err != nil {
+		return fmt.Errorf("unable to convert log line to CLB record: %w", err)
+	}
+	f.addToClbAccessLogs(resourceAttr, scopeLogs, record)
+	return nil
 }
 
 // addToClbAccessLogs adds clb record to provided logs based
@@ -146,9 +154,9 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(resourceAttr *resourceAttri
 	// Create record log
 	recordLog := plog.NewLogRecord()
 	// Set resource id
-	resourceAttr.resourceId = clbRecord.ELB
+	resourceAttr.resourceID = clbRecord.ELB
 	// Populate record attributes
-	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), clbRecord.ClientIp)
+	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), clbRecord.ClientIP)
 	recordLog.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), clbRecord.RequestMethod)
 	recordLog.Attributes().PutStr(string(conventions.URLFullKey), clbRecord.RequestURI)
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), clbRecord.ProtocolName)
@@ -176,6 +184,16 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(resourceAttr *resourceAttri
 	recordLog.MoveTo(rScope)
 }
 
+// handleAlbAccessLogs handles alb access logs
+func (f *elbAccessLogUnmarshaler) handleAlbAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+	record, err := convertTextToAlbAccessLogRecord(fields)
+	if err != nil {
+		return fmt.Errorf("unable to convert log line to ALB record: %w", err)
+	}
+	f.addToAlbAccessLogs(resourceAttr, scopeLogs, record)
+	return nil
+}
+
 // addToAlbAccessLogs adds alb record to provided logs based
 // on the extracted logs of each resource
 func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, albRecord AlbAccessLogRecord) {
@@ -189,11 +207,11 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(resourceAttr *resourceAttri
 	// Create record log
 	recordLog := plog.NewLogRecord()
 	// Set resource id
-	resourceAttr.resourceId = albRecord.ELB
+	resourceAttr.resourceID = albRecord.ELB
 	// Populate record attributes
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), albRecord.Type)
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), albRecord.ProtocolVersion)
-	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), albRecord.ClientIp)
+	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), albRecord.ClientIP)
 	recordLog.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), albRecord.RequestMethod)
 	recordLog.Attributes().PutStr(string(conventions.URLFullKey), albRecord.RequestURI)
 	recordLog.Attributes().PutInt(string(conventions.ClientPortKey), albRecord.ClientPort)
@@ -215,6 +233,16 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(resourceAttr *resourceAttri
 	recordLog.MoveTo(rScope)
 }
 
+// handleNlbAccessLogs handles nlb access logs
+func (f *elbAccessLogUnmarshaler) handleNlbAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+	record, err := convertTextToNlbAccessLogRecord(fields)
+	if err != nil {
+		return fmt.Errorf("unable to convert log line to ALB record: %w", err)
+	}
+	f.addToNlbAccessLogs(resourceAttr, scopeLogs, record)
+	return nil
+}
+
 // addToNlbAccessLogs adds nlb record to provided logs based
 // on the extracted logs of each resource
 func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, nlbRecord NlbAccessLogRecord) {
@@ -228,15 +256,15 @@ func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(resourceAttr *resourceAttri
 	// Create record log
 	recordLog := plog.NewLogRecord()
 	// Set resource id
-	resourceAttr.resourceId = nlbRecord.ELB
+	resourceAttr.resourceID = nlbRecord.ELB
 	// Populate record attributes
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), nlbRecord.Type)
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), nlbRecord.Version)
-	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), nlbRecord.ClientIp)
+	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), nlbRecord.ClientIP)
 	recordLog.Attributes().PutInt(string(conventions.ClientPortKey), nlbRecord.ClientPort)
 	recordLog.Attributes().PutInt(string(conventions.HTTPRequestSizeKey), nlbRecord.ReceivedBytes)
 	recordLog.Attributes().PutInt(string(conventions.HTTPResponseSizeKey), nlbRecord.SentBytes)
-	recordLog.Attributes().PutStr(AttributeTlsListenerResourceID, nlbRecord.Listener)
+	recordLog.Attributes().PutStr(AttributeTLSListenerResourceID, nlbRecord.Listener)
 	recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
 	recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
 
