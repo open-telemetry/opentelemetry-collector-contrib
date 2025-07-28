@@ -29,6 +29,7 @@ type Config struct {
 	HealthPath                 string                   `mapstructure:"health_path"`                   // path for health check api. Default is /health_check
 	RequiredHeader             RequiredHeader           `mapstructure:"required_header"`               // optional setting to set a required header for all requests to have
 	SplitLogsAtNewLine         bool                     `mapstructure:"split_logs_at_newline"`         // optional setting to split logs into multiple log records
+	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
 }
@@ -84,4 +85,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	return errs
+}
+
+func (cfg *Config) ShouldSplitLogsAtJSONBoundary() bool {
+	return cfg.SplitLogsAtJSONBoundary
 }
