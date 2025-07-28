@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/rs/cors"
 	"go.opentelemetry.io/collector/component"
@@ -34,7 +36,7 @@ type datadogRUMReceiver struct {
 	server    *http.Server
 	lReceiver *receiverhelper.ObsReport
 
-	cancel        context.CancelFunc
+	cancel context.CancelFunc
 }
 
 func newDataDogRUMReceiver(config *Config, params receiver.Settings) (component.Component, error) {
@@ -101,6 +103,20 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 }
 
 func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Request) {
+	ddforward := req.URL.Query().Get("ddforward")
+	if ddforward != "" && strings.Contains(ddforward, "replay") {
+		// Forward the request to the ddforward URL
+		if err := ddr.forwardRequest(req, ddforward); err != nil {
+			ddr.params.Logger.Error("Failed to forward request", zap.Error(err))
+			http.Error(w, "Failed to forward request", http.StatusInternalServerError)
+			return
+		}
+		// Return success response to original client
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+		return
+	}
+
 	ddr.params.Logger.Info("Received RUM event")
 	obsCtx := ddr.lReceiver.StartTracesOp(req.Context())
 	var err error
@@ -167,4 +183,43 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 
 func (ddr *datadogRUMReceiver) Shutdown(ctx context.Context) (err error) {
 	return ddr.server.Shutdown(ctx)
+}
+
+func (ddr *datadogRUMReceiver) forwardRequest(req *http.Request, ddForwardURL string) error {
+	fmt.Println("&&&&&&&&&& FORWARDING REPLAY REQUEST TO: ", ddForwardURL)
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	reqBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read request body: %w", err)
+	}
+	forwardedRequest, err := http.NewRequest("POST", ddForwardURL, bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := client.Do(forwardedRequest)
+
+	if err != nil {
+		return fmt.Errorf("failed to send request: %v", err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+		}
+	}(resp.Body)
+
+	// read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %v", err)
+	}
+
+	// check the status code of the response
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("received non-OK response: status: %s, body: %s", resp.Status, body)
+	}
+	return nil
 }

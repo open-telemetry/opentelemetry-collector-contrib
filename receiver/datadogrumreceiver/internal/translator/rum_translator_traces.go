@@ -43,6 +43,7 @@ func ToTraces(logger *zap.Logger, payload map[string]any, req *http.Request, req
 	}
 	newSpan.SetTraceID(traceID)
 	newSpan.SetSpanID(spanID)
+	newSpan.Attributes().PutStr("operation.name", "rum")
 
 	flatPayload := flattenJSON(payload)
 

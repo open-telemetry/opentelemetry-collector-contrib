@@ -487,8 +487,11 @@ func setAttributes(flatPayload map[string]any, attributes pcommon.Map) {
 				attributes.PutDouble(meta.OTLPName, f)
 			}
 		case IntegerAttribute:
-			if i, ok := val.(int); ok {
-				attributes.PutInt(meta.OTLPName, int64(i))
+			if i, ok := val.(int64); ok {
+				attributes.PutInt(meta.OTLPName, i)
+			} else if f, ok := val.(float64); ok {
+				i := int64(f)
+				attributes.PutInt(meta.OTLPName, i)
 			}
 		case ObjectAttribute:
 			if o, ok := val.(map[string]any); ok {
