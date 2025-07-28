@@ -31,7 +31,6 @@ internal/common
 
 exporter/awscloudwatchlogsexporter
 exporter/carbonexporter
-exporter/kineticaexporter
 extension/healthcheckextension
 extension/observer/ecstaskobserver
 processor/groupbytraceprocessor
