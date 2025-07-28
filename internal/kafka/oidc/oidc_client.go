@@ -67,7 +67,6 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	defer p.mu.Unlock()
 
 	now := time.Now()
-	// log.Printf("Refreshing token for %s", p.ClientID)
 	if now.Sub(p.lastRefreshTime) < p.refreshCooldown {
 		// Someone just refreshed - skip
 		log.Printf("Skipping token refresh for %s, within the quiet window of %s",
@@ -92,8 +91,6 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	if err != nil || oauthTok == nil || oauthTok.AccessToken == "" {
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
-
-	// log.Printf("CLIENT updateToken(): oauthTok = %s", DumpOauth2Token(oauthTok))
 
 	// oauth2.Token() in golang.org/x/oauth2 v0.30.0 appears not to populate the `ExpiresIn` field(?) from
 	// the server response.  The Expiry/`expiry` field is not standard in the OIDC or Oauth2 specs.
