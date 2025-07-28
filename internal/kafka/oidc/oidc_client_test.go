@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,7 +26,6 @@ import (
 )
 
 const (
-	PORT            = 3000
 	testClientID    = "mock-client-id"
 	testScope       = "mock-scope"
 	tokenExpireSecs = 60
@@ -53,16 +53,18 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
-	oidcServerQuit := make(chan any)
+	oidcServerQuit := make(chan bool, 1)
+	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit)
+		oidcServer(oidcServerQuit, portCh)
 	}()
 	defer func() {
 		oidcServerQuit <- true
 	}()
 
-	time.Sleep(50 * time.Millisecond) // wait for OIDC server to fully start
-	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
+	// Wait for server to start and get the port
+	port := <-portCh
+	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
 
@@ -94,16 +96,18 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
-	oidcServerQuit := make(chan any)
+	oidcServerQuit := make(chan bool)
+	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit)
+		oidcServer(oidcServerQuit, portCh)
 	}()
 	defer func() {
 		oidcServerQuit <- true
 	}()
 
-	time.Sleep(50 * time.Millisecond) // wait for OIDC server to fully start
-	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", PORT)
+	// Wait for server to start and get the port
+	port := <-portCh
+	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), "wrong-client-id", secretFile,
 		tokenURL, []string{testScope}, 0)
@@ -358,30 +362,41 @@ func generateJWTToken(clientID, scope string) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-func oidcServer(ch <-chan any) {
-	http.HandleFunc("/token", tokenHandler)
+func oidcServer(ch <-chan bool, portCh chan<- int) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", tokenHandler)
 	s := &http.Server{
-		Addr:              fmt.Sprintf(":%d", PORT),
+		Addr:              ":0", // Use port 0 for dynamic allocation
+		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       10 * time.Second,
 	}
 
+	listener, err := net.Listen("tcp", s.Addr)
+	if err != nil {
+		log.Fatalf("could not create listener: %v", err)
+	}
+
+	// Get the actual port number and send it back
+	port := listener.Addr().(*net.TCPAddr).Port
+	portCh <- port
+
 	go func() {
-		fmt.Printf("OIDC Mock Server starting\n")
-		err := s.ListenAndServe()
-		if err != nil {
-			log.Fatalf("could not start OIDC server: %v", err)
+		// fmt.Printf("OIDC Mock Server starting on port %d\n", port)
+		err := s.Serve(listener)
+		if err != nil && err != http.ErrServerClosed {
+			log.Printf("OIDC server error: %v", err)
 		}
 	}()
 
 	<-ch
-	fmt.Printf("OIDC server shutting down\n")
-	err := s.Shutdown(context.Background())
+	// fmt.Printf("OIDC server shutting down\n")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = s.Shutdown(shutdownCtx)
 	if err != nil {
-		log.Fatalf("error shutting down OIDC server: %v", err)
-	}
-	err = s.Close()
-	if err != nil {
-		log.Fatalf("error closing OIDC socket: %v", err)
+		log.Printf("error shutting down OIDC server: %v", err)
 	}
 }
