@@ -327,7 +327,7 @@ func TestComputeRateMetricFromCounter(t *testing.T) {
 
 	assert.Equal(t, "hw.network.io.rate", rateMetric.Labels["metricName"])
 	assert.Equal(t, "By.per_second", rateMetric.Labels["unit"])
-	assert.Len(t, rateMetric.Samples, 1) 
+	assert.Len(t, rateMetric.Samples, 1)
 	assert.Greater(t, rateMetric.Samples[0].Value, 0.0, "Rate should be a positive value")
 }
 

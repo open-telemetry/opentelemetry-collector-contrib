@@ -29,14 +29,14 @@ type BMCHelixOMSample struct {
 
 // MetricsProducer is responsible for converting OpenTelemetry metrics into BMC Helix Operations Management metrics
 type MetricsProducer struct {
-	logger          *zap.Logger
+	logger           *zap.Logger
 	previousCounters map[string]BMCHelixOMSample
 }
 
 // NewMetricsProducer creates a new MetricsProducer
 func NewMetricsProducer(logger *zap.Logger) *MetricsProducer {
 	return &MetricsProducer{
-		logger: logger,
+		logger:           logger,
 		previousCounters: make(map[string]BMCHelixOMSample),
 	}
 }
@@ -479,10 +479,10 @@ func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric)
 	deltaValue := sample.Value - prev.Value
 	if deltaValue < 0 {
 		mp.logger.Debug("Negative delta value, skipping rate calculation", zap.String("key", key), zap.Float64("deltaValue", deltaValue))
-    	return nil
+		return nil
 	}
 
-	deltaTime := float64(sample.Timestamp - prev.Timestamp) / 1000.0 // ms to sec
+	deltaTime := float64(sample.Timestamp-prev.Timestamp) / 1000.0 // ms to sec
 
 	if deltaTime <= 0 {
 		mp.logger.Debug("Zero or negative delta time, skipping rate calculation", zap.String("key", key), zap.Float64("deltaTime", deltaTime))
@@ -496,8 +496,8 @@ func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric)
 	for k, v := range metric.Labels {
 		rateLabels[k] = v
 	}
-	rateLabels["metricName"] = rateLabels["metricName"] + ".rate"
-	rateLabels["unit"] = rateLabels["unit"] + ".per_second"
+	rateLabels["metricName"] += ".rate"
+	rateLabels["unit"] += ".per_second"
 
 	return &BMCHelixOMMetric{
 		Labels:  rateLabels,
