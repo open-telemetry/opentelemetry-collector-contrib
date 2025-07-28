@@ -44,7 +44,7 @@ tail_sampling:
        {
           name: test-policy-8,
           type: span_count,
-          span_count: {min_spans: 2, max_spans: 20}
+          span_count: {min_spans: 2}
        },
        {
           name: test-policy-9,

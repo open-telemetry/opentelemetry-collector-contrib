@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:         "test-policy-8",
 						Type:         SpanCount,
-						SpanCountCfg: SpanCountCfg{MinSpans: 2, MaxSpans: 20},
+						SpanCountCfg: SpanCountCfg{MinSpans: 2},
 					},
 				},
 				{

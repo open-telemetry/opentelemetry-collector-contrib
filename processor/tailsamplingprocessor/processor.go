@@ -223,9 +223,14 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		minValue := nafCfg.MinValue
-		maxValue := nafCfg.MaxValue
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, &minValue, &maxValue, nafCfg.InvertMatch), nil
+		var minValuePtr, maxValuePtr *int64
+		if nafCfg.MinValue != 0 {
+			minValuePtr = &nafCfg.MinValue
+		}
+		if nafCfg.MaxValue != 0 {
+			maxValuePtr = &nafCfg.MaxValue
+		}
+		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, minValuePtr, maxValuePtr, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
