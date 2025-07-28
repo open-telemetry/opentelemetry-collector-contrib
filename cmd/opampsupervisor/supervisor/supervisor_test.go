@@ -2041,8 +2041,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		resp, respErr := sendHealthCheckRequest()
 		require.NoError(t, respErr)
 		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
+		body, bodyErr := io.ReadAll(resp.Body)
+		require.NoError(t, bodyErr)
 		assert.Equalf(t, http.StatusOK, resp.StatusCode, "expected %d, got %d, response body: %s", http.StatusOK, resp.StatusCode, string(body))
 	})
 
