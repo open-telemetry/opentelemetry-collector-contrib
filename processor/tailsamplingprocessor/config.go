@@ -140,7 +140,7 @@ type LatencyCfg struct {
 	// Lower bound in milliseconds. Retaining original name for compatibility
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
 	// Upper bound in milliseconds.
-	UpperThresholdmsMs int64 `mapstructure:"upper_threshold_ms"`
+	UpperThresholdMs int64 `mapstructure:"upper_threshold_ms"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
