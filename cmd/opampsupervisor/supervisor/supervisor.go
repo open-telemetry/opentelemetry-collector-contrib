@@ -699,7 +699,7 @@ func (s *Supervisor) startOpAMPClient() error {
 
 func (s *Supervisor) startHealthCheckServer() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		if s.persistentState == nil {
 			w.WriteHeader(http.StatusPreconditionFailed)
 			_, _ = w.Write([]byte("persistent state is nil"))
@@ -723,8 +723,9 @@ func (s *Supervisor) startHealthCheckServer() error {
 
 	healthCheckServerPort := 23233
 	s.healthCheckServer = &http.Server{
-		Addr:    fmt.Sprintf(":%d", healthCheckServerPort),
-		Handler: mux,
+		Addr:        fmt.Sprintf(":%d", healthCheckServerPort),
+		ReadTimeout: 5 * time.Second,
+		Handler:     mux,
 	}
 
 	listener, err := net.Listen("tcp", s.healthCheckServer.Addr)

@@ -2011,7 +2011,6 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 }
 
 func TestSupervisor_HealthCheckServer(t *testing.T) {
-	var err error
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 
 	s := &Supervisor{
@@ -2027,7 +2026,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	}
 	s.cfgState.Store(healthyConfig)
 
-	err = s.startHealthCheckServer()
+	err := s.startHealthCheckServer()
 	require.NoError(t, err)
 	require.NotNil(t, s.healthCheckServer)
 
@@ -2039,8 +2038,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	}
 
 	t.Run("Health check server startup", func(t *testing.T) {
-		resp, err := sendHealthCheckRequest()
-		require.NoError(t, err)
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
@@ -2051,8 +2050,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		s.cfgState.Store(healthyConfig)
 		s.persistentState = &persistentState{InstanceID: testUUID}
 
-		resp, err := sendHealthCheckRequest()
-		require.NoError(t, err)
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
@@ -2064,8 +2063,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		})
 		s.persistentState = nil
 
-		resp, err := sendHealthCheckRequest()
-		require.NoError(t, err)
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
 	})
@@ -2077,8 +2076,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		})
 		s.cfgState = &atomic.Value{}
 
-		resp, err := sendHealthCheckRequest()
-		require.NoError(t, err)
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
 	})
@@ -2090,8 +2089,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		})
 		s.cfgState = &atomic.Value{}
 
-		resp, err := sendHealthCheckRequest()
-		require.NoError(t, err)
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
 	})
