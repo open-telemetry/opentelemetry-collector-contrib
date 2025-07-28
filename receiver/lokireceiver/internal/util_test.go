@@ -41,7 +41,7 @@ func (b *bufReader) BytesBuffer() *bytes.Buffer { return b.Buffer }
 
 type errorReader struct{}
 
-func (*errorReader) Read(p []byte) (int, error) { return 0, errors.New("read error") }
+func (*errorReader) Read(_ []byte) (int, error) { return 0, errors.New("read error") }
 
 func TestParseProtoReader_Success(t *testing.T) {
 	msg := &dummyProto{}
