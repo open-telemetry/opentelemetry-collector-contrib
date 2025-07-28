@@ -614,6 +614,8 @@ Examples:
 
 The `Contains` Converter checks if a string contains any of the specified substrings. It returns `true` if any substring is found, and `false` otherwise. This function uses Go's native string contains functionality which provides better performance compared to regex-based approaches like `IsMatch`.
 
+**Note:** This function does not support wildcards or regex patterns. For pattern matching with wildcards or regex, use the `IsMatch` function instead.
+
 **Parameters:**
 - `target` is a string to search within. If `target` is not a string or is nil, the function will return an error.
 - `substrings` is an array of strings to search for. The function returns `true` if ANY of the substrings are found in the target string.
