@@ -67,7 +67,7 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	defer p.mu.Unlock()
 
 	now := time.Now()
-	log.Printf("Refreshing token for %s", p.ClientID)
+	// log.Printf("Refreshing token for %s", p.ClientID)
 	if now.Sub(p.lastRefreshTime) < p.refreshCooldown {
 		// Someone just refreshed - skip
 		log.Printf("Skipping token refresh for %s, within the quiet window of %s",

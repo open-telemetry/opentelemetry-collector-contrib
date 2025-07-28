@@ -26,9 +26,12 @@ import (
 )
 
 const (
-	testClientID    = "mock-client-id"
-	testScope       = "mock-scope"
-	tokenExpireSecs = 60
+	testClientID = "mock-client-id"
+	testScope    = "mock-scope"
+)
+
+var (
+	tokenExpireSecs int = 10
 )
 
 type MockOAuthProvider struct {
@@ -84,7 +87,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	assert.Equal(t, testScope, claims["scope"])
 
 	assert.WithinDuration(t, time.Now(), time.Unix(int64(claims["iat"].(float64)), 0), 2*time.Second)
-	expectedTimeout := time.Now().Add(tokenExpireSecs * time.Second)
+	expectedTimeout := time.Now().Add(time.Duration(tokenExpireSecs) * time.Second)
 	actualTimeout := time.Unix(int64(claims["exp"].(float64)), 0)
 	assert.WithinDuration(t, expectedTimeout, actualTimeout, 2*time.Second)
 }
@@ -117,45 +120,37 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	assert.Nil(t, saramaToken)
 }
 
-// func TestOIDCProvider_GetToken_Error(t *testing.T) {
-// 	mockProvider := &MockOAuthProvider{
-// 		// TODO can we remove all requestAuthority ... ?
-// 		MockSignin: func(clientID, scope string, requestedAuthority ...string) (*sarama.AccessToken, error) {
-// 			return nil, errors.New("failed to sign in")
-// 		},
-// 	}
+func TestOIDCProvider_TokenCaching(t *testing.T) {
+	secretFile, err := k8sSecretFile()
+	assert.NoError(t, err)
 
-// 	oidcProvider := NewOIDCFileTokenProvider("mock-client-id", "mock-scopes", mockProvider, 0)
+	testClientSecret, err = os.ReadFile(secretFile)
+	assert.NoError(t, err)
 
-// 	token, err := oidcProvider.Token()
-// 	assert.NotNil(t, err)
-// 	assert.Nil(t, token)
-// 	assert.Equal(t, "failed to refresh token: failed to sign in", err.Error())
-// }
+	oidcServerQuit := make(chan bool, 1)
+	portCh := make(chan int, 1)
+	go func() {
+		oidcServer(oidcServerQuit, portCh)
+	}()
+	defer func() {
+		oidcServerQuit <- true
+	}()
 
-// func TestOIDCProvider_TokenCaching(t *testing.T) {
-// 	mockProvider := &MockOAuthProvider{
-// 		MockSignin: func(clientID, scope string, requestedAuthority ...string) (*AccessToken, error) {
-// 			return &AccessToken{
-// 				AccessToken: "mock-access-token",
-// 				ExpiresIn:   3600,
-// 				TokenType:   "Bearer",
-// 				Scope:       "mock-scopes",
-// 			}, nil
-// 		},
-// 	}
+	// Wait for server to start and get the port
+	port := <-portCh
+	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-// 	oidcProvider := NewGRSigningAccessTokenProvider("mock-client-id", "mock-scopes", mockProvider, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
 
-// 	token1, err1 := oidcProvider.GetToken()
-// 	assert.Nil(t, err1)
-// 	assert.NotNil(t, token1)
+	token1, err1 := oidcProvider.Token()
+	assert.Nil(t, err1)
+	assert.NotNil(t, token1)
 
-// 	token2, err2 := oidcProvider.GetToken()
-// 	assert.Nil(t, err2)
-// 	assert.NotNil(t, token2)
-// 	assert.Equal(t, token1, token2)
-// }
+	token2, err2 := oidcProvider.Token()
+	assert.Nil(t, err2)
+	assert.NotNil(t, token2)
+	assert.Equal(t, token1, token2)
+}
 
 // func TestOIDCProvider_TokenExpired(t *testing.T) {
 // 	mockProvider := &MockOAuthProvider{
@@ -334,7 +329,6 @@ func validateClient(clientID, clientSecret string) bool {
 	validClients := map[string]string{
 		testClientID: string(testClientSecret),
 		// "test_client": "test_secret",
-		// "demo_client": "demo_secret",
 	}
 
 	expectedSecret, exists := validClients[clientID]
@@ -362,7 +356,7 @@ func generateJWTToken(clientID, scope string) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-func oidcServer(ch <-chan bool, portCh chan<- int) {
+func oidcServer(shutdownCh <-chan bool, portCh chan<- int) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/token", tokenHandler)
 	s := &http.Server{
@@ -382,15 +376,13 @@ func oidcServer(ch <-chan bool, portCh chan<- int) {
 	portCh <- port
 
 	go func() {
-		// fmt.Printf("OIDC Mock Server starting on port %d\n", port)
 		err := s.Serve(listener)
 		if err != nil && err != http.ErrServerClosed {
 			log.Printf("OIDC server error: %v", err)
 		}
 	}()
 
-	<-ch
-	// fmt.Printf("OIDC server shutting down\n")
+	<-shutdownCh
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
