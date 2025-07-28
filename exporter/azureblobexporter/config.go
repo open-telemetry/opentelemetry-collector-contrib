@@ -51,6 +51,9 @@ type Authentication struct {
 
 	// ConnectionString to the endpoint.
 	ConnectionString string `mapstructure:"connection_string"`
+
+	// FederatedTokenFile is the path to the file containing the federated token. It's needed when type is workload_identity.
+	FederatedTokenFile string `mapstructure:"federated_token_file"`
 }
 
 type AuthType string
@@ -60,6 +63,7 @@ const (
 	SystemManagedIdentity AuthType = "system_managed_identity"
 	UserManagedIdentity   AuthType = "user_managed_identity"
 	ServicePrincipal      AuthType = "service_principal"
+	WorkloadIdentity      AuthType = "workload_identity"
 )
 
 // Config contains the main configuration options for the azure storage blob exporter
@@ -103,6 +107,10 @@ func (c *Config) Validate() error {
 	case UserManagedIdentity:
 		if c.Auth.ClientID == "" {
 			return errors.New("client_id cannot be empty when auth type is user_managed_identity")
+		}
+	case WorkloadIdentity:
+		if c.Auth.TenantID == "" || c.Auth.ClientID == "" || c.Auth.FederatedTokenFile == "" {
+			return errors.New("tenant_id, client_id and federated_token_file cannot be empty when auth type is workload_identity")
 		}
 	}
 

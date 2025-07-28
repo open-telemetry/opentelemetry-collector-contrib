@@ -6,7 +6,7 @@ status:
     alpha: [traces_to_traces, metrics_to_metrics, logs_to_logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [mwear]
+    active: [mwear, TylerHelmuth, evan-bradley, edmocosta]
     emeritus: [jpkrohling]
     seeking_new: true
 
