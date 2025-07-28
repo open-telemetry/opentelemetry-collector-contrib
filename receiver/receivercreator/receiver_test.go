@@ -36,21 +36,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 type mockObserver struct{}
 
-func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
+func (*mockObserver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m *mockObserver) Shutdown(_ context.Context) error {
+func (*mockObserver) Shutdown(context.Context) error {
 	return nil
 }
 
 var _ extension.Extension = (*mockObserver)(nil)
 
-func (m *mockObserver) ListAndWatch(notify observer.Notify) {
+func (*mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
 }
 
-func (m *mockObserver) Unsubscribe(_ observer.Notify) {}
+func (*mockObserver) Unsubscribe(observer.Notify) {}
 
 var _ observer.Observable = (*mockObserver)(nil)
 

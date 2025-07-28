@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/scalyr/dataset-go/pkg/buffer"
 	"github.com/scalyr/dataset-go/pkg/buffer_config"
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
@@ -212,8 +212,8 @@ func (c *Config) String() string {
 	return s
 }
 
-func (c *Config) convert() *ExporterConfig {
-	return &ExporterConfig{
+func (c *Config) convert() *exporterConfig {
+	return &exporterConfig{
 		datasetConfig: &datasetConfig.DataSetConfig{
 			Endpoint: c.DatasetURL,
 			Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
@@ -242,7 +242,7 @@ func (c *Config) convert() *ExporterConfig {
 	}
 }
 
-type ExporterConfig struct {
+type exporterConfig struct {
 	datasetConfig      *datasetConfig.DataSetConfig
 	tracesSettings     TracesSettings
 	logsSettings       LogsSettings

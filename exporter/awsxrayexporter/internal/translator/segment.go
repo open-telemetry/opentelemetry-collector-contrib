@@ -744,11 +744,9 @@ func fixSegmentName(name string) string {
 func fixAnnotationKey(key string) string {
 	return strings.Map(func(r rune) rune {
 		switch {
-		case '0' <= r && r <= '9':
-			fallthrough
-		case 'A' <= r && r <= 'Z':
-			fallthrough
-		case 'a' <= r && r <= 'z':
+		case '0' <= r && r <= '9',
+			'A' <= r && r <= 'Z',
+			'a' <= r && r <= 'z':
 			return r
 		case remoteXrayExporterDotConverter.IsEnabled() && r == '.':
 			return r

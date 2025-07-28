@@ -83,6 +83,16 @@ resourceMetrics:
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The number of temp files.
             name: postgresql.temp_files
             sum:
@@ -550,6 +560,16 @@ resourceMetrics:
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The number of temp files.
             name: postgresql.temp_files
             sum:
@@ -1085,12 +1105,22 @@ resourceMetrics:
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2825408"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The number of temp files.
             name: postgresql.temp_files
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "2"
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
               isMonotonic: true

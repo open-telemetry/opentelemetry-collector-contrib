@@ -12,7 +12,9 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -62,15 +64,22 @@ type HecTelemetry struct {
 	ExtraAttributes map[string]string `mapstructure:"extra_attributes"`
 }
 
+type DeprecatedBatchConfig struct {
+	Enabled      bool                            `mapstructure:"enabled"`
+	FlushTimeout time.Duration                   `mapstructure:"flush_timeout"`
+	Sizer        exporterhelper.RequestSizerType `mapstructure:"sizer"`
+	MinSize      int64                           `mapstructure:"min_size"`
+	MaxSize      int64                           `mapstructure:"max_size"`
+	isSet        bool                            `mapstructure:"-"`
+}
+
 // Config defines configuration for Splunk exporter.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-
-	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
-	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"` //nolint:staticcheck
+	// DeprecatedBatcher is the deprecated batcher configuration.
+	DeprecatedBatcher DeprecatedBatchConfig `mapstructure:"batcher"`
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
@@ -142,6 +151,35 @@ type Config struct {
 
 	// Telemetry is the configuration for splunk hec exporter telemetry
 	Telemetry HecTelemetry `mapstructure:"telemetry"`
+}
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if conf.IsSet("batcher") {
+		cfg.DeprecatedBatcher.isSet = true
+		if cfg.QueueSettings.Batch.HasValue() {
+			return errors.New(`deprecated "batcher" cannot be set along with "sending_queue::batch"`)
+		}
+		if cfg.DeprecatedBatcher.Enabled {
+			cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				FlushTimeout: cfg.DeprecatedBatcher.FlushTimeout,
+				Sizer:        cfg.DeprecatedBatcher.Sizer,
+				MinSize:      cfg.DeprecatedBatcher.MinSize,
+				MaxSize:      cfg.DeprecatedBatcher.MaxSize,
+			})
+
+			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
+			// behavior of the deprecated batcher.
+			if !cfg.QueueSettings.Enabled {
+				cfg.QueueSettings.Enabled = true
+				cfg.QueueSettings.WaitForResult = true
+			}
+		}
+	}
+
+	return nil
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {

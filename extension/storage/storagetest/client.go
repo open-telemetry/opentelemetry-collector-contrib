@@ -45,7 +45,7 @@ func NewInMemoryClient(kind component.Kind, id component.ID, name string) *TestC
 // NewFileBackedClient creates a storage.Client that will load previous
 // storage contents upon creation and save storage contents when closed.
 // It also has metadata which may be used to validate test expectations.
-func NewFileBackedClient(kind component.Kind, id component.ID, name string, storageDir string) *TestClient {
+func NewFileBackedClient(kind component.Kind, id component.ID, name, storageDir string) *TestClient {
 	client := NewInMemoryClient(kind, id, name)
 
 	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%s_%s_%s_%s", kind, id.Type(), id.Name(), name))

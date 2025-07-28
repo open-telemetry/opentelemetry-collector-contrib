@@ -194,9 +194,6 @@ service:
 	effectiveConfig, err := os.ReadFile("../testdata/collector/effective_config.yaml")
 	require.NoError(t, err)
 
-	mergedEffectiveConfig, err := os.ReadFile("./testdata/merged_effective_config.yaml")
-	require.NoError(t, err)
-
 	mergedLocalConfig, err := os.ReadFile("./testdata/merged_local_config.yaml")
 	require.NoError(t, err)
 
@@ -230,7 +227,7 @@ service:
 			acceptsRemoteConfig: true,
 			remoteConfig:        nil,
 			wantErr:             false,
-			wantChanged:         true,
+			wantChanged:         false,
 			wantConfig:          mergedLocalConfig,
 		},
 		{
@@ -245,7 +242,7 @@ service:
 				},
 			},
 			wantErr:     false,
-			wantChanged: true,
+			wantChanged: false,
 			wantConfig:  effectiveConfig,
 		},
 		{
@@ -255,16 +252,20 @@ service:
 			remoteConfig:        nil,
 			wantErr:             false,
 			wantChanged:         false,
-			wantConfig:          mergedEffectiveConfig,
+			wantConfig:          effectiveConfig,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := Supervisor{
-				telemetrySettings:              newNopTelemetrySettings(),
-				persistentState:                &persistentState{},
-				config:                         config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: tt.acceptsRemoteConfig}, Agent: config.Agent{ConfigFiles: tt.configFiles}},
+				telemetrySettings: newNopTelemetrySettings(),
+				persistentState:   &persistentState{},
+				config: config.Supervisor{
+					Capabilities: config.Capabilities{AcceptsRemoteConfig: tt.acceptsRemoteConfig},
+					Agent:        config.Agent{ConfigFiles: tt.configFiles},
+					Storage:      config.Storage{Directory: t.TempDir()},
+				},
 				pidProvider:                    staticPIDProvider(1234),
 				hasNewConfig:                   make(chan struct{}, 1),
 				agentConfigOwnTelemetrySection: &atomic.Value{},
@@ -466,9 +467,13 @@ func Test_onMessage(t *testing.T) {
 		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
-			telemetrySettings:              newNopTelemetrySettings(),
-			pidProvider:                    defaultPIDProvider{},
-			config:                         config.Supervisor{},
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       defaultPIDProvider{},
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+			},
 			hasNewConfig:                   make(chan struct{}, 1),
 			persistentState:                &persistentState{InstanceID: initialID},
 			agentDescription:               agentDesc,
@@ -566,7 +571,7 @@ service:
 				)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -577,6 +582,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -666,7 +672,7 @@ service:
 				)
 				return errors.New("unexpected error")
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -677,6 +683,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -733,7 +740,7 @@ service:
 				assert.NotEmpty(t, rcs.ErrorMessage)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -744,6 +751,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -821,7 +829,7 @@ service:
 
 		remoteConfigStatusUpdated := false
 		mc := &mockOpAMPClient{
-			setRemoteConfigStatusFunc: func(_ *protobufs.RemoteConfigStatus) error {
+			setRemoteConfigStatusFunc: func(*protobufs.RemoteConfigStatus) error {
 				remoteConfigStatusUpdated = true
 				return nil
 			},
@@ -833,6 +841,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -876,6 +885,108 @@ service:
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
 		assert.Equal(t, expectedMergedConfig, s.cfgState.Load().(*configState).mergedConfig)
+	})
+
+	t.Run("RemoteConfig - do nothing if not capable of accepting remote config", func(t *testing.T) {
+		const testConfigMessage = `receivers:
+  debug:`
+
+		const expectedEffectiveConfig = `extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 88888
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+service:
+    extensions:
+        - opamp
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource: null
+`
+
+		remoteConfig := &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {
+						Body: []byte(testConfigMessage),
+					},
+				},
+			},
+			ConfigHash: []byte("hash"),
+		}
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+		remoteConfigStatusUpdated := false
+		mc := &mockOpAMPClient{
+			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+				remoteConfigStatusUpdated = true
+				assert.Equal(
+					t,
+					&protobufs.RemoteConfigStatus{
+						LastRemoteConfigHash: remoteConfig.ConfigHash,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+					},
+					rcs,
+				)
+				return nil
+			},
+			updateEffectiveConfigFunc: func(context.Context) error {
+				return nil
+			},
+		}
+
+		configStorageDir := t.TempDir()
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: false},
+				Storage: config.Storage{
+					Directory: configStorageDir,
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+		}
+
+		require.NoError(t, s.createTemplates())
+
+		s.agentDescription.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes:    []*protobufs.KeyValue{},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{},
+		})
+
+		s.cfgState.Store(&configState{
+			mergedConfig:     expectedEffectiveConfig,
+			configMapIsEmpty: false,
+		})
+
+		s.onMessage(context.Background(), &types.MessageData{
+			RemoteConfig: remoteConfig,
+		})
+
+		assert.Equal(t, expectedEffectiveConfig, s.cfgState.Load().(*configState).mergedConfig)
+		assert.False(t, remoteConfigStatusUpdated)
 	})
 }
 
@@ -976,7 +1087,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
@@ -1015,7 +1126,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient; client returns error", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return errors.New("unexpected error")
 			},
@@ -1054,7 +1165,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config message contains an empty config", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
@@ -1090,7 +1201,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
 		healthSet := false
 		mc := &mockOpAMPClient{
-			setHealthFunc: func(_ *protobufs.ComponentHealth) {
+			setHealthFunc: func(*protobufs.ComponentHealth) {
 				healthSet = true
 			},
 		}
@@ -1256,11 +1367,11 @@ type mockOpAMPClient struct {
 	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
-func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+func (mockOpAMPClient) Start(context.Context, types.StartSettings) error {
 	return nil
 }
 
-func (mockOpAMPClient) Stop(_ context.Context) error {
+func (mockOpAMPClient) Stop(context.Context) error {
 	return nil
 }
 
@@ -1286,11 +1397,11 @@ func (m mockOpAMPClient) SetRemoteConfigStatus(rcs *protobufs.RemoteConfigStatus
 	return m.setRemoteConfigStatusFunc(rcs)
 }
 
-func (mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
@@ -1311,11 +1422,11 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 	return msgChan, nil
 }
 
-func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) (err error) {
+func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) (err error) {
 	return nil
 }
 
-func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
 
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
@@ -1386,6 +1497,11 @@ func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 			cfgState:                       &atomic.Value{},
 			persistentState:                &persistentState{InstanceID: testUUID},
 			pidProvider:                    staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+			},
 		}
 		err := s.createTemplates()
 
@@ -1438,7 +1554,7 @@ service:
 		got = strings.ReplaceAll(got, "\r\n", "\n")
 
 		// replace the port because that changes on each run
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replaced := portRegex.ReplaceAll([]byte(got), []byte(":55555"))
 		assert.Equal(t, expectedOwnMetricsSection, string(replaced))
 	})
@@ -1614,7 +1730,7 @@ service:
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
 		// replace random port numbers
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
 		assert.Equal(t, expectedMergedConfig, string(replacedMergedConfig))
 	})

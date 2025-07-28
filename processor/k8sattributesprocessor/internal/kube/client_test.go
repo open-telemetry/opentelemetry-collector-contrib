@@ -33,7 +33,7 @@ func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 	return fake.NewSimpleClientset(), nil
 }
 
-func newPodIdentifier(from string, name string, value string) PodIdentifier {
+func newPodIdentifier(from, name, value string) PodIdentifier {
 	if from == "connection" {
 		name = ""
 	}
@@ -871,7 +871,7 @@ func TestExtractionRules(t *testing.T) {
 					}, {
 						Name:  "l2",
 						Key:   "label2",
-						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
 						From:  MetadataFromPod,
 					},
 				},
@@ -899,7 +899,7 @@ func TestExtractionRules(t *testing.T) {
 					}, {
 						Name:  "l2",
 						Key:   "label2",
-						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
 					},
 				},
 			},
@@ -1496,6 +1496,102 @@ func TestDeploymentExtractionRules(t *testing.T) {
 			require.True(t, ok)
 
 			assert.Len(t, n.Attributes, len(tc.attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestStatefulSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	statefulset := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleStatefulSetAdd(statefulset)
+			n, ok := c.GetStatefulSet(string(statefulset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
 			for k, v := range tc.attributes {
 				got, ok := n.Attributes[k]
 				assert.True(t, ok)
@@ -2237,6 +2333,70 @@ func TestExtractDeploymentLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func TestExtractStatefulSetLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                     string
+		shouldExtractStatefulSet bool
+		rules                    ExtractionRules
+	}{
+		{
+			name:                     "empty-rules",
+			shouldExtractStatefulSet: false,
+			rules:                    ExtractionRules{},
+		}, {
+			name:                     "pod-rules",
+			shouldExtractStatefulSet: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                     "statefulset-rules-only-annotations",
+			shouldExtractStatefulSet: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+			},
+		}, {
+			name:                     "statefulset-rules-only-labels",
+			shouldExtractStatefulSet: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractStatefulSet, c.extractStatefulSetLabelsAnnotations())
+		})
+	}
+}
+
 func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	set := componenttest.NewNopTelemetrySettings()
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
@@ -2286,7 +2446,7 @@ type neverSyncedResourceEventHandlerRegistration struct {
 	cache.ResourceEventHandlerRegistration
 }
 
-func (n *neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
+func (*neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
 	return false
 }
 

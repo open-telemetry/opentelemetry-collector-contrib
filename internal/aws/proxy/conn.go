@@ -42,7 +42,7 @@ const (
 	stsAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
 )
 
-var newAWSSession = func(roleArn string, region string, log *zap.Logger) (*session.Session, error) {
+var newAWSSession = func(roleArn, region string, log *zap.Logger) (*session.Session, error) {
 	sts := &stsCalls{log: log, getSTSCredsFromRegionEndpoint: getSTSCredsFromRegionEndpoint}
 
 	if roleArn == "" {
@@ -206,7 +206,7 @@ type stsCalls struct {
 
 // getCreds gets STS credentials first from the regional endpoint, then from the primary
 // region in the respective AWS partition if the regional endpoint is disabled.
-func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credentials, error) {
+func (s *stsCalls) getCreds(region, roleArn string) (*credentials.Credentials, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credent
 // getSTSCredsFromRegionEndpoint fetches STS credentials for provided roleARN from regional endpoint.
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
 // Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
-var getSTSCredsFromRegionEndpoint = func(log *zap.Logger, sess *session.Session, region string, roleArn string) *credentials.Credentials {
+var getSTSCredsFromRegionEndpoint = func(log *zap.Logger, sess *session.Session, region, roleArn string) *credentials.Credentials {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
 	// for other opt-in regions, region value will create STS regional endpoint.
@@ -247,7 +247,7 @@ var getSTSCredsFromRegionEndpoint = func(log *zap.Logger, sess *session.Session,
 
 // getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in the
 // respective partition.
-func (s *stsCalls) getSTSCredsFromPrimaryRegionEndpoint(sess *session.Session, roleArn string, region string) (*credentials.Credentials, error) {
+func (s *stsCalls) getSTSCredsFromPrimaryRegionEndpoint(sess *session.Session, roleArn, region string) (*credentials.Credentials, error) {
 	partitionID := getPartition(region)
 	switch partitionID {
 	case endpoints.AwsPartitionID:

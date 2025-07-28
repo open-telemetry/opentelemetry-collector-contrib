@@ -23,7 +23,7 @@ func Validate(globs []string) error {
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
-func FindFiles(includes []string, excludes []string) ([]string, error) {
+func FindFiles(includes, excludes []string) ([]string, error) {
 	var errs error
 
 	allSet := make(map[string]struct{}, len(includes))
