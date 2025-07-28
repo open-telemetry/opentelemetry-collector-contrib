@@ -102,7 +102,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	var errs error
 	if buildResource {
 		parser, err := ottlresource.NewParser(
-			common.Functions[ottlresource.TransformContext](),
+			common.StandardFunctions[ottlresource.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -113,7 +113,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildSpan {
 		parser, err := ottlspan.NewParser(
-			common.Functions[ottlspan.TransformContext](),
+			common.SpanFunctions(),
 			settings,
 		)
 		if err == nil {
@@ -124,7 +124,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildMetric {
 		parser, err := ottlmetric.NewParser(
-			common.Functions[ottlmetric.TransformContext](),
+			common.StandardFunctions[ottlmetric.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -135,7 +135,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildDataPoint {
 		parser, err := ottldatapoint.NewParser(
-			common.Functions[ottldatapoint.TransformContext](),
+			common.StandardFunctions[ottldatapoint.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -146,7 +146,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildLog {
 		parser, err := ottllog.NewParser(
-			common.Functions[ottllog.TransformContext](),
+			common.StandardFunctions[ottllog.TransformContext](),
 			settings,
 		)
 		if err == nil {
