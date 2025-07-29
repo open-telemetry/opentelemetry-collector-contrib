@@ -79,6 +79,7 @@ components:
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googleclientauth
         - googlecloudlogentry_encoding
         - headers_setter
         - health_check
