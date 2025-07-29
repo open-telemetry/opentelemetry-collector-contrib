@@ -30,8 +30,6 @@ const (
 	testScope    = "mock-scope"
 )
 
-var tokenExpireSecs = 10
-
 type MockOAuthProvider struct {
 	MockSignin func(clientID, scope string, requestedAuthority ...string) (*sarama.AccessToken, error)
 }
@@ -57,7 +55,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	oidcServerQuit := make(chan bool, 1)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh)
+		oidcServer(oidcServerQuit, portCh, 10)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -85,7 +83,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	assert.Equal(t, testScope, claims["scope"])
 
 	assert.WithinDuration(t, time.Now(), time.Unix(int64(claims["iat"].(float64)), 0), 2*time.Second)
-	expectedTimeout := time.Now().Add(time.Duration(tokenExpireSecs) * time.Second)
+	expectedTimeout := time.Now().Add(time.Duration(10) * time.Second)
 	actualTimeout := time.Unix(int64(claims["exp"].(float64)), 0)
 	assert.WithinDuration(t, expectedTimeout, actualTimeout, 2*time.Second)
 }
@@ -100,7 +98,7 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	oidcServerQuit := make(chan bool)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh)
+		oidcServer(oidcServerQuit, portCh, 10)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -128,7 +126,7 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	oidcServerQuit := make(chan bool, 1)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh)
+		oidcServer(oidcServerQuit, portCh, 10)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -160,7 +158,7 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	oidcServerQuit := make(chan bool, 1)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh)
+		oidcServer(oidcServerQuit, portCh, 3)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -170,11 +168,6 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	originalTokenExpireSecs := tokenExpireSecs
-	defer func() {
-		tokenExpireSecs = originalTokenExpireSecs
-	}()
-	tokenExpireSecs = 3
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
 
 	token1, err1 := oidcProvider.Token()
@@ -230,108 +223,110 @@ func init() {
 	publicKey = &privateKey.PublicKey
 }
 
-func tokenHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Error:            "invalid_request",
-			ErrorDescription: "Method not allowed",
-		})
+func NewTokenHandler(expireSecs int) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			err := json.NewEncoder(w).Encode(ErrorResponse{
+				Error:            "invalid_request",
+				ErrorDescription: "Method not allowed",
+			})
+			if err != nil {
+				log.Printf("could not encode error response: %v", err)
+			}
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			err := json.NewEncoder(w).Encode(ErrorResponse{
+				Error:            "invalid_request",
+				ErrorDescription: "Failed to parse form data",
+			})
+			if err != nil {
+				log.Printf("could not encode error response: %v", err)
+			}
+			return
+		}
+
+		grantType := r.FormValue("grant_type")
+		submittedClientID := r.FormValue("client_id")
+		submittedClientSecret := r.FormValue("client_secret")
+		scope := r.FormValue("scope")
+
+		if grantType != "client_credentials" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			err := json.NewEncoder(w).Encode(ErrorResponse{
+				Error:            "unsupported_grant_type",
+				ErrorDescription: "Only client_credentials grant type is supported",
+			})
+			if err != nil {
+				log.Printf("could not encode error response: %v", err)
+			}
+			return
+		}
+
+		if submittedClientID == "" || submittedClientSecret == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			err := json.NewEncoder(w).Encode(ErrorResponse{
+				Error:            "invalid_client",
+				ErrorDescription: "Client ID and secret are required",
+			})
+			if err != nil {
+				log.Printf("could not encode error response: %v", err)
+			}
+			return
+		}
+
+		if !validateClient(submittedClientID, submittedClientSecret) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			err := json.NewEncoder(w).Encode(ErrorResponse{
+				Error:            "invalid_client",
+				ErrorDescription: "Invalid client credentials",
+			})
+			if err != nil {
+				log.Printf("could not encode error response: %v", err)
+			}
+			return
+		}
+
+		token, err := generateJWTToken(submittedClientID, scope, expireSecs)
 		if err != nil {
-			log.Printf("could not encode error response: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			encodeErr := json.NewEncoder(w).Encode(ErrorResponse{
+				Error:            "server_error",
+				ErrorDescription: "Failed to generate token",
+			})
+			if encodeErr != nil {
+				log.Printf("could not encode error response: %v", encodeErr)
+			}
+			return
 		}
-		return
-	}
 
-	if err := r.ParseForm(); err != nil {
+		// log.Printf("tokenHandler(): expireSecs = %v", expireSecs)
+
+		response := oauth2.Token{
+			AccessToken: token,
+			TokenType:   "Bearer",
+			// Note that `expiry` is not an official field in the OIDC or OAuth2 specs
+			Expiry:    time.Now().Add(time.Duration(expireSecs) * time.Second),
+			ExpiresIn: int64(expireSecs),
+		}
+
+		// log.Printf("SERVER tokenHandler(): response token = %s\n", DumpOauth2Token(&response))
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Error:            "invalid_request",
-			ErrorDescription: "Failed to parse form data",
-		})
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(response)
 		if err != nil {
-			log.Printf("could not encode error response: %v", err)
+			log.Printf("could not encode response: %v", err)
 		}
-		return
-	}
-
-	grantType := r.FormValue("grant_type")
-	submittedClientID := r.FormValue("client_id")
-	submittedClientSecret := r.FormValue("client_secret")
-	scope := r.FormValue("scope")
-
-	if grantType != "client_credentials" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Error:            "unsupported_grant_type",
-			ErrorDescription: "Only client_credentials grant type is supported",
-		})
-		if err != nil {
-			log.Printf("could not encode error response: %v", err)
-		}
-		return
-	}
-
-	if submittedClientID == "" || submittedClientSecret == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Error:            "invalid_client",
-			ErrorDescription: "Client ID and secret are required",
-		})
-		if err != nil {
-			log.Printf("could not encode error response: %v", err)
-		}
-		return
-	}
-
-	if !validateClient(submittedClientID, submittedClientSecret) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Error:            "invalid_client",
-			ErrorDescription: "Invalid client credentials",
-		})
-		if err != nil {
-			log.Printf("could not encode error response: %v", err)
-		}
-		return
-	}
-
-	token, err := generateJWTToken(submittedClientID, scope)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		encodeErr := json.NewEncoder(w).Encode(ErrorResponse{
-			Error:            "server_error",
-			ErrorDescription: "Failed to generate token",
-		})
-		if encodeErr != nil {
-			log.Printf("could not encode error response: %v", encodeErr)
-		}
-		return
-	}
-
-	// log.Printf("tokenHandler(): tokenExpireSecs = %v", tokenExpireSecs)
-
-	response := oauth2.Token{
-		AccessToken: token,
-		TokenType:   "Bearer",
-		// Note that `expiry` is not an official field in the OIDC or OAuth2 specs
-		Expiry:    time.Now().Add(time.Duration(tokenExpireSecs) * time.Second),
-		ExpiresIn: int64(tokenExpireSecs),
-	}
-
-	// log.Printf("SERVER tokenHandler(): response token = %s\n", DumpOauth2Token(&response))
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		log.Printf("could not encode response: %v", err)
 	}
 }
 
@@ -345,14 +340,14 @@ func validateClient(clientID, clientSecret string) bool {
 	return exists && expectedSecret == clientSecret
 }
 
-func generateJWTToken(clientID, scope string) (string, error) {
+func generateJWTToken(clientID, scope string, expireSecs int) (string, error) {
 	now := time.Now()
 
 	claims := jwt.MapClaims{
 		"iss":       "oidc-mock-server",
 		"sub":       clientID,
 		"aud":       "api",
-		"exp":       now.Add(time.Duration(tokenExpireSecs) * time.Second).Unix(),
+		"exp":       now.Add(time.Duration(expireSecs) * time.Second).Unix(),
 		"iat":       now.Unix(),
 		"client_id": clientID,
 	}
@@ -366,9 +361,9 @@ func generateJWTToken(clientID, scope string) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-func oidcServer(shutdownCh <-chan bool, portCh chan<- int) {
+func oidcServer(shutdownCh <-chan bool, portCh chan<- int, expireSecs int) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/token", tokenHandler)
+	mux.HandleFunc("/token", NewTokenHandler(expireSecs))
 	s := &http.Server{
 		Addr:              ":0", // Use port 0 for dynamic allocation
 		Handler:           mux,
@@ -387,7 +382,7 @@ func oidcServer(shutdownCh <-chan bool, portCh chan<- int) {
 
 	go func() {
 		err = s.Serve(listener)
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("OIDC server error: %v", err)
 		}
 	}()
