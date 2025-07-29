@@ -75,15 +75,18 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 		// Process lines based on determined syntax
 		switch syntax {
 		case albAccessLogs:
-			if err := f.handleAlbAccessLogs(fields, resourceAttr, scopeLogs); err != nil {
+			err = f.handleAlbAccessLogs(fields, resourceAttr, scopeLogs)
+			if err != nil {
 				return plog.Logs{}, err
 			}
 		case nlbAccessLogs:
-			if err := f.handleNlbAccessLogs(fields, resourceAttr, scopeLogs); err != nil {
+			err = f.handleNlbAccessLogs(fields, resourceAttr, scopeLogs)
+			if err != nil {
 				return plog.Logs{}, err
 			}
 		case clbAccessLogs:
-			if err := f.handleClbAccessLogs(fields, resourceAttr, scopeLogs); err != nil {
+			err = f.handleClbAccessLogs(fields, resourceAttr, scopeLogs)
+			if err != nil {
 				return plog.Logs{}, err
 			}
 		default:
