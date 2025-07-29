@@ -50,6 +50,9 @@ The following settings can be optionally configured:
 - `traces`
   - `topic` (default = otlp\_spans): The name of the Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
+- `profiles`
+  - `topic` (default = otlp\_profiles): The name of the Kafka topic from which to consume profiles.
+  - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
 - `topic` (Deprecated [v0.124.0]: use `logs::topic`, `traces::topic`, or `metrics::topic`).
    If this is set, it will take precedence over the default value for those fields.
 - `encoding` (Deprecated [v0.124.0]: use `logs::encoding`, `traces::encoding`, or `metrics::encoding`).
@@ -108,10 +111,10 @@ The following settings can be optionally configured:
     **Note: this can block the entire partition in case a message processing returns a permanent error**
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
-  - `headers` (default = []): List of headers they'd like to extract from kafka record. 
-  **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
+  - `headers` (default = []): List of headers they'd like to extract from kafka record.
+  **Note: Matching pattern will be `exact`. Regexes are not supported as of now.**
 - `error_backoff`: [BackOff](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.116.0/config/configretry/backoff.go#L27-L43) configuration in case of errors
-  - `enabled`: (default = false) Whether to enable backoff when next consumers return errors 
+  - `enabled`: (default = false) Whether to enable backoff when next consumers return errors
   - `initial_interval`: The time to wait after the first error before retrying
   - `max_interval`: The upper bound on backoff interval between consecutive retries
   - `multiplier`: The value multiplied by the backoff interval bounds
@@ -185,7 +188,7 @@ be configured to extract and attach specific headers as resource attributes. e.g
 ```yaml
 receivers:
   kafka:
-    header_extraction: 
+    header_extraction:
       extract_headers: true
       headers: ["header1", "header2"]
 ```
