@@ -130,6 +130,9 @@ jobs:
           fi
   flakytests-generate-issues:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        os: [windows-2022, windows-2025]
     runs-on: ubuntu-24.04
     needs: [windows-unittest-matrix]
     permissions:
