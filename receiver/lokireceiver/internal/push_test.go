@@ -66,7 +66,7 @@ func TestParseRequest_Encodings(t *testing.T) {
 				body = jsonData
 			}
 
-			req := createTestRequest(body, "application/json", tc.contentEncoding)
+			req := createTestRequest(body, applicationJSON, tc.contentEncoding)
 
 			pushReq, err := ParseRequest(req)
 			if tc.expectError {
@@ -82,7 +82,7 @@ func TestParseRequest_Encodings(t *testing.T) {
 
 func TestParseRequest_GzipEncodingError(t *testing.T) {
 	// Invalid gzip data
-	req := createTestRequest("not-gzip-data", "application/json", "gzip")
+	req := createTestRequest("not-gzip-data", applicationJSON, "gzip")
 
 	_, err := ParseRequest(req)
 	if err == nil {
@@ -91,7 +91,7 @@ func TestParseRequest_GzipEncodingError(t *testing.T) {
 }
 
 func TestParseRequest_UnsupportedEncoding(t *testing.T) {
-	req := createTestRequest("data", "application/json", "unsupported")
+	req := createTestRequest("data", applicationJSON, "unsupported")
 
 	_, err := ParseRequest(req)
 	if err == nil {
