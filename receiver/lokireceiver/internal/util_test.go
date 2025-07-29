@@ -48,12 +48,10 @@ func TestParseProtoReader_Success(t *testing.T) {
 	data := []byte("hello")
 	compressed := snappy.Encode(nil, data)
 	err := parseProtoReader(bytes.NewReader(compressed), len(compressed), 100, msg)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if msg.Value != "hello" {
-		t.Errorf("expected value 'hello', got %q", msg.Value)
-	}
+
+	require.NoError(t, err, "unexpected error while parsing proto reader")
+	require.Equal(t, "hello", msg.Value, "unexpected value in parsed proto message")
+
 }
 
 func TestParseProtoReader_DecompressError(t *testing.T) {
@@ -61,9 +59,7 @@ func TestParseProtoReader_DecompressError(t *testing.T) {
 	data := []byte("not-snappy")
 	// Not snappy data
 	err := parseProtoReader(bytes.NewReader(data), 10, 100, msg)
-	if err == nil {
-		t.Error("expected error from decompress, got nil")
-	}
+	require.Error(t, err, "expected error from decompress, got nil")
 }
 
 func TestParseProtoReader_UnmarshalError(t *testing.T) {
@@ -71,9 +67,7 @@ func TestParseProtoReader_UnmarshalError(t *testing.T) {
 	data := []byte("fail")
 	compressed := snappy.Encode(nil, data)
 	err := parseProtoReader(bytes.NewReader(compressed), len(compressed), 100, msg)
-	if err == nil {
-		t.Error("expected error from Unmarshal, got nil")
-	}
+	require.Error(t, err, "expected error from Unmarshal, got nil")
 }
 
 func TestParseProtoReader_UsesProtoNewBuffer(t *testing.T) {
@@ -88,48 +82,37 @@ func TestParseProtoReader_UsesProtoNewBuffer(t *testing.T) {
 func TestDecompressRequest_SizeChecks(t *testing.T) {
 	data := snappy.Encode(nil, []byte("abc"))
 	_, err := decompressRequest(bytes.NewReader(data), 200, 100)
-	if err == nil {
-		t.Error("expected error for expectedSize > maxSize")
-	}
+	require.Error(t, err, "expected error for expectedSize > maxSize")
 }
 
 func TestDecompressRequest_BufferPath(t *testing.T) {
 	data := snappy.Encode(nil, []byte("abc"))
 	br := &bufReader{bytes.NewBuffer(data)}
 	body, err := decompressRequest(br, len(data), 100)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if string(body) != "abc" {
-		t.Errorf("expected 'abc', got %q", string(body))
-	}
+
+	require.NoError(t, err, "unexpected error during decompression: %v", err)
+	require.Equal(t, "abc", string(body), "expected decompressed content to be 'abc', got %q", string(body))
 }
 
 func TestDecompressFromReader_Error(t *testing.T) {
 	r := errorReader{}
 	_, err := decompressFromReader(&r, 0, 100)
-	if err == nil {
-		t.Error("expected error from reader, got nil")
-	}
+	require.Error(t, err, "expected error from reader, got nil")
 }
 
 func TestDecompressFromBuffer_SizeError(t *testing.T) {
 	buf := bytes.NewBuffer(make([]byte, 101))
 	_, err := decompressFromBuffer(buf, 100)
-	if err == nil {
-		t.Error("expected error for buffer > maxSize")
-	}
+	require.Error(t, err, "expected error for buffer > maxSize")
 }
 
 func TestTryBufferFromReader(t *testing.T) {
 	br := &bufReader{bytes.NewBufferString("abc")}
 	buf, ok := tryBufferFromReader(br)
-	if !ok || buf.String() != "abc" {
-		t.Error("expected to extract buffer from reader")
-	}
+
+	require.True(t, ok, "expected to extract buffer from reader of type *bufReader")
+	require.Equal(t, "abc", buf.String(), "expected buffer to contain 'abc', got %q", buf.String())
 	// Negative case
 	_, ok = tryBufferFromReader(bytes.NewBufferString("abc"))
-	if ok {
-		t.Error("expected false for non-matching reader")
-	}
+	require.False(t, ok, "expected false for non-*bufReader type")
 }

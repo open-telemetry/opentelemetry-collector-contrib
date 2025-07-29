@@ -75,7 +75,6 @@ func TestParseRequest_Encodings(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-
                         require.Len(t, pushReq.Streams, 1)
 		})
 	}
@@ -84,43 +83,30 @@ func TestParseRequest_Encodings(t *testing.T) {
 func TestParseRequest_GzipEncodingError(t *testing.T) {
 	// Invalid gzip data
 	req := createTestRequest("not-gzip-data", applicationJSON, "gzip")
-
 	_, err := ParseRequest(req)
-	if err == nil {
-		t.Error("expected error from invalid gzip data")
-	}
+	require.Error(t, err, "expected error from invalid gzip data")
 }
 
 func TestParseRequest_UnsupportedEncoding(t *testing.T) {
 	req := createTestRequest("data", applicationJSON, "unsupported")
-
 	_, err := ParseRequest(req)
-	if err == nil {
-		t.Error("expected error for unsupported encoding")
-	}
+	require.Error(t, err, "expected error for unsupported encoding")
 }
 
 func TestParseRequest_InvalidContentType(t *testing.T) {
 	req := createTestRequest("data", "invalid/content-type", "")
-
 	_, err := ParseRequest(req)
-	if err == nil {
-		t.Error("expected error for invalid content type")
-	}
+	require.Error(t, err, "expected error for invalid content type")
 }
 
 func TestParseRequest_ProtobufContentType(t *testing.T) {
 	// Create a simple protobuf message
 	protoData := createTestProtobuf()
 	req := createTestRequest(protoData, "application/x-protobuf", "")
-
 	pushReq, err := ParseRequest(req)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if pushReq == nil {
-		t.Error("expected non-nil push request")
-	}
+
+	require.NoError(t, err, "unexpected error while parsing protobuf request")
+	require.NotNil(t, pushReq, "expected non-nil push request")
 }
 
 // Helper functions
