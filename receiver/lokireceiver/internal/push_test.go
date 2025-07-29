@@ -70,10 +70,7 @@ func TestParseRequest_Encodings(t *testing.T) {
 
 			pushReq, err := ParseRequest(req)
 			if tc.expectError {
-				if err == nil {
-					t.Error("expected error, got nil")
-				}
-				return
+			        require.Error(t, err)
 			}
 
 			if err != nil {
