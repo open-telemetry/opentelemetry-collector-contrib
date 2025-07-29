@@ -11,13 +11,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.130.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
-	go.opentelemetry.io/collector/component v1.36.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/config/configopaque v1.36.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/confmap v1.36.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/consumer v1.36.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/extension v1.36.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/pdata v1.36.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/receiver v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/component v1.37.0
+	go.opentelemetry.io/collector/config/configopaque v1.37.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.37.0
+	go.opentelemetry.io/collector/consumer v1.37.0
+	go.opentelemetry.io/collector/extension v1.37.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.37.0
+	go.opentelemetry.io/collector/receiver v1.37.0
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.uber.org/goleak v1.3.0
@@ -157,7 +157,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.130.2-0.20250725192953-424a12102dca // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.130.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/featuregate v1.36.2-0.20250725192953-424a12102dca // indirect
+	go.opentelemetry.io/collector/featuregate v1.37.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.130.2-0.20250725192953-424a12102dca // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.130.2-0.20250725192953-424a12102dca // indirect
 	go.opentelemetry.io/collector/pipeline v0.130.2-0.20250725192953-424a12102dca // indirect

@@ -14,17 +14,17 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.6
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector/component v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/component v1.37.0
 	go.opentelemetry.io/collector/component/componenttest v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/confmap v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/confmap v1.37.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/consumer v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/consumer v1.37.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/featuregate v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/featuregate v1.37.0
 	go.opentelemetry.io/collector/filter v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/pdata v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/pdata v1.37.0
 	go.opentelemetry.io/collector/pipeline v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/receiver v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/receiver v1.37.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.130.2-0.20250725192953-424a12102dca
 	go.opentelemetry.io/collector/scraper v0.130.2-0.20250725192953-424a12102dca
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.130.2-0.20250725192953-424a12102dca

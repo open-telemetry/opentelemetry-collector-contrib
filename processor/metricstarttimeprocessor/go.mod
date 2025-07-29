@@ -6,14 +6,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.130.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.130.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/component v1.37.0
 	go.opentelemetry.io/collector/component/componenttest v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/confmap v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/confmap v1.37.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/consumer v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/consumer v1.37.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/pdata v1.36.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/processor v1.36.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/pdata v1.37.0
+	go.opentelemetry.io/collector/processor v1.37.0
 	go.opentelemetry.io/collector/processor/processorhelper v0.130.2-0.20250725192953-424a12102dca
 	go.opentelemetry.io/collector/processor/processortest v0.130.2-0.20250725192953-424a12102dca
 	go.opentelemetry.io/otel v1.37.0
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.130.2-0.20250725192953-424a12102dca // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.130.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/featuregate v1.36.2-0.20250725192953-424a12102dca // indirect
+	go.opentelemetry.io/collector/featuregate v1.37.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.130.2-0.20250725192953-424a12102dca // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.130.2-0.20250725192953-424a12102dca // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.130.2-0.20250725192953-424a12102dca // indirect
