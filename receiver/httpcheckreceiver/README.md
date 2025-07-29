@@ -95,13 +95,13 @@ receivers:
     collection_interval: 30s
     # Optional: Enable timing breakdown metrics
     metrics:
-      httpcheck.dns_lookup.duration:
+      httpcheck.dns.lookup.duration:
         enabled: true
-      httpcheck.tcp_connection.duration:
+      httpcheck.client.connection.duration:
         enabled: true
-      httpcheck.tls_handshake.duration:
+      httpcheck.tls.handshake.duration:
         enabled: true
-      httpcheck.request.duration:
+      httpcheck.client.request.duration:
         enabled: true
       httpcheck.response.duration:
         enabled: true
