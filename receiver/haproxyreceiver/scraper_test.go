@@ -129,11 +129,11 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 	require.Equal(t, 0, m.MetricCount())
 }
 
-func listenUnix(t testing.TB) (net.Listener, string) {
+func listenUnix(tb testing.TB) (net.Listener, string) {
 	// Use an abstract unix socket address to avoid filesystem issues, e.g. path length limits.
-	socketAddr := "@" + t.Name()
+	socketAddr := "@" + tb.Name()
 	l, err := net.Listen("unix", socketAddr)
-	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, l.Close()) })
+	require.NoError(tb, err)
+	tb.Cleanup(func() { assert.NoError(tb, l.Close()) })
 	return l, socketAddr
 }
