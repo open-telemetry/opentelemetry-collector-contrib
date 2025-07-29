@@ -618,7 +618,7 @@ The `Contains` Converter checks if a string contains any of the specified substr
 
 **Parameters:**
 - `target` is a string to search within. If `target` is not a string or is nil, the function will return an error.
-- `substrings` is an array of strings to search for. The function returns `true` if ANY of the substrings are found in the target string.
+- `substrings` is an array of strings to search for. The function returns `true` if ANY of the substrings are found in the target string. If the array is empty, the function returns `false`.
 - `case_sensitive` is a boolean parameter that determines if the search should be case-sensitive (`true` for case-sensitive, `false` for case-insensitive).
 
 **Returns:** `true` if any substring is found, `false` if no substrings are found, or an error if the target is not a string.
