@@ -5,9 +5,15 @@ all_set:
       enabled: true
     httpcheck.error:
       enabled: true
+    httpcheck.response.size:
+      enabled: true
     httpcheck.status:
       enabled: true
     httpcheck.tls.cert_remaining:
+      enabled: true
+    httpcheck.validation.failed:
+      enabled: true
+    httpcheck.validation.passed:
       enabled: true
 none_set:
   metrics:
@@ -15,7 +21,13 @@ none_set:
       enabled: false
     httpcheck.error:
       enabled: false
+    httpcheck.response.size:
+      enabled: false
     httpcheck.status:
       enabled: false
     httpcheck.tls.cert_remaining:
+      enabled: false
+    httpcheck.validation.failed:
+      enabled: false
+    httpcheck.validation.passed:
       enabled: false

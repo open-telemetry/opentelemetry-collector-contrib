@@ -68,6 +68,20 @@ metrics:
     enabled: true
 ```
 
+### httpcheck.response.size
+
+Size of response body in bytes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+
 ### httpcheck.tls.cert_remaining
 
 Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
@@ -84,3 +98,33 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 | http.tls.issuer | The entity that issued the certificate. | Any Str | false |
 | http.tls.cn | The commonName in the subject of the certificate. | Any Str | false |
 | http.tls.san | The Subject Alternative Name of the certificate. | Any Slice | false |
+
+### httpcheck.validation.failed
+
+Number of response validations that failed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {validation} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | false |
+
+### httpcheck.validation.passed
+
+Number of response validations that passed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {validation} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | false |
