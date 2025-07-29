@@ -414,11 +414,11 @@ func TestAddRateVariants(t *testing.T) {
 
 	// Create a base counter metric
 	originalLabels := map[string]string{
-		"metricName":                  "hw.network.io",
-		"unit":                        "By",
-		"entityId":                    "OTEL:host:network:eth0",
-		"hostname":                    "host",
-		"source":                      "OTEL",
+		"metricName":   "hw.network.io",
+		"unit":         "By",
+		"entityId":     "OTEL:host:network:eth0",
+		"hostname":     "host",
+		"source":       "OTEL",
 		rateMetricFlag: "true",
 	}
 

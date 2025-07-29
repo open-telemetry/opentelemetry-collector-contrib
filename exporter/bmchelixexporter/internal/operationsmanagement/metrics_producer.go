@@ -436,7 +436,7 @@ func addPercentageVariants(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
 	for _, m := range metrics {
 		final = append(final, m)
 
-		unit := strings.ToLower(m.Labels["unit"])
+		unit := m.Labels["unit"]
 		if unit != "1" {
 			continue // Not a ratio
 		}
