@@ -407,7 +407,7 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 
 	// test
 	e := &oidcExtension{
-		providerContainers: make(map[string]*ProviderContainer),
+		providerContainers: make(map[string]*providerContainer),
 	}
 	err = e.processProviderConfig(context.Background(), config.getProviderConfigs()[0])
 
@@ -486,7 +486,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 
 	// test
 	e := &oidcExtension{
-		providerContainers: make(map[string]*ProviderContainer),
+		providerContainers: make(map[string]*providerContainer),
 	}
 	err = e.processProviderConfig(context.Background(), *config.getLegacyProviderConfig())
 

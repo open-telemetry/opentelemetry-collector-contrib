@@ -33,7 +33,7 @@ var (
 	_ extensionauth.Server = (*oidcExtension)(nil)
 )
 
-type ProviderContainer struct {
+type providerContainer struct {
 	providerCfg ProviderCfg
 	provider    *oidc.Provider
 	verifier    *oidc.IDTokenVerifier
@@ -44,7 +44,7 @@ type ProviderContainer struct {
 type oidcExtension struct {
 	cfg *Config
 
-	providerContainers map[string]*ProviderContainer
+	providerContainers map[string]*providerContainer
 	logger             *zap.Logger
 }
 
@@ -67,7 +67,7 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 	return &oidcExtension{
 		cfg:                cfg,
 		logger:             logger,
-		providerContainers: make(map[string]*ProviderContainer),
+		providerContainers: make(map[string]*providerContainer),
 	}
 }
 
@@ -120,12 +120,12 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	if err != nil {
 		return ctx, fmt.Errorf("failed to parse the token: %w", err)
 	}
-	providerContainer, err := e.resolveProvider(unverifiedIssuer)
+	pc, err := e.resolveProvider(unverifiedIssuer)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to resolve OIDC provider for the issuer %q: %w", unverifiedIssuer, err)
 	}
 
-	idToken, err := providerContainer.verifier.Verify(ctx, raw)
+	idToken, err := pc.verifier.Verify(ctx, raw)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
@@ -141,11 +141,11 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errFailedToObtainClaimsFromToken
 	}
 
-	subject, err := getSubjectFromClaims(claims, providerContainer.providerCfg.UsernameClaim, idToken.Subject)
+	subject, err := getSubjectFromClaims(claims, pc.providerCfg.UsernameClaim, idToken.Subject)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
-	membership, err := getGroupsFromClaims(claims, providerContainer.providerCfg.GroupsClaim)
+	membership, err := getGroupsFromClaims(claims, pc.providerCfg.GroupsClaim)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
@@ -159,25 +159,25 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	return client.NewContext(ctx, cl), nil
 }
 
-func (e *oidcExtension) resolveProvider(issuer string) (*ProviderContainer, error) {
+func (e *oidcExtension) resolveProvider(issuer string) (*providerContainer, error) {
 	if len(e.providerContainers) == 1 {
-		for _, providerContainer := range e.providerContainers {
-			return providerContainer, nil
+		for _, pc := range e.providerContainers {
+			return pc, nil
 		}
 	}
-	providerContainer, ok := e.providerContainers[issuer]
+	pc, ok := e.providerContainers[issuer]
 	if !ok {
 		return nil, fmt.Errorf("no OIDC provider configured for the issuer %q", issuer)
 	}
-	return providerContainer, nil
+	return pc, nil
 }
 
 func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg) error {
-	providerContainer := ProviderContainer{
+	pc := providerContainer{
 		providerCfg: p,
 	}
 
-	providerContainer.transport = &http.Transport{
+	pc.transport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   5 * time.Second,
@@ -193,34 +193,34 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 
 	cert, err := getIssuerCACertFromPath(p.IssuerCAPath)
 	if err != nil {
-		providerContainer.transport.CloseIdleConnections()
+		pc.transport.CloseIdleConnections()
 		return err // the errors from this path have enough context already
 	}
 
 	if cert != nil {
-		providerContainer.transport.TLSClientConfig = &tls.Config{
+		pc.transport.TLSClientConfig = &tls.Config{
 			RootCAs: x509.NewCertPool(),
 		}
-		providerContainer.transport.TLSClientConfig.RootCAs.AddCert(cert)
+		pc.transport.TLSClientConfig.RootCAs.AddCert(cert)
 	}
 
-	providerContainer.client = &http.Client{
+	pc.client = &http.Client{
 		Timeout:   5 * time.Second,
-		Transport: providerContainer.transport,
+		Transport: pc.transport,
 	}
-	oidcContext := oidc.ClientContext(ctx, providerContainer.client)
-	providerContainer.provider, err = oidc.NewProvider(oidcContext, p.IssuerURL)
+	oidcContext := oidc.ClientContext(ctx, pc.client)
+	pc.provider, err = oidc.NewProvider(oidcContext, p.IssuerURL)
 	if err != nil {
-		providerContainer.transport.CloseIdleConnections()
-		providerContainer.client.CloseIdleConnections()
+		pc.transport.CloseIdleConnections()
+		pc.client.CloseIdleConnections()
 		return fmt.Errorf("failed to create OIDC provider for %q: %w", p.IssuerURL, err)
 	}
-	providerContainer.verifier = providerContainer.provider.Verifier(&oidc.Config{
+	pc.verifier = pc.provider.Verifier(&oidc.Config{
 		ClientID:          p.Audience,
 		SkipClientIDCheck: p.IgnoreAudience,
 	})
 
-	e.providerContainers[p.IssuerURL] = &providerContainer
+	e.providerContainers[p.IssuerURL] = &pc
 
 	return nil
 }
