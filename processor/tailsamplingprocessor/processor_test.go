@@ -414,6 +414,16 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 
 	var expectedSpans atomic.Int64
 	wg := sync.WaitGroup{}
+	var combinedErr error
+	errCh := make(chan error, len(batches))
+	errDone := make(chan struct{})
+
+	go func() {
+		for err := range errCh {
+			combinedErr = errors.Join(combinedErr, err)
+		}
+		close(errDone)
+	}()
 	// For each batch, we consume the same trace repeatedly for at least 2x the decision wait time
 	// this ensures that batches are being consumed concurrently with policy evaluation.
 	for _, batch := range batches {
@@ -427,12 +437,17 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			for time.Since(start) < 2*cfg.DecisionWait {
 				expectedSpans.Add(int64(batch.SpanCount()))
 				err := tsp.ConsumeTraces(context.Background(), batch)
-				require.NoError(t, err)
+				if err != nil {
+					errCh <- err
+				}
 			}
 			wg.Done()
 		}()
 	}
 	wg.Wait()
+	close(errCh)
+	<-errDone
+	require.NoError(t, combinedErr)
 
 	// verify
 	// despite all the concurrency above, we should eventually sample all the spans.
