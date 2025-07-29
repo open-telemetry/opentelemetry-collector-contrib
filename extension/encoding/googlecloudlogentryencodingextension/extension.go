@@ -8,7 +8,6 @@ import (
 	stdjson "encoding/json"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -45,25 +44,17 @@ func (ex *ext) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (ex *ext) Shutdown(_ context.Context) error {
+func (*ext) Shutdown(context.Context) error {
 	return nil
 }
 
 func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	out := plog.NewLogs()
-
-	resource, lr, err := ex.translateLogEntry(buf)
+	logs, err := ex.translateLogEntry(buf)
 	if err != nil {
-		return out, err
+		return plog.Logs{}, err
 	}
 
-	logs := out.ResourceLogs()
-	rls := logs.AppendEmpty()
-	resource.CopyTo(rls.Resource())
-
-	ills := rls.ScopeLogs().AppendEmpty()
-	lr.CopyTo(ills.LogRecords().AppendEmpty())
-	return out, nil
+	return logs, nil
 }
 
 // TranslateLogEntry translates a JSON-encoded LogEntry message into a pair of
@@ -74,15 +65,17 @@ func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 // schema; this ensures that a numeric value in the input is correctly
 // translated to either an integer or a double in the output. It falls back to
 // plain JSON decoding if payload type is not available in the proto registry.
-func (ex *ext) translateLogEntry(data []byte) (pcommon.Resource, plog.LogRecord, error) {
-	lr := plog.NewLogRecord()
-	res := pcommon.NewResource()
-
+func (ex *ext) translateLogEntry(data []byte) (plog.Logs, error) {
 	var src map[string]stdjson.RawMessage
 	err := json.Unmarshal(data, &src)
 	if err != nil {
-		return res, lr, err
+		return plog.Logs{}, err
 	}
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	res := rl.Resource()
+	lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	resAttrs := res.Attributes()
 	attrs := lr.Attributes()
@@ -99,5 +92,5 @@ func (ex *ext) translateLogEntry(data []byte) (pcommon.Resource, plog.LogRecord,
 
 	// All other fields -> Attributes["gcp.*"]
 	err = translateInto(attrs, getLogEntryDescriptor(), src, preserveDst, prefixKeys("gcp."), snakeifyKeys)
-	return res, lr, err
+	return logs, err
 }

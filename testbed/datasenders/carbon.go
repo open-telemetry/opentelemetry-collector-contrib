@@ -70,6 +70,6 @@ func (cs *CarbonDataSender) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (cs *CarbonDataSender) ProtocolName() string {
+func (*CarbonDataSender) ProtocolName() string {
 	return "carbon"
 }

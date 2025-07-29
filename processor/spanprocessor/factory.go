@@ -66,7 +66,7 @@ func createTracesProcessor(
 		if oCfg.SetStatus.Code != statusCodeUnset && oCfg.SetStatus.Code != statusCodeError && oCfg.SetStatus.Code != statusCodeOk {
 			return nil, errIncorrectStatusCode
 		}
-		if len(oCfg.SetStatus.Description) > 0 && oCfg.SetStatus.Code != statusCodeError {
+		if oCfg.SetStatus.Description != "" && oCfg.SetStatus.Code != statusCodeError {
 			return nil, errIncorrectStatusDescription
 		}
 	}

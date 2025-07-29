@@ -208,8 +208,8 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	verifyCorsResp(t, url, "disallowed-origin.com", http.StatusNoContent, false)
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest(http.MethodOptions, url, nil)
+func verifyCorsResp(t *testing.T, url, origin string, wantStatus int, wantAllowed bool) {
+	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
@@ -895,7 +895,7 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.consumeError = err
 }
 
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+func (*errOrSinkConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -943,7 +943,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

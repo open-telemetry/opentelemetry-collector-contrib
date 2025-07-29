@@ -124,7 +124,7 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
 	url, _ := url.JoinPath(c.clients[eptType].endpoint.String(), path)
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 }
 
 // forms an *http.Request for use with Splunk built-in API's (like introspection).
-func (c *splunkEntClient) createAPIRequest(eptType string, apiEndpoint string) (req *http.Request, err error) {
+func (c *splunkEntClient) createAPIRequest(eptType, apiEndpoint string) (req *http.Request, err error) {
 	var u string
 	ctx := context.WithValue(context.Background(), endpointType("type"), eptType)
 
@@ -143,7 +143,7 @@ func (c *splunkEntClient) createAPIRequest(eptType string, apiEndpoint string) (
 		return nil, errNoClientFound
 	}
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

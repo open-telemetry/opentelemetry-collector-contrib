@@ -118,11 +118,11 @@ func getCertificateAndKey(filename string) (*x509.Certificate, crypto.PrivateKey
 	return certs[0], privateKey, nil
 }
 
-func (a *authenticator) Start(_ context.Context, _ component.Host) error {
+func (*authenticator) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (a *authenticator) Shutdown(_ context.Context) error {
+func (*authenticator) Shutdown(context.Context) error {
 	return nil
 }
 

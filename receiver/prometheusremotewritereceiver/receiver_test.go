@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -17,6 +18,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
@@ -367,6 +369,42 @@ func TestTranslateV2(t *testing.T) {
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 17, 18},
 						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
 					},
+					{
+						// NHCB histogram with scope1
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16},
+						Histograms: []writev2.Histogram{
+							{
+								Schema:         -53,
+								Count:          &writev2.Histogram_CountInt{CountInt: 4},
+								Sum:            1,
+								Timestamp:      1,
+								CustomValues:   []float64{1.0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveDeltas: []int64{1, 2},
+							},
+						},
+					},
+					{
+						// Exponential histogram with scope2
+						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 17, 18},
+						CreatedTimestamp: 150,
+						Histograms: []writev2.Histogram{
+							{
+								Schema:        0,
+								Count:         &writev2.Histogram_CountInt{CountInt: 6},
+								Sum:           1,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: 1},
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 2},
+								},
+								PositiveDeltas: []int64{2, 2},
+							},
+						},
+					},
 				},
 			},
 			expectedMetrics: func() pmetric.Metrics {
@@ -395,6 +433,22 @@ func TestTranslateV2(t *testing.T) {
 				dp2.SetDoubleValue(2.0)
 				dp2.Attributes().PutStr("d", "e")
 
+				// Add NHCB histogram to scope1
+				cbneMetric := sm1.Metrics().AppendEmpty()
+				cbneMetric.SetName("test_metric")
+				cbneMetric.SetUnit("")
+				cbneMetric.SetDescription("")
+				hist := cbneMetric.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				cbneDP := hist.DataPoints().AppendEmpty()
+				cbneDP.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				cbneDP.SetCount(4)
+				cbneDP.SetSum(1)
+				cbneDP.ExplicitBounds().FromRaw([]float64{1.0})
+				cbneDP.BucketCounts().FromRaw([]uint64{1, 3})
+				cbneDP.Attributes().PutStr("d", "e")
+
 				sm2 := rm1.ScopeMetrics().AppendEmpty()
 				sm2.Scope().SetName("scope2")
 				sm2.Scope().SetVersion("v2")
@@ -408,12 +462,32 @@ func TestTranslateV2(t *testing.T) {
 				dp3.SetDoubleValue(3.0)
 				dp3.Attributes().PutStr("foo", "bar")
 
+				// Add exponential histogram to scope2
+				expMetric := sm2.Metrics().AppendEmpty()
+				expMetric.SetName("test_metric")
+				expMetric.SetUnit("")
+				expMetric.SetDescription("")
+				expHist := expMetric.SetEmptyExponentialHistogram()
+				expHist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				expDP := expHist.DataPoints().AppendEmpty()
+				expDP.SetStartTimestamp(pcommon.Timestamp(150 * int64(time.Millisecond)))
+				expDP.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				expDP.SetCount(6)
+				expDP.SetSum(1)
+				expDP.SetScale(0)
+				expDP.SetZeroThreshold(1)
+				expDP.SetZeroCount(1)
+				expDP.Positive().SetOffset(-1)
+				expDP.Positive().BucketCounts().FromRaw([]uint64{2, 4})
+				expDP.Attributes().PutStr("foo", "bar")
+
 				return expected
 			}(),
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
 				Samples:    3,
-				Histograms: 0,
+				Histograms: 2,
 				Exemplars:  0,
 			},
 		},
@@ -922,26 +996,7 @@ func TestTranslateV2(t *testing.T) {
 				Histograms: 0,
 				Exemplars:  0,
 			},
-			expectedMetrics: func() pmetric.Metrics {
-				metrics := pmetric.NewMetrics()
-				rm := metrics.ResourceMetrics().AppendEmpty()
-				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
-				attrs.PutStr("service.instance.id", "107cn001")
-
-				sm := rm.ScopeMetrics().AppendEmpty()
-				sm.Scope().SetName("scope1")
-				sm.Scope().SetVersion("v1")
-
-				m := sm.Metrics().AppendEmpty()
-				m.SetName("test_metric")
-
-				hist := m.SetEmptyExponentialHistogram()
-				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				return metrics
-			}(),
+			expectedMetrics: pmetric.NewMetrics(), // Reset hint gauge should be dropped completely, no resources should be created
 		},
 		{
 			name: "classic histogram - should be dropped",
@@ -978,20 +1033,7 @@ func TestTranslateV2(t *testing.T) {
 				Histograms: 0,
 				Exemplars:  0,
 			},
-			expectedMetrics: func() pmetric.Metrics {
-				metrics := pmetric.NewMetrics()
-				rm := metrics.ResourceMetrics().AppendEmpty()
-				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
-				attrs.PutStr("service.instance.id", "107cn001")
-
-				sm := rm.ScopeMetrics().AppendEmpty()
-				sm.Scope().SetName("scope1")
-				sm.Scope().SetVersion("v1")
-
-				return metrics
-			}(),
+			expectedMetrics: pmetric.NewMetrics(), // Classic histograms should be dropped completely, no resources should be created
 		},
 		{
 			name: "summary - should be dropped",
@@ -1040,6 +1082,298 @@ func TestTranslateV2(t *testing.T) {
 				return metrics
 			}(),
 		},
+		{
+			name: "NHCB translation",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"test_hncb_histogram",
+					"job",
+					"test",
+					"instance",
+					"localhost:8080",
+					"seconds",
+					"Test NHCB histogram",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram, job=test, instance=localhost:8080
+						CreatedTimestamp: 123456000,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Timestamp:    123456789,
+								Schema:       -53, // NHCB schema
+								Sum:          100.5,
+								Count:        &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
+								},
+								PositiveDeltas: []int64{10, 15, 20, 5, 0}, // Delta counts for each bucket
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "localhost:8080")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("test_hncb_histogram")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				hist := m1.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
+				dp.SetSum(100.5)
+				dp.SetCount(180)
+				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "NHCB translation with stale NaN",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"test_hncb_histogram_stale",
+					"job",
+					"test",
+					"instance",
+					"localhost:8080",
+					"seconds",
+					"Test NHCB histogram with stale NaN",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram_stale, job=test, instance=localhost:8080
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Timestamp:    123456789,
+								Schema:       -53, // NHCB schema
+								Sum:          math.Float64frombits(value.StaleNaN),
+								Count:        &writev2.Histogram_CountInt{CountInt: 0},
+								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "localhost:8080")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("test_hncb_histogram_stale")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				hist := m1.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				dp.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "invalid schema histogram dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"test_invalid_schema_histogram",
+					"job",
+					"test",
+					"instance",
+					"localhost:8080",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_invalid_schema_histogram, job=test, instance=localhost:8080
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Timestamp: 123456789,
+								Schema:    -10, // Invalid schema (outside -4 to 8 range)
+								Sum:       100.5,
+								Count:     &writev2.Histogram_CountInt{CountInt: 50},
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 2},
+								},
+								PositiveDeltas: []int64{10, 15},
+							},
+							{
+								Timestamp: 123456789,
+								Schema:    15, // Invalid schema (outside -4 to 8 range)
+								Sum:       200.5,
+								Count:     &writev2.Histogram_CountInt{CountInt: 100},
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 2},
+								},
+								PositiveDeltas: []int64{20, 25},
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: pmetric.NewMetrics(), // When all histograms have invalid schemas, no metrics should be created
+		},
+		{
+			name: "mixed schema histograms - NHCB and exponential",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"test_mixed_histogram",
+					"job",
+					"test",
+					"instance",
+					"localhost:8080",
+					"seconds",
+					"Test mixed histogram",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_mixed_histogram, job=test, instance=localhost:8080
+						CreatedTimestamp: 123456000,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								// First histogram - NHCB
+								Timestamp:    123456789,
+								Schema:       -53,
+								Sum:          100.5,
+								Count:        &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues: []float64{1.0, 2.0, 5.0, 10.0},
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 5},
+								},
+								PositiveDeltas: []int64{10, 15, 20, 5, 0},
+							},
+							{
+								// Second histogram - Exponential
+								Timestamp:     123456790,
+								Schema:        -4,
+								Sum:           200.0,
+								Count:         &writev2.Histogram_CountInt{CountInt: 100},
+								ZeroThreshold: 1.0,
+								ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: 5},
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 1, Length: 2},
+								},
+								PositiveDeltas: []int64{30, 40},
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 2,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "localhost:8080")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				// First metric - NHCB (regular histogram)
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("test_mixed_histogram")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				hist1 := m1.SetEmptyHistogram()
+				hist1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp1 := hist1.DataPoints().AppendEmpty()
+				dp1.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
+				dp1.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
+				dp1.SetSum(100.5)
+				dp1.SetCount(180)
+				dp1.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				dp1.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
+
+				// Second metric - Exponential histogram
+				m2 := sm.Metrics().AppendEmpty()
+				m2.SetName("test_mixed_histogram")
+				m2.SetUnit("")
+				m2.SetDescription("")
+				hist2 := m2.SetEmptyExponentialHistogram()
+				hist2.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp2 := hist2.DataPoints().AppendEmpty()
+				dp2.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
+				dp2.SetTimestamp(pcommon.Timestamp(123456790 * int64(time.Millisecond)))
+				dp2.SetScale(-4)
+				dp2.SetSum(200.0)
+				dp2.SetCount(100)
+				dp2.SetZeroCount(5)
+				dp2.SetZeroThreshold(1.0)
+				dp2.Positive().SetOffset(0)
+				dp2.Positive().BucketCounts().FromRaw([]uint64{30, 70})
+
+				return metrics
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
@@ -1060,7 +1394,7 @@ func TestTranslateV2(t *testing.T) {
 type nonMutatingConsumer struct{}
 
 // Capabilities returns the base consumer capabilities.
-func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
+func (nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

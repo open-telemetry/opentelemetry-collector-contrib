@@ -36,7 +36,7 @@ func compressToGZIPReader(t *testing.T, buf []byte) io.Reader {
 
 // readAndCompressLogFile reads the data inside it, compresses it
 // and returns a GZIP reader for it.
-func readAndCompressLogFile(t *testing.T, dir string, file string) io.Reader {
+func readAndCompressLogFile(t *testing.T, dir, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
 	return compressToGZIPReader(t, data)

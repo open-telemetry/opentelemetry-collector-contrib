@@ -419,7 +419,7 @@ type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(int) int32 {
+func (*processHandlesMock) Pid(int) int32 {
 	return 1
 }
 
@@ -1035,7 +1035,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, handleCountError, rlimitError, cgroupError, uptimeError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, cgroupError, uptimeError error) int {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 2
 	}
@@ -1239,7 +1239,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 type ProcessReadError struct{}
 
-func (m *ProcessReadError) Error() string {
+func (*ProcessReadError) Error() string {
 	return "unable to read data"
 }
 

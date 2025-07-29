@@ -148,7 +148,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	return errs
 }
 
-func (p *logProcessor) group(
+func (*logProcessor) group(
 	key string,
 	groups map[string]logsGroup,
 	exporters []exporter.Logs,
@@ -199,10 +199,10 @@ func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	return errs
 }
 
-func (p *logProcessor) Shutdown(context.Context) error {
+func (*logProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (p *logProcessor) Capabilities() consumer.Capabilities {
+func (*logProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

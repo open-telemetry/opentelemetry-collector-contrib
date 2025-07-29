@@ -605,7 +605,7 @@ func Test_replaceAllPatterns_bad_function_result(t *testing.T) {
 			}
 			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
-		Setter: func(_ context.Context, tCtx any, m any) error {
+		Setter: func(_ context.Context, tCtx, m any) error {
 			if v, ok := tCtx.(pcommon.Map); ok {
 				if v2, ok2 := m.(pcommon.Map); ok2 {
 					v.CopyTo(v2)
@@ -643,7 +643,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 			assert.Nil(t, tCtx)
 			return pcommon.NewMap(), nil
 		},
-		Setter: func(_ context.Context, tCtx any, m any) error {
+		Setter: func(_ context.Context, tCtx, m any) error {
 			if v, ok := tCtx.(pcommon.Map); ok {
 				if v2, ok2 := m.(pcommon.Map); ok2 {
 					v.CopyTo(v2)

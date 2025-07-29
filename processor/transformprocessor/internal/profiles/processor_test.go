@@ -46,7 +46,7 @@ func Test_ProcessProfiles_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(_ pprofile.Profiles) {
+			want: func(pprofile.Profiles) {
 			},
 		},
 		{
@@ -87,7 +87,7 @@ func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(resource.attributes["test"], "pass") where resource.attributes["host.name"] == "wrong"`,
-			want: func(_ pprofile.Profiles) {
+			want: func(pprofile.Profiles) {
 			},
 		},
 		{
@@ -128,7 +128,7 @@ func Test_ProcessProfiles_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(_ pprofile.Profiles) {
+			want: func(pprofile.Profiles) {
 			},
 		},
 		{
@@ -169,7 +169,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(scope.attributes["test"], "pass") where scope.version == 2`,
-			want: func(_ pprofile.Profiles) {
+			want: func(pprofile.Profiles) {
 			},
 		},
 		{
@@ -320,7 +320,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 		},
 		{
 			statement: `set(original_payload_format, Split(resource.attributes["not_exist"], "|"))`,
-			want:      func(_ pprofile.Profiles) {},
+			want:      func(pprofile.Profiles) {},
 		},
 		{
 			statement: `set(original_payload_format, Substring(original_payload_format, 3, 3))`,
@@ -336,7 +336,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 		},
 		{
 			statement: `set(original_payload_format, Substring(attributes["not_exist"], 3, 3))`,
-			want:      func(_ pprofile.Profiles) {},
+			want:      func(pprofile.Profiles) {},
 		},
 		{
 			statement: `set(attributes["test"], ["A", "B", "C"]) where original_payload_format == "operationA"`,
@@ -528,7 +528,7 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 		},
 		{
 			statement: `set(profile.original_payload_format, Split(resource.attributes["not_exist"], "|"))`,
-			want:      func(_ pprofile.Profiles) {},
+			want:      func(pprofile.Profiles) {},
 		},
 		{
 			statement: `set(profile.original_payload_format, Substring(profile.original_payload_format, 3, 3))`,
@@ -544,7 +544,7 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 		},
 		{
 			statement: `set(profile.original_payload_format, Substring(resource.attributes["not_exist"], 3, 3))`,
-			want:      func(_ pprofile.Profiles) {},
+			want:      func(pprofile.Profiles) {},
 		},
 		{
 			statement: `set(profile.attribute_indices, [1, 2, 3]) where profile.original_payload_format == "operationA"`,
@@ -1230,8 +1230,8 @@ func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 
 type TestFuncArguments[K any] struct{}
 
-func createTestFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(_ context.Context, _ K) (any, error) {
+func createTestFunc[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(context.Context, K) (any, error) {
 		return nil, nil
 	}, nil
 }

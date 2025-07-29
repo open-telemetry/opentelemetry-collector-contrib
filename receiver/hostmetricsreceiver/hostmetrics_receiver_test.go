@@ -174,7 +174,7 @@ func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 	return metricNames
 }
 
-func appendMapInto(m1 map[string]struct{}, m2 map[string]struct{}) {
+func appendMapInto(m1, m2 map[string]struct{}) {
 	for k, v := range m2 {
 		m1[k] = v
 	}
@@ -221,7 +221,7 @@ type notifyingSink struct {
 	ch              chan int
 }
 
-func (s *notifyingSink) Capabilities() consumer.Capabilities {
+func (*notifyingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

@@ -359,7 +359,7 @@ func (m *mockDetectorUtils) isIMDSAccessible(_ context.Context) bool {
 	return m.imdsAccessible
 }
 
-func (m *mockDetectorUtils) getAWSConfig(_ context.Context, _ bool) (aws.Config, error) {
+func (*mockDetectorUtils) getAWSConfig(context.Context, bool) (aws.Config, error) {
 	return aws.Config{}, nil
 }
 

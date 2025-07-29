@@ -65,6 +65,6 @@ func (sr *StefDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (sr *StefDataReceiver) ProtocolName() string {
+func (*StefDataReceiver) ProtocolName() string {
 	return "stef"
 }

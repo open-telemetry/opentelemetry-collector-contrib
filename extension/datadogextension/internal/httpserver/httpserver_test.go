@@ -281,7 +281,7 @@ func TestHandleMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, serializer := tt.setupTest()
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, "/metadata", nil)
+			r := httptest.NewRequest(http.MethodGet, "/metadata", http.NoBody)
 			r.Header.Set("Content-Type", "application/json")
 			srv := &Server{
 				logger:     logger,
@@ -369,7 +369,7 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 		go func(index int) {
 			defer wg.Done()
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, "/metadata", nil)
+			r := httptest.NewRequest(http.MethodGet, "/metadata", http.NoBody)
 			r.Header.Set("Content-Type", "application/json")
 			responses[index] = w
 			srv.HandleMetadata(w, r)
@@ -746,7 +746,7 @@ func TestHandleMetadata_JSONMarshalError(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/metadata", nil)
+	r := httptest.NewRequest(http.MethodGet, "/metadata", http.NoBody)
 	r.Header.Set("Content-Type", "application/json")
 
 	srv.HandleMetadata(w, r)
@@ -830,7 +830,7 @@ func TestHandleMetadataErrorPaths(t *testing.T) {
 		}
 
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodPost, "/metadata", nil) // Method doesn't matter
+		r := httptest.NewRequest(http.MethodPost, "/metadata", http.NoBody) // Method doesn't matter
 
 		srv.HandleMetadata(w, r)
 

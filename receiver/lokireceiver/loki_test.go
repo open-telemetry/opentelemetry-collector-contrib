@@ -39,7 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
 
-func sendToCollector(endpoint string, contentType string, contentEncoding string, body []byte) error {
+func sendToCollector(endpoint, contentType, contentEncoding string, body []byte) error {
 	var buf bytes.Buffer
 
 	switch contentEncoding {

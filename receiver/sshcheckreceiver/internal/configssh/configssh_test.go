@@ -117,7 +117,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 
 			assert.Equal(t, client.User, test.settings.Username)
 
-			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
+			if test.settings.KeyFile != "" || test.settings.Password != "" {
 				assert.Len(t, client.Auth, 1)
 			}
 		})
@@ -150,7 +150,7 @@ func Test_Client_Dial(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return &ssh.Client{}, nil
 			},
 			shouldError: false,
@@ -163,7 +163,7 @@ func Test_Client_Dial(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return nil, errors.New("dial")
 			},
 			shouldError: true,
@@ -191,7 +191,7 @@ func Test_Client_Dial(t *testing.T) {
 			if test.settings.IgnoreHostKey {
 				assert.Equal(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
 			}
-			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
+			if test.settings.KeyFile != "" || test.settings.Password != "" {
 				assert.Len(t, client.Auth, 1)
 			}
 		})
@@ -223,7 +223,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return &ssh.Client{}, nil
 			},
 			shouldError: false,
@@ -236,7 +236,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 				Username: username,
 				KeyFile:  keyfile,
 			},
-			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
+			dial: func(string, string, *ssh.ClientConfig) (*ssh.Client, error) {
 				return nil, errors.New("dial")
 			},
 			shouldError: true,

@@ -91,7 +91,7 @@ func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, che
 	return invert
 }
 
-func SetAttrOnScopeSpans(data *TraceData, attrName string, attrKey string) {
+func SetAttrOnScopeSpans(data *TraceData, attrName, attrKey string) {
 	data.Lock()
 	defer data.Unlock()
 

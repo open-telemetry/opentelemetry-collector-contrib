@@ -94,7 +94,8 @@ func (c *client) DialConfig(config DialConfig) (Connection, error) {
 	ch.connLock.Lock()
 	defer ch.connLock.Unlock()
 
-	return ch, ch.connect()
+	err := ch.connect()
+	return ch, err
 }
 
 func (c *connectionHolder) ReconnectIfUnhealthy() error {

@@ -299,6 +299,50 @@ func TestTransformerProcessWithValid(t *testing.T) {
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 }
 
+// This test documents the current behavior where the operators split batches,
+// as described in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39575.
+// After that issue is resolved, this test should be renamed to “TestTransformerProcessBatchDoesNotSplitBatches`
+// and updated to prove that batches are not split.
+func TestTransformerProcessBatchSplitsBatches(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	transformer := TransformerOperator{
+		OnError: SendOnError,
+		WriterOperator: WriterOperator{
+			BasicOperator: BasicOperator{
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
+			},
+			OutputOperators: []operator.Operator{output},
+			OutputIDs:       []string{"test-output"},
+		},
+	}
+
+	ctx := context.Background()
+	testEntry := entry.New()
+	testEntry2 := entry.New()
+	testEntry3 := entry.New()
+	testEntries := []*entry.Entry{testEntry, testEntry2, testEntry3}
+	process := func(ctx context.Context, entries *entry.Entry) error {
+		return transformer.ProcessWith(ctx, entries, func(*entry.Entry) error {
+			return nil
+		})
+	}
+
+	err := transformer.ProcessBatchWith(ctx, testEntries, process)
+	require.NoError(t, err)
+	// The following assertions prove that the batch was split into three separate calls to Process.
+	output.AssertCalled(t, "Process", ctx, testEntry)
+	output.AssertCalled(t, "Process", ctx, testEntry2)
+	output.AssertCalled(t, "Process", ctx, testEntry3)
+	output.AssertNumberOfCalls(t, "Process", 3)
+}
+
 func TestTransformerIf(t *testing.T) {
 	cases := []struct {
 		name        string

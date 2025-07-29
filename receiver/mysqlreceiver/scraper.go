@@ -6,11 +6,13 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"net"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -24,6 +26,7 @@ type mySQLScraper struct {
 	logger    *zap.Logger
 	config    *Config
 	mb        *metadata.MetricsBuilder
+	lb        *metadata.LogsBuilder
 
 	// Feature gates regarding resource attributes
 	renameCommands bool
@@ -37,6 +40,7 @@ func newMySQLScraper(
 		logger: settings.Logger,
 		config: config,
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:     metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
 	}
 }
 
@@ -112,6 +116,21 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return m.mb.Emit(), errs.Combine()
 }
 
+// scrape scrapes the mysql db query stats, transforms them and labels them into an event slices.
+func (m *mySQLScraper) scrapeLog(context.Context) (plog.Logs, error) {
+	if m.sqlclient == nil {
+		return plog.NewLogs(), errors.New("failed to connect to http client")
+	}
+
+	errs := &scrapererror.ScrapeErrors{}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	m.scrapeQuerySamples(now, errs)
+
+	return m.lb.Emit(), errs.Combine()
+}
+
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
@@ -138,6 +157,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Innodb_buffer_pool_pages_free":
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesFree))
+		case "Innodb_buffer_pool_pages_total":
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesTotal))
 		case "Innodb_buffer_pool_pages_misc":
 			_, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
@@ -586,6 +608,55 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
+	}
+}
+
+func (m *mySQLScraper) scrapeQuerySamples(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery)
+	if err != nil {
+		m.logger.Error("Failed to fetch query samples", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for _, sample := range samples {
+		clientAddress := ""
+		clientPort := int64(0)
+		networkPeerAddress := ""
+		networkPeerPort := int64(0)
+
+		if sample.processlistHost != "" {
+			addr, port, err := net.SplitHostPort(sample.processlistHost)
+			if err != nil {
+				m.logger.Error("Failed to parse processlistHost value", zap.Error(err))
+				errs.AddPartial(1, err)
+			} else {
+				clientAddress = addr
+				clientPort, _ = parseInt(port)
+				networkPeerAddress = addr
+				networkPeerPort, _ = parseInt(port)
+			}
+		}
+
+		m.lb.RecordDbServerQuerySampleEvent(
+			context.Background(),
+			now,
+			metadata.AttributeDbSystemNameMysql,
+			sample.threadID,
+			sample.processlistUser,
+			sample.processlistDB,
+			sample.processlistCommand,
+			sample.processlistState,
+			sample.sqlText,
+			sample.digest,
+			sample.eventID,
+			sample.waitEvent,
+			sample.waitTime,
+			clientAddress,
+			clientPort,
+			networkPeerAddress,
+			networkPeerPort,
+		)
 	}
 }
 

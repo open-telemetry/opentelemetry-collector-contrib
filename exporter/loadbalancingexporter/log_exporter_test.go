@@ -524,7 +524,7 @@ type mockLogsExporter struct {
 	consumeErr    error
 }
 
-func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
+func (*mockLogsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

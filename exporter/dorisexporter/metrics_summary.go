@@ -34,11 +34,11 @@ type metricModelSummary struct {
 	metricModelCommon[dMetricSummary]
 }
 
-func (m *metricModelSummary) metricType() pmetric.MetricType {
+func (*metricModelSummary) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeSummary
 }
 
-func (m *metricModelSummary) tableSuffix() string {
+func (*metricModelSummary) tableSuffix() string {
 	return "_summary"
 }
 
