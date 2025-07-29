@@ -419,7 +419,7 @@ func TestAddRateVariants(t *testing.T) {
 		"entityId":                    "OTEL:host:network:eth0",
 		"hostname":                    "host",
 		"source":                      "OTEL",
-		"bmchelix.requiresRateMetric": "true",
+		rateMetricFlag: "true",
 	}
 
 	t1 := time.Now().UnixMilli()
@@ -444,7 +444,7 @@ func TestAddRateVariants(t *testing.T) {
 
 	// Original metric should remain unchanged except the flag
 	orig := metrics[0]
-	_, exists := orig.Labels["bmchelix.requiresRateMetric"]
+	_, exists := orig.Labels[rateMetricFlag]
 	assert.False(t, exists, "Temporary label should be removed after processing")
 
 	// Check the added rate metric

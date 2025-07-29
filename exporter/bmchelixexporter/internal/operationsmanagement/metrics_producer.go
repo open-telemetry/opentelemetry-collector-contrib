@@ -197,7 +197,7 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 // and computes the rate metric from the counter metric if required.
 func (mp *MetricsProducer) addRateVariants(helixMetrics []BMCHelixOMMetric) []BMCHelixOMMetric {
 	for i, metric := range helixMetrics {
-		requiresRate := metric.Labels["bmchelix.requiresRateMetric"] == "true"
+		requiresRate := metric.Labels[rateMetricFlag] == "true"
 		if !requiresRate {
 			continue
 		}
@@ -208,7 +208,7 @@ func (mp *MetricsProducer) addRateVariants(helixMetrics []BMCHelixOMMetric) []BM
 		}
 
 		// Remove the 'bmchelix.requiresRateMetric' label
-		delete(helixMetrics[i].Labels, "bmchelix.requiresRateMetric")
+		delete(helixMetrics[i].Labels, rateMetricFlag)
 	}
 	return helixMetrics
 }
