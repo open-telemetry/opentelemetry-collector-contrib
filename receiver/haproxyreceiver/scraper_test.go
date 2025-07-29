@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,12 +21,7 @@ import (
 )
 
 func Test_scraper_readStats(t *testing.T) {
-	f := t.TempDir()
-	socketAddr := filepath.Join(f, "testhaproxy.sock")
-	l, err := net.Listen("unix", socketAddr)
-	require.NoError(t, err)
-	defer l.Close()
-
+	l, socketAddr := listenUnix(t)
 	go func() {
 		c, err2 := l.Accept()
 		assert.NoError(t, err2)
@@ -65,15 +59,7 @@ func Test_scraper_readStats(t *testing.T) {
 }
 
 func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Test is failing due to t.TempDir usage on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38860")
-	}
-	f := t.TempDir()
-	socketAddr := filepath.Join(f, "testhaproxy.sock")
-	l, err := net.Listen("unix", socketAddr)
-	require.NoError(t, err)
-	defer l.Close()
-
+	l, socketAddr := listenUnix(t)
 	go func() {
 		c, err2 := l.Accept()
 		assert.NoError(t, err2)
@@ -111,12 +97,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 }
 
 func Test_scraper_readStatsWithNoValues(t *testing.T) {
-	f := t.TempDir()
-	socketAddr := filepath.Join(f, "testhaproxy.sock")
-	l, err := net.Listen("unix", socketAddr)
-	require.NoError(t, err)
-	defer l.Close()
-
+	l, socketAddr := listenUnix(t)
 	go func() {
 		c, err2 := l.Accept()
 		assert.NoError(t, err2)
@@ -146,4 +127,13 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 	require.NotNil(t, m)
 
 	require.Equal(t, 0, m.MetricCount())
+}
+
+func listenUnix(t testing.TB) (net.Listener, string) {
+	// Use an abstract unix socket address to avoid filesystem issues, e.g. path length limits.
+	socketAddr := "@" + t.Name()
+	l, err := net.Listen("unix", socketAddr)
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, l.Close()) })
+	return l, socketAddr
 }
