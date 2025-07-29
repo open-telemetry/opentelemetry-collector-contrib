@@ -75,9 +75,7 @@ func TestParseRequest_Encodings(t *testing.T) {
 
 			require.NoError(t, err)
 
-			if len(pushReq.Streams) != 1 {
-				t.Errorf("expected 1 stream, got %d", len(pushReq.Streams))
-			}
+                         require.Len(t, pushReq.Streams, 1)
 		})
 	}
 }
