@@ -32,11 +32,13 @@ ignored_paths:
   - pkg/winperfcounters
   - pkg/xk8stest
   - processor/tailsamplingprocessor
+  - receiver/hostmetricsreceiver # issue with the parser not identifying Config as a config struct
   - receiver/pulsarreceiver # 38930
   - exporter/pulsarexporter # 38929
   - exporter/elasticsearchexporter/integrationtest
   - scraper/zookeeperscraper
   - testbed/mockdatasenders/mockdatadogagentexporter
+  - extension/sumologicextension # 40655
 allowed_functions:
   - name: NewFactory
     classes:
