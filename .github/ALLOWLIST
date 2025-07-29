@@ -36,6 +36,7 @@ extension/observer/ecstaskobserver
 processor/groupbytraceprocessor
 processor/routingprocessor
 receiver/awscloudwatchmetricsreceiver
+receiver/bigipreceiver
 receiver/carbonreceiver
 
 # End unmaintained components list

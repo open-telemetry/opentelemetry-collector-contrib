@@ -49,7 +49,6 @@ exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
-exporter/lokiexporter exporter/loki
 exporter/mezmoexporter exporter/mezmo
 exporter/opencensusexporter exporter/opencensus
 exporter/opensearchexporter exporter/opensearch
@@ -204,7 +203,6 @@ receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
-receiver/bigipreceiver receiver/bigip
 receiver/chronyreceiver receiver/chrony
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
@@ -323,4 +321,5 @@ extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 processor/groupbytraceprocessor processor/groupbytrace
 processor/routingprocessor processor/routing
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
+receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon

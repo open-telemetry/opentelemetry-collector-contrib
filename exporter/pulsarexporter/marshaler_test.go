@@ -111,7 +111,6 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 						"scope": map[string]any{},
 						"spans": []any{
 							map[string]any{
-								"traceId":           "",
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),
