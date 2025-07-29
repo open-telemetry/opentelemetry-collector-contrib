@@ -51,7 +51,6 @@ func TestParseProtoReader_Success(t *testing.T) {
 
 	require.NoError(t, err, "unexpected error while parsing proto reader")
 	require.Equal(t, "hello", msg.Value, "unexpected value in parsed proto message")
-
 }
 
 func TestParseProtoReader_DecompressError(t *testing.T) {
