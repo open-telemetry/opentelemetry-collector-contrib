@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/push"
 )
@@ -75,7 +76,7 @@ func TestParseRequest_Encodings(t *testing.T) {
 
 			require.NoError(t, err)
 
-                         require.Len(t, pushReq.Streams, 1)
+                        require.Len(t, pushReq.Streams, 1)
 		})
 	}
 }
