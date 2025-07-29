@@ -20,6 +20,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -183,10 +184,24 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 }
 
 func k8sSecretFile() (string, error) {
-	k8sSAtoken := `eyJhbGciOiJSUzI1NiIsImtpZCI6IjdjdDhhT0pTSXh0Zm0yUVprUVRXaFpTVFpHUlQ0MlFkbDMzQXQ1XzRURkkifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzg0Mzk4Mzk5LCJpYXQiOjE3NTI4NjIzOTksImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiNTE3Zjg4ZDUtOTNjZC00YWIzLWFkZWItY2NiZjExMDdmZGYxIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJ0ZXN0Iiwibm9kZSI6eyJuYW1lIjoia2luZC1jb250cm9sLXBsYW5lIiwidWlkIjoiZThjZTczMWMtMmZjNC00NWZjLWJjNzItMzdhYTgyNDQzN2EwIn0sInBvZCI6eyJuYW1lIjoib2lkYy1zZXJ2ZXIteDU4bm4iLCJ1aWQiOiJmM2Q3YTBkZC04Yzk3LTRkNTgtOGYyYy01ZDRiNThjMmY5NDIifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImRlZmF1bHQiLCJ1aWQiOiIwZjc1MTJhNi00ZjhkLTQxYjAtOTM4NC1mYWE4YzlmZWUxMWYifSwid2FybmFmdGVyIjoxNzUyODY2MDA2fSwibmJmIjoxNzUyODYyMzk5LCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6dGVzdDpkZWZhdWx0In0.A8eDX9Wz6aoAwO-Vrg2ddbxJ5d7r3pdg8J6D4gyHPNQLRmBcZHaWagRKJTZ3gDYvT_u_hCG5RJrHARt9MncftPJ5_gdRyXckbd9a9dcSSRVxFEPzdaUR6GSmTmI2sUwhU33AnWmRqlOlZW_WtslPGXl8tNsfDLfpvabjAuBFJrb7KB8MvzXVNvVcJ8BmM4oglX3e3xIxLBzSSQFkW9OGdmeWFsMh-lNaHpzXQGaZx3W2Wit2SUigbDDSJPCTs_tFMdPv-LW0AH9eRd5yU_j87gEsapu_u5j6qcNku-3g79LcGoIvTqe8QdSI7OeoWVnD05SjfAoyHhR-aoMJtSCOQg`
+	// Mock a small subset of a Kubernetes Service Account token
+	claims := jwt.MapClaims{
+		"iss": "https://kubernetes.default.svc.cluster.local",
+		"sub": "system:serviceaccount:test:default",
+		"aud": []string{"https://kubernetes.default.svc.cluster.local"},
+		"exp": time.Now().Add(time.Duration(120) * time.Second).Unix(),
+		"iat": time.Now().Unix(),
+		"jti": uuid.NewString(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	k8sSAtoken, err := token.SignedString(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("error creating mock K8S service account token: %w", err)
+	}
 
 	tokenPath := filepath.Join(os.TempDir(), "k8sToken")
-	err := os.WriteFile(tokenPath, []byte(k8sSAtoken), 0o600)
+	err = os.WriteFile(tokenPath, []byte(k8sSAtoken), 0o600)
 	if err != nil {
 		return "", fmt.Errorf("error writing %s: %w", tokenPath, err)
 	}

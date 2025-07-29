@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.45.2
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.130.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0

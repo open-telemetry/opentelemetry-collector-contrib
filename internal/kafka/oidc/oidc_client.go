@@ -44,13 +44,19 @@ type OIDCfileTokenProvider struct {
 func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
 	scopes []string, refreshAhead time.Duration,
 ) sarama.AccessTokenProvider {
-	return &OIDCfileTokenProvider{
+	prov := &OIDCfileTokenProvider{
 		Ctx:                  ctx,
 		ClientID:             clientID,
 		ClientSecretFilePath: clientSecretFilePath,
 		TokenURL:             tokenURL,
 		Scopes:               scopes,
 	}
+
+	if refreshAhead.Milliseconds() > 0 {
+		prov.startBackgroundRefresher()
+	}
+
+	return prov
 }
 
 func (p *OIDCfileTokenProvider) Token() (*sarama.AccessToken, error) {
