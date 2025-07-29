@@ -190,6 +190,7 @@ type databaseStats struct {
 	transactionCommitted int64
 	transactionRollback  int64
 	deadlocks            int64
+	tempIo               int64
 	tempFiles            int64
 	tupUpdated           int64
 	tupReturned          int64
@@ -202,7 +203,7 @@ type databaseStats struct {
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
 	query := filterQueryByDatabases(
-		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
+		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, temp_bytes, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
 		databases,
 		false,
 	)
@@ -217,8 +218,8 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
+		var transactionCommitted, transactionRollback, deadlocks, tempIo, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tempIo, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -228,6 +229,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionCommitted: transactionCommitted,
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
+				tempIo:               tempIo,
 				tempFiles:            tempFiles,
 				tupUpdated:           tupUpdated,
 				tupReturned:          tupReturned,
