@@ -11,4 +11,6 @@ type TransactionsConfig struct {
 
 type Config struct {
 	TransactionsConfig `mapstructure:"transactions"`
+	// prevents unkeyed literal initialization
+	_ struct{}
 }
