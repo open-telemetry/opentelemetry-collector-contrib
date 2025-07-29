@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.23.1
 	go.opentelemetry.io/build-tools/issuegenerator v0.23.1
 	go.opentelemetry.io/build-tools/multimod v0.25.0
-	go.opentelemetry.io/collector/cmd/builder v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/cmd/mdatagen v0.130.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/cmd/builder v0.131.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.131.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.35.0
 	golang.org/x/vuln v1.1.4
@@ -255,8 +255,8 @@ require (
 	go.opentelemetry.io/collector/confmap v1.37.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.37.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.37.0 // indirect
-	go.opentelemetry.io/collector/filter v0.130.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.130.2-0.20250725192953-424a12102dca // indirect
+	go.opentelemetry.io/collector/filter v0.131.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.131.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.37.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
