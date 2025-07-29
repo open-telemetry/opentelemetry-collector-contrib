@@ -6,14 +6,14 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.130.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.131.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071
 	github.com/stretchr/testify v1.10.0
@@ -84,7 +84,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.130.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect

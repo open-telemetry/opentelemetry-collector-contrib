@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
 	github.com/splunk/stef/go/grpc v0.0.6
 	github.com/splunk/stef/go/otel v0.0.6
 	github.com/splunk/stef/go/pdata v0.0.6
