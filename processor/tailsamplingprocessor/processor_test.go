@@ -25,7 +25,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -414,11 +413,12 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	}()
 
 	var expectedSpans atomic.Int64
-	group := errgroup.Group{}
+	wg := sync.WaitGroup{}
 	// For each batch, we consume the same trace repeatedly for at least 2x the decision wait time
 	// this ensures that batches are being consumed concurrently with policy evaluation.
 	for _, batch := range batches {
-		group.Go(func() error {
+		wg.Add(1)
+		go func() {
 			start := time.Now()
 			// The important thing here is that we are writing as close as
 			// possible to the moment when the policy is evaluated. We can't
@@ -427,14 +427,12 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			for time.Since(start) < 2*cfg.DecisionWait {
 				expectedSpans.Add(int64(batch.SpanCount()))
 				err := tsp.ConsumeTraces(context.Background(), batch)
-				if err != nil {
-					return err
-				}
+				require.NoError(t, err)
 			}
-			return nil
-		})
+			wg.Done()
+		}()
 	}
-	require.NoError(t, group.Wait())
+	wg.Wait()
 
 	// verify
 	// despite all the concurrency above, we should eventually sample all the spans.
