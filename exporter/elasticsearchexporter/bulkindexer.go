@@ -500,6 +500,18 @@ func flushBulkIndexer(
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
 		}
+
+		// append metadata attributes to error log fields
+		for _, kv := range defaultMetaAttrs {
+			switch kv.Value.Type() {
+			case attribute.STRINGSLICE:
+				fields = append(fields, zap.Strings(string(kv.Key), kv.Value.AsStringSlice()))
+			default:
+				// For other types, convert to string
+				fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
+			}
+		}
+
 		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
 			fields = append(fields, zap.String("hint", hint))
 		}
