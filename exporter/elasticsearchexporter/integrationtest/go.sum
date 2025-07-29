@@ -174,8 +174,8 @@ github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b h1:11UHH39
 github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b/go.mod h1:WZxr2/6a/Ar9bMDc2rN/LJrE/hF6bXE4LPyDSIxwAfg=
 github.com/lestrrat-go/envload v0.0.0-20180220234015-a3eb8ddeffcc h1:RKf14vYWi2ttpEmkA4aQ3j4u9dStX2t4M8UM6qqNsG8=
 github.com/lestrrat-go/envload v0.0.0-20180220234015-a3eb8ddeffcc/go.mod h1:kopuH9ugFRkIXf3YoqHKyrJ9YfUFsckUU9S7B+XP+is=
-github.com/lestrrat-go/strftime v1.1.0 h1:gMESpZy44/4pXLO/m+sL0yBd1W6LjgjrrD4a68Gapyg=
-github.com/lestrrat-go/strftime v1.1.0/go.mod h1:uzeIB52CeUJenCo1syghlugshMysrqUT51HlxphXVeI=
+github.com/lestrrat-go/strftime v1.1.1 h1:zgf8QCsgj27GlKBy3SU9/8MMgegZ8UCzlCyHYrUF0QU=
+github.com/lestrrat-go/strftime v1.1.1/go.mod h1:YDrzHJAODYQ+xxvrn5SG01uFIQAeDTzpxNVppCz7Nmw=
 github.com/lightstep/go-expohisto v1.0.0 h1:UPtTS1rGdtehbbAF7o/dhkWLTDI73UifG8LbfQI7cA4=
 github.com/lightstep/go-expohisto v1.0.0/go.mod h1:xDXD0++Mu2FOaItXtdDfksfgxfV0z1TMPa+e/EUd0cs=
 github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 h1:7UMa6KCCMjZEMDtTVdcGu0B1GmmC7QJKiCCjyTAWQy0=
