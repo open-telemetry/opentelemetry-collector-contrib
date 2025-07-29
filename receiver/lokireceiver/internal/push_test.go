@@ -192,7 +192,7 @@ func createTestProtobuf() string {
 		},
 	}
 
-	// Serializar y comprimir con snappy
+	// Serialize and compress with Snappy
 	data, _ := req.Marshal()
 	compressed := snappy.Encode(nil, data)
 	return string(compressed)
