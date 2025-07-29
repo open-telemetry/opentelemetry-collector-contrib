@@ -500,6 +500,7 @@ Available Converters:
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
+- [ParseCEF](#parsecef)
 - [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
@@ -1540,6 +1541,33 @@ Examples:
 
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
+
+### ParseCEF
+
+`ParseCEF(target)`
+
+The `ParseCEF` Converter returns a `pcommon.Map` struct that contains the result of parsing the `target` string as CEF (Common Event Format). The parsed CEF message includes header fields and extension key-value pairs.
+
+`target` is a Getter that returns a string. This string should be a CEF-formatted message starting with "CEF:". If `target` is not a valid CEF message, `ParseCEF` will return an error.
+
+The CEF format consists of:
+- 7 pipe-separated header fields: `CEF:Version|DeviceVendor|DeviceProduct|DeviceVersion|DeviceEventClassID|Name|Severity`
+- Extension field: space-separated key=value pairs
+
+Supported escape sequences in CEF fields:
+- `\|` for literal pipe character
+- `\=` for literal equals character  
+- `\\` for literal backslash character
+
+Examples:
+
+- `ParseCEF("CEF:0|Vendor|Product|1.0|100|Event Name|High|src=10.0.0.1 dst=10.0.0.2")`
+
+
+- `ParseCEF(log.body)`
+
+
+- `ParseCEF("CEF:0|Vendor\|Corp|Product|1.0|100|Event|High|key\=special=value")`
 
 ### ParseInt
 
