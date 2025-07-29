@@ -130,10 +130,16 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 }
 
 func listenUnix(tb testing.TB) (net.Listener, string) {
-	// Use an abstract unix socket address to avoid filesystem issues, e.g. path length limits.
-	socketAddr := "@" + tb.Name()
-	l, err := net.Listen("unix", socketAddr)
+	// Note that we intentionally do not use tb.TempDir() here, as we need to
+	// create a path that is as short as possible. This is based on code from
+	// Go's net package.
+	tempdir, err := os.MkdirTemp("", "") //nolint:usetesting
+	require.NoError(tb, err)
+	tb.Cleanup(func() {
+		assert.NoError(tb, os.RemoveAll(tempdir))
+	})
+	l, err := net.Listen("unix", filepath.Join(tempdir, "sock"))
 	require.NoError(tb, err)
 	tb.Cleanup(func() { assert.NoError(tb, l.Close()) })
-	return l, socketAddr
+	return l, l.Addr().String()
 }
