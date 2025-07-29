@@ -448,7 +448,7 @@ func assertExpectedAttributes(t *testing.T, want pcommon.Map, got pmetric.Resour
 	}
 }
 
-func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames bool, existsOnly bool) {
+func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames, existsOnly bool) {
 	var defaultExpectations []metricExpectation
 	switch {
 	case existsOnly:

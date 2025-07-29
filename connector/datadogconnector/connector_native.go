@@ -100,7 +100,7 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnectorNative) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnectorNative) Start(context.Context, component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
 	c.wg.Add(1)
@@ -128,7 +128,7 @@ func (c *traceToMetricConnectorNative) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
+func (*traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

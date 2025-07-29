@@ -125,8 +125,8 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	hasher.UpdateResource(rm.Resource())
 	hasher.UpdateScope(sm.Scope())
-	for i := 0; i < dps.Len(); i++ {
-		dp := datapoints.NewNumber(m, dps.At(i))
+	for _, dp := range dps.All() {
+		dp := datapoints.NewNumber(m, dp)
 		hasher.UpdateDataPoint(dp)
 		dpHash := hasher.HashKey()
 		dataPoints, ok := groupedDataPoints[dpHash]
@@ -1175,7 +1175,7 @@ type oTelResource struct {
 
 type oTelSpanID pcommon.SpanID
 
-func (o oTelSpanID) MarshalJSON() ([]byte, error) {
+func (oTelSpanID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
@@ -1190,7 +1190,7 @@ func (o *oTelSpanID) UnmarshalJSON(data []byte) error {
 
 type oTelTraceID pcommon.TraceID
 
-func (o oTelTraceID) MarshalJSON() ([]byte, error) {
+func (oTelTraceID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 

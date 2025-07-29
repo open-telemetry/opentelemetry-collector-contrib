@@ -700,6 +700,107 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	assert.Equal(t, int64(2), val.Int())
 }
 
+// TestRedactAllTypesFalse validates that not all types are redacted when the setting is false
+func TestRedactAllTypesFalse(t *testing.T) {
+	testConfig := TestConfig{
+		config: &Config{
+			AllowedKeys:    []string{"group", "id", "name"},
+			AllowAllKeys:   true,
+			BlockedValues:  []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			RedactAllTypes: false,
+		},
+		allowed: map[string]pcommon.Value{
+			"group":           pcommon.NewValueStr("temporary"),
+			"id":              pcommon.NewValueInt(5),
+			"name":            pcommon.NewValueStr("placeholder"),
+			"credit_card_int": pcommon.NewValueInt(4111111111111111),
+		},
+		masked: map[string]pcommon.Value{
+			"credit_card": pcommon.NewValueStr("placeholder 4111111111111111"),
+		},
+	}
+
+	outTraces := runTest(t, testConfig)
+	outLogs := runLogsTest(t, testConfig)
+	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		for k, v := range testConfig.allowed {
+			val, ok := attr.Get(k)
+			assert.True(t, ok)
+			assert.Equal(t, v.AsRaw(), val.AsRaw())
+		}
+		value, _ := attr.Get("credit_card")
+		assert.Equal(t, "placeholder ****", value.Str())
+	}
+}
+
+// TestRedactAllTypesTrue validates the redact all types setting ensures ints and maps can be redacted
+func TestRedactAllTypesTrue(t *testing.T) {
+	testConfig := TestConfig{
+		config: &Config{
+			AllowedKeys:    []string{"group", "id", "name"},
+			AllowAllKeys:   true,
+			BlockedValues:  []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			RedactAllTypes: true,
+		},
+		allowed: map[string]pcommon.Value{
+			"group": pcommon.NewValueStr("temporary"),
+			"id":    pcommon.NewValueInt(5),
+			"name":  pcommon.NewValueStr("placeholder"),
+		},
+		masked: map[string]pcommon.Value{
+			"credit_card":     pcommon.NewValueStr("placeholder 4111111111111111"),
+			"credit_card_int": pcommon.NewValueInt(4111111111111111),
+		},
+	}
+
+	outTraces := runTest(t, testConfig)
+	outLogs := runLogsTest(t, testConfig)
+	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		for k, v := range testConfig.allowed {
+			val, ok := attr.Get(k)
+			assert.True(t, ok)
+			assert.Equal(t, v.AsRaw(), val.AsRaw())
+		}
+		value, _ := attr.Get("credit_card")
+		assert.Equal(t, "placeholder ****", value.Str())
+
+		value, _ = attr.Get("credit_card_int")
+		assert.Equal(t, "****", value.Str())
+	}
+}
+
 func TestSpanEventRedacted(t *testing.T) {
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()

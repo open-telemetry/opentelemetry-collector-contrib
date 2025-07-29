@@ -624,21 +624,21 @@ func (m *mockSerializer) State() uint32 {
 	return m.state
 }
 
-func (m *mockSerializer) SendMetadata(marshaler.JSONMarshaler) error            { return nil }
-func (m *mockSerializer) SendEvents(event.Events) error                         { return nil }
-func (m *mockSerializer) SendServiceChecks(servicecheck.ServiceChecks) error    { return nil }
-func (m *mockSerializer) SendIterableSeries(metrics.SerieSource) error          { return nil }
-func (m *mockSerializer) AreSeriesEnabled() bool                                { return false }
-func (m *mockSerializer) SendSketch(metrics.SketchesSource) error               { return nil }
-func (m *mockSerializer) AreSketchesEnabled() bool                              { return false }
-func (m *mockSerializer) SendHostMetadata(marshaler.JSONMarshaler) error        { return nil }
-func (m *mockSerializer) SendProcessesMetadata(any) error                       { return nil }
-func (m *mockSerializer) SendAgentchecksMetadata(marshaler.JSONMarshaler) error { return nil }
-func (m *mockSerializer) SendOrchestratorMetadata([]types.ProcessMessageBody, string, string, int) error {
+func (*mockSerializer) SendMetadata(marshaler.JSONMarshaler) error            { return nil }
+func (*mockSerializer) SendEvents(event.Events) error                         { return nil }
+func (*mockSerializer) SendServiceChecks(servicecheck.ServiceChecks) error    { return nil }
+func (*mockSerializer) SendIterableSeries(metrics.SerieSource) error          { return nil }
+func (*mockSerializer) AreSeriesEnabled() bool                                { return false }
+func (*mockSerializer) SendSketch(metrics.SketchesSource) error               { return nil }
+func (*mockSerializer) AreSketchesEnabled() bool                              { return false }
+func (*mockSerializer) SendHostMetadata(marshaler.JSONMarshaler) error        { return nil }
+func (*mockSerializer) SendProcessesMetadata(any) error                       { return nil }
+func (*mockSerializer) SendAgentchecksMetadata(marshaler.JSONMarshaler) error { return nil }
+func (*mockSerializer) SendOrchestratorMetadata([]types.ProcessMessageBody, string, string, int) error {
 	return nil
 }
 
-func (m *mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, string, string) error {
+func (*mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, string, string) error {
 	return nil
 }
 
@@ -647,7 +647,7 @@ type mockFailingSerializer struct {
 	mockSerializer
 }
 
-func (m *mockFailingSerializer) SendMetadata(marshaler.JSONMarshaler) error {
+func (*mockFailingSerializer) SendMetadata(marshaler.JSONMarshaler) error {
 	return errors.New("payload send failed")
 }
 

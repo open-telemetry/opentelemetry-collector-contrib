@@ -78,7 +78,7 @@ type logsFailover struct {
 	logger   *zap.Logger
 }
 
-func (f *logsFailover) Capabilities() consumer.Capabilities {
+func (*logsFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -87,7 +87,7 @@ func (f *logsFailover) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return f.failover.Consume(ctx, ld)
 }
 
-func (f *logsFailover) Shutdown(_ context.Context) error {
+func (f *logsFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}

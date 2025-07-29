@@ -20,7 +20,7 @@ import (
 )
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
-func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
+func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify bool,
 	proxyAddress string,
 ) (*http.Client, error) {
 	logger.Debug("Using proxy address: ",

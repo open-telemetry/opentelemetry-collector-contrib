@@ -54,6 +54,7 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlWalDelay.Enabled = true
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		cfg.Metrics.PostgresqlTupReturned.Enabled = true
 		cfg.Metrics.PostgresqlTupFetched.Enabled = true
@@ -85,7 +86,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
 
-	runTest := func(separateSchemaAttr bool, file string, fileDefault string) {
+	runTest := func(separateSchemaAttr bool, file, fileDefault string) {
 		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
@@ -97,6 +98,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -130,6 +133,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = false
 		cfg.Metrics.PostgresqlTempFiles.Enabled = false
+		cfg.Metrics.PostgresqlTempIo.Enabled = false
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = false
 		cfg.Metrics.PostgresqlTupReturned.Enabled = false
 		cfg.Metrics.PostgresqlTupFetched.Enabled = false
@@ -172,6 +176,8 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -223,6 +229,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -274,6 +282,8 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -326,6 +336,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -512,22 +524,22 @@ type (
 )
 
 // explainQuery implements client.
-func (m *mockClient) explainQuery(_ string, _ string, _ *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
 // getTopQuery implements client.
-func (m *mockClient) getTopQuery(_ context.Context, _ int64, _ *zap.Logger) ([]map[string]any, error) {
+func (*mockClient) getTopQuery(context.Context, int64, *zap.Logger) ([]map[string]any, error) {
 	panic("unimplemented")
 }
 
 // close implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) close() error {
+func (mockSimpleClientFactory) close() error {
 	return nil
 }
 
 // getClient implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
+func (m mockSimpleClientFactory) getClient(string) (client, error) {
 	return &postgreSQLClient{
 		client:  m.db,
 		closeFn: m.close,
@@ -535,7 +547,7 @@ func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
 }
 
 // getQuerySamples implements client.
-func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ float64, _ *zap.Logger) ([]map[string]any, float64, error) {
+func (*mockClient) getQuerySamples(context.Context, int64, float64, *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 
@@ -579,6 +591,11 @@ func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) 
 func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
 	args := m.Called(ctx, database)
 	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
+}
+
+func (m *mockClient) getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[functionIdentifer]functionStat), args.Error(1)
 }
 
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
@@ -633,7 +650,7 @@ func (m *mockClientFactory) initMocks(databases []string) {
 	}
 }
 
-func (m *mockClient) initMocks(database string, schema string, databases []string, index int) {
+func (m *mockClient) initMocks(database, schema string, databases []string, index int) {
 	m.On("Close").Return(nil)
 
 	if database == defaultPostgreSQLDatabase {
@@ -656,6 +673,7 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 				tupDeleted:           int64(idx + 9),
 				blksHit:              int64(idx + 10),
 				blksRead:             int64(idx + 11),
+				tempIo:               int64(idx + 12),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
@@ -815,5 +833,23 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 			},
 		}
 		m.On("getIndexStats", mock.Anything, database).Return(indexStats, nil)
+
+		function1 := "test_function1"
+		function2 := "test_function2"
+		functionStats := map[functionIdentifer]functionStat{
+			functionKey(database, schema, function1): {
+				database: database,
+				schema:   schema,
+				function: function1,
+				calls:    int64(index + 50),
+			},
+			functionKey(database, schema, function2): {
+				database: database,
+				schema:   schema,
+				function: function2,
+				calls:    int64(index + 51),
+			},
+		}
+		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 	}
 }
