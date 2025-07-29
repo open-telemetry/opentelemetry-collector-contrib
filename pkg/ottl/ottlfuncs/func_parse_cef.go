@@ -73,10 +73,7 @@ func parseCEF[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		// Parse extensions directly into pMap
 		extensionsMap := pMap.PutEmptyMap("extensions")
 		if extensionPart != "" {
-			err = parseCEFExtensions(extensionPart, extensionsMap)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse CEF extensions: %w", err)
-			}
+			parseCEFExtensions(extensionPart, extensionsMap)
 		}
 
 		return pMap, nil
@@ -135,9 +132,9 @@ func parseCEFHeader(message string) ([]string, string, error) {
 }
 
 // parseCEFExtensions parses the extension part directly into a pcommon.Map
-func parseCEFExtensions(extensionPart string, extensionsMap pcommon.Map) error {
+func parseCEFExtensions(extensionPart string, extensionsMap pcommon.Map) {
 	if strings.TrimSpace(extensionPart) == "" {
-		return nil
+		return
 	}
 
 	i := 0
@@ -158,8 +155,6 @@ func parseCEFExtensions(extensionPart string, extensionsMap pcommon.Map) error {
 
 		extensionsMap.PutStr(unescapeCEFValue(key), unescapeCEFValue(value))
 	}
-
-	return nil
 }
 
 // skipSpaces advances index past any whitespace characters
