@@ -60,8 +60,7 @@ export traces. Exporter can make as many requests in parallel as the number of w
 that this will likely be removed in future in favour of processors handling parallel exporting.
 - `access_token_passthrough`: (default = `true`) Whether to use `"com.splunk.signalfx.access_token"`
 trace resource attribute, if any, as SFx access token.  In either case this attribute will be deleted
-during final translation.  Intended to be used in tandem with identical configuration option for
-[SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
+during final translation.  
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 - `log_detailed_response` (default = `false`): Option to log detailed response from Splunk APM.
 In addition to setting this option to `true`, debug logging at the Collector level needs to be enabled.
