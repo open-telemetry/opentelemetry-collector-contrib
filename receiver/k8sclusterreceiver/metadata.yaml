@@ -295,7 +295,7 @@ metrics:
   # Semantic conventions: https://github.com/open-telemetry/semantic-conventions/blob/main/docs/system/k8s-metrics.md#metric-k8scontainerstatusstate
   k8s.container.status.state:
     enabled: false
-    description: Experimental metric.Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+    description: Experimental metric. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
     unit: "{container}"
     sum:
       aggregation_temporality: cumulative
