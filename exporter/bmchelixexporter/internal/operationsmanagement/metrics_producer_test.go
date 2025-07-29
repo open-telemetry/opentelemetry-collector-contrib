@@ -326,7 +326,7 @@ func TestComputeRateMetricFromCounter(t *testing.T) {
 	assert.NotNil(t, rateMetric, "Expected a rate metric on second datapoint")
 
 	assert.Equal(t, "hw.network.io.rate", rateMetric.Labels["metricName"])
-	assert.Equal(t, "By.per_second", rateMetric.Labels["unit"])
+	assert.Equal(t, "By/s", rateMetric.Labels["unit"])
 	assert.Len(t, rateMetric.Samples, 1)
 	assert.Greater(t, rateMetric.Samples[0].Value, 0.0, "Rate should be a positive value")
 }
@@ -402,7 +402,58 @@ func TestAddPercentageVariants(t *testing.T) {
 	// Percent variant added
 	percent := result[1]
 	assert.Equal(t, "hw.network.percent", percent.Labels["metricName"])
-	assert.Equal(t, "percent", percent.Labels["unit"])
+	assert.Equal(t, "%", percent.Labels["unit"])
 	assert.InDelta(t, 82.0, percent.Samples[0].Value, 0.001)
 	assert.Equal(t, sample.Timestamp, percent.Samples[0].Timestamp)
+}
+
+func TestAddRateVariants(t *testing.T) {
+	t.Parallel()
+
+	producer := NewMetricsProducer(zap.NewExample())
+
+	// Create a base counter metric
+	originalLabels := map[string]string{
+		"metricName":                   "hw.network.io",
+		"unit":                         "By",
+		"entityId":                     "OTEL:host:network:eth0",
+		"hostname":                     "host",
+		"source":                       "OTEL",
+		"bmchelix.requiresRateMetric": "true",
+	}
+
+	t1 := time.Now().UnixMilli()
+	sample1 := BMCHelixOMSample{Value: 1000, Timestamp: t1}
+
+	// Store the first sample for comparison (simulate already seen)
+	producer.previousCounters["OTEL:host:network:eth0:hw.network.io"] = sample1
+
+	// Second sample (incoming)
+	t2 := t1 + 1000 // 1 second later
+	sample2 := BMCHelixOMSample{Value: 2000, Timestamp: t2}
+
+	inputMetric := BMCHelixOMMetric{
+		Labels:  originalLabels,
+		Samples: []BMCHelixOMSample{sample2},
+	}
+
+	// Run addRateVariants
+	metrics := producer.addRateVariants([]BMCHelixOMMetric{inputMetric})
+
+	assert.Len(t, metrics, 2, "Should return original + rate metric")
+
+	// Original metric should remain unchanged except the flag
+	orig := metrics[0]
+	_, exists := orig.Labels["bmchelix.requiresRateMetric"]
+	assert.False(t, exists, "Temporary label should be removed after processing")
+
+	// Check the added rate metric
+	rate := metrics[1]
+	assert.Equal(t, "hw.network.io.rate", rate.Labels["metricName"])
+	assert.Equal(t, "By/s", rate.Labels["unit"])
+	assert.Len(t, rate.Samples, 1)
+
+	expectedRate := 1000.0 // (2000 - 1000) / 1s
+	assert.InDelta(t, expectedRate, rate.Samples[0].Value, 0.001)
+	assert.Equal(t, t2, rate.Samples[0].Timestamp)
 }

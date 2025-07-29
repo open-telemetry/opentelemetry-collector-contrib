@@ -55,6 +55,8 @@ var coreAttributes = map[string]struct{}{
 	"entityId":               {},
 }
 
+var rateMetricFlag = "bmchelix.requiresRateMetric"
+
 // ProduceHelixPayload takes the OpenTelemetry metrics and converts them into the BMC Helix Operations Management metric format
 func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHelixOMMetric, error) {
 	helixMetrics := []BMCHelixOMMetric{}
@@ -150,16 +152,14 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 				mp.logger.Warn("Failed to create Helix metric from datapoint", zap.Error(err))
 				continue
 			}
+
+			// If the metric is a counter, add a flag to compute the rate metric later
+			if metric.Sum().IsMonotonic() {
+				metricPayload.Labels[rateMetricFlag] = "true"
+			}
+
 			helixMetrics = append(helixMetrics, *metricPayload)
 
-			// If the metric is a counter, compute the rate metric
-			if metric.Sum().IsMonotonic() {
-				// Compute rate metric
-				rateMetric := mp.computeRateMetricFromCounter(*metricPayload)
-				if rateMetric != nil {
-					helixMetrics = append(helixMetrics, *rateMetric)
-				}
-			}
 		}
 	case pmetric.MetricTypeGauge:
 		sliceLen := metric.Gauge().DataPoints().Len()
@@ -186,7 +186,32 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 	// Add percentage variants for ratio metrics (unit "1")
 	helixMetrics = addPercentageVariants(helixMetrics)
 
+	// Compute rate metrics for counter metrics that require it
+	// This will add a new metric with the same labels but with ".rate" suffix in the metric name
+	// and the value being the rate of change per second
+	helixMetrics = mp.addRateVariants(helixMetrics)
+
 	return helixMetrics, nil
+}
+
+// addRateVariants checks each metric for the 'bmchelix.requiresRateMetric' label
+// and computes the rate metric from the counter metric if required.
+func (mp *MetricsProducer) addRateVariants(helixMetrics []BMCHelixOMMetric) []BMCHelixOMMetric {
+	for i, metric := range helixMetrics {
+		requiresRate := metric.Labels["bmchelix.requiresRateMetric"] == "true"
+		if !requiresRate {
+			continue
+		}
+
+		// Compute the rate metric from the counter metric
+		if rateMetric := mp.computeRateMetricFromCounter(metric); rateMetric != nil {
+			helixMetrics = append(helixMetrics, *rateMetric)
+		}
+
+		// Remove the 'bmchelix.requiresRateMetric' label
+		delete(helixMetrics[i].Labels, "bmchelix.requiresRateMetric")
+	}
+	return helixMetrics
 }
 
 // createSingleDatapointMetric creates a single BMCHelixOMMetric from a single OpenTelemetry datapoint
@@ -427,7 +452,7 @@ func addPercentageVariants(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
 		originalName := percentLabels["metricName"]
 
 		percentLabels["metricName"] = toPercentMetricName(originalName)
-		percentLabels["unit"] = "percent"
+		percentLabels["unit"] = "%"
 
 		// Convert sample value
 		percentSamples := make([]BMCHelixOMSample, len(m.Samples))
@@ -497,7 +522,7 @@ func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric)
 		rateLabels[k] = v
 	}
 	rateLabels["metricName"] += ".rate"
-	rateLabels["unit"] += ".per_second"
+	rateLabels["unit"] += "/s"
 
 	return &BMCHelixOMMetric{
 		Labels:  rateLabels,
