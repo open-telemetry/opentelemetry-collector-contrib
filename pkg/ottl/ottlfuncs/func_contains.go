@@ -33,7 +33,7 @@ func createContainsFunction[K any](
 
 	if !ok {
 		return nil, errors.New(
-			"NewContainsFactory args must be of type *ContainsArguments[K]",
+			"ContainsFactory args must be of type *ContainsArguments[K]",
 		)
 	}
 
