@@ -159,7 +159,6 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 			}
 
 			helixMetrics = append(helixMetrics, *metricPayload)
-
 		}
 	case pmetric.MetricTypeGauge:
 		sliceLen := metric.Gauge().DataPoints().Len()
