@@ -73,9 +73,7 @@ func TestParseRequest_Encodings(t *testing.T) {
 			        require.Error(t, err)
 			}
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			require.NoError(t, err)
 
 			if len(pushReq.Streams) != 1 {
 				t.Errorf("expected 1 stream, got %d", len(pushReq.Streams))
