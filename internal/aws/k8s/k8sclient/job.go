@@ -29,11 +29,11 @@ type JobClient interface {
 
 type noOpJobClient struct{}
 
-func (nc *noOpJobClient) JobToCronJob() map[string]string {
+func (*noOpJobClient) JobToCronJob() map[string]string {
 	return map[string]string{}
 }
 
-func (nc *noOpJobClient) shutdown() {
+func (*noOpJobClient) shutdown() {
 }
 
 type jobClientOption func(*jobClient)

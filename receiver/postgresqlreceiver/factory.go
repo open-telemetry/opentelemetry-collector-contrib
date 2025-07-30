@@ -65,6 +65,7 @@ func createDefaultConfig() component.Config {
 			InsecureSkipVerify: true,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySampleCollection: QuerySampleCollection{
 			Enabled:         false,
 			MaxRowsPerQuery: 1000,

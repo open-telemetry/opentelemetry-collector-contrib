@@ -520,11 +520,12 @@ func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *tes
 
 func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 	tests := []struct {
-		name       string
-		candidates map[string]*priorityContextInferrerCandidate
-		statements []string
-		conditions []string
-		expected   string
+		name        string
+		candidates  map[string]*priorityContextInferrerCandidate
+		statements  []string
+		conditions  []string
+		expressions []string
+		expected    string
 	}{
 		{
 			name: "with statements",
@@ -548,12 +549,40 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			expected: "metric",
 		},
 		{
+			name: "with expressions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{
+				`resource.attributes["foo"]`,
+				`metric.name`,
+			},
+			expected: "metric",
+		},
+		{
 			name: "with statements and conditions",
 			candidates: map[string]*priorityContextInferrerCandidate{
 				"metric":   defaultDummyPriorityContextInferrerCandidate,
 				"resource": defaultDummyPriorityContextInferrerCandidate,
 			},
 			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			conditions: []string{
+				`IsMatch(metric.name, "^bar.*")`,
+				`IsMatch(metric.name, "^foo.*")`,
+			},
+			expected: "metric",
+		},
+		{
+			name: "with statements, conditions, and value expressions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			expressions: []string{
+				`resource.attributes["foo"]`,
+			},
 			conditions: []string{
 				`IsMatch(metric.name, "^bar.*")`,
 				`IsMatch(metric.name, "^foo.*")`,
@@ -568,7 +597,7 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 				componenttest.NewNopTelemetrySettings(),
 				tt.candidates,
 			)
-			inferredContext, err := inferrer.infer(tt.statements, tt.conditions)
+			inferredContext, err := inferrer.infer(tt.statements, tt.conditions, tt.expressions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})

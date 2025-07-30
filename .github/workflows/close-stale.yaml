@@ -4,8 +4,14 @@ on:
   schedule:
     - cron: "12 5 * * *" # arbitrary time not to DDOS GitHub
 
+permissions:
+  contents: read
+
 jobs:
   stale:
+    permissions:
+      issues: write # required for closing stale issues
+      pull-requests: write # required for closing stale pull requests
     runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ github.token }}

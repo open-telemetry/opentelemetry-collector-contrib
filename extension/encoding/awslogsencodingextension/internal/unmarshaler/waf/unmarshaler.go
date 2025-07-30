@@ -5,31 +5,26 @@ package waf // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	gojson "github.com/goccy/go-json"
-	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.28.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 type wafLogUnmarshaler struct {
 	buildInfo component.BuildInfo
-	gzipPool  sync.Pool
 }
 
-var _ plog.Unmarshaler = (*wafLogUnmarshaler)(nil)
-
-func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
+func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
 	return &wafLogUnmarshaler{
 		buildInfo: buildInfo,
 	}
@@ -65,29 +60,7 @@ type wafLog struct {
 	Ja4Fingerprint   string `json:"ja4Fingerprint"`
 }
 
-func (w *wafLogUnmarshaler) UnmarshalLogs(content []byte) (plog.Logs, error) {
-	var errGzipReader error
-	gzipReader, ok := w.gzipPool.Get().(*gzip.Reader)
-	if !ok {
-		gzipReader, errGzipReader = gzip.NewReader(bytes.NewReader(content))
-	} else {
-		errGzipReader = gzipReader.Reset(bytes.NewReader(content))
-	}
-	if errGzipReader != nil {
-		if gzipReader != nil {
-			w.gzipPool.Put(gzipReader)
-		}
-		return plog.Logs{}, fmt.Errorf("failed to decompress content: %w", errGzipReader)
-	}
-	defer func() {
-		_ = gzipReader.Close()
-		w.gzipPool.Put(gzipReader)
-	}()
-
-	return w.unmarshalWAFLogs(gzipReader)
-}
-
-func (w *wafLogUnmarshaler) unmarshalWAFLogs(reader io.Reader) (plog.Logs, error) {
+func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
@@ -165,7 +138,7 @@ func setResourceAttributes(resourceLogs plog.ResourceLogs, webACLID string) erro
 	return nil
 }
 
-func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
+func (*wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 	// timestamp is in milliseconds, so we need to convert it to ns first
 	nanos := log.Timestamp * 1_000_000
 	ts := pcommon.Timestamp(nanos)
@@ -187,7 +160,7 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 		record.Attributes().PutInt(string(conventions.HTTPResponseStatusCodeKey), *log.ResponseCodeSent)
 	}
 
-	putStr := func(name string, value string) {
+	putStr := func(name, value string) {
 		if value != "" {
 			record.Attributes().PutStr(name, value)
 		}

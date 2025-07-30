@@ -229,4 +229,48 @@ func TestPartitionKeyInputsUniqueKey(t *testing.T) {
 		assert.False(t, ok, "Must not have repeated partition key %q", uv)
 		seen[uv] = struct{}{}
 	}
+
+	// This test is to validate that the UUIDv7 unique key
+	// is generated correctly, is unique, and is ordered by time.
+	seen = make(map[string]struct{})
+	lastKey := ""
+	for i := 0; i < 500; i++ {
+		uv := (&PartitionKeyBuilder{UniqueKeyFunc: GenerateUUIDv7}).uniqueKey()
+		_, ok := seen[uv]
+		assert.False(t, ok, "Must not have repeated partition key %q", uv)
+		seen[uv] = struct{}{}
+
+		assert.Greater(t, uv, lastKey, "Must be greater than the last key %q", lastKey)
+		lastKey = uv
+	}
+
+	for _, tc := range []struct {
+		name   string
+		inputs *PartitionKeyBuilder
+		match  string
+	}{
+		{
+			name: "default unique key",
+			inputs: &PartitionKeyBuilder{
+				FilePrefix: "collector-capture-",
+				FileFormat: "metrics",
+			},
+			match: "collector-capture-_[0-9]+.metrics",
+		},
+		{
+			name: "uuidv7 key",
+			inputs: &PartitionKeyBuilder{
+				FilePrefix:    "collector-capture-",
+				FileFormat:    "metrics",
+				UniqueKeyFunc: GenerateUUIDv7,
+			},
+			match: "collector-capture-_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.metrics",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Regexp(t, tc.match, tc.inputs.fileName(), "Must match the expected regex pattern")
+		})
+	}
 }

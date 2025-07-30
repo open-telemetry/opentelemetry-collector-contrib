@@ -97,7 +97,8 @@ func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName
 	defer cursor.Close(ctx)
 
 	var indexStats []bson.M
-	if err = cursor.All(context.Background(), &indexStats); err != nil {
+	err = cursor.All(context.Background(), &indexStats)
+	if err != nil {
 		return nil, err
 	}
 	return indexStats, nil

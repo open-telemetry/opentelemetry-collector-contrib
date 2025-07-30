@@ -101,7 +101,7 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	return metrics
 }
 
-func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
+func createTraceData(resourcesNum, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
@@ -129,11 +129,11 @@ func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
 	return traces
 }
 
-func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs {
+func createLogData(numResources, numLibraries, numRecords int) plog.Logs {
 	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
-func repeat(what int, times int) []int {
+func repeat(what, times int) []int {
 	result := make([]int, times)
 	for i := range result {
 		result[i] = what
@@ -826,7 +826,7 @@ func TestReceiveLogs(t *testing.T) {
 								z.Close()
 								require.NoError(t, err)
 							}
-							if strings.Contains(string(batchBody), fmt.Sprintf(`"%s"`, attrVal.Str())) {
+							if strings.Contains(string(batchBody), fmt.Sprintf(`%q`, attrVal.Str())) {
 								assert.False(t, eventFound, "log event %s found in multiple batches", attrVal.Str())
 								eventFound = true
 								droppedCount--
@@ -1801,7 +1801,7 @@ func Benchmark_pushLogData_compressed_100_200_5M(b *testing.B) {
 	benchPushLogData(b, 100, 200, 5*1024*1024, true)
 }
 
-func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool) {
+func benchPushLogData(b *testing.B, numResources, numRecords int, bufSize uint, compressionEnabled bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
 	config.DisableCompression = !compressionEnabled
@@ -1950,7 +1950,7 @@ func Benchmark_pushMetricData_compressed_100_200_5M_MultiMetric(b *testing.B) {
 	benchPushMetricData(b, 100, 200, 5*1024*1024, true, true)
 }
 
-func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool, useMultiMetricFormat bool) {
+func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uint, compressionEnabled, useMultiMetricFormat bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthMetrics = bufSize
 	config.DisableCompression = !compressionEnabled

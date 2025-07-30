@@ -45,15 +45,15 @@ type hostWithCustomCapabilityRegistry struct {
 	extension *mockCustomCapabilityRegistry
 }
 
-func (h hostWithCustomCapabilityRegistry) Start(context.Context, component.Host) error {
+func (hostWithCustomCapabilityRegistry) Start(context.Context, component.Host) error {
 	panic("unsupported")
 }
 
-func (h hostWithCustomCapabilityRegistry) Shutdown(context.Context) error {
+func (hostWithCustomCapabilityRegistry) Shutdown(context.Context) error {
 	panic("unsupported")
 }
 
-func (h hostWithCustomCapabilityRegistry) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (hostWithCustomCapabilityRegistry) GetFactory(component.Kind, component.Type) component.Factory {
 	panic("unsupported")
 }
 
@@ -73,7 +73,7 @@ func (m *mockCustomCapabilityRegistry) Register(_ string, _ ...opampcustommessag
 	return m, nil
 }
 
-func (m *mockCustomCapabilityRegistry) Message() <-chan *protobufs.CustomMessage {
+func (*mockCustomCapabilityRegistry) Message() <-chan *protobufs.CustomMessage {
 	panic("unsupported")
 }
 

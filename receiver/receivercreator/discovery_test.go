@@ -26,12 +26,14 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 collection_interval: "20s"
 timeout: "30s"
 username: "username"
-password: "changeme"`
+password: "changeme"
+endpoint: 1.2.3.4:6379`
 	configRedis := `
 collection_interval: "20s"
 timeout: "130s"
 username: "username"
-password: "changeme"`
+password: "changeme"
+endpoint: 1.2.3.4:6379`
 
 	tests := map[string]struct {
 		inputEndpoint    observer.Endpoint
@@ -109,7 +111,7 @@ password: "changeme"`
 			expectedReceiver: receiverTemplate{
 				receiverConfig: receiverConfig{
 					id:     id,
-					config: userConfigMap{"endpoint": "1.2.3.4:6379"},
+					config: userConfigMap{},
 				}, signals: receiverSignals{metrics: true, logs: false, traces: false},
 			},
 			wantError:       false,
@@ -624,7 +626,6 @@ nested_example:
 				"io.opentelemetry.discovery.metrics/config":  configNoEndpoint,
 			}, expectedConf: userConfigMap{
 				"collection_interval": "20s",
-				"endpoint":            "1.1.1.1:8080",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
 				"nested_example":      userConfigMap{"foo": "bar"},

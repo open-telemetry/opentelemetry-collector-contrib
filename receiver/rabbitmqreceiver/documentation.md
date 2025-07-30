@@ -38,9 +38,9 @@ The total number of messages currently in the queue.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` | false |
 
 ### rabbitmq.message.delivered
 

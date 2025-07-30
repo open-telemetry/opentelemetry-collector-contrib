@@ -129,7 +129,7 @@ func (h *headersPerRPC) GetRequestMetadata(
 // RequireTransportSecurity always returns false for this implementation.
 // The header setter is not sending auth data, so it should not require
 // a transport security.
-func (h *headersPerRPC) RequireTransportSecurity() bool {
+func (*headersPerRPC) RequireTransportSecurity() bool {
 	return false
 }
 

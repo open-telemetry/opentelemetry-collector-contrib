@@ -19,10 +19,11 @@ func NewConfig() *Config {
 // NewConfig will return an event log config with default values.
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
-		MaxReads:     100,
-		StartAt:      "end",
-		PollInterval: 1 * time.Second,
+		InputConfig:         helper.NewInputConfig(operatorID, operatorType),
+		MaxReads:            100,
+		StartAt:             "end",
+		PollInterval:        1 * time.Second,
+		IgnoreChannelErrors: false,
 	}
 }
 
@@ -30,6 +31,7 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig       `mapstructure:",squash"`
 	Channel                  string        `mapstructure:"channel"`
+	IgnoreChannelErrors      bool          `mapstructure:"ignore_channel_errors,omitempty"`
 	MaxReads                 int           `mapstructure:"max_reads,omitempty"`
 	StartAt                  string        `mapstructure:"start_at,omitempty"`
 	PollInterval             time.Duration `mapstructure:"poll_interval,omitempty"`

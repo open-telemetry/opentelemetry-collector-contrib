@@ -13,6 +13,8 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -39,9 +41,12 @@ var (
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
 
-	notUsefulLabelsHistogram = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.BucketLabel})
-	notUsefulLabelsSummary   = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.QuantileLabel})
-	notUsefulLabelsOther     = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel})
+	notUsefulLabelsOther = sortString([]string{
+		model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel,
+		model.MetricsPathLabel, model.JobLabel, prometheus.ScopeNameLabelKey, prometheus.ScopeVersionLabelKey, prometheus.ScopeSchemaURLLabelKey,
+	})
+	notUsefulLabelsHistogram = sortString(append(notUsefulLabelsOther, model.BucketLabel))
+	notUsefulLabelsSummary   = sortString(append(notUsefulLabelsOther, model.QuantileLabel))
 )
 
 func sortString(strs []string) []string {
@@ -55,8 +60,6 @@ func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
 		return notUsefulLabelsHistogram
 	case pmetric.MetricTypeSummary:
 		return notUsefulLabelsSummary
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
-		fallthrough
 	default:
 		return notUsefulLabelsOther
 	}
@@ -85,8 +88,6 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 		if val == "" {
 			return 0, errEmptyQuantileLabel
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
-		fallthrough
 	default:
 		return 0, errNoBoundaryLabel
 	}
@@ -113,8 +114,6 @@ func convToMetricType(metricType model.MetricType) (pmetric.MetricType, bool) {
 		return pmetric.MetricTypeSummary, true
 	case model.MetricTypeInfo, model.MetricTypeStateset:
 		return pmetric.MetricTypeSum, false
-	case model.MetricTypeGaugeHistogram:
-		fallthrough
 	default:
 		// including: model.MetricTypeGaugeHistogram
 		return pmetric.MetricTypeEmpty, false

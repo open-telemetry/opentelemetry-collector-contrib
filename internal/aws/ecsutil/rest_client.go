@@ -25,7 +25,7 @@ type nopHost struct {
 	component.Host
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return map[component.ID]component.Component{}
 }
 

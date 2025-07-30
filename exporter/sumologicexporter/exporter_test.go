@@ -15,8 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -81,7 +83,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	})
 
 	cfg.Endpoint = testServer.URL
-	cfg.Auth = nil
+	cfg.Auth = configoptional.None[configauth.Config]()
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -498,7 +500,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		config := createDefaultConfig().(*Config)
 		config.MetricFormat = PrometheusFormat
 		config.LogFormat = TextFormat
-		config.Auth = nil
+		config.Auth = configoptional.None[configauth.Config]()
 		config.Compression = configcompression.TypeGzip
 		return config
 	}

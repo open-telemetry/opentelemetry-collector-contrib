@@ -72,3 +72,57 @@ func TestExtension(t *testing.T) {
 	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
+
+func TestExtension_WithDelay(t *testing.T) {
+	config := &Config{
+		LeaseName:      "foo",
+		LeaseNamespace: "default",
+		LeaseDuration:  15 * time.Second,
+		RenewDuration:  10 * time.Second,
+		RetryPeriod:    2 * time.Second,
+	}
+
+	ctx := context.TODO()
+	fakeClient := fake.NewClientset()
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fakeClient, nil
+	}
+
+	observedZapCore, _ := observer.New(zap.WarnLevel)
+
+	leaderElection := leaderElectionExtension{
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderID: "foo",
+	}
+
+	var onStartLeadingInvoked atomic.Bool
+
+	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
+
+	// Simulate a delay of setting up callbacks after the leader has been elected.
+	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	require.Eventually(t, func() bool {
+		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+		require.NotNil(t, lease.Spec.AcquireTime)
+		require.NotNil(t, lease.Spec.HolderIdentity)
+		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
+		return true
+	}, 10*time.Second, 100*time.Millisecond)
+
+	leaderElection.SetCallBackFuncs(
+		func(_ context.Context) {
+			onStartLeadingInvoked.Store(true)
+			fmt.Printf("%v: LeaderElection started leading\n", time.Now().String())
+		},
+		func() {
+			fmt.Printf("%v: LeaderElection stopped leading\n", time.Now().String())
+		},
+	)
+
+	require.True(t, onStartLeadingInvoked.Load())
+	require.NoError(t, leaderElection.Shutdown(ctx))
+}

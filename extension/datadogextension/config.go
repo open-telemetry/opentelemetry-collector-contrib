@@ -4,6 +4,7 @@
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -38,6 +39,9 @@ func (c *Config) Validate() error {
 	invalidAPIKeyChars := datadogconfig.NonHexRegex.FindAllString(string(c.API.Key), -1)
 	if len(invalidAPIKeyChars) > 0 {
 		return fmt.Errorf("%w: invalid characters: %s", datadogconfig.ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
+	}
+	if c.HTTPConfig == nil {
+		return errors.New("http config is required")
 	}
 	return nil
 }

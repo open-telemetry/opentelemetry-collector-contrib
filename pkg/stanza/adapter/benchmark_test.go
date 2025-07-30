@@ -111,11 +111,11 @@ type BenchConfig struct {
 }
 type BenchReceiverType struct{}
 
-func (f BenchReceiverType) Type() component.Type {
+func (BenchReceiverType) Type() component.Type {
 	return benchType
 }
 
-func (f BenchReceiverType) CreateDefaultConfig() component.Config {
+func (BenchReceiverType) CreateDefaultConfig() component.Config {
 	return &BenchConfig{
 		BaseConfig: BaseConfig{
 			Operators: []operator.Config{},
@@ -124,11 +124,11 @@ func (f BenchReceiverType) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (f BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
+func (BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*BenchConfig).BaseConfig
 }
 
-func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(cfg.(*BenchConfig))
 }
 

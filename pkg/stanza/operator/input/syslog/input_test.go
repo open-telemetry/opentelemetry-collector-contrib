@@ -148,7 +148,7 @@ func TestInput(t *testing.T) {
 	})
 }
 
-func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
+func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc, attr map[string]any) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)

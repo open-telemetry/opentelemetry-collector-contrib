@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
@@ -58,6 +60,8 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
+		cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
 		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
@@ -68,6 +72,7 @@ func TestScrape(t *testing.T) {
 			statementEventsFile:         "statement_events",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
+			querySamplesFile:            "query_samples",
 		}
 
 		scraper.renameCommands = true
@@ -79,8 +84,19 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
+		actualLogs, err := scraper.scrapeLog(context.Background())
+		require.NoError(t, err)
+		expectedLogFile := filepath.Join("testdata", "scraper", "expectedLogs.yaml")
+		// Uncomment this to regenerate the expected logs file
+		// golden.WriteLogs(t, expectedLogFile, actualLogs)
+		expectedLogs, err := golden.ReadLogs(expectedLogFile)
+		require.NoError(t, err)
+
+		require.NoError(t, plogtest.CompareLogs(actualLogs, expectedLogs,
+			plogtest.IgnoreTimestamp()))
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {
@@ -114,7 +130,7 @@ func TestScrape(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp()))
 
@@ -152,7 +168,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
@@ -167,6 +183,7 @@ type mockClient struct {
 	statementEventsFile         string
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
+	querySamplesFile            string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -185,11 +202,11 @@ func readFile(fname string) (map[string]string, error) {
 	return stats, nil
 }
 
-func (c *mockClient) Connect() error {
+func (*mockClient) Connect() error {
 	return nil
 }
 
-func (c *mockClient) getVersion() (*version.Version, error) {
+func (*mockClient) getVersion() (*version.Version, error) {
 	version, _ := version.NewVersion("8.0.27")
 	return version, nil
 }
@@ -202,8 +219,8 @@ func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
 }
 
-func (c *mockClient) getTableStats() ([]TableStats, error) {
-	var stats []TableStats
+func (c *mockClient) getTableStats() ([]tableStats, error) {
+	var stats []tableStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableStatsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -212,7 +229,7 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s TableStats
+		var s tableStats
 		text := strings.Split(scanner.Text(), "\t")
 		s.schema = text[0]
 		s.name = text[1]
@@ -226,8 +243,8 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
-	var stats []TableIoWaitsStats
+func (c *mockClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
+	var stats []tableIoWaitsStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableIoWaitsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -236,7 +253,7 @@ func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s TableIoWaitsStats
+		var s tableIoWaitsStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -255,8 +272,8 @@ func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
-	var stats []IndexIoWaitsStats
+func (c *mockClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
+	var stats []indexIoWaitsStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.indexIoWaitsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -265,7 +282,7 @@ func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s IndexIoWaitsStats
+		var s indexIoWaitsStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -285,8 +302,8 @@ func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
-	var stats []StatementEventStats
+func (c *mockClient) getStatementEventsStats() ([]statementEventStats, error) {
+	var stats []statementEventStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.statementEventsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -295,7 +312,7 @@ func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s StatementEventStats
+		var s statementEventStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -359,8 +376,8 @@ func (c *mockClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, er
 	return stats, nil
 }
 
-func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
-	var stats []ReplicaStatusStats
+func (c *mockClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
+	var stats []replicaStatusStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.replicaStatusFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -369,7 +386,7 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s ReplicaStatusStats
+		var s replicaStatusStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.replicaIOState = text[0]
@@ -440,6 +457,38 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) Close() error {
+// Generate a function for getQuerySamples to read data from a static file
+func (c *mockClient) getQuerySamples(uint64) ([]querySample, error) {
+	var samples []querySample
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.querySamplesFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s querySample
+		text := strings.Split(scanner.Text(), "\t")
+
+		s.threadID, _ = parseInt(text[0])
+		s.processlistUser = text[1]
+		s.processlistHost = text[2]
+		s.processlistDB = text[3]
+		s.processlistCommand = text[4]
+		s.processlistState = text[5]
+		s.sqlText = text[6]
+		s.digest = text[7]
+		s.eventID, _ = parseInt(text[8])
+		s.waitEvent = text[9]
+		s.waitTime, _ = strconv.ParseFloat(text[10], 64)
+
+		samples = append(samples, s)
+	}
+
+	return samples, nil
+}
+
+func (*mockClient) Close() error {
 	return nil
 }

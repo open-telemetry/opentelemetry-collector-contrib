@@ -41,6 +41,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewBase64DecodeFactory[K](),
 		NewDecodeFactory[K](),
 		NewConcatFactory[K](),
+		NewContainsValueFactory[K](),
 		NewConvertCaseFactory[K](),
 		NewConvertAttributesToElementsXMLFactory[K](),
 		NewConvertTextToElementsXMLFactory[K](),
@@ -112,6 +113,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
 		NewURLFactory[K](),
+		NewValuesFactory[K](),
 		NewWeekdayFactory[K](),
 		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
@@ -119,5 +121,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewHexFactory[K](),
 		NewSliceToMapFactory[K](),
 		NewProfileIDFactory[K](),
+		NewParseIntFactory[K](),
+		NewKeysFactory[K](),
 	}
 }

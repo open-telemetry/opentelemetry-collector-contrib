@@ -17,7 +17,7 @@ func TestParseConnectionString(t *testing.T) {
 		name      string
 		envValue  string
 		config    *Config
-		want      *ConnectionVars
+		want      *connectionVars
 		wantError bool
 	}{
 		{
@@ -26,7 +26,7 @@ func TestParseConnectionString(t *testing.T) {
 				ConnectionString:   "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
 				InstrumentationKey: "00000000-0000-0000-0000-00000000IKEY",
 			},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
@@ -37,7 +37,7 @@ func TestParseConnectionString(t *testing.T) {
 			config: &Config{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 			},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 				IngestionURL:       DefaultIngestionEndpoint + "v2.1/track",
 			},
@@ -48,7 +48,7 @@ func TestParseConnectionString(t *testing.T) {
 			config: &Config{
 				ConnectionString: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
 			},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
@@ -92,7 +92,7 @@ func TestParseConnectionString(t *testing.T) {
 			config: &Config{
 				ConnectionString: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/;ExtraParam=extra",
 			},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
@@ -103,7 +103,7 @@ func TestParseConnectionString(t *testing.T) {
 			config: &Config{
 				ConnectionString: "InstrumentationKey = 00000000-0000-0000-0000-000000000000 ; IngestionEndpoint = https://ingestion.azuremonitor.com/",
 			},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
@@ -121,7 +121,7 @@ func TestParseConnectionString(t *testing.T) {
 			name:     "Environment variable only",
 			envValue: "InstrumentationKey=00000000-0000-0000-0000-00000000ENV;IngestionEndpoint=https://ingestion.env.azuremonitor.com/",
 			config:   &Config{},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-00000000ENV",
 				IngestionURL:       "https://ingestion.env.azuremonitor.com/v2.1/track",
 			},
@@ -134,7 +134,7 @@ func TestParseConnectionString(t *testing.T) {
 				ConnectionString:   "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
 				InstrumentationKey: "00000000-0000-0000-0000-00000000IKEY",
 			},
-			want: &ConnectionVars{
+			want: &connectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-00000000ENV",
 				IngestionURL:       "https://ingestion.override.azuremonitor.com/v2.1/track",
 			},

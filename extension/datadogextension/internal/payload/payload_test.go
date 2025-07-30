@@ -139,7 +139,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	site := "datadoghq.com"
 
 	// Prepare base metadata
-	metadata := PrepareOtelCollectorPayload(
+	metadata := PrepareOtelCollectorMetadata(
 		hostname,
 		hostnameSource,
 		extensionUUID,

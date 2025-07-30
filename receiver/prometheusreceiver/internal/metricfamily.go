@@ -419,8 +419,6 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 		} else {
 			mg.value = v
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
-		fallthrough
 	default:
 		mg.value = v
 	}
@@ -518,8 +516,6 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		}
 		pointCount = hdpL.Len()
 
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
-		fallthrough
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
@@ -580,7 +576,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 2. If len(src) = len(dst) -> copy src to dst as it is
 3. If len(src) < len(dst) -> prepend required 0s and then add src to dst. Example -> src = []byte{0xab, 0xcd}, dst = [8]byte, result dst = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd}
 */
-func decodeAndCopyToLowerBytes(dst []byte, src []byte) error {
+func decodeAndCopyToLowerBytes(dst, src []byte) error {
 	var err error
 	decodedLen := hex.DecodedLen(len(src))
 	if decodedLen >= len(dst) {

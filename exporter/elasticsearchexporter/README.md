@@ -323,13 +323,14 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 #### Bulk indexing error response
 
-With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error) is supported.
-This configuration allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
+With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error)
+allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
+In the exporter, the equivalent configuration is also named `include_source_on_error`.
 
-In this exporter, the equivalent configuration is also named `include_source_on_error`. The valid values are:
-- `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
-- `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
-- `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
+- `include_source_on_error`:
+  - `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
+  - `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
+  - `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
 
 ### Elasticsearch node discovery
 
@@ -355,6 +356,14 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input_rate_limit` (default="1s"): Rate limiting of logs emitted by `log_failed_docs_input` config, e.g. "1s" means roughly 1 log line per second. A zero or negative value disables rate limiting.
+
+### Metadata keys
+
+Metadata keys are a list of client metadata keys that the exporter currently uses to enrich internal telemetry.
+
+⚠️ This is experimental and may change at any time.
+
+- `metadata_keys` (optional): List of metadata keys that will be added to the exporter's telemetry if defined. The config only applies when batcher is used (set to `true` or `false`). The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case.
 
 ## Exporting metrics
 

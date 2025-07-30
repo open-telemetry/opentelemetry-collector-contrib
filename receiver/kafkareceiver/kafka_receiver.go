@@ -25,13 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-const (
-	transport = "kafka"
-	// TODO: update the following attributes to reflect semconv
-	attrInstanceName = "name"
-	attrTopic        = "topic"
-	attrPartition    = "partition"
-)
+const transport = "kafka"
 
 type consumeMessageFunc func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error
 
@@ -79,7 +73,6 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
-				[]metric.AddOption{metric.WithAttributeSet(attrs)},
 				&logsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -90,7 +83,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 			)
 		}, nil
 	}
-	return newSaramaConsumer(config, set, []string{config.Logs.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, []string{config.Logs.Topic}, newConsumeMessageFunc)
 }
 
 func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -104,7 +97,6 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
-				[]metric.AddOption{metric.WithAttributeSet(attrs)},
 				&metricsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -115,7 +107,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 			)
 		}, nil
 	}
-	return newSaramaConsumer(config, set, []string{config.Metrics.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, []string{config.Metrics.Topic}, newConsumeMessageFunc)
 }
 
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
@@ -129,7 +121,6 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
-				[]metric.AddOption{metric.WithAttributeSet(attrs)},
 				&tracesHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -140,7 +131,22 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 			)
 		}, nil
 	}
-	return newSaramaConsumer(config, set, []string{config.Traces.Topic}, consumeFn)
+	return newReceiver(config, set, []string{config.Traces.Topic}, consumeFn)
+}
+
+func newReceiver(
+	config *Config,
+	set receiver.Settings,
+	topics []string,
+	consumeFn func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error),
+) (component.Component, error) {
+	if franzGoConsumerFeatureGate.IsEnabled() {
+		return newFranzKafkaConsumer(config, set, topics, consumeFn)
+	}
+	return newSaramaConsumer(config, set, topics, consumeFn)
 }
 
 type logsHandler struct {
@@ -170,7 +176,7 @@ func (h *logsHandler) endObsReport(ctx context.Context, n int, err error) {
 	h.obsrecv.EndLogsOp(ctx, h.encoding, n, err)
 }
 
-func (h *logsHandler) getResources(data plog.Logs) iter.Seq[pcommon.Resource] {
+func (*logsHandler) getResources(data plog.Logs) iter.Seq[pcommon.Resource] {
 	return func(yield func(pcommon.Resource) bool) {
 		for _, rm := range data.ResourceLogs().All() {
 			if !yield(rm.Resource()) {
@@ -180,7 +186,7 @@ func (h *logsHandler) getResources(data plog.Logs) iter.Seq[pcommon.Resource] {
 	}
 }
 
-func (h *logsHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+func (*logsHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
 	return telBldr.KafkaReceiverUnmarshalFailedLogRecords
 }
 
@@ -211,7 +217,7 @@ func (h *metricsHandler) endObsReport(ctx context.Context, n int, err error) {
 	h.obsrecv.EndMetricsOp(ctx, h.encoding, n, err)
 }
 
-func (h *metricsHandler) getResources(data pmetric.Metrics) iter.Seq[pcommon.Resource] {
+func (*metricsHandler) getResources(data pmetric.Metrics) iter.Seq[pcommon.Resource] {
 	return func(yield func(pcommon.Resource) bool) {
 		for _, rm := range data.ResourceMetrics().All() {
 			if !yield(rm.Resource()) {
@@ -221,7 +227,7 @@ func (h *metricsHandler) getResources(data pmetric.Metrics) iter.Seq[pcommon.Res
 	}
 }
 
-func (h *metricsHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+func (*metricsHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
 	return telBldr.KafkaReceiverUnmarshalFailedMetricPoints
 }
 
@@ -252,7 +258,7 @@ func (h *tracesHandler) endObsReport(ctx context.Context, n int, err error) {
 	h.obsrecv.EndTracesOp(ctx, h.encoding, n, err)
 }
 
-func (h *tracesHandler) getResources(data ptrace.Traces) iter.Seq[pcommon.Resource] {
+func (*tracesHandler) getResources(data ptrace.Traces) iter.Seq[pcommon.Resource] {
 	return func(yield func(pcommon.Resource) bool) {
 		for _, rm := range data.ResourceSpans().All() {
 			if !yield(rm.Resource()) {
@@ -262,7 +268,7 @@ func (h *tracesHandler) getResources(data ptrace.Traces) iter.Seq[pcommon.Resour
 	}
 }
 
-func (h *tracesHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+func (*tracesHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
 	return telBldr.KafkaReceiverUnmarshalFailedSpans
 }
 
@@ -273,28 +279,25 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 	config *Config,
 	logger *zap.Logger,
 	telBldr *metadata.TelemetryBuilder,
-	metricAddOpts []metric.AddOption,
 	handler messageHandler[T],
 	attrs attribute.Set,
 ) error {
-	logger.Debug("kafka message received",
-		zap.String("value", string(message.value())),
-		zap.Time("timestamp", message.timestamp()),
-		zap.String("topic", message.topic()),
-		zap.Int32("partition", message.partition()),
-		zap.Int64("offset", message.offset()),
-	)
-
-	// Update telemetry metrics
-	telBldr.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
-	telBldr.KafkaReceiverCurrentOffset.Record(ctx, message.offset(), metric.WithAttributeSet(attrs))
+	if logger.Core().Enabled(zap.DebugLevel) {
+		logger.Debug("kafka message received",
+			zap.String("value", string(message.value())),
+			zap.Time("timestamp", message.timestamp()),
+			zap.String("topic", message.topic()),
+			zap.Int32("partition", message.partition()),
+			zap.Int64("offset", message.offset()),
+		)
+	}
 
 	ctx = contextWithHeaders(ctx, message.headers())
 
 	obsCtx := handler.startObsReport(ctx)
 	data, n, err := handler.unmarshalData(message.value())
 	if err != nil {
-		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metricAddOpts...)
+		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metric.WithAttributeSet(attrs))
 		logger.Error("failed to unmarshal message", zap.Error(err))
 		handler.endObsReport(obsCtx, n, err)
 		return err

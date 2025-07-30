@@ -456,6 +456,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
 - [Concat](#concat)
+- [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
 - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
 - [ConvertTextToElementsXML](#converttexttoelementsxml)
@@ -483,6 +484,7 @@ Available Converters:
 - [IsMatch](#ismatch)
 - [IsList](#islist)
 - [IsString](#isstring)
+- [Keys](#keys)
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
@@ -498,6 +500,7 @@ Available Converters:
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
+- [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
@@ -530,6 +533,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [Values](#values)
 - [Weekday](#weekday)
 - [Year](#year)
 
@@ -585,6 +589,23 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
+
+### ContainsValue
+
+`ContainsValue(target, item)`
+
+The `ContainsValue` Converter checks if an item is present in a given slice `target` using OTTL [comparison rules](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/LANGUAGE.md#comparison-rules). It returns `true` if the `item` is found, and `false` otherwise.
+
+`target` is a slice of any type described in the OTTL comparison rules.
+
+`item` is the value to check for in the `target`.
+
+Examples:
+
+- `ContainsValue(attributes["tags"], "staging")`
+- `ContainsValue([1, 2, 3, 4, 5], 3)`
+- `ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`
+- `ContainsValue(["GET", "PUT", "POST"], "GET")`
 
 ### ConvertCase
 
@@ -896,7 +917,7 @@ If either `time` or `format` are nil, an error is returned. The parser used is t
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
@@ -1259,6 +1280,21 @@ Examples:
 
 - `IsString(resource.attributes["maybe a string"])`
 
+### Keys
+
+`Keys(target)`
+
+The `Keys` Converter returns a slice containing all the keys from the given map.
+
+`target` is a `pcommon.Map`. If `target` is another type an error is returned.
+
+The returned type is `pcommon.Slice`.
+
+Examples:
+- 
+- `Keys(resource.attributes)`
+- `Keys({"k1":"v1", "k2": "v2"})`
+
 ### Len
 
 `Len(target)`
@@ -1504,6 +1540,36 @@ Examples:
 
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
+
+### ParseInt
+
+`ParseInt(target, base)`
+
+The `ParseInt` Converter interprets a string `target` in the given `base` (0, 2 to 36) and returns its integer representation.
+
+`target` is the string to be converted. `target` should be a valid integer represented in string format. For example, "1234" is a valid `target` value, but "notANumber" is not. The `target` may begin with a leading sign: "+" or "-".
+
+`base` is an `int64` representing the base of the number in the `target` string. An error occurs if the `base` argument is a negative integer.
+
+If the `base` argument is 0, the true base is implied by the string's prefix following the sign (if present): 2 for "0b", 8 for "0" or "0o", 16 for "0x", and 10 otherwise. When the `base` value is 0, underscore characters are permitted as defined by the Go syntax for [integer literals](https://go.dev/ref/spec#Integer_literals).
+
+Examples of `ParseInt` behavior when `base` is 0: 
+- `ParseInt("0b1111_0000", 0) -> 240`
+- `ParseInt("0b10110", 0) -> 22`
+- `ParseInt("0xFF", 0) -> 255`
+- `ParseInt("-0xFF", 0) -> -255`
+- `ParseInt("-0o123", 0) -> -83`
+
+The return type is `int64`.
+
+For more information, please refer to the documentation for the Go [strconv.ParseInt](https://pkg.go.dev/strconv#ParseInt) function.
+
+Examples:
+
+- `ParseInt("12345", 10)`
+- `ParseInt("0xAA", 0)`
+- `ParseInt("AA", 16)`
+- `ParseInt("-20", 8)`
 
 ### ParseJSON
 
@@ -1918,14 +1984,14 @@ Examples:
 
 ### SliceToMap
 
-`SliceToMap(target, keyPath, Optional[valuePath])`
+`SliceToMap(target, Optional[keyPath], Optional[valuePath])`
 
 The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
 
 - `target`: A list of maps containing the entries to be converted.
-- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
-the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
-to a map entry.
+- `keyPath`: An optional string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+if `keyPath` is provided, it must resolve to a string value, otherwise the converter will not be able to convert the item to a map entry. If `keyPath` isn't provided, the string representation of the index when looping through objects in the slice will be the key for the object in the output map. 
+
 - `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
 `valuePath` is defined, the value of the map entry will be the same as the original slice item.
 
@@ -1955,6 +2021,22 @@ attributes:
       name: foo
       value: 2
     bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(resource.attributes["things"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    "0":
+      name: foo
+      value: 2
+    "1":
       name: bar
       value: 5
 ```
@@ -2119,7 +2201,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
@@ -2357,8 +2439,8 @@ The `UserAgent` Converter parses the string argument trying to match it against 
 
 `value` is a string or a path to a string.  If `value` is not a string an error is returned.
 
-The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
-as defined in semconv v1.25.0.
+The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version`, `user_agent.original`, `os.name`, and `os.version` as defined in semconv v1.34.0. `os.name` and `os.version` are omitted if empty.
+
 
 Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
@@ -2368,13 +2450,23 @@ Examples:
   ```yaml
   "user_agent.name": "curl"
   "user_agent.version": "7.81.0"
-  "user_agent.original": "curl/7.81.0"
+  "user_agent.original": "curl/7.81.0",
+  "os.name": "Other",
   ```
 - `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
   ```yaml
   "user_agent.name": "Firefox"
   "user_agent.version": "126.0"
-  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0"
+  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
+  "os.name": "Linux",
+  ```
+- `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59`
+  ```yaml
+  "user_agent.name": "Edge"
+  "user_agent.version": "91.0.864"
+  "user_agent.original": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59",
+  "os.name": "Windows",
+  "os.version": "10"
   ```
 
 ### URL
@@ -2420,6 +2512,18 @@ results in
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Values
+
+`Values(target)` converts a `pcommon.Map` into a slice containing its values.
+
+`target` is a `pcommon.Map`
+
+The function returns a `pcommon.Slice`. The order of elements in the output `pcommon.Slice` is not guaranteed.
+
+Examples:
+- `Values(resource.attributes)`
+- `Values({"key1": "value1", "key2": 5, "key3": [1,2], "key4": {"b1": "c"}})`
 
 ### Weekday
 

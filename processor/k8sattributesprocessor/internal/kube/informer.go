@@ -181,3 +181,30 @@ func deploymentWatchFuncWithSelectors(client kubernetes.Interface, namespace str
 		return client.AppsV1().Deployments(namespace).Watch(context.Background(), opts)
 	}
 }
+
+func newStatefulSetSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  statefulsetListFuncWithSelectors(client, namespace),
+			WatchFunc: statefulsetWatchFuncWithSelectors(client, namespace),
+		},
+		&apps_v1.StatefulSet{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func statefulsetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.AppsV1().StatefulSets(namespace).List(context.Background(), opts)
+	}
+}
+
+func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.AppsV1().StatefulSets(namespace).Watch(context.Background(), opts)
+	}
+}

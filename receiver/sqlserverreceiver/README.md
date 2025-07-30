@@ -8,7 +8,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsqlserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsqlserver) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sqlserver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sqlserver&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@StefanKurek](https://www.github.com/StefanKurek), [@sincejune](https://www.github.com/sincejune), [@crobert-1](https://www.github.com/crobert-1) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@sincejune](https://www.github.com/sincejune), [@crobert-1](https://www.github.com/crobert-1) \| Seeking more code owners! |
+| Emeritus      | [@StefanKurek](https://www.github.com/StefanKurek) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -22,6 +23,32 @@ are only available when running on Windows.
 Make sure to run the collector as administrator in order to collect all performance counters for metrics. 
 
 ## Configuration
+
+The following is a generic configuration that can be used for the default logs and metrics scraped
+by the SQL Server receiver. A basic explanation on some of the fields has also been provided. For more
+information, please reference the following section.
+
+```yaml
+sqlserver:
+  collection_interval: 10s                     # interval for overall collection
+  instance_name: CustomInstance
+  username: myusername
+  password: mypassword
+  server: sqlserver.address
+  port: 1433
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
+  top_query_collection:                        # this collection exports the most expensive queries as logs
+    lookback_time: 60                          # which time window should we look for the top queries
+    max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
+    top_query_count: 200                       # The maximum number of active queries to report in a single run.
+    collection_interval: 60s                   # collection interval for top query collection specifically
+  query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
+    max_rows_per_query: 100                    # the maximum number of samples to return for one single query.
+```
 
 The following settings are optional:
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
@@ -54,12 +81,9 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
-- `enabled`: (optional, default = `false`): Enable collection of top queries.
-  - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
-- `enabled`: (optional, default = `false`): Enable collection of sample queries.
 Example:
 
 ```yaml
@@ -102,15 +126,23 @@ Top query collection enabled:
         server: 0.0.0.0
         port: 1433
         top_query_collection:
-          enabled: true
           lookback_time: 60
           max_query_sample_count: 1000
           top_query_count: 200
         query_sample_collection:
-          enabled: true
           max_rows_per_query: 1450
-          
 ```
+
+## Feature Gate
+
+A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port` 
+resource attributes, as they are not identified as resources attributes in the semantic conventions.
+To enable it, pass the following argument to the Collector:
+
+```
+--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)

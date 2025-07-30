@@ -169,7 +169,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	fakeClientSet := fake.NewSimpleClientset()
+	fakeClientSet := fake.NewClientset()
 	client := newPodClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NoError(t, client.store.Replace(podArray, ""))
 	client.refresh()

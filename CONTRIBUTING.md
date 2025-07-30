@@ -84,7 +84,7 @@ Pull requests that contain user-facing changes will require a changelog entry. K
 
 Changes that affect the first two groups should be noted in `CHANGELOG.md`. Changes that affect the third or fourth groups should be noted in `CHANGELOG-API.md`.
 
-If a changelog entry is not required, a maintainer or approver will add the `Skip Changelog` label to the pull request.
+If a changelog entry is not required, start your pull request title with `[chore]`, or ask a maintainer or approver will add the `Skip Changelog` label to the pull request.
 
 **Examples**
 

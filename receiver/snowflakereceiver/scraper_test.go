@@ -136,7 +136,7 @@ func (m *mockDB) initMockDB() {
 		{
 			query:   storageMetricsQuery,
 			columns: []string{"storage_bytes", "stage_bytes", "failsafe_bytes"},
-			params:  []driver.Value{1, 2, 3},
+			params:  []driver.Value{1.4, 2.0, 3.67},
 		},
 	}
 

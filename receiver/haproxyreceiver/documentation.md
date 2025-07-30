@@ -102,9 +102,9 @@ Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrs
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status_code | Status code category, 1xx, 2xx, 3xx, 4xx, 5xx or other | Str: ``1xx``, ``2xx``, ``3xx``, ``4xx``, ``5xx``, ``other`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status_code | Status code category, 1xx, 2xx, 3xx, 4xx, 5xx or other | Str: ``1xx``, ``2xx``, ``3xx``, ``4xx``, ``5xx``, ``other`` | false |
 
 ### haproxy.responses.denied
 

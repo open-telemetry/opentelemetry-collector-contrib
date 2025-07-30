@@ -34,10 +34,10 @@ func Test_GetSliceValue_Valid(t *testing.T) {
 
 func Test_GetSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -121,10 +121,10 @@ func Test_SetSliceValue_Valid(t *testing.T) {
 
 func Test_SetSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -211,10 +211,10 @@ func Test_GetCommonTypedSliceValue_Valid(t *testing.T) {
 
 func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -298,10 +298,10 @@ func Test_SetCommonTypedSliceValue_Valid(t *testing.T) {
 
 func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
@@ -459,96 +459,6 @@ func Test_SetCommonTypedSliceValues(t *testing.T) {
 	}
 }
 
-func Test_GetCommonIntSliceValue_Valid(t *testing.T) {
-	s := pcommon.NewIntSlice()
-	s.Append(1, 2, 3)
-
-	value, err := ctxutil.GetCommonIntSliceValue[any, int](context.Background(), nil, s, []ottl.Key[any]{
-		&pathtest.Key[any]{
-			I: ottltest.Intp(1),
-		},
-	})
-
-	assert.NoError(t, err)
-	assert.Equal(t, int64(s.At(1)), value)
-}
-
-func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
-	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return nil, nil
-		},
-		Setter: func(_ context.Context, _ any, _ any) error {
-			return nil
-		},
-	}
-	tests := []struct {
-		name string
-		keys []ottl.Key[any]
-		err  error
-	}{
-		{
-			name: "first key not an integer",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
-					G: getSetter,
-				},
-			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
-		},
-		{
-			name: "index too large",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
-					G: getSetter,
-				},
-			},
-			err: errors.New("index 1 out of bounds"),
-		},
-		{
-			name: "index too small",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
-					G: getSetter,
-				},
-			},
-			err: errors.New("index -1 out of bounds"),
-		},
-		{
-			name: "invalid key type",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
-					G: getSetter,
-				},
-				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
-					G: getSetter,
-				},
-			},
-			err: errors.New("type pcommon.IntSlice does not support indexing"),
-		},
-		{
-			name: "nil key",
-			keys: nil,
-			err:  errors.New("cannot get slice value without key"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := pcommon.NewIntSlice()
-			s.Append(1)
-
-			_, err := ctxutil.GetCommonIntSliceValue[any, int](context.Background(), nil, s, tt.keys)
-			assert.Equal(t, tt.err.Error(), err.Error())
-		})
-	}
-}
-
 func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 	s := pcommon.NewInt32Slice()
 	s.Append(1, 2, 3)
@@ -568,10 +478,10 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 
 func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}

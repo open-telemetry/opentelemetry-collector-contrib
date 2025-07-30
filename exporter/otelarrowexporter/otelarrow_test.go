@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowpbMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowpbMock "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1/mock"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -315,9 +316,9 @@ func TestSendTraces(t *testing.T) {
 		Headers: map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
 		},
-		Auth: &configauth.Config{
+		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
-		},
+		}),
 	}
 	// This test fails w/ Arrow enabled because the function
 	// passed to newTestAuthExtension() below requires it the
@@ -424,6 +425,7 @@ func TestSendTraces(t *testing.T) {
 }
 
 func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
+	t.Skip("Temporarily disabled due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41241")
 	tests := []struct {
 		name               string
 		useTLS             bool
@@ -717,6 +719,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 }
 
 func TestSendTracesOnResourceExhaustion(t *testing.T) {
+	t.Skip("Temporarily disabled due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41241")
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err)
 	rcv, _ := otelArrowTracesReceiverOnGRPCServer(ln, false)
@@ -924,9 +927,9 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		Headers: map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
 		},
-		Auth: &configauth.Config{
+		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
-		},
+		}),
 	}
 	// Arrow client is enabled, but the server doesn't support it.
 	cfg.Arrow.NumStreams = 1

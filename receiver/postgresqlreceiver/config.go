@@ -51,6 +51,7 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	metadata.LogsBuilderConfig     `mapstructure:",squash"`
 	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
 	TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
 }

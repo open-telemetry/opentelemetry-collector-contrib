@@ -190,9 +190,9 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			rateLimitErr := errors.New("rate limit exceeded")
-			exp.EnableRateLimit(rateLimitErr)
-			exp.EnableRateLimit(rateLimitErr)
+			// Add two rate limit errors
+			exp.EnableRateLimit()
+			exp.EnableRateLimit()
 
 			profiles := pprofile.NewProfiles()
 			resourceProfiles := profiles.ResourceProfiles()
@@ -314,7 +314,6 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 					var id [16]byte
 					binary.LittleEndian.PutUint64(id[:8], uint64(j))
 					profile.SetProfileID(id)
-					profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 					profile.SetDuration(1000000000) // 1 second in nanoseconds
 				}
 				_ = exp.pushProfiles(context.Background(), profiles)
@@ -360,11 +359,11 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 
 	profile1 := scopeProfiles.Profiles().AppendEmpty()
 	var id1 [16]byte
-	copy(id1[:], []byte("profile1-unique"))
+	copy(id1[:], "profile1-unique")
 	profile1.SetProfileID(id1)
 	profile2 := scopeProfiles.Profiles().AppendEmpty()
 	var id2 [16]byte
-	copy(id2[:], []byte("profile2-unique"))
+	copy(id2[:], "profile2-unique")
 	profile2.SetProfileID(id2)
 
 	partialSuccess := pprofileotlp.NewExportPartialSuccess()
@@ -435,7 +434,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		}
 
@@ -451,9 +449,8 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		rateLimitErr := errors.New("rate limit exceeded")
 		for i := 0; i < 5; i++ {
-			exp.EnableRateLimit(rateLimitErr)
+			exp.EnableRateLimit()
 		}
 
 		profiles := pprofile.NewProfiles()
@@ -467,7 +464,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		}
 
@@ -483,7 +479,24 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 
 	t.Run("Rate limit reset", func(t *testing.T) {
 		mockSrv.recvCount = 0
-		time.Sleep(2 * time.Second)
+
+		require.Eventually(t, func() bool {
+			testProfiles := pprofile.NewProfiles()
+			testRp := testProfiles.ResourceProfiles().AppendEmpty()
+			testRp.Resource().Attributes().PutStr("service.name", "test-service")
+			testSp := testRp.ScopeProfiles().AppendEmpty()
+			testProfile := testSp.Profiles().AppendEmpty()
+			var testID [16]byte
+			binary.LittleEndian.PutUint64(testID[:8], uint64(0))
+			testProfile.SetProfileID(testID)
+
+			errPush := exp.pushProfiles(context.Background(), testProfiles)
+			return errPush == nil
+		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
+
+		// It's 1 because the last push is successful
+		require.Equal(t, 1, mockSrv.recvCount)
+		mockSrv.recvCount = 0
 
 		profiles := pprofile.NewProfiles()
 		rp := profiles.ResourceProfiles().AppendEmpty()
@@ -496,7 +509,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		}
 
@@ -507,5 +519,139 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, profileCount, mockSrv.recvCount, "Expected to receive exactly %d profiles after rate limit reset", profileCount)
 		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+}
+
+func TestProfilesExporter_RateLimitErrorCountReset(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpProfilesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Profiles: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	for i := 0; i < 5; i++ {
+		exp.EnableRateLimit()
+	}
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+
+	profiles := pprofile.NewProfiles()
+	resourceProfiles := profiles.ResourceProfiles().AppendEmpty()
+	resource := resourceProfiles.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+	scopeProfiles := resourceProfiles.ScopeProfiles().AppendEmpty()
+	profile := scopeProfiles.Profiles().AppendEmpty()
+	var id [16]byte
+	binary.LittleEndian.PutUint64(id[:8], uint64(1))
+	profile.SetProfileID(id)
+	profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+
+	err = exp.pushProfiles(context.Background(), profiles)
+	assert.Error(t, err)
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+	assert.Equal(t, 0, srv.recvCount)
+
+	require.Eventually(t, func() bool {
+		err = exp.pushProfiles(context.Background(), profiles)
+		return err == nil &&
+			exp.rateError.errorCount.Load() == 0 &&
+			srv.recvCount > 0
+	}, 3*time.Second, 100*time.Millisecond)
+}
+
+func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpProfilesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Profiles: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	createTestProfiles := func() pprofile.Profiles {
+		profiles := pprofile.NewProfiles()
+		resourceProfiles := profiles.ResourceProfiles().AppendEmpty()
+		resource := resourceProfiles.Resource()
+		resource.Attributes().PutStr("service.name", "test-service")
+		scopeProfiles := resourceProfiles.ScopeProfiles().AppendEmpty()
+		profile := scopeProfiles.Profiles().AppendEmpty()
+		var id [16]byte
+		binary.LittleEndian.PutUint64(id[:8], uint64(1))
+		profile.SetProfileID(id)
+		profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		return profiles
+	}
+
+	t.Run("Initial successful push", func(t *testing.T) {
+		profiles := createTestProfiles()
+		err = exp.pushProfiles(context.Background(), profiles)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 1, srv.recvCount)
+	})
+
+	t.Run("Trigger errors below threshold", func(t *testing.T) {
+		for i := 0; i < 4; i++ {
+			exp.EnableRateLimit()
+		}
+		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
+		assert.False(t, exp.rateError.isRateLimited(), "Should not be rate limited yet")
+	})
+
+	t.Run("Successful push after errors", func(t *testing.T) {
+		profiles := createTestProfiles()
+		err = exp.pushProfiles(context.Background(), profiles)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 2, srv.recvCount)
+	})
+
+	t.Run("Verify error count stays at 0", func(t *testing.T) {
+		profiles := createTestProfiles()
+		err = exp.pushProfiles(context.Background(), profiles)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 3, srv.recvCount)
 	})
 }

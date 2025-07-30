@@ -187,7 +187,7 @@ type testRoundTripper struct {
 	testString string
 }
 
-func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (*testRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 
@@ -302,7 +302,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.ErrorContains(t, err, serverURL.String())
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	baseRoundTripper := (http.RoundTripper)(transport)
+	baseRoundTripper := http.RoundTripper(transport)
 	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 	require.NoError(t, err)
 
@@ -310,7 +310,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		Transport: roundTripper,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", http.NoBody)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
