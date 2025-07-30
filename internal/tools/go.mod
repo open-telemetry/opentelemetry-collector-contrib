@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.13.6
+	github.com/daixiang0/gci v0.13.7
 	github.com/golangci/golangci-lint/v2 v2.1.6
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
