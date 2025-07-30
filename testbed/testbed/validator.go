@@ -47,7 +47,7 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 	}
 }
 
-func (v *LogPresentValidator) RecordResults(tc *TestCase) {
+func (*LogPresentValidator) RecordResults(tc *TestCase) {
 	var result string
 	if tc.t.Failed() {
 		result = "FAIL"
@@ -71,7 +71,7 @@ type PerfTestValidator struct {
 	IncludeLimitsInReport bool
 }
 
-func (v *PerfTestValidator) Validate(tc *TestCase) {
+func (*PerfTestValidator) Validate(tc *TestCase) {
 	if assert.Equal(tc.t,
 		int64(tc.LoadGenerator.DataItemsSent()),
 		int64(tc.MockBackend.DataItemsReceived()),
@@ -121,7 +121,7 @@ type CorrectnessTestValidator struct {
 	ignoreSpanLinksAttrs bool
 }
 
-func NewCorrectTestValidator(senderName string, receiverName string, provider DataProvider) *CorrectnessTestValidator {
+func NewCorrectTestValidator(senderName, receiverName string, provider DataProvider) *CorrectnessTestValidator {
 	// TODO: Fix Jaeger span links attributes and tracestate.
 	return &CorrectnessTestValidator{
 		dataProvider:         provider,
@@ -186,7 +186,7 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpan(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpan(sentSpan, recdSpan ptrace.Span) {
 	v.diffSpanTraceID(sentSpan, recdSpan)
 	v.diffSpanSpanID(sentSpan, recdSpan)
 	v.diffSpanTraceState(sentSpan, recdSpan)
@@ -200,7 +200,7 @@ func (v *CorrectnessTestValidator) diffSpan(sentSpan ptrace.Span, recdSpan ptrac
 	v.diffSpanStatus(sentSpan, recdSpan)
 }
 
-func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.TraceID() != recdSpan.TraceID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -213,7 +213,7 @@ func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan ptrace.Span, recdSpa
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.SpanID() != recdSpan.SpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -226,7 +226,7 @@ func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan ptrace.Span, recdSpan
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.TraceState().AsRaw() != recdSpan.TraceState().AsRaw() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -239,7 +239,7 @@ func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan ptrace.Span, recd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.ParentSpanID() != recdSpan.ParentSpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -252,7 +252,7 @@ func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan ptrace.Span, re
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanName(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanName(sentSpan, recdSpan ptrace.Span) {
 	// Because of https://github.com/openzipkin/zipkin-go/pull/166 compare lower cases.
 	if !strings.EqualFold(sentSpan.Name(), recdSpan.Name()) {
 		af := &TraceAssertionFailure{
@@ -266,7 +266,7 @@ func (v *CorrectnessTestValidator) diffSpanName(sentSpan ptrace.Span, recdSpan p
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanKind(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanKind(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.Kind() != recdSpan.Kind() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -279,7 +279,7 @@ func (v *CorrectnessTestValidator) diffSpanKind(sentSpan ptrace.Span, recdSpan p
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan, recdSpan ptrace.Span) {
 	if notWithinOneMillisecond(sentSpan.StartTimestamp(), recdSpan.StartTimestamp()) {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -302,7 +302,7 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan ptrace.Span, recd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.Attributes().Len() != recdSpan.Attributes().Len() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -327,7 +327,7 @@ func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan ptrace.Span, recd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.Events().Len() != recdSpan.Events().Len() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -385,7 +385,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan ptrace.Span, recdSpan
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.Links().Len() != recdSpan.Links().Len() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -441,7 +441,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan 
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan, recdSpan ptrace.Span) {
 	if sentSpan.Status().Code() != recdSpan.Status().Code() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -455,7 +455,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan ptrace.Span, recdSpan
 }
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
-	sentAttrs pcommon.Map, recdAttrs pcommon.Map, fmtStr string,
+	sentAttrs, recdAttrs pcommon.Map, fmtStr string,
 ) {
 	for sentKey, sentVal := range sentAttrs.All() {
 		recdVal, ok := recdAttrs.Get(sentKey)
@@ -479,8 +479,8 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	}
 }
 
-func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,
-	fmtStr string, attrKey string,
+func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal, recdVal pcommon.Value,
+	fmtStr, attrKey string,
 ) {
 	if reflect.DeepEqual(sentVal.AsRaw(), recdVal.AsRaw()) {
 		sentStr := sentVal.AsString()
@@ -499,7 +499,7 @@ func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal 
 }
 
 func (v *CorrectnessTestValidator) compareKeyValueList(
-	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string,
+	spanName string, sentVal, recdVal pcommon.Value, fmtStr, attrKey string,
 ) {
 	switch recdVal.Type() {
 	case pcommon.ValueTypeMap:
@@ -543,7 +543,7 @@ func convertLinksSliceToMap(links ptrace.SpanLinkSlice) map[string]ptrace.SpanLi
 	return linkMap
 }
 
-func notWithinOneMillisecond(sentNs pcommon.Timestamp, recdNs pcommon.Timestamp) bool {
+func notWithinOneMillisecond(sentNs, recdNs pcommon.Timestamp) bool {
 	var diff pcommon.Timestamp
 	if sentNs > recdNs {
 		diff = sentNs - recdNs
@@ -617,7 +617,7 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 	}
 }
 
-func (c *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
+func (*CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
 	rc := tc.agentProc.GetTotalConsumption()
 
 	var result string

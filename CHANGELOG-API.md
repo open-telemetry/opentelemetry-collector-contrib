@@ -7,6 +7,48 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `metricstransformprocessor`: Unexport Operation, ValueAction, FilterConfig (#40657)
+- `oidcauthextension`: Unexport ProviderContainer (#41633)
+- `pkg/ottl`: Remove experimental transform context option `WithCache` from OTTL Profile context. (#41277)
+- `tailsamplingprocessor`: Latency config name change from `UpperThresholdmsMs` to `UpperThresholdMs` (#41563)
+- `awskinesisexporter`: Unexport Exporter (#40645)
+- `deltatocumulativeprocessor`: Unexport Processor,CountingSink (#40656)
+- `datasetexporter`: Unexport DatasetExporter, ExporterConfig (#40649)
+
+### 💡 Enhancements 💡
+
+- `oidcauthextension`: Add support for multiple OIDC providers. (#40854)
+  Users can now configure multiple OIDC providers in the OIDC Auth extension. Tokens will
+  be matched to a provider based on the `iss` claim.
+  
+- `pkg/ottl`: Add support for combining `scope` with other OTTL contexts. (#39308)
+  Previously, OTTL paths could only use the `instrumentation_scope` context when combined with 
+  lower-level contexts like `log` or `metric`. This change allows the `scope` context to be 
+  used interchangeably with `instrumentation_scope`, improving flexibility and consistency.
+  
+
+<!-- previous-version -->
+
+## v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `splunkhecexporter`: Update 'batcher' config to use internal deprecated struct instead of the one removed from the core. (#41224)
+- `elasticsearchexporter`: Update 'batcher' config to use internal struct instead of the one removed from the core. (#41225)
+- `sumologicprocessor`: Types that do not contribute to intended API surface will be unexported (#40660)
+  https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40641
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add a `GetOr` function to `ottl.Optional` to return a default value when the optional is empty. (#40243)
+- `metricstarttimeprocessor`: Add the start_time_metric, which sets the start time based on another metric in the batch of metrics. (#38383)
+
+<!-- previous-version -->
+
 ## v0.129.0
 
 ### 🛑 Breaking changes 🛑

@@ -6,13 +6,15 @@ package marshaler // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
-	_ LogsMarshaler    = pdataLogsMarshaler{}
-	_ MetricsMarshaler = pdataMetricsMarshaler{}
-	_ TracesMarshaler  = pdataTracesMarshaler{}
+	_ LogsMarshaler     = pdataLogsMarshaler{}
+	_ MetricsMarshaler  = pdataMetricsMarshaler{}
+	_ TracesMarshaler   = pdataTracesMarshaler{}
+	_ ProfilesMarshaler = pdataProfilesMarshaler{}
 )
 
 type pdataLogsMarshaler struct {
@@ -69,6 +71,26 @@ func NewPdataTracesMarshaler(m ptrace.Marshaler) TracesMarshaler {
 
 func (p pdataTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]Message, error) {
 	bts, err := p.marshaler.MarshalTraces(td)
+	if err != nil {
+		return nil, err
+	}
+	return []Message{{Value: bts}}, nil
+}
+
+type pdataProfilesMarshaler struct {
+	marshaler pprofile.Marshaler
+}
+
+// NewPdataProfilesMarshaler returns a new ProfilesMarshaler that marshals
+// pprofile.Profiles using the given pprofile.Marshaler. This can be used with
+// the standard OTLP marshalers in the pprofile package, or with encoding
+// extensions.
+func NewPdataProfilesMarshaler(m pprofile.Marshaler) ProfilesMarshaler {
+	return pdataProfilesMarshaler{marshaler: m}
+}
+
+func (p pdataProfilesMarshaler) MarshalProfiles(ld pprofile.Profiles) ([]Message, error) {
+	bts, err := p.marshaler.MarshalProfiles(ld)
 	if err != nil {
 		return nil, err
 	}

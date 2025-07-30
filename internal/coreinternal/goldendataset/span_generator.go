@@ -115,8 +115,6 @@ func generateTraceState(tracestate PICTInputTracestate) string {
 		return "lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955"
 	case TraceStateFour:
 		return "err@ck=80ee5638,rate@ck=1.62,rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
-	case TraceStateEmpty:
-		fallthrough
 	default:
 		return ""
 	}
@@ -134,8 +132,6 @@ func lookupSpanKind(kind PICTInputKind) ptrace.SpanKind {
 		return ptrace.SpanKindConsumer
 	case SpanKindInternal:
 		return ptrace.SpanKindInternal
-	case SpanKindUnspecified:
-		fallthrough
 	default:
 		return ptrace.SpanKindUnspecified
 	}
@@ -395,8 +391,6 @@ func calculateListSize(listCnt PICTInputSpanChild) int {
 		return 2
 	case SpanChildCountEight:
 		return 8
-	case SpanChildCountEmpty:
-		fallthrough
 	default:
 		return 0
 	}

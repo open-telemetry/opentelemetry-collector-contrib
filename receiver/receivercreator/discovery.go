@@ -248,7 +248,7 @@ func createLogsConfig(
 	return defaultConfMap
 }
 
-func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
+func getHintAnnotation(annotations map[string]string, hintBase, hintKey, suffix string) (string, bool) {
 	// try to scope the hint more on container level by suffixing
 	// with .<port> in case of Port event or .<container_name> in case of Pod Container event
 	containerLevelHint, ok := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
@@ -261,7 +261,7 @@ func getHintAnnotation(annotations map[string]string, hintBase string, hintKey s
 	return podLevelHint, ok
 }
 
-func discoveryEnabled(annotations map[string]string, hintBase string, scopeSuffix string) bool {
+func discoveryEnabled(annotations map[string]string, hintBase, scopeSuffix string) bool {
 	enabledHint, found := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
 	if !found {
 		return false

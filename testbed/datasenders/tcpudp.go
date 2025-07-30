@@ -28,7 +28,7 @@ type TCPUDPWriter struct {
 
 var _ testbed.LogDataSender = (*TCPUDPWriter)(nil)
 
-func NewTCPUDPWriter(network string, host string, port int, batchSize int) *TCPUDPWriter {
+func NewTCPUDPWriter(network, host string, port, batchSize int) *TCPUDPWriter {
 	f := &TCPUDPWriter{
 		network: network,
 		bufSize: batchSize,
@@ -52,7 +52,7 @@ func (f *TCPUDPWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (f *TCPUDPWriter) Capabilities() consumer.Capabilities {
+func (*TCPUDPWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -90,11 +90,11 @@ func (f *TCPUDPWriter) GenConfigYAMLStr() string {
 func (f *TCPUDPWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1_000_000_000), int64(lr.Timestamp()%1_000_000_000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", traceutil.TraceIDToHexOrEmptyString(lr.TraceID())))
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", traceutil.SpanIDToHexOrEmptyString(lr.SpanID())))
+	sdid.WriteString(fmt.Sprintf("%s=%q ", "trace_id", traceutil.TraceIDToHexOrEmptyString(lr.TraceID())))
+	sdid.WriteString(fmt.Sprintf("%s=%q ", "span_id", traceutil.SpanIDToHexOrEmptyString(lr.SpanID())))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
 	for k, v := range lr.Attributes().All() {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
+		sdid.WriteString(fmt.Sprintf("%s=%q ", k, v.Str()))
 	}
 	msg := fmt.Sprintf("<166> %s 127.0.0.1 - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
 
@@ -118,7 +118,7 @@ func (f *TCPUDPWriter) SendCheck() error {
 	return nil
 }
 
-func (f *TCPUDPWriter) Flush() {
+func (*TCPUDPWriter) Flush() {
 }
 
 func (f *TCPUDPWriter) ProtocolName() string {

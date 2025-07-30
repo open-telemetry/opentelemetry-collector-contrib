@@ -26,7 +26,7 @@ const nanosInASecond = 1e9
 // For more information, please see https://www.bis.doc.gov
 // See also https://www.apache.org/dev/crypto.html and/or seek legal counsel.
 
-func calculateCPUPercent(previous *ctypes.CPUStats, v *ctypes.CPUStats) float64 {
+func calculateCPUPercent(previous, v *ctypes.CPUStats) float64 {
 	var (
 		cpuPercent = 0.0
 		// calculate the change for the cpu usage of the container in between readings
@@ -69,7 +69,7 @@ func calculateMemUsageNoCache(memoryStats *ctypes.MemoryStats) uint64 {
 	return memoryStats.Usage
 }
 
-func calculateMemoryPercent(limit uint64, usedNoCache uint64) float64 {
+func calculateMemoryPercent(limit, usedNoCache uint64) float64 {
 	// MemoryStats.Limit will never be 0 unless the container is not running and we haven't
 	// got any data from cgroup
 	if limit != 0 {

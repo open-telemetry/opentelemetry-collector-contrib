@@ -9,20 +9,25 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
@@ -34,11 +39,13 @@ type transformProcessorFactory struct {
 	metricFunctions                     map[string]ottl.Factory[ottlmetric.TransformContext]
 	spanEventFunctions                  map[string]ottl.Factory[ottlspanevent.TransformContext]
 	spanFunctions                       map[string]ottl.Factory[ottlspan.TransformContext]
+	profileFunctions                    map[string]ottl.Factory[ottlprofile.TransformContext]
 	defaultDataPointFunctionsOverridden bool
 	defaultLogFunctionsOverridden       bool
 	defaultMetricFunctionsOverridden    bool
 	defaultSpanEventFunctionsOverridden bool
 	defaultSpanFunctionsOverridden      bool
+	defaultProfileFunctionsOverridden   bool
 }
 
 // FactoryOption applies changes to transformProcessorFactory.
@@ -104,6 +111,18 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[ottlspan.TransformContext]) 
 	}
 }
 
+// WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
+// Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
+func WithProfileFunctions(profileFunctions []ottl.Factory[ottlprofile.TransformContext]) FactoryOption {
+	return func(factory *transformProcessorFactory) {
+		if !factory.defaultProfileFunctionsOverridden {
+			factory.profileFunctions = map[string]ottl.Factory[ottlprofile.TransformContext]{}
+			factory.defaultProfileFunctionsOverridden = true
+		}
+		factory.profileFunctions = mergeFunctionsToMap(factory.profileFunctions, profileFunctions)
+	}
+}
+
 func NewFactory() processor.Factory {
 	return NewFactoryWithOptions()
 }
@@ -116,17 +135,19 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 		metricFunctions:    defaultMetricFunctionsMap(),
 		spanEventFunctions: defaultSpanEventFunctionsMap(),
 		spanFunctions:      defaultSpanFunctionsMap(),
+		profileFunctions:   defaultProfileFunctionsMap(),
 	}
 	for _, o := range options {
 		o(f)
 	}
 
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		f.createDefaultConfig,
-		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
-		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability),
 	)
 }
 
@@ -136,11 +157,13 @@ func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 		TraceStatements:    []common.ContextStatements{},
 		MetricStatements:   []common.ContextStatements{},
 		LogStatements:      []common.ContextStatements{},
+		ProfileStatements:  []common.ContextStatements{},
 		dataPointFunctions: f.dataPointFunctions,
 		logFunctions:       f.logFunctions,
 		metricFunctions:    f.metricFunctions,
 		spanEventFunctions: f.spanEventFunctions,
 		spanFunctions:      f.spanFunctions,
+		profileFunctions:   f.profileFunctions,
 	}
 }
 
@@ -218,4 +241,29 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 		nextConsumer,
 		proc.ProcessMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func (f *transformProcessorFactory) createProfilesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Profiles,
+) (xprocessor.Profiles, error) {
+	oCfg := cfg.(*Config)
+	oCfg.logger = set.Logger
+
+	if f.defaultProfileFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"transform\" processor", zap.Bool("profile", f.defaultProfileFunctionsOverridden))
+	}
+	proc, err := profiles.NewProcessor(oCfg.ProfileStatements, oCfg.ErrorMode, set.TelemetrySettings, f.profileFunctions)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return xprocessorhelper.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		proc.ProcessProfiles,
+		xprocessorhelper.WithCapabilities(processorCapabilities))
 }

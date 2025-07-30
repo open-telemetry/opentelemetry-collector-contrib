@@ -30,10 +30,6 @@ import (
 	"text/template"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
-
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -45,6 +41,7 @@ import (
 	"github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -53,6 +50,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // getTestModes returns the test modes for the supervisor tests.
@@ -100,7 +98,7 @@ func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
 }
 
 func defaultConnectingHandler(connectionCallbacks types.ConnectionCallbacks) func(request *http.Request) types.ConnectionResponse {
-	return func(_ *http.Request) types.ConnectionResponse {
+	return func(*http.Request) types.ConnectionResponse {
 		return types.ConnectionResponse{
 			Accept:              true,
 			ConnectionCallbacks: connectionCallbacks,
@@ -333,7 +331,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			connected := atomic.Bool{}
 			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
-				OnConnected: func(_ context.Context, _ types.Connection) {
+				OnConnected: func(context.Context, types.Connection) {
 					connected.Store(true)
 				},
 			})
@@ -383,6 +381,56 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 
 				return n != 0
 			}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+		})
+	}
+}
+
+func TestSupervisorStartsCollectorWithNoPipelineConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			connected := atomic.Bool{}
+			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+				OnConnected: func(context.Context, types.Connection) {
+					connected.Store(true)
+				},
+			})
+
+			cfg, _ := createEmptyPipelineCollectorConf(t)
+
+			collectorConfigDir := t.TempDir()
+			cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
+			t.Cleanup(func() { cfgFile.Close() })
+			require.NoError(t, err)
+
+			_, err = cfgFile.Write(cfg.Bytes())
+			require.NoError(t, err)
+
+			storageDir := t.TempDir()
+
+			extraConfigData := map[string]string{
+				"url":          server.addr,
+				"storage_dir":  storageDir,
+				"local_config": cfgFile.Name(),
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			t.Cleanup(s.Shutdown)
+			require.NoError(t, s.Start())
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+			require.True(t, connected.Load(), "Supervisor failed to connect")
+
+			require.EventuallyWithTf(t, func(c *assert.CollectT) {
+				require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+			}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
 		})
 	}
 }
@@ -1249,6 +1297,32 @@ func createSimplePipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte, *os
 	return &confmapBuf, h.Sum(nil), inputFile, outputFile
 }
 
+// Creates a Collector config that contains no pipeline
+func createEmptyPipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "empty_pipeline.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	var confmapBuf bytes.Buffer
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{},
+	)
+	require.NoError(t, err)
+
+	h := sha256.New()
+	if _, err := io.Copy(h, bytes.NewBuffer(confmapBuf.Bytes())); err != nil {
+		log.Fatal(err)
+	}
+
+	return &confmapBuf, h.Sum(nil)
+}
+
 func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
 	colCfg, err := os.ReadFile(path.Join("testdata", "collector", "bad_config.yaml"))
 	require.NoError(t, err)
@@ -1420,10 +1494,10 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		types.ConnectionCallbacks{
-			OnConnected: func(_ context.Context, _ types.Connection) {
+			OnConnected: func(context.Context, types.Connection) {
 				connectedToNewServer.Store(true)
 			},
-			OnMessage: func(_ context.Context, _ types.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
 		})

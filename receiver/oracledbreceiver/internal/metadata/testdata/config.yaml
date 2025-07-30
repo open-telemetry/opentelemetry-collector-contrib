@@ -33,6 +33,8 @@ all_set:
       enabled: true
     oracledb.logical_reads:
       enabled: true
+    oracledb.logons:
+      enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -83,7 +85,14 @@ all_set:
       enabled: true
     oracledb.user_rollbacks:
       enabled: true
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
   resource_attributes:
+    host.name:
+      enabled: true
     oracledb.instance.name:
       enabled: true
 none_set:
@@ -120,6 +129,8 @@ none_set:
       enabled: false
     oracledb.logical_reads:
       enabled: false
+    oracledb.logons:
+      enabled: false
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: false
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -170,18 +181,41 @@ none_set:
       enabled: false
     oracledb.user_rollbacks:
       enabled: false
+  events:
+    db.server.query_sample:
+      enabled: false
+    db.server.top_query:
+      enabled: false
   resource_attributes:
+    host.name:
+      enabled: false
     oracledb.instance.name:
       enabled: false
 filter_set_include:
   resource_attributes:
+    host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     oracledb.instance.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    host.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.name-val"
+      events_exclude:
+        - strict: "host.name-val"
     oracledb.instance.name:
       enabled: true
       metrics_exclude:
+        - strict: "oracledb.instance.name-val"
+      events_exclude:
         - strict: "oracledb.instance.name-val"

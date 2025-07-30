@@ -31,7 +31,9 @@ const (
 	MetadataFromNode = "node"
 	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
 	MetadataFromDeployment = "deployment"
-	PodIdentifierMaxLength = 4
+	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
+	MetadataFromStatefulSet = "statefulset"
+	PodIdentifierMaxLength  = 4
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
@@ -72,7 +74,7 @@ func PodIdentifierAttributeFromConnection(value string) PodIdentifierAttribute {
 }
 
 // PodIdentifierAttributeFromSource builds PodIdentifierAttribute for given resource_attribute name and value
-func PodIdentifierAttributeFromResourceAttribute(key string, value string) PodIdentifierAttribute {
+func PodIdentifierAttributeFromResourceAttribute(key, value string) PodIdentifierAttribute {
 	return PodIdentifierAttributeFromSource(
 		AssociationSource{
 			From: ResourceSource,
@@ -94,6 +96,7 @@ type Client interface {
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
 	GetDeployment(string) (*Deployment, bool)
+	GetStatefulSet(string) (*StatefulSet, bool)
 	Start() error
 	Stop()
 }
@@ -107,16 +110,17 @@ type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface
 
 // Pod represents a kubernetes pod.
 type Pod struct {
-	Name          string
-	Address       string
-	PodUID        string
-	Attributes    map[string]string
-	StartTime     *metav1.Time
-	Ignore        bool
-	Namespace     string
-	NodeName      string
-	DeploymentUID string
-	HostNetwork   bool
+	Name           string
+	Address        string
+	PodUID         string
+	Attributes     map[string]string
+	StartTime      *metav1.Time
+	Ignore         bool
+	Namespace      string
+	NodeName       string
+	DeploymentUID  string
+	StatefulSetUID string
+	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
 	Containers PodContainers
@@ -295,35 +299,42 @@ type FieldExtractionRule struct {
 	//  - namespace
 	//  - node
 	//  - deployment
+	//  - statefulset
 	From string
 }
 
-func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, formatter string) {
 	// By default if the From field is not set for labels and annotations we want to extract them from pod
 	if r.From == MetadataFromPod || r.From == "" {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNamespace {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNodeMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNode {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromDeployment {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, formatter string) {
+	if r.From == MetadataFromStatefulSet {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, formatter string) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
 			if r.KeyRegex.MatchString(k) && v != "" {
@@ -395,6 +406,13 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+}
+
+// StatefulSet represents a kubernetes statefulset.
+type StatefulSet struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
 }
 
 func OtelAnnotations() FieldExtractionRule {

@@ -25,9 +25,6 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 1xx
-                    - key: http.status_code
-                      value:
-                        intValue: "404"
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
@@ -41,9 +38,6 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 2xx
-                    - key: http.status_code
-                      value:
-                        intValue: "404"
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
@@ -57,9 +51,6 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 3xx
-                    - key: http.status_code
-                      value:
-                        intValue: "404"
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
@@ -89,9 +80,6 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 5xx
-                    - key: http.status_code
-                      value:
-                        intValue: "404"
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000

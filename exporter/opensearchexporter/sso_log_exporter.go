@@ -164,7 +164,7 @@ func convertGoTimeFormat(format string) string {
 }
 
 func getIndexName(dataset, namespace, index string) string {
-	if len(index) != 0 {
+	if index != "" {
 		return index
 	}
 

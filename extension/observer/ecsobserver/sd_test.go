@@ -223,7 +223,7 @@ func newTestTaskFetcher(t *testing.T, ecsClient ecsClient, ec2Client ec2Client, 
 		Region:      "not used",
 		ecsOverride: ecsClient,
 		ec2Override: ec2Client,
-		serviceNameFilter: func(_ string) bool {
+		serviceNameFilter: func(string) bool {
 			return true
 		},
 	}

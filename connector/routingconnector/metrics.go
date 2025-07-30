@@ -56,7 +56,7 @@ func newMetricsConnector(
 	}, nil
 }
 
-func (c *metricsConnector) Capabilities() consumer.Capabilities {
+func (*metricsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

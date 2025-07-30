@@ -387,7 +387,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -397,7 +397,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -412,7 +412,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -432,7 +432,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -442,7 +442,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -464,7 +464,7 @@ func (mac *mockAccessLogsClient) GetClusters(ctx context.Context, groupID string
 	return args.Get(0).([]mongodbatlas.Cluster), args.Error(1)
 }
 
-func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
 	args := mac.Called(ctx, groupID, clusterName, opts)
 	return args.Get(0).([]*mongodbatlas.AccessLogs), args.Error(1)
 }

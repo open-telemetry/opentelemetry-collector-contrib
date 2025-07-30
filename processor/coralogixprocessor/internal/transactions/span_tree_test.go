@@ -72,7 +72,7 @@ func TestBuildSpanTreeEmpty(t *testing.T) {
 	assert.Nil(t, root)
 }
 
-func createSpan(name string, spanID pcommon.SpanID, parentSpanID pcommon.SpanID, startTime int64) ptrace.Span {
+func createSpan(name string, spanID, parentSpanID pcommon.SpanID, startTime int64) ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetName(name)
 	span.SetSpanID(spanID)

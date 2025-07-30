@@ -281,7 +281,7 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	// Get related VM compute info
 	crRef = vmRefToComputeRef[vm.Reference().Value]
 	if crRef == nil {
-		return crRef, groupInfo, fmt.Errorf("no ComputeResource ref found for VM: %s", vm.Name)
+		return nil, groupInfo, fmt.Errorf("no ComputeResource ref found for VM: %s", vm.Name)
 	}
 	cr := v.scrapeData.computesByRef[crRef.Value]
 	if cr == nil {

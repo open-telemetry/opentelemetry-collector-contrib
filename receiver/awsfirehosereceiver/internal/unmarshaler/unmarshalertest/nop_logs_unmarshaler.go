@@ -40,6 +40,6 @@ func (u *NopLogsUnmarshaler) UnmarshalLogs([]byte) (plog.Logs, error) {
 }
 
 // Type of the serialized messages.
-func (u *NopLogsUnmarshaler) Type() string {
+func (*NopLogsUnmarshaler) Type() string {
 	return typeStr
 }

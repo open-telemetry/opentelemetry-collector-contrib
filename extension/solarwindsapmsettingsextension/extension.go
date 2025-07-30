@@ -14,7 +14,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/solarwindscloud/apm-proto/go/collectorpb"
+	"github.com/solarwinds/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/extension"
@@ -115,7 +115,7 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 	}
 	switch result := response.GetResult(); result {
 	case collectorpb.ResultCode_OK:
-		if len(response.GetWarning()) > 0 {
+		if response.GetWarning() != "" {
 			extension.telemetrySettings.Logger.Warn("GetSettings succeed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
 		}
 		var settings []map[string]any
@@ -168,7 +168,7 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 			if err := os.WriteFile(filename, content, 0o600); err != nil {
 				extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
 			} else {
-				if len(response.GetWarning()) > 0 {
+				if response.GetWarning() != "" {
 					extension.telemetrySettings.Logger.Warn(filename + " is refreshed (soft disabled)")
 				} else {
 					extension.telemetrySettings.Logger.Info(filename + " is refreshed")

@@ -8,10 +8,10 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
+	"github.com/prometheus/otlptranslator"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
@@ -56,8 +56,9 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	cfg.MetricConfig.InstrumentationLibraryLabels = false
 	cfg.MetricConfig.ServiceResourceLabels = false
 	// Update metric naming to match GMP conventions
+	namer := otlptranslator.MetricNamer{WithMetricSuffixes: c.MetricConfig.Config.AddMetricSuffixes}
 	cfg.MetricConfig.GetMetricName = func(baseName string, metric pmetric.Metric) (string, error) {
-		compliantName := prometheus.BuildCompliantName(metric, "", c.MetricConfig.Config.AddMetricSuffixes)
+		compliantName := namer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 		return googlemanagedprometheus.GetMetricName(baseName, compliantName, metric)
 	}
 	// Map to the prometheus_target monitored resource
