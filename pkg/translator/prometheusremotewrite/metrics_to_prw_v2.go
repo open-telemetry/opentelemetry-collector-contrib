@@ -113,8 +113,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					}
 
 					if settings.ConvertHistogramsToNHCB {
-						errs = multierr.Append(errs, c.addCustomBucketsHistogramDataPoints(
-							dataPoints, resource, settings, promName, m))
+						c.addCustomBucketsHistogramDataPoints(dataPoints, resource, settings, promName, m)
 						break
 					}
 					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)

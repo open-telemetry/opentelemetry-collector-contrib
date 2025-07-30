@@ -5,10 +5,10 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"fmt"
-	"github.com/prometheus/prometheus/model/histogram"
 	"math"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,30 +38,20 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 	return nil
 }
 
-func (c *prometheusConverterV2) addCustomBucketsHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string, metadata metadata,
-) error {
+func (c *prometheusConverterV2) addCustomBucketsHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice, resource pcommon.Resource, settings Settings, name string, metadata metadata) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-
 		lbls := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer, model.MetricNameLabel, name)
-
-		histogram, err := explicitHistogramToCustomBucketsHistogram(pt)
-		if err != nil {
-			return err
-		}
-
+		histogram := explicitHistogramToCustomBucketsHistogram(pt)
 		ts := c.createTimeSeries(lbls, metadata)
 		ts.Histograms = append(ts.Histograms, histogram)
 		c.unique[timeSeriesSignature(lbls)] = ts
 
 		// TODO handle exemplars
 	}
-
-	return nil
 }
 
-func explicitHistogramToCustomBucketsHistogram(p pmetric.HistogramDataPoint) (writev2.Histogram, error) {
+func explicitHistogramToCustomBucketsHistogram(p pmetric.HistogramDataPoint) writev2.Histogram {
 	buckets := p.BucketCounts().AsRaw()
 	offset := getBucketOffset(buckets)
 	bucketCounts := buckets[offset:]
@@ -105,7 +95,7 @@ func explicitHistogramToCustomBucketsHistogram(p pmetric.HistogramDataPoint) (wr
 		}
 		h.Count = &writev2.Histogram_CountInt{CountInt: p.Count()}
 	}
-	return h, nil
+	return h
 }
 
 func getBucketOffset(buckets []uint64) (offset int) {
