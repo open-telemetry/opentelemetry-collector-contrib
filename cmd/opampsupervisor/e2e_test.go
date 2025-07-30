@@ -385,6 +385,56 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 	}
 }
 
+func TestSupervisorStartsCollectorWithNoPipelineConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			connected := atomic.Bool{}
+			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+				OnConnected: func(context.Context, types.Connection) {
+					connected.Store(true)
+				},
+			})
+
+			cfg, _ := createEmptyPipelineCollectorConf(t)
+
+			collectorConfigDir := t.TempDir()
+			cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
+			t.Cleanup(func() { cfgFile.Close() })
+			require.NoError(t, err)
+
+			_, err = cfgFile.Write(cfg.Bytes())
+			require.NoError(t, err)
+
+			storageDir := t.TempDir()
+
+			extraConfigData := map[string]string{
+				"url":          server.addr,
+				"storage_dir":  storageDir,
+				"local_config": cfgFile.Name(),
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			t.Cleanup(s.Shutdown)
+			require.NoError(t, s.Start())
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+			require.True(t, connected.Load(), "Supervisor failed to connect")
+
+			require.EventuallyWithTf(t, func(c *assert.CollectT) {
+				require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+			}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
+		})
+	}
+}
+
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
 	modes := getTestModes()
 
@@ -1245,6 +1295,32 @@ func createSimplePipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte, *os
 	}
 
 	return &confmapBuf, h.Sum(nil), inputFile, outputFile
+}
+
+// Creates a Collector config that contains no pipeline
+func createEmptyPipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "empty_pipeline.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	var confmapBuf bytes.Buffer
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{},
+	)
+	require.NoError(t, err)
+
+	h := sha256.New()
+	if _, err := io.Copy(h, bytes.NewBuffer(confmapBuf.Bytes())); err != nil {
+		log.Fatal(err)
+	}
+
+	return &confmapBuf, h.Sum(nil)
 }
 
 func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
