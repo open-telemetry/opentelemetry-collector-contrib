@@ -4,6 +4,7 @@ status:
   class: extension
   stability:
     beta: [extension]
+  distributions: [contrib]
   codeowners:
     active: [dashpole, aabmass, braydonk, jsuereth, psx95, ridwanmsharif]
 
