@@ -494,7 +494,7 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 	}{
 		{
 			name: "producer",
-			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, topic string, metadataMinAge time.Duration) {
+			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, _ string, metadataMinAge time.Duration) {
 				tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 				client, err := NewFranzSyncProducer(context.Background(), clientConfig,
 					configkafka.NewDefaultProducerConfig(), time.Second, tl,
