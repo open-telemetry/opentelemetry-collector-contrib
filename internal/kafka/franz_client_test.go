@@ -540,9 +540,6 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 				t.Fatal("timed out waiting for initial metadata request")
 			}
 
-			// Wait for refresh
-			time.Sleep(metadataMaxAge + 50*time.Millisecond)
-
 			// Check for second metadata request
 			select {
 			case <-metadataReqCh:
