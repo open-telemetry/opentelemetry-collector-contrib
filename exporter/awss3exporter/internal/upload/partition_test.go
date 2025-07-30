@@ -27,7 +27,32 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 					return "fixed"
 				},
 			},
-			expect:         "/_fixed",
+			expect:         "_fixed",
+			overridePrefix: "",
+		},
+		{
+			name: "fixed key with prefix",
+			inputs: &PartitionKeyBuilder{
+				PartitionPrefix: "telemetry",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "telemetry/_fixed",
+			overridePrefix: "",
+		},
+		{
+			name: "empty partition",
+			inputs: &PartitionKeyBuilder{
+				PartitionPrefix: "telemetry/foo",
+				PartitionFormat: "",
+				FilePrefix:      "signal-output-",
+				FileFormat:      "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "telemetry/foo/signal-output-_fixed.metrics",
 			overridePrefix: "",
 		},
 		{
