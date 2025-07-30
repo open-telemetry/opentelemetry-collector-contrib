@@ -112,6 +112,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixNanoFactory[K](),
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
+		NewUUIDv7Factory[K](),
 		NewURLFactory[K](),
 		NewValuesFactory[K](),
 		NewWeekdayFactory[K](),
