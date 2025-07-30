@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.13.6
+	github.com/daixiang0/gci v0.13.7
 	github.com/golangci/golangci-lint/v2 v2.1.6
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
@@ -59,7 +59,7 @@ require (
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.3 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.9.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
 	github.com/breml/bidichk v0.3.3 // indirect
 	github.com/breml/errchkjson v0.4.1 // indirect
