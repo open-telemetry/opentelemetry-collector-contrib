@@ -1,6 +1,0 @@
-change_type: enhancement
-component: libhoneyreceiver
-note: Handle metadata in libhoneyreceiver
-issues: [40953]
-subtext: |
-  By adding metadata handling to the libhoney receiver, users can configure the headers_setter extension with it.
