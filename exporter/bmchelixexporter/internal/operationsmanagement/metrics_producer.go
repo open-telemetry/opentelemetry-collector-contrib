@@ -196,7 +196,7 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 // addRateVariants checks each metric for the 'bmchelix.requiresRateMetric' label
 // and computes the rate metric from the counter metric if required.
 func (mp *MetricsProducer) addRateVariants(helixMetrics []BMCHelixOMMetric) []BMCHelixOMMetric {
-	for i, metric := range helixMetrics {
+	for _, metric := range helixMetrics {
 		requiresRate := metric.Labels[rateMetricFlag] == "true"
 		if !requiresRate {
 			continue
@@ -204,11 +204,12 @@ func (mp *MetricsProducer) addRateVariants(helixMetrics []BMCHelixOMMetric) []BM
 
 		// Compute the rate metric from the counter metric
 		if rateMetric := mp.computeRateMetricFromCounter(metric); rateMetric != nil {
+			// Add the rate metric to the helixMetrics slice
 			helixMetrics = append(helixMetrics, *rateMetric)
 		}
 
 		// Remove the 'bmchelix.requiresRateMetric' label
-		delete(helixMetrics[i].Labels, rateMetricFlag)
+		delete(metric.Labels, rateMetricFlag)
 	}
 	return helixMetrics
 }
@@ -518,8 +519,12 @@ func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric)
 	// Clone labels
 	rateLabels := make(map[string]string, len(metric.Labels))
 	for k, v := range metric.Labels {
-		rateLabels[k] = v
+		if k != rateMetricFlag {
+			rateLabels[k] = v
+		}
 	}
+
+	// Modify metric name and unit for rate
 	rateLabels["metricName"] += ".rate"
 	rateLabels["unit"] += "/s"
 
