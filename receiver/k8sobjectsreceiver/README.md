@@ -48,11 +48,11 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
   - `propagate` will propagate the error to the collector as an Error.
   - `ignore` will log and ignore the error and continue.
   - `silent` will ignore the error and continue without logging.
-- `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
   - `watch` mode will do setup a long connection using the watch API to just get updates.
+- `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.

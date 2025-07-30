@@ -378,13 +378,16 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 		},
 	}
 
-	_, err := newReceiver(
+	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "include_initial_state can only be used with watch mode")
+	require.NoError(t, err)
+
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	_ = r.Shutdown(context.Background())
 }
 
 func TestExcludeDeletedTrue(t *testing.T) {

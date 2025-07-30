@@ -41,11 +41,6 @@ type k8sobjectsreceiver struct {
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
-	// Validate configuration
-	if err := config.Validate(); err != nil {
-		return nil, err
-	}
-
 	transport := "http"
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
