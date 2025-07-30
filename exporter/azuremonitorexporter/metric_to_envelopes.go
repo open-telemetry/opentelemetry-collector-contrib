@@ -54,6 +54,8 @@ func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric, resource pc
 			applyResourcesToDataProperties(metricData.Properties, resourceAttributes)
 			applyInstrumentationScopeValueToDataProperties(metricData.Properties, instrumentationScope)
 			applyCloudTagsToEnvelope(envelope, resourceAttributes)
+			applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+			applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 			applyInternalSdkVersionTagToEnvelope(envelope)
 
 			setAttributesAsProperties(timedDataPoint.attributes, metricData.Properties)
