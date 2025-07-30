@@ -199,6 +199,7 @@ components:
         - postgresql
         - prometheus
         - prometheus_simple
+        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
