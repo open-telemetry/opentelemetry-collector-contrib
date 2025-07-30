@@ -428,8 +428,20 @@ func flushBulkIndexer(
 			ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet),
 		)
 	}
+
+	fields := []zap.Field{}
+	// append metadata attributes to error log fields
+	for _, kv := range defaultMetaAttrs {
+		switch kv.Value.Type() {
+		case attribute.STRINGSLICE:
+			fields = append(fields, zap.Strings(string(kv.Key), kv.Value.AsStringSlice()))
+		default:
+			// For other types, convert to string
+			fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
+		}
+	}
 	if err != nil {
-		logger.Error("bulk indexer flush error", zap.Error(err))
+		logger.Error("bulk indexer flush error", append(fields, zap.Error(err))...)
 		var bulkFailedErr docappender.ErrorFlushFailed
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
@@ -495,22 +507,11 @@ func flushBulkIndexer(
 			clientFailed++
 		}
 		// Log failed docs
-		fields := []zap.Field{
+		fields = append(fields,
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
-		}
-
-		// append metadata attributes to error log fields
-		for _, kv := range defaultMetaAttrs {
-			switch kv.Value.Type() {
-			case attribute.STRINGSLICE:
-				fields = append(fields, zap.Strings(string(kv.Key), kv.Value.AsStringSlice()))
-			default:
-				// For other types, convert to string
-				fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
-			}
-		}
+		)
 
 		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
 			fields = append(fields, zap.String("hint", hint))
