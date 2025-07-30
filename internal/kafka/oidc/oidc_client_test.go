@@ -53,10 +53,12 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
+	tokenTTLsecs := 10
+
 	oidcServerQuit := make(chan bool, 1)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh, 10)
+		oidcServer(oidcServerQuit, portCh, tokenTTLsecs)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -84,7 +86,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	assert.Equal(t, testScope, claims["scope"])
 
 	assert.WithinDuration(t, time.Now(), time.Unix(int64(claims["iat"].(float64)), 0), 2*time.Second)
-	expectedTimeout := time.Now().Add(time.Duration(10) * time.Second)
+	expectedTimeout := time.Now().Add(time.Duration(tokenTTLsecs) * time.Second)
 	actualTimeout := time.Unix(int64(claims["exp"].(float64)), 0)
 	assert.WithinDuration(t, expectedTimeout, actualTimeout, 2*time.Second)
 }
@@ -96,10 +98,12 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
+	tokenTTLsecs := 10
+
 	oidcServerQuit := make(chan bool)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh, 10)
+		oidcServer(oidcServerQuit, portCh, tokenTTLsecs)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -124,10 +128,12 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
+	tokenTTLsecs := 10
+
 	oidcServerQuit := make(chan bool, 1)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh, 10)
+		oidcServer(oidcServerQuit, portCh, tokenTTLsecs)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -156,10 +162,12 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	testClientSecret, err = os.ReadFile(secretFile)
 	assert.NoError(t, err)
 
+	tokenTTLsecs := 3
+
 	oidcServerQuit := make(chan bool, 1)
 	portCh := make(chan int, 1)
 	go func() {
-		oidcServer(oidcServerQuit, portCh, 3)
+		oidcServer(oidcServerQuit, portCh, tokenTTLsecs)
 	}()
 	defer func() {
 		oidcServerQuit <- true
@@ -175,7 +183,44 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	assert.NoError(t, err1)
 	assert.NotNil(t, token1)
 
-	time.Sleep(3500 * time.Millisecond)
+	time.Sleep(time.Duration((tokenTTLsecs*1000)+500) * time.Millisecond)
+
+	token2, err2 := oidcProvider.Token()
+	assert.NoError(t, err2)
+	assert.NotNil(t, token2)
+	assert.NotEqual(t, token1, token2)
+}
+
+func TestOIDCProvider_RefreshAhead(t *testing.T) {
+	secretFile, err := k8sSecretFile()
+	assert.NoError(t, err)
+
+	testClientSecret, err = os.ReadFile(secretFile)
+	assert.NoError(t, err)
+
+	tokenTTLsecs := 5
+
+	oidcServerQuit := make(chan bool, 1)
+	portCh := make(chan int, 1)
+	go func() {
+		oidcServer(oidcServerQuit, portCh, tokenTTLsecs)
+	}()
+	defer func() {
+		oidcServerQuit <- true
+	}()
+
+	// Wait for server to start and get the port
+	port := <-portCh
+	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
+
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
+		[]string{testScope}, 2*time.Second)
+
+	token1, err1 := oidcProvider.Token()
+	assert.NoError(t, err1)
+	assert.NotNil(t, token1)
+
+	time.Sleep(time.Duration((tokenTTLsecs*1000)+500) * time.Millisecond)
 
 	token2, err2 := oidcProvider.Token()
 	assert.NoError(t, err2)

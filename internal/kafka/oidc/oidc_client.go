@@ -50,6 +50,7 @@ func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePat
 		ClientSecretFilePath: clientSecretFilePath,
 		TokenURL:             tokenURL,
 		Scopes:               scopes,
+		refreshAhead:         refreshAhead,
 	}
 
 	if refreshAhead.Milliseconds() > 0 {
