@@ -4,10 +4,10 @@
 package googlecloudlogentryencodingextension
 
 import (
-	stdjson "encoding/json"
 	"os"
 	"testing"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -179,11 +179,9 @@ func TestProtoFieldTypes(t *testing.T) {
 
 func TestProtoErrors(t *testing.T) {
 	tests := []struct {
-		scenario     string
-		input        []byte
-		expectsErr   string
-		expectedBody any
-		expectedAttr map[string]any
+		scenario   string
+		input      []byte
+		expectsErr string
 	}{
 		{
 			scenario: "UnknownJSONName",
@@ -194,10 +192,6 @@ func TestProtoErrors(t *testing.T) {
   }
 }`),
 			expectsErr: "google.cloud.audit.AuditLog has no known field with JSON name ServiceName",
-			expectedAttr: map[string]any{
-				"gcp.proto_payload": map[string]any{},
-			},
-			expectedBody: map[string]any{},
 		},
 		{
 			scenario: "EnumTypeError",
@@ -216,14 +210,6 @@ func TestProtoErrors(t *testing.T) {
   }
 }`),
 			expectsErr: "wrong type for enum: object",
-			expectedBody: map[string]any{
-				"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": nil}}}},
-			},
-			expectedAttr: map[string]any{
-				"gcp.proto_payload": map[string]any{
-					"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": nil}}}},
-				},
-			},
 		},
 	}
 
@@ -236,18 +222,9 @@ func TestProtoErrors(t *testing.T) {
 
 			extension := newTestExtension(t, config)
 
-			gotRes, err := extension.translateLogEntry(tt.input)
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
-			} else {
-				require.NoError(t, err)
-			}
-
-			require.Equal(t, 1, gotRes.LogRecordCount())
-
-			lr := gotRes.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-			require.Equal(t, tt.expectedBody, lr.Body().AsRaw())
-			require.Equal(t, tt.expectedAttr, lr.Attributes().AsRaw())
+			_, err := extension.translateLogEntry(tt.input)
+			require.Error(t, err)
+			require.ErrorContains(t, err, tt.expectsErr)
 		})
 	}
 }
@@ -288,7 +265,7 @@ func TestGetTokenType(t *testing.T) {
 		t.Run(tt.scenario, func(t *testing.T) {
 			t.Parallel()
 
-			j := stdjson.RawMessage{}
+			j := gojson.RawMessage{}
 			err := j.UnmarshalJSON([]byte(tt.input))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, getTokenType(j))
