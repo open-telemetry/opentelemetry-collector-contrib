@@ -164,16 +164,21 @@ func (exp *traceExporter) consumeTraces(
 					rattr := rspan.Resource().Attributes()
 					sattr := span.Attributes()
 
-					var rawRumData pcommon.Value
-					rawRumData, _ = rattr.Get("request_body_dump")
-
 					// build the Datadog intake URL
 					ddforward, _ := rattr.Get("request_ddforward")
 					outUrlString := "https://browser-intake-datadoghq.com" +
 						ddforward.AsString()
 
+					// construct request body according to RUM spec
+					rumPayload := constructRumPayloadFromOTLP(sattr)
+
+					byts, err := json.Marshal(rumPayload)
+					if err != nil {
+						return fmt.Errorf("failed to marshal RUM payload: %v", err)
+					}
+					req, err := http.NewRequest("POST", outUrlString, bytes.NewBuffer(byts))
 					// forward the request to the Datadog intake URL using the POST method
-					req, err := http.NewRequest("POST", outUrlString, bytes.NewBuffer(rawRumData.Bytes().AsRaw()))
+					//					req, err := http.NewRequest("POST", outUrlString, bytes.NewBuffer(rawRumData.Bytes().AsRaw()))
 					if err != nil {
 						exp.params.Logger.Info("failed to create request: %v", zap.Error(err))
 					}
@@ -198,15 +203,8 @@ func (exp *traceExporter) consumeTraces(
 							return true
 						})
 					*/
+					fmt.Println("&&&&&&&&&& HEADERS EXPORTED: ", req.Header)
 
-					// construct request body according to RUM spec
-					rumPayload := constructRumPayloadFromOTLP(sattr)
-
-					byts, err := json.Marshal(rumPayload)
-					if err != nil {
-						return fmt.Errorf("failed to marshal RUM payload: %v", err)
-					}
-					req.Body = io.NopCloser(bytes.NewBuffer(byts))
 					// send the request to the Datadog intake URL
 					resp, err := client.Do(req)
 					if err != nil {
@@ -391,6 +389,8 @@ func constructRumPayloadFromOTLP(attr pcommon.Map) map[string]any {
 	attr.Range(func(k string, v pcommon.Value) bool {
 		if rumAttributeName, exists := OTLPToRUMAttributeMap[k]; exists {
 			buildRumPayload(rumAttributeName, v, rumPayload)
+		} else {
+			buildRumPayload(strings.TrimPrefix(k, "datadog."), v, rumPayload)
 		}
 		return true
 	})
