@@ -17,7 +17,6 @@ assigneeGroups:
     # - crobert-1 (On leave, back August 5th)
     - dashpole
     - dehaansa
-    - edmocosta
     - mwear
     - fatsheep9146
     # Maintainers
@@ -26,6 +25,7 @@ assigneeGroups:
     - bogdandrutu
     - codeboten
     - dmitryax
+    - edmocosta
     - evan-bradley
     - MovieStoreGuy
     - mx-psi
