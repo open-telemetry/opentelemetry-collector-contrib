@@ -105,6 +105,8 @@ github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/open-telemetry/otel-arrow/go v0.39.0 h1:ZlPsPdqn5wuSzulWqIs41jWmwk7B10Qg+sL7Bw3w6kA=
 github.com/open-telemetry/otel-arrow/go v0.39.0/go.mod h1:CK13damnj/yQW2TKzdjJs5xVmfbkTKLLwjtjoUrMk7I=
+github.com/open-telemetry/otel-arrow/go v0.40.0 h1:3LFpzVMSfagtTt+63LyyR8rb9uspidFOkwC4FQOigpo=
+github.com/open-telemetry/otel-arrow/go v0.40.0/go.mod h1:WPOGu7W0vWLw8f/ho5KSdG3wcn+aZiWtTZZ0p7JiRF0=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=
 github.com/pierrec/lz4/v4 v4.1.22/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
