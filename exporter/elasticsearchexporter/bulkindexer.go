@@ -429,7 +429,7 @@ func flushBulkIndexer(
 		)
 	}
 
-	fields := []zap.Field{}
+	var fields []zap.Field
 	// append metadata attributes to error log fields
 	for _, kv := range defaultMetaAttrs {
 		switch kv.Value.Type() {
