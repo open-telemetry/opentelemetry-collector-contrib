@@ -68,23 +68,23 @@ For detailed performance analysis, timing breakdown metrics are available:
 receivers:
   httpcheck:
     metrics:
-      httpcheck.dns_lookup.duration:
+      httpcheck.dns.lookup.duration:
         enabled: true
-      httpcheck.tcp_connection.duration:
+      httpcheck.client.connection.duration:
         enabled: true
-      httpcheck.tls_handshake.duration:
+      httpcheck.tls.handshake.duration:
         enabled: true
-      httpcheck.request.duration:
+      httpcheck.client.request.duration:
         enabled: true
       httpcheck.response.duration:
         enabled: true
 ```
 
 These metrics provide detailed timing information for different phases of the HTTP request:
-- `dns_lookup.duration`: Time spent performing DNS lookup
-- `tcp_connection.duration`: Time spent establishing TCP connection
-- `tls_handshake.duration`: Time spent performing TLS handshake (HTTPS only)
-- `request.duration`: Time spent sending the HTTP request
+- `dns.lookup.duration`: Time spent performing DNS lookup
+- `client.connection.duration`: Time spent establishing TCP connection
+- `tls.handshake.duration`: Time spent performing TLS handshake (HTTPS only)
+- `client.request.duration`: Time spent sending the HTTP request
 - `response.duration`: Time spent receiving the HTTP response
 
 ### Example Configuration
