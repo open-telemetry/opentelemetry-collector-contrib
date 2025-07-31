@@ -5,4 +5,4 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [constanca-m, ShourieG]
+    active: [constanca-m]
