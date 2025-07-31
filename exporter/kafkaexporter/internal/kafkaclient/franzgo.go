@@ -6,6 +6,7 @@ package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -42,7 +43,7 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	var errs []error
 	for _, r := range result {
 		if r.Err != nil {
-			errs = append(errs, r.Err)
+			errs = append(errs, fmt.Errorf("%w when exporting to topic %s", r.Err, r.Record.Topic))
 		}
 	}
 	return errors.Join(errs...)

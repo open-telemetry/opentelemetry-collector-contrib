@@ -5,7 +5,9 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"iter"
+	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
@@ -145,8 +147,10 @@ func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	var m kafkaclient.Messages
 	for key, data := range e.messenger.partitionData(data) {
+		topic := e.messenger.getTopic(ctx, data)
 		partitionMessages, err := e.messenger.marshalData(data)
 		if err != nil {
+			err = fmt.Errorf("%w when exporting to topic %s", err, topic)
 			return consumererror.NewPermanent(err)
 		}
 		for i := range partitionMessages {
@@ -158,11 +162,23 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		}
 		m.Count += len(partitionMessages)
 		m.TopicMessages = append(m.TopicMessages, kafkaclient.TopicMessages{
-			Topic:    e.messenger.getTopic(ctx, data),
+			Topic:    topic,
 			Messages: partitionMessages,
 		})
 	}
-	return e.producer.ExportData(ctx, m)
+	err := e.producer.ExportData(ctx, m)
+	if err == nil {
+		if e.logger.Core().Enabled(zap.DebugLevel) {
+			for _, mi := range m.TopicMessages {
+				e.logger.Debug("kafka records exported",
+					zap.Int("records", len(mi.Messages)),
+					zap.Time("timestamp", time.Now()),
+					zap.String("topic", mi.Topic),
+				)
+			}
+		}
+	}
+	return err
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
