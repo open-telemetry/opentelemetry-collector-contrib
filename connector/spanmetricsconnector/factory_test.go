@@ -64,6 +64,15 @@ func TestNewConnector(t *testing.T) {
 			assert.NotNil(t, smc)
 
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
+
+			traceConnector2, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+			smc2 := traceConnector2.(*connectorImp)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, smc2)
+
+			// As we use a shared component the instances should be the same
+			assert.Equal(t, traceConnector, traceConnector2)
 		})
 	}
 }

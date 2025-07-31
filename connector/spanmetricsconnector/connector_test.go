@@ -78,7 +78,7 @@ type span struct {
 }
 
 // verifyDisabledHistogram expects that histograms are disabled.
-func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics) bool {
+func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics, _ ptrace.Traces) bool {
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -95,7 +95,7 @@ func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics) bool {
 	return true
 }
 
-func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics) bool {
+func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics, traces ptrace.Traces) bool {
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -118,28 +118,41 @@ func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics) bool {
 			}
 		}
 	}
+
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				v, ok := span.Attributes().Get(exemplarKey)
+				assert.True(tb, ok)
+				assert.True(tb, v.Bool())
+			}
+		}
+	}
 	return true
 }
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
-func verifyConsumeMetricsInputCumulative(tb testing.TB, input pmetric.Metrics) bool {
+func verifyConsumeMetricsInputCumulative(tb testing.TB, input pmetric.Metrics, _ ptrace.Traces) bool {
 	return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
-func verifyBadMetricsOkay(testing.TB, pmetric.Metrics) bool {
+func verifyBadMetricsOkay(testing.TB, pmetric.Metrics, ptrace.Traces) bool {
 	return true // Validating no exception
 }
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
-func verifyConsumeMetricsInputDelta(tb testing.TB, input pmetric.Metrics) bool {
+func verifyConsumeMetricsInputDelta(tb testing.TB, input pmetric.Metrics, _ ptrace.Traces) bool {
 	return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityDelta, 1)
 }
 
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
 // numCumulativeConsumptions acts as a multiplier for the values, since the cumulative metrics are additive.
-func verifyMultipleCumulativeConsumptions() func(tb testing.TB, input pmetric.Metrics) bool {
+func verifyMultipleCumulativeConsumptions() func(tb testing.TB, input pmetric.Metrics, traces ptrace.Traces) bool {
 	numCumulativeConsumptions := 0
-	return func(tb testing.TB, input pmetric.Metrics) bool {
+	return func(tb testing.TB, input pmetric.Metrics, _ ptrace.Traces) bool {
 		numCumulativeConsumptions++
 		return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityCumulative, numCumulativeConsumptions)
 	}
@@ -768,7 +781,7 @@ func TestConsumeTraces(t *testing.T) {
 		aggregationTemporality string
 		histogramConfig        func() HistogramConfig
 		exemplarConfig         func() ExemplarsConfig
-		verifier               func(tb testing.TB, input pmetric.Metrics) bool
+		verifier               func(tb testing.TB, input pmetric.Metrics, traces ptrace.Traces) bool
 		traces                 []ptrace.Traces
 	}{
 		// disabling histogram
@@ -885,18 +898,22 @@ func TestConsumeTraces(t *testing.T) {
 			// Prepare
 
 			mcon := &consumertest.MetricsSink{}
+			tcon := &consumertest.TracesSink{}
 			mockClock := clockwork.NewFakeClock()
 			p, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000, mockClock)
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
+			p.traceConsumer = tcon
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err = p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
 
+			spanCount := 0
 			for _, traces := range tc.traces {
+				spanCount += traces.SpanCount()
 				// Test
 				err = p.ConsumeTraces(ctx, traces)
 				assert.NoError(t, err)
@@ -906,8 +923,14 @@ func TestConsumeTraces(t *testing.T) {
 				require.Eventually(t, func() bool {
 					return len(mcon.AllMetrics()) > 0
 				}, 1*time.Second, 10*time.Millisecond)
-				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
+				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1], tcon.AllTraces()[len(tcon.AllTraces())-1])
 			}
+
+			receivedCount := 0
+			for _, traces := range tcon.AllTraces() {
+				receivedCount += traces.SpanCount()
+			}
+			assert.Equal(t, spanCount, receivedCount, "Expected to receive the same number of spans as sent")
 		})
 	}
 }
@@ -1252,7 +1275,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 }
 
 func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
-	t.Skip("flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37096")
+	// t.Skip("flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37096")
 	// Prepare
 	traces0 := ptrace.NewTraces()
 

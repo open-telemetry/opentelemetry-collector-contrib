@@ -34,6 +34,7 @@ const (
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
+	exemplarKey                    = "exemplar"                           // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
 
 	defaultResourceMetricsCacheSize = 1000
@@ -54,6 +55,7 @@ type connectorImp struct {
 	config Config
 
 	metricsConsumer consumer.Metrics
+	traceConsumer   consumer.Traces
 
 	// Additional dimensions to add to metrics.
 	dimensions []utilattri.Dimension
@@ -242,10 +244,17 @@ func (*connectorImp) Capabilities() consumer.Capabilities {
 
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics.
-func (p *connectorImp) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
+func (p *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
+
+	// If a trace passthrough is configured, forward the traces
+	// now that any exemplars have been marked.
+	if p.traceConsumer != nil {
+		return p.traceConsumer.ConsumeTraces(ctx, traces)
+	}
+
 	return nil
 }
 
@@ -257,6 +266,13 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
 	p.lock.Unlock()
+
+	// It's very unlikely that we would have no metrics exporter configured
+	// but we should prevent a panic in case of a misconfiguration.
+	if p.metricsConsumer == nil {
+		p.logger.Debug("No metrics consumer configured, skipping export")
+		return
+	}
 
 	if err := p.metricsConsumer.ConsumeMetrics(ctx, m); err != nil {
 		p.logger.Error("Failed ConsumeMetrics", zap.Error(err))
@@ -409,6 +425,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				s, limitReached := sums.GetOrCreate(key, attributesFun, startTimestamp)
 				if !limitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
+					p.markSpanAsExemplar(span)
 				}
 				s.Add(1)
 
@@ -422,7 +439,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					}
 					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
-						p.addExemplar(span, duration, h)
+						h.AddExemplar(span.TraceID(), span.SpanID(), duration)
+						p.markSpanAsExemplar(span)
 					}
 					h.Observe(duration)
 				}
@@ -451,6 +469,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp)
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
+							p.markSpanAsExemplar(span)
 						}
 						e.Add(1)
 					}
@@ -460,15 +479,12 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	}
 }
 
-func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics.Histogram) {
-	if !p.config.Exemplars.Enabled {
-		return
+func (p *connectorImp) markSpanAsExemplar(span ptrace.Span) {
+	// Only mark the span as an exemplar if a trace consumer is configured,
+	// otherwise don't mutate the span
+	if p.traceConsumer != nil {
+		span.Attributes().PutBool(exemplarKey, true)
 	}
-	if span.TraceID().IsEmpty() {
-		return
-	}
-
-	h.AddExemplar(span.TraceID(), span.SpanID(), duration)
 }
 
 type resourceKey [16]byte

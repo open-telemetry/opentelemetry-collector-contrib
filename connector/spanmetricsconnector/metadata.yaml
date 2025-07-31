@@ -3,7 +3,7 @@ type: spanmetrics
 status:
   class: connector
   stability:
-    alpha: [traces_to_metrics]
+    alpha: [traces_to_metrics, traces_to_traces]
   distributions: [contrib]
   codeowners:
     active: [portertech, Frapschen, iblancasa]
@@ -12,3 +12,5 @@ status:
 
 tests:
   config:
+  goleak:
+    skip: true

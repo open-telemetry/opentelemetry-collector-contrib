@@ -42,6 +42,14 @@ func TestComponentLifecycle(t *testing.T) {
 				return factory.CreateTracesToMetrics(ctx, set, cfg, router)
 			},
 		},
+
+		{
+			name: "traces_to_traces",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(pipeline.SignalTraces): consumertest.NewNop()})
+				return factory.CreateTracesToTraces(ctx, set, cfg, router)
+			},
+		},
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
