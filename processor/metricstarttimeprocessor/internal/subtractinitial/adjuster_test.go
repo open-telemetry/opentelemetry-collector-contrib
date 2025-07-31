@@ -905,7 +905,6 @@ func TestJobGC(t *testing.T) {
 	// ensure that at least one jobsMap.gc() completed
 	time.Sleep(gcInterval)
 	ma.referenceCache.MaybeGC()
-	ma.previousValueCache.MaybeGC()
 	time.Sleep(5 * time.Second) // Wait for the goroutine to complete.
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	testhelper.RunScript(t, ma, job1Script2, "0")
