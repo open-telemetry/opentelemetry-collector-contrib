@@ -121,7 +121,7 @@ func (c *mongodbClient) GetVersion(ctx context.Context) (*version.Version, error
 	return version.NewVersion(v)
 }
 
-// CurrentOp returns the result of db.currentOp() or db.aggregate([{$currentOp: {}}])
+// CurrentOp returns the result db.aggregate([{$currentOp: {}}])
 // more information can be found here: https://www.mongodb.com/docs/manual/reference/operator/aggregation/currentOp/
 func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
 	cursor, err := c.Database("admin").Aggregate(
@@ -129,11 +129,11 @@ func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
 		mongo.Pipeline{
 			bson.D{
 				{Key: "$currentOp", Value: bson.M{
-					"allUsers":        true, // Include operations from all users
-					"idleConnections": true, // Exclude idle connections
-					"idleCursors":     true, // Exclude idle cursors
-					"idleSessions":    true, // Exclude idle sessions
-					"localOps":        true, // Include operations from all shards
+					"allUsers":        true,
+					"idleConnections": true,
+					"idleCursors":     true,
+					"idleSessions":    true,
+					"localOps":        true,
 				}},
 			},
 		},

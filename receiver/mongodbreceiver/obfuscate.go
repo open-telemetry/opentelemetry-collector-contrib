@@ -24,9 +24,9 @@ var (
 		"$gleStats":           true,
 	}
 	keysToCleanFromCommand = map[string]bool{
-		"comment":      true, // Comment field should not contribute to query signature
-		"lsid":         true, // Session ID is unique identifier
-		"$clusterTime": true, // Cluster time is used for operation ordering
+		"comment":      true,
+		"lsid":         true,
+		"$clusterTime": true,
 	}
 	keysToRemoveFromCommandForExplain = map[string]bool{
 		"$db":                    true,
@@ -82,8 +82,6 @@ func prepareCommandForExplain(command bson.D) bson.D {
 // cleanExplainPlan removes unnecessary keys from the explain plan result
 func cleanExplainPlan(explainResult bson.M) bson.M {
 	cleaned := make(bson.M)
-
-	// Keys to remove from explain plan result
 
 	for k, v := range explainResult {
 		if !keysToRemoveFromExplainPlan[k] {
@@ -145,7 +143,6 @@ func obfuscateLiterals(value any) any {
 		// Replace literal values with placeholder
 		return "?"
 	default:
-		// For other types (ObjectId, Date, etc.), keep the type but obfuscate
 		return value
 	}
 }
@@ -156,7 +153,6 @@ func obfuscateExplainPlan(plan any) any {
 	case bson.M:
 		obfuscated := make(bson.M)
 		for key, value := range p {
-			// Obfuscate specific fields that contain query predicates
 			if key == "filter" || key == "parsedQuery" || key == "indexBounds" {
 				obfuscated[key] = obfuscateLiterals(value)
 			} else {
@@ -167,7 +163,6 @@ func obfuscateExplainPlan(plan any) any {
 	case map[string]any:
 		obfuscated := make(map[string]any)
 		for key, value := range p {
-			// Obfuscate specific fields that contain query predicates
 			if key == "filter" || key == "parsedQuery" || key == "indexBounds" {
 				obfuscated[key] = obfuscateLiterals(value)
 			} else {

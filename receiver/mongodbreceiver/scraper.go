@@ -270,7 +270,6 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			zap.String("query_signature", querySignature),
 			zap.Bool("has_explain_plan", explainPlan != ""))
 
-		// Record the query sample event using the generated logs builder method
 		s.lb.RecordDbServerQuerySampleEvent(
 			ctx,
 			now,
@@ -294,17 +293,13 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 
 // shouldExplainOperation determines if we should try to get an explain plan for this operation
 func (*mongodbScraper) shouldExplainOperation(opType string, command bson.D) bool {
-	// Skip operations that are not queries
 	if opType == "" || opType == "none" {
 		return false
 	}
 
-	// Skip non-query operations
 	if opType == "insert" || opType == "update" || opType == "getmore" || opType == "killcursors" || opType == "remove" {
 		return false
 	}
-
-	// Check for unexplainable commands
 
 	for _, cmd := range command {
 		if unexplainableCommands[cmd.Key] {
@@ -312,7 +307,6 @@ func (*mongodbScraper) shouldExplainOperation(opType string, command bson.D) boo
 		}
 	}
 
-	// Check for unexplainable pipeline stages in aggregation
 	for _, v := range command {
 		if v.Key == "pipeline" {
 			pipelineArray, ok := v.Value.(bson.A)
@@ -335,26 +329,22 @@ func (*mongodbScraper) shouldExplainOperation(opType string, command bson.D) boo
 }
 
 func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
-	// Skip operations without a namespace
 	if ns := getValue[string](op, namespaceKey); ns == "" {
 		s.logger.Debug("Skipping operation without namespace", zap.Any("operation", op))
 		return false
 	}
 
-	// Skip operations for admin database
 	if db := s.getDBFromNamespace(getValue[string](op, namespaceKey)); db == "admin" {
 		s.logger.Debug("Skipping operation for admin database", zap.Any("operation", op))
 		return false
 	}
 
-	// Skip operations without a command
 	command := getValue[bson.D](op, commandKey)
 	if len(command) == 0 {
 		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
 		return false
 	}
 
-	// Skip "hello" operations
 	for _, v := range command {
 		if v.Key == "hello" {
 			s.logger.Debug("Skipping hello operation", zap.Any("operation", op))
@@ -394,7 +384,6 @@ func (*mongodbScraper) getCollectionFromNamespace(namespace string) string {
 
 // getExplainPlan executes the explain command for a given command and database
 func (s *mongodbScraper) getExplainPlan(ctx context.Context, command bson.D) (string, error) {
-	// Create a clean copy of the command for explain
 	explainableCommand := prepareCommandForExplain(command)
 	if len(explainableCommand) == 0 {
 		return "", errors.New("command cannot be explained")
@@ -409,13 +398,10 @@ func (s *mongodbScraper) getExplainPlan(ctx context.Context, command bson.D) (st
 		return "", fmt.Errorf("failed to execute explain command: %w", err)
 	}
 
-	// Clean the explain plan result by removing unnecessary server info
 	cleanedResult := cleanExplainPlan(result)
 
-	// Obfuscate sensitive data in the explain plan
 	obfuscatedResult := obfuscateExplainPlan(cleanedResult)
 
-	// Convert the BSON result to a JSON string for storage
 	jsonBytes, err := json.Marshal(obfuscatedResult)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal explain plan to JSON: %w", err)

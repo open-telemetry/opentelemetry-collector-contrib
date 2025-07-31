@@ -158,7 +158,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		for {
 			select {
 			case <-ticker.C:
-				// Mimic the query from .tools/query-mongo.sh
 				_, err := coll.Find(queryCtx, bson.M{"$where": "sleep(500); return true;"})
 				assert.NoError(t, err)
 			case <-queryCtx.Done():

@@ -48,12 +48,6 @@ The following settings are optional:
 - `timeout`: (default = `1m`) The timeout of running commands against mongo.
 - `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 - `direct_connection`: If true, then the driver will not try to autodiscover other nodes, and perform instead a direct connection o the host.
-- `query_sampling`: (optional) Configuration for MongoDB query sampling to collect current operation samples as logs.
-  - `enabled` (default: `false`): Enable query sampling.
-  - `collection_interval` (default: `30s`): How often to collect query samples.
-  - `max_operations` (default: `100`): Maximum number of operations to sample per collection.
-  - `include_databases` (default: `[]`): List of databases to include. If empty, all databases are included (except excluded ones).
-  - `exclude_databases` (default: `["admin", "local", "config"]`): List of databases to exclude from sampling.
 
 ### Example Configuration
 
