@@ -136,13 +136,13 @@ func TestCreateMetrics(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: defaultNetAddr,
 					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionAge: 60 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             30 * time.Second,
 							PermitWithoutStream: true,
-						},
+						}),
 					}),
 				},
 			},

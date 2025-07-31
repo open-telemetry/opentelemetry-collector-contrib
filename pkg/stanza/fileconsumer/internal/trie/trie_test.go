@@ -335,7 +335,7 @@ func put(key string, val any) testOp {
 }
 
 // del automatically asserts that the trie no longer contains the key after deleting it.
-func del(key string, why string) testOp {
+func del(key, why string) testOp {
 	return func(t *testing.T, trie *Trie[any]) {
 		val := trie.Get([]byte(key))
 		if val == nil {

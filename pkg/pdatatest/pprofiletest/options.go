@@ -120,7 +120,7 @@ func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofil
 	opt.maskProfileTimestampValues(actual)
 }
 
-func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
+func (ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		sls := rls.At(i).ScopeProfiles()

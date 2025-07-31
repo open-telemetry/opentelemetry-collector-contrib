@@ -28,7 +28,7 @@ func (t *AggregationTemporality) String() string {
 	return string(metricdata.Temporality(*t))
 }
 
-func (t *AggregationTemporality) Type() string {
+func (*AggregationTemporality) Type() string {
 	return "temporality"
 }
 

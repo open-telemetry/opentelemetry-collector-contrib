@@ -121,7 +121,7 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardPMapGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
+		Getter: func(context.Context, any) (pcommon.Map, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return pcommon.Map{}, nil
 		},

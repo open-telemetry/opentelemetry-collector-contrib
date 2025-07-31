@@ -66,12 +66,12 @@ func (as *ackPartition) computeAcks(ackIDs []uint64) map[uint64]bool {
 }
 
 // Start of inMemoryAckExtension does nothing and returns nil
-func (i *inMemoryAckExtension) Start(_ context.Context, _ component.Host) error {
+func (*inMemoryAckExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // Shutdown of inMemoryAckExtension does nothing and returns nil
-func (i *inMemoryAckExtension) Shutdown(_ context.Context) error {
+func (*inMemoryAckExtension) Shutdown(context.Context) error {
 	return nil
 }
 

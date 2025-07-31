@@ -1,5 +1,0 @@
-change_type: enhancement
-component: loadbalancingexporter
-note: Use a linear probe to decrease variance caused by hash collisions, which was causing a non-uniform distribution of loadbalancing.
-issues: [41200]
-change_logs: [user]

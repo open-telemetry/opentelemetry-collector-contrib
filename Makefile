@@ -367,10 +367,6 @@ docker-golden:
 	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
 	rm cmd/golden/golden_*
 
-.PHONY: generate
-generate: install-tools
-	PATH="$(ROOT_DIR).tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
-	$(MAKE) gofmt
 
 .PHONY: gengithub
 gengithub: $(GITHUBGEN)

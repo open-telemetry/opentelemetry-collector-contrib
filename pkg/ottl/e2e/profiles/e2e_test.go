@@ -1140,6 +1140,7 @@ func Test_e2e_converters(t *testing.T) {
 					"user_agent.original": "curl/7.81.0",
 					"user_agent.name":     "curl",
 					"user_agent.version":  "7.81.0",
+					"os.name":             "Other",
 				})
 			},
 		},

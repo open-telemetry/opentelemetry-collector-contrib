@@ -38,12 +38,12 @@ type mockPerfCounter struct {
 }
 
 // ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
-func (w *mockPerfCounter) ScrapeRawValue(_ *int64) (bool, error) {
+func (*mockPerfCounter) ScrapeRawValue(*int64) (bool, error) {
 	panic("unimplemented")
 }
 
 // ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
-func (w *mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+func (*mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
 	panic("unimplemented")
 }
 

@@ -50,7 +50,7 @@ func getProcessExecutable(ctx context.Context, proc processHandle) (string, erro
 }
 
 // matches the first argument before an unquoted space or slash
-var cmdRegex = regexp.MustCompile(`^((?:[^"]*?"[^"]*?")*?[^"]*?)(?:[ \/]|$)`)
+var cmdRegex = regexp.MustCompile(`^((?:[^"]*?"[^"]*?")*?[^"]*?)(?:[ /]|$)`)
 
 func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadata, error) {
 	cmdline, err := proc.CmdlineWithContext(ctx)

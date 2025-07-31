@@ -240,7 +240,7 @@ func (p testPath) Next() ottl.Path[testContext] {
 	return p.nextPath
 }
 
-func (p testPath) Keys() []ottl.Key[testContext] {
+func (testPath) Keys() []ottl.Key[testContext] {
 	return nil
 }
 
@@ -255,10 +255,10 @@ type testGetSetter struct {
 	value any
 }
 
-func (m *testGetSetter) Get(_ context.Context, _ testContext) (any, error) {
+func (m *testGetSetter) Get(context.Context, testContext) (any, error) {
 	return m.value, nil
 }
 
-func (m *testGetSetter) Set(_ context.Context, _ testContext, _ any) error {
+func (*testGetSetter) Set(context.Context, testContext, any) error {
 	return nil
 }

@@ -200,10 +200,6 @@ component_management:
     name: exporter_kafka
     paths:
     - exporter/kafkaexporter/**
-  - component_id: exporter_kinetica
-    name: exporter_kinetica
-    paths:
-    - exporter/kineticaexporter/**
   - component_id: exporter_loadbalancing
     name: exporter_loadbalancing
     paths:
@@ -216,10 +212,6 @@ component_management:
     name: exporter_logzio
     paths:
     - exporter/logzioexporter/**
-  - component_id: exporter_loki
-    name: exporter_loki
-    paths:
-    - exporter/lokiexporter/**
   - component_id: exporter_mezmo
     name: exporter_mezmo
     paths:
