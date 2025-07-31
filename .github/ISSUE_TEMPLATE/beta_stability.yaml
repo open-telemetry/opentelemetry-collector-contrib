@@ -162,6 +162,7 @@ body:
       - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
+      - pkg/parquet
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
