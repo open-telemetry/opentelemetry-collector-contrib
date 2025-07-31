@@ -482,7 +482,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 func (p *connectorImp) markSpanAsExemplar(span ptrace.Span) {
 	// Only mark the span as an exemplar if a trace consumer is configured,
 	// otherwise don't mutate the span
-	if p.traceConsumer != nil {
+	if p.config.Exemplars.MarkSpans && p.traceConsumer != nil {
 		span.Attributes().PutBool(exemplarKey, true)
 	}
 }

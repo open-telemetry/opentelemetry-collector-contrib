@@ -107,6 +107,7 @@ type HistogramConfig struct {
 type ExemplarsConfig struct {
 	Enabled         bool `mapstructure:"enabled"`
 	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
+	MarkSpans       bool `mapstructure:"mark_spans"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

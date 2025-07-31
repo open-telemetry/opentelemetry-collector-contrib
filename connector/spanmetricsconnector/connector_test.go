@@ -95,43 +95,49 @@ func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics, _ ptrace.Trac
 	return true
 }
 
-func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics, traces ptrace.Traces) bool {
-	for i := 0; i < input.ResourceMetrics().Len(); i++ {
-		rm := input.ResourceMetrics().At(i)
-		ism := rm.ScopeMetrics()
+func verifyExemplarsExist(markSpans bool) func(tb testing.TB, input pmetric.Metrics, traces ptrace.Traces) bool {
+	return func(tb testing.TB, input pmetric.Metrics, traces ptrace.Traces) bool {
+		for i := 0; i < input.ResourceMetrics().Len(); i++ {
+			rm := input.ResourceMetrics().At(i)
+			ism := rm.ScopeMetrics()
 
-		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
-		for ismC := 0; ismC < ism.Len(); ismC++ {
-			m := ism.At(ismC).Metrics()
+			// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
+			for ismC := 0; ismC < ism.Len(); ismC++ {
+				m := ism.At(ismC).Metrics()
 
-			for mC := 0; mC < m.Len(); mC++ {
-				metric := m.At(mC)
+				for mC := 0; mC < m.Len(); mC++ {
+					metric := m.At(mC)
 
-				if metric.Type() != pmetric.MetricTypeHistogram {
-					continue
-				}
-				dps := metric.Histogram().DataPoints()
-				for dp := 0; dp < dps.Len(); dp++ {
-					d := dps.At(dp)
-					assert.Positive(tb, d.Exemplars().Len())
+					if metric.Type() != pmetric.MetricTypeHistogram {
+						continue
+					}
+					dps := metric.Histogram().DataPoints()
+					for dp := 0; dp < dps.Len(); dp++ {
+						d := dps.At(dp)
+						assert.Positive(tb, d.Exemplars().Len())
+					}
 				}
 			}
 		}
-	}
 
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
-		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
-			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
-				span := ss.Spans().At(k)
-				v, ok := span.Attributes().Get(exemplarKey)
-				assert.True(tb, ok)
-				assert.True(tb, v.Bool())
+		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+			rs := traces.ResourceSpans().At(i)
+			for j := 0; j < rs.ScopeSpans().Len(); j++ {
+				ss := rs.ScopeSpans().At(j)
+				for k := 0; k < ss.Spans().Len(); k++ {
+					span := ss.Spans().At(k)
+					v, ok := span.Attributes().Get(exemplarKey)
+					if !markSpans {
+						assert.False(tb, ok)
+						continue
+					}
+					assert.True(tb, ok)
+					assert.True(tb, v.Bool())
+				}
 			}
 		}
+		return true
 	}
-	return true
 }
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
@@ -427,9 +433,12 @@ func disabledExemplarsConfig() ExemplarsConfig {
 	}
 }
 
-func enabledExemplarsConfig() ExemplarsConfig {
-	return ExemplarsConfig{
-		Enabled: true,
+func enabledExemplarsConfig(markSpans bool) func() ExemplarsConfig {
+	return func() ExemplarsConfig {
+		return ExemplarsConfig{
+			Enabled:   true,
+			MarkSpans: markSpans,
+		}
 	}
 }
 
@@ -887,8 +896,17 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test Exemplars are enabled",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
-			exemplarConfig:         enabledExemplarsConfig,
-			verifier:               verifyExemplarsExist,
+			exemplarConfig:         enabledExemplarsConfig(true),
+			verifier:               verifyExemplarsExist(true),
+			traces:                 []ptrace.Traces{buildSampleTrace()},
+		},
+		// enabling exemplars but do not mark spans
+		{
+			name:                   "Test Exemplars are enabled",
+			aggregationTemporality: cumulative,
+			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         enabledExemplarsConfig(false),
+			verifier:               verifyExemplarsExist(false),
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
 	}
@@ -1596,7 +1614,7 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock())
+			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig(true), enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock())
 			p.metricsConsumer = &consumertest.MetricsSink{}
 			require.NoError(t, err)
 
@@ -1724,7 +1742,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.temporality, func(t *testing.T) {
 			mockClock := newAlwaysIncreasingClock()
-			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, mockClock)
+			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig(true), enabledEventsConfig, tt.temporality, 0, []string{}, 1000, mockClock)
 			require.NoError(t, err)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
@@ -1819,7 +1837,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	timestampCacheSize := 1
 	mockClock := newAlwaysIncreasingClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize, mockClock)
+	p, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig(true), enabledEventsConfig, delta, 0, []string{}, timestampCacheSize, mockClock)
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 
