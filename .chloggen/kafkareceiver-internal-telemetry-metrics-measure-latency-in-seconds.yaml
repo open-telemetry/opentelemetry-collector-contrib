@@ -18,9 +18,9 @@ issues: [41109]
 subtext: |
   Add a new metric kafka_receiver_records_delay to capture the time between producing and receiving a batch of records.
   Improve internal metrics telemetry consistency:
-  kafka_broker_throttling_duration is deprecated in favor of kafka_broker_throttling_latency
-  kafka_receiver_latency is deprecated in favor of kafka_receiver_read_latency
-  kafka_receiver_messages is deprecated in favor kafka_receiver_records
+  kafka_broker_throttling_duration is deprecated in favor of kafka_broker_throttling_latency and will be removed in the next minor release
+  kafka_receiver_latency is deprecated in favor of kafka_receiver_read_latency and will be removed in the next minor release
+  kafka_receiver_messages is deprecated in favor kafka_receiver_records and will be removed in the next minor release
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
