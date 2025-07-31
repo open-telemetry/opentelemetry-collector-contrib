@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/tj/assert"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -27,6 +28,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -736,6 +738,11 @@ func TestScrapeLogs(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, logs.LogRecordCount())
 	mockClient.AssertExpectations(t)
+	// golden.WriteLogs(t, filepath.Join("testdata", "query_sample.yaml"), logs)
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "query_sample.yaml"))
+	assert.NoError(t, err)
+	assert.NoError(t, plogtest.CompareLogs(expectedLogs, logs,
+		plogtest.IgnoreTimestamp()))
 
 	// Test error on CurrentOp
 	mockClient.On("CurrentOp", ctx).Return([]bson.M{}, errors.New("current op failed")).Once()
