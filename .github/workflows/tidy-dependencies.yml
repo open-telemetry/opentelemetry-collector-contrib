@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
@@ -12,6 +15,8 @@ env:
 
 jobs:
   setup-environment:
+    permissions:
+      contents: write # required for pushing changes
     timeout-minutes: 30
     runs-on: ubuntu-24.04
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
@@ -21,7 +26,7 @@ jobs:
           ref: ${{ github.head_ref }}
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache

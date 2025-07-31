@@ -242,7 +242,7 @@ func TestHealthCheck(t *testing.T) {
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil))
+	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", http.NoBody))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)
@@ -350,7 +350,7 @@ func TestValidateReq(t *testing.T) {
 				cfg: cfg,
 			}
 
-			req := httptest.NewRequest(tt.method, "http://localhost", nil)
+			req := httptest.NewRequest(tt.method, "http://localhost", http.NoBody)
 			for k, v := range tt.headers {
 				req.Header.Set(k, v)
 			}

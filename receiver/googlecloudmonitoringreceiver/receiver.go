@@ -107,7 +107,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
 
 		// Get the filter query for the metric
-		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metricType)
+		filterQuery = fmt.Sprintf(`metric.type = %q`, metricType)
 
 		// Define the request to list time series data
 		tsReq := &monitoringpb.ListTimeSeriesRequest{
@@ -237,7 +237,7 @@ func getFilterQuery(metric MetricConfig) string {
 
 	// see https://cloud.google.com/monitoring/api/v3/filters
 	if metric.MetricName != "" {
-		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metric.MetricName)
+		filterQuery = fmt.Sprintf(`metric.type = %q`, metric.MetricName)
 	} else {
 		filterQuery = metric.MetricDescriptorFilter
 	}
@@ -274,7 +274,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 			}
 			if timeSeries.GetMetadata().GetSystemLabels() != nil {
 				for k, v := range timeSeries.GetMetadata().GetSystemLabels().GetFields() {
-					resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+					resource.Attributes().PutStr(k, v.String())
 				}
 			}
 		}
@@ -282,7 +282,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		// Add metric-specific labels if they are present
 		if len(timeSeries.GetMetric().Labels) > 0 {
 			for k, v := range timeSeries.GetMetric().GetLabels() {
-				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+				resource.Attributes().PutStr(k, v)
 			}
 		}
 

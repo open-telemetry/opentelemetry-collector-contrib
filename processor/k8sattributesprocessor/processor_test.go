@@ -34,7 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-func newPodIdentifier(from string, name string, value string) kube.PodIdentifier {
+func newPodIdentifier(from, name, value string) kube.PodIdentifier {
 	if from == kube.ConnectionSource {
 		return kube.PodIdentifier{
 			kube.PodIdentifierAttributeFromConnection(value),
@@ -244,7 +244,7 @@ func (m *multiTest) assertResourceObjectLen(batchNo int) {
 	assert.Equal(m.t, 1, m.nextProfiles.AllProfiles()[batchNo].ResourceProfiles().Len())
 }
 
-func (m *multiTest) assertResourceAttributesLen(batchNo int, attrsLen int) {
+func (m *multiTest) assertResourceAttributesLen(batchNo, attrsLen int) {
 	assert.Equal(m.t, attrsLen, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(0).Resource().Attributes().Len())
 	assert.Equal(m.t, attrsLen, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(m.t, attrsLen, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(0).Resource().Attributes().Len())
@@ -362,7 +362,7 @@ func withContainerRunID(containerRunID string) generateResourceFunc {
 
 type strAddr string
 
-func (s strAddr) String() string {
+func (strAddr) String() string {
 	return "1.1.1.1:3200"
 }
 
@@ -1766,7 +1766,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

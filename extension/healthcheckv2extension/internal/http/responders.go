@@ -5,7 +5,6 @@ package http // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -136,7 +135,7 @@ func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {
 		}
 		if code == http.StatusOK {
 			resp.UpSince = *startTimestamp
-			resp.Uptime = fmt.Sprintf("%v", time.Since(*startTimestamp))
+			resp.Uptime = time.Since(*startTimestamp).String()
 		}
 		return respondWithJSON(code, resp, w)
 	}

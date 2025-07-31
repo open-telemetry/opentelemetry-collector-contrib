@@ -49,7 +49,6 @@ exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
-exporter/lokiexporter exporter/loki
 exporter/mezmoexporter exporter/mezmo
 exporter/opencensusexporter exporter/opencensus
 exporter/opensearchexporter exporter/opensearch
@@ -90,7 +89,6 @@ extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
-extension/healthcheckextension extension/healthcheck
 extension/healthcheckv2extension extension/healthcheckv2
 extension/httpforwarderextension extension/httpforwarder
 extension/jaegerremotesampling extension/jaegerremotesampling
@@ -188,7 +186,6 @@ processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourceprocessor processor/resource
-processor/routingprocessor processor/routing
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
 processor/sumologicprocessor processor/sumologic
@@ -207,7 +204,6 @@ receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
-receiver/bigipreceiver receiver/bigip
 receiver/chronyreceiver receiver/chrony
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
@@ -321,7 +317,9 @@ reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
-exporter/kineticaexporter exporter/kinetica
+extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
+processor/routingprocessor processor/routing
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
+receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon

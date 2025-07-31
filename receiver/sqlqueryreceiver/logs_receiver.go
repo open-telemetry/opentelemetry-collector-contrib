@@ -345,7 +345,7 @@ func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.Lo
 	return errors.Join(errs...)
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {
+func (queryReceiver *logsQueryReceiver) shutdown(context.Context) error {
 	if queryReceiver.db == nil {
 		return nil
 	}

@@ -26,27 +26,27 @@ func (m mockEBSVolumeClient) DescribeVolumes(ctx context.Context, params *ec2.De
 
 type mockFileInfo struct{}
 
-func (m *mockFileInfo) Name() string {
+func (*mockFileInfo) Name() string {
 	return "mockFileInfo"
 }
 
-func (m *mockFileInfo) Size() int64 {
+func (*mockFileInfo) Size() int64 {
 	return 256
 }
 
-func (m *mockFileInfo) Mode() os.FileMode {
+func (*mockFileInfo) Mode() os.FileMode {
 	return os.ModeSymlink
 }
 
-func (m *mockFileInfo) ModTime() time.Time {
+func (*mockFileInfo) ModTime() time.Time {
 	return time.Now()
 }
 
-func (m *mockFileInfo) IsDir() bool {
+func (*mockFileInfo) IsDir() bool {
 	return false
 }
 
-func (m *mockFileInfo) Sys() any {
+func (*mockFileInfo) Sys() any {
 	return nil
 }
 

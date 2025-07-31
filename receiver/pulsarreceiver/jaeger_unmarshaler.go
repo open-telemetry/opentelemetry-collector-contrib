@@ -18,7 +18,7 @@ type jaegerProtoSpanUnmarshaler struct{}
 
 var _ TracesUnmarshaler = (*jaegerProtoSpanUnmarshaler)(nil)
 
-func (j jaegerProtoSpanUnmarshaler) Unmarshal(bytes []byte) (ptrace.Traces, error) {
+func (jaegerProtoSpanUnmarshaler) Unmarshal(bytes []byte) (ptrace.Traces, error) {
 	span := &jaegerproto.Span{}
 	err := span.Unmarshal(bytes)
 	if err != nil {
@@ -27,7 +27,7 @@ func (j jaegerProtoSpanUnmarshaler) Unmarshal(bytes []byte) (ptrace.Traces, erro
 	return jaegerSpanToTraces(span)
 }
 
-func (j jaegerProtoSpanUnmarshaler) Encoding() string {
+func (jaegerProtoSpanUnmarshaler) Encoding() string {
 	return "jaeger_proto"
 }
 
@@ -35,7 +35,7 @@ type jaegerJSONSpanUnmarshaler struct{}
 
 var _ TracesUnmarshaler = (*jaegerJSONSpanUnmarshaler)(nil)
 
-func (j jaegerJSONSpanUnmarshaler) Unmarshal(data []byte) (ptrace.Traces, error) {
+func (jaegerJSONSpanUnmarshaler) Unmarshal(data []byte) (ptrace.Traces, error) {
 	span := &jaegerproto.Span{}
 	err := jsonpb.Unmarshal(bytes.NewReader(data), span)
 	if err != nil {
@@ -44,7 +44,7 @@ func (j jaegerJSONSpanUnmarshaler) Unmarshal(data []byte) (ptrace.Traces, error)
 	return jaegerSpanToTraces(span)
 }
 
-func (j jaegerJSONSpanUnmarshaler) Encoding() string {
+func (jaegerJSONSpanUnmarshaler) Encoding() string {
 	return "jaeger_json"
 }
 

@@ -172,7 +172,7 @@ func prepareLogs() plog.Logs {
 	return logs
 }
 
-func prepareLogsNonDefaultParams(index string, source string, sourcetype string, event string) plog.Logs {
+func prepareLogsNonDefaultParams(index, source, sourcetype, event string) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -200,7 +200,7 @@ func prepareMetricsData(metricName string) pmetric.Metrics {
 	return metricData
 }
 
-func prepareTracesData(index string, source string, sourcetype string) ptrace.Traces {
+func prepareTracesData(index, source, sourcetype string) ptrace.Traces {
 	ts := pcommon.Timestamp(0)
 
 	traces := ptrace.NewTraces()

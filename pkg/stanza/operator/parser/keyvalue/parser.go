@@ -38,7 +38,7 @@ func (p *Parser) parse(value any) (any, error) {
 	}
 }
 
-func (p *Parser) parser(input string, delimiter string, pairDelimiter string) (map[string]any, error) {
+func (p *Parser) parser(input, delimiter, pairDelimiter string) (map[string]any, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", p.ParseFrom.String())
 	}

@@ -26,6 +26,8 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
+For HTTPS endpoints, the receiver can collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability. Note that TLS certificate metrics are disabled by default and must be explicitly enabled in the metrics configuration.
+
 ## Configuration
 
 The following configuration settings are available:
@@ -42,12 +44,26 @@ Each target has the following properties:
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
+To enable TLS certificate collection for HTTPS endpoints, configure the metrics section:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.tls.cert_remaining:
+        enabled: true
+```
+
 ### Example Configuration
 
 ```yaml
 receivers:
   httpcheck:
     collection_interval: 30s
+    # Enable TLS certificate monitoring (disabled by default)
+    metrics:
+      httpcheck.tls.cert_remaining:
+        enabled: true
     targets:
       - method: "GET"
         endpoints:
@@ -62,6 +78,8 @@ receivers:
         endpoint: "http://localhost:8080/hello"
         headers:
           Authorization: "Bearer <your_bearer_token>"
+      - method: "GET"
+        endpoint: "https://example.com"
 processors:
   batch:
     send_batch_max_size: 1000

@@ -905,14 +905,14 @@ func TestValidConfiguration(t *testing.T) {
 			{Key: "two", Value: 123, Action: "INSERT"},
 			{Key: "three", FromAttribute: "two", Action: "upDaTE"},
 			{Key: "five", FromAttribute: "two", Action: "upsert"},
-			{Key: "two", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<documentId>.*)\\/update$", Action: "EXTRact"},
+			{Key: "two", RegexPattern: `^/api/v1/document/(?P<documentId>.*)/update$`, Action: "EXTRact"},
 		},
 	}
 	ap, err := NewAttrProc(cfg)
 	require.NoError(t, err)
 
 	av := pcommon.NewValueInt(123)
-	compiledRegex := regexp.MustCompile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
+	compiledRegex := regexp.MustCompile(`^/api/v1/document/(?P<documentId>.*)/update$`)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
 		{

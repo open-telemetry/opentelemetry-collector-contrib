@@ -38,7 +38,7 @@ type signalToMetrics struct {
 	component.ShutdownFunc
 }
 
-func (sm *signalToMetrics) Capabilities() consumer.Capabilities {
+func (*signalToMetrics) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

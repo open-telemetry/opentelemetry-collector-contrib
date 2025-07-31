@@ -63,7 +63,7 @@ func (cfg *Config) Validate() error {
 	if authMethod > 1 {
 		return errTooManyAuthDetails
 	}
-	if len(strings.TrimSpace(cfg.Queue)) == 0 {
+	if strings.TrimSpace(cfg.Queue) == "" {
 		return errMissingQueueName
 	}
 	if cfg.Flow.DelayedRetry == nil {

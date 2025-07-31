@@ -81,7 +81,7 @@ func Test_ConvertAttributesToElementsXML(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			args := &ConvertAttributesToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.document, nil
 					},
 				},

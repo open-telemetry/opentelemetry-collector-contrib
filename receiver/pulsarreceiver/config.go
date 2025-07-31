@@ -65,7 +65,7 @@ type OAuth2 struct {
 var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
-func (cfg *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (cfg *Config) auth() pulsar.Authentication {
 
 func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	url := cfg.Endpoint
-	if len(url) == 0 {
+	if url == "" {
 		url = defaultServiceURL
 	}
 	options := pulsar.ClientOptions{
@@ -109,7 +109,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
-	if len(cfg.TLSTrustCertsFilePath) > 0 {
+	if cfg.TLSTrustCertsFilePath != "" {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
 
@@ -125,7 +125,7 @@ func (cfg *Config) consumerOptions() (pulsar.ConsumerOptions, error) {
 		SubscriptionName: cfg.Subscription,
 	}
 
-	if len(cfg.ConsumerName) > 0 {
+	if cfg.ConsumerName != "" {
 		options.Name = cfg.ConsumerName
 	}
 

@@ -208,8 +208,18 @@ checklinks:
 
 .PHONY: fmt
 fmt: $(GOFUMPT) $(GOIMPORTS)
-	$(GOFUMPT) -l -w .
+	$(GOFUMPT) -l -w -extra .
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+
+.PHONY: generate
+generate: install-tools
+ifeq ($(CURDIR),$(SRC_ROOT))
+	PATH="$(TOOLS_BIN_DIR):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) gofmt
+else
+	PATH="$(TOOLS_BIN_DIR):$$PATH" $(GOCMD) generate ./...
+	$(MAKE) fmt
+endif
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell

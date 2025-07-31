@@ -411,6 +411,14 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.temp.io:
+    enabled: false
+    description: Total amount of data written to temporary files by queries.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |
@@ -507,6 +515,7 @@ tests:
   goleak:
     ignore:
       any:
+      - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue" # see https://github.com/cihub/seelog/issues/182
       - "github.com/godbus/dbus.(*Conn).inWorker"
       - github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].func1
       top:
