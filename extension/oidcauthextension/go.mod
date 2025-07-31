@@ -3,7 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidca
 go 1.23.0
 
 require (
-	github.com/coreos/go-oidc/v3 v3.14.1
+	github.com/coreos/go-oidc/v3 v3.15.0
+	github.com/go-jose/go-jose/v4 v4.0.5
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.37.0
 	go.opentelemetry.io/collector/component v1.37.0
@@ -19,7 +20,6 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
