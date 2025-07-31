@@ -90,8 +90,9 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 }
 
 // createClientWithPanicRecovery attempts to create a client, and if recreate is enabled
-// and a panic occurs (typically due to database corruption), it will rename the file
-// and try again with a fresh database
+// and corruption is detected, it will rename the file and try again with a fresh database.
+// Since bbolt panics can occur in internal goroutines that we can't catch with recover(),
+// we run the client creation in a separate goroutine to catch those panics.
 func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) (client *fileStorageClient, err error) {
 	// First attempt: try to create client normally
 	if !lfs.cfg.Recreate {
@@ -99,32 +100,102 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 	}
 
-	// If recreate is enabled, handle potential panics during database opening
-	defer func() {
-		if r := recover(); r != nil {
-			lfs.logger.Warn("Database corruption detected, recreating database file", 
-				zap.String("file", absoluteName),
-				zap.Any("panic", r))
-			
-			// Rename the corrupted file
-			backupName := absoluteName + ".backup"
-			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
-				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
-				return
+	// Try to create the client normally first, with goroutine panic recovery
+	client, err = lfs.tryCreateClientWithPanicRecovery(absoluteName)
+	
+	// If we detect corruption, rename the file and try again
+	if err != nil && lfs.isCorruptionError(err) {
+		lfs.logger.Warn("Database corruption detected, recreating database file", 
+			zap.String("file", absoluteName),
+			zap.Error(err))
+		
+		// Rename the corrupted file
+		backupName := absoluteName + ".backup"
+		if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
+			// If file doesn't exist, that's fine - we can proceed
+			if !os.IsNotExist(renameErr) {
+				return nil, fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
 			}
-			
-			lfs.logger.Info("Corrupted database file renamed", 
-				zap.String("original", absoluteName),
-				zap.String("backup", backupName))
-			
-			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 		}
-	}()
-
-	// Try to create the client normally first
-	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		
+		lfs.logger.Info("Corrupted database file renamed, creating fresh database", 
+			zap.String("original", absoluteName),
+			zap.String("backup", backupName))
+		
+		// Try to create client again with fresh database
+		client, err = lfs.tryCreateClientWithPanicRecovery(absoluteName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create fresh database after corruption recovery: %w", err)
+		}
+	}
+	
 	return client, err
+}
+
+// tryCreateClientWithPanicRecovery attempts to create a client with panic recovery
+func (lfs *localFileStorage) tryCreateClientWithPanicRecovery(absoluteName string) (*fileStorageClient, error) {
+	type result struct {
+		client *fileStorageClient
+		err    error
+	}
+	
+	resultChan := make(chan result, 1)
+	
+	// Run newClient in a goroutine to catch panics from bbolt's internal goroutines
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// If there's a panic in this goroutine, convert it to an error
+				lfs.logger.Error("Panic detected during database opening", 
+					zap.String("file", absoluteName),
+					zap.Any("panic", r))
+				resultChan <- result{nil, fmt.Errorf("database corruption panic: %v", r)}
+			}
+		}()
+		
+		client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		resultChan <- result{client, err}
+	}()
+	
+	// Wait for result
+	res := <-resultChan
+	return res.client, res.err
+}
+
+// isCorruptionError analyzes the error to determine if it indicates database corruption
+func (lfs *localFileStorage) isCorruptionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	
+	errStr := strings.ToLower(err.Error())
+	
+	// Check for known corruption indicators
+	corruptionKeywords := []string{
+		"corruption",
+		"corrupted", 
+		"invalid",
+		"assertion failed",
+		"panic",
+		"unexpected",
+		"malformed",
+		"bad",
+		"freelist",
+		"page",
+		"bucket",
+		"meta",
+	}
+	
+	for _, keyword := range corruptionKeywords {
+		if strings.Contains(errStr, keyword) {
+			lfs.logger.Debug("Corruption keyword detected", 
+				zap.String("keyword", keyword),
+				zap.Error(err))
+			return true
+		}
+	}
+	
+	return false
 }
 
 func kindString(k component.Kind) string {
