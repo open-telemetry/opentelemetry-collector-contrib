@@ -245,7 +245,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	if kr.config.IncludeInitialState != nil && *kr.config.IncludeInitialState {
+	if kr.config.IncludeInitialState {
 		kr.sendInitialState(ctx, config, resource)
 	}
 

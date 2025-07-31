@@ -290,7 +290,7 @@ func TestIncludeInitialState(t *testing.T) {
 			rCfg.makeDiscoveryClient = getMockDiscoveryClient
 			rCfg.ErrorMode = PropagateError
 			if tt.includeInitialState != nil {
-				rCfg.IncludeInitialState = tt.includeInitialState
+				rCfg.IncludeInitialState = *tt.includeInitialState
 			}
 
 			rCfg.Objects = []*K8sObjectsConfig{
@@ -367,8 +367,7 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	includeInitialState := true
-	rCfg.IncludeInitialState = &includeInitialState
+	rCfg.IncludeInitialState = true
 	rCfg.ErrorMode = PropagateError
 
 	rCfg.Objects = []*K8sObjectsConfig{

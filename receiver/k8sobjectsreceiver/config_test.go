@@ -254,7 +254,7 @@ func TestDeepCopy(t *testing.T) {
 func TestCreateDefaultConfigIncludeInitialState(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	// Verify that IncludeInitialState defaults to nil/false
-	assert.Nil(t, cfg.IncludeInitialState)
+	assert.False(t, cfg.IncludeInitialState)
 }
 
 func TestConfigValidationIncludeInitialState(t *testing.T) {
@@ -269,7 +269,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 			desc: "include_initial_state true with watch mode is valid",
 			cfg: &Config{
 				ErrorMode:           PropagateError,
-				IncludeInitialState: func() *bool { b := true; return &b }(),
+				IncludeInitialState: true,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -282,7 +282,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 			desc: "include_initial_state false with watch mode is valid",
 			cfg: &Config{
 				ErrorMode:           PropagateError,
-				IncludeInitialState: func() *bool { b := false; return &b }(),
+				IncludeInitialState: false,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -295,7 +295,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 			desc: "include_initial_state true with pull mode is invalid",
 			cfg: &Config{
 				ErrorMode:           PropagateError,
-				IncludeInitialState: func() *bool { b := true; return &b }(),
+				IncludeInitialState: true,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
