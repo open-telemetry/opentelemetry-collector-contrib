@@ -97,7 +97,7 @@ func getHistogramBucketsMetric(metric pmetric.Metric) pmetric.Metric {
 			bucketDataPoint.SetStartTimestamp(histogramDataPoint.StartTimestamp())
 			bucketDataPoint.SetTimestamp(histogramDataPoint.Timestamp())
 			cumulative += histogramDataPoint.BucketCounts().At(j)
-			bucketDataPoint.SetIntValue(int64(cumulative))
+			bucketDataPoint.SetDoubleValue(float64(cumulative))
 		}
 
 		// need to add one more bucket at +Inf
@@ -107,7 +107,7 @@ func getHistogramBucketsMetric(metric pmetric.Metric) pmetric.Metric {
 		bucketDataPoint.SetStartTimestamp(histogramDataPoint.StartTimestamp())
 		bucketDataPoint.SetTimestamp(histogramDataPoint.Timestamp())
 		cumulative += histogramDataPoint.BucketCounts().At(histogramDataPoint.ExplicitBounds().Len())
-		bucketDataPoint.SetIntValue(int64(cumulative))
+		bucketDataPoint.SetDoubleValue(float64(cumulative))
 	}
 	return bucketsMetric
 }
@@ -149,7 +149,7 @@ func getHistogramCountMetric(metric pmetric.Metric) pmetric.Metric {
 		histogramDataPoint.Attributes().CopyTo(countDataPoint.Attributes())
 		countDataPoint.SetStartTimestamp(histogramDataPoint.StartTimestamp())
 		countDataPoint.SetTimestamp(histogramDataPoint.Timestamp())
-		countDataPoint.SetIntValue(int64(histogramDataPoint.Count()))
+		countDataPoint.SetDoubleValue(float64(histogramDataPoint.Count()))
 	}
 	return countMetric
 }
