@@ -96,10 +96,9 @@ are then also available for the use within association rules. Available attribut
   - k8s.cluster.uid
   - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
   - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
-  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)
-  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)
+  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)(cannot be used for source rules in the pod_association when it's calculated based on container's image tag/digest)
+  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)(cannot be used for source rules in the pod_association)
   - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
-
 
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
@@ -126,7 +125,7 @@ correctly associate the matching container to the resource:
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
-Please note, however, that container level attributes can't be used for source rules in the pod_association.
+Please note, however, that only `container.id` attribute can be used for source rules in the pod_association.
 
 Example for extracting container level attributes:
 
