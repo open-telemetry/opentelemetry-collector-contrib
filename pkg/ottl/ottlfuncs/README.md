@@ -533,6 +533,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
 - [Year](#year)
@@ -2512,6 +2513,14 @@ results in
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### UUIDv7
+
+`UUIDv7()`
+
+The `UUIDv7` function generates a version 7 UUID using the current Unix epoch timestamp.
+
+The returned type is `string`.
 
 ### Values
 
