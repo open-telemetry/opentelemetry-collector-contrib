@@ -99,6 +99,7 @@ extension/encoding/                                              @open-telemetry
 extension/encoding/avrologencodingextension/                     @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/awscloudwatchmetricstreamsencodingextension/  @open-telemetry/collector-contrib-approvers @axw @constanca-m
 extension/encoding/awslogsencodingextension/                     @open-telemetry/collector-contrib-approvers @axw @constanca-m
+extension/encoding/azureencodingextension/                       @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith @constanca-m
 extension/encoding/googlecloudlogentryencodingextension/         @open-telemetry/collector-contrib-approvers @constanca-m
 extension/encoding/jaegerencodingextension/                      @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/                     @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
