@@ -11,6 +11,7 @@ import (
 	"net"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -147,19 +148,22 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	scraper := newMongodbScraper(settings, cfg)
 	require.NoError(t, err)
 
-	coll := client.Database("sample_db").Collection("users")
-
 	// Start a goroutine to send queries periodically.
 	queryCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	finished := atomic.Bool{}
+	finished.Store(false)
 	go func() {
-		ticker := time.NewTicker(100 * time.Millisecond)
+		coll := client.Database("sample_db").Collection("users")
+		ticker := time.NewTicker(10 * time.Millisecond)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
 				_, err := coll.Find(queryCtx, bson.M{"$where": "sleep(500); return true;"})
-				assert.NoError(t, err)
+				if !finished.Load() {
+					assert.NoError(t, err)
+				}
 			case <-queryCtx.Done():
 				return
 			}
@@ -196,5 +200,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		}
 
 		return false
-	}, 60*time.Second, 150*time.Millisecond, "failed to find expected log record")
+	}, 60*time.Second, 1*time.Millisecond, "failed to find expected log record")
+	finished.Store(true)
 }
