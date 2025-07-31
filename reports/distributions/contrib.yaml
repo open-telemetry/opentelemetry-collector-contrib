@@ -45,7 +45,6 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
         - opencensus
         - opensearch
@@ -62,6 +61,7 @@ components:
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
@@ -79,20 +79,27 @@ components:
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googleclientauth
         - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
         - http_forwarder
+        - jaeger_encoding
         - jaegerremotesampling
+        - json_log_encoding
+        - k8s_leader_elector
         - k8s_observer
         - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
+        - otlp_encoding
         - pprof
         - redis_storage
         - sigv4auth
+        - text_encoding
+        - zipkin_encoding
     processor:
         - attributes
         - cumulativetodelta
@@ -192,6 +199,7 @@ components:
         - postgresql
         - prometheus
         - prometheus_simple
+        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -199,6 +207,7 @@ components:
         - receiver_creator
         - redis
         - riak
+        - saphana
         - sapm
         - signalfx
         - skywalking

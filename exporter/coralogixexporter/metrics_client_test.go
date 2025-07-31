@@ -377,7 +377,7 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	partialSuccess.SetRejectedDataPoints(1)
 	mockSrv.partialSuccess = &partialSuccess
 
-	core, observed := observer.New(zapcore.ErrorLevel)
+	core, observed := observer.New(zapcore.DebugLevel)
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 

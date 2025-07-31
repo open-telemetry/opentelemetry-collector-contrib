@@ -37,6 +37,7 @@ const (
 	executeCount                   = "execute count"
 	parseCountTotal                = "parse count (total)"
 	parseCountHard                 = "parse count (hard)"
+	logons                         = "logons cumulative"
 	userCommits                    = "user commits"
 	userRollbacks                  = "user rollbacks"
 	physicalReads                  = "physical reads"
@@ -212,7 +213,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbDbBlockGets.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbConsistentGets.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbConsistentGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLogons.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -358,6 +360,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case consistentGets:
 				err := s.mb.RecordOracledbConsistentGetsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case logons:
+				err := s.mb.RecordOracledbLogonsDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
@@ -786,8 +793,6 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	for _, row := range planData {
 		currentChildAddress := row[childAddressAttr]
 		jsonPlansSlice, ok := childAddressToPlanMap[currentChildAddress]
-		// child address was for internal use only, it's not going to be used beyond this point
-		delete(row, childAddressAttr)
 		if ok {
 			childAddressToPlanMap[currentChildAddress] = append(jsonPlansSlice, row)
 		} else {

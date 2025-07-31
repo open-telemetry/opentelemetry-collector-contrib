@@ -127,6 +127,13 @@ resourceMetrics:
                         stringValue: data
                   startTimeUnixNano: "1674545255370693000"
                   timeUnixNano: "1674545265375344000"
+                - asInt: "1148"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
             unit: "1"
           - description: The number of bytes in the InnoDB buffer pool.
             name: mysql.buffer_pool.usage
