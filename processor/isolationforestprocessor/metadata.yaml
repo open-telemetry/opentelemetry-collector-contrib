@@ -1,0 +1,36 @@
+type: isolationforest
+status:
+  class: processor
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [your-github-username]
+
+resource_attributes:
+
+attributes:
+  anomaly_score:
+    description: The anomaly score calculated by the isolation forest algorithm (0.0-1.0, higher values indicate more anomalous data)
+    type: double
+
+telemetry:
+  metrics:
+    isolationforest_processed_metrics:
+      enabled: true
+      description: Number of metrics processed by the isolation forest processor
+      unit: 1
+      gauge:
+        value_type: int
+    isolationforest_anomalies_detected:
+      enabled: true
+      description: Number of anomalies detected by the isolation forest processor
+      unit: 1
+      gauge:
+        value_type: int
+    isolationforest_model_training_duration:
+      enabled: true
+      description: Time taken to train the isolation forest model
+      unit: ms
+      gauge:
+        value_type: int

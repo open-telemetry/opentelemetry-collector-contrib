@@ -143,6 +143,8 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.131.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.131.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.131.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor v0.131.0
+    path: ./processor/isolationforestprocessor
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.131.0
@@ -278,4 +280,7 @@ providers:
 # When using `make genotelcontribcol`, the `replaces` content is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
+
 replaces:
+  github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor => ./processor/isolationforestprocessor
+
