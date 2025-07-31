@@ -28,7 +28,6 @@ const (
 )
 
 type TopQueryCollection struct {
-	Enabled                bool          `mapstructure:"enabled"`
 	MaxRowsPerQuery        int64         `mapstructure:"max_rows_per_query"`
 	TopNQuery              int64         `mapstructure:"top_n_query"`
 	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
@@ -37,7 +36,6 @@ type TopQueryCollection struct {
 }
 
 type QuerySampleCollection struct {
-	Enabled         bool  `mapstructure:"enabled"`
 	MaxRowsPerQuery int64 `mapstructure:"max_rows_per_query"`
 }
 
