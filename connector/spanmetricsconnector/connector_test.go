@@ -719,7 +719,7 @@ func TestConnectorCapabilities(t *testing.T) {
 
 	// Verify
 	assert.NotNil(t, c)
-	assert.False(t, caps.MutatesData)
+	assert.True(t, caps.MutatesData)
 }
 
 type errConsumer struct {

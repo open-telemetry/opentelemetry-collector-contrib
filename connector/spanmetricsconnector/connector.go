@@ -239,7 +239,7 @@ func (p *connectorImp) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 func (*connectorImp) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // ConsumeTraces implements the consumer.Traces interface.
