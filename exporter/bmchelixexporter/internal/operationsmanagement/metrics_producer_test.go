@@ -300,11 +300,12 @@ func TestComputeRateMetricFromCounter(t *testing.T) {
 	}
 
 	// First sample: initial counter datapoint
+	now := time.Now()
 	first := BMCHelixOMMetric{
 		Labels: labels,
 		Samples: []BMCHelixOMSample{{
 			Value:     5000,
-			Timestamp: time.Now().UnixMilli(),
+			Timestamp: now.UnixMilli(),
 		}},
 	}
 
@@ -312,13 +313,13 @@ func TestComputeRateMetricFromCounter(t *testing.T) {
 	assert.Nil(t, producer.computeRateMetricFromCounter(first), "First datapoint should not yield a rate metric")
 
 	// Simulate a second datapoint after a short delay (simulate time passage)
-	time.Sleep(20 * time.Millisecond)
+	next := now.Add(100 * time.Millisecond)
 
 	second := BMCHelixOMMetric{
 		Labels: labels,
 		Samples: []BMCHelixOMSample{{
 			Value:     8000,
-			Timestamp: time.Now().UnixMilli(),
+			Timestamp: next.UnixMilli(),
 		}},
 	}
 

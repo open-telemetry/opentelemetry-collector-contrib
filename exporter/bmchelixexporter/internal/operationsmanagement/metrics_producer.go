@@ -55,7 +55,7 @@ var coreAttributes = map[string]struct{}{
 	"entityId":               {},
 }
 
-var rateMetricFlag = "bmchelix.requiresRateMetric"
+const rateMetricFlag = "bmchelix.requiresRateMetric"
 
 // ProduceHelixPayload takes the OpenTelemetry metrics and converts them into the BMC Helix Operations Management metric format
 func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHelixOMMetric, error) {
@@ -503,8 +503,8 @@ func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric)
 
 	deltaValue := sample.Value - prev.Value
 	if deltaValue < 0 {
-		mp.logger.Debug("Negative delta value, skipping rate calculation", zap.String("key", key), zap.Float64("deltaValue", deltaValue))
-		return nil
+		mp.logger.Debug("Negative delta value, resetting to zero", zap.String("key", key), zap.Float64("deltaValue", deltaValue))
+		deltaValue = 0 // Avoid negative rates
 	}
 
 	deltaTime := float64(sample.Timestamp-prev.Timestamp) / 1000.0 // ms to sec
