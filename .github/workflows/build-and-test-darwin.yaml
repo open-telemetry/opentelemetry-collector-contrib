@@ -23,7 +23,28 @@ concurrency:
 permissions: read-all
 
 jobs:
+  setup-environment:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-14, macos-15 ]
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
   darwin-build-unittest-binary:
+    needs: [setup-environment]
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
       fail-fast: false
@@ -42,12 +63,6 @@ jobs:
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Build test binaries
         env:
           GOTESTARCH: amd64
@@ -76,12 +91,6 @@ jobs:
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: testbinaries
