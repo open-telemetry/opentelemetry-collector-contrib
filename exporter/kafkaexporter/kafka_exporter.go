@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"iter"
-	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
@@ -151,6 +150,10 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		partitionMessages, err := e.messenger.marshalData(data)
 		if err != nil {
 			err = fmt.Errorf("%w when exporting to topic %s", err, topic)
+			e.logger.Error("kafka records marshal data failed",
+				zap.String("topic", topic),
+				zap.Error(err),
+			)
 			return consumererror.NewPermanent(err)
 		}
 		for i := range partitionMessages {
@@ -172,10 +175,17 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 			for _, mi := range m.TopicMessages {
 				e.logger.Debug("kafka records exported",
 					zap.Int("records", len(mi.Messages)),
-					zap.Time("timestamp", time.Now()),
 					zap.String("topic", mi.Topic),
 				)
 			}
+		}
+	} else {
+		for _, mi := range m.TopicMessages {
+			e.logger.Error("kafka records export failed",
+				zap.Int("records", len(mi.Messages)),
+				zap.String("topic", mi.Topic),
+				zap.Error(err),
+			)
 		}
 	}
 	return err
