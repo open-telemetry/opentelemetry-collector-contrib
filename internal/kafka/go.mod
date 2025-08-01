@@ -13,9 +13,9 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/config/configcompression v1.37.0
-	go.opentelemetry.io/collector/config/configopaque v1.37.0
-	go.opentelemetry.io/collector/config/configtls v1.37.0
+	go.opentelemetry.io/collector/config/configcompression v1.37.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/config/configopaque v1.37.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/config/configtls v1.37.1-0.20250801020258-8b73477b9810
 	go.uber.org/goleak v1.3.0
 	golang.org/x/oauth2 v0.30.0
 )
@@ -69,8 +69,8 @@ require (
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/confmap v1.37.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.37.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.37.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/featuregate v1.37.1-0.20250801020258-8b73477b9810 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.38.0 // indirect
