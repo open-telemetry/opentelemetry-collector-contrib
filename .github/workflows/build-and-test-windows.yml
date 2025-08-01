@@ -26,11 +26,7 @@ permissions: read-all
 
 jobs:
   setup-environment:
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ windows-2022, windows-2025 ]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-2025
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
