@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -56,7 +57,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -132,7 +133,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -208,7 +209,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -358,6 +359,22 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "queuebatch_enabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.QueueBatchConfig.Enabled = true
+				cfg.QueueBatchConfig.NumConsumers = 100
+				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeRequests
+				cfg.QueueBatchConfig.Batch = configoptional.Some(
+					exporterhelper.BatchConfig{
+						Sizer: exporterhelper.RequestSizerTypeRequests,
+					},
+				)
 			}),
 		},
 	}
