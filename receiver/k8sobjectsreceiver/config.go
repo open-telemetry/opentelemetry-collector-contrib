@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -46,6 +47,7 @@ type K8sObjectsConfig struct {
 	Name             string               `mapstructure:"name"`
 	Group            string               `mapstructure:"group"`
 	Namespaces       []string             `mapstructure:"namespaces"`
+	IgnoreNamespaces filter.Config        `mapstructure:"ignore_namespaces"`
 	Mode             mode                 `mapstructure:"mode"`
 	LabelSelector    string               `mapstructure:"label_selector"`
 	FieldSelector    string               `mapstructure:"field_selector"`
@@ -150,13 +152,14 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	copied := &K8sObjectsConfig{
-		Name:            k.Name,
-		Group:           k.Group,
-		Mode:            k.Mode,
-		LabelSelector:   k.LabelSelector,
-		FieldSelector:   k.FieldSelector,
-		Interval:        k.Interval,
-		ResourceVersion: k.ResourceVersion,
+		Name:             k.Name,
+		Group:            k.Group,
+		Mode:             k.Mode,
+		LabelSelector:    k.LabelSelector,
+		FieldSelector:    k.FieldSelector,
+		Interval:         k.Interval,
+		ResourceVersion:  k.ResourceVersion,
+		IgnoreNamespaces: k.IgnoreNamespaces,
 	}
 
 	copied.Namespaces = make([]string, len(k.Namespaces))
