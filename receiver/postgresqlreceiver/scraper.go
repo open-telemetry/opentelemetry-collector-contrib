@@ -118,14 +118,13 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
-	if err != nil {
-		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-		return pmetric.NewMetrics(), err
-	}
-	defer listClient.Close()
-
 	if len(databases) == 0 {
+		listClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+		if err != nil {
+			p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+			return pmetric.NewMetrics(), err
+		}
+		defer listClient.Close()
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
 			p.logger.Error("Failed to request list of databases from postgres", zap.Error(dbErr))
@@ -149,7 +148,6 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		dbSizeMap:   make(map[databaseName]int64),
 		dbStats:     make(map[databaseName]databaseStats),
 	}
-	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
 		dbClient, dbErr := p.clientFactory.getClient(database)
@@ -160,18 +158,18 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		}
 		defer dbClient.Close()
 		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
-
+		p.retrieveDBMetrics(ctx, dbClient, databases, r, &errs)
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 		p.collectFunctions(ctx, now, dbClient, database, &errs)
+		p.collectBGWriterStats(ctx, now, dbClient, &errs)
+		p.collectWalAge(ctx, now, dbClient, &errs)
+		p.collectReplicationStats(ctx, now, dbClient, &errs)
+		p.collectMaxConnections(ctx, now, dbClient, &errs)
+		p.collectDatabaseLocks(ctx, now, dbClient, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
-	p.collectBGWriterStats(ctx, now, listClient, &errs)
-	p.collectWalAge(ctx, now, listClient, &errs)
-	p.collectReplicationStats(ctx, now, listClient, &errs)
-	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
 	return p.mb.Emit(), errs.combine()
 }
