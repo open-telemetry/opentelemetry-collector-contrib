@@ -24,7 +24,7 @@ import (
 
 type mockHubWrapper struct{}
 
-func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubRuntimeInformation, error) {
+func (mockHubWrapper) GetRuntimeInformation(context.Context) (*eventhub.HubRuntimeInformation, error) {
 	return &eventhub.HubRuntimeInformation{
 		Path:           "foo",
 		CreatedAt:      time.Now(),
@@ -33,13 +33,13 @@ func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubR
 	}, nil
 }
 
-func (m mockHubWrapper) Receive(ctx context.Context, _ string, _ eventhub.Handler, _ ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
+func (mockHubWrapper) Receive(ctx context.Context, _ string, _ eventhub.Handler, _ ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
 	return &mockListenerHandleWrapper{
 		ctx: ctx,
 	}, nil
 }
 
-func (m mockHubWrapper) Close(_ context.Context) error {
+func (mockHubWrapper) Close(context.Context) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ func (m *mockListenerHandleWrapper) Done() <-chan struct{} {
 	return m.ctx.Done()
 }
 
-func (m mockListenerHandleWrapper) Err() error {
+func (mockListenerHandleWrapper) Err() error {
 	return nil
 }
 
@@ -70,7 +70,7 @@ func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Tra
 	m.nextTracesConsumer = nextTracesConsumer
 }
 
-func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
+func (*mockDataConsumer) setNextMetricsConsumer(consumer.Metrics) {}
 
 func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) error {
 	logsContext := m.obsrecv.StartLogsOp(ctx)

@@ -44,7 +44,7 @@ var _ error = (*ErrMaxEntries)(nil)
 type CorrelationClient interface {
 	Correlate(*Correlation, CorrelateCB)
 	Delete(*Correlation, SuccessfulDeleteCB)
-	Get(dimName string, dimValue string, cb SuccessfulGetCB)
+	Get(dimName, dimValue string, cb SuccessfulGetCB)
 	Start()
 	Shutdown()
 }
@@ -237,7 +237,7 @@ func (cc *Client) Delete(cor *Correlation, callback SuccessfulDeleteCB) {
 type SuccessfulGetCB func(map[string][]string)
 
 // Get
-func (cc *Client) Get(dimName string, dimValue string, callback SuccessfulGetCB) {
+func (cc *Client) Get(dimName, dimValue string, callback SuccessfulGetCB) {
 	err := cc.putRequestOnChan(&request{
 		Correlation: &Correlation{
 			DimName:  dimName,

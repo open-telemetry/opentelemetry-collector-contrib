@@ -33,7 +33,7 @@ func Start(cfg *Config) error {
 
 	logger.Info("starting the logs generator with configuration", zap.Any("config", cfg))
 
-	if err = run(cfg, exporterFactory(cfg, logger), logger); err != nil {
+	if err := run(cfg, exporterFactory(cfg, logger), logger); err != nil {
 		return err
 	}
 

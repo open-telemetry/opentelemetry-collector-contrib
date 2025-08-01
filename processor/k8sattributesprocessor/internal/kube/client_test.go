@@ -33,7 +33,7 @@ func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 	return fake.NewSimpleClientset(), nil
 }
 
-func newPodIdentifier(from string, name string, value string) PodIdentifier {
+func newPodIdentifier(from, name, value string) PodIdentifier {
 	if from == "connection" {
 		name = ""
 	}
@@ -871,7 +871,7 @@ func TestExtractionRules(t *testing.T) {
 					}, {
 						Name:  "l2",
 						Key:   "label2",
-						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
 						From:  MetadataFromPod,
 					},
 				},
@@ -899,7 +899,7 @@ func TestExtractionRules(t *testing.T) {
 					}, {
 						Name:  "l2",
 						Key:   "label2",
-						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
 					},
 				},
 			},
@@ -2446,7 +2446,7 @@ type neverSyncedResourceEventHandlerRegistration struct {
 	cache.ResourceEventHandlerRegistration
 }
 
-func (n *neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
+func (*neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
 	return false
 }
 

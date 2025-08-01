@@ -236,7 +236,7 @@ func (p *connectorImp) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
-func (p *connectorImp) Capabilities() consumer.Capabilities {
+func (*connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -597,7 +597,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
-func buildMetricName(namespace string, name string) string {
+func buildMetricName(namespace, name string) string {
 	if namespace != "" {
 		return namespace + "." + name
 	}

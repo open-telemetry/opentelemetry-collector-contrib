@@ -900,7 +900,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
+func buildSFxDatapointMsg(time, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
 	return &sfxpb.DataPointUploadMessage{
 		Datapoints: []*sfxpb.DataPoint{
 			{
@@ -941,11 +941,11 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(_ []byte) (n int, err error) {
+func (badReqBody) Read([]byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 
-func (b badReqBody) Close() error {
+func (badReqBody) Close() error {
 	return nil
 }
 
@@ -1068,7 +1068,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

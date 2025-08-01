@@ -344,7 +344,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 }
 
 // TODO: duplicate
-func (s *azureBatchScraper) storeMetricsDefinitionByType(subscriptionID string, resourceType string, name string, compositeKey metricsCompositeKey) {
+func (s *azureBatchScraper) storeMetricsDefinitionByType(subscriptionID, resourceType, name string, compositeKey metricsCompositeKey) {
 	if _, ok := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey]; ok {
 		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics = append(
 			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, name,

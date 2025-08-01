@@ -141,7 +141,7 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 	}
 
 	for i := 0; i < expected.ScopeSpans().Len(); i++ {
-		errPrefix := fmt.Sprintf(`scope "%s"`, expected.ScopeSpans().At(i).Scope().Name())
+		errPrefix := fmt.Sprintf(`scope %q`, expected.ScopeSpans().At(i).Scope().Name())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix,
 			CompareScopeSpans(expected.ScopeSpans().At(i), actual.ScopeSpans().At(i))))
 	}
@@ -206,7 +206,7 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 	}
 
 	for as, es := range matchingSpans {
-		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span "%s"`, es.Name()), CompareSpan(es, as)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span %q`, es.Name()), CompareSpan(es, as)))
 	}
 
 	return errs
@@ -340,7 +340,7 @@ func compareSpanEventSlice(expected, actual ptrace.SpanEventSlice) (errs error) 
 	}
 
 	for ae, ee := range matchingSpanEvents {
-		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span event "%s"`, ee.Name()), CompareSpanEvent(ee, ae)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span event %q`, ee.Name()), CompareSpanEvent(ee, ae)))
 	}
 
 	return errs
@@ -420,7 +420,7 @@ func compareSpanLinkSlice(expected, actual ptrace.SpanLinkSlice) (errs error) {
 	}
 
 	for al, el := range matchingSpanLinks {
-		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span link "%s"`, el.SpanID()), CompareSpanLink(el, al)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span link %q`, el.SpanID()), CompareSpanLink(el, al)))
 	}
 
 	return errs

@@ -471,6 +471,6 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 	return tc.tracesConsumer.ConsumeTraces(ctx, traces)
 }
 
-func (tc *testConsumer) Capabilities() consumer.Capabilities {
+func (*testConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

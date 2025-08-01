@@ -39,7 +39,7 @@ func Test_keys(t *testing.T) {
 			err := m.FromRaw(tt.target)
 			assert.NoError(t, err)
 			target := ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return m, nil
 				},
 			}

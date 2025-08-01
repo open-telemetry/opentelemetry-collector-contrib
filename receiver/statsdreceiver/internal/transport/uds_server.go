@@ -14,7 +14,7 @@ type udsServer struct {
 }
 
 // Ensure that Server is implemented on UDS Server.
-var _ (Server) = (*udsServer)(nil)
+var _ Server = (*udsServer)(nil)
 
 // NewUDSServer creates a transport.Server using Unixgram as its transport.
 func NewUDSServer(transport Transport, socketPath string, socketPermissions os.FileMode) (Server, error) {

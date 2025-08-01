@@ -107,7 +107,7 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 	return prwe.exportV2(ctx, requests)
 }
 
-func (prwe *prwExporter) handleHeader(ctx context.Context, resp *http.Response, headerName string, metricType string, recordFunc func(context.Context, int64)) {
+func (prwe *prwExporter) handleHeader(ctx context.Context, resp *http.Response, headerName, metricType string, recordFunc func(context.Context, int64)) {
 	headerValue := resp.Header.Get(headerName)
 	if headerValue == "" {
 		prwe.settings.Logger.Warn(

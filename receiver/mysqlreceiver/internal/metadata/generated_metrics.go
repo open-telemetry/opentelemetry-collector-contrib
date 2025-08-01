@@ -94,6 +94,7 @@ const (
 	AttributeBufferPoolPagesData
 	AttributeBufferPoolPagesFree
 	AttributeBufferPoolPagesMisc
+	AttributeBufferPoolPagesTotal
 )
 
 // String returns the string representation of the AttributeBufferPoolPages.
@@ -105,15 +106,18 @@ func (av AttributeBufferPoolPages) String() string {
 		return "free"
 	case AttributeBufferPoolPagesMisc:
 		return "misc"
+	case AttributeBufferPoolPagesTotal:
+		return "total"
 	}
 	return ""
 }
 
 // MapAttributeBufferPoolPages is a helper map of string to AttributeBufferPoolPages attribute value.
 var MapAttributeBufferPoolPages = map[string]AttributeBufferPoolPages{
-	"data": AttributeBufferPoolPagesData,
-	"free": AttributeBufferPoolPagesFree,
-	"misc": AttributeBufferPoolPagesMisc,
+	"data":  AttributeBufferPoolPagesData,
+	"free":  AttributeBufferPoolPagesFree,
+	"misc":  AttributeBufferPoolPagesMisc,
+	"total": AttributeBufferPoolPagesTotal,
 }
 
 // AttributeCacheStatus specifies the value cache_status attribute.

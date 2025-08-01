@@ -108,7 +108,7 @@ func (rc *recordCarrier) clearThreshold() {
 	rc.record.Attributes().Remove("sampling.threshold")
 }
 
-func (rc *recordCarrier) reserialize() error {
+func (*recordCarrier) reserialize() error {
 	return nil
 }
 
@@ -167,7 +167,7 @@ func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (random
 
 // randomnessFromLogRecord (hashingSampler) uses OTEP 235 semantic
 // conventions basing its decision only on the TraceID.
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+func (*consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	lrc, err := newLogRecordCarrier(logRec)
 	rnd := newMissingRandomnessMethod()
 

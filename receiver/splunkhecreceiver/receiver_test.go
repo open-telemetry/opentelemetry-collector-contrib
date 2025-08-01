@@ -890,11 +890,11 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(_ []byte) (n int, err error) {
+func (badReqBody) Read([]byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 
-func (b badReqBody) Close() error {
+func (badReqBody) Close() error {
 	return nil
 }
 
@@ -1439,11 +1439,11 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						currAckID++
 						return currAckID
 					},
-					ack: func(_ string, _ uint64) {},
+					ack: func(string, uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -1461,11 +1461,11 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						currAckID++
 						return currAckID
 					},
-					ack: func(_ string, _ uint64) {},
+					ack: func(string, uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -1482,11 +1482,11 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						currAckID++
 						return currAckID
 					},
-					ack: func(_ string, _ uint64) {},
+					ack: func(string, uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -1614,10 +1614,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						return uint64(1)
 					},
-					ack: func(_ string, _ uint64) {
+					ack: func(string, uint64) {
 					},
 				}
 			},
@@ -1639,10 +1639,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						return uint64(1)
 					},
-					ack: func(_ string, _ uint64) {
+					ack: func(string, uint64) {
 					},
 				}
 			},
@@ -1663,10 +1663,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}(),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
-					processEvent: func(_ string) (ackID uint64) {
+					processEvent: func(string) (ackID uint64) {
 						return uint64(1)
 					},
-					ack: func(_ string, _ uint64) {
+					ack: func(string, uint64) {
 					},
 				}
 			},
@@ -2046,11 +2046,11 @@ type mockAckExtension struct {
 	processEvent func(partitionID string) (ackID uint64)
 }
 
-func (ae *mockAckExtension) Start(_ context.Context, _ component.Host) error {
+func (*mockAckExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (ae *mockAckExtension) Shutdown(_ context.Context) error {
+func (*mockAckExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -2072,7 +2072,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

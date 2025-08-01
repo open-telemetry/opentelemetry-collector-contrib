@@ -35,7 +35,7 @@ func (rc *metricsRecordConsumer) ConsumeMetrics(_ context.Context, metrics pmetr
 	return nil
 }
 
-func (rc *metricsRecordConsumer) Capabilities() consumer.Capabilities {
+func (*metricsRecordConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

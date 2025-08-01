@@ -21,7 +21,6 @@ internal/common
 
 # Start deprecated components list
 
-processor/routingprocessor/
 
 
 # End deprecated components list
@@ -32,9 +31,11 @@ processor/routingprocessor/
 
 exporter/awscloudwatchlogsexporter
 exporter/carbonexporter
-exporter/kineticaexporter
+extension/healthcheckextension
 extension/observer/ecstaskobserver
+processor/routingprocessor
 receiver/awscloudwatchmetricsreceiver
+receiver/bigipreceiver
 receiver/carbonreceiver
 
 # End unmaintained components list

@@ -374,7 +374,8 @@ func (s *Stream) read(_ context.Context) error {
 			return err
 		}
 
-		if err = s.processBatchStatus(resp); err != nil {
+		err = s.processBatchStatus(resp)
+		if err != nil {
 			return err
 		}
 	}

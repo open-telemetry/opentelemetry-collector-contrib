@@ -294,7 +294,7 @@ func (se *sumologicexporter) getDataURLs() (logs, metrics, traces string) {
 	return se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces
 }
 
-func (se *sumologicexporter) shutdown(context.Context) error {
+func (*sumologicexporter) shutdown(context.Context) error {
 	return nil
 }
 
@@ -473,7 +473,7 @@ func sanitizeURL(urlString string) string {
 		s1 := urlString[0 : leftIndex+len(strBefore)]
 		s2 := nchars('*', (rightIndex - leftIndex - length))
 		s3 := urlString[rightIndex:]
-		sanitizedStr := strings.Join([]string{s1, s2, s3}, "")
+		sanitizedStr := s1 + s2 + s3
 		return sanitizedStr
 	}
 	return urlString

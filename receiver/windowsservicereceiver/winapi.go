@@ -38,17 +38,17 @@ func scmConnect() (*serviceManager, error) {
 }
 
 //nolint:unused
-func (sm *serviceManager) disconnect() error {
+func (*serviceManager) disconnect() error {
 	return nil
 }
 
 //nolint:unused
-func (sm *serviceManager) listServices() ([]string, error) {
+func (*serviceManager) listServices() ([]string, error) {
 	var s []string
 	return s, nil
 }
 
 //nolint:unused
-func (sm *serviceManager) openService() (*mgr.Service, error) {
+func (*serviceManager) openService() (*mgr.Service, error) {
 	return nil, nil
 }

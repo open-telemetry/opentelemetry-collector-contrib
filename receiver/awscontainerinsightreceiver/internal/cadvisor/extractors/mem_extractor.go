@@ -18,7 +18,7 @@ type MemMetricExtractor struct {
 	rateCalculator awsmetrics.MetricCalculator
 }
 
-func (m *MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
+func (*MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasMemory
 }
 

@@ -36,7 +36,7 @@ func (ods *ocDataSender) GenConfigYAMLStr() string {
     endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *ocDataSender) ProtocolName() string {
+func (*ocDataSender) ProtocolName() string {
 	return "opencensus"
 }
 

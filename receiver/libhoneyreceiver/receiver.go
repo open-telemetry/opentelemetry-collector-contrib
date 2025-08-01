@@ -147,7 +147,7 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	var authClient http.Client
 	authResp, err := authClient.Do(authReq)
 	if err != nil {
-		errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", "%s"}`, err.Error()))
+		errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", %q}`, err.Error()))
 		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 		return
 	}

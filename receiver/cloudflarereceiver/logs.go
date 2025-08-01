@@ -420,7 +420,7 @@ func severityFromStatusCode(statusCode int64) plog.SeverityNumber {
 
 // flattenMap recursively flattens a map[string]any into a single level map
 // with keys joined by the specified separator
-func flattenMap(input map[string]any, prefix string, separator string, result map[string]any) {
+func flattenMap(input map[string]any, prefix, separator string, result map[string]any) {
 	for k, v := range input {
 		// Replace hyphens with underscores in the key. Content-Type becomes Content_Type
 		k = strings.ReplaceAll(k, "-", "_")

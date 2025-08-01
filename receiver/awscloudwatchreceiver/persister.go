@@ -121,7 +121,7 @@ func (p *cloudwatchCheckpointPersister) Shutdown(ctx context.Context) error {
 }
 
 // getCheckpointKey generates a unique storage key
-func (p *cloudwatchCheckpointPersister) getCheckpointKey(logGroupName string) string {
+func (*cloudwatchCheckpointPersister) getCheckpointKey(logGroupName string) string {
 	if logGroupName == "" {
 		return ""
 	}

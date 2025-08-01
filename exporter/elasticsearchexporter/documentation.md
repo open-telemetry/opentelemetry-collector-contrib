@@ -19,7 +19,22 @@ Count of the completed bulk requests. [alpha]
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http_status_code | HTTP status code. | Any Int |
+| http.response.status_code | HTTP status code. | Any Int |
+
+### otelcol.elasticsearch.bulk_requests.latency
+
+Latency of Elasticsearch bulk operations in seconds. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
+| http.response.status_code | HTTP status code. | Any Int |
 
 ### otelcol.elasticsearch.docs.processed
 
@@ -34,7 +49,7 @@ Count of documents flushed to Elasticsearch. [alpha]
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http_status_code | HTTP status code. | Any Int |
+| http.response.status_code | HTTP status code. | Any Int |
 | failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` |
 
 ### otelcol.elasticsearch.docs.received

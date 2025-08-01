@@ -69,7 +69,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return fmt.Errorf("failed to get tmp file for jmxreceiver config: %w", err)
 	}
 
-	if _, err = tmpFile.Write([]byte(javaConfig)); err != nil {
+	if _, err = tmpFile.WriteString(javaConfig); err != nil {
 		return fmt.Errorf("failed to write config file for jmxreceiver config: %w", err)
 	}
 

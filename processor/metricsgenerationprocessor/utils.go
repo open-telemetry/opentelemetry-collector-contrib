@@ -71,7 +71,7 @@ func generateCalculatedMetrics(rm pmetric.ResourceMetrics, metric2 pmetric.Metri
 
 // Calculates a new metric based on the calculation-type rule specified. New data points will be generated for each
 // calculation of the input metrics where overlapping attributes have matching values.
-func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) pmetric.Metric {
+func generateMetricFromMatchingAttributes(metric1, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) pmetric.Metric {
 	var metric1DataPoints pmetric.NumberDataPointSlice
 	var toDataPoints pmetric.NumberDataPointSlice
 	to := pmetric.NewMetric()
@@ -238,7 +238,7 @@ func appendNewMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, u
 	}
 }
 
-func calculateValue(operand1 float64, operand2 float64, operation string, metricName string) (float64, error) {
+func calculateValue(operand1, operand2 float64, operation, metricName string) (float64, error) {
 	switch operation {
 	case string(add):
 		return operand1 + operand2, nil

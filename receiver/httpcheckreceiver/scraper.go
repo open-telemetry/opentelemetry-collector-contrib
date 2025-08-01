@@ -35,7 +35,7 @@ type httpcheckScraper struct {
 }
 
 // extractTLSInfo extracts TLS certificate information from the connection state
-func extractTLSInfo(state *tls.ConnectionState) (issuer string, commonName string, sans []any, timeLeft int64) {
+func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans []any, timeLeft int64) {
 	if state == nil || len(state.PeerCertificates) == 0 {
 		return "", "", nil, 0
 	}
@@ -206,7 +206,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 						now,
 						int64(0),
 						h.cfg.Targets[targetIndex].Endpoint,
-						int64(statusCode),
+						int64(0), // Use 0 as status code when the class doesn't match
 						req.Method,
 						class,
 					)
@@ -217,7 +217,41 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	wg.Wait()
-	return h.mb.Emit(), nil
+
+	// Emit metrics and post-process to remove http.status_code when value is 0
+	metrics := h.mb.Emit()
+	removeStatusCodeForZeroValues(metrics)
+
+	return metrics, nil
+}
+
+// removeStatusCodeForZeroValues removes the http.status_code attribute from httpcheck.status metrics
+func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		sms := rm.ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			sm := sms.At(j)
+			ms := sm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				if m.Name() == "httpcheck.status" {
+					// Process sum data points
+					if m.Type() == pmetric.MetricTypeSum {
+						dps := m.Sum().DataPoints()
+						for l := 0; l < dps.Len(); l++ {
+							dp := dps.At(l)
+							// If the value is 0, remove the http.status_code attribute
+							if dp.IntValue() == 0 {
+								dp.Attributes().Remove("http.status_code")
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func newScraper(conf *Config, settings receiver.Settings) *httpcheckScraper {

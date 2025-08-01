@@ -37,6 +37,7 @@ const (
 	executeCount                   = "execute count"
 	parseCountTotal                = "parse count (total)"
 	parseCountHard                 = "parse count (hard)"
+	logons                         = "logons cumulative"
 	userCommits                    = "user commits"
 	userRollbacks                  = "user rollbacks"
 	physicalReads                  = "physical reads"
@@ -131,7 +132,7 @@ type oracleScraper struct {
 	querySampleCfg             QuerySample
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, hostName string) (scraper.Metrics, error) {
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
 	s := &oracleScraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -212,7 +213,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbDbBlockGets.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbConsistentGets.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbConsistentGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLogons.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -358,6 +360,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case consistentGets:
 				err := s.mb.RecordOracledbConsistentGetsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case logons:
+				err := s.mb.RecordOracledbLogonsDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
@@ -786,8 +793,6 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	for _, row := range planData {
 		currentChildAddress := row[childAddressAttr]
 		jsonPlansSlice, ok := childAddressToPlanMap[currentChildAddress]
-		// child address was for internal use only, it's not going to be used beyond this point
-		delete(row, childAddressAttr)
 		if ok {
 			childAddressToPlanMap[currentChildAddress] = append(jsonPlansSlice, row)
 		} else {
@@ -798,7 +803,7 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	return childAddressToPlanMap
 }
 
-func (s *oracleScraper) getTopNMetricNames() []string {
+func (*oracleScraper) getTopNMetricNames() []string {
 	return []string{
 		elapsedTimeMetric, queryExecutionMetric, cpuTimeMetric, applicationWaitTimeMetric,
 		concurrencyWaitTimeMetric, userIoWaitTimeMetric, clusterWaitTimeMetric, rowsProcessedMetric, bufferGetsMetric,

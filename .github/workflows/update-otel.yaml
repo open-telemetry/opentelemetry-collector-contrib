@@ -10,6 +10,7 @@ permissions:
 jobs:
   update-otel:
     permissions:
+      contents: write # required for pushing changes
       issues: write # required for creating failure issues
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
@@ -40,13 +41,13 @@ jobs:
           echo "LAST_COMMIT=$LAST_COMMIT" >> $GITHUB_ENV
           echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}         
+          GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: Gets packages from links with retries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         with:  
-          retry_wait_seconds: 500
+          retry_wait_seconds: 1800
           timeout_minutes: 120
-          max_attempts: 3
+          max_attempts: 2
           retry_on: error 
           command: |
             cd opentelemetry-collector-contrib

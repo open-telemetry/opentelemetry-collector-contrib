@@ -5,6 +5,7 @@ package upload // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"math/rand/v2"
+	"path"
 	"strconv"
 	"time"
 
@@ -44,7 +45,7 @@ type PartitionKeyBuilder struct {
 }
 
 func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {
-	return pki.bucketKeyPrefix(ts, overridePrefix) + "/" + pki.fileName()
+	return path.Join(pki.bucketKeyPrefix(ts, overridePrefix), pki.fileName())
 }
 
 func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix string) string {
@@ -95,7 +96,7 @@ func GenerateUUIDv7() string {
 	return id.String()
 }
 
-func (pki *PartitionKeyBuilder) randInt() string {
+func (*PartitionKeyBuilder) randInt() string {
 	// This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
 	const (

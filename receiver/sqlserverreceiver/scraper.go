@@ -153,7 +153,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	return s.lb.Emit(metadata.WithLogsResource(resources)), err
 }
 
-func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
+func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
 	if s.db != nil {
 		return s.db.Close()
 	}
@@ -541,6 +541,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
 	const cpuCount = "cpu_count"
+	const computerUptime = "computer_uptime"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -563,13 +564,16 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 			rb.SetServerPort(int64(s.config.Port))
 		}
 
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
+		errs = append(errs,
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline),
-			s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]))
+			s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]),
+			s.mb.RecordSqlserverComputerUptimeDataPoint(now, row[computerUptime]),
+		)
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -807,7 +811,7 @@ func (s *sqlServerScraperHelper) retrieveValue(
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
-func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val int64) (bool, int64) {
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column string, val int64) (bool, int64) {
 	if val < 0 {
 		return false, 0
 	}

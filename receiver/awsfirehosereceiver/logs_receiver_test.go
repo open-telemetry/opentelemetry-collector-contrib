@@ -36,7 +36,7 @@ func (rc *logsRecordConsumer) ConsumeLogs(_ context.Context, logs plog.Logs) err
 	return nil
 }
 
-func (rc *logsRecordConsumer) Capabilities() consumer.Capabilities {
+func (*logsRecordConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

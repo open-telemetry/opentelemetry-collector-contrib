@@ -74,11 +74,11 @@ type TransformerOperator struct {
 }
 
 // CanProcess will always return true for a transformer operator.
-func (t *TransformerOperator) CanProcess() bool {
+func (*TransformerOperator) CanProcess() bool {
 	return true
 }
 
-func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
+func (*TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
 	var errs error
 	for i := range entries {
 		errs = multierr.Append(errs, process(ctx, entries[i]))

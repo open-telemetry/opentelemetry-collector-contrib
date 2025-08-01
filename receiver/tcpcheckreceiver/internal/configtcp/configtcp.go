@@ -32,7 +32,7 @@ func (c *Client) Dial() (err error) {
 	return nil
 }
 
-func (tcs *TCPClientSettings) ToClient(_ component.Host, _ component.TelemetrySettings) (*Client, error) {
+func (tcs *TCPClientSettings) ToClient(component.Host, component.TelemetrySettings) (*Client, error) {
 	return &Client{
 		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: tcs.Endpoint,
