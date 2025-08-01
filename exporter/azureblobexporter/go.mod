@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector/client v1.37.1-0.20250801020258-8b73477b9810 // indirect
