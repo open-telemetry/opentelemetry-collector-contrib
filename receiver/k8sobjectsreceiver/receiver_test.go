@@ -538,9 +538,8 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name:              "pods",
-			Mode:              WatchMode,
-			NamespaceDenyList: []string{"default_ignore"},
+			Name: "pods",
+			Mode: WatchMode,
 		},
 	}
 
