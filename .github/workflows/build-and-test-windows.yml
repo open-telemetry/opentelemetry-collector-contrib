@@ -17,9 +17,9 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   # See https://github.com/spiffe/spire/pull/5158 D: drive is faster.
-  GOPATH: 'D:\golang\go'
-  GOCACHE: 'D:\golang\cache'
-  GOMODCACHE: 'D:\golang\modcache'
+  GOPATH: 'D:\go'
+  GOCACHE: 'D:\gocache'
+  GOMODCACHE: 'D:\modcache'
 # Do not cancel this workflow on main
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
