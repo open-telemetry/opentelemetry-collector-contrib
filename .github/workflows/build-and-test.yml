@@ -125,6 +125,7 @@ jobs:
           - cmd-0
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    needs: [setup-environment]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
