@@ -32,6 +32,6 @@ func (e *MetricType) Set(v string) error {
 }
 
 // Type is only used in help text
-func (e *MetricType) Type() string {
+func (*MetricType) Type() string {
 	return "MetricType"
 }

@@ -57,7 +57,7 @@ func ExpectError(expectErr string) Step {
 	}
 }
 
-func Eventually(step Step, maxTime time.Duration, tick time.Duration) Step {
+func Eventually(step Step, maxTime, tick time.Duration) Step {
 	step.tick = tick
 	step.timeout = maxTime
 	return step

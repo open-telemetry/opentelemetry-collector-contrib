@@ -102,8 +102,9 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
-				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
+				cfg.Fields = append(cfg.Fields,
+					entry.NewBodyField("key"),
+					entry.NewBodyField("nested2"))
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -135,12 +136,13 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Fields = append(cfg.Fields, entry.NewBodyField("foo"))
-				cfg.Fields = append(cfg.Fields, entry.NewBodyField("one", "two"))
-				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("foo"))
-				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("one", "two"))
-				cfg.Fields = append(cfg.Fields, entry.NewResourceField("foo"))
-				cfg.Fields = append(cfg.Fields, entry.NewResourceField("one", "two"))
+				cfg.Fields = append(cfg.Fields,
+					entry.NewBodyField("foo"),
+					entry.NewBodyField("one", "two"),
+					entry.NewAttributeField("foo"),
+					entry.NewAttributeField("one", "two"),
+					entry.NewResourceField("foo"),
+					entry.NewResourceField("one", "two"))
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -296,8 +298,9 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key1"))
-				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key2"))
+				cfg.Fields = append(cfg.Fields,
+					entry.NewAttributeField("key1"),
+					entry.NewAttributeField("key2"))
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -346,8 +349,9 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
-				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key2"))
+				cfg.Fields = append(cfg.Fields,
+					entry.NewResourceField("key1"),
+					entry.NewResourceField("key2"))
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -373,9 +377,10 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
-				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key3"))
-				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
+				cfg.Fields = append(cfg.Fields,
+					entry.NewResourceField("key1"),
+					entry.NewAttributeField("key3"),
+					entry.NewBodyField("key"))
 				return cfg
 			}(),
 			func() *entry.Entry {

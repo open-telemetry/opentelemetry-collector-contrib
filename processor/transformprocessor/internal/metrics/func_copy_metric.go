@@ -31,7 +31,7 @@ func createCopyMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	return copyMetric(args.Name, args.Description, args.Unit)
 }
 
-func copyMetric(name ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]], desc ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]], unit ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func copyMetric(name, desc, unit ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		cur := tCtx.GetMetric()
 		metrics := tCtx.GetMetrics()

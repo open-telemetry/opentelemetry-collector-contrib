@@ -16,7 +16,7 @@ import (
 
 type mockEndpoint struct{}
 
-func (m *mockEndpoint) PodKeyToServiceNames() map[string][]string {
+func (*mockEndpoint) PodKeyToServiceNames() map[string][]string {
 	return map[string][]string{
 		"namespace:default,podName:test-pod": {"test-service"},
 	}

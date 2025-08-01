@@ -17,9 +17,9 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testLogsExporter(t *testing.T, endpoint string) {
+func testLogsExporter(t *testing.T, endpoint string, mapBody bool) {
 	exporter := newTestLogsExporter(t, endpoint)
-	verifyExportLogs(t, exporter)
+	verifyExportLogs(t, exporter, mapBody)
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
@@ -31,11 +31,13 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 	return exporter
 }
 
-func verifyExportLogs(t *testing.T, exporter *logsExporter) {
-	// 3 pushes
-	mustPushLogsData(t, exporter, simpleLogs(5000))
-	mustPushLogsData(t, exporter, simpleLogs(5000))
-	mustPushLogsData(t, exporter, simpleLogs(5000))
+func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody bool) {
+	err := exporter.db.Exec(context.Background(), "TRUNCATE otel_int_test.otel_logs")
+	require.NoError(t, err)
+
+	pushConcurrentlyNoError(t, func() error {
+		return exporter.pushLogsData(context.Background(), simpleLogs(5000, mapBody))
+	})
 
 	type log struct {
 		Timestamp          time.Time         `ch:"Timestamp"`
@@ -79,23 +81,21 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter) {
 			"service.namespace": "default",
 		},
 	}
+	if mapBody {
+		expectedLog.Body = `{"error":"message"}`
+	}
 
 	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_logs")
 	require.NoError(t, row.Err())
 
 	var actualLog log
-	err := row.ScanStruct(&actualLog)
+	err = row.ScanStruct(&actualLog)
 	require.NoError(t, err)
 
 	require.Equal(t, expectedLog, actualLog)
 }
 
-func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
-	err := exporter.pushLogsData(context.Background(), ld)
-	require.NoError(t, err)
-}
-
-func simpleLogs(count int) plog.Logs {
+func simpleLogs(count int, mapBody bool) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
@@ -112,7 +112,14 @@ func simpleLogs(count int) plog.Logs {
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
-		r.Body().SetStr("error message")
+
+		if mapBody {
+			r.Body().SetEmptyMap()
+			r.Body().Map().PutStr("error", "message")
+		} else {
+			r.Body().SetStr("error message")
+		}
+
 		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})

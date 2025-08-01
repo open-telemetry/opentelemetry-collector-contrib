@@ -31,6 +31,8 @@ all_set:
       enabled: true
     postgresql.deadlocks:
       enabled: true
+    postgresql.function.calls:
+      enabled: true
     postgresql.index.scans:
       enabled: true
     postgresql.index.size:
@@ -50,6 +52,8 @@ all_set:
     postgresql.table.size:
       enabled: true
     postgresql.table.vacuum.count:
+      enabled: true
+    postgresql.temp.io:
       enabled: true
     postgresql.temp_files:
       enabled: true
@@ -115,6 +119,8 @@ none_set:
       enabled: false
     postgresql.deadlocks:
       enabled: false
+    postgresql.function.calls:
+      enabled: false
     postgresql.index.scans:
       enabled: false
     postgresql.index.size:
@@ -134,6 +140,8 @@ none_set:
     postgresql.table.size:
       enabled: false
     postgresql.table.vacuum.count:
+      enabled: false
+    postgresql.temp.io:
       enabled: false
     postgresql.temp_files:
       enabled: false

@@ -208,7 +208,7 @@ func (mec *mockEventsClient) setupGetOrganization() {
 	}, nil)
 }
 
-func (mec *mockEventsClient) loadTestEvents(t *testing.T, filename string) []*mongodbatlas.Event {
+func (*mockEventsClient) loadTestEvents(t *testing.T, filename string) []*mongodbatlas.Event {
 	testEvents := filepath.Join("testdata", "events", "sample-payloads", filename)
 	eventBytes, err := os.ReadFile(testEvents)
 	require.NoError(t, err)
@@ -244,6 +244,6 @@ func (mec *mockEventsClient) GetOrganizationEvents(ctx context.Context, oID stri
 	return args.Get(0).([]*mongodbatlas.Event), args.Bool(1), args.Error(2)
 }
 
-func (mec *mockEventsClient) Shutdown() error {
+func (*mockEventsClient) Shutdown() error {
 	return nil
 }

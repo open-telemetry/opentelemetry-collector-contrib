@@ -51,7 +51,7 @@ type ebsVolume struct {
 
 type ebsVolumeOption func(*ebsVolume)
 
-func newEBSVolume(ctx context.Context, cfg aws.Config, instanceID string, region string,
+func newEBSVolume(ctx context.Context, cfg aws.Config, instanceID, region string,
 	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption,
 ) ebsVolumeProvider {
 	cfg.Region = region

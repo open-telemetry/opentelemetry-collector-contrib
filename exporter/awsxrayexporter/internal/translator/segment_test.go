@@ -1879,16 +1879,17 @@ func constructProducerSpan(parentSpanID pcommon.SpanID, name string, code ptrace
 func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
-		if cast, ok := value.(int); ok {
+		switch cast := value.(type) {
+		case int:
 			attrs.PutInt(key, int64(cast))
-		} else if cast, ok := value.(int64); ok {
+		case int64:
 			attrs.PutInt(key, cast)
-		} else if cast, ok := value.([]string); ok {
+		case []string:
 			slice := attrs.PutEmptySlice(key)
 			for _, v := range cast {
 				slice.AppendEmpty().SetStr(v)
 			}
-		} else {
+		default:
 			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}

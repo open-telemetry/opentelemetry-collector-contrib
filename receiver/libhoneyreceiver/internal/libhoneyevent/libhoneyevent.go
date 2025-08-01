@@ -259,7 +259,7 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 
 // GetParentID returns the parent id from the event or an error if it's not found
 func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
-	if pid, ok := l.Data[fieldName]; ok {
+	if pid, ok := l.Data[fieldName]; ok && pid != nil {
 		pid := strings.ReplaceAll(pid.(string), "-", "")
 		pidByteArray, err := hex.DecodeString(pid)
 		if err == nil {
@@ -280,9 +280,11 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	timeNs := l.MsgPackTimestamp.UnixNano()
 	logger.Debug("processing trace with", zap.Int64("timestamp", timeNs))
 
-	var parentID trc.SpanID
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
-		parentID = spanIDFrom(pid.(string))
+		parentID, err := l.GetParentID(cfg.Attributes.ParentID)
+		if err != nil {
+			parentID = spanIDFrom(pid.(string))
+		}
 		newSpan.SetParentSpanID(pcommon.SpanID(parentID))
 	}
 
@@ -293,7 +295,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			break
 		}
 	}
-	endTimestamp := timeNs + (int64(durationMs) * 1000000)
+	endTimestamp := timeNs + int64(durationMs*1000000)
 
 	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
 		tid := strings.ReplaceAll(tid.(string), "-", "")

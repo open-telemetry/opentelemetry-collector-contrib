@@ -53,7 +53,7 @@ func newObserver(params extension.Settings, config *Config) (extension.Extension
 	return h, nil
 }
 
-func (h *hostObserver) Start(context.Context, component.Host) error {
+func (*hostObserver) Start(context.Context, component.Host) error {
 	return nil
 }
 
