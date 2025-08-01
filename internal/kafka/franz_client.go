@@ -39,6 +39,7 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	cfg configkafka.ProducerConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
+	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
 	codec := compressionCodec(cfg.Compression)
 	switch cfg.CompressionParams.Level {
@@ -46,14 +47,15 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(ctx, clientCfg, logger,
+	opts, err := commonOpts(ctx, clientCfg, logger, append(
+		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
 		// Use the UniformBytesPartitioner that is the default in franz-go with
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
-	)
+	)...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,12 +65,10 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		opts = append(opts, kgo.RequiredAcks(kgo.AllISRAcks()))
 	case configkafka.NoResponse:
 		// NOTE(marclop) only disable if acks != all.
-		opts = append(opts, kgo.DisableIdempotentWrite())
-		opts = append(opts, kgo.RequiredAcks(kgo.NoAck()))
+		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.NoAck()))
 	default: // WaitForLocal
 		// NOTE(marclop) only disable if acks != all.
-		opts = append(opts, kgo.DisableIdempotentWrite())
-		opts = append(opts, kgo.RequiredAcks(kgo.LeaderAck()))
+		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
 	}
 
 	// Configure max message size

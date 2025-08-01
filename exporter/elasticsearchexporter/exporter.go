@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
@@ -41,9 +42,16 @@ type elasticsearchExporter struct {
 	documentEncoders         [NumMappingModes]documentEncoder
 	documentRouters          [NumMappingModes]documentRouter
 	spanEventDocumentRouters [NumMappingModes]documentRouter
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize internal telemetry: %w", err)
+	}
+
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	exporter := &elasticsearchExporter{
@@ -54,6 +62,8 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
+		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
+		telemetryBuilder:    telemetryBuilder,
 	}
 	for mappingMode := range NumMappingModes {
 		encoder, err := newEncoder(mappingMode)
@@ -78,6 +88,10 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if err := e.bulkIndexers.shutdown(ctx); err != nil {
 		return fmt.Errorf("error shutting down bulk indexers: %w", err)
 	}
+	if e.telemetryBuilder != nil {
+		e.telemetryBuilder.Shutdown()
+		e.telemetryBuilder = nil
+	}
 	return nil
 }
 
@@ -90,13 +104,9 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	defer mappingModeSessions.End()
 
 	var errs []error
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
+	for _, rl := range ld.ResourceLogs().All() {
 		resource := rl.Resource()
-		ills := rl.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
+		for _, ill := range rl.ScopeLogs().All() {
 			scope := ill.Scope()
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
@@ -113,9 +123,8 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 				scopeSchemaURL:    ill.SchemaUrl(),
 			}
 
-			logs := ill.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, router, encoder, ec, logs.At(k), session); err != nil {
+			for _, lr := range ill.LogRecords().All() {
+				if err := e.pushLogRecord(ctx, router, encoder, ec, lr, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -247,18 +256,14 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
-					dps := metric.Sum().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dp := dps.At(l)
+					for _, dp := range metric.Sum().DataPoints().All() {
 						if err := upsertDataPoint(datapoints.NewNumber(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeGauge:
-					dps := metric.Gauge().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dp := dps.At(l)
+					for _, dp := range metric.Gauge().DataPoints().All() {
 						if err := upsertDataPoint(datapoints.NewNumber(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
@@ -269,9 +274,7 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality exponential histogram %q", metric.Name()))
 						continue
 					}
-					dps := metric.ExponentialHistogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dp := dps.At(l)
+					for _, dp := range metric.ExponentialHistogram().DataPoints().All() {
 						if err := upsertDataPoint(datapoints.NewExponentialHistogram(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
@@ -282,18 +285,14 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality histogram %q", metric.Name()))
 						continue
 					}
-					dps := metric.Histogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dp := dps.At(l)
+					for _, dp := range metric.Histogram().DataPoints().All() {
 						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeSummary:
-					dps := metric.Summary().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dp := dps.At(l)
+					for _, dp := range metric.Summary().DataPoints().All() {
 						if err := upsertDataPoint(datapoints.NewSummary(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
@@ -361,13 +360,9 @@ func (e *elasticsearchExporter) pushTraceData(
 	defer sessions.End()
 
 	var errs []error
-	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
-		il := resourceSpans.At(i)
+	for _, il := range td.ResourceSpans().All() {
 		resource := il.Resource()
-		scopeSpans := il.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
-			scopeSpan := scopeSpans.At(j)
+		for _, scopeSpan := range il.ScopeSpans().All() {
 			scope := scopeSpan.Scope()
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
@@ -385,17 +380,14 @@ func (e *elasticsearchExporter) pushTraceData(
 				scopeSchemaURL:    scopeSpan.SchemaUrl(),
 			}
 
-			spans := scopeSpan.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
+			for _, span := range scopeSpan.Spans().All() {
 				if err := e.pushTraceRecord(ctx, router, encoder, ec, span, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
 					errs = append(errs, err)
 				}
-				for ii := 0; ii < span.Events().Len(); ii++ {
-					spanEvent := span.Events().At(ii)
+				for _, spanEvent := range span.Events().All() {
 					if err := e.pushSpanEvent(ctx, spanEventRouter, encoder, ec, span, spanEvent, session); err != nil {
 						errs = append(errs, err)
 					}
@@ -554,7 +546,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushProfileRecord(
+func (*elasticsearchExporter) pushProfileRecord(
 	ctx context.Context,
 	encoder documentEncoder,
 	ec encodingContext,

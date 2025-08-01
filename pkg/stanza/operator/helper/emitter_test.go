@@ -204,7 +204,7 @@ func complexEntry() *entry.Entry {
 	return e
 }
 
-func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
+func complexEntriesForNDifferentHosts(count, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
 	for i := 0; i < count; i++ {
 		e := entry.New()

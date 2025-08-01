@@ -5,11 +5,11 @@ package googlecloudlogentryencodingextension // import "github.com/open-telemetr
 
 import (
 	"bytes"
-	stdjson "encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 
+	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -17,12 +17,14 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-func setBodyFromProto(logRecord plog.LogRecord, value stdjson.RawMessage) error {
-	err := translateInto(logRecord.Body().SetEmptyMap(), (&anypb.Any{}).ProtoReflect().Descriptor(), value)
-	return err
+func setBodyFromProto(logRecord plog.LogRecord, value gojson.RawMessage) error {
+	if err := translateInto(logRecord.Body().SetEmptyMap(), (&anypb.Any{}).ProtoReflect().Descriptor(), value); err != nil {
+		return fmt.Errorf("failed to set body from proto payload: %w", err)
+	}
+	return nil
 }
 
-func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protoreflect.FieldDescriptor, src stdjson.RawMessage) error {
+func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protoreflect.FieldDescriptor, src gojson.RawMessage) error {
 	var err error
 	switch fd.Kind() {
 	case protoreflect.MessageKind:
@@ -66,7 +68,7 @@ func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protorefl
 
 		enum := fd.Enum()
 		var i int32
-		if err = json.Unmarshal(src, &i); err != nil {
+		if err = gojson.Unmarshal(src, &i); err != nil {
 			return fmt.Errorf("wrong type for enum: %v", getTokenType(src))
 		}
 		enumValue := enum.Values().ByNumber(protoreflect.EnumNumber(i))
@@ -77,7 +79,7 @@ func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protorefl
 		dst.SetStr(string(enumValue.Name()))
 	case protoreflect.BoolKind:
 		var val bool
-		err = json.Unmarshal(src, &val)
+		err = gojson.Unmarshal(src, &val)
 		if err != nil {
 			return err
 		}
@@ -95,13 +97,14 @@ func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protorefl
 		// The protojson encoding accepts either string or number for
 		// integer types, so try both.
 		var val int64
-		if json.Unmarshal(src, &val) == nil {
+		if gojson.Unmarshal(src, &val) == nil {
 			dst.SetInt(val)
 			return nil
 		}
 
 		var s string
-		if err = json.Unmarshal(src, &s); err != nil {
+		err = gojson.Unmarshal(src, &s)
+		if err != nil {
 			return err
 		}
 		if val, err = strconv.ParseInt(s, 10, 64); err != nil {
@@ -111,7 +114,7 @@ func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protorefl
 		return nil
 	case protoreflect.FloatKind, protoreflect.DoubleKind:
 		var val float64
-		err := json.Unmarshal(src, &val)
+		err := gojson.Unmarshal(src, &val)
 		if err != nil {
 			return err
 		}
@@ -119,7 +122,7 @@ func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protorefl
 		return nil
 	case protoreflect.BytesKind:
 		var val []byte
-		err := json.Unmarshal(src, &val)
+		err := gojson.Unmarshal(src, &val)
 		if err != nil {
 			return err
 		}
@@ -133,9 +136,9 @@ func (opts fieldTranslateOptions) translateValue(dst pcommon.Value, fd protorefl
 	return nil
 }
 
-func (opts fieldTranslateOptions) translateList(dst pcommon.Slice, fd protoreflect.FieldDescriptor, src stdjson.RawMessage) error {
-	var msg []stdjson.RawMessage
-	if err := json.Unmarshal(src, &msg); err != nil {
+func (opts fieldTranslateOptions) translateList(dst pcommon.Slice, fd protoreflect.FieldDescriptor, src gojson.RawMessage) error {
+	var msg []gojson.RawMessage
+	if err := gojson.Unmarshal(src, &msg); err != nil {
 		return err
 	}
 
@@ -148,9 +151,9 @@ func (opts fieldTranslateOptions) translateList(dst pcommon.Slice, fd protorefle
 	return nil
 }
 
-func (opts fieldTranslateOptions) translateMap(dst pcommon.Map, fd protoreflect.FieldDescriptor, src stdjson.RawMessage) error {
-	var msg map[string]stdjson.RawMessage
-	if err := json.Unmarshal(src, &msg); err != nil {
+func (opts fieldTranslateOptions) translateMap(dst pcommon.Map, fd protoreflect.FieldDescriptor, src gojson.RawMessage) error {
+	var msg map[string]gojson.RawMessage
+	if err := gojson.Unmarshal(src, &msg); err != nil {
 		return err
 	}
 	for k, v := range msg {
@@ -162,7 +165,7 @@ func (opts fieldTranslateOptions) translateMap(dst pcommon.Map, fd protoreflect.
 	return nil
 }
 
-func translateAny(dst pcommon.Map, src map[string]stdjson.RawMessage) error {
+func translateAny(dst pcommon.Map, src map[string]gojson.RawMessage) error {
 	// protojson represents Any as the JSON representation of the actual
 	// message, plus a special @type field containing the type URL of the
 	// message.
@@ -171,7 +174,7 @@ func translateAny(dst pcommon.Map, src map[string]stdjson.RawMessage) error {
 		return errors.New("no @type member in Any message")
 	}
 	var typeURLStr string
-	if err := json.Unmarshal(typeURL, &typeURLStr); err != nil {
+	if err := gojson.Unmarshal(typeURL, &typeURLStr); err != nil {
 		return err
 	}
 	delete(src, "@type")
@@ -182,7 +185,7 @@ func translateAny(dst pcommon.Map, src map[string]stdjson.RawMessage) error {
 		// some ints might be floats or strings.
 		for k, v := range src {
 			var val any
-			err = json.Unmarshal(v, &val)
+			err = gojson.Unmarshal(v, &val)
 			if err != nil {
 				return nil
 			}
@@ -200,7 +203,7 @@ func translateAny(dst pcommon.Map, src map[string]stdjson.RawMessage) error {
 	return nil
 }
 
-func translateProtoMessage(dst pcommon.Map, desc protoreflect.MessageDescriptor, src map[string]stdjson.RawMessage, opts fieldTranslateOptions) error {
+func translateProtoMessage(dst pcommon.Map, desc protoreflect.MessageDescriptor, src map[string]gojson.RawMessage, opts fieldTranslateOptions) error {
 	if !opts.preserveDst {
 		dst.Clear()
 	}
@@ -212,7 +215,7 @@ func translateProtoMessage(dst pcommon.Map, desc protoreflect.MessageDescriptor,
 	case "google.protobuf.Struct":
 		for k, v := range src {
 			var val any
-			if err := json.Unmarshal(v, &val); err != nil {
+			if err := gojson.Unmarshal(v, &val); err != nil {
 				return err
 			}
 			_ = dst.PutEmpty(k).FromRaw(val)
@@ -248,15 +251,15 @@ func translateProtoMessage(dst pcommon.Map, desc protoreflect.MessageDescriptor,
 }
 
 func translateInto(dst pcommon.Map, desc protoreflect.MessageDescriptor, src any, opts ...fieldTranslateFn) error {
-	var toTranslate map[string]stdjson.RawMessage
+	var toTranslate map[string]gojson.RawMessage
 
 	switch msg := src.(type) {
-	case stdjson.RawMessage:
-		err := json.Unmarshal(msg, &toTranslate)
+	case gojson.RawMessage:
+		err := gojson.Unmarshal(msg, &toTranslate)
 		if err != nil {
 			return err
 		}
-	case map[string]stdjson.RawMessage:
+	case map[string]gojson.RawMessage:
 		toTranslate = msg
 	}
 
@@ -268,9 +271,9 @@ func translateInto(dst pcommon.Map, desc protoreflect.MessageDescriptor, src any
 	return translateProtoMessage(dst, desc, toTranslate, options)
 }
 
-func translateStr(dst pcommon.Value, src stdjson.RawMessage) error {
+func translateStr(dst pcommon.Value, src gojson.RawMessage) error {
 	var val string
-	err := json.Unmarshal(src, &val)
+	err := gojson.Unmarshal(src, &val)
 	if err != nil {
 		return err
 	}
@@ -278,9 +281,9 @@ func translateStr(dst pcommon.Value, src stdjson.RawMessage) error {
 	return nil
 }
 
-func translateRaw(dst pcommon.Value, src stdjson.RawMessage) error {
+func translateRaw(dst pcommon.Value, src gojson.RawMessage) error {
 	var val any
-	err := json.Unmarshal(src, &val)
+	err := gojson.Unmarshal(src, &val)
 	if err != nil {
 		return err
 	}
@@ -288,14 +291,14 @@ func translateRaw(dst pcommon.Value, src stdjson.RawMessage) error {
 	return nil
 }
 
-func getTokenType(src stdjson.RawMessage) string {
-	dec := stdjson.NewDecoder(bytes.NewReader(src))
+func getTokenType(src gojson.RawMessage) string {
+	dec := gojson.NewDecoder(bytes.NewReader(src))
 	tok, err := dec.Token()
 	if err != nil {
 		return "invalid json"
 	}
 	switch t := tok.(type) {
-	case stdjson.Delim:
+	case gojson.Delim:
 		switch t {
 		case '[':
 			return "array"
@@ -306,7 +309,7 @@ func getTokenType(src stdjson.RawMessage) string {
 		}
 	case bool:
 		return "bool"
-	case float64, stdjson.Number:
+	case float64, gojson.Number:
 		return "number"
 	case string:
 		return "string"

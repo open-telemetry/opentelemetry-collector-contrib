@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,40 +20,30 @@ func Test_deleteKey(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
-			return tCtx, nil
-		},
-	}
-
 	tests := []struct {
-		name   string
-		target ottl.PMapGetter[pcommon.Map]
-		key    string
-		want   func(pcommon.Map)
+		name string
+		key  string
+		want func(pcommon.Map)
 	}{
 		{
-			name:   "delete test",
-			target: target,
-			key:    "test",
+			name: "delete test",
+			key:  "test",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutBool("test3", true)
 				expectedMap.PutInt("test2", 3)
 			},
 		},
 		{
-			name:   "delete test2",
-			target: target,
-			key:    "test2",
+			name: "delete test2",
+			key:  "test2",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
-			name:   "delete nothing",
-			target: target,
-			key:    "not a valid key",
+			name: "delete nothing",
+			key:  "not a valid key",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -65,10 +56,26 @@ func Test_deleteKey(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc := deleteKey(tt.target, tt.key)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, val any) error {
+					setterWasCalled = true
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc := deleteKey(target, tt.key)
 
 			_, err := exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -80,9 +87,12 @@ func Test_deleteKey(t *testing.T) {
 
 func Test_deleteKey_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -94,9 +104,12 @@ func Test_deleteKey_bad_input(t *testing.T) {
 }
 
 func Test_deleteKey_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 

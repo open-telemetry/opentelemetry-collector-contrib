@@ -23,11 +23,18 @@ To successfully operate this receiver, you must follow these steps in order:
     - At the time the receiver was written, LogPush was available only for Enterprise sites.
 1. Create a LogPush HTTP destination job following the [directions](https://developers.cloudflare.com/logs/get-started/enable-destinations/http/) provided by Cloudflare. When the job is created, it will attempt to validate the connection to the receiver.
     - If you've configured the receiver with a `secret` to validate requests, ensure you add the value to the `destination_conf` parameter of the LogPush job by adding its value as a query parameter under the `header_X-CF-Secret` parameter. For example, `"destination_conf": "https://example.com?header_X-CF-Secret=abcd1234"`.
-    - If you want the receiver to parse one of the fields as the log record's timestamp (`EdgeStartTimestamp` is the default), the timestamp should be formatted RFC3339. This is not the default format, and must be explicitly specified in your job config.
-      - If using the deprecated `logpull_options` parameter to configure your job, this can be explicitly specified by adding `&timestamps=rfc3339` to the `logpull_options` string when creating your LogPush job.
-      - If using the `output_options` parameter to configure your job, this can be explicitly specified by setting the `timestamp_format` field of `output_options` to `"rfc3339"`
-    - The receiver expects the uploaded logs to be in `ndjson` format with no template, prefix, suffix, or delimiter changes based on the options in `output_options`. The only [settings](https://developers.cloudflare.com/logs/reference/log-output-options/#output-types) supported by this receiver in `output_options` are `field_names`, `CVE-2021-44228`, and `sample_rate`.
-1. If the LogPush job creates successfully, the receiver is correctly configured and the LogPush job was able to send it a "test" message. If the job failed to create, the most likely issue is with the SSL configuration. Check both the LogPush API response and the receiver's logs for more details.
+    - If you want the receiver to parse one of the fields as the log record's timestamp (`EdgeStartTimestamp` is the default), you must configure the timestamp format in your LogPush job to match your data:
+      - Cloudflare Logpush default `timestamp_format` is `unixnano`, which the receiver parses automatically.
+      - Use `&timestamps=rfc3339` in `logpull_options` for RFC3339-formatted strings (with or without fractional seconds).
+      - In `output_options`, set `timestamp_format: "rfc3339"` for RFC3339 strings.
+      - In `output_options`, set `timestamp_format: "unix"` for Unix seconds.
+      - In `output_options`, set `timestamp_format: "unixnano"` for Unix nanoseconds.
+    - The receiver expects the uploaded logs to be in `ndjson` format with no template, prefix, suffix, or delimiter changes based on the options in `output_options`. The only [settings](https://developers.cloudflare.com/logs/reference/log-output-options/#output-types) supported by this receiver in `output_options` are:
+      - `field_names`
+      - `timestamp_format`
+      - `sample_rate`
+      - `CVE-2021-44228`
+2. If the LogPush job creates successfully, the receiver is correctly configured and the LogPush job was able to send it a "test" message. If the job failed to create, the most likely issue is with the SSL configuration. Check both the LogPush API response and the receiver's logs for more details.
 
 ### Optional
 If the receiver will be handling TLS termination:
@@ -46,7 +53,9 @@ If the receiver will be handling TLS termination:
 - `secret`
   - If this value is set, the receiver expects to see it in any valid requests under the `X-CF-Secret` header
 - `timestamp_field` (default: `EdgeStartTimestamp`)
-  - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp. the timestamp must be formatted RFC3339, as stated in the Getting Started section.
+  - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp.
+- `timestamp_format` (default: `unixnano`)
+  - One of `unix`, `unixnano`, or `rfc3339`, matching how your LogPush job encodes the timestamp field.
 - `attributes`
   - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
   - When the `attributes` configuration is empty, the receiver will automatically ingest all fields from the log messages as attributes, using the original field names as attribute names.
@@ -66,6 +75,7 @@ receivers:
       endpoint: 0.0.0.0:12345
       secret: 1234567890abcdef1234567890abcdef
       timestamp_field: EdgeStartTimestamp
+      timestamp_format: rfc3339
       attributes:
         ClientIP: http_request.client_ip
         ClientRequestURI: http_request.uri
@@ -82,6 +92,7 @@ receivers:
       endpoint: 0.0.0.0:12345
       secret: 1234567890abcdef1234567890abcdef
       timestamp_field: EdgeStartTimestamp
+      timestamp_format: rfc3339
       attributes:
         # Specifying no attributes ingests them all
 ```

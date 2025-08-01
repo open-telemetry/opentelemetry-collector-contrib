@@ -34,7 +34,7 @@ func (c *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 }
 
 // RequireTransportSecurity always returns true for this implementation. Passing bearer tokens in plain-text connections is a bad idea.
-func (c *perRPCAuth) RequireTransportSecurity() bool {
+func (*perRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 

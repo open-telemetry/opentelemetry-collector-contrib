@@ -36,7 +36,7 @@ func NewInMemoryStorageExtension(name string) *TestStorage {
 }
 
 // NewFileBackedStorageExtension creates a TestStorage extension
-func NewFileBackedStorageExtension(name string, storageDir string) *TestStorage {
+func NewFileBackedStorageExtension(name, storageDir string) *TestStorage {
 	return &TestStorage{
 		ID:         NewStorageID(name),
 		storageDir: storageDir,

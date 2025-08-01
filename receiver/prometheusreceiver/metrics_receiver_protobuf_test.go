@@ -402,8 +402,9 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		},
 		"feature enabled scrape classic on": {
 			mutCfg: func(cfg *PromConfig) {
+				truePtr := true
 				for _, scrapeConfig := range cfg.ScrapeConfigs {
-					scrapeConfig.AlwaysScrapeClassicHistograms = true
+					scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
 				}
 			},
 			enableNativeHistograms: true,
@@ -460,8 +461,9 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		},
 		"feature disabled scrape classic on": {
 			mutCfg: func(cfg *PromConfig) {
+				truePtr := true
 				for _, scrapeConfig := range cfg.ScrapeConfigs {
-					scrapeConfig.AlwaysScrapeClassicHistograms = true
+					scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
 				}
 			},
 			enableNativeHistograms: false,

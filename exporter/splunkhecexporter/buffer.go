@@ -46,7 +46,7 @@ func (c *cancellableBytesWriter) Reset() {
 	c.innerWriter.Reset()
 }
 
-func (c *cancellableBytesWriter) Close() error {
+func (*cancellableBytesWriter) Close() error {
 	return nil
 }
 

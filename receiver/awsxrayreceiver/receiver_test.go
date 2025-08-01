@@ -229,11 +229,11 @@ type mockPoller struct {
 	closeErr error
 }
 
-func (m *mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
+func (*mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
 	return make(chan udppoller.RawSegment, 1)
 }
 
-func (m *mockPoller) Start(_ context.Context) {}
+func (*mockPoller) Start(context.Context) {}
 
 func (m *mockPoller) Close() error {
 	if m.closeErr != nil {
@@ -246,7 +246,7 @@ type mockProxy struct {
 	closeErr error
 }
 
-func (m *mockProxy) ListenAndServe() error {
+func (*mockProxy) ListenAndServe() error {
 	return errors.New("returning from ListenAndServe() always errors out")
 }
 

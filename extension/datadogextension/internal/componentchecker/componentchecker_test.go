@@ -275,7 +275,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
 			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "'service.extensions': source data must be an array or slice, got map",
+			expectedError:      "'service.extensions' source data must be an array or slice, got map",
 		},
 		{
 			name: "Invalid extension value",
@@ -288,7 +288,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
 			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "'service.extensions[0]' expected a map, got 'int'",
+			expectedError:      `'service.extensions[0]' expected a map or struct, got "int"`,
 		},
 		{
 			name: "Invalid pipeline map",
@@ -299,7 +299,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
 			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "'service.pipelines' expected a map, got 'slice'",
+			expectedError:      "'service.pipelines' expected type 'pipelines.Config', got unconvertible type '[]interface {}'",
 		},
 		{
 			name: "Invalid pipeline components map",
@@ -312,7 +312,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
 			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "'service.pipelines[traces]' expected a map, got 'slice'",
+			expectedError:      `'service.pipelines[traces]' expected a map or struct, got "slice"`,
 		},
 		{
 			name: "Invalid pipeline components list",
@@ -327,7 +327,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
 			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "'service.pipelines[traces].receivers': source data must be an array or slice, got map",
+			expectedError:      "'service.pipelines[traces].receivers' source data must be an array or slice, got map",
 		},
 		{
 			name: "Invalid pipeline component value",
@@ -344,7 +344,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
 			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "'service.pipelines[traces].receivers[0]' expected a map, got 'int'",
+			expectedError:      `'service.pipelines[traces].receivers[0]' expected a map or struct, got "int"`,
 		},
 		{
 			name: "Connector as exporter in traces and receiver in metrics",

@@ -317,7 +317,7 @@ func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecstypes.T
 
 // GenTaskDefinitions returns tasks with TaskArn set to arnPrefix+offset+version, where offset is [0, count).
 // e.g. foo0:1, foo1:1 the `:` is following the task family version syntax.
-func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(i int, def *ecstypes.TaskDefinition)) []*ecstypes.TaskDefinition {
+func GenTaskDefinitions(arnPrefix string, count, version int, modifier func(i int, def *ecstypes.TaskDefinition)) []*ecstypes.TaskDefinition {
 	var defs []*ecstypes.TaskDefinition
 	for i := 0; i < count; i++ {
 		d := &ecstypes.TaskDefinition{

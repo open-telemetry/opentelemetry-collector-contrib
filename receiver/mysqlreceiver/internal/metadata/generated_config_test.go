@@ -44,6 +44,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlJoins:                   MetricConfig{Enabled: true},
 					MysqlLocks:                   MetricConfig{Enabled: true},
 					MysqlLogOperations:           MetricConfig{Enabled: true},
+					MysqlMaxUsedConnections:      MetricConfig{Enabled: true},
 					MysqlMysqlxConnections:       MetricConfig{Enabled: true},
 					MysqlMysqlxWorkerThreads:     MetricConfig{Enabled: true},
 					MysqlOpenedResources:         MetricConfig{Enabled: true},
@@ -100,6 +101,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlJoins:                   MetricConfig{Enabled: false},
 					MysqlLocks:                   MetricConfig{Enabled: false},
 					MysqlLogOperations:           MetricConfig{Enabled: false},
+					MysqlMaxUsedConnections:      MetricConfig{Enabled: false},
 					MysqlMysqlxConnections:       MetricConfig{Enabled: false},
 					MysqlMysqlxWorkerThreads:     MetricConfig{Enabled: false},
 					MysqlOpenedResources:         MetricConfig{Enabled: false},
@@ -151,6 +153,16 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

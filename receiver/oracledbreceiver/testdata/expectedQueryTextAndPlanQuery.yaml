@@ -1,0 +1,86 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: oracledb.instance.name
+          value:
+            stringValue: oracle-instance-sample-1
+        - key: host.name
+          value:
+            stringValue: oracle-host-sample-1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
+              - key: db.server.name
+                value:
+                  stringValue: oracle-host-sample-1
+              - key: db.query.text
+                value:
+                  stringValue: select count ( * ) from admin. employee e join admin. person p on e. businessentityid = ? join admin. employeepayhistory eph on e. businessentityid = eph. businessentityid where eph. rate > ( select avg ( rate ) from admin. employeepayhistory )
+              - key: oracledb.query_plan
+                value:
+                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","CHILD_ADDRESS":"0000000074C6E830","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
+              - key: oracledb.sql_id
+                value:
+                  stringValue: fxk8aq3nds8aw
+              - key: oracledb.child_number
+                value:
+                  stringValue: "0"
+              - key: oracledb.application_wait_time
+                value:
+                  doubleValue: 0
+              - key: oracledb.buffer_gets
+                value:
+                  intValue: "189417"
+              - key: oracledb.cluster_wait_time
+                value:
+                  doubleValue: 0.001
+              - key: oracledb.concurrency_wait_time
+                value:
+                  doubleValue: 1e-05
+              - key: oracledb.cpu_time
+                value:
+                  doubleValue: 9.915824
+              - key: oracledb.direct_reads
+                value:
+                  intValue: "2"
+              - key: oracledb.direct_writes
+                value:
+                  intValue: "4"
+              - key: oracledb.disk_reads
+                value:
+                  intValue: "3"
+              - key: oracledb.elapsed_time
+                value:
+                  doubleValue: 61
+              - key: oracledb.executions
+                value:
+                  intValue: "100000"
+              - key: oracledb.physical_read_bytes
+                value:
+                  intValue: "100"
+              - key: oracledb.physical_read_requests
+                value:
+                  intValue: "400"
+              - key: oracledb.physical_write_bytes
+                value:
+                  intValue: "6"
+              - key: oracledb.physical_write_requests
+                value:
+                  intValue: "30"
+              - key: oracledb.rows_processed
+                value:
+                  intValue: "199443"
+              - key: oracledb.user_io_wait_time
+                value:
+                  doubleValue: 2e-05
+            body: {}
+            eventName: db.server.top_query
+            spanId: ""
+            timeUnixNano: "1752581882636677000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+          version: latest

@@ -88,14 +88,14 @@ func (c mockPodmanClient) stats(context.Context, url.Values) ([]containerStats, 
 	return report.Stats, nil
 }
 
-func (c mockPodmanClient) ping(context.Context) error {
+func (mockPodmanClient) ping(context.Context) error {
 	return nil
 }
 
-func (c mockPodmanClient) list(context.Context, url.Values) ([]container, error) {
+func (mockPodmanClient) list(context.Context, url.Values) ([]container, error) {
 	return []container{{ID: "c1", Image: "localimage"}}, nil
 }
 
-func (c mockPodmanClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
+func (mockPodmanClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
 	return nil, nil
 }

@@ -141,6 +141,6 @@ func parseLog(data []byte) (log cWLog, control bool, _ error) {
 }
 
 // Type of the serialized messages.
-func (u *Unmarshaler) Type() string {
+func (*Unmarshaler) Type() string {
 	return TypeStr
 }

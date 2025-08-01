@@ -5,6 +5,7 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net/http"
@@ -31,6 +32,39 @@ type httpcheckScraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
+}
+
+// extractTLSInfo extracts TLS certificate information from the connection state
+func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans []any, timeLeft int64) {
+	if state == nil || len(state.PeerCertificates) == 0 {
+		return "", "", nil, 0
+	}
+
+	cert := state.PeerCertificates[0]
+	issuer = cert.Issuer.String()
+	commonName = cert.Subject.CommonName
+
+	// Collect all SANs
+	sans = make([]any, 0, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
+	for _, ip := range cert.IPAddresses {
+		sans = append(sans, ip.String())
+	}
+	for _, uri := range cert.URIs {
+		sans = append(sans, uri.String())
+	}
+	for _, dnsName := range cert.DNSNames {
+		sans = append(sans, dnsName)
+	}
+	for _, emailAddress := range cert.EmailAddresses {
+		sans = append(sans, emailAddress)
+	}
+
+	// Calculate time left until expiry
+	currentTime := time.Now()
+	timeLeftSeconds := cert.NotAfter.Sub(currentTime).Seconds()
+	timeLeft = int64(timeLeftSeconds)
+
+	return issuer, commonName, sans, timeLeft
 }
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
@@ -122,6 +156,22 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			mux.Lock()
+
+			// Check if TLS metric is enabled and this is an HTTPS endpoint
+			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
+				// Extract TLS info directly from the HTTP response
+				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
+				if issuer != "" || commonName != "" || len(sans) > 0 {
+					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
+						now,
+						timeLeft,
+						h.cfg.Targets[targetIndex].Endpoint,
+						issuer,
+						commonName,
+						sans,
+					)
+				}
+			}
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
 				time.Since(start).Milliseconds(),
@@ -156,7 +206,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 						now,
 						int64(0),
 						h.cfg.Targets[targetIndex].Endpoint,
-						int64(statusCode),
+						int64(0), // Use 0 as status code when the class doesn't match
 						req.Method,
 						class,
 					)
@@ -167,7 +217,41 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	wg.Wait()
-	return h.mb.Emit(), nil
+
+	// Emit metrics and post-process to remove http.status_code when value is 0
+	metrics := h.mb.Emit()
+	removeStatusCodeForZeroValues(metrics)
+
+	return metrics, nil
+}
+
+// removeStatusCodeForZeroValues removes the http.status_code attribute from httpcheck.status metrics
+func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		sms := rm.ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			sm := sms.At(j)
+			ms := sm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				if m.Name() == "httpcheck.status" {
+					// Process sum data points
+					if m.Type() == pmetric.MetricTypeSum {
+						dps := m.Sum().DataPoints()
+						for l := 0; l < dps.Len(); l++ {
+							dp := dps.At(l)
+							// If the value is 0, remove the http.status_code attribute
+							if dp.IntValue() == 0 {
+								dp.Attributes().Remove("http.status_code")
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func newScraper(conf *Config, settings receiver.Settings) *httpcheckScraper {

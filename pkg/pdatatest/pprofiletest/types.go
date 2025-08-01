@@ -132,7 +132,7 @@ func (p *Profile) Transform(dic pprofile.ProfilesDictionary, psp pprofile.ScopeP
 	pp.SetOriginalPayloadFormat(p.OriginalPayloadFormat)
 	pp.OriginalPayload().FromRaw(p.OriginalPayload)
 	for _, at := range p.Attributes {
-		pp.AttributeIndices().Append(at.Transform(dic))
+		at.Transform(dic, pp)
 	}
 	for _, au := range p.AttributeUnits {
 		au.Transform(dic)
@@ -218,13 +218,13 @@ func (sa *Sample) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile
 			pl.SetFunctionIndex(l.Function.Transform(dic))
 		}
 		for _, at := range loc.Attributes {
-			ploc.AttributeIndices().Append(at.Transform(dic))
+			at.Transform(dic, ploc)
 		}
 	}
 	psa.SetLocationsLength(int32(pp.LocationIndices().Len()) - psa.LocationsStartIndex())
 	psa.Value().FromRaw(sa.Value)
 	for _, at := range sa.Attributes {
-		psa.AttributeIndices().Append(at.Transform(dic))
+		at.Transform(dic, psa)
 	}
 	//nolint:revive,staticcheck
 	if sa.Link != nil {
@@ -272,7 +272,7 @@ func (m *Mapping) Transform(dic pprofile.ProfilesDictionary) {
 	pm.SetFileOffset(m.FileOffset)
 	pm.SetFilenameStrindex(addString(dic, m.Filename))
 	for _, at := range m.Attributes {
-		pm.AttributeIndices().Append(at.Transform(dic))
+		at.Transform(dic, pm)
 	}
 	pm.SetHasFunctions(m.HasFunctions)
 	pm.SetHasFilenames(m.HasFileNames)
@@ -285,14 +285,20 @@ type Attribute struct {
 	Value any
 }
 
-func (a *Attribute) Transform(dic pprofile.ProfilesDictionary) int32 {
-	pa := dic.AttributeTable().AppendEmpty()
-	pa.SetKey(a.Key)
-	if pa.Value().FromRaw(a.Value) != nil {
+type attributable interface {
+	AttributeIndices() pcommon.Int32Slice
+}
+
+func (a *Attribute) Transform(dic pprofile.ProfilesDictionary, record attributable) {
+	v := pcommon.NewValueEmpty()
+	if err := v.FromRaw(a.Value); err != nil {
 		panic(fmt.Sprintf("unsupported attribute value: {%s: %v (type %T)}",
 			a.Key, a.Value, a.Value))
 	}
-	return int32(dic.AttributeTable().Len() - 1)
+	if err := pprofile.PutAttribute(dic.AttributeTable(), record, a.Key, v); err != nil {
+		panic(fmt.Sprintf("failed to put attribute: {%s: %v (type %T)}: %v",
+			a.Key, a.Value, a.Value, err))
+	}
 }
 
 type AttributeUnit struct {

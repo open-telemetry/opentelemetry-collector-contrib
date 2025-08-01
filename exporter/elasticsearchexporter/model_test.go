@@ -125,8 +125,8 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	hasher.UpdateResource(rm.Resource())
 	hasher.UpdateScope(sm.Scope())
-	for i := 0; i < dps.Len(); i++ {
-		dp := datapoints.NewNumber(m, dps.At(i))
+	for _, dp := range dps.All() {
+		dp := datapoints.NewNumber(m, dp)
 		hasher.UpdateDataPoint(dp)
 		dpHash := hasher.HashKey()
 		dataPoints, ok := groupedDataPoints[dpHash]
@@ -364,28 +364,6 @@ func TestEncodeSpan_Events(t *testing.T) {
 			  "Events.event_3.time": "1970-01-01T00:00:00.000000000Z"
 			}`,
 		},
-		"ecs": {
-			mappingMode: MappingECS,
-			want: `
-			{
-			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
-			  "Duration": 0,
-			  "EndTimestamp": "1970-01-01T00:00:00.000000000Z",
-			  "Scope": {
-			    "name": "",
-			    "version": ""
-			  },
-			  "Kind": "SPAN_KIND_UNSPECIFIED",
-			  "Link": "[]",
-			  "TraceStatus": 0,
-			  "Events": {
-			    "event_0": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_1": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_2": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_3": {"time": "1970-01-01T00:00:00.000000000Z"}
-			  }
-			}`,
-		},
 	}
 
 	for name, test := range tests {
@@ -445,6 +423,102 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want, buf.String())
+}
+
+func TestEncodeSpanECSMode(t *testing.T) {
+	encoder, _ := newEncoder(MappingECS)
+
+	resource := pcommon.NewResource()
+	err := resource.Attributes().FromRaw(map[string]any{
+		string(semconv.CloudProviderKey):         "aws",
+		string(semconv.CloudPlatformKey):         "aws_elastic_beanstalk",
+		string(semconv.DeploymentEnvironmentKey): "BETA",
+		string(semconv.ServiceInstanceIDKey):     "23",
+		string(semconv.ServiceNameKey):           "some-service",
+		string(semconv.ServiceVersionKey):        "env-version-1234",
+	})
+	require.NoError(t, err)
+
+	scope := pcommon.NewInstrumentationScope()
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(resourceSpans.Resource())
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope.CopyTo(scopeSpans.Scope())
+
+	span := scopeSpans.Spans().AppendEmpty()
+	span.SetName("client span")
+	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetParentSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)))
+	span.Status().SetCode(ptrace.StatusCodeError)
+	span.Status().SetMessage("Test")
+	require.NoError(t, err)
+
+	link1 := span.Links().AppendEmpty()
+	link1.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01})
+	link1.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+
+	link2 := span.Links().AppendEmpty()
+	link2.SetTraceID([16]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21})
+	link2.SetSpanID([8]byte{0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38})
+
+	var buf bytes.Buffer
+	err = encoder.encodeSpan(
+		encodingContext{
+			resource: resource,
+			scope:    scope,
+		},
+		span,
+		elasticsearch.Index{},
+		&buf,
+	)
+	assert.NoError(t, err)
+
+	assert.JSONEq(t, `{
+	  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+	  "trace": {
+		"id": "01020304050607080807060504030201"
+	  },
+	  "span": {
+		"id": "1920212223242526",
+		"name": "client span",
+		"links": [
+		  {
+			"span_id": "1112131415161718",
+			"trace_id": "01020304050607080807060504030201"
+		  },
+		  {
+			"span_id": "3132333435363738",
+			"trace_id": "21222324252627282827262524232221"
+		  }
+		]
+	  },
+      "parent": {
+		"id": "0102030405060708"
+	  },
+	  "cloud": {
+		"provider": "aws",
+		"service": {
+		  "name": "aws_elastic_beanstalk"
+		}
+	  },
+	  "event": {
+		"outcome": "failure"
+	  },
+	  "service": {
+		"environment": "BETA",
+		"name": "some-service",
+		"node": {
+		  "name": "23"
+		},
+		"version": "env-version-1234"
+	  }
+	}`, buf.String())
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
@@ -1101,7 +1175,7 @@ type oTelResource struct {
 
 type oTelSpanID pcommon.SpanID
 
-func (o oTelSpanID) MarshalJSON() ([]byte, error) {
+func (oTelSpanID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
@@ -1116,7 +1190,7 @@ func (o *oTelSpanID) UnmarshalJSON(data []byte) error {
 
 type oTelTraceID pcommon.TraceID
 
-func (o oTelTraceID) MarshalJSON() ([]byte, error) {
+func (oTelTraceID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 

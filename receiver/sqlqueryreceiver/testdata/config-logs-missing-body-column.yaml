@@ -1,8 +1,8 @@
 sqlquery:
   collection_interval: 10s
-  driver: mydriver
+  driver: postgres
   datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"
   queries:
     - sql: "select * from test_logs"
       logs:
-      - {}
+        - {}

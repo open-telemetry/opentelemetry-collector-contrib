@@ -306,8 +306,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	next := &mockProcessor{
 		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			require.Equal(t, 2, traces.ResourceSpans().Len())
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0))
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(1))
+			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0), traces.ResourceSpans().At(1))
 			wg.Done()
 			return nil
 		},
@@ -600,15 +599,15 @@ func (m *mockProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (m *mockProcessor) Capabilities() consumer.Capabilities {
+func (*mockProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (m *mockProcessor) Shutdown(context.Context) error {
+func (*mockProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *mockProcessor) Start(_ context.Context, _ component.Host) error {
+func (*mockProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -663,7 +662,7 @@ type blockingConsumer struct {
 
 var _ consumer.Traces = (*blockingConsumer)(nil)
 
-func (b *blockingConsumer) Capabilities() consumer.Capabilities {
+func (*blockingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

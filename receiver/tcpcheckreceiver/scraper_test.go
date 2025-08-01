@@ -31,7 +31,7 @@ type mockTCPserver struct {
 	listener net.Listener
 }
 
-func newTCPServer(host string, port string) *mockTCPserver {
+func newTCPServer(host, port string) *mockTCPserver {
 	return &mockTCPserver{
 		host: host,
 		port: port,

@@ -71,28 +71,29 @@ func (cdr *collectDRecord) appendToMetrics(logger *zap.Logger, scopeMetrics pmet
 	}
 
 	for i := range cdr.Dsnames {
-		if i < len(cdr.Dstypes) && i < len(cdr.Values) && cdr.Values[i] != nil {
-			dsType, dsName, val := cdr.Dstypes[i], cdr.Dsnames[i], cdr.Values[i]
-			metricName, usedDsName := cdr.getReasonableMetricName(i, labels)
-			createMetric := createMetricInfo{
-				Name:   metricName,
-				DsType: dsType,
-				Val:    val,
-			}
-
-			addIfNotNullOrEmpty(labels, "plugin", cdr.Plugin)
-			parseAndAddLabels(labels, cdr.PluginInstance, cdr.Host)
-			if !usedDsName {
-				addIfNotNullOrEmpty(labels, "dsname", dsName)
-			}
-
-			metric, err := cdr.newMetric(createMetric, labels)
-			if err != nil {
-				return fmt.Errorf("error processing metric %s: %w", sanitize.String(metricName), err)
-			}
-			newMetric := scopeMetrics.Metrics().AppendEmpty()
-			metric.MoveTo(newMetric)
+		if i >= len(cdr.Dstypes) || i >= len(cdr.Values) || cdr.Values[i] == nil {
+			continue
 		}
+		dsType, dsName, val := cdr.Dstypes[i], cdr.Dsnames[i], cdr.Values[i]
+		metricName, usedDsName := cdr.getReasonableMetricName(i, labels)
+		createMetric := createMetricInfo{
+			Name:   metricName,
+			DsType: dsType,
+			Val:    val,
+		}
+
+		addIfNotNullOrEmpty(labels, "plugin", cdr.Plugin)
+		parseAndAddLabels(labels, cdr.PluginInstance, cdr.Host)
+		if !usedDsName {
+			addIfNotNullOrEmpty(labels, "dsname", dsName)
+		}
+
+		metric, err := cdr.newMetric(createMetric, labels)
+		if err != nil {
+			return fmt.Errorf("error processing metric %s: %w", sanitize.String(metricName), err)
+		}
+		newMetric := scopeMetrics.Metrics().AppendEmpty()
+		metric.MoveTo(newMetric)
 	}
 	return nil
 }
@@ -171,7 +172,7 @@ func (cdr *collectDRecord) getReasonableMetricName(index int, attrs map[string]s
 		parts = append(parts, *cdr.TypeS...)
 	}
 	parts = cdr.pointTypeInstance(attrs, parts)
-	if cdr.Dsnames != nil && !isNilOrEmpty(cdr.Dsnames[index]) && len(cdr.Dsnames) > 1 {
+	if len(cdr.Dsnames) > 1 && !isNilOrEmpty(cdr.Dsnames[index]) {
 		if len(parts) > 0 {
 			parts = append(parts, '.')
 		}
@@ -213,7 +214,7 @@ func addIfNotNullOrEmpty(m map[string]string, key string, val *string) {
 	}
 }
 
-func parseAndAddLabels(labels map[string]string, pluginInstance *string, host *string) {
+func parseAndAddLabels(labels map[string]string, pluginInstance, host *string) {
 	parseNameForLabels(labels, "plugin_instance", pluginInstance)
 	parseNameForLabels(labels, "host", host)
 }

@@ -41,7 +41,7 @@ func (client *testClient) GetObject(_ context.Context, request *s3.GetObjectInpu
 		return &s3.GetObjectOutput{}, err
 	}
 
-	bodyLen := (int64)(len(f))
+	bodyLen := int64(len(f))
 	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: &bodyLen}, nil
 }
 

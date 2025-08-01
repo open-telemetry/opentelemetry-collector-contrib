@@ -44,12 +44,12 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 
 		// Convert to model.LabelSet
 		filtered := model.LabelSet{}
-		for _, label := range ls {
+		for labelName, labelValue := range ls.Map() {
 			// Labels started from __ are considered internal and should be ignored
-			if strings.HasPrefix(label.Name, "__") {
+			if strings.HasPrefix(labelName, "__") {
 				continue
 			}
-			filtered[model.LabelName(label.Name)] = model.LabelValue(label.Value)
+			filtered[model.LabelName(labelName)] = model.LabelValue(labelValue)
 		}
 
 		for i := range stream.Entries {

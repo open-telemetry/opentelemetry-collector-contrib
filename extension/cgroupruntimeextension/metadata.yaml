@@ -3,7 +3,7 @@ type: cgroupruntime
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   distributions: [contrib]
   codeowners:
     active: [mx-psi, rogercoll]

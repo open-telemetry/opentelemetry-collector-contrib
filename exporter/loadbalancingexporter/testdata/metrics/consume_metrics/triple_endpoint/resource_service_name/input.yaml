@@ -4,7 +4,7 @@ resourceMetrics:
       attributes:
         - key: service.name
           value:
-            stringValue: serviceA
+            stringValue: service-alpha
     scopeMetrics:
       - schemaUrl: https://test-scope-schema.com/schema
         scope:
@@ -31,7 +31,7 @@ resourceMetrics:
       attributes:
         - key: service.name
           value:
-            stringValue: serviceB
+            stringValue: service-beta
     scopeMetrics:
       - schemaUrl: https://test-scope-schema.com/schema
         scope:
@@ -58,7 +58,7 @@ resourceMetrics:
       attributes:
         - key: service.name
           value:
-            stringValue: serviceC
+            stringValue: service-gamma
     scopeMetrics:
       - schemaUrl: https://test-scope-schema.com/schema
         scope:

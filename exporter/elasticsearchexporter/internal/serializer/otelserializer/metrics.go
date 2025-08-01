@@ -6,10 +6,10 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"fmt"
-	"hash/fnv"
 	"sort"
 	"strconv"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -92,13 +92,13 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 		writeUIntField(v, "_doc_count", docCount)
 	}
 	sort.Strings(metricNames)
-	hasher := fnv.New32a()
+	hasher := xxhash.New()
 	for _, name := range metricNames {
-		_, _ = hasher.Write([]byte(name))
+		_, _ = hasher.WriteString(name)
 	}
 	// workaround for https://github.com/elastic/elasticsearch/issues/99123
 	// should use a string field to benefit from run-length encoding
-	writeStringFieldSkipDefault(v, "_metric_names_hash", strconv.FormatUint(uint64(hasher.Sum32()), 16))
+	writeStringFieldSkipDefault(v, "_metric_names_hash", strconv.FormatUint(hasher.Sum64(), 16))
 
 	return dynamicTemplates
 }

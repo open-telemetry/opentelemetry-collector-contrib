@@ -105,7 +105,7 @@ func Test_RemoveXML(t *testing.T) {
 				ottl.FunctionContext{},
 				&RemoveXMLArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.document, nil
 						},
 					},
@@ -151,7 +151,7 @@ func TestCreateRemoveXMLFunc(t *testing.T) {
 
 func invalidXMLGetter() ottl.StandardStringGetter[any] {
 	return ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return `<a>>>>>>>`, nil
 		},
 	}

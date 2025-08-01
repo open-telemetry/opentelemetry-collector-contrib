@@ -75,6 +75,20 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Context: "profile",
+						Statements: []string{
+							`set(original_payload_format, "bear") where original_payload_format == "/animal"`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -108,6 +122,15 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Context:    "profile",
+						Conditions: []string{`original_payload_format == "/animal"`},
+						Statements: []string{
+							`set(original_payload_format, "bear")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -122,8 +145,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements: []common.ContextStatements{},
-				LogStatements:    []common.ContextStatements{},
+				MetricStatements:  []common.ContextStatements{},
+				LogStatements:     []common.ContextStatements{},
+				ProfileStatements: []common.ContextStatements{},
 			},
 		},
 		{
@@ -143,6 +167,12 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_profile"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "unknown_function_profile"),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
@@ -172,6 +202,12 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Context:    "log",
 						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Context:    "profile",
+						Statements: []string{`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`},
 					},
 				},
 			},
@@ -204,6 +240,14 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -230,6 +274,14 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Statements: []string{
 							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`,
 							`set(resource.attributes["name"], "bear")`,
 						},
 					},
@@ -270,6 +322,16 @@ func TestLoadConfig(t *testing.T) {
 						ErrorMode:  "",
 					},
 				},
+				ProfileStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
 			},
 		},
 	}
@@ -296,7 +358,8 @@ func TestLoadConfig(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
-				assert.Equal(t, tt.expected, cfg)
+				assert.EqualExportedValues(t, tt.expected, cfg)
+				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
 		})
 	}

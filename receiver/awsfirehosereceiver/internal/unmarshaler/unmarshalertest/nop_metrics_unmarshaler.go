@@ -42,6 +42,6 @@ func (u *NopMetricsUnmarshaler) UnmarshalMetrics([]byte) (pmetric.Metrics, error
 }
 
 // Type of the serialized messages.
-func (u *NopMetricsUnmarshaler) Type() string {
+func (*NopMetricsUnmarshaler) Type() string {
 	return typeStr
 }

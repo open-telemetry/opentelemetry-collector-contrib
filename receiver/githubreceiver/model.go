@@ -5,9 +5,11 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"unicode"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v74/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
@@ -105,6 +107,7 @@ const (
 	// The following attributes are exclusive to GitHub but not listed under
 	// Vendor Extensions within Semantic Conventions yet.
 	AttributeGitHubAppInstallationID            = "github.app.installation.id"             // GitHub's Installation ID
+	AttributeGitHubRepositoryCustomProperty     = "github.repository.custom_properties"    // GitHub's Repository Custom Properties
 	AttributeGitHubWorkflowRunAttempt           = "github.workflow.run.attempt"            // GitHub's Run Attempt
 	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
 
@@ -146,6 +149,9 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 	}
 
 	attrs.PutStr(string(semconv.ServiceNameKey), svc)
+
+	// Add all custom properties from the repository as resource attributes
+	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -219,6 +225,9 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 	}
 
 	attrs.PutStr(string(semconv.ServiceNameKey), svc)
+
+	// Add all custom properties from the repository as resource attributes
+	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -317,6 +326,45 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 	}
 }
 
+// addCustomPropertiesToAttrs adds all custom properties from the repository as resource attributes
+// with the prefix AttributeGitHubCustomProperty. Keys are converted to snake_case to follow
+// resource attribute naming convention.
+func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]any) {
+	if len(customProps) == 0 {
+		return
+	}
+
+	for key, value := range customProps {
+		// Skip service_name as it's already handled separately
+		if key == "service_name" {
+			continue
+		}
+
+		// Convert key to snake_case
+		snakeCaseKey := toSnakeCase(key)
+
+		// Use dot notation for keys, following resource attribute naming convention
+		attrKey := fmt.Sprintf("%s.%s", AttributeGitHubRepositoryCustomProperty, snakeCaseKey)
+
+		// Handle different value types
+		switch v := value.(type) {
+		case string:
+			attrs.PutStr(attrKey, v)
+		case int:
+			attrs.PutInt(attrKey, int64(v))
+		case int64:
+			attrs.PutInt(attrKey, v)
+		case float64:
+			attrs.PutDouble(attrKey, v)
+		case bool:
+			attrs.PutBool(attrKey, v)
+		default:
+			// For any other types, convert to string
+			attrs.PutStr(attrKey, fmt.Sprintf("%v", v))
+		}
+	}
+}
+
 // formatString formats a string to lowercase and replaces underscores with
 // hyphens.
 func formatString(input string) string {
@@ -327,4 +375,42 @@ func formatString(input string) string {
 func replaceAPIURL(apiURL string) (htmlURL string) {
 	// TODO: Support enterpise server configuration with custom domain.
 	return strings.Replace(apiURL, "api.github.com/repos", "github.com", 1)
+}
+
+// toSnakeCase converts a string to snake_case format.
+// It handles all GitHub supported characters for custom property names: a-z, A-Z, 0-9, _, -, $, #.
+// This function ensures that the resulting string follows snake_case convention.
+func toSnakeCase(s string) string {
+	// Replace hyphens, spaces, and dots with underscores
+	s = strings.ReplaceAll(s, "-", "_")
+	s = strings.ReplaceAll(s, " ", "_")
+	s = strings.ReplaceAll(s, ".", "_")
+
+	// Replace special characters with underscores
+	s = strings.ReplaceAll(s, "$", "_dollar_")
+	s = strings.ReplaceAll(s, "#", "_hash_")
+
+	// Handle camelCase and PascalCase
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && unicode.IsUpper(r) {
+			// If current char is uppercase and previous char is lowercase or a digit,
+			// or if current char is uppercase and next char is lowercase,
+			// add an underscore before the current char
+			prevIsLower := i > 0 && (unicode.IsLower(rune(s[i-1])) || unicode.IsDigit(rune(s[i-1])))
+			nextIsLower := i < len(s)-1 && unicode.IsLower(rune(s[i+1]))
+			if prevIsLower || nextIsLower {
+				result.WriteRune('_')
+			}
+		}
+		result.WriteRune(unicode.ToLower(r))
+	}
+
+	// Replace multiple consecutive underscores with a single one
+	output := result.String()
+	for strings.Contains(output, "__") {
+		output = strings.ReplaceAll(output, "__", "_")
+	}
+
+	return output
 }

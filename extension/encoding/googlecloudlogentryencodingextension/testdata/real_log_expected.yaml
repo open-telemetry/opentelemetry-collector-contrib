@@ -1,0 +1,79 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.resource_type
+          value:
+            stringValue: cloud_run_revision
+        - key: gcp.configuration_name
+          value:
+            stringValue: otelcol
+        - key: gcp.location
+          value:
+            stringValue: europe-west1
+        - key: gcp.project_id
+          value:
+            stringValue: gcp-project
+        - key: gcp.revision_name
+          value:
+            stringValue: example-00007-sun
+        - key: gcp.service_name
+          value:
+            stringValue: otelcol
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: gcp.http_request
+                value:
+                  kvlistValue:
+                    values:
+                      - key: referer
+                        value:
+                          stringValue: https://console.cloud.google.com/
+                      - key: remote_ip
+                        value:
+                          stringValue: 1802:2a14:1188:9898:34ab:b5c5:86eb:a142
+                      - key: request_url
+                        value:
+                          stringValue: https://example.a.run.app/
+                      - key: protocol
+                        value:
+                          stringValue: H2C
+                      - key: request_method
+                        value:
+                          stringValue: GET
+                      - key: request_size
+                        value:
+                          intValue: "1220"
+                      - key: response_size
+                        value:
+                          intValue: "963"
+                      - key: server_ip
+                        value:
+                          stringValue: 2024:6048:3248:42::42
+                      - key: status
+                        value:
+                          intValue: "503"
+                      - key: user_agent
+                        value:
+                          stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+                      - key: latency
+                        value:
+                          stringValue: 0.001901s
+              - key: gcp.instance_id
+                value:
+                  stringValue: 00f46b9285fdad63aa1a6951b9b01126bd635517f264c8f231a40248b473fcdf266eed0fdfebd05fb338203c0e3e5bf6422f0b480445cacc4ec75bd4ebc86a72
+              - key: gcp.log_name
+                value:
+                  stringValue: projects/gcp-project/logs/run.googleapis.com%2Frequests
+              - key: log.record.uid
+                value:
+                  stringValue: 663760330006df7c63521728
+            body: {}
+            flags: 1
+            observedTimeUnixNano: "1714905139455706870"
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 3e3a5741b18f0710
+            timeUnixNano: "1714905139440152000"
+            traceId: 1dbe317eb73eb6e3bbb51a2bc3a41e09
+        scope: {}

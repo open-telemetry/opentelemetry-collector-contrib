@@ -388,7 +388,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
 	tsp := sp.(*tailSamplingSpanProcessor)
-	tsp.idToTrace.Range(func(_ any, _ any) bool {
+	tsp.idToTrace.Range(func(_, _ any) bool {
 		cnt++
 		return true
 	})
@@ -811,7 +811,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	return firstBatch, true
 }
 
-func (s *syncIDBatcher) Stop() {
+func (*syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {
@@ -822,4 +822,99 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
+}
+
+// TestNumericAttributeCases tests cases for the numeric attribute filter
+func TestNumericAttributeCases(t *testing.T) {
+	tests := []struct {
+		name           string
+		minValue       int64
+		maxValue       int64
+		testValue      int64
+		expectedResult sampling.Decision
+		description    string
+	}{
+		{
+			name:           "Only min_value set (positive)",
+			minValue:       400,
+			maxValue:       0, // not set (default)
+			testValue:      500,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when value >= min_value and max_value not set",
+		},
+		{
+			name:           "Only min_value set (negative value)",
+			minValue:       -100,
+			maxValue:       0, // not set (default)
+			testValue:      50,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when value >= min_value (negative) and max_value not set",
+		},
+		{
+			name:           "Only max_value set (positive)",
+			minValue:       0, // not set (default)
+			maxValue:       1000,
+			testValue:      500,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when value <= max_value and min_value not set",
+		},
+		{
+			name:           "Both min and max set",
+			minValue:       100,
+			maxValue:       200,
+			testValue:      150,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when min_value <= value <= max_value",
+		},
+		{
+			name:           "Value below min_value",
+			minValue:       400,
+			maxValue:       0, // not set (default)
+			testValue:      300,
+			expectedResult: sampling.NotSampled,
+			description:    "Should not sample when value < min_value",
+		},
+		{
+			name:           "Value above max_value",
+			minValue:       0, // not set (default)
+			maxValue:       100,
+			testValue:      200,
+			expectedResult: sampling.NotSampled,
+			description:    "Should not sample when value > max_value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NumericAttributeCfg{
+				Key:      "test_attribute",
+				MinValue: tt.minValue,
+				MaxValue: tt.maxValue,
+			}
+
+			settings := componenttest.NewNopTelemetrySettings()
+
+			evaluator, err := getSharedPolicyEvaluator(settings, &sharedPolicyCfg{
+				Name:                "test-policy",
+				Type:                NumericAttribute,
+				NumericAttributeCfg: cfg,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, evaluator)
+
+			// Create test trace data
+			trace := &sampling.TraceData{}
+			trace.ReceivedBatches = ptrace.NewTraces()
+
+			rs := trace.ReceivedBatches.ResourceSpans().AppendEmpty()
+			ils := rs.ScopeSpans().AppendEmpty()
+			span := ils.Spans().AppendEmpty()
+			span.Attributes().PutInt("test_attribute", tt.testValue)
+
+			decision, err := evaluator.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4}), trace)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedResult, decision, tt.description)
+		})
+	}
 }

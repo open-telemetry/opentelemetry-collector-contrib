@@ -10,6 +10,7 @@ import (
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	logsconfig "github.com/DataDog/datadog-agent/comp/logs/agent/config"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
@@ -151,6 +152,7 @@ func WithLogsDefaults() ConfigOption {
 		pkgconfig.Set("logs_config.auditor_ttl", pkgconfigsetup.DefaultAuditorTTL, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.batch_max_content_size", pkgconfigsetup.DefaultBatchMaxContentSize, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.batch_max_size", pkgconfigsetup.DefaultBatchMaxSize, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.compression_kind", logsconfig.GzipCompressionKind, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.force_use_http", true, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.input_chan_size", pkgconfigsetup.DefaultInputChanSize, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.max_message_size_bytes", pkgconfigsetup.DefaultMaxMessageSizeBytes, pkgconfigmodel.SourceDefault)
@@ -228,7 +230,7 @@ func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) forw
 	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
 		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
 	}
-	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
+	forwarderOptions, _ := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
 	forwarderOptions.DisableAPIKeyChecking = true
 	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
 }

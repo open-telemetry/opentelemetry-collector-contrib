@@ -22,29 +22,29 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	if !e.config.Enabled {
 		return
 	}
-	lr := e.data.AppendEmpty()
-	lr.SetEventName("db.server.query_sample")
-	lr.SetTimestamp(timestamp)
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.query_sample")
+	dp.SetTimestamp(timestamp)
 
 	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
-		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
-		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("user.name", userNameAttributeValue)
+	dp.Attributes().PutStr("postgresql.state", postgresqlStateAttributeValue)
+	dp.Attributes().PutInt("postgresql.pid", postgresqlPidAttributeValue)
+	dp.Attributes().PutStr("postgresql.application_name", postgresqlApplicationNameAttributeValue)
+	dp.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
+	dp.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
+	dp.Attributes().PutStr("postgresql.client_hostname", postgresqlClientHostnameAttributeValue)
+	dp.Attributes().PutStr("postgresql.query_start", postgresqlQueryStartAttributeValue)
+	dp.Attributes().PutStr("postgresql.wait_event", postgresqlWaitEventAttributeValue)
+	dp.Attributes().PutStr("postgresql.wait_event_type", postgresqlWaitEventTypeAttributeValue)
+	dp.Attributes().PutStr("postgresql.query_id", postgresqlQueryIDAttributeValue)
 
-	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
-	lr.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
-	lr.Attributes().PutStr("user.name", userNameAttributeValue)
-	lr.Attributes().PutStr("postgresql.state", postgresqlStateAttributeValue)
-	lr.Attributes().PutInt("postgresql.pid", postgresqlPidAttributeValue)
-	lr.Attributes().PutStr("postgresql.application_name", postgresqlApplicationNameAttributeValue)
-	lr.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
-	lr.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
-	lr.Attributes().PutStr("postgresql.client_hostname", postgresqlClientHostnameAttributeValue)
-	lr.Attributes().PutStr("postgresql.query_start", postgresqlQueryStartAttributeValue)
-	lr.Attributes().PutStr("postgresql.wait_event", postgresqlWaitEventAttributeValue)
-	lr.Attributes().PutStr("postgresql.wait_event_type", postgresqlWaitEventTypeAttributeValue)
-	lr.Attributes().PutStr("postgresql.query_id", postgresqlQueryIDAttributeValue)
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -71,31 +71,31 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	if !e.config.Enabled {
 		return
 	}
-	lr := e.data.AppendEmpty()
-	lr.SetEventName("db.server.top_query")
-	lr.SetTimestamp(timestamp)
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.top_query")
+	dp.SetTimestamp(timestamp)
 
 	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
-		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
-		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutInt("postgresql.calls", postgresqlCallsAttributeValue)
+	dp.Attributes().PutInt("postgresql.rows", postgresqlRowsAttributeValue)
+	dp.Attributes().PutInt("postgresql.shared_blks_dirtied", postgresqlSharedBlksDirtiedAttributeValue)
+	dp.Attributes().PutInt("postgresql.shared_blks_hit", postgresqlSharedBlksHitAttributeValue)
+	dp.Attributes().PutInt("postgresql.shared_blks_read", postgresqlSharedBlksReadAttributeValue)
+	dp.Attributes().PutInt("postgresql.shared_blks_written", postgresqlSharedBlksWrittenAttributeValue)
+	dp.Attributes().PutInt("postgresql.temp_blks_read", postgresqlTempBlksReadAttributeValue)
+	dp.Attributes().PutInt("postgresql.temp_blks_written", postgresqlTempBlksWrittenAttributeValue)
+	dp.Attributes().PutStr("postgresql.queryid", postgresqlQueryidAttributeValue)
+	dp.Attributes().PutStr("postgresql.rolname", postgresqlRolnameAttributeValue)
+	dp.Attributes().PutDouble("postgresql.total_exec_time", postgresqlTotalExecTimeAttributeValue)
+	dp.Attributes().PutDouble("postgresql.total_plan_time", postgresqlTotalPlanTimeAttributeValue)
+	dp.Attributes().PutStr("postgresql.query_plan", postgresqlQueryPlanAttributeValue)
 
-	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
-	lr.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
-	lr.Attributes().PutInt("postgresql.calls", postgresqlCallsAttributeValue)
-	lr.Attributes().PutInt("postgresql.rows", postgresqlRowsAttributeValue)
-	lr.Attributes().PutInt("postgresql.shared_blks_dirtied", postgresqlSharedBlksDirtiedAttributeValue)
-	lr.Attributes().PutInt("postgresql.shared_blks_hit", postgresqlSharedBlksHitAttributeValue)
-	lr.Attributes().PutInt("postgresql.shared_blks_read", postgresqlSharedBlksReadAttributeValue)
-	lr.Attributes().PutInt("postgresql.shared_blks_written", postgresqlSharedBlksWrittenAttributeValue)
-	lr.Attributes().PutInt("postgresql.temp_blks_read", postgresqlTempBlksReadAttributeValue)
-	lr.Attributes().PutInt("postgresql.temp_blks_written", postgresqlTempBlksWrittenAttributeValue)
-	lr.Attributes().PutStr("postgresql.queryid", postgresqlQueryidAttributeValue)
-	lr.Attributes().PutStr("postgresql.rolname", postgresqlRolnameAttributeValue)
-	lr.Attributes().PutDouble("postgresql.total_exec_time", postgresqlTotalExecTimeAttributeValue)
-	lr.Attributes().PutDouble("postgresql.total_plan_time", postgresqlTotalPlanTimeAttributeValue)
-	lr.Attributes().PutStr("postgresql.query_plan", postgresqlQueryPlanAttributeValue)
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.

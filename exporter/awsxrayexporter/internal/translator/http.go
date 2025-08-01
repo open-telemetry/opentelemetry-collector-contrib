@@ -6,6 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -59,8 +60,8 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case string(conventionsv112.HTTPTargetKey), string(conventions.URLQueryKey):
-			urlParts[string(conventionsv112.HTTPTargetKey)] = value.Str()
+		case string(conventionsv112.HTTPTargetKey):
+			urlParts[key] = value.Str()
 			hasHTTP = true
 		case string(conventionsv112.HTTPServerNameKey):
 			urlParts[key] = value.Str()
@@ -69,7 +70,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 		case string(conventionsv112.NetHostPortKey):
 			urlParts[key] = value.Str()
 			hasHTTP = true
-			if len(urlParts[key]) == 0 {
+			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case string(conventionsv112.HostNameKey):
@@ -83,7 +84,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			hasHTTPRequestURLAttributes = true
 		case string(conventionsv112.NetPeerPortKey):
 			urlParts[key] = value.Str()
-			if len(urlParts[key]) == 0 {
+			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case string(conventionsv112.NetPeerIPKey):
@@ -110,12 +111,15 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 		case string(conventions.URLPathKey):
 			urlParts[key] = value.Str()
 			hasHTTP = true
+		case string(conventions.URLQueryKey):
+			urlParts[key] = value.Str()
+			hasHTTP = true
 		case string(conventions.ServerAddressKey):
 			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		case string(conventions.ServerPortKey):
 			urlParts[key] = value.Str()
-			if len(urlParts[key]) == 0 {
+			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		default:
@@ -198,14 +202,26 @@ func constructClientURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
+	if port != "" && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[string(conventionsv112.HTTPTargetKey)]
 	if ok {
 		url += target
 	} else {
-		url += "/"
+		path, ok := urlParts[string(conventions.URLPathKey)]
+		if ok {
+			url += path
+		} else {
+			url += "/"
+		}
+		query, ok := urlParts[string(conventions.URLQueryKey)]
+		if ok {
+			if !strings.HasPrefix(query, "?") {
+				query = "?" + query
+			}
+			url += query
+		}
 	}
 	return url
 }
@@ -246,7 +262,7 @@ func constructServerURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
+	if port != "" && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[string(conventionsv112.HTTPTargetKey)]
@@ -258,6 +274,13 @@ func constructServerURL(urlParts map[string]string) string {
 			url += path
 		} else {
 			url += "/"
+		}
+		query, ok := urlParts[string(conventions.URLQueryKey)]
+		if ok {
+			if !strings.HasPrefix(query, "?") {
+				query = "?" + query
+			}
+			url += query
 		}
 	}
 	return url

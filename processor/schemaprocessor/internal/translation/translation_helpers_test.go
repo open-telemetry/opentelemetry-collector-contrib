@@ -64,10 +64,9 @@ func NewExampleLogs(tb testing.TB, at Version) plog.Logs {
 			l.Attributes().PutStr("application.stacktrace", "func main() { panic('boom') }")
 			l.SetSeverityText("ERROR")
 			l.Body().SetStr("bad program")
-		case Version{1, 5, 0}, Version{1, 4, 0}:
+		case Version{1, 5, 0}, Version{1, 4, 0},
 			// No changes to log during this versions
-			fallthrough
-		case Version{1, 2, 0}:
+			Version{1, 2, 0}:
 			log.Resource().Attributes().PutStr("test.name", tb.Name())
 
 			l := sl.LogRecords().AppendEmpty()

@@ -108,36 +108,6 @@ func TestTimeseriesMap_GC(t *testing.T) {
 	assert.Empty(t, tsm2.TsiMap)
 }
 
-func TestGetAttributesSignature(t *testing.T) {
-	m1 := pcommon.NewMap()
-	m1.PutStr("k1", "v1")
-	m1.PutStr("k2", "v2")
-	m1.PutStr("k3", "")
-
-	m2 := pcommon.NewMap()
-	m2.PutStr("k2", "v2")
-	m2.PutStr("k1", "v1")
-	m2.PutStr("k4", "")
-
-	m3 := pcommon.NewMap()
-	m3.PutStr("k1", "v1")
-	m3.PutStr("k2", "v2")
-
-	m4 := pcommon.NewMap()
-	m4.PutStr("k1", "v1")
-	m4.PutStr("k2", "v2")
-	m4.PutStr("k3", "v3")
-
-	sig1 := getAttributesSignature(m1)
-	sig2 := getAttributesSignature(m2)
-	sig3 := getAttributesSignature(m3)
-	sig4 := getAttributesSignature(m4)
-
-	assert.Equal(t, sig1, sig2)
-	assert.Equal(t, sig1, sig3)
-	assert.NotEqual(t, sig1, sig4)
-}
-
 func TestNewTimeseriesMap(t *testing.T) {
 	tsm := newTimeseriesMap()
 	assert.NotNil(t, tsm)
@@ -654,24 +624,5 @@ func TestTimeseriesInfo_IsResetSum(t *testing.T) {
 			s := tt.setupS()
 			assert.Equal(t, tt.expectedReset, IsResetSum(s, tsi.Number))
 		})
-	}
-}
-
-func BenchmarkGetAttributesSignature(b *testing.B) {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("key1", "some-random-test-value-1")
-	attrs.PutStr("key2", "some-random-test-value-2")
-	attrs.PutStr("key6", "some-random-test-value-6")
-	attrs.PutStr("key3", "some-random-test-value-3")
-	attrs.PutStr("key4", "some-random-test-value-4")
-	attrs.PutStr("key5", "some-random-test-value-5")
-	attrs.PutStr("key7", "some-random-test-value-7")
-	attrs.PutStr("key8", "some-random-test-value-8")
-
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	for i := 0; i < b.N; i++ {
-		getAttributesSignature(attrs)
 	}
 }

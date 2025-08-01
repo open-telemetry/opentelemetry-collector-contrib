@@ -22,9 +22,9 @@ Availability of the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
 
 ### bigip.node.connection.count
 
@@ -44,9 +44,9 @@ Amount of data transmitted to and from the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.node.enabled
 
@@ -58,9 +58,9 @@ Enabled state of of the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
 
 ### bigip.node.packet.count
 
@@ -72,9 +72,9 @@ Number of packets transmitted to and from the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.node.request.count
 
@@ -102,9 +102,9 @@ Availability of the pool.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
 
 ### bigip.pool.connection.count
 
@@ -124,9 +124,9 @@ Amount of data transmitted to and from the pool.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.pool.enabled
 
@@ -138,9 +138,9 @@ Enabled state of of the pool.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
 
 ### bigip.pool.member.count
 
@@ -152,9 +152,9 @@ Total number of pool members.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The active status. | Str: ``active``, ``inactive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The active status. | Str: ``active``, ``inactive`` | false |
 
 ### bigip.pool.packet.count
 
@@ -166,9 +166,9 @@ Number of packets transmitted to and from the pool.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.pool.request.count
 
@@ -188,9 +188,9 @@ Availability of the pool member.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
 
 ### bigip.pool_member.connection.count
 
@@ -210,9 +210,9 @@ Amount of data transmitted to and from the pool member.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.pool_member.enabled
 
@@ -224,9 +224,9 @@ Enabled state of of the pool member.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
 
 ### bigip.pool_member.packet.count
 
@@ -238,9 +238,9 @@ Number of packets transmitted to and from the pool member.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.pool_member.request.count
 
@@ -268,9 +268,9 @@ Availability of the virtual server.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
 
 ### bigip.virtual_server.connection.count
 
@@ -290,9 +290,9 @@ Amount of data transmitted to and from the virtual server.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.virtual_server.enabled
 
@@ -304,9 +304,9 @@ Enabled state of of the virtual server.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
 
 ### bigip.virtual_server.packet.count
 
@@ -318,9 +318,9 @@ Number of packets transmitted to and from the virtual server.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data. | Str: ``sent``, ``received`` | false |
 
 ### bigip.virtual_server.request.count
 

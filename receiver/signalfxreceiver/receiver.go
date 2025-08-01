@@ -92,7 +92,7 @@ func newReceiver(
 	config Config,
 ) (*sfxReceiver, error) {
 	transport := "http"
-	if config.TLS != nil {
+	if config.TLS.HasValue() {
 		transport = "https"
 	}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{

@@ -22,9 +22,9 @@ Measures the duration of TCP connection.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tcpcheck.endpoint | TCP endpoint | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tcpcheck.endpoint | TCP endpoint | Any Str | false |
 
 ### tcpcheck.error
 
@@ -36,10 +36,10 @@ Records errors occurring during TCP check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tcpcheck.endpoint | TCP endpoint | Any Str |
-| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tcpcheck.endpoint | TCP endpoint | Any Str | false |
+| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` | false |
 
 ### tcpcheck.status
 
@@ -51,6 +51,6 @@ Records errors occurring during TCP check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tcpcheck.endpoint | TCP endpoint | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tcpcheck.endpoint | TCP endpoint | Any Str | false |

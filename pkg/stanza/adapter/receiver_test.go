@@ -411,11 +411,11 @@ type testInputBuilder struct {
 	produceBatches     bool
 }
 
-func (t *testInputBuilder) ID() string {
+func (*testInputBuilder) ID() string {
 	return testInputOperatorTypeStr
 }
 
-func (t *testInputBuilder) Type() string {
+func (*testInputBuilder) Type() string {
 	return testInputOperatorTypeStr
 }
 
@@ -434,7 +434,7 @@ func (t *testInputBuilder) Build(settings component.TelemetrySettings) (operator
 	}, nil
 }
 
-func (t *testInputBuilder) SetID(_ string) {}
+func (*testInputBuilder) SetID(string) {}
 
 var _ operator.Operator = &testInputOperator{}
 
@@ -446,11 +446,11 @@ type testInputOperator struct {
 	cancelFunc         context.CancelFunc
 }
 
-func (t *testInputOperator) ID() string {
+func (*testInputOperator) ID() string {
 	return testInputOperatorTypeStr
 }
 
-func (t *testInputOperator) Type() string {
+func (*testInputOperator) Type() string {
 	return testInputOperatorTypeStr
 }
 
@@ -493,7 +493,7 @@ type testConsumer struct {
 	receivedLogs    atomic.Uint32
 }
 
-func (t *testConsumer) Capabilities() consumer.Capabilities {
+func (*testConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 

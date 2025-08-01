@@ -209,7 +209,7 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	}, nil
 }
 
-func (p *Parser[K]) prependContextToPaths(context string, ottl string, ottlPathsGetter func(ottl string) ([]path, error)) (string, error) {
+func (p *Parser[K]) prependContextToPaths(context, ottl string, ottlPathsGetter func(ottl string) ([]path, error)) (string, error) {
 	if _, ok := p.pathContextNames[context]; !ok {
 		return "", fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
 	}
@@ -235,7 +235,7 @@ func (p *Parser[K]) prependContextToPaths(context string, ottl string, ottlPaths
 // to all context-less paths. No modifications are performed for paths which [Path.Context]
 // value matches any WithPathContextNames value.
 // The context argument must be valid WithPathContextNames value, otherwise an error is returned.
-func (p *Parser[K]) prependContextToStatementPaths(context string, statement string) (string, error) {
+func (p *Parser[K]) prependContextToStatementPaths(context, statement string) (string, error) {
 	return p.prependContextToPaths(context, statement, func(ottl string) ([]path, error) {
 		parsed, err := parseStatement(ottl)
 		if err != nil {
@@ -249,13 +249,27 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 // to all context-less paths. No modifications are performed for paths which [Path.Context]
 // value matches any WithPathContextNames value.
 // The context argument must be valid WithPathContextNames value, otherwise an error is returned.
-func (p *Parser[K]) prependContextToConditionPaths(context string, condition string) (string, error) {
+func (p *Parser[K]) prependContextToConditionPaths(context, condition string) (string, error) {
 	return p.prependContextToPaths(context, condition, func(ottl string) ([]path, error) {
 		parsed, err := parseCondition(ottl)
 		if err != nil {
 			return nil, err
 		}
 		return getBooleanExpressionPaths(parsed), nil
+	})
+}
+
+// prependContextToValueExpressionPaths changes the given OTTL value expression adding the context name prefix
+// to all context-less paths. No modifications are performed for paths which [Path.Context]
+// value matches any WithPathContextNames value.
+// The context argument must be valid WithPathContextNames value, otherwise an error is returned.
+func (p *Parser[K]) prependContextToValueExpressionPaths(context, expr string) (string, error) {
+	return p.prependContextToPaths(context, expr, func(ottl string) ([]path, error) {
+		parsed, err := parseValueExpression(ottl)
+		if err != nil {
+			return nil, err
+		}
+		return getValuePaths(parsed), nil
 	})
 }
 
@@ -304,7 +318,7 @@ func parseValueExpression(raw string) (*value, error) {
 	return parsed, nil
 }
 
-func insertContextIntoPathsOffsets(context string, statement string, offsets []int) (string, error) {
+func insertContextIntoPathsOffsets(context, statement string, offsets []int) (string, error) {
 	if len(offsets) == 0 {
 		return statement, nil
 	}
@@ -493,12 +507,36 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 // a mathematical expression.
 // This allows other components using this library to extract data from the context of the incoming signal using OTTL.
 type ValueExpression[K any] struct {
-	getter Getter[K]
+	getter   Getter[K]
+	origText string
 }
 
 // Eval evaluates the given expression and returns the value the expression resolves to.
 func (e *ValueExpression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.getter.Get(ctx, tCtx)
+}
+
+// ParseValueExpressions parses string expressions into a ValueExpression slice ready for execution.
+// Returns a slice of ValueExpression and a nil error on successful parsing.
+// If parsing fails, returns nil and an error containing each error per failed condition.
+func (p *Parser[K]) ParseValueExpressions(expressions []string) ([]*ValueExpression[K], error) {
+	parsedValueExpressions := make([]*ValueExpression[K], 0, len(expressions))
+	var parseErrs []error
+
+	for _, expression := range expressions {
+		ps, err := p.ParseValueExpression(expression)
+		if err != nil {
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL value expression %q: %w", expression, err))
+			continue
+		}
+		parsedValueExpressions = append(parsedValueExpressions, ps)
+	}
+
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
+	}
+
+	return parsedValueExpressions, nil
 }
 
 // ParseValueExpression parses an expression string into a ValueExpression. The ValueExpression's Eval
@@ -514,6 +552,7 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	}
 
 	return &ValueExpression[K]{
+		origText: raw,
 		getter: &StandardGetSetter[K]{
 			Getter: func(ctx context.Context, tCtx K) (any, error) {
 				val, err := getter.Get(ctx, tCtx)

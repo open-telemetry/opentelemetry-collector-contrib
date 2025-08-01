@@ -30,9 +30,9 @@ The number of operations performed by the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| request | The request operation type. | Str: ``put``, ``get`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| request | The request operation type. | Str: ``put``, ``get`` | false |
 
 ### riak.node.operation.time.mean
 
@@ -44,9 +44,9 @@ The mean time between request and response for operations performed by the node 
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| request | The request operation type. | Str: ``put``, ``get`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| request | The request operation type. | Str: ``put``, ``get`` | false |
 
 ### riak.node.read_repair.count
 
@@ -66,9 +66,9 @@ The number of index operations performed by vnodes on the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` | false |
 
 ### riak.vnode.operation.count
 
@@ -80,9 +80,9 @@ The number of operations performed by vnodes on the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| request | The request operation type. | Str: ``put``, ``get`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| request | The request operation type. | Str: ``put``, ``get`` | false |
 
 ## Resource Attributes
 
