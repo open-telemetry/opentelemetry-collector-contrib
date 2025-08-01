@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoe
 go 1.23.0
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.2
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250801020258-8b73477b9810

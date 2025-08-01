@@ -37,7 +37,7 @@ require (
 	github.com/apache/arrow/go/v16 v16.1.0 // indirect
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc // indirect
 	github.com/brianvoe/gofakeit/v6 v6.17.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
