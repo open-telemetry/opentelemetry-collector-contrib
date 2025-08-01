@@ -11,7 +11,8 @@ import (
 )
 
 // GetProcessesPayload currently just a stub.
-func NewProcessesPayload(_ string, _ *zap.Logger) *gohai.ProcessesPayload {
+func NewProcessesPayload(_ string, logger *zap.Logger) *gohai.ProcessesPayload {
 	// unimplemented for misc platforms.
+	logger.Info("Using noop gohai implementation since this platform is not supported")
 	return &gohai.ProcessesPayload{}
 }
