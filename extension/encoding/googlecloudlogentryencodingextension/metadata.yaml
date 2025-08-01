@@ -7,7 +7,8 @@ status:
     alpha: [ extension ]
   distributions: [ contrib ]
   codeowners:
-    active: [ alexvanboxel ]
+    active: [ constanca-m ]
+    emeritus: [ alexvanboxel ]
 
 tests:
   config:

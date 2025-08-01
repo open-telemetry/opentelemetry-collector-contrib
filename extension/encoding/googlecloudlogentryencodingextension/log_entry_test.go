@@ -4,11 +4,10 @@
 package googlecloudlogentryencodingextension
 
 import (
-	stdjson "encoding/json"
 	"testing"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -149,50 +148,10 @@ func TestCloudLoggingSeverityToNumber(t *testing.T) {
 	}
 }
 
-func TestHandleTextPayload(t *testing.T) {
-	tests := []struct {
-		name        string
-		textPayload stdjson.RawMessage
-		expectsBody string
-		expectsErr  string
-	}{
-		{
-			name: "valid_text_payload",
-			textPayload: func() stdjson.RawMessage {
-				raw, err := json.Marshal("valid")
-				require.NoError(t, err)
-				return raw
-			}(),
-			expectsBody: "valid",
-		},
-		{
-			name:        "invalid_text_payload",
-			textPayload: []byte("invalid"),
-			expectsErr:  "failed to unmarshal text payload",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			lr := plog.NewLogRecord()
-
-			err := handleTextPayload(pcommon.Map{}, lr, pcommon.Map{}, "", tt.textPayload, Config{})
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, lr.Body().Str(), tt.expectsBody)
-		})
-	}
-}
-
 func TestHandleJSONPayload(t *testing.T) {
 	tests := []struct {
 		name        string
-		jsonPayload stdjson.RawMessage
+		jsonPayload gojson.RawMessage
 		expectsBody any
 		cfg         Config
 		expectsErr  string
@@ -239,7 +198,7 @@ func TestHandleJSONPayload(t *testing.T) {
 
 			lr := plog.NewLogRecord()
 
-			err := handleJSONPayload(pcommon.Map{}, lr, pcommon.Map{}, "", tt.jsonPayload, tt.cfg)
+			err := handleJSONPayloadField(lr, tt.jsonPayload, tt.cfg)
 			if tt.expectsErr != "" {
 				require.ErrorContains(t, err, tt.expectsErr)
 				return
@@ -253,7 +212,7 @@ func TestHandleJSONPayload(t *testing.T) {
 func TestHandleProtoPayload(t *testing.T) {
 	tests := []struct {
 		name         string
-		protoPayload stdjson.RawMessage
+		protoPayload gojson.RawMessage
 		expectsBody  any
 		cfg          Config
 		expectsErr   string
@@ -308,7 +267,7 @@ func TestHandleProtoPayload(t *testing.T) {
 
 			lr := plog.NewLogRecord()
 
-			err := handleProtoPayload(pcommon.Map{}, lr, pcommon.Map{}, "", tt.protoPayload, tt.cfg)
+			err := handleProtoPayloadField(lr, tt.protoPayload, tt.cfg)
 			if tt.expectsErr != "" {
 				require.ErrorContains(t, err, tt.expectsErr)
 				return

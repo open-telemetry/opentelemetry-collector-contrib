@@ -337,11 +337,18 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("failed loading initial config: %w", err)
 	}
 
+	flags := []string{
+		"--config", s.agentConfigFilePath(),
+	}
+	featureGateFlag := s.getFeatureGateFlag()
+	if len(featureGateFlag) > 0 {
+		flags = append(flags, featureGateFlag...)
+	}
 	s.commander, err = commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", s.agentConfigFilePath(),
+		flags...,
 	)
 	if err != nil {
 		return err
