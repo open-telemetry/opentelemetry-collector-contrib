@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"sync"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -185,21 +183,6 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		zap.Any("gvr", object.gvr),
 		zap.Any("mode", object.Mode),
 		zap.Any("namespaces", object.Namespaces))
-
-	// If a deny list is provided, filter out the namespaces that are in the deny list
-	if len(object.NamespaceDenyList) != 0 && len(object.Namespaces) == 0 {
-		allNamespaces, err := kr.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}).List(ctx, metav1.ListOptions{})
-		if err != nil {
-			kr.setting.Logger.Error("failed to list namespaces", zap.Error(err))
-			return
-		}
-
-		for _, ns := range allNamespaces.Items {
-			if !slices.Contains(object.NamespaceDenyList, ns.GetName()) {
-				object.Namespaces = append(object.Namespaces, ns.GetName())
-			}
-		}
-	}
 
 	switch object.Mode {
 	case PullMode:
