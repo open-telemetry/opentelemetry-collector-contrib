@@ -13,6 +13,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -68,7 +69,8 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
+		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 
 	saramaToken, err := oidcProvider.Token()
 	require.NoError(t, err)
@@ -114,7 +116,7 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), "wrong-client-id", secretFile,
-		tokenURL, []string{testScope}, 0)
+		tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 
 	saramaToken, err := oidcProvider.Token()
 	require.Error(t, err)
@@ -143,7 +145,7 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 
 	token1, err1 := oidcProvider.Token()
 	assert.NoError(t, err1)
@@ -177,7 +179,7 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0)
+	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 
 	token1, err1 := oidcProvider.Token()
 	assert.NoError(t, err1)
@@ -214,7 +216,9 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
-		[]string{testScope}, 2*time.Second)
+		[]string{testScope}, 2*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 
 	token1, err1 := oidcProvider.Token()
 	assert.NoError(t, err1)
@@ -226,6 +230,32 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.NotNil(t, token2)
 	assert.NotEqual(t, token1, token2)
+
+	// Verify second token is different and issued after the first
+	token1obj, err := parser.Parse(token1.Token, func(_ *jwt.Token) (any, error) {
+		return publicKey, nil
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, token1obj)
+	claims1 := token1obj.Claims.(jwt.MapClaims)
+	assert.Equal(t, testClientID, claims1["client_id"])
+	assert.Equal(t, testScope, claims1["scope"])
+	tok1IssuedAt := time.Unix(int64(claims1["iat"].(float64)), 0)
+	tok1ExpAt := time.Unix(int64(claims1["exp"].(float64)), 0)
+
+	token2obj, err := parser.Parse(token2.Token, func(_ *jwt.Token) (any, error) {
+		return publicKey, nil
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, token2obj)
+	claims2 := token2obj.Claims.(jwt.MapClaims)
+	assert.Equal(t, testClientID, claims2["client_id"])
+	assert.Equal(t, testScope, claims2["scope"])
+	tok2IssuedAt := time.Unix(int64(claims2["iat"].(float64)), 0)
+	tok2ExpAt := time.Unix(int64(claims2["exp"].(float64)), 0)
+
+	assert.True(t, tok2IssuedAt.After(tok1IssuedAt))
+	assert.True(t, tok2ExpAt.After(tok1ExpAt))
 }
 
 func k8sSecretFile() (string, error) {

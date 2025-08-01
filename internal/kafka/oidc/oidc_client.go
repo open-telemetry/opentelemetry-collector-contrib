@@ -36,13 +36,12 @@ type OIDCfileTokenProvider struct {
 	refreshAhead    time.Duration
 	refreshCooldown time.Duration
 
-	// TODO support the remaining fields of clientcredentials.Config
 	EndpointParams url.Values
 	AuthStyle      oauth2.AuthStyle
 }
 
 func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
-	scopes []string, refreshAhead time.Duration,
+	scopes []string, refreshAhead time.Duration, endPointParams url.Values, authStyle oauth2.AuthStyle,
 ) sarama.AccessTokenProvider {
 	prov := &OIDCfileTokenProvider{
 		Ctx:                  ctx,
@@ -51,6 +50,8 @@ func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePat
 		TokenURL:             tokenURL,
 		Scopes:               scopes,
 		refreshAhead:         refreshAhead,
+		EndpointParams:       endPointParams,
+		AuthStyle:            authStyle,
 	}
 
 	if refreshAhead.Milliseconds() > 0 {
@@ -89,10 +90,12 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	}
 
 	oauthTok, err := (&clientcredentials.Config{
-		ClientID:     p.ClientID,
-		ClientSecret: string(clientSecret),
-		TokenURL:     p.TokenURL,
-		Scopes:       p.Scopes,
+		ClientID:       p.ClientID,
+		ClientSecret:   string(clientSecret),
+		TokenURL:       p.TokenURL,
+		Scopes:         p.Scopes,
+		EndpointParams: p.EndpointParams,
+		AuthStyle:      p.AuthStyle,
 	}).Token(p.Ctx)
 
 	if err != nil || oauthTok == nil || oauthTok.AccessToken == "" {
