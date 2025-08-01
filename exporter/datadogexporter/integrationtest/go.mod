@@ -123,7 +123,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.67.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/winutil v0.67.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.70.0-devel.0.20250801132403-9300d3e37608 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.68.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.43.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
