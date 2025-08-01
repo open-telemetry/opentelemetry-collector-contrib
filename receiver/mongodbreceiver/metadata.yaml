@@ -3,7 +3,7 @@ type: mongodb
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    beta: [metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [justinianvoss22]
@@ -86,6 +86,54 @@ attributes:
       - exclusive
       - intent_shared
       - intent_exclusive
+  client.address:
+    description: Hostname or address of the client.
+    type: string
+  client.port:
+    description: TCP port used by the client.
+    type: int
+  db.collection.name:
+    description: The namespace of the MongoDB operation (database.collection).
+    type: string
+  db.operation.name:
+    description: The name of the MongoDB command being executed.
+    type: string
+  db.query.text:
+    description: The obfuscated MongoDB command statement.
+    type: string
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
+    type: string
+    enum: [mongodb]
+  mongodb.application.name:
+    description: The identifier of the client application which ran the operation
+    type: string
+  mongodb.operation.duration:
+    description: The duration of the MongoDB operation in microseconds.
+    type: double
+  mongodb.query.plan:
+    description: The query plan for the query to be executed.
+    type: string
+  mongodb.query.signature:
+    description: A unique signature for the MongoDB query.
+    type: string
+
+
+events:
+  db.server.query_sample:
+    description: query sample
+    enabled: true
+    attributes:
+      - client.address
+      - client.port
+      - db.system.name
+      - db.collection.name
+      - db.operation.name
+      - db.query.text
+      - mongodb.application.name
+      - mongodb.query.signature
+      - mongodb.operation.duration
+      - mongodb.query.plan
 
 metrics:
   mongodb.cache.operations:
@@ -501,3 +549,7 @@ metrics:
 tests:
   config:
     timeout: 1ms
+  goleak:
+    ignore:
+      top:
+        - sync.runtime_notifyListWait

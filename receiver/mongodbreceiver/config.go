@@ -26,6 +26,8 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.LogsBuilderConfig    `mapstructure:",squash"`
+
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Username         string                    `mapstructure:"username"`
