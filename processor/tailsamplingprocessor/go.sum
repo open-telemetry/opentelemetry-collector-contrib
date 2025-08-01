@@ -1,3 +1,5 @@
+github.com/AlessandroPomponio/go-gibberish v0.0.0-20191004143433-a2d4156f0396 h1:cKIHT8I2mrmw/VgdyNeACP/AvetK8AgGsiRfOC3ZjmQ=
+github.com/AlessandroPomponio/go-gibberish v0.0.0-20191004143433-a2d4156f0396/go.mod h1:2VCDG9kHYQ5vfYUqeoB7foVlcvIvB7rp9LxTELLD1qU=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/participle/v2 v2.1.4 h1:W/H79S8Sat/krZ3el6sQMvMaahJ+XcM9WSI2naI7w2U=

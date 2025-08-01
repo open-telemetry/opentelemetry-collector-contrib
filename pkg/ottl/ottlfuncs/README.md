@@ -507,6 +507,7 @@ Available Converters:
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
 - [RemoveXML](#removexml)
+- [SanitizeURL](#sanitizeurl)
 - [Second](#second)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
@@ -1898,6 +1899,31 @@ Delete all comments
 Delete text from nodes that contain the word "sensitive"
 
 - `RemoveXML(log.body, "//*[contains(text(), 'sensitive')]")`
+
+### SanitizeURL
+
+`SanitizeURL(target, replacement)`
+
+The `SanitizeURL` Converter sanitizes URL paths by replacing non-dictionary words, numeric segments, and gibberish text with a replacement string. This is useful for grouping similar URLs that differ only in IDs or random segments.
+
+`target` is a string containing a URL path.
+`replacement` is a string that will replace any identified non-dictionary words or numeric segments.
+
+The function:
+- Preserves dictionary words and common URL path segments
+- Replaces numeric IDs and random strings with the replacement character
+- Maintains path structure and separators
+- Handles hyphenated, underscored, and dotted segments appropriately
+- Limits processing to first 10 segments for performance
+
+The returned type is string.
+
+Examples:
+
+- `SanitizeURL("/v1/products/123", "*")` returns `"/v1/products/*"`
+- `SanitizeURL("/users/abc123/orders/789", "[ID]")` returns `"/users/[ID]/orders/[ID]"`
+- `SanitizeURL("/api/hello.world", "*")` returns `"/api/hello.world"`
+- `SanitizeURL("/usuarios/fdklsd/j4elk/23993/trabajo/2", "*")` returns `"/usuarios/*/j4elk/*/trabajo/*"`
 
 ### Second
 

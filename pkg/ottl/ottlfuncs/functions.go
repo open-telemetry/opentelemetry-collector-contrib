@@ -124,5 +124,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewProfileIDFactory[K](),
 		NewParseIntFactory[K](),
 		NewKeysFactory[K](),
+		NewSanitizeURLFactory[K](),
 	}
 }
