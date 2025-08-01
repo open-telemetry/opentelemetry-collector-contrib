@@ -5,6 +5,7 @@ package operationsmanagement
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -281,4 +282,179 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 			assert.ElementsMatch(t, tt.expectedLabels, actualLabels)
 		})
 	}
+}
+
+func TestComputeRateMetricFromCounter(t *testing.T) {
+	t.Parallel()
+	producer := &MetricsProducer{
+		logger:           nil,
+		previousCounters: make(map[string]BMCHelixOMSample),
+	}
+
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+		"hostname":   "host",
+		"source":     "OTEL",
+	}
+
+	// First sample: initial counter datapoint
+	now := time.Now()
+	first := BMCHelixOMMetric{
+		Labels: labels,
+		Samples: []BMCHelixOMSample{{
+			Value:     5000,
+			Timestamp: now.UnixMilli(),
+		}},
+	}
+
+	// First call – no rate should be returned yet
+	assert.Nil(t, producer.computeRateMetricFromCounter(first), "First datapoint should not yield a rate metric")
+
+	// Simulate a second datapoint after a short delay (simulate time passage)
+	next := now.Add(100 * time.Millisecond)
+
+	second := BMCHelixOMMetric{
+		Labels: labels,
+		Samples: []BMCHelixOMSample{{
+			Value:     8000,
+			Timestamp: next.UnixMilli(),
+		}},
+	}
+
+	rateMetric := producer.computeRateMetricFromCounter(second)
+	assert.NotNil(t, rateMetric, "Expected a rate metric on second datapoint")
+
+	assert.Equal(t, "hw.network.io.rate", rateMetric.Labels["metricName"])
+	assert.Equal(t, "By/s", rateMetric.Labels["unit"])
+	assert.Len(t, rateMetric.Samples, 1)
+	assert.Greater(t, rateMetric.Samples[0].Value, 0.0, "Rate should be a positive value")
+}
+
+func TestToPercentMetricName(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name         string
+		original     string
+		expectedName string
+	}{
+		{
+			name:         "ends with ratio",
+			original:     "hw.fan.ratio",
+			expectedName: "hw.fan.percent",
+		},
+		{
+			name:         "contains ratio mid-word",
+			original:     "some.ratio.metric.value",
+			expectedName: "some.ratio.metric.value.percent",
+		},
+		{
+			name:         "no ratio present",
+			original:     "disk.utilization",
+			expectedName: "disk.utilization.percent",
+		},
+		{
+			name:         "already ends with .percent",
+			original:     "network.bandwidth.percent",
+			expectedName: "network.bandwidth.percent",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toPercentMetricName(tt.original)
+			assert.Equal(t, tt.expectedName, got)
+		})
+	}
+}
+
+func TestAddPercentageVariants(t *testing.T) {
+	t.Parallel()
+	ratioLabels := map[string]string{
+		"metricName": "hw.network.ratio",
+		"unit":       "1",
+		"entityId":   "OTEL:host:network:eth0",
+		"hostname":   "host",
+		"source":     "OTEL",
+	}
+
+	sample := BMCHelixOMSample{
+		Value:     0.82,
+		Timestamp: 1690000000000,
+	}
+
+	metrics := []BMCHelixOMMetric{
+		{
+			Labels:  ratioLabels,
+			Samples: []BMCHelixOMSample{sample},
+		},
+	}
+
+	result := addPercentageVariants(metrics)
+	assert.Len(t, result, 2, "Expected original + .percent variant")
+
+	// Original preserved
+	original := result[0]
+	assert.Equal(t, "hw.network.ratio", original.Labels["metricName"])
+	assert.Equal(t, "1", original.Labels["unit"])
+	assert.Equal(t, 0.82, original.Samples[0].Value)
+
+	// Percent variant added
+	percent := result[1]
+	assert.Equal(t, "hw.network.percent", percent.Labels["metricName"])
+	assert.Equal(t, "%", percent.Labels["unit"])
+	assert.InDelta(t, 82.0, percent.Samples[0].Value, 0.001)
+	assert.Equal(t, sample.Timestamp, percent.Samples[0].Timestamp)
+}
+
+func TestAddRateVariants(t *testing.T) {
+	t.Parallel()
+
+	producer := NewMetricsProducer(zap.NewExample())
+
+	// Create a base counter metric
+	originalLabels := map[string]string{
+		"metricName":   "hw.network.io",
+		"unit":         "By",
+		"entityId":     "OTEL:host:network:eth0",
+		"hostname":     "host",
+		"source":       "OTEL",
+		rateMetricFlag: "true",
+	}
+
+	t1 := time.Now().UnixMilli()
+	sample1 := BMCHelixOMSample{Value: 1000, Timestamp: t1}
+
+	// Store the first sample for comparison (simulate already seen)
+	producer.previousCounters["OTEL:host:network:eth0:hw.network.io"] = sample1
+
+	// Second sample (incoming)
+	t2 := t1 + 1000 // 1 second later
+	sample2 := BMCHelixOMSample{Value: 2000, Timestamp: t2}
+
+	inputMetric := BMCHelixOMMetric{
+		Labels:  originalLabels,
+		Samples: []BMCHelixOMSample{sample2},
+	}
+
+	// Run addRateVariants
+	metrics := producer.addRateVariants([]BMCHelixOMMetric{inputMetric})
+
+	assert.Len(t, metrics, 2, "Should return original + rate metric")
+
+	// Original metric should remain unchanged except the flag
+	orig := metrics[0]
+	_, exists := orig.Labels[rateMetricFlag]
+	assert.False(t, exists, "Temporary label should be removed after processing")
+
+	// Check the added rate metric
+	rate := metrics[1]
+	assert.Equal(t, "hw.network.io.rate", rate.Labels["metricName"])
+	assert.Equal(t, "By/s", rate.Labels["unit"])
+	assert.Len(t, rate.Samples, 1)
+
+	expectedRate := 1000.0 // (2000 - 1000) / 1s
+	assert.InDelta(t, expectedRate, rate.Samples[0].Value, 0.001)
+	assert.Equal(t, t2, rate.Samples[0].Timestamp)
 }
