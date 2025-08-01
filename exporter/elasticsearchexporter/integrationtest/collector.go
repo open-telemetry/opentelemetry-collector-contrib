@@ -29,7 +29,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -70,12 +69,7 @@ extensions:
 service:
   telemetry:
     metrics:
-      readers:
-        - pull:
-            exporter:
-              prometheus:
-                host: '127.0.0.1'
-                port: %d
+      level: none
     logs:
       level: %s
       sampling:
@@ -95,7 +89,6 @@ service:
 		debugVerbosity,
 		processorSection,
 		extensionSection,
-		testutil.GetAvailablePort(tb),
 		logLevel,
 		extensionList,
 		pipelineType,
