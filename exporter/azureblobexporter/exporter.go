@@ -36,16 +36,16 @@ type azureBlobExporter struct {
 }
 
 type azblobClient interface {
-	UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error)
+	UploadStream(ctx context.Context, containerName, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error)
 	URL() string
-	AppendBlock(ctx context.Context, containerName string, blobName string, data []byte, o *appendblob.AppendBlockOptions) error
+	AppendBlock(ctx context.Context, containerName, blobName string, data []byte, o *appendblob.AppendBlockOptions) error
 }
 
 type azblobClientImpl struct {
 	client *azblob.Client
 }
 
-func (c *azblobClientImpl) UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
+func (c *azblobClientImpl) UploadStream(ctx context.Context, containerName, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
 	return c.client.UploadStream(ctx, containerName, blobName, body, o)
 }
 
@@ -53,7 +53,7 @@ func (c *azblobClientImpl) URL() string {
 	return c.client.URL()
 }
 
-func (c *azblobClientImpl) AppendBlock(ctx context.Context, containerName string, blobName string, data []byte, o *appendblob.AppendBlockOptions) error {
+func (c *azblobClientImpl) AppendBlock(ctx context.Context, containerName, blobName string, data []byte, o *appendblob.AppendBlockOptions) error {
 	containerClient := c.client.ServiceClient().NewContainerClient(containerName)
 	appendBlobClient := containerClient.NewAppendBlobClient(blobName)
 
@@ -143,6 +143,19 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		if err != nil {
 			return fmt.Errorf("failed to create client with user managed identity: %w", err)
 		}
+	case WorkloadIdentity:
+		cred, err := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
+			ClientID:      e.config.Auth.ClientID,
+			TenantID:      e.config.Auth.TenantID,
+			TokenFilePath: e.config.Auth.FederatedTokenFile,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create workload identity credential: %w", err)
+		}
+		azblobClient.client, err = azblob.NewClient(e.config.URL, cred, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create client with workload identity: %w", err)
+		}
 	default:
 		return fmt.Errorf("unsupported authentication type: %s", authType)
 	}
@@ -178,7 +191,7 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal) (string, er
 	return blobName, nil
 }
 
-func (e *azureBlobExporter) Capabilities() consumer.Capabilities {
+func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -264,6 +277,6 @@ type readSeekCloserWrapper struct {
 	*bytes.Reader
 }
 
-func (r readSeekCloserWrapper) Close() error {
+func (readSeekCloserWrapper) Close() error {
 	return nil
 }

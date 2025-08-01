@@ -28,6 +28,7 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 				p := &pprofiletest.Profile{
 					ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
 					Attributes: []pprofiletest.Attribute{{Key: "container-attr1", Value: "value1"}},
+					Comment:    []string{"comment1", "comment2"},
 				}
 				return dic, p.Transform(dic, pprofile.NewScopeProfiles())
 			},

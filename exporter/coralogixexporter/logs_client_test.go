@@ -187,9 +187,8 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			rateLimitErr := errors.New("rate limit exceeded")
-			exp.EnableRateLimit(rateLimitErr)
-			exp.EnableRateLimit(rateLimitErr)
+			exp.EnableRateLimit()
+			exp.EnableRateLimit()
 
 			logs := plog.NewLogs()
 			resourceLogs := logs.ResourceLogs()
@@ -433,9 +432,8 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		rateLimitErr := errors.New("rate limit exceeded")
 		for i := 0; i < 5; i++ {
-			exp.EnableRateLimit(rateLimitErr)
+			exp.EnableRateLimit()
 		}
 
 		logs := plog.NewLogs()
@@ -463,7 +461,25 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 
 	t.Run("Rate limit reset", func(t *testing.T) {
 		mockSrv.recvCount = 0
-		time.Sleep(2 * time.Second)
+
+		require.Eventually(t, func() bool {
+			testLogs := plog.NewLogs()
+			testRl := testLogs.ResourceLogs().AppendEmpty()
+			testRl.Resource().Attributes().PutStr("service.name", "test-service")
+			testSl := testRl.ScopeLogs().AppendEmpty()
+			testLogRecord := testSl.LogRecords().AppendEmpty()
+			testLogRecord.Body().SetStr("test log message")
+			testLogRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			testLogRecord.SetSeverityText("INFO")
+
+			errPush := exp.pushLogs(context.Background(), testLogs)
+			return errPush == nil
+		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
+
+		// It's 1 because the last push is successful
+		require.Equal(t, 1, mockSrv.recvCount)
+
+		mockSrv.recvCount = 0
 
 		logs := plog.NewLogs()
 		rl := logs.ResourceLogs().AppendEmpty()
@@ -485,5 +501,135 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, logCount, mockSrv.recvCount, "Expected to receive exactly %d logs after rate limit reset", logCount)
 		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+}
+
+func TestLogsExporter_RateLimitErrorCountReset(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpLogsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Logs: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	for i := 0; i < 5; i++ {
+		exp.EnableRateLimit()
+	}
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resource := resourceLogs.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	logRecord.Body().SetStr("test log message")
+
+	err = exp.pushLogs(context.Background(), logs)
+	assert.Error(t, err)
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+	assert.Equal(t, 0, srv.recvCount)
+
+	require.Eventually(t, func() bool {
+		err = exp.pushLogs(context.Background(), logs)
+		return err == nil &&
+			exp.rateError.errorCount.Load() == 0 &&
+			srv.recvCount > 0
+	}, 3*time.Second, 100*time.Millisecond)
+}
+
+func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpLogsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Logs: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	createTestLogs := func() plog.Logs {
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resource := resourceLogs.Resource()
+		resource.Attributes().PutStr("service.name", "test-service")
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		logRecord := scopeLogs.LogRecords().AppendEmpty()
+		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		logRecord.Body().SetStr("test log message")
+		return logs
+	}
+
+	t.Run("Initial successful push", func(t *testing.T) {
+		logs := createTestLogs()
+		err = exp.pushLogs(context.Background(), logs)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 1, srv.recvCount)
+	})
+
+	t.Run("Trigger errors below threshold", func(t *testing.T) {
+		for i := 0; i < 4; i++ {
+			exp.EnableRateLimit()
+		}
+		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
+		assert.False(t, exp.rateError.isRateLimited(), "Should not be rate limited yet")
+	})
+
+	t.Run("Successful push after errors", func(t *testing.T) {
+		logs := createTestLogs()
+		err = exp.pushLogs(context.Background(), logs)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 2, srv.recvCount)
+	})
+
+	t.Run("Verify error count stays at 0", func(t *testing.T) {
+		logs := createTestLogs()
+		err = exp.pushLogs(context.Background(), logs)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 3, srv.recvCount)
 	})
 }

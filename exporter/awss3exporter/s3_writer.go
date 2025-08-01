@@ -78,6 +78,14 @@ func newUploadManager(
 			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
 	}
 
+	var uniqueKeyFunc func() string
+	switch conf.S3Uploader.UniqueKeyFuncName {
+	case "uuidv7":
+		uniqueKeyFunc = upload.GenerateUUIDv7
+	default:
+		uniqueKeyFunc = nil
+	}
+
 	return upload.NewS3Manager(
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
@@ -87,6 +95,7 @@ func newUploadManager(
 			Metadata:        metadata,
 			FileFormat:      format,
 			Compression:     conf.S3Uploader.Compression,
+			UniqueKeyFunc:   uniqueKeyFunc,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),

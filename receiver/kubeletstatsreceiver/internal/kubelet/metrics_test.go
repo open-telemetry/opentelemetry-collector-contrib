@@ -18,11 +18,11 @@ import (
 
 type fakeRestClient struct{}
 
-func (f fakeRestClient) StatsSummary() ([]byte, error) {
+func (fakeRestClient) StatsSummary() ([]byte, error) {
 	return os.ReadFile("../../testdata/stats-summary.json")
 }
 
-func (f fakeRestClient) Pods() ([]byte, error) {
+func (fakeRestClient) Pods() ([]byte, error) {
 	return os.ReadFile("../../testdata/pods.json")
 }
 

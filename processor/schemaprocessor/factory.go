@@ -41,7 +41,7 @@ func NewFactory() processor.Factory {
 	)
 }
 
-func (f factory) createLogsProcessor(
+func (factory) createLogsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -62,7 +62,7 @@ func (f factory) createLogsProcessor(
 	)
 }
 
-func (f factory) createMetricsProcessor(
+func (factory) createMetricsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -83,7 +83,7 @@ func (f factory) createMetricsProcessor(
 	)
 }
 
-func (f factory) createTracesProcessor(
+func (factory) createTracesProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,

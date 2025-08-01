@@ -7,7 +7,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Foidcauth%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Foidcauth) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Foidcauth%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Foidcauth) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_oidc)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_oidc&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    |  \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@asweet-confluent](https://www.github.com/asweet-confluent) \| Seeking more code owners! |
 | Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -22,10 +22,11 @@ This extension implements a `configauth.ServerAuthenticator`, to be used in rece
 ```yaml
 extensions:
   oidc:
-    issuer_url: http://localhost:8080/auth/realms/opentelemetry
-    issuer_ca_path: /etc/pki/tls/cert.pem
-    audience: account
-    username_claim: email
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        issuer_ca_path: /etc/pki/tls/cert.pem
+        audience: account
+        username_claim: email
 
 receivers:
   otlp:
@@ -48,3 +49,21 @@ service:
       processors: []
       exporters: [debug]
 ```
+
+## Provider Matching
+
+Although multiple OIDC providers can be configured, incoming tokens will only be verified against a single provider. This is done by decoding the token, extracting the `iss` claim, and checking the configured providers for one with a matching `issuer_url` field.
+
+If no matching `issuer_url` is found, the extension will fail to authenticate with an error informing the caller that `no OIDC provider configured for the issuer`.
+
+## Configuration Structure Change
+
+Earlier versions of this extension only allowed configuring a single provider:
+```yaml
+extensions:
+  oidc:
+    issuer_url: http://localhost:8080/auth/realms/opentelemetry
+    issuer_ca_path: /etc/pki/tls/cert.pem
+```
+
+Although this configuration is still accepted by the extension, it is deprecated and support for it will be dropped in the future.

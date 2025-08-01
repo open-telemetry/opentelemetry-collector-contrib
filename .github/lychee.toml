@@ -4,7 +4,8 @@ accept = ["200..=299", "429"]
 
 exclude  = [
     "^http(s)?://localhost",
-    "^http(s)?://example.com"
+    "^http(s)?://example.com",
+    "^https://dev.mysql.com"
 ]
 
 # better to be safe and avoid failures

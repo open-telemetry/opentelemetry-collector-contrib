@@ -70,7 +70,7 @@ func TestScrape_Error(t *testing.T) {
 			scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			scraper.perfCounterFactory = func(_, _, _ string) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 				return &testmocks.PerfCounterWatcherMock{
 					ScrapeErr: test.scrapeErr,
 				}, nil

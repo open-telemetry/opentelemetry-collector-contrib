@@ -28,7 +28,7 @@ func DiffMetrics(diffs []*MetricDiff, expected, actual pmetric.Metrics) []*Metri
 	return append(diffs, diffMetricData(expected, actual)...)
 }
 
-func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics) []*MetricDiff {
+func diffRMSlices(sent, recd []pmetric.ResourceMetrics) []*MetricDiff {
 	var diffs []*MetricDiff
 	if len(sent) != len(recd) {
 		return []*MetricDiff{{
@@ -45,7 +45,7 @@ func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics
 	return diffs
 }
 
-func diffRMs(diffs []*MetricDiff, expected pmetric.ResourceMetrics, actual pmetric.ResourceMetrics) []*MetricDiff {
+func diffRMs(diffs []*MetricDiff, expected, actual pmetric.ResourceMetrics) []*MetricDiff {
 	diffs = diffResource(diffs, expected.Resource(), actual.Resource())
 	diffs = diffILMSlice(
 		diffs,
@@ -79,7 +79,7 @@ func diffILM(
 	return diffMetrics(diffs, expected.Metrics(), actual.Metrics())
 }
 
-func diffMetrics(diffs []*MetricDiff, expected pmetric.MetricSlice, actual pmetric.MetricSlice) []*MetricDiff {
+func diffMetrics(diffs []*MetricDiff, expected, actual pmetric.MetricSlice) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, actual.Len(), expected.Len(), "MetricSlice len")
 	if mismatch {
@@ -104,7 +104,7 @@ func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
 	return out
 }
 
-func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Metric) []*MetricDiff {
+func DiffMetric(diffs []*MetricDiff, expected, actual pmetric.Metric) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffMetricDescriptor(diffs, expected, actual)
 	if mismatch {
@@ -282,11 +282,11 @@ func diffExemplars(
 	return diffs
 }
 
-func diffResource(diffs []*MetricDiff, expected pcommon.Resource, actual pcommon.Resource) []*MetricDiff {
+func diffResource(diffs []*MetricDiff, expected, actual pcommon.Resource) []*MetricDiff {
 	return diffResourceAttrs(diffs, expected.Attributes(), actual.Attributes())
 }
 
-func diffResourceAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.Map) []*MetricDiff {
+func diffResourceAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*MetricDiff {
 	if !reflect.DeepEqual(expected, actual) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
@@ -297,7 +297,7 @@ func diffResourceAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon
 	return diffs
 }
 
-func diffMetricAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.Map) []*MetricDiff {
+func diffMetricAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*MetricDiff {
 	if !reflect.DeepEqual(expected, actual) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
@@ -308,7 +308,7 @@ func diffMetricAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.M
 	return diffs
 }
 
-func diff(diffs []*MetricDiff, expected any, actual any, msg string) []*MetricDiff {
+func diff(diffs []*MetricDiff, expected, actual any, msg string) []*MetricDiff {
 	out, _ := diffValues(diffs, expected, actual, msg)
 	return out
 }

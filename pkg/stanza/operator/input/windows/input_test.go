@@ -48,6 +48,21 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	assert.ErrorContains(t, err, "The specified channel could not be found")
 }
 
+// TestInputStart_NoErrorIfIgnoreChannelErrorsEnabled ensures no error is thrown when ignore_channel_errors flag is enabled
+// Other existing tests ensures the default behavior of error out when any error occurs while subscribing to the channel
+func TestInputStart_NoErrorIfIgnoreChannelErrorEnabled(t *testing.T) {
+	persister := testutil.NewMockPersister("")
+
+	input := newTestInput()
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.ignoreChannelErrors = true
+	input.pollInterval = 1 * time.Second
+
+	err := input.Start(persister)
+	assert.NoError(t, err, "Expected no error when ignoreMissingChannel is true")
+}
+
 // TestInputStart_RemoteSubscriptionError ensures the input correctly handles remote subscription errors.
 func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	persister := testutil.NewMockPersister("")
@@ -91,7 +106,7 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
@@ -116,7 +131,7 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
 	}
 

@@ -47,3 +47,20 @@ func TestFactory_CreateLogs(t *testing.T) {
 
 	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
+
+func TestCreateLogsExporter_WithDynamicIndex(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.LogsIndex = "otel-logs-%{service.name}"
+		cfg.LogsIndexFallback = "fallback"
+		cfg.LogsIndexTimeFormat = "yyyy.MM.dd"
+	})
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateLogs(context.Background(), set, cfg)
+	if err != nil {
+		t.Fatalf("failed to create logs exporter: %v", err)
+	}
+	if exp == nil {
+		t.Fatal("expected exporter, got nil")
+	}
+}

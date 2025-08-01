@@ -166,7 +166,7 @@ func (c *apacheSparkClient) JobStats(appID string) ([]models.Job, error) {
 
 func (c *apacheSparkClient) buildReq(path string) (*http.Request, error) {
 	url := c.cfg.Endpoint + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

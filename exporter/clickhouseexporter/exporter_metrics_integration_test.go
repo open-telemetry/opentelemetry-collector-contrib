@@ -35,21 +35,15 @@ func verifyExporterMetrics(t *testing.T, exporter *metricsExporter) {
 	rm := metric.ResourceMetrics().AppendEmpty()
 	simpleMetrics(5000).ResourceMetrics().At(0).CopyTo(rm)
 
-	// 3 pushes
-	mustPushMetricsData(t, exporter, metric)
-	mustPushMetricsData(t, exporter, metric)
-	mustPushMetricsData(t, exporter, metric)
+	pushConcurrentlyNoError(t, func() error {
+		return exporter.pushMetricsData(context.Background(), metric)
+	})
 
 	verifyGaugeMetric(t, exporter)
 	verifySumMetric(t, exporter)
 	verifyHistogramMetric(t, exporter)
 	verifyExphistogramMetric(t, exporter)
 	verifySummaryMetric(t, exporter)
-}
-
-func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Metrics) {
-	err := exporter.pushMetricsData(context.Background(), md)
-	require.NoError(t, err)
 }
 
 // simpleMetrics there will be added two ResourceMetrics and each of them have count data point

@@ -55,6 +55,6 @@ func (lw *limitedWriter) Write(p []byte) (n int, err error) {
 }
 
 // Close closes the writer.
-func (lw *limitedWriter) Close() error {
+func (*limitedWriter) Close() error {
 	return nil
 }

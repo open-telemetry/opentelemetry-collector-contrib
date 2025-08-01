@@ -67,6 +67,26 @@ All config params here are valid as well
 
 https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration
 
+### `/intake` Config
+
+The `datadog-agent` forwards metadata about its runtime environment via the `/intake` API endpoint.
+This receiver supports receiving this data and forwarding it directly to Datadog.
+(Note that this data isn't telemetry data, so it does not go through any configured collector pipelines.)
+
+This feature can be enabled in the config:
+
+```
+receivers:
+  datadog:
+    intake:
+      behavior: proxy
+      proxy:
+        api:
+          key: ${env:DD_API_KEY}
+          site: datadoghq.com
+          fail_on_invalid_key: true
+```
+
 ### Default Attributes
 
 - `dd.span.Resource`: The datadog resource name (as distinct from the span name)
@@ -90,15 +110,15 @@ Format example can be found [here](./internal/translator/traces_translator_test.
 
 **Metrics**
 
-| Datadog API Endpoint        | Status      | Notes |
-|-----------------------------|-------------|-------|
-| /api/v1/series              | Development |       |
-| /api/v2/series              | Development |       |
-| /api/v1/check_run           | Development |       |
-| /api/v1/sketches            | Development |       |
-| /api/beta/sketches          | Development |       |
-| /api/v1/distribution_points | Development |       |
-| /intake                     | Development |       |
+| Datadog API Endpoint        | Status      | Notes                      |
+|-----------------------------|-------------|----------------------------|
+| /api/v1/series              | Development |                            |
+| /api/v2/series              | Development |                            |
+| /api/v1/check_run           | Development |                            |
+| /api/v1/sketches            | Development |                            |
+| /api/beta/sketches          | Development |                            |
+| /api/v1/distribution_points | Development |                            |
+| /intake                     | Development | Support for proxying calls |
 
 ### Temporality considerations
 

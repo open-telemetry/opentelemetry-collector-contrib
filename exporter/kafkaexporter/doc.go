@@ -3,5 +3,5 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package kafkaexporter exports trace data to Kafka.
+// Package kafkaexporter exports traces, logs, metrics and profiles data to Kafka.
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
