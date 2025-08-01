@@ -21,13 +21,16 @@ resourceLogs:
                   stringValue: select count ( * ) from admin. employee e join admin. person p on e. businessentityid = ? join admin. employeepayhistory eph on e. businessentityid = eph. businessentityid where eph. rate > ( select avg ( rate ) from admin. employeepayhistory )
               - key: oracledb.query_plan
                 value:
-                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","CHILD_ADDRESS":"0000000074C6E830","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
+                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
               - key: oracledb.sql_id
                 value:
                   stringValue: fxk8aq3nds8aw
               - key: oracledb.child_number
                 value:
                   stringValue: "0"
+              - key: oracledb.child_address
+                value:
+                  stringValue: 0000000074C6E830
               - key: oracledb.application_wait_time
                 value:
                   doubleValue: 0

@@ -650,6 +650,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			s.hostName,
 			hit.queryText,
 			planString, hit.sqlID, hit.childNumber,
+			hit.childAddress,
 			asFloatInSeconds(hit.metrics[applicationWaitTimeMetric]),
 			hit.metrics[bufferGetsMetric],
 			asFloatInSeconds(hit.metrics[clusterWaitTimeMetric]),
@@ -793,6 +794,8 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	for _, row := range planData {
 		currentChildAddress := row[childAddressAttr]
 		jsonPlansSlice, ok := childAddressToPlanMap[currentChildAddress]
+		// child address was for internal use only, it's not going to be used beyond this point
+		delete(row, childAddressAttr)
 		if ok {
 			childAddressToPlanMap[currentChildAddress] = append(jsonPlansSlice, row)
 		} else {
