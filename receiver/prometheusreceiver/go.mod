@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promet
 go 1.23.0
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.2
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/go-kit/log v0.2.1
 	github.com/goccy/go-yaml v1.18.0
 	github.com/gogo/protobuf v1.3.2
