@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
@@ -525,11 +527,11 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		generateNamespace("default", "1"),
 		generateNamespace("default_ignore", "2"),
 	)
-	mockClient.createPods(
+	/*mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
-	)
+	)*/
 
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
@@ -540,6 +542,9 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		{
 			Name: "pods",
 			Mode: WatchMode,
+			IgnoreNamespaces: filter.Config{
+				Regex: "default_ignore",
+			},
 		},
 	}
 
