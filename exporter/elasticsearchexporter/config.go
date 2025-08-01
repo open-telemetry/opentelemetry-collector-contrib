@@ -104,7 +104,7 @@ type Config struct {
 	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
 	// then the Flush will be ignored even if Batcher.Enabled is false.
 	//
-	// Deprecated: [v0.131.0] This config is now deprecated. Use `sending_queue::batch` instead.
+	// Deprecated: [v0.132.0] This config is now deprecated. Use `sending_queue::batch` instead.
 	// Batcher config will be ignored if `sending_queue::batch` is defined even if sending queue
 	// is disabled.
 	Batcher BatcherConfig `mapstructure:"batcher"`
