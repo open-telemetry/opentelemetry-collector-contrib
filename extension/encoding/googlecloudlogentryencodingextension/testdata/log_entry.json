@@ -1,0 +1,47 @@
+{
+    "receiveTimestamp": "2024-05-05T10:32:19.45570687Z",
+    "timestamp": "2024-05-05T10:31:19.45570687Z",
+    "insertId": "test",
+    "logName": "projects/open-telemetry/logs/log-test",
+    "severity": "DEFAULT",
+    "trace": "projects/open-telemetry/traces/6a4ff0a7376921a0eb18291d8618302c",
+    "spanId": "2d84b769bfe8de6d",
+    "traceSampled": false,
+    "labels": {
+        "project": "open telemetry"
+    },
+    "httpRequest": {
+        "requestMethod": "GET",
+        "requestUrl": "https://example.com/api/v1/users?limit=10",
+        "requestSize": "1452",
+        "status": 200,
+        "responseSize": "8921",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "remoteIp": "203.0.113.42",
+        "serverIp": "10.0.0.1",
+        "referer": "https://example.com/dashboard",
+        "latency": "0.45s",
+        "cacheLookup": true,
+        "cacheHit": false,
+        "cacheValidatedWithOriginServer": true,
+        "cacheFillBytes": "8921",
+        "protocol": "HTTP/1.1"
+    },
+    "resource": {
+        "type": "test",
+        "labels": {
+            "owner": "test"
+        }
+    },
+    "operation": {
+        "id": "operation-test",
+        "producer": "producer-test",
+        "first": false,
+        "last": false
+    },
+    "sourceLocation": {
+        "file": "test-file",
+        "line": "123",
+        "function": "testFunction"
+    }
+}
