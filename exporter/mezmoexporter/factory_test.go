@@ -48,6 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			MaxConnsPerHost:     defaultMaxConnsPerHost,
 			IdleConnTimeout:     defaultIdleConnTimeout,
 			Headers:             map[string]configopaque.String{},
+			ForceAttemptHTTP2:   true,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
