@@ -1,0 +1,57 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+
+processors:
+  batch:
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+
+exporters:
+  # Datadog exporter with routing configuration
+  datadog:
+    api:
+      site: ${env:DD_SITE}
+      key: ${env:DD_API_KEY}
+    
+    # Metrics routing configuration
+    metrics:
+      routing:
+        enabled: true
+        # otlp_endpoint is optional - if not specified, it will be auto-generated 
+        # as "https://trace.agent.{DD_SITE}/api/v0.2/stats" using the api.site value
+        # otlp_endpoint: "https://custom.endpoint.com/otlp" # specify only if using a custom endpoint
+        otlp_headers:
+          "Dd-Protocol": "otlp"
+          "X-Datadog-Reported-Languages": "java"
+          "dd-api-key": ${env:DD_API_KEY}
+        rules:
+          - name: "datadog_trace_metrics"
+            condition:
+              instrumentation_scope_name: "datadog.trace.metrics"
+            target: "otlp"
+
+service:
+  telemetry:
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog] 

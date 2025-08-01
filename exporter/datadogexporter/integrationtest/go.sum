@@ -978,6 +978,8 @@ go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.131.0 h
 go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.131.0/go.mod h1:3JKSuykSQbebdhaxxeq9GQ0axvA58UdVA5ygOqNo8jc=
 go.opentelemetry.io/collector/exporter/exportertest v0.131.0 h1:gb/uM1Md/nsmUPf6POP8mLX3yog+9ZvberW6wDL8uw0=
 go.opentelemetry.io/collector/exporter/exportertest v0.131.0/go.mod h1:j5r6by0ZOraHg43DkLEJkf/dodqDVwHKmzSH17gnuRY=
+go.opentelemetry.io/collector/exporter/otlphttpexporter v0.131.0 h1:ReZ94b3gQP8nc65zPEZWMmPQ5q1uOqTNiGq/XbXIAqI=
+go.opentelemetry.io/collector/exporter/otlphttpexporter v0.131.0/go.mod h1:eOHe8z7R4FemG8/15eMRTWPFYYAqjYKTxDAgf56W11M=
 go.opentelemetry.io/collector/exporter/xexporter v0.131.0 h1:px+eJTiQOoiR1g8hQGmyPHoPHTUuBkIMY39IOOg7zC8=
 go.opentelemetry.io/collector/exporter/xexporter v0.131.0/go.mod h1:R4r3/xWpTh9UTndnZW36nHkz/gVB1SezJfiup7pjspE=
 go.opentelemetry.io/collector/extension v1.37.0 h1:K2srrCLyJ/Lp6mkerdmaEffhRj9P2GgbdxGvQq7klWc=

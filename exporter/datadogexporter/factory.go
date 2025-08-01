@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/routing"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -258,6 +259,107 @@ func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, sta
 	}
 }
 
+// metricsRouterConfig holds configuration for creating a metrics router
+type metricsRouterConfig struct {
+	enabled          bool
+	routingConfig    datadogconfig.MetricsRoutingConfig
+	apiKey           string
+	site             string
+	logger           *zap.Logger
+	exporterSettings exporter.Settings
+}
+
+// adaptableMetricsExporter wraps any metrics exporter with optional routing capabilities
+type adaptableMetricsExporter struct {
+	baseExporter consumer.ConsumeMetricsFunc
+	router       routing.MetricsRouter
+	config       metricsRouterConfig
+	logger       *zap.Logger
+}
+
+// createMetricsRouterWithPushFunc creates a metrics router with the provided push function if routing is enabled
+func createMetricsRouterWithPushFunc(
+	ctx context.Context,
+	pushFunc consumer.ConsumeMetricsFunc,
+	config metricsRouterConfig,
+) (routing.MetricsRouter, error) {
+	if !config.enabled {
+		return nil, nil
+	}
+
+	// Create metrics router
+	routerSettings := routing.MetricsRouterSettings{
+		DatadogPushFunc:  pushFunc,
+		RoutingConfig:    config.routingConfig,
+		APIKey:           config.apiKey,
+		Site:             config.site,
+		Logger:           config.logger,
+		ExporterSettings: config.exporterSettings,
+	}
+
+	metricsRouter, err := routing.NewMetricsRouter(ctx, routerSettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metrics router: %w", err)
+	}
+
+	return metricsRouter, nil
+}
+
+// newAdaptableMetricsExporter creates an adaptable metrics exporter that can work with any underlying exporter
+func newAdaptableMetricsExporter(
+	ctx context.Context,
+	baseExporter consumer.ConsumeMetricsFunc,
+	config metricsRouterConfig,
+) (*adaptableMetricsExporter, error) {
+	exporter := &adaptableMetricsExporter{
+		baseExporter: baseExporter,
+		config:       config,
+		logger:       config.logger,
+	}
+
+	// Create router if routing is enabled
+	if config.enabled {
+		router, err := createMetricsRouterWithPushFunc(ctx, baseExporter, config)
+		if err != nil {
+			return nil, err
+		}
+		exporter.router = router
+	}
+
+	return exporter, nil
+}
+
+// GetConsumeMetricsFunc returns the appropriate consume function based on whether routing is enabled
+func (e *adaptableMetricsExporter) GetConsumeMetricsFunc() consumer.ConsumeMetricsFunc {
+	if e.router != nil {
+		return e.router.ConsumeMetrics
+	}
+	return e.baseExporter
+}
+
+// GetStartFunc returns the start function for lifecycle management
+func (e *adaptableMetricsExporter) GetStartFunc() func(context.Context, component.Host) error {
+	if e.router != nil {
+		return e.router.Start
+	}
+	return nil
+}
+
+// GetShutdownFunc returns the shutdown function for lifecycle management
+func (e *adaptableMetricsExporter) GetShutdownFunc(additionalShutdown func(context.Context) error) func(context.Context) error {
+	return func(ctx context.Context) error {
+		if e.router != nil {
+			if err := e.router.Shutdown(ctx); err != nil {
+				e.logger.Error("Failed to shutdown metrics router", zap.Error(err))
+			}
+		}
+		if additionalShutdown != nil {
+			return additionalShutdown(ctx)
+		}
+		return nil
+	}
+}
+
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
@@ -272,6 +374,14 @@ func (f *factory) createMetricsExporter(
 
 	// cancel() runs on shutdown
 	ctx, cancel := context.WithCancel(ctx)
+
+	// Ensure cancel is called on any early error returns
+	var cancelCalled bool
+	defer func() {
+		if !cancelCalled {
+			cancel()
+		}
+	}()
 
 	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
 	if err != nil {
@@ -301,6 +411,8 @@ func (f *factory) createMetricsExporter(
 	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
 
 	var pushMetricsFn consumer.ConsumeMetricsFunc
+	var startFunc func(context.Context, component.Host) error
+	var shutdownFunc func(context.Context) error
 
 	pcfg := newMetadataConfigfromConfig(cfg)
 	// Don't start a `Reporter` if host metadata is disabled.
@@ -312,7 +424,6 @@ func (f *factory) createMetricsExporter(
 			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 		}
 	}
-
 	switch {
 	case cfg.OnlyMetadata:
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
@@ -389,30 +500,40 @@ func (f *factory) createMetricsExporter(
 			},
 			HostMetadata: cfg.HostMetadata,
 		}
-		return sf.CreateMetrics(ctx, set, ex)
-	default:
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
-		if metricsErr != nil {
-			cancel()  // first cancel context
-			wg.Wait() // then wait for shutdown
-			return nil, metricsErr
-		}
-		pushMetricsFn = exp.PushMetricsDataScrubbed
-	}
 
-	exporter, err := exporterhelper.NewMetrics(
-		ctx,
-		set,
-		cfg,
-		pushMetricsFn,
-		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
-		// We use our own custom mechanism for retries, since we hit several endpoints.
-		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
-		// The metrics remapping code mutates data
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
+		// Create the serializer exporter
+		serializerExp, sErr := sf.CreateMetrics(ctx, set, ex)
+		if sErr != nil {
+			cancel()
+			wg.Wait()
+			return nil, sErr
+		}
+
+		// Create adaptable metrics exporter with routing support
+		set.Logger.Info("Metrics routing configuration", zap.Any("routing_config", cfg.Metrics.Routing))
+		routerConfig := metricsRouterConfig{
+			enabled:          cfg.Metrics.Routing.Enabled,
+			routingConfig:    cfg.Metrics.Routing,
+			apiKey:           string(cfg.API.Key),
+			site:             cfg.API.Site,
+			logger:           set.Logger,
+			exporterSettings: set,
+		}
+
+		adaptableExporter, expErr := newAdaptableMetricsExporter(ctx, serializerExp.ConsumeMetrics, routerConfig)
+		if expErr != nil {
+			cancel()
+			wg.Wait()
+			return nil, expErr
+		}
+
+		// Use the adaptable exporter's function
+		pushMetricsFn = adaptableExporter.GetConsumeMetricsFunc()
+		startFunc = adaptableExporter.GetStartFunc()
+
+		// Update shutdown function to include router cleanup
+		oldShutdownFunc := func(context.Context) error {
+			cancelCalled = true
 			cancel()  // first cancel context
 			wg.Wait() // then wait for shutdown
 			f.StopReporter()
@@ -421,11 +542,90 @@ func (f *factory) createMetricsExporter(
 				close(statsIn)
 			}
 			return nil
-		}),
+		}
+		shutdownFunc = adaptableExporter.GetShutdownFunc(oldShutdownFunc)
+	default:
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
+		if metricsErr != nil {
+			cancel()  // first cancel context
+			wg.Wait() // then wait for shutdown
+			return nil, metricsErr
+		}
+
+		// Create adaptable metrics exporter with routing support
+		set.Logger.Info("Metrics routing configuration", zap.Any("routing_config", cfg.Metrics.Routing))
+		routerConfig := metricsRouterConfig{
+			enabled:          cfg.Metrics.Routing.Enabled,
+			routingConfig:    cfg.Metrics.Routing,
+			apiKey:           string(cfg.API.Key),
+			site:             cfg.API.Site,
+			logger:           set.Logger,
+			exporterSettings: set,
+		}
+
+		adaptableExporter, aErr := newAdaptableMetricsExporter(ctx, exp.PushMetricsDataScrubbed, routerConfig)
+		if aErr != nil {
+			cancel()
+			wg.Wait()
+			return nil, aErr
+		}
+
+		// Use the adaptable exporter's function
+		pushMetricsFn = adaptableExporter.GetConsumeMetricsFunc()
+		startFunc = adaptableExporter.GetStartFunc()
+
+		// Update shutdown function to include router cleanup
+		oldShutdownFunc := func(context.Context) error {
+			cancelCalled = true
+			cancel()  // first cancel context
+			wg.Wait() // then wait for shutdown
+			f.StopReporter()
+			statsWriter.Stop()
+			if statsIn != nil {
+				close(statsIn)
+			}
+			return nil
+		}
+		shutdownFunc = adaptableExporter.GetShutdownFunc(oldShutdownFunc)
+	}
+
+	// Create the final metrics exporter with proper lifecycle management
+	// Note: startFunc and shutdownFunc are already defined in the switch cases above
+
+	exporterOptions := []exporterhelper.Option{
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
+		// We use our own custom mechanism for retries, since we hit several endpoints.
+		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
+		// The metrics remapping code mutates data
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithShutdown(shutdownFunc),
+	}
+
+	if startFunc != nil {
+		exporterOptions = append(exporterOptions, exporterhelper.WithStart(startFunc))
+	}
+
+	exporter, err := exporterhelper.NewMetrics(
+		ctx,
+		set,
+		cfg,
+		pushMetricsFn,
+		exporterOptions...,
 	)
 	if err != nil {
+		// Ensure cleanup in case of failure after router/exporter setup
+		if shutdownFunc != nil {
+			_ = shutdownFunc(ctx)
+		} else {
+			cancelCalled = true
+			cancel()
+		}
 		return nil, err
 	}
+	// Mark cancel as handled since shutdown function will manage it
+	cancelCalled = true
 	return resourcetotelemetry.WrapMetricsExporter(
 		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
 }
