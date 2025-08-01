@@ -220,8 +220,8 @@ github.com/DataDog/datadog-agent/pkg/util/system/socket v0.67.0 h1:pM5p51BfBYgkp
 github.com/DataDog/datadog-agent/pkg/util/system/socket v0.67.0/go.mod h1:cQWaDB4GxK3i+0jbXZlePXzJ3f1oz2bnEPVfF9rK1Dg=
 github.com/DataDog/datadog-agent/pkg/util/testutil v0.67.0 h1:mLXT+D29nRHZdUHQvLp+mskZ9kQZJqkkk05EsEjw7WY=
 github.com/DataDog/datadog-agent/pkg/util/testutil v0.67.0/go.mod h1:yi2rztz2PWPdqIykyyX4nHkJiQLvEn0dTPzj9V7g7o8=
-github.com/DataDog/datadog-agent/pkg/util/winutil v0.67.0 h1:as8nOTMEeifcLCeHN+oqfdRrtUtVZIvwIN7kD2fQDIM=
-github.com/DataDog/datadog-agent/pkg/util/winutil v0.67.0/go.mod h1:2l1nTFRygeIQkYr8E1tHuO/ZMjxPt0VgJ1wW14F2Fb4=
+github.com/DataDog/datadog-agent/pkg/util/winutil v0.70.0-devel.0.20250801132403-9300d3e37608 h1:8euFCQn/SNpuN3L5uHx0bHj3N6Yf4QBukUSdylwArSA=
+github.com/DataDog/datadog-agent/pkg/util/winutil v0.70.0-devel.0.20250801132403-9300d3e37608/go.mod h1:mKV8FnTNGRSJF/TEPDOYWCCnarpPsxhfTZBVkFh/zRY=
 github.com/DataDog/datadog-agent/pkg/version v0.68.0 h1:O9K/SxuDrKJp+juA724SS1STQxw7meylHWTHjlHs+rM=
 github.com/DataDog/datadog-agent/pkg/version v0.68.0/go.mod h1:zpRXbtsHTgxP3vMyL6hsKQt/c590KDDaFtDQqPPEezo=
 github.com/DataDog/datadog-api-client-go/v2 v2.43.0 h1:HiRaKLfMe9qnoZ1r6Gm0dHg30i9wi1YqdYPVJ8/Fkgc=
