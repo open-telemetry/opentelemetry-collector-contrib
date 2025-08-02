@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 )
 
 var _ encoding.TextUnmarshaler = (*HashFunction)(nil)
@@ -57,6 +59,9 @@ type Config struct {
 	// AllowedValues is a list of regular expressions for allowing values of
 	// blocked span attributes. Values that match are not masked.
 	AllowedValues []string `mapstructure:"allowed_values"`
+
+	// DBSanitizer is a flag to enable database query sanitization.
+	DBSanitizer db.DBSanitizerConfig `mapstructure:"db_sanitizer"`
 
 	// Summary controls the verbosity level of the diagnostic attributes that
 	// the processor adds to the spans when it redacts or masks other
