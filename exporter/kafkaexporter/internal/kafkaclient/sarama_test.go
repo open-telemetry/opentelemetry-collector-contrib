@@ -15,8 +15,9 @@ import (
 func TestWrapKafkaProducerError(t *testing.T) {
 	t.Run("should return permanent error on configuration error", func(t *testing.T) {
 		err := sarama.ConfigurationError("configuration error")
+		msg := sarama.ProducerMessage{Topic: "topic"}
 		prodErrs := sarama.ProducerErrors{
-			&sarama.ProducerError{Err: err},
+			&sarama.ProducerError{Err: err, Msg: &msg},
 		}
 
 		got := wrapKafkaProducerError(prodErrs)
@@ -27,9 +28,10 @@ func TestWrapKafkaProducerError(t *testing.T) {
 
 	t.Run("should return permanent error whne multiple configuration error", func(t *testing.T) {
 		err := sarama.ConfigurationError("configuration error")
+		msg := sarama.ProducerMessage{Topic: "topic"}
 		prodErrs := sarama.ProducerErrors{
-			&sarama.ProducerError{Err: err},
-			&sarama.ProducerError{Err: err},
+			&sarama.ProducerError{Err: err, Msg: &msg},
+			&sarama.ProducerError{Err: err, Msg: &msg},
 		}
 
 		got := wrapKafkaProducerError(prodErrs)
@@ -40,9 +42,10 @@ func TestWrapKafkaProducerError(t *testing.T) {
 
 	t.Run("should return not permanent error when at least one not configuration error", func(t *testing.T) {
 		err := sarama.ConfigurationError("configuration error")
+		msg := sarama.ProducerMessage{Topic: "topic"}
 		prodErrs := sarama.ProducerErrors{
-			&sarama.ProducerError{Err: err},
-			&sarama.ProducerError{Err: errors.New("other producer error")},
+			&sarama.ProducerError{Err: err, Msg: &msg},
+			&sarama.ProducerError{Err: errors.New("other producer error"), Msg: &msg},
 		}
 
 		got := wrapKafkaProducerError(prodErrs)
@@ -53,8 +56,9 @@ func TestWrapKafkaProducerError(t *testing.T) {
 
 	t.Run("should return not permanent error on other producer error", func(t *testing.T) {
 		err := errors.New("other producer error")
+		msg := sarama.ProducerMessage{Topic: "topic"}
 		prodErrs := sarama.ProducerErrors{
-			&sarama.ProducerError{Err: err},
+			&sarama.ProducerError{Err: err, Msg: &msg},
 		}
 
 		got := wrapKafkaProducerError(prodErrs)
