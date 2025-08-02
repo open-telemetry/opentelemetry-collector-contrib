@@ -1,0 +1,6 @@
+# ignore the build output
+dist/
+bin/
+
+# keep the main collector entry point
+!cmd/otelcontribcol/**
