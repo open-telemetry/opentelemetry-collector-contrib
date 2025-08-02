@@ -1,52 +1,221 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-//go:generate mdatagen metadata.yaml
-
-package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
+// factory.go - OpenTelemetry Collector factory implementation
+package isolationforestprocessor
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor/internal/metadata"
+	"go.uber.org/zap"
 )
 
-// NewFactory returns a new factory for the Isolation Forest processor
+const (
+	// typeStr is the type identifier for this processor in OpenTelemetry configurations
+	typeStr = "isolationforest"
+
+	// stability indicates this processor is in alpha stage
+	stability = component.StabilityLevelAlpha
+)
+
+// NewFactory creates a new processor factory for the isolation forest processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		metadata.Type,
+		component.MustNewType(typeStr),
 		createDefaultConfig,
-		processor.WithMetrics(createMetrics, metadata.MetricsStability),
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
 	)
 }
 
-// createDefaultConfig creates the default configuration for the processor
-func createDefaultConfig() component.Config {
-	return &Config{
-		NumTrees:              100,
-		SubsampleSize:         256,
-		WindowSize:           1000,
-		AnomalyThreshold:     0.6,
-		TrainingInterval:     5 * time.Minute,
-		MetricsToAnalyze:     []string{},
-		Features:             []string{},
-		AddAnomalyScore:      true,
-		DropAnomalousMetrics: false,
+// createTracesProcessor creates a trace processor instance
+func createTracesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
+
+	processorCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration is not of type *Config")
 	}
+
+	if err := processorCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	set.Logger.Info("Creating isolation forest traces processor",
+		zap.String("processor_id", set.ID.String()),
+		zap.Int("forest_size", processorCfg.ForestSize),
+		zap.String("mode", processorCfg.Mode),
+		zap.Float64("threshold", processorCfg.Threshold),
+	)
+
+	proc, err := newIsolationForestProcessor(processorCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+
+	return &tracesProcessor{
+		isolationForestProcessor: proc,
+		nextConsumer:             nextConsumer,
+		logger:                   set.Logger,
+	}, nil
 }
 
-// createMetrics creates a metrics processor based on the config
-func createMetrics(
-	_ context.Context,
+// createMetricsProcessor creates a metrics processor instance
+func createMetricsProcessor(
+	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	oCfg := cfg.(*Config)
-	return newIsolationForestProcessor(set, oCfg, nextConsumer)
+
+	processorCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration is not of type *Config")
+	}
+
+	if err := processorCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	set.Logger.Info("Creating isolation forest metrics processor",
+		zap.String("processor_id", set.ID.String()),
+		zap.Int("forest_size", processorCfg.ForestSize),
+		zap.String("mode", processorCfg.Mode),
+	)
+
+	proc, err := newIsolationForestProcessor(processorCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+
+	return &metricsProcessor{
+		isolationForestProcessor: proc,
+		nextConsumer:             nextConsumer,
+		logger:                   set.Logger,
+	}, nil
+}
+
+// createLogsProcessor creates a logs processor instance
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (processor.Logs, error) {
+
+	processorCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration is not of type *Config")
+	}
+
+	if err := processorCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	set.Logger.Info("Creating isolation forest logs processor",
+		zap.String("processor_id", set.ID.String()),
+		zap.Int("forest_size", processorCfg.ForestSize),
+		zap.String("mode", processorCfg.Mode),
+	)
+
+	proc, err := newIsolationForestProcessor(processorCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+
+	return &logsProcessor{
+		isolationForestProcessor: proc,
+		nextConsumer:             nextConsumer,
+		logger:                   set.Logger,
+	}, nil
+}
+
+// tracesProcessor implements processor.Traces
+type tracesProcessor struct {
+	*isolationForestProcessor
+	nextConsumer consumer.Traces
+	logger       *zap.Logger
+}
+
+func (tp *tracesProcessor) Start(ctx context.Context, host component.Host) error {
+	return tp.isolationForestProcessor.Start(ctx, host)
+}
+
+func (tp *tracesProcessor) Shutdown(ctx context.Context) error {
+	return tp.isolationForestProcessor.Shutdown(ctx)
+}
+
+func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	processedTraces, err := tp.processTraces(ctx, td)
+	if err != nil {
+		return err
+	}
+	return tp.nextConsumer.ConsumeTraces(ctx, processedTraces)
+}
+
+func (tp *tracesProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+// metricsProcessor implements processor.Metrics
+type metricsProcessor struct {
+	*isolationForestProcessor
+	nextConsumer consumer.Metrics
+	logger       *zap.Logger
+}
+
+func (mp *metricsProcessor) Start(ctx context.Context, host component.Host) error {
+	return mp.isolationForestProcessor.Start(ctx, host)
+}
+
+func (mp *metricsProcessor) Shutdown(ctx context.Context) error {
+	return mp.isolationForestProcessor.Shutdown(ctx)
+}
+
+func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	processedMetrics, err := mp.processMetrics(ctx, md)
+	if err != nil {
+		return err
+	}
+	return mp.nextConsumer.ConsumeMetrics(ctx, processedMetrics)
+}
+
+func (mp *metricsProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+// logsProcessor implements processor.Logs
+type logsProcessor struct {
+	*isolationForestProcessor
+	nextConsumer consumer.Logs
+	logger       *zap.Logger
+}
+
+func (lp *logsProcessor) Start(ctx context.Context, host component.Host) error {
+	return lp.isolationForestProcessor.Start(ctx, host)
+}
+
+func (lp *logsProcessor) Shutdown(ctx context.Context) error {
+	return lp.isolationForestProcessor.Shutdown(ctx)
+}
+
+func (lp *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	processedLogs, err := lp.processLogs(ctx, ld)
+	if err != nil {
+		return err
+	}
+	return lp.nextConsumer.ConsumeLogs(ctx, processedLogs)
+}
+
+func (lp *logsProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }

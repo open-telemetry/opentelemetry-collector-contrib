@@ -1,550 +1,664 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
+// processor.go - Main processor implementation with signal-specific processing methods
+package isolationforestprocessor
 
 import (
 	"context"
+	"fmt"
+	"hash/fnv"
 	"math"
-	"math/rand"
+	"strconv"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor/internal/metadata"
 )
 
-// isolationForestProcessor implements the Isolation Forest anomaly detection algorithm
+// isolationForestProcessor is the core processor that contains the isolation forest
+// algorithm implementation and coordinates processing across different signal types.
 type isolationForestProcessor struct {
-	config       *Config
-	logger       *zap.Logger
-	nextConsumer consumer.Metrics
-	telemetry    *metadata.TelemetryBuilder
+	config *Config
+	logger *zap.Logger
 
-	// Model state
-	trees        []*isolationTree
-	dataWindow   *slidingWindow
-	lastTraining time.Time
-	mu           sync.RWMutex
+	// Machine learning components
+	defaultForest *OnlineIsolationForest            // Default model for single-model mode
+	modelForests  map[string]*OnlineIsolationForest // Named models for multi-model mode
+	forestsMutex  sync.RWMutex                      // Protects forest access
 
-	// Metrics
-	processedCount int64
-	anomalyCount   int64
+	// Feature extraction components
+	traceExtractor   *TraceFeatureExtractor
+	metricsExtractor *MetricsFeatureExtractor
+	logsExtractor    *LogsFeatureExtractor
+
+	// Performance tracking
+	processedCount uint64
+	anomalyCount   uint64
+	statsMutex     sync.Mutex
+
+	// Model lifecycle management
+	lastModelUpdate time.Time
+	updateTicker    *time.Ticker
+	stopChan        chan struct{}
 }
 
-// isolationTree represents a single isolation tree
-type isolationTree struct {
-	root     *treeNode
-	maxDepth int
-}
-
-// treeNode represents a node in the isolation tree
-type treeNode struct {
-	splitFeature int
-	splitValue   float64
-	left         *treeNode
-	right        *treeNode
-	isLeaf       bool
-	size         int
-}
-
-// dataPoint represents a single data point for analysis
-type dataPoint struct {
-	timestamp time.Time
-	features  []float64
-	metadata  map[string]interface{}
-}
-
-// slidingWindow maintains a sliding window of data points
-type slidingWindow struct {
-	data    []dataPoint
-	maxSize int
-	mu      sync.RWMutex
-}
-
-// newIsolationForestProcessor creates a new isolation forest processor
-func newIsolationForestProcessor(
-	set processor.Settings,
-	config *Config,
-	nextConsumer consumer.Metrics,
-) (processor.Metrics, error) {
-	telemetry, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
+// newIsolationForestProcessor creates a new processor instance with the specified configuration.
+// This function initializes all the core components including the isolation forest models,
+// feature extractors, and performance monitoring systems.
+func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolationForestProcessor, error) {
+	processor := &isolationForestProcessor{
+		config:          config,
+		logger:          logger,
+		modelForests:    make(map[string]*OnlineIsolationForest),
+		stopChan:        make(chan struct{}),
+		lastModelUpdate: time.Now(),
 	}
 
-	return &isolationForestProcessor{
-		config:       config,
-		logger:       set.Logger,
-		nextConsumer: nextConsumer,
-		telemetry:    telemetry,
-		dataWindow:   newSlidingWindow(config.WindowSize),
-		lastTraining: time.Now(),
-	}, nil
-}
+	// Initialize feature extractors for different signal types
+	processor.traceExtractor = NewTraceFeatureExtractor(config.Features.Traces, logger)
+	processor.metricsExtractor = NewMetricsFeatureExtractor(config.Features.Metrics, logger)
+	processor.logsExtractor = NewLogsFeatureExtractor(config.Features.Logs, logger)
 
-// newSlidingWindow creates a new sliding window
-func newSlidingWindow(maxSize int) *slidingWindow {
-	return &slidingWindow{
-		data:    make([]dataPoint, 0, maxSize),
-		maxSize: maxSize,
-	}
-}
+	// Initialize isolation forest models based on configuration mode
+	if config.IsMultiModelMode() {
+		// Create named models for multi-model configuration
+		for _, modelConfig := range config.Models {
+			forest := NewOnlineIsolationForest(
+				modelConfig.ForestSize,
+				config.Performance.BatchSize, // Use global batch size as window size
+				0,                            // Let forest determine max depth automatically
+			)
+			processor.modelForests[modelConfig.Name] = forest
 
-// add adds a data point to the sliding window
-func (sw *slidingWindow) add(dp dataPoint) {
-	sw.mu.Lock()
-	defer sw.mu.Unlock()
-
-	sw.data = append(sw.data, dp)
-	if len(sw.data) > sw.maxSize {
-		sw.data = sw.data[1:]
-	}
-}
-
-// getData returns a copy of the current data
-func (sw *slidingWindow) getData() []dataPoint {
-	sw.mu.RLock()
-	defer sw.mu.RUnlock()
-
-	result := make([]dataPoint, len(sw.data))
-	copy(result, sw.data)
-	return result
-}
-
-// Capabilities returns the consumer capabilities
-func (ifp *isolationForestProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-// Start starts the processor
-func (ifp *isolationForestProcessor) Start(ctx context.Context, host component.Host) error {
-	ifp.logger.Info("Starting Isolation Forest processor",
-		zap.Int("num_trees", ifp.config.NumTrees),
-		zap.Int("subsample_size", ifp.config.SubsampleSize),
-		zap.Float64("anomaly_threshold", ifp.config.AnomalyThreshold),
-	)
-	return nil
-}
-
-// Shutdown stops the processor
-func (ifp *isolationForestProcessor) Shutdown(ctx context.Context) error {
-	ifp.logger.Info("Shutting down Isolation Forest processor",
-		zap.Int64("processed_count", ifp.processedCount),
-		zap.Int64("anomaly_count", ifp.anomalyCount),
-	)
-	return nil
-}
-
-// ConsumeMetrics processes the metrics data
-func (ifp *isolationForestProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	now := time.Now()
-
-	// Check if we need to retrain the model
-	if now.Sub(ifp.lastTraining) > ifp.config.TrainingInterval {
-		go ifp.trainModel()
-	}
-
-	// Process each metric
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		ifp.processResourceMetrics(rm)
-	}
-
-	// Update telemetry
-	ifp.telemetry.IsolationforestProcessedMetrics.Add(ctx, 1)
-
-	return ifp.nextConsumer.ConsumeMetrics(ctx, md)
-}
-
-// processResourceMetrics processes resource metrics
-func (ifp *isolationForestProcessor) processResourceMetrics(rm pmetric.ResourceMetrics) {
-	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
-		sm := rm.ScopeMetrics().At(i)
-		ifp.processScopeMetrics(sm)
-	}
-}
-
-// processScopeMetrics processes scope metrics
-func (ifp *isolationForestProcessor) processScopeMetrics(sm pmetric.ScopeMetrics) {
-	for i := 0; i < sm.Metrics().Len(); i++ {
-		metric := sm.Metrics().At(i)
-		ifp.processMetric(metric)
-	}
-}
-
-// processMetric processes a single metric
-func (ifp *isolationForestProcessor) processMetric(metric pmetric.Metric) {
-	metricName := metric.Name()
-
-	// Check if this metric should be analyzed
-	if len(ifp.config.MetricsToAnalyze) > 0 {
-		shouldAnalyze := false
-		for _, name := range ifp.config.MetricsToAnalyze {
-			if name == metricName {
-				shouldAnalyze = true
-				break
-			}
+			logger.Info("Initialized model",
+				zap.String("model_name", modelConfig.Name),
+				zap.Int("forest_size", modelConfig.ForestSize),
+				zap.Int("subsample_size", modelConfig.SubsampleSize),
+			)
 		}
-		if !shouldAnalyze {
+	} else {
+		// Create single default model
+		processor.defaultForest = NewOnlineIsolationForest(
+			config.ForestSize,
+			config.Performance.BatchSize,
+			0, // Auto-determine max depth
+		)
+
+		logger.Info("Initialized default model",
+			zap.Int("forest_size", config.ForestSize),
+			zap.Int("subsample_size", config.SubsampleSize),
+		)
+	}
+
+	// Start model update ticker for periodic retraining
+	updateFreq, err := config.GetUpdateFrequencyDuration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse update frequency: %w", err)
+	}
+
+	processor.updateTicker = time.NewTicker(updateFreq)
+	go processor.modelUpdateLoop()
+
+	return processor, nil
+}
+
+// Start initializes the processor
+func (p *isolationForestProcessor) Start(ctx context.Context, host component.Host) error {
+	p.logger.Info("Starting isolation forest processor")
+	// Any additional initialization logic can go here
+	return nil
+}
+
+// Shutdown gracefully stops the processor and cleans up resources.
+func (p *isolationForestProcessor) Shutdown(ctx context.Context) error {
+	p.logger.Info("Shutting down isolation forest processor")
+
+	// Stop the update ticker
+	if p.updateTicker != nil {
+		p.updateTicker.Stop()
+	}
+
+	// Signal background goroutines to stop
+	close(p.stopChan)
+
+	p.logger.Info("Isolation forest processor shutdown complete")
+	return nil
+}
+
+// modelUpdateLoop runs periodic model updates in the background to adapt to changing patterns.
+func (p *isolationForestProcessor) modelUpdateLoop() {
+	for {
+		select {
+		case <-p.updateTicker.C:
+			p.performModelUpdate()
+		case <-p.stopChan:
 			return
 		}
 	}
-
-	// Extract data points based on metric type
-	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		ifp.processGauge(metric.Gauge())
-	case pmetric.MetricTypeSum:
-		ifp.processSum(metric.Sum())
-	case pmetric.MetricTypeHistogram:
-		ifp.processHistogram(metric.Histogram())
-	case pmetric.MetricTypeSummary:
-		ifp.processSummary(metric.Summary())
-	}
 }
 
-// processGauge processes gauge metrics
-func (ifp *isolationForestProcessor) processGauge(gauge pmetric.Gauge) {
-	for i := 0; i < gauge.DataPoints().Len(); i++ {
-		dp := gauge.DataPoints().At(i)
-		features := ifp.extractFeatures(dp.DoubleValue(), dp.Attributes())
+// performModelUpdate triggers model retraining based on recent data patterns.
+func (p *isolationForestProcessor) performModelUpdate() {
+	p.logger.Debug("Performing scheduled model update")
 
-		dataPoint := dataPoint{
-			timestamp: time.Unix(0, int64(dp.Timestamp())),
-			features:  features,
-			metadata: map[string]interface{}{
-				"value": dp.DoubleValue(),
-			},
+	// Get current statistics from all models
+	p.forestsMutex.RLock()
+	if p.defaultForest != nil {
+		stats := p.defaultForest.GetStatistics()
+		p.logger.Debug("Default model statistics",
+			zap.Uint64("total_samples", stats.TotalSamples),
+			zap.Float64("anomaly_rate", stats.AnomalyRate),
+			zap.Float64("current_threshold", stats.CurrentThreshold),
+		)
+	}
+
+	for name, forest := range p.modelForests {
+		stats := forest.GetStatistics()
+		p.logger.Debug("Model statistics",
+			zap.String("model_name", name),
+			zap.Uint64("total_samples", stats.TotalSamples),
+			zap.Float64("anomaly_rate", stats.AnomalyRate),
+		)
+	}
+	p.forestsMutex.RUnlock()
+
+	p.lastModelUpdate = time.Now()
+}
+
+// processFeatures is the core method that takes extracted features and runs them through
+// the isolation forest algorithm to compute anomaly scores and classifications.
+func (p *isolationForestProcessor) processFeatures(features map[string][]float64, attributes map[string]interface{}) (float64, bool, string) {
+	if len(features) == 0 {
+		return 0.0, false, ""
+	}
+
+	// Determine which model to use based on configuration
+	var forest *OnlineIsolationForest
+	var modelName string
+
+	p.forestsMutex.RLock()
+	defer p.forestsMutex.RUnlock()
+
+	if p.config.IsMultiModelMode() {
+		// Find matching model based on attributes
+		if modelConfig := p.config.GetModelForAttributes(attributes); modelConfig != nil {
+			if f, exists := p.modelForests[modelConfig.Name]; exists {
+				forest = f
+				modelName = modelConfig.Name
+			}
 		}
 
-		ifp.dataWindow.add(dataPoint)
-		ifp.analyzeDataPoint(dataPoint, dp)
-		ifp.processedCount++
-	}
-}
-
-// processSum processes sum metrics
-func (ifp *isolationForestProcessor) processSum(sum pmetric.Sum) {
-	for i := 0; i < sum.DataPoints().Len(); i++ {
-		dp := sum.DataPoints().At(i)
-		features := ifp.extractFeatures(dp.DoubleValue(), dp.Attributes())
-
-		dataPoint := dataPoint{
-			timestamp: time.Unix(0, int64(dp.Timestamp())),
-			features:  features,
-			metadata: map[string]interface{}{
-				"value": dp.DoubleValue(),
-			},
+		// Fall back to first available model if no match found
+		if forest == nil && len(p.modelForests) > 0 {
+			for name, f := range p.modelForests {
+				forest = f
+				modelName = name
+				break
+			}
 		}
-
-		ifp.dataWindow.add(dataPoint)
-		ifp.analyzeDataPoint(dataPoint, dp)
-		ifp.processedCount++
+	} else {
+		forest = p.defaultForest
+		modelName = "default"
 	}
+
+	if forest == nil {
+		p.logger.Warn("No isolation forest available for processing")
+		return 0.0, false, ""
+	}
+
+	// Combine all features into a single feature vector
+	var combinedFeatures []float64
+	for _, featureVector := range features {
+		combinedFeatures = append(combinedFeatures, featureVector...)
+	}
+
+	if len(combinedFeatures) == 0 {
+		return 0.0, false, modelName
+	}
+
+	// Process through isolation forest
+	anomalyScore, isAnomaly := forest.ProcessSample(combinedFeatures)
+
+	// Update statistics
+	p.statsMutex.Lock()
+	p.processedCount++
+	if isAnomaly {
+		p.anomalyCount++
+	}
+	p.statsMutex.Unlock()
+
+	return anomalyScore, isAnomaly, modelName
 }
 
-// processHistogram processes histogram metrics
-func (ifp *isolationForestProcessor) processHistogram(histogram pmetric.Histogram) {
-	for i := 0; i < histogram.DataPoints().Len(); i++ {
-		dp := histogram.DataPoints().At(i)
-		// Use count and sum as features
-		features := []float64{float64(dp.Count()), dp.Sum()}
+// processTraces processes trace telemetry
+func (p *isolationForestProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	// Process each resource scope and its spans
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		resourceAttrs := attributeMapToGeneric(rs.Resource().Attributes())
 
-		dataPoint := dataPoint{
-			timestamp: time.Unix(0, int64(dp.Timestamp())),
-			features:  features,
-			metadata: map[string]interface{}{
-				"count": dp.Count(),
-				"sum":   dp.Sum(),
-			},
-		}
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
 
-		ifp.dataWindow.add(dataPoint)
-		ifp.processedCount++
-	}
-}
+			// Create a new span slice for filtered spans
+			newSpans := ptrace.NewSpanSlice()
 
-// processSummary processes summary metrics
-func (ifp *isolationForestProcessor) processSummary(summary pmetric.Summary) {
-	for i := 0; i < summary.DataPoints().Len(); i++ {
-		dp := summary.DataPoints().At(i)
-		// Use count and sum as features
-		features := []float64{float64(dp.Count()), dp.Sum()}
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
 
-		dataPoint := dataPoint{
-			timestamp: time.Unix(0, int64(dp.Timestamp())),
-			features:  features,
-			metadata: map[string]interface{}{
-				"count": dp.Count(),
-				"sum":   dp.Sum(),
-			},
-		}
+				// Extract features from the span
+				features := p.traceExtractor.ExtractFeatures(span, resourceAttrs)
 
-		ifp.dataWindow.add(dataPoint)
-		ifp.processedCount++
-	}
-}
+				// Combine span and resource attributes for model selection
+				spanAttrs := attributeMapToGeneric(span.Attributes())
+				allAttrs := mergeAttributes(resourceAttrs, spanAttrs)
 
-// extractFeatures extracts features from a metric value and attributes
-func (ifp *isolationForestProcessor) extractFeatures(value float64, attributes pcommon.Map) []float64 {
-	if len(ifp.config.Features) == 0 {
-		return []float64{value}
-	}
+				// Process through isolation forest
+				score, isAnomaly, modelName := p.processFeatures(features, allAttrs)
 
-	features := make([]float64, 0, len(ifp.config.Features))
-	for _, featureName := range ifp.config.Features {
-		if attr, ok := attributes.Get(featureName); ok {
-			switch attr.Type() {
-			case pcommon.ValueTypeDouble:
-				features = append(features, attr.Double())
-			case pcommon.ValueTypeInt:
-				features = append(features, float64(attr.Int()))
+				// Apply processing mode
+				if p.config.Mode == "filter" && !isAnomaly {
+					// Skip this span - don't add to newSpans
+					continue
+				}
+
+				// Copy span to new slice
+				newSpan := newSpans.AppendEmpty()
+				span.CopyTo(newSpan)
+
+				// Add anomaly attributes in enrich or both modes
+				if p.config.Mode == "enrich" || p.config.Mode == "both" {
+					newSpan.Attributes().PutDouble(p.config.ScoreAttribute, score)
+					newSpan.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+					if modelName != "" && modelName != "default" {
+						newSpan.Attributes().PutStr("anomaly.model_name", modelName)
+					}
+				}
+			}
+
+			// Replace the original spans with filtered/enriched spans
+			ss.Spans().RemoveAll()
+			for k := 0; k < newSpans.Len(); k++ {
+				newSpan := ss.Spans().AppendEmpty()
+				newSpans.At(k).CopyTo(newSpan)
 			}
 		}
 	}
 
-	// Always include the metric value
-	features = append(features, value)
+	return td, nil
+}
+
+// processMetrics processes metric telemetry
+func (p *isolationForestProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	// Process each resource metric and its data points
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		resourceAttrs := attributeMapToGeneric(rm.Resource().Attributes())
+
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+
+				// Extract features based on metric type
+				features := p.metricsExtractor.ExtractFeatures(metric, resourceAttrs)
+
+				// Process through isolation forest
+				score, isAnomaly, modelName := p.processFeatures(features, resourceAttrs)
+
+				// Add anomaly attributes to metric data points
+				if p.config.Mode == "enrich" || p.config.Mode == "both" {
+					p.addAnomalyAttributesToMetric(metric, score, isAnomaly, modelName)
+				}
+			}
+		}
+	}
+
+	return md, nil
+}
+
+// processLogs processes log telemetry
+func (p *isolationForestProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	// Process each resource log and its records
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rl := ld.ResourceLogs().At(i)
+		resourceAttrs := attributeMapToGeneric(rl.Resource().Attributes())
+
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+
+			// Create a new log record slice for filtered logs
+			newLogs := plog.NewLogRecordSlice()
+
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				record := sl.LogRecords().At(k)
+
+				// Extract features from the log record
+				features := p.logsExtractor.ExtractFeatures(record, resourceAttrs)
+
+				// Combine log and resource attributes for model selection
+				logAttrs := attributeMapToGeneric(record.Attributes())
+				allAttrs := mergeAttributes(resourceAttrs, logAttrs)
+
+				// Process through isolation forest
+				score, isAnomaly, modelName := p.processFeatures(features, allAttrs)
+
+				// Apply processing mode
+				if p.config.Mode == "filter" && !isAnomaly {
+					// Skip this log record - don't add to newLogs
+					continue
+				}
+
+				// Copy log record to new slice
+				newRecord := newLogs.AppendEmpty()
+				record.CopyTo(newRecord)
+
+				// Add anomaly attributes in enrich or both modes
+				if p.config.Mode == "enrich" || p.config.Mode == "both" {
+					newRecord.Attributes().PutDouble(p.config.ScoreAttribute, score)
+					newRecord.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+					if modelName != "" && modelName != "default" {
+						newRecord.Attributes().PutStr("anomaly.model_name", modelName)
+					}
+				}
+			}
+
+			// Replace the original log records with filtered/enriched logs
+			sl.LogRecords().RemoveAll()
+			for k := 0; k < newLogs.Len(); k++ {
+				newRecord := sl.LogRecords().AppendEmpty()
+				newLogs.At(k).CopyTo(newRecord)
+			}
+		}
+	}
+
+	return ld, nil
+}
+
+// addAnomalyAttributesToMetric adds anomaly detection results to metric data points
+func (p *isolationForestProcessor) addAnomalyAttributesToMetric(metric pmetric.Metric, score float64, isAnomaly bool, modelName string) {
+	// Add attributes to different metric types based on their structure
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		gauge := metric.Gauge()
+		for i := 0; i < gauge.DataPoints().Len(); i++ {
+			dp := gauge.DataPoints().At(i)
+			dp.Attributes().PutDouble(p.config.ScoreAttribute, score)
+			dp.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+			if modelName != "" && modelName != "default" {
+				dp.Attributes().PutStr("anomaly.model_name", modelName)
+			}
+		}
+	case pmetric.MetricTypeSum:
+		sum := metric.Sum()
+		for i := 0; i < sum.DataPoints().Len(); i++ {
+			dp := sum.DataPoints().At(i)
+			dp.Attributes().PutDouble(p.config.ScoreAttribute, score)
+			dp.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+			if modelName != "" && modelName != "default" {
+				dp.Attributes().PutStr("anomaly.model_name", modelName)
+			}
+		}
+	case pmetric.MetricTypeHistogram:
+		histogram := metric.Histogram()
+		for i := 0; i < histogram.DataPoints().Len(); i++ {
+			dp := histogram.DataPoints().At(i)
+			dp.Attributes().PutDouble(p.config.ScoreAttribute, score)
+			dp.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+			if modelName != "" && modelName != "default" {
+				dp.Attributes().PutStr("anomaly.model_name", modelName)
+			}
+		}
+	case pmetric.MetricTypeSummary:
+		summary := metric.Summary()
+		for i := 0; i < summary.DataPoints().Len(); i++ {
+			dp := summary.DataPoints().At(i)
+			dp.Attributes().PutDouble(p.config.ScoreAttribute, score)
+			dp.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+			if modelName != "" && modelName != "default" {
+				dp.Attributes().PutStr("anomaly.model_name", modelName)
+			}
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		exponentialHistogram := metric.ExponentialHistogram()
+		for i := 0; i < exponentialHistogram.DataPoints().Len(); i++ {
+			dp := exponentialHistogram.DataPoints().At(i)
+			dp.Attributes().PutDouble(p.config.ScoreAttribute, score)
+			dp.Attributes().PutBool(p.config.ClassificationAttribute, isAnomaly)
+			if modelName != "" && modelName != "default" {
+				dp.Attributes().PutStr("anomaly.model_name", modelName)
+			}
+		}
+	}
+}
+
+// Feature extraction components for different signal types
+
+// TraceFeatureExtractor extracts numerical features from trace spans
+type TraceFeatureExtractor struct {
+	features []string
+	logger   *zap.Logger
+}
+
+func NewTraceFeatureExtractor(features []string, logger *zap.Logger) *TraceFeatureExtractor {
+	return &TraceFeatureExtractor{
+		features: features,
+		logger:   logger,
+	}
+}
+
+func (tfe *TraceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttrs map[string]interface{}) map[string][]float64 {
+	features := make(map[string][]float64)
+
+	for _, featureName := range tfe.features {
+		switch featureName {
+		case "duration":
+			// Extract span duration in milliseconds
+			duration := float64(span.EndTimestamp()-span.StartTimestamp()) / 1e6 // Convert nanoseconds to milliseconds
+			features["duration"] = []float64{duration}
+
+		case "error":
+			// Binary feature indicating error status
+			errorValue := 0.0
+			if span.Status().Code() == ptrace.StatusCodeError {
+				errorValue = 1.0
+			}
+			features["error"] = []float64{errorValue}
+
+		case "http.status_code":
+			// HTTP status code if available
+			if statusCode, exists := span.Attributes().Get("http.status_code"); exists {
+				if code, err := strconv.ParseFloat(statusCode.AsString(), 64); err == nil {
+					features["http.status_code"] = []float64{code}
+				}
+			}
+
+		case "service.name":
+			// Categorical encoding of service name
+			if serviceName, exists := resourceAttrs["service.name"]; exists {
+				encoded := categoricalEncode(fmt.Sprintf("%v", serviceName))
+				features["service.name"] = []float64{encoded}
+			}
+
+		case "operation.name":
+			// Categorical encoding of operation name
+			encoded := categoricalEncode(span.Name())
+			features["operation.name"] = []float64{encoded}
+		}
+	}
+
 	return features
 }
 
-// analyzeDataPoint analyzes a data point for anomalies
-func (ifp *isolationForestProcessor) analyzeDataPoint(dp dataPoint, metricDP interface{}) {
-	ifp.mu.RLock()
-	trees := ifp.trees
-	ifp.mu.RUnlock()
+// MetricsFeatureExtractor extracts numerical features from metrics
+type MetricsFeatureExtractor struct {
+	features []string
+	logger   *zap.Logger
 
-	if len(trees) == 0 {
-		return // Model not trained yet
-	}
+	// Track previous values for rate calculation
+	previousValues map[string]float64
+	previousTimes  map[string]time.Time
+	mutex          sync.Mutex
+}
 
-	// Calculate anomaly score
-	score := ifp.calculateAnomalyScore(dp.features)
-
-	// Add anomaly score as attribute if configured
-	if ifp.config.AddAnomalyScore {
-		ifp.addAnomalyScoreAttribute(metricDP, score)
-	}
-
-	// Check if it's anomalous
-	if score > ifp.config.AnomalyThreshold {
-		ifp.anomalyCount++
-		ifp.telemetry.IsolationforestAnomaliesDetected.Add(context.Background(), 1)
-		ifp.logger.Debug("Anomaly detected",
-			zap.Float64("score", score),
-			zap.Any("features", dp.features),
-			zap.Time("timestamp", dp.timestamp),
-		)
+func NewMetricsFeatureExtractor(features []string, logger *zap.Logger) *MetricsFeatureExtractor {
+	return &MetricsFeatureExtractor{
+		features:       features,
+		logger:         logger,
+		previousValues: make(map[string]float64),
+		previousTimes:  make(map[string]time.Time),
 	}
 }
 
-// addAnomalyScoreAttribute adds the anomaly score as an attribute
-func (ifp *isolationForestProcessor) addAnomalyScoreAttribute(metricDP interface{}, score float64) {
-	switch dp := metricDP.(type) {
-	case pmetric.NumberDataPoint:
-		dp.Attributes().PutDouble("anomaly_score", score)
-	case pmetric.HistogramDataPoint:
-		dp.Attributes().PutDouble("anomaly_score", score)
-	case pmetric.SummaryDataPoint:
-		dp.Attributes().PutDouble("anomaly_score", score)
+func (mfe *MetricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, resourceAttrs map[string]interface{}) map[string][]float64 {
+	features := make(map[string][]float64)
+
+	// Extract primary metric value based on type
+	var currentValue float64
+	var timestamp time.Time
+
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		if metric.Gauge().DataPoints().Len() > 0 {
+			dp := metric.Gauge().DataPoints().At(0)
+			currentValue = dp.DoubleValue()
+			timestamp = time.Unix(0, int64(dp.Timestamp()))
+		}
+	case pmetric.MetricTypeSum:
+		if metric.Sum().DataPoints().Len() > 0 {
+			dp := metric.Sum().DataPoints().At(0)
+			currentValue = dp.DoubleValue()
+			timestamp = time.Unix(0, int64(dp.Timestamp()))
+		}
+	}
+
+	metricKey := metric.Name()
+
+	for _, featureName := range mfe.features {
+		switch featureName {
+		case "value":
+			features["value"] = []float64{currentValue}
+
+		case "rate_of_change":
+			// Calculate rate of change from previous value
+			mfe.mutex.Lock()
+			if prevValue, exists := mfe.previousValues[metricKey]; exists {
+				if prevTime, timeExists := mfe.previousTimes[metricKey]; timeExists {
+					timeDiff := timestamp.Sub(prevTime).Seconds()
+					if timeDiff > 0 {
+						rate := (currentValue - prevValue) / timeDiff
+						features["rate_of_change"] = []float64{rate}
+					}
+				}
+			}
+			mfe.previousValues[metricKey] = currentValue
+			mfe.previousTimes[metricKey] = timestamp
+			mfe.mutex.Unlock()
+		}
+	}
+
+	return features
+}
+
+// LogsFeatureExtractor extracts numerical features from log records
+type LogsFeatureExtractor struct {
+	features      []string
+	logger        *zap.Logger
+	lastTimestamp map[string]time.Time
+	mutex         sync.Mutex
+}
+
+func NewLogsFeatureExtractor(features []string, logger *zap.Logger) *LogsFeatureExtractor {
+	return &LogsFeatureExtractor{
+		features:      features,
+		logger:        logger,
+		lastTimestamp: make(map[string]time.Time),
 	}
 }
 
-// trainModel trains the isolation forest model
-func (ifp *isolationForestProcessor) trainModel() {
-	startTime := time.Now()
-	ifp.logger.Info("Training Isolation Forest model")
+func (lfe *LogsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resourceAttrs map[string]interface{}) map[string][]float64 {
+	features := make(map[string][]float64)
 
-	data := ifp.dataWindow.getData()
-	if len(data) < ifp.config.SubsampleSize {
-		ifp.logger.Debug("Insufficient data for training", zap.Int("data_points", len(data)))
-		return
+	for _, featureName := range lfe.features {
+		switch featureName {
+		case "severity_number":
+			// Numeric log severity level
+			features["severity_number"] = []float64{float64(record.SeverityNumber())}
+
+		case "timestamp_gap":
+			// Time since last log entry from same source
+			currentTime := time.Unix(0, int64(record.Timestamp()))
+
+			// Use service name or other identifier as key
+			var sourceKey string
+			if serviceName, exists := resourceAttrs["service.name"]; exists {
+				sourceKey = fmt.Sprintf("%v", serviceName)
+			} else {
+				sourceKey = "default"
+			}
+
+			lfe.mutex.Lock()
+			if lastTime, exists := lfe.lastTimestamp[sourceKey]; exists {
+				gap := currentTime.Sub(lastTime).Seconds()
+				features["timestamp_gap"] = []float64{gap}
+			}
+			lfe.lastTimestamp[sourceKey] = currentTime
+			lfe.mutex.Unlock()
+
+		case "message_length":
+			// Length of log message
+			messageLength := float64(len(record.Body().AsString()))
+			features["message_length"] = []float64{messageLength}
+		}
 	}
 
-	// Build isolation trees
-	trees := make([]*isolationTree, ifp.config.NumTrees)
-	for i := 0; i < ifp.config.NumTrees; i++ {
-		trees[i] = ifp.buildTree(data)
-	}
-
-	ifp.mu.Lock()
-	ifp.trees = trees
-	ifp.lastTraining = time.Now()
-	ifp.mu.Unlock()
-
-	trainingDuration := time.Since(startTime)
-	ifp.telemetry.IsolationforestModelTrainingDuration.Record(context.Background(), trainingDuration.Milliseconds())
-
-	ifp.logger.Info("Isolation Forest model trained successfully",
-		zap.Int("num_trees", len(trees)),
-		zap.Int("data_points", len(data)),
-		zap.Duration("training_duration", trainingDuration),
-	)
+	return features
 }
 
-// buildTree builds a single isolation tree
-func (ifp *isolationForestProcessor) buildTree(data []dataPoint) *isolationTree {
-	// Sample data for this tree
-	subsample := ifp.subsample(data, ifp.config.SubsampleSize)
+// Utility functions for attribute handling and feature processing
 
-	// Build the tree
-	maxDepth := int(math.Ceil(math.Log2(float64(len(subsample)))))
-	root := ifp.buildTreeNode(subsample, 0, maxDepth)
-
-	return &isolationTree{
-		root:     root,
-		maxDepth: maxDepth,
-	}
+// attributeMapToGeneric converts OpenTelemetry attribute maps to generic map[string]interface{}
+func attributeMapToGeneric(attrs pcommon.Map) map[string]interface{} {
+	result := make(map[string]interface{})
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		switch v.Type() {
+		case pcommon.ValueTypeStr:
+			result[k] = v.Str()
+		case pcommon.ValueTypeInt:
+			result[k] = v.Int()
+		case pcommon.ValueTypeDouble:
+			result[k] = v.Double()
+		case pcommon.ValueTypeBool:
+			result[k] = v.Bool()
+		default:
+			result[k] = v.AsString()
+		}
+		return true
+	})
+	return result
 }
 
-// subsample randomly samples data points
-func (ifp *isolationForestProcessor) subsample(data []dataPoint, size int) []dataPoint {
-	if len(data) <= size {
-		return data
-	}
-
-	// Create indices and shuffle them
-	indices := make([]int, len(data))
-	for i := range indices {
-		indices[i] = i
-	}
-
-	// Fisher-Yates shuffle
-	for i := len(indices) - 1; i > 0; i-- {
-		j := rand.Intn(i + 1)
-		indices[i], indices[j] = indices[j], indices[i]
-	}
-
-	result := make([]dataPoint, size)
-	for i := 0; i < size; i++ {
-		result[i] = data[indices[i]]
+// mergeAttributes combines multiple attribute maps with later maps taking precedence
+func mergeAttributes(maps ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
 	}
 	return result
 }
 
-// buildTreeNode recursively builds tree nodes
-func (ifp *isolationForestProcessor) buildTreeNode(data []dataPoint, depth, maxDepth int) *treeNode {
-	node := &treeNode{size: len(data)}
+// categoricalEncode converts string values to numerical representation using hash function
+func categoricalEncode(value string) float64 {
+	h := fnv.New64a()
+	h.Write([]byte(value))
 
-	// Stop conditions
-	if len(data) <= 1 || depth >= maxDepth {
-		node.isLeaf = true
-		return node
-	}
-
-	// Find feature dimensions
-	if len(data) == 0 || len(data[0].features) == 0 {
-		node.isLeaf = true
-		return node
-	}
-
-	numFeatures := len(data[0].features)
-
-	// Randomly select a feature
-	splitFeature := rand.Intn(numFeatures)
-
-	// Find min and max values for the selected feature
-	minVal, maxVal := math.Inf(1), math.Inf(-1)
-	for _, dp := range data {
-		if splitFeature < len(dp.features) {
-			val := dp.features[splitFeature]
-			if val < minVal {
-				minVal = val
-			}
-			if val > maxVal {
-				maxVal = val
-			}
-		}
-	}
-
-	if minVal >= maxVal {
-		node.isLeaf = true
-		return node
-	}
-
-	// Random split value
-	splitValue := minVal + rand.Float64()*(maxVal-minVal)
-
-	node.splitFeature = splitFeature
-	node.splitValue = splitValue
-
-	// Split data
-	var leftData, rightData []dataPoint
-	for _, dp := range data {
-		if splitFeature < len(dp.features) {
-			if dp.features[splitFeature] < splitValue {
-				leftData = append(leftData, dp)
-			} else {
-				rightData = append(rightData, dp)
-			}
-		}
-	}
-
-	// Build child nodes
-	if len(leftData) > 0 {
-		node.left = ifp.buildTreeNode(leftData, depth+1, maxDepth)
-	}
-	if len(rightData) > 0 {
-		node.right = ifp.buildTreeNode(rightData, depth+1, maxDepth)
-	}
-
-	return node
-}
-
-// calculateAnomalyScore calculates the anomaly score for a data point
-func (ifp *isolationForestProcessor) calculateAnomalyScore(features []float64) float64 {
-	if len(ifp.trees) == 0 {
-		return 0.0
-	}
-
-	totalPathLength := 0.0
-	for _, tree := range ifp.trees {
-		pathLength := ifp.getPathLength(tree.root, features, 0)
-		totalPathLength += pathLength
-	}
-
-	avgPathLength := totalPathLength / float64(len(ifp.trees))
-
-	// Normalize the path length to get anomaly score
-	// Shorter paths indicate anomalies
-	c := ifp.averagePathLengthBST(ifp.config.SubsampleSize)
-	if c <= 0 {
-		return 0.0
-	}
-
-	score := math.Pow(2.0, -avgPathLength/c)
-	return score
-}
-
-// getPathLength calculates the path length from root to leaf for given features
-func (ifp *isolationForestProcessor) getPathLength(node *treeNode, features []float64, depth int) float64 {
-	if node == nil || node.isLeaf {
-		// Add the average path length of unsuccessful search in BST
-		return float64(depth) + ifp.averagePathLengthBST(node.size)
-	}
-
-	if node.splitFeature < len(features) {
-		if features[node.splitFeature] < node.splitValue {
-			return ifp.getPathLength(node.left, features, depth+1)
-		} else {
-			return ifp.getPathLength(node.right, features, depth+1)
-		}
-	}
-
-	return float64(depth)
-}
-
-// averagePathLengthBST calculates the average path length of unsuccessful search in BST
-func (ifp *isolationForestProcessor) averagePathLengthBST(n int) float64 {
-	if n <= 1 {
-		return 0.0
-	}
-	return 2.0*((math.Log(float64(n-1)) + 0.5772156649) - (2.0*float64(n-1))/float64(n))
+	// Convert hash to float64 in range [0, 1]
+	hashValue := h.Sum64()
+	return float64(hashValue) / float64(math.MaxUint64)
 }

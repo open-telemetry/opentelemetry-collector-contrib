@@ -1,0 +1,323 @@
+// processor.go - Main processor implementation
+package isolationforestprocessor
+
+import (
+	"context"
+	"fmt"
+	"hash/fnv"
+	"math"
+	"strconv"
+	"sync"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
+)
+
+type isolationForestProcessor struct {
+	config        *Config
+	logger        *zap.Logger
+	defaultForest *OnlineIsolationForest
+	modelForests  map[string]*OnlineIsolationForest
+	forestsMutex  sync.RWMutex
+	traceExtractor   *TraceFeatureExtractor
+	metricsExtractor *MetricsFeatureExtractor
+	logsExtractor    *LogsFeatureExtractor
+	processedCount uint64
+	anomalyCount   uint64
+	statsMutex     sync.Mutex
+	updateTicker   *time.Ticker
+	stopChan       chan struct{}
+}
+
+func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolationForestProcessor, error) {
+	processor := &isolationForestProcessor{
+		config:       config,
+		logger:       logger,
+		modelForests: make(map[string]*OnlineIsolationForest),
+		stopChan:     make(chan struct{}),
+	}
+	
+	processor.traceExtractor = NewTraceFeatureExtractor(config.Features.Traces, logger)
+	processor.metricsExtractor = NewMetricsFeatureExtractor(config.Features.Metrics, logger)
+	processor.logsExtractor = NewLogsFeatureExtractor(config.Features.Logs, logger)
+	
+	if config.IsMultiModelMode() {
+		for _, modelConfig := range config.Models {
+			forest := NewOnlineIsolationForest(
+				modelConfig.ForestSize,
+				config.Performance.BatchSize,
+				0,
+			)
+			processor.modelForests[modelConfig.Name] = forest
+		}
+	} else {
+		processor.defaultForest = NewOnlineIsolationForest(
+			config.ForestSize,
+			config.Performance.BatchSize,
+			0,
+		)
+	}
+	
+	updateFreq, err := config.GetUpdateFrequencyDuration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse update frequency: %w", err)
+	}
+	
+	processor.updateTicker = time.NewTicker(updateFreq)
+	go processor.modelUpdateLoop()
+	
+	return processor, nil
+}
+
+func (p *isolationForestProcessor) modelUpdateLoop() {
+	for {
+		select {
+		case <-p.updateTicker.C:
+			p.logger.Debug("Performing scheduled model update")
+		case <-p.stopChan:
+			return
+		}
+	}
+}
+
+func (p *isolationForestProcessor) Shutdown(ctx context.Context) error {
+	if p.updateTicker != nil {
+		p.updateTicker.Stop()
+	}
+	close(p.stopChan)
+	return nil
+}
+
+func (p *isolationForestProcessor) processFeatures(features map[string][]float64, attributes map[string]interface{}) (float64, bool, string) {
+	if len(features) == 0 {
+		return 0.0, false, ""
+	}
+	
+	var forest *OnlineIsolationForest
+	var modelName string
+	
+	p.forestsMutex.RLock()
+	defer p.forestsMutex.RUnlock()
+	
+	if p.config.IsMultiModelMode() {
+		if modelConfig := p.config.GetModelForAttributes(attributes); modelConfig != nil {
+			if f, exists := p.modelForests[modelConfig.Name]; exists {
+				forest = f
+				modelName = modelConfig.Name
+			}
+		}
+		if forest == nil && len(p.modelForests) > 0 {
+			for name, f := range p.modelForests {
+				forest = f
+				modelName = name
+				break
+			}
+		}
+	} else {
+		forest = p.defaultForest
+		modelName = "default"
+	}
+	
+	if forest == nil {
+		return 0.0, false, ""
+	}
+	
+	var combinedFeatures []float64
+	for _, featureVector := range features {
+		combinedFeatures = append(combinedFeatures, featureVector...)
+	}
+	
+	if len(combinedFeatures) == 0 {
+		return 0.0, false, modelName
+	}
+	
+	anomalyScore, isAnomaly := forest.ProcessSample(combinedFeatures)
+	
+	p.statsMutex.Lock()
+	p.processedCount++
+	if isAnomaly {
+		p.anomalyCount++
+	}
+	p.statsMutex.Unlock()
+	
+	return anomalyScore, isAnomaly, modelName
+}
+
+// Signal-specific processors
+type tracesProcessor struct {
+	*isolationForestProcessor
+	nextConsumer consumer.Traces
+	logger       *zap.Logger
+}
+
+func (tp *tracesProcessor) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		resourceAttrs := attributeMapToGeneric(rs.Resource().Attributes())
+		
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				features := tp.traceExtractor.ExtractFeatures(span, resourceAttrs)
+				spanAttrs := attributeMapToGeneric(span.Attributes())
+				allAttrs := mergeAttributes(resourceAttrs, spanAttrs)
+				score, isAnomaly, modelName := tp.processFeatures(features, allAttrs)
+				
+				if tp.config.Mode == "filter" && !isAnomaly {
+					continue
+				}
+				
+				if tp.config.Mode == "enrich" || tp.config.Mode == "both" {
+					span.Attributes().PutDouble(tp.config.ScoreAttribute, score)
+					span.Attributes().PutBool(tp.config.ClassificationAttribute, isAnomaly)
+					if modelName != "" && modelName != "default" {
+						span.Attributes().PutStr("anomaly.model_name", modelName)
+					}
+				}
+			}
+		}
+	}
+	
+	return tp.nextConsumer.ConsumeTraces(ctx, td)
+}
+
+func (tp *tracesProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+type metricsProcessor struct {
+	*isolationForestProcessor
+	nextConsumer consumer.Metrics
+	logger       *zap.Logger
+}
+
+func (mp *metricsProcessor) ProcessMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return mp.nextConsumer.ConsumeMetrics(ctx, md)
+}
+
+func (mp *metricsProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+type logsProcessor struct {
+	*isolationForestProcessor
+	nextConsumer consumer.Logs
+	logger       *zap.Logger
+}
+
+func (lp *logsProcessor) ProcessLogs(ctx context.Context, ld plog.Logs) error {
+	return lp.nextConsumer.ConsumeLogs(ctx, ld)
+}
+
+func (lp *logsProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+// Feature extractors
+type TraceFeatureExtractor struct {
+	features []string
+	logger   *zap.Logger
+}
+
+func NewTraceFeatureExtractor(features []string, logger *zap.Logger) *TraceFeatureExtractor {
+	return &TraceFeatureExtractor{features: features, logger: logger}
+}
+
+func (tfe *TraceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttrs map[string]interface{}) map[string][]float64 {
+	features := make(map[string][]float64)
+	
+	for _, featureName := range tfe.features {
+		switch featureName {
+		case "duration":
+			duration := float64(span.EndTimestamp()-span.StartTimestamp()) / 1e6
+			features["duration"] = []float64{duration}
+		case "error":
+			errorValue := 0.0
+			if span.Status().Code() == ptrace.StatusCodeError {
+				errorValue = 1.0
+			}
+			features["error"] = []float64{errorValue}
+		case "http.status_code":
+			if statusCode, exists := span.Attributes().Get("http.status_code"); exists {
+				if code, err := strconv.ParseFloat(statusCode.AsString(), 64); err == nil {
+					features["http.status_code"] = []float64{code}
+				}
+			}
+		}
+	}
+	
+	return features
+}
+
+type MetricsFeatureExtractor struct {
+	features []string
+	logger   *zap.Logger
+}
+
+func NewMetricsFeatureExtractor(features []string, logger *zap.Logger) *MetricsFeatureExtractor {
+	return &MetricsFeatureExtractor{features: features, logger: logger}
+}
+
+func (mfe *MetricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, resourceAttrs map[string]interface{}) map[string][]float64 {
+	features := make(map[string][]float64)
+	return features
+}
+
+type LogsFeatureExtractor struct {
+	features []string
+	logger   *zap.Logger
+}
+
+func NewLogsFeatureExtractor(features []string, logger *zap.Logger) *LogsFeatureExtractor {
+	return &LogsFeatureExtractor{features: features, logger: logger}
+}
+
+func (lfe *LogsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resourceAttrs map[string]interface{}) map[string][]float64 {
+	features := make(map[string][]float64)
+	return features
+}
+
+// Utility functions
+func attributeMapToGeneric(attrs pcommon.Map) map[string]interface{} {
+	result := make(map[string]interface{})
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		switch v.Type() {
+		case pcommon.ValueTypeStr:
+			result[k] = v.Str()
+		case pcommon.ValueTypeInt:
+			result[k] = v.Int()
+		case pcommon.ValueTypeDouble:
+			result[k] = v.Double()
+		case pcommon.ValueTypeBool:
+			result[k] = v.Bool()
+		default:
+			result[k] = v.AsString()
+		}
+		return true
+	})
+	return result
+}
+
+func mergeAttributes(maps ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+func categoricalEncode(value string) float64 {
+	h := fnv.New64a()
+	h.Write([]byte(value))
+	hashValue := h.Sum64()
+	return float64(hashValue) / float64(math.MaxUint64)
+}

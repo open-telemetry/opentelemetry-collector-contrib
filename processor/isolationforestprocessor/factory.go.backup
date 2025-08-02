@@ -1,0 +1,108 @@
+// factory.go - OpenTelemetry Collector factory implementation
+package isolationforestprocessor
+
+import (
+	"context"
+	"fmt"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
+)
+
+const (
+	typeStr   = "isolationforest"
+	stability = component.StabilityLevelAlpha
+)
+
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
+	)
+}
+
+func createTracesProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
+	processorCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration is not of type *Config")
+	}
+	
+	if err := processorCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+	
+	processor, err := newIsolationForestProcessor(processorCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+	
+	return &tracesProcessor{
+		isolationForestProcessor: processor,
+		nextConsumer:            nextConsumer,
+		logger:                  set.Logger,
+	}, nil
+}
+
+func createMetricsProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (processor.Metrics, error) {
+	processorCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration is not of type *Config")
+	}
+	
+	if err := processorCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+	
+	processor, err := newIsolationForestProcessor(processorCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+	
+	return &metricsProcessor{
+		isolationForestProcessor: processor,
+		nextConsumer:            nextConsumer,
+		logger:                  set.Logger,
+	}, nil
+}
+
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (processor.Logs, error) {
+	processorCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration is not of type *Config")
+	}
+	
+	if err := processorCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+	
+	processor, err := newIsolationForestProcessor(processorCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+	
+	return &logsProcessor{
+		isolationForestProcessor: processor,
+		nextConsumer:            nextConsumer,
+		logger:                  set.Logger,
+	}, nil
+}
