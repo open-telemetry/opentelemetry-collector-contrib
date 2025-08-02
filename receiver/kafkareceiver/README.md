@@ -115,6 +115,10 @@ The following settings can be optionally configured:
   - `multiplier`: The value multiplied by the backoff interval bounds
   - `randomization_factor`: A random factor used to calculate next backoff. Randomized interval = RetryInterval * (1 ± RandomizationFactor)
   - `max_elapsed_time`: The maximum amount of time trying to backoff before giving up. If set to 0, the retries are never stopped.
+- `telemetry`
+  - `metrics`
+    - `kafka_receiver_records_delay`:
+      - `enabled` (default = false) Whether the metric kafka_receiver_records_delay will be reported or not.
 
 ### Supported encodings
 

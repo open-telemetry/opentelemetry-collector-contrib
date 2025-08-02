@@ -62,6 +62,13 @@ func TestLoadConfig(t *testing.T) {
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
 				},
+				Telemetry: TelemetryConfig{
+					Metrics: MetricsConfig{
+						KafkaReceiverRecordsDelay: MetricConfig{
+							Enabled: true,
+						},
+					},
+				},
 			},
 		},
 		{
