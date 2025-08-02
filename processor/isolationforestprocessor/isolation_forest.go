@@ -22,20 +22,20 @@ type OnlineIsolationForest struct {
 	treesMutex sync.RWMutex           // Protects concurrent access to trees
 
 	// Sliding window management for incremental learning
-	dataWindow  [][]float64  // Recent data points for tree updates
-	windowIndex int          // Current position in circular buffer
-	windowFull  bool         // Whether the window has been filled once
-	windowMutex sync.RWMutex // Protects window access
+	dataWindow  [][]float64 // Recent data points for tree updates
+	windowIndex int         // Current position in circular buffer
+	windowFull  bool        // Whether the window has been filled once
+	windowMutex sync.RWMutex
 
 	// Adaptive threshold management
-	scoreHistory   []float64    // Recent anomaly scores for threshold adaptation
-	threshold      float64      // Current adaptive threshold
-	thresholdMutex sync.RWMutex // Protects threshold updates
+	scoreHistory   []float64 // Recent anomaly scores for threshold adaptation
+	threshold      float64   // Current adaptive threshold
+	thresholdMutex sync.RWMutex
 
 	// Statistics and monitoring
-	totalSamples uint64       // Total number of samples processed
-	anomalyCount uint64       // Total number of anomalies detected
-	statsMutex   sync.RWMutex // Protects statistics
+	totalSamples uint64 // Total number of samples processed
+	anomalyCount uint64 // Total number of anomalies detected
+	statsMutex   sync.RWMutex
 
 	// Random number generation
 	rng      *rand.Rand // Random number generator for reproducible results
@@ -51,7 +51,6 @@ type OnlineIsolationTree struct {
 
 	// Tree update statistics for monitoring tree health
 	lastUpdateTime time.Time // When this tree was last updated
-	avgPathLength  float64   // Average path length for normalization
 }
 
 // OnlineTreeNode represents a node in an online isolation tree.
@@ -88,7 +87,6 @@ func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *OnlineIsolati
 	if maxDepth <= 0 {
 		maxDepth = int(math.Ceil(math.Log2(float64(windowSize))))
 	}
-
 	forest := &OnlineIsolationForest{
 		numTrees:     numTrees,
 		maxDepth:     maxDepth,
@@ -107,7 +105,6 @@ func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *OnlineIsolati
 			lastUpdateTime: time.Now(),
 		}
 	}
-
 	return forest
 }
 
@@ -125,7 +122,6 @@ func (oif *OnlineIsolationForest) ProcessSample(sample []float64) (float64, bool
 	oif.thresholdMutex.RLock()
 	currentThreshold := oif.threshold
 	oif.thresholdMutex.RUnlock()
-
 	isAnomaly := anomalyScore > currentThreshold
 
 	// Update statistics
@@ -178,7 +174,6 @@ func (oif *OnlineIsolationForest) calculateAnomalyScore(sample []float64) float6
 	} else if anomalyScore > 1 {
 		anomalyScore = 1
 	}
-
 	return anomalyScore
 }
 
@@ -206,7 +201,6 @@ func (oif *OnlineIsolationForest) updateSlidingWindow(sample []float64) {
 	// Add to circular buffer
 	oif.dataWindow[oif.windowIndex] = sampleCopy
 	oif.windowIndex = (oif.windowIndex + 1) % oif.windowSize
-
 	if oif.windowIndex == 0 {
 		oif.windowFull = true
 	}
@@ -246,7 +240,6 @@ func (oif *OnlineIsolationForest) updateAdaptiveThreshold(score float64) {
 		if thresholdIndex >= len(sortedScores) {
 			thresholdIndex = len(sortedScores) - 1
 		}
-
 		newThreshold := sortedScores[thresholdIndex]
 
 		// Smooth threshold updates to avoid rapid changes
@@ -288,7 +281,6 @@ func (oif *OnlineIsolationForest) updateTree(tree *OnlineIsolationTree, sample [
 
 	// Traverse tree and update nodes along the path
 	oif.updateNodePath(tree.root, sample, 0, tree.maxDepth)
-
 	tree.sampleCount++
 	tree.updateCount++
 	tree.lastUpdateTime = time.Now()
@@ -340,7 +332,6 @@ func (oif *OnlineIsolationForest) splitNode(node *OnlineTreeNode, sample []float
 			featureValues = append(featureValues, windowSample[featureIndex])
 		}
 	}
-
 	if len(featureValues) < 2 {
 		oif.rngMutex.Unlock()
 		return // Not enough data to determine split
@@ -356,7 +347,6 @@ func (oif *OnlineIsolationForest) splitNode(node *OnlineTreeNode, sample []float
 			maxVal = val
 		}
 	}
-
 	if minVal >= maxVal {
 		oif.rngMutex.Unlock()
 		return // Cannot split on constant feature
@@ -370,14 +360,12 @@ func (oif *OnlineIsolationForest) splitNode(node *OnlineTreeNode, sample []float
 	node.featureIndex = featureIndex
 	node.splitValue = splitValue
 	node.isLeaf = false
-
 	node.left = &OnlineTreeNode{
 		depth:          depth + 1,
 		sampleCount:    1,
 		isLeaf:         true,
 		isolationScore: 0.5,
 	}
-
 	node.right = &OnlineTreeNode{
 		depth:          depth + 1,
 		sampleCount:    1,
@@ -391,7 +379,6 @@ func (tree *OnlineIsolationTree) calculatePathLength(sample []float64) float64 {
 	if tree.root == nil {
 		return 0.0
 	}
-
 	return tree.traverseNode(tree.root, sample)
 }
 
@@ -405,9 +392,8 @@ func (tree *OnlineIsolationTree) traverseNode(node *OnlineTreeNode, sample []flo
 	// Navigate to appropriate child
 	if len(sample) > node.featureIndex && sample[node.featureIndex] < node.splitValue {
 		return tree.traverseNode(node.left, sample)
-	} else {
-		return tree.traverseNode(node.right, sample)
 	}
+	return tree.traverseNode(node.right, sample)
 }
 
 // estimateRemainingPath estimates the remaining path length for a leaf node.
@@ -415,15 +401,14 @@ func (tree *OnlineIsolationTree) estimateRemainingPath(sampleCount int) float64 
 	if sampleCount <= 1 {
 		return 0.0
 	}
-
 	// Use harmonic number approximation for expected remaining path
-	return 2.0*(math.Log(float64(sampleCount-1))+0.5772156649) - (2.0 * float64(sampleCount-1) / float64(sampleCount))
+	return 2.0*(math.Log(float64(sampleCount-1))+0.5772156649) -
+		(2.0 * float64(sampleCount-1) / float64(sampleCount))
 }
 
 // getWindowData returns a copy of current window data.
 func (oif *OnlineIsolationForest) getWindowData() [][]float64 {
 	var result [][]float64
-
 	if !oif.windowFull {
 		// Window not full yet, return data from start to current index
 		for i := 0; i < oif.windowIndex; i++ {
@@ -439,7 +424,6 @@ func (oif *OnlineIsolationForest) getWindowData() [][]float64 {
 			}
 		}
 	}
-
 	return result
 }
 
@@ -456,7 +440,8 @@ func (oif *OnlineIsolationForest) getExpectedPathLength() float64 {
 	}
 
 	// Use harmonic number approximation
-	return 2.0*(math.Log(float64(sampleSize-1))+0.5772156649) - (2.0 * float64(sampleSize-1) / float64(sampleSize))
+	return 2.0*(math.Log(float64(sampleSize-1))+0.5772156649) -
+		(2.0 * float64(sampleSize-1) / float64(sampleSize))
 }
 
 // GetStatistics returns performance and health statistics for monitoring.
