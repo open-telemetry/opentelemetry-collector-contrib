@@ -183,8 +183,9 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					"-c",
 					"shared_preload_libraries=pg_stat_statements",
 				},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
-					WithStartupTimeout(2 * time.Minute),
+				WaitingFor: wait.ForLog(".*port 5432").
+					AsRegexp().
+					WithOccurrence(1),
 			},
 		})
 	assert.NoError(t, err)
@@ -214,12 +215,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		},
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: net.JoinHostPort("localhost", p.Port()),
-		},
-		QuerySampleCollection: QuerySampleCollection{
-			Enabled: true,
-		},
-		TopQueryCollection: TopQueryCollection{
-			Enabled: true,
 		},
 		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}
