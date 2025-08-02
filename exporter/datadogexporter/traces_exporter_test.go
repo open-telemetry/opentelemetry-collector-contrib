@@ -591,3 +591,26 @@ func genTraces(traceID pcommon.TraceID, rattrs, sattrs map[string]any, kind ptra
 	}
 	return traces
 }
+
+func TestRUMEventHandling(t *testing.T) {
+	t.Run("RUMPayloadConstruction", func(t *testing.T) {
+		testRUMPayloadConstruction(t)
+	})
+}
+
+func testRUMPayloadConstruction(t *testing.T) {
+	attr := pcommon.NewMap()
+	attr.PutStr("session.id", "test-session-123")
+	attr.PutStr("service.name", "test-service")
+	attr.PutStr("datadog.view.url", "https://test.com")
+	attr.PutStr("user.id", "user-123")
+	attr.PutInt("datadog.view.loading_time", 1500)
+
+	rumPayload := constructRumPayloadFromOTLP(attr)
+
+	assert.Equal(t, "test-session-123", rumPayload["session"].(map[string]any)["id"])
+	assert.Equal(t, "test-service", rumPayload["service"])
+	assert.Equal(t, "https://test.com", rumPayload["view"].(map[string]any)["url"])
+	assert.Equal(t, "user-123", rumPayload["usr"].(map[string]any)["id"])
+	assert.Equal(t, int64(1500), rumPayload["view"].(map[string]any)["loading_time"])
+}
