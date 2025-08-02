@@ -61,53 +61,48 @@ See the sample below for context.
 receivers:
   otlp:
     protocols:
-      grpc:
-      http:
+      grpc:            # → listen on 0.0.0.0:4317
 
 processors:
-  # One instance can sit in *all* three pipelines
   isolationforest:
-    # Algorithm parameters
-    forest_size:        150        # number of trees
-    subsample_size:     512        # rows per tree
-    window_size:        2000       # sliding window length
-    contamination_rate: 0.05       # expect 5 % anomalies
-    training_interval:  5m
+    # ─── core algorithm parameters ────────────────────────────────
+    forest_size:        150          # trees per forest
+    subsample_size:     512          # rows per tree
+    contamination_rate: 0.05         # 5 % expected outliers
+    threshold:          0.0          # 0 ⇒ let contamination_rate drive the cut-off
+    mode:               both         # enrich + filter (see docstring)
+    training_window:    24h          # window of data kept for training
+    update_frequency:   5m           # retrain every 5 minutes
+    min_samples:        1000         # wait until this many points seen
 
-    # Output behaviour
-    add_anomaly_score:  true
-    drop_anomalous_data: false     # set true to filter outliers
+    # ─── where to write results on each data point ───────────────
+    score_attribute:          anomaly.isolation_score   # float 0–1
+    classification_attribute: anomaly.is_anomaly        # bool
 
-    # Metric‑specific knobs (ignored for traces/logs)
-    metrics_to_analyze:
-      - system.cpu.utilization
-      - system.memory.utilization
-    
-    # Per‑entity modelling (applies to all signals)
+    # ─── which numeric features the model should look at ─────────
     features:
-      - service.name
-      - k8s.pod.name
+      traces:  [duration]           # span duration (µs / ns)
+      metrics: [value]              # the sample’s numeric value
+      logs:    [severity_number]    # log severity enum
+
+    # ─── performance guard-rails (optional) ──────────────────────
+    performance:
+      max_memory_mb:     512
+      batch_size:        1000
+      parallel_workers:  4
 
 exporters:
-  logging:
-    loglevel: debug
+  prometheus:
+    endpoint: "0.0.0.0:9464"   # Prom-server will scrape /metrics here
+    send_timestamps: true      # (field is valid in the standard exporter)
 
 service:
   pipelines:
-    traces:
-      receivers:  [otlp]
-      processors: [isolationforest]
-      exporters:  [logging]
-
     metrics:
       receivers:  [otlp]
       processors: [isolationforest]
-      exporters:  [logging]
+      exporters:  [prometheus]
 
-    logs:
-      receivers:  [otlp]
-      processors: [isolationforest]
-      exporters:  [logging]
 ```
 
 ### What the example does
