@@ -120,6 +120,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		}
 
 		dp.ExplicitBounds().FromRaw(eb.sortedBuckets)
+		// +1 to give space for the +Inf bucket
 		cumulativeCounts := make([]uint64, len(eb.sortedBuckets)+1)
 
 		for i, bound := range eb.sortedBuckets {
