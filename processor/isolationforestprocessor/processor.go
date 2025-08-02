@@ -280,7 +280,7 @@ func (p *isolationForestProcessor) processTraces(ctx context.Context, td ptrace.
 			}
 
 			// Replace the original spans with filtered/enriched spans
-			ss.Spans().RemoveAll()
+			ss.Spans().RemoveIf(func(_ ptrace.Span) bool { return true })
 			for k := 0; k < newSpans.Len(); k++ {
 				newSpan := ss.Spans().AppendEmpty()
 				newSpans.At(k).CopyTo(newSpan)
@@ -368,7 +368,7 @@ func (p *isolationForestProcessor) processLogs(ctx context.Context, ld plog.Logs
 			}
 
 			// Replace the original log records with filtered/enriched logs
-			sl.LogRecords().RemoveAll()
+			sl.LogRecords().RemoveIf(func(_ plog.LogRecord) bool { return true })
 			for k := 0; k < newLogs.Len(); k++ {
 				newRecord := sl.LogRecords().AppendEmpty()
 				newLogs.At(k).CopyTo(newRecord)
