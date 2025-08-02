@@ -68,6 +68,63 @@ metrics:
     enabled: true
 ```
 
+### httpcheck.client.connection.duration
+
+Time spent establishing TCP connection to the endpoint.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| network.transport | OSI transport layer or inter-process communication method. | Any Str | false |
+
+### httpcheck.client.request.duration
+
+Time spent sending the HTTP request to the endpoint.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+
+### httpcheck.dns.lookup.duration
+
+Time spent performing DNS lookup for the endpoint.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+
+### httpcheck.response.duration
+
+Time spent receiving the HTTP response from the endpoint.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+
 ### httpcheck.tls.cert_remaining
 
 Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
@@ -84,3 +141,17 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 | http.tls.issuer | The entity that issued the certificate. | Any Str | false |
 | http.tls.cn | The commonName in the subject of the certificate. | Any Str | false |
 | http.tls.san | The Subject Alternative Name of the certificate. | Any Slice | false |
+
+### httpcheck.tls.handshake.duration
+
+Time spent performing TLS handshake with the endpoint.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |

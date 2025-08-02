@@ -1,0 +1,8 @@
+change_type: enhancement
+component: httpcheckreceiver
+note: Add detailed timing metrics
+issues: [41379]
+subtext: |
+  The timing metrics added to the receiver now include durations for dns lookup, tcp connection, tls handshake, request,
+  and response.
+change_logs: [user]
