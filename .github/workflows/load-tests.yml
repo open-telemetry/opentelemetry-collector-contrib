@@ -30,24 +30,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
           go-version: oldstable
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Install Dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
@@ -69,24 +60,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
           go-version: oldstable
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Install Dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Testbed Binaries
