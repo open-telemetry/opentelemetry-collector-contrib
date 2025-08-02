@@ -10,7 +10,9 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// Test that default configuration is valid and sensible
-	cfg := createDefaultConfig()
+	raw := createDefaultConfig()
+	cfg, ok := raw.(*Config)
+	require.True(t, ok, "createDefaultConfig should return *Config")
 
 	// Verify core algorithm parameters
 	assert.Equal(t, 100, cfg.ForestSize, "Default forest size should be 100")
@@ -56,58 +58,44 @@ func TestConfigurationValidation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "negative forest size",
-			modifyConfig: func(cfg *Config) {
-				cfg.ForestSize = -1
-			},
+			name:          "negative forest size",
+			modifyConfig:  func(cfg *Config) { cfg.ForestSize = -1 },
 			expectError:   true,
 			errorContains: "forest_size must be positive",
 		},
 		{
-			name: "excessive forest size",
-			modifyConfig: func(cfg *Config) {
-				cfg.ForestSize = 1500
-			},
+			name:          "excessive forest size",
+			modifyConfig:  func(cfg *Config) { cfg.ForestSize = 1500 },
 			expectError:   true,
 			errorContains: "forest_size should not exceed 1000",
 		},
 		{
-			name: "invalid contamination rate - too high",
-			modifyConfig: func(cfg *Config) {
-				cfg.ContaminationRate = 1.5
-			},
+			name:          "invalid contamination rate - too high",
+			modifyConfig:  func(cfg *Config) { cfg.ContaminationRate = 1.5 },
 			expectError:   true,
 			errorContains: "contamination_rate must be between 0.0 and 1.0",
 		},
 		{
-			name: "invalid contamination rate - negative",
-			modifyConfig: func(cfg *Config) {
-				cfg.ContaminationRate = -0.1
-			},
+			name:          "invalid contamination rate - negative",
+			modifyConfig:  func(cfg *Config) { cfg.ContaminationRate = -0.1 },
 			expectError:   true,
 			errorContains: "contamination_rate must be between 0.0 and 1.0",
 		},
 		{
-			name: "invalid mode",
-			modifyConfig: func(cfg *Config) {
-				cfg.Mode = "invalid_mode"
-			},
+			name:          "invalid mode",
+			modifyConfig:  func(cfg *Config) { cfg.Mode = "invalid_mode" },
 			expectError:   true,
 			errorContains: "mode must be 'enrich', 'filter', or 'both'",
 		},
 		{
-			name: "invalid threshold - too high",
-			modifyConfig: func(cfg *Config) {
-				cfg.Threshold = 1.5
-			},
+			name:          "invalid threshold - too high",
+			modifyConfig:  func(cfg *Config) { cfg.Threshold = 1.5 },
 			expectError:   true,
 			errorContains: "threshold must be between 0.0 and 1.0",
 		},
 		{
-			name: "invalid training window",
-			modifyConfig: func(cfg *Config) {
-				cfg.TrainingWindow = "invalid_duration"
-			},
+			name:          "invalid training window",
+			modifyConfig:  func(cfg *Config) { cfg.TrainingWindow = "invalid_duration" },
 			expectError:   true,
 			errorContains: "training_window is not a valid duration",
 		},
@@ -136,11 +124,12 @@ func TestConfigurationValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := createDefaultConfig()
+			raw := createDefaultConfig()
+			cfg, ok := raw.(*Config)
+			require.True(t, ok, "createDefaultConfig should return *Config")
+
 			tt.modifyConfig(cfg)
-
 			err := cfg.Validate()
-
 			if tt.expectError {
 				require.Error(t, err, "Expected validation error for %s", tt.name)
 				if tt.errorContains != "" {
@@ -154,7 +143,9 @@ func TestConfigurationValidation(t *testing.T) {
 }
 
 func TestMultiModelConfiguration(t *testing.T) {
-	cfg := createDefaultConfig()
+	raw := createDefaultConfig()
+	cfg, ok := raw.(*Config)
+	require.True(t, ok, "createDefaultConfig should return *Config")
 
 	// Add multiple models with different configurations
 	cfg.Models = []ModelConfig{
@@ -190,7 +181,6 @@ func TestMultiModelConfiguration(t *testing.T) {
 		"service.name": "frontend",
 		"http.method":  "GET",
 	}
-
 	selectedModel := cfg.GetModelForAttributes(webServiceAttrs)
 	require.NotNil(t, selectedModel, "Should find matching model for frontend service")
 	assert.Equal(t, "web_service", selectedModel.Name)
@@ -200,7 +190,6 @@ func TestMultiModelConfiguration(t *testing.T) {
 	unknownServiceAttrs := map[string]interface{}{
 		"service.name": "unknown_service",
 	}
-
 	selectedModel = cfg.GetModelForAttributes(unknownServiceAttrs)
 	assert.Nil(t, selectedModel, "Should return nil for non-matching attributes")
 
@@ -210,11 +199,12 @@ func TestMultiModelConfiguration(t *testing.T) {
 }
 
 func TestDurationParsing(t *testing.T) {
-	cfg := createDefaultConfig()
+	raw := createDefaultConfig()
+	cfg, ok := raw.(*Config)
+	require.True(t, ok, "createDefaultConfig should return *Config")
 
 	// Test valid durations
 	validDurations := []string{"1h", "24h", "30m", "1h30m", "2h45m30s"}
-
 	for _, duration := range validDurations {
 		cfg.TrainingWindow = duration
 		cfg.UpdateFrequency = duration
@@ -228,5 +218,3 @@ func TestDurationParsing(t *testing.T) {
 		assert.True(t, updateDur > 0)
 	}
 }
-
-// ---
