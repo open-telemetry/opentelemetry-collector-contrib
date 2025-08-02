@@ -35,34 +35,29 @@ func TestBasicAnomalyDetection(t *testing.T) {
 		{0.8, 1.2}, {1.0, 1.0}, {0.95, 1.05}, {1.05, 0.95},
 		{1.1, 1.1}, {0.9, 0.9}, {1.0, 1.0}, {1.0, 1.0},
 	}
-
 	// Process normal samples to train the model
 	for _, sample := range normalSamples {
 		forest.ProcessSample(sample)
-		time.Sleep(1 * time.Millisecond) // Allow async processing
+		time.Sleep(1 * time.Millisecond) // allow async processing
 	}
-
 	// Allow some time for model updates
 	time.Sleep(10 * time.Millisecond)
 
 	// Test with clearly anomalous points (far from normal cluster)
 	anomalousSamples := [][]float64{
 		{10.0, 10.0}, // Very far from normal cluster
-		{-5.0, -5.0}, // In opposite direction
+		{-5.0, -5.0}, // Opposite direction
 		{0.0, 100.0}, // Extreme in one dimension
 	}
 
 	// Process anomalous samples and check scores
 	for _, sample := range anomalousSamples {
 		score, isAnomaly := forest.ProcessSample(sample)
-
 		// Verify score is in valid range
-		assert.True(t, score >= 0.0 && score <= 1.0,
-			"Anomaly score should be between 0 and 1, got %f for sample %v", score, sample)
-
+		assert.True(t, score >= 0.0 && score <= 1.0, "Anomaly score should be between 0 and 1, got %f for sample %v", score, sample)
 		// Note: In a production scenario with more training data,
-		// we would expect isAnomaly to be true for these extreme points
-		// For unit testing, we mainly verify the algorithm runs without errors
+		// we would expect isAnomaly to be true for these extreme points.
+		// For unit testing, we mainly verify the algorithm runs without errors.
 		_ = isAnomaly // Avoid unused variable warning
 	}
 }
@@ -73,18 +68,17 @@ func TestAdaptiveThreshold(t *testing.T) {
 	// Track how threshold changes with different score patterns
 	initialStats := forest.GetStatistics()
 	initialThreshold := initialStats.CurrentThreshold
+	_ = initialThreshold // mark as used to avoid compile error if not asserted
 
 	// Process samples with varying anomaly scores
 	samples := [][]float64{
 		{1.0, 1.0}, {2.0, 2.0}, {3.0, 3.0}, {4.0, 4.0}, {5.0, 5.0},
 		{1.1, 1.1}, {2.1, 2.1}, {3.1, 3.1}, {4.1, 4.1}, {5.1, 5.1},
 	}
-
 	for _, sample := range samples {
 		forest.ProcessSample(sample)
 		time.Sleep(1 * time.Millisecond)
 	}
-
 	// Allow time for threshold adaptation
 	time.Sleep(20 * time.Millisecond)
 
@@ -92,14 +86,11 @@ func TestAdaptiveThreshold(t *testing.T) {
 	finalThreshold := finalStats.CurrentThreshold
 
 	// Verify threshold is still in valid range
-	assert.True(t, finalThreshold >= 0.0 && finalThreshold <= 1.0,
-		"Adaptive threshold should be between 0 and 1, got %f", finalThreshold)
+	assert.True(t, finalThreshold >= 0.0 && finalThreshold <= 1.0, "Adaptive threshold should be between 0 and 1, got %f", finalThreshold)
 
 	// Verify statistics are reasonable
-	assert.True(t, finalStats.TotalSamples >= uint64(len(samples)),
-		"Should have processed at least %d samples", len(samples))
-	assert.True(t, finalStats.WindowUtilization >= 0.0 && finalStats.WindowUtilization <= 1.0,
-		"Window utilization should be between 0 and 1")
+	assert.True(t, finalStats.TotalSamples >= uint64(len(samples)), "Should have processed at least %d samples", len(samples))
+	assert.True(t, finalStats.WindowUtilization >= 0.0 && finalStats.WindowUtilization <= 1.0, "Window utilization should be between 0 and 1")
 }
 
 func TestForestStatistics(t *testing.T) {
@@ -116,20 +107,16 @@ func TestForestStatistics(t *testing.T) {
 	samples := [][]float64{
 		{1.0, 2.0}, {1.5, 2.5}, {0.5, 1.5}, {2.0, 3.0}, {1.2, 2.2},
 	}
-
 	for _, sample := range samples {
 		forest.ProcessSample(sample)
 	}
-
 	// Allow processing time
 	time.Sleep(10 * time.Millisecond)
 
 	// Check updated statistics
 	stats = forest.GetStatistics()
-	assert.True(t, stats.TotalSamples >= uint64(len(samples)),
-		"Should have processed at least %d samples", len(samples))
-	assert.True(t, stats.AnomalyRate >= 0.0 && stats.AnomalyRate <= 1.0,
-		"Anomaly rate should be between 0 and 1")
+	assert.True(t, stats.TotalSamples >= uint64(len(samples)), "Should have processed at least %d samples", len(samples))
+	assert.True(t, stats.AnomalyRate >= 0.0 && stats.AnomalyRate <= 1.0, "Anomaly rate should be between 0 and 1")
 }
 
 func TestTreePathLength(t *testing.T) {
@@ -164,7 +151,6 @@ func TestTreePathLength(t *testing.T) {
 	// Test path length calculation for both sides of split
 	leftPath := tree.calculatePathLength([]float64{1.0, 2.0})  // Should go left
 	rightPath := tree.calculatePathLength([]float64{2.0, 2.0}) // Should go right
-
 	assert.True(t, leftPath > 0, "Left path should have positive length")
 	assert.True(t, rightPath > 0, "Right path should have positive length")
 }
@@ -176,7 +162,6 @@ func TestExpectedPathLength(t *testing.T) {
 	samples := [][]float64{
 		{1.0, 1.0}, {2.0, 2.0}, {3.0, 3.0}, {4.0, 4.0}, {5.0, 5.0},
 	}
-
 	for _, sample := range samples {
 		forest.ProcessSample(sample)
 	}
@@ -187,6 +172,7 @@ func TestExpectedPathLength(t *testing.T) {
 }
 
 // Benchmark tests to verify performance characteristics
+
 func BenchmarkIsolationForestProcessing(b *testing.B) {
 	forest := NewOnlineIsolationForest(100, 1000, 10)
 
@@ -201,7 +187,6 @@ func BenchmarkIsolationForestProcessing(b *testing.B) {
 	}
 
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		sample := samples[i%len(samples)]
 		forest.ProcessSample(sample)
@@ -225,10 +210,7 @@ func BenchmarkFeatureExtraction(b *testing.B) {
 	}
 
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		extractor.ExtractFeatures(span, resourceAttrs)
 	}
 }
-
-// ---

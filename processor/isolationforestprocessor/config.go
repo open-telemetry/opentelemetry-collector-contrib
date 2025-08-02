@@ -49,24 +49,27 @@ type PerformanceConfig struct {
 }
 
 // createDefaultConfig returns a configuration with sensible defaults
-// Note: This function now returns component.Config interface to match the expected signature
+// Note: This function returns component.Config to match the expected signature.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ForestSize:              100,
-		SubsampleSize:           256,
-		ContaminationRate:       0.1,
-		Mode:                    "enrich",
-		Threshold:               0.7,
-		TrainingWindow:          "24h",
-		UpdateFrequency:         "1h",
-		MinSamples:              1000,
+		ForestSize:        100,
+		SubsampleSize:     256,
+		ContaminationRate: 0.1,
+		Mode:              "enrich",
+		Threshold:         0.7,
+		TrainingWindow:    "24h",
+		UpdateFrequency:   "1h",
+		MinSamples:        1000,
+
 		ScoreAttribute:          "anomaly.isolation_score",
 		ClassificationAttribute: "anomaly.is_anomaly",
+
 		Features: FeatureConfig{
 			Traces:  []string{"duration", "error", "http.status_code"},
 			Metrics: []string{"value", "rate_of_change"},
 			Logs:    []string{"severity_number", "timestamp_gap"},
 		},
+
 		Performance: PerformanceConfig{
 			MaxMemoryMB:     512,
 			BatchSize:       1000,
@@ -80,6 +83,11 @@ func (cfg *Config) Validate() error {
 	if cfg.ForestSize <= 0 {
 		return errors.New("forest_size must be positive")
 	}
+	// Upper bound required by tests
+	if cfg.ForestSize > 1000 {
+		return errors.New("forest_size should not exceed 1000")
+	}
+
 	if cfg.ContaminationRate < 0.0 || cfg.ContaminationRate > 1.0 {
 		return errors.New("contamination_rate must be between 0.0 and 1.0")
 	}
@@ -89,15 +97,23 @@ func (cfg *Config) Validate() error {
 	if cfg.Threshold < 0.0 || cfg.Threshold > 1.0 {
 		return errors.New("threshold must be between 0.0 and 1.0")
 	}
+
 	if _, err := time.ParseDuration(cfg.TrainingWindow); err != nil {
 		return fmt.Errorf("training_window is not a valid duration: %w", err)
 	}
 	if _, err := time.ParseDuration(cfg.UpdateFrequency); err != nil {
 		return fmt.Errorf("update_frequency is not a valid duration: %w", err)
 	}
+
 	if cfg.ScoreAttribute == cfg.ClassificationAttribute {
 		return errors.New("score_attribute and classification_attribute must be different")
 	}
+
+	// Require at least one feature type configured
+	if len(cfg.Features.Traces) == 0 && len(cfg.Features.Metrics) == 0 && len(cfg.Features.Logs) == 0 {
+		return errors.New("at least one feature type must be configured")
+	}
+
 	return nil
 }
 
@@ -117,14 +133,15 @@ func (cfg *Config) GetModelForAttributes(attributes map[string]interface{}) *Mod
 	if !cfg.IsMultiModelMode() {
 		return nil
 	}
-
 	for _, model := range cfg.Models {
 		matches := true
 		for key, expectedValue := range model.Selector {
-			if actualValue, exists := attributes[key]; !exists {
+			actualValue, exists := attributes[key]
+			if !exists {
 				matches = false
 				break
-			} else if fmt.Sprintf("%v", actualValue) != expectedValue {
+			}
+			if fmt.Sprintf("%v", actualValue) != expectedValue {
 				matches = false
 				break
 			}
@@ -133,6 +150,5 @@ func (cfg *Config) GetModelForAttributes(attributes map[string]interface{}) *Mod
 			return &model
 		}
 	}
-
 	return nil
 }
