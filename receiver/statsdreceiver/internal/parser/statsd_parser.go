@@ -245,7 +245,7 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 }
 
 func explicitBucketInitializeRegex(opts protocol.HistogramConfig) []explicitBucketConfig {
-	ebc := make([]explicitBucketConfig, len(opts.ExplicitBuckets), len(opts.ExplicitBuckets))
+	ebc := make([]explicitBucketConfig, len(opts.ExplicitBuckets))
 	for i := range opts.ExplicitBuckets {
 		ebc[i] = explicitBucketConfig{
 			re:      regexp.MustCompile(opts.ExplicitBuckets[i].MatcherPattern),
