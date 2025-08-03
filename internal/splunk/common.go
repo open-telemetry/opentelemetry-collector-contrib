@@ -4,7 +4,6 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
-	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -109,9 +108,7 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 		SourceType string         `json:"sourcetype,omitempty"`
 		Index      string         `json:"index,omitempty"`
 	}{}
-	decoder := json.NewDecoder(bytes.NewReader(b))
-	decoder.UseNumber()
-	err := decoder.Decode(&rawEvent)
+	err := json.Unmarshal(b, &rawEvent)
 	if err != nil {
 		return err
 	}

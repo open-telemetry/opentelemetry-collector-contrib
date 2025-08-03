@@ -1947,6 +1947,9 @@ func BenchmarkHandleReq(b *testing.B) {
 		}
 	}
 
+	b.ReportAllocs()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(totalMessage))
 		rcv.handleReq(w, req)
