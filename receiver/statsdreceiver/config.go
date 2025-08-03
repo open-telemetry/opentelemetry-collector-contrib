@@ -81,7 +81,7 @@ func (c *Config) Validate() error {
 					}
 				}
 			}
-		} else { //nolint:gocritic
+		} else if eachMap.ObserverType != protocol.HistogramObserver {
 			// Non-histogram observer w/ histogram config
 			if eachMap.Histogram.MaxSize != 0 || eachMap.Histogram.ExplicitBuckets != nil {
 				errs = multierr.Append(errs, errors.New("histogram configuration requires observer_type: histogram"))
