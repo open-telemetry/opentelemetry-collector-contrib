@@ -6,7 +6,6 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 
 	"github.com/prometheus/otlptranslator"
@@ -112,9 +111,19 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
+
+					if settings.ConvertHistogramsToNHCB {
+						c.addCustomBucketsHistogramDataPoints(dataPoints, resource, settings, promName, m)
+						break
+					}
 					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)
 				case pmetric.MetricTypeExponentialHistogram:
-					// TODO implement
+					dataPoints := metric.ExponentialHistogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
+						dataPoints, resource, settings, promName, m))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -142,29 +151,7 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 }
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
-	// TODO consider how to accommodate metadata in the symbol table when allocating the buffer, given not all metrics might have metadata.
-	buf := make([]uint32, 0, len(lbls)*2)
-
-	// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
-	sort.Slice(lbls, func(i, j int) bool {
-		return lbls[i].Name < lbls[j].Name
-	})
-
-	var off uint32
-	for _, l := range lbls {
-		off = c.symbolTable.Symbolize(l.Name)
-		buf = append(buf, off)
-		off = c.symbolTable.Symbolize(l.Value)
-		buf = append(buf, off)
-	}
-	ts := writev2.TimeSeries{
-		LabelsRefs: buf,
-		Samples:    []writev2.Sample{*sample},
-		Metadata: writev2.Metadata{
-			Type:    metadata.Type,
-			HelpRef: c.symbolTable.Symbolize(metadata.Help),
-			UnitRef: c.symbolTable.Symbolize(metadata.Unit),
-		},
-	}
-	c.unique[timeSeriesSignature(lbls)] = &ts
+	ts := c.createTimeSeries(lbls, metadata)
+	ts.Samples = []writev2.Sample{*sample}
+	c.unique[timeSeriesSignature(lbls)] = ts
 }
