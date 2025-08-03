@@ -100,7 +100,7 @@ func TestEventsScraper(t *testing.T) {
 	}{
 		{
 			name:        "QuerySample",
-			clientQuery: "WAITFOR DELAY '00:00:20' SELECT * FROM dbo.test_table",
+			clientQuery: "WAITFOR DELAY '00:01:00' SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
 				cfg.Events.DbServerQuerySample.Enabled = true
 				return cfg
@@ -208,6 +208,8 @@ func TestEventsScraper(t *testing.T) {
 					}
 				}
 			}(queryContext)
+
+			time.Sleep(10 * time.Second)
 
 			portNumber, err := strconv.Atoi(p.Port())
 			assert.NoError(t, err)
