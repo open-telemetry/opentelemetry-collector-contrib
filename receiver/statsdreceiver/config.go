@@ -76,13 +76,12 @@ func (c *Config) Validate() error {
 					if len(eb.Buckets) == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
 					}
-					_, err := regexp.Compile(eb.MatcherPattern)
-					if err != nil {
+					if _, err := regexp.Compile(eb.MatcherPattern); err != nil {
 						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern is not a valid regular expression: %w", i, err))
 					}
 				}
 			}
-		} else {
+		} else { //nolint:gocritic
 			// Non-histogram observer w/ histogram config
 			if eachMap.Histogram.MaxSize != 0 || eachMap.Histogram.ExplicitBuckets != nil {
 				errs = multierr.Append(errs, errors.New("histogram configuration requires observer_type: histogram"))
