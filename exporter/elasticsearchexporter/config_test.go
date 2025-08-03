@@ -101,7 +101,7 @@ func TestConfig(t *testing.T) {
 				},
 				Flush: FlushSettings{
 					Bytes:    10485760,
-					Interval: 30 * time.Second,
+					Interval: 10 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -120,7 +120,7 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					FlushTimeout: 30 * time.Second,
+					FlushTimeout: 10 * time.Second,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      defaultBatcherMinSizeItems,
 				},
@@ -177,7 +177,7 @@ func TestConfig(t *testing.T) {
 				},
 				Flush: FlushSettings{
 					Bytes:    10485760,
-					Interval: 30 * time.Second,
+					Interval: 10 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -196,7 +196,7 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					FlushTimeout: 30 * time.Second,
+					FlushTimeout: 10 * time.Second,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      defaultBatcherMinSizeItems,
 				},
@@ -253,7 +253,7 @@ func TestConfig(t *testing.T) {
 				},
 				Flush: FlushSettings{
 					Bytes:    10485760,
-					Interval: 30 * time.Second,
+					Interval: 10 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -272,7 +272,7 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					FlushTimeout: 30 * time.Second,
+					FlushTimeout: 10 * time.Second,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      defaultBatcherMinSizeItems,
 				},

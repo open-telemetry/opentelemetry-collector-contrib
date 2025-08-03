@@ -84,13 +84,13 @@ func createDefaultConfig() component.Config {
 		},
 		IncludeSourceOnError: nil,
 		Batcher: BatcherConfig{
-			FlushTimeout: 30 * time.Second,
+			FlushTimeout: 10 * time.Second,
 			Sizer:        exporterhelper.RequestSizerTypeItems,
 			MinSize:      defaultBatcherMinSizeItems,
 		},
 		Flush: FlushSettings{
 			Bytes:    5e+6,
-			Interval: 30 * time.Second,
+			Interval: 10 * time.Second,
 		},
 	}
 }
