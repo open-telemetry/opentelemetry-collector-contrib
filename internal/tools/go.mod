@@ -5,12 +5,12 @@ go 1.23.0
 require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.13.6
+	github.com/daixiang0/gci v0.13.7
 	github.com/golangci/golangci-lint/v2 v2.1.6
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.131.0
 	go.opentelemetry.io/build-tools/checkapi v0.23.1
 	go.opentelemetry.io/build-tools/checkfile v0.23.1
 	go.opentelemetry.io/build-tools/chloggen v0.23.1
@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.23.1
 	go.opentelemetry.io/build-tools/issuegenerator v0.23.1
 	go.opentelemetry.io/build-tools/multimod v0.25.0
-	go.opentelemetry.io/collector/cmd/builder v0.130.2-0.20250725192953-424a12102dca
-	go.opentelemetry.io/collector/cmd/mdatagen v0.130.2-0.20250725192953-424a12102dca
+	go.opentelemetry.io/collector/cmd/builder v0.131.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/cmd/mdatagen v0.131.1-0.20250801020258-8b73477b9810
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.35.0
 	golang.org/x/vuln v1.1.4
@@ -59,7 +59,7 @@ require (
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.3 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.9.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
 	github.com/breml/bidichk v0.3.3 // indirect
 	github.com/breml/errchkjson v0.4.1 // indirect
@@ -251,13 +251,13 @@ require (
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.25.0 // indirect
-	go.opentelemetry.io/collector/component v1.36.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/confmap v1.36.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.36.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/featuregate v1.36.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/filter v0.130.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.130.2-0.20250725192953-424a12102dca // indirect
-	go.opentelemetry.io/collector/pdata v1.36.2-0.20250725192953-424a12102dca // indirect
+	go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/confmap v1.37.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.37.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/featuregate v1.37.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/filter v0.131.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.131.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/pdata v1.37.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
