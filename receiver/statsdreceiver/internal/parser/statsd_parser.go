@@ -47,7 +47,7 @@ const (
 type ObserverCategory struct {
 	method                protocol.ObserverType
 	histogramConfig       structure.Config
-	explicitBucketConfigs []protocol.ExplicitBucket
+	explicitBucketConfigs []explicitBucketConfig
 	summaryPercentiles    []float64
 }
 
@@ -100,7 +100,13 @@ type summaryMetric struct {
 
 type histogramStructure = structure.Histogram[float64]
 
+type explicitBucketConfig struct {
+	re      *regexp.Regexp
+	buckets []float64
+}
+
 type explicitBucket struct {
+	_             struct{}
 	buckets       map[float64]int
 	sortedBuckets []float64
 	count         uint64
@@ -221,14 +227,14 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		case protocol.HistogramTypeName, protocol.DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				p.histogramEvents.explicitBucketConfigs = eachMap.Histogram.ExplicitBuckets
+				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
 			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				p.histogramEvents.explicitBucketConfigs = eachMap.Histogram.ExplicitBuckets
+				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
 			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
@@ -236,6 +242,17 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		}
 	}
 	return nil
+}
+
+func explicitBucketInitializeRegex(opts protocol.HistogramConfig) []explicitBucketConfig {
+	ebc := make([]explicitBucketConfig, len(opts.ExplicitBuckets), len(opts.ExplicitBuckets))
+	for i := range opts.ExplicitBuckets {
+		ebc[i] = explicitBucketConfig{
+			re:      regexp.MustCompile(opts.ExplicitBuckets[i].MatcherPattern),
+			buckets: opts.ExplicitBuckets[i].Buckets,
+		}
+	}
+	return ebc
 }
 
 func expoHistogramConfig(opts protocol.HistogramConfig) structure.Config {
@@ -404,15 +421,10 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 					agg = existing.agg
 				}
 			} else {
-				var matchedConfig *protocol.ExplicitBucket
+				var matchedConfig *explicitBucketConfig
 				if category.explicitBucketConfigs != nil {
 					for _, config := range category.explicitBucketConfigs {
-						re, err := regexp.Compile(config.MatcherPattern)
-						if err != nil {
-							return fmt.Errorf("invalid regexp for explicit buckets: %w", err)
-						}
-
-						if re.MatchString(parsedMetric.description.name) {
+						if config.re.MatchString(parsedMetric.description.name) {
 							matchedConfig = &config
 							break
 						}
@@ -422,7 +434,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 				hm := histogramMetric{}
 				if matchedConfig != nil {
 					eb = new(explicitBucket)
-					eb.Init(matchedConfig.Buckets)
+					eb.Init(matchedConfig.buckets)
 					hm.explicitBucket = eb
 				} else {
 					agg = new(histogramStructure)
