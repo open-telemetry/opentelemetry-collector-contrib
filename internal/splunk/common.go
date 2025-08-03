@@ -4,10 +4,12 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
-	"encoding/json"
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 // Constants for Splunk components.
@@ -107,7 +109,9 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 		SourceType string         `json:"sourcetype,omitempty"`
 		Index      string         `json:"index,omitempty"`
 	}{}
-	err := json.Unmarshal(b, &rawEvent)
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.UseNumber()
+	err := decoder.Decode(&rawEvent)
 	if err != nil {
 		return err
 	}
