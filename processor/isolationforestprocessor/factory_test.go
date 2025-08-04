@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // factory_test.go - Factory wiring & creation tests
 package isolationforestprocessor
 

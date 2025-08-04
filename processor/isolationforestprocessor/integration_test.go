@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // integration_test.go - Integration-style tests through the factory
 package isolationforestprocessor
 

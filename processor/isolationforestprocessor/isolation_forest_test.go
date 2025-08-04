@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // isolation_forest_test.go - Unit tests for the isolation forest algorithm
 package isolationforestprocessor
 

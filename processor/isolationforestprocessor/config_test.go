@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // config_test.go - Comprehensive tests for configuration validation and parsing
 package isolationforestprocessor
 

@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // processor_test.go - Tests for the isolationForestProcessor behavior
 package isolationforestprocessor
 
