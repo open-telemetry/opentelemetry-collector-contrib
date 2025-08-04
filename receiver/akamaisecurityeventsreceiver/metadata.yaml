@@ -1,0 +1,12 @@
+type: akamaisecurityevents
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [newly12]
+
+tests:
+  config:
