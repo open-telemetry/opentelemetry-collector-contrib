@@ -126,29 +126,3 @@ func TestTraceExporter_ResolveIndexName_EmptyTimeFormat(t *testing.T) {
 	}
 }
 
-// Helper functions to create test trace data
-
-func createTestTraceData(serviceName string) ptrace.Traces {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	if serviceName != "" {
-		rs.Resource().Attributes().PutStr("service.name", serviceName)
-	}
-	ss := rs.ScopeSpans().AppendEmpty()
-	span := ss.Spans().AppendEmpty()
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return td
-}
-
-func createTestTraceDataWithCustomAttribute(serviceName, attrKey, attrValue string) ptrace.Traces {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	if serviceName != "" {
-		rs.Resource().Attributes().PutStr("service.name", serviceName)
-	}
-	rs.Resource().Attributes().PutStr(attrKey, attrValue)
-	ss := rs.ScopeSpans().AppendEmpty()
-	span := ss.Spans().AppendEmpty()
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return td
-}

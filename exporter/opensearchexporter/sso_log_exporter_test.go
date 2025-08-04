@@ -183,29 +183,3 @@ func TestLogExporter_ResolveIndexName_AttributeWithSpecialChars(t *testing.T) {
 	}
 }
 
-// Helper functions to create test log data
-
-func createTestLogData(serviceName string) plog.Logs {
-	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
-	if serviceName != "" {
-		rl.Resource().Attributes().PutStr("service.name", serviceName)
-	}
-	sl := rl.ScopeLogs().AppendEmpty()
-	logRecord := sl.LogRecords().AppendEmpty()
-	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return ld
-}
-
-func createTestLogDataWithCustomAttribute(serviceName, attrKey, attrValue string) plog.Logs {
-	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
-	if serviceName != "" {
-		rl.Resource().Attributes().PutStr("service.name", serviceName)
-	}
-	rl.Resource().Attributes().PutStr(attrKey, attrValue)
-	sl := rl.ScopeLogs().AppendEmpty()
-	logRecord := sl.LogRecords().AppendEmpty()
-	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return ld
-}
