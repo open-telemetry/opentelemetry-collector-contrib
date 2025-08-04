@@ -1124,7 +1124,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		newPod.StatefulSetUID = statefulset.UID
 	}
 
-	if daemonset, ok := c.getStatefulSet(getPodDaemonSetUID(pod)); ok {
+	if daemonset, ok := c.getDaemonSet(getPodDaemonSetUID(pod)); ok {
 		newPod.DaemonSetUID = daemonset.UID
 	}
 
