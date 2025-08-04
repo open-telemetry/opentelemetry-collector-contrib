@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package opensearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
+package opensearchexporter
 
 import (
 	"regexp"
@@ -66,7 +66,7 @@ func (r *IndexResolver) resolveIndexName(indexPattern, fallback, timeFormat stri
 }
 
 // appendTimeFormat appends time suffix if format is specified
-func (r *IndexResolver) appendTimeFormat(index, timeFormat string, timestamp time.Time) string {
+func (*IndexResolver) appendTimeFormat(index, timeFormat string, timestamp time.Time) string {
 	if timeFormat != "" {
 		return index + "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
 	}
@@ -74,7 +74,7 @@ func (r *IndexResolver) appendTimeFormat(index, timeFormat string, timestamp tim
 }
 
 // collectLogAttributes extracts resource and log record attributes into a flat map for placeholder resolution
-func (r *IndexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
+func (*IndexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
 	attrs := make(map[string]string)
 	resLogsSlice := ld.ResourceLogs()
 	for i := 0; i < resLogsSlice.Len(); i++ {
@@ -114,7 +114,7 @@ func (r *IndexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
 }
 
 // collectTraceAttributes extracts resource and span attributes into a flat map for placeholder resolution
-func (r *IndexResolver) collectTraceAttributes(td ptrace.Traces) map[string]string {
+func (*IndexResolver) collectTraceAttributes(td ptrace.Traces) map[string]string {
 	attrs := make(map[string]string)
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {

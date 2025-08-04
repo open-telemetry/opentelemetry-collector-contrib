@@ -60,13 +60,13 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint             = errors.New("endpoint must be specified")
-	errDatasetNoValue               = errors.New("dataset must be specified")
-	errNamespaceNoValue             = errors.New("namespace must be specified")
-	errBulkActionInvalid            = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid           = errors.New("mapping.mode is invalid")
-	errLogsIndexInvalidPlaceholder  = errors.New("logs_index can only have one attribute or context key placeholder")
-	errLogsIndexTimeFormatInvalid   = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errConfigNoEndpoint              = errors.New("endpoint must be specified")
+	errDatasetNoValue                = errors.New("dataset must be specified")
+	errNamespaceNoValue              = errors.New("namespace must be specified")
+	errBulkActionInvalid             = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid            = errors.New("mapping.mode is invalid")
+	errLogsIndexInvalidPlaceholder   = errors.New("logs_index can only have one attribute or context key placeholder")
+	errLogsIndexTimeFormatInvalid    = errors.New("logs_index_time_format contains unsupported or invalid tokens")
 	errTracesIndexInvalidPlaceholder = errors.New("traces_index can only have one attribute or context key placeholder")
 	errTracesIndexTimeFormatInvalid  = errors.New("traces_index_time_format contains unsupported or invalid tokens")
 )

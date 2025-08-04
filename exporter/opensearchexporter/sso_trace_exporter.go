@@ -66,7 +66,7 @@ func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 	// Use collector time for consistency with logs and elasticsearch exporter
 	traceTimestamp := time.Now()
 	indexName := s.indexResolver.ResolveTraceIndex(s.config, td, traceTimestamp)
-	
+
 	indexer := newTraceBulkIndexer(indexName, s.bulkAction, s.model)
 	startErr := indexer.start(s.client)
 	if startErr != nil {

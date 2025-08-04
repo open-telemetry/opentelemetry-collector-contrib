@@ -71,10 +71,9 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	// Resolve index name using the common index resolver
 	logTimestamp := time.Now() // Replace with actual log timestamp extraction
 	indexName := l.indexResolver.ResolveLogIndex(l.config, ld, logTimestamp)
-	
+
 	indexer.index = indexName
 	indexer.submit(ctx, ld)
 	indexer.close(ctx)
 	return indexer.joinedError()
 }
-
