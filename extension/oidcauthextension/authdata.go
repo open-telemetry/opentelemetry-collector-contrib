@@ -3,7 +3,12 @@
 
 package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 
-import "go.opentelemetry.io/collector/client"
+import (
+	"go.opentelemetry.io/collector/client"
+	"strings"
+)
+
+const claimsPrefix = "claims."
 
 var _ client.AuthData = (*authData)(nil)
 
@@ -24,6 +29,14 @@ func (a *authData) GetAttribute(name string) any {
 	case "raw":
 		return a.raw
 	default:
+		prefixed := strings.HasPrefix(name, claimsPrefix)
+		if !prefixed {
+			// If the name does not start with the claims prefix, we return nil.
+			// This ensures not mixing custom JWT claims with hard defined attributes.
+			return nil
+		}
+
+		name = strings.TrimPrefix(name, claimsPrefix)
 		e, ok := a.claims[name]
 		if ok {
 			return e
@@ -36,7 +49,7 @@ func (a *authData) GetAttribute(name string) any {
 func (a *authData) GetAttributeNames() []string {
 	attributeNames := []string{"subject", "membership", "raw"}
 	for n := range a.claims {
-		attributeNames = append(attributeNames, n)
+		attributeNames = append(attributeNames, claimsPrefix+n)
 	}
 
 	return attributeNames
