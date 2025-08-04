@@ -31,9 +31,18 @@ func TestBasicAnomalyDetection(t *testing.T) {
 
 	// Generate normal data points (clustered around origin)
 	normalSamples := [][]float64{
-		{1.0, 1.0}, {1.1, 0.9}, {0.9, 1.1}, {1.2, 0.8},
-		{0.8, 1.2}, {1.0, 1.0}, {0.95, 1.05}, {1.05, 0.95},
-		{1.1, 1.1}, {0.9, 0.9}, {1.0, 1.0}, {1.0, 1.0},
+		{1.0, 1.0},
+		{1.1, 0.9},
+		{0.9, 1.1},
+		{1.2, 0.8},
+		{0.8, 1.2},
+		{1.0, 1.0},
+		{0.95, 1.05},
+		{1.05, 0.95},
+		{1.1, 1.1},
+		{0.9, 0.9},
+		{1.0, 1.0},
+		{1.0, 1.0},
 	}
 	// Process normal samples to train the model
 	for _, sample := range normalSamples {
@@ -72,8 +81,16 @@ func TestAdaptiveThreshold(t *testing.T) {
 
 	// Process samples with varying anomaly scores
 	samples := [][]float64{
-		{1.0, 1.0}, {2.0, 2.0}, {3.0, 3.0}, {4.0, 4.0}, {5.0, 5.0},
-		{1.1, 1.1}, {2.1, 2.1}, {3.1, 3.1}, {4.1, 4.1}, {5.1, 5.1},
+		{1.0, 1.0},
+		{2.0, 2.0},
+		{3.0, 3.0},
+		{4.0, 4.0},
+		{5.0, 5.0},
+		{1.1, 1.1},
+		{2.1, 2.1},
+		{3.1, 3.1},
+		{4.1, 4.1},
+		{5.1, 5.1},
 	}
 	for _, sample := range samples {
 		forest.ProcessSample(sample)
