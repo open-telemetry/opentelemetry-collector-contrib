@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "opensearchexporter"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add Dynamic Index Naming Support for Traces and Improve Code Consistency"
+note: "Add dynamic index naming support for traces"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34746, 38595]
