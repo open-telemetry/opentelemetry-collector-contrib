@@ -143,8 +143,6 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.131.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.131.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.131.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor v0.131.0
-    path: ./processor/isolationforestprocessor
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.131.1-0.20250801020258-8b73477b9810
@@ -282,5 +280,4 @@ providers:
 # Contrib modules.
 
 replaces:
-  github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor => ./processor/isolationforestprocessor
 

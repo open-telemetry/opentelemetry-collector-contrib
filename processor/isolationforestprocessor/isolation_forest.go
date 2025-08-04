@@ -1,5 +1,5 @@
 // isolation_forest.go - Core isolation forest algorithm implementation
-package isolationforestprocessor
+package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 
 import (
 	"math"

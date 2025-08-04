@@ -1,5 +1,5 @@
 // config.go - CORRECTED VERSION with proper interface implementations
-package isolationforestprocessor
+package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 
 import (
 	"errors"

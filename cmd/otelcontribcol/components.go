@@ -148,7 +148,6 @@ import (
 	transformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	remotetapprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor"
 	datadogsemanticsprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor"
-	isolationforestprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	activedirectorydsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
@@ -710,7 +709,6 @@ func components() (otelcol.Factories, error) {
 		transformprocessor.NewFactory(),
 		remotetapprocessor.NewFactory(),
 		datadogsemanticsprocessor.NewFactory(),
-		isolationforestprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -745,7 +743,6 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[transformprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.131.0"
 	factories.ProcessorModules[remotetapprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.131.0"
 	factories.ProcessorModules[datadogsemanticsprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.131.0"
-	factories.ProcessorModules[isolationforestprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor v0.131.0"
 
 	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		forwardconnector.NewFactory(),
