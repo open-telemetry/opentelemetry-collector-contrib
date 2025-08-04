@@ -5,8 +5,9 @@ package googlecloudlogentryencodingextension // import "github.com/open-telemetr
 
 import (
 	"context"
-	stdjson "encoding/json"
+	"fmt"
 
+	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -16,31 +17,14 @@ import (
 var _ encoding.LogsUnmarshalerExtension = (*ext)(nil)
 
 type ext struct {
-	Config     Config
-	extractFns map[string]extractFn
+	config Config
 }
 
 func newExtension(cfg *Config) *ext {
-	return &ext{Config: *cfg}
+	return &ext{config: *cfg}
 }
 
-func (ex *ext) Start(_ context.Context, _ component.Host) error {
-	ex.extractFns = map[string]extractFn{
-		"protoPayload":     handleProtoPayload,
-		"receiveTimestamp": handleReceiveTimestamp,
-		"timestamp":        handleTimestamp,
-		"insertId":         handleInsertID,
-		"logName":          handleLogName,
-		"textPayload":      handleTextPayload,
-		"jsonPayload":      handleJSONPayload,
-		"severity":         handleSeverity,
-		"trace":            handleTrace,
-		"spanId":           handleSpanID,
-		"traceSampled":     handleTraceSampled,
-		"labels":           handleLabels,
-		"httpRequest":      handleHTTPRequest,
-		"resource":         handleResource,
-	}
+func (*ext) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -57,40 +41,26 @@ func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-// TranslateLogEntry translates a JSON-encoded LogEntry message into a pair of
-// pcommon.Resource and plog.LogRecord, trying to keep as close as possible to
-// the semantic conventions.
+// TranslateLogEntry translates a JSON-encoded LogEntry message into plog.Logs,
+// trying to keep as close as possible to the GCP original names.
 //
 // For maximum fidelity, the decoding is done according to the protobuf message
 // schema; this ensures that a numeric value in the input is correctly
 // translated to either an integer or a double in the output. It falls back to
 // plain JSON decoding if payload type is not available in the proto registry.
 func (ex *ext) translateLogEntry(data []byte) (plog.Logs, error) {
-	var src map[string]stdjson.RawMessage
-	err := json.Unmarshal(data, &src)
-	if err != nil {
-		return plog.Logs{}, err
+	var log logEntry
+	if err := gojson.Unmarshal(data, &log); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal log entry: %w", err)
 	}
 
 	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	res := rl.Resource()
-	lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resource := resourceLogs.Resource()
+	logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	resAttrs := res.Attributes()
-	attrs := lr.Attributes()
-
-	for key, value := range src {
-		fn := ex.extractFns[key]
-		if fn != nil {
-			kverr := fn(resAttrs, lr, attrs, key, value, ex.Config)
-			if kverr == nil {
-				delete(src, key)
-			}
-		}
+	if err := handleLogEntryFields(resource.Attributes(), logRecord, log, ex.config); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to handle log entry: %w", err)
 	}
-
-	// All other fields -> Attributes["gcp.*"]
-	err = translateInto(attrs, getLogEntryDescriptor(), src, preserveDst, prefixKeys("gcp."), snakeifyKeys)
-	return logs, err
+	return logs, nil
 }
