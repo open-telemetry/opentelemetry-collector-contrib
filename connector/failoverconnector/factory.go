@@ -53,11 +53,23 @@ func createTracesToTraces(
 
 	oCfg := cfg.(*Config)
 
-	return exporterhelper.NewTraces(ctx, expSettings, cfg,
+	// If queue is disabled, return the raw failover connector directly (original behavior)
+	if !oCfg.QueueSettings.Enabled {
+		return t, nil
+	}
+
+	// If queue is enabled, wrap with exporterhelper
+	wrapped, err := exporterhelper.NewTraces(ctx, expSettings, cfg,
 		t.ConsumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return testable wrapper that exposes internal failover router
+	return NewWrappedTracesConnector(wrapped, t.(*tracesFailover)), nil
 }
 
 func createMetricsToMetrics(
@@ -78,11 +90,23 @@ func createMetricsToMetrics(
 
 	oCfg := cfg.(*Config)
 
-	return exporterhelper.NewMetrics(ctx, expSettings, cfg,
+	// If queue is disabled, return the raw failover connector directly (original behavior)
+	if !oCfg.QueueSettings.Enabled {
+		return t, nil
+	}
+
+	// If queue is enabled, wrap with exporterhelper
+	wrapped, err := exporterhelper.NewMetrics(ctx, expSettings, cfg,
 		t.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return testable wrapper that exposes internal failover router
+	return NewWrappedMetricsConnector(wrapped, t.(*metricsFailover)), nil
 }
 
 func createLogsToLogs(
@@ -103,9 +127,21 @@ func createLogsToLogs(
 
 	oCfg := cfg.(*Config)
 
-	return exporterhelper.NewLogs(ctx, expSettings, cfg,
+	// If queue is disabled, return the raw failover connector directly (original behavior)
+	if !oCfg.QueueSettings.Enabled {
+		return t, nil
+	}
+
+	// If queue is enabled, wrap with exporterhelper
+	wrapped, err := exporterhelper.NewLogs(ctx, expSettings, cfg,
 		t.ConsumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return testable wrapper that exposes internal failover router
+	return NewWrappedLogsConnector(wrapped, t.(*logsFailover)), nil
 }

@@ -5,6 +5,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"testing"
 	"time"
 
@@ -127,6 +128,43 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	md := sampleMetric()
 
 	assert.EqualError(t, conn.ConsumeMetrics(context.Background(), md), "All provided pipelines return errors")
+}
+
+func TestMetricsWithQueue(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		RetryInterval:    50 * time.Millisecond,
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+	}
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+	})
+
+	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*WrappedMetricsConnector)
+	mRouter := failoverConnector.GetFailoverRouter()
+	mRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	mRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+	mRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errMetricsConsumer))
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+	}()
+
+	md := sampleMetric()
+
+	assert.NoError(t, conn.ConsumeMetrics(context.Background(), md))
 }
 
 func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {
