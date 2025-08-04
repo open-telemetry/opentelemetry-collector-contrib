@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -195,7 +196,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost", http.NoBody),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
@@ -219,7 +220,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/not-protobuf")
 				return req
 			}(),
@@ -231,7 +232,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding_sfx",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
@@ -244,7 +245,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding_otlp",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", otlpContentHeader)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
@@ -257,7 +258,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "fail_to_read_body_sfx",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Body = badReqBody{}
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				return req
@@ -270,7 +271,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "fail_to_read_body_otlp",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Body = badReqBody{}
 				req.Header.Set("Content-Type", otlpContentHeader)
 				return req
@@ -461,7 +462,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost", http.NoBody),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
@@ -485,7 +486,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
 				return req
 			}(),
@@ -497,7 +498,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
@@ -510,7 +511,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		{
 			name: "fail_to_read_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Body = badReqBody{}
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				return req
@@ -621,12 +622,12 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSSetting = &configtls.ServerConfig{
+	cfg.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
 		},
-	}
+	})
 	sink := new(consumertest.MetricsSink)
 	cs := receivertest.NewNopSettings(metadata.Type)
 	r, err := newReceiver(cs, *cfg)
@@ -899,7 +900,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
+func buildSFxDatapointMsg(time, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
 	return &sfxpb.DataPointUploadMessage{
 		Datapoints: []*sfxpb.DataPoint{
 			{
@@ -940,11 +941,11 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(_ []byte) (n int, err error) {
+func (badReqBody) Read([]byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 
-func (b badReqBody) Close() error {
+func (badReqBody) Close() error {
 	return nil
 }
 
@@ -1067,7 +1068,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

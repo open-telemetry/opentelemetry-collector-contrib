@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -196,7 +195,8 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	if err = se.injectCredentials(ctx, colCreds); err != nil {
+	err = se.injectCredentials(ctx, colCreds)
+	if err != nil {
 		return err
 	}
 
@@ -429,7 +429,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
 		CollectorName: collectorName,
 		Description:   se.conf.CollectorDescription,
 		Category:      se.conf.CollectorCategory,
@@ -438,7 +438,8 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
-	}); err != nil {
+	})
+	if err != nil {
 		return credentials.CollectorCredentials{}, err
 	}
 
@@ -634,12 +635,12 @@ var (
 	errUnauthorizedMetadata  = errors.New("metadata update unauthorized")
 )
 
-type ErrorAPI struct {
+type errorAPI struct {
 	status int
 	body   string
 }
 
-func (e ErrorAPI) Error() string {
+func (e errorAPI) Error() string {
 	return fmt.Sprintf("API error (status code: %d): %s", e.status, e.body)
 }
 
@@ -648,7 +649,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 	if err != nil {
 		return fmt.Errorf("unable to parse heartbeat URL %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("unable to create HTTP request %w", err)
 	}
@@ -672,7 +673,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 		}
 
 		return fmt.Errorf("collector heartbeat request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -736,23 +737,22 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 
 	processes, err := process.Processes()
 	if err != nil {
-		return pl, err
+		return pl, fmt.Errorf("process discovery failed: %w", err)
 	}
 
 	for _, v := range processes {
 		e, err := v.Name()
 		if err != nil {
-			if runtime.GOOS == "windows" {
-				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
-				se.logger.Warn(
-					"Failed to get executable name, it is likely a zombie process, skipping it",
-					zap.Int32("pid", v.Pid),
-					zap.Error(err))
-				continue
-			}
-
-			return nil, fmt.Errorf("Error getting executable name: %w", err)
+			// If we can't get a process name, it may be a zombie process.
+			// We do not want to error out here, as it's not worth disrupting
+			// the startup process of the collector.
+			se.logger.Warn(
+				"process discovery: failed to get executable name (is it a zombie?)",
+				zap.Int32("pid", v.Pid),
+				zap.Error(err))
+			continue
 		}
+
 		e = strings.ToLower(e)
 
 		if a, i := sumoAppProcesses[e]; i {
@@ -768,7 +768,11 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 		if e == "java" {
 			cmdline, err := v.Cmdline()
 			if err != nil {
-				return nil, fmt.Errorf("error getting executable name for PID %d: %w", v.Pid, err)
+				se.logger.Warn(
+					"process discovery: failed to get process arguments",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
+				continue
 			}
 
 			switch {
@@ -837,7 +841,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
 		HostDetails: api.OpenMetadataHostDetails{
 			Name:        hostname,
 			OsName:      info.OS,
@@ -851,7 +855,8 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			HostIPAddress: ip,
 		},
 		TagDetails: td,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -887,7 +892,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			zap.String("body", buff.String()))
 
 		return fmt.Errorf("collector metadata request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -1066,7 +1071,7 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func addCollectorCredentials(req *http.Request, collectorCredentialID string, collectorCredentialKey string) {
+func addCollectorCredentials(req *http.Request, collectorCredentialID, collectorCredentialKey string) {
 	token := base64.StdEncoding.EncodeToString(
 		[]byte(collectorCredentialID + ":" + collectorCredentialKey),
 	)

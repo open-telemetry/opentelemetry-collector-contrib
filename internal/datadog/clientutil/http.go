@@ -54,7 +54,7 @@ func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
 		ExpectContinueTimeout: 1 * time.Second,
 		// Not supported by intake
 		ForceAttemptHTTP2: false,
-		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLSSetting.InsecureSkipVerify},
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLS.InsecureSkipVerify},
 	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize

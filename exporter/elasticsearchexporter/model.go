@@ -78,7 +78,7 @@ type documentEncoder interface {
 	encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error
 	encodeMetrics(_ encodingContext, _ []datapoints.DataPoint, validationErrors *[]error, _ elasticsearch.Index, _ *bytes.Buffer) (map[string]string, error)
-	encodeProfile(_ encodingContext, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
+	encodeProfile(_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
 }
 
 type encodingContext struct {
@@ -113,11 +113,6 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 	case MappingECS:
 		return ecsModeEncoder{
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
-			nonOTelSpanEncoder: nonOTelSpanEncoder{
-				attributesPrefix: "Attributes",
-				eventsPrefix:     "Events",
-				dedot:            true,
-			},
 		}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
@@ -144,7 +139,6 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	nonOTelSpanEncoder
 	nopSpanEventEncoder
 	profilesUnsupportedEncoder
 }
@@ -186,7 +180,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	return document.Serialize(buf, false)
 }
 
-func (e ecsModeEncoder) encodeLog(
+func (ecsModeEncoder) encodeLog(
 	ec encodingContext,
 	record plog.LogRecord,
 	idx elasticsearch.Index,
@@ -217,7 +211,7 @@ func (e ecsModeEncoder) encodeLog(
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, ec.resource)
 	encodeLogAgentVersionECSMode(&document, ec.resource)
-	encodeLogHostOsTypeECSMode(&document, ec.resource)
+	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
@@ -230,6 +224,48 @@ func (e ecsModeEncoder) encodeLog(
 	if record.Body().Type() == pcommon.ValueTypeStr {
 		document.AddAttribute("message", record.Body())
 	}
+
+	return document.Serialize(buf, true)
+}
+
+func (ecsModeEncoder) encodeSpan(
+	ec encodingContext,
+	span ptrace.Span,
+	idx elasticsearch.Index,
+	buf *bytes.Buffer,
+) error {
+	var document objmodel.Document
+
+	// First, try to map resource-level attributes to ECS fields.
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Then, try to map scope-level attributes to ECS fields.
+	scopeAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Finally, try to map record-level attributes to ECS fields.
+	spanAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+
+	// Handle special cases.
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
+	encodeHostOsTypeECSMode(&document, ec.resource)
+	addDataStreamAttributes(&document, "", idx)
+
+	document.AddTimestamp("@timestamp", span.StartTimestamp())
+	document.AddTraceID("trace.id", span.TraceID())
+	document.AddSpanID("span.id", span.SpanID())
+	document.AddString("span.name", span.Name())
+	document.AddSpanID("parent.id", span.ParentSpanID())
+	if span.Status().Code() == ptrace.StatusCodeOk {
+		document.AddString("event.outcome", "success")
+	} else if span.Status().Code() == ptrace.StatusCodeError {
+		document.AddString("event.outcome", "failure")
+	}
+	document.AddLinks("span.links", span.Links())
 
 	return document.Serialize(buf, true)
 }
@@ -291,13 +327,14 @@ func (e otelModeEncoder) encodeMetrics(
 
 func (e otelModeEncoder) encodeProfile(
 	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
 	profile pprofile.Profile,
 	pushData func(*bytes.Buffer, string, string) error,
 ) error {
-	return e.serializer.SerializeProfile(ec.resource, ec.scope, profile, pushData)
+	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
-func (e bodymapModeEncoder) encodeLog(
+func (bodymapModeEncoder) encodeLog(
 	_ encodingContext,
 	record plog.LogRecord,
 	_ elasticsearch.Index,
@@ -339,7 +376,7 @@ type profilesUnsupportedEncoder struct {
 }
 
 func (e profilesUnsupportedEncoder) encodeProfile(
-	_ encodingContext, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error,
+	_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error,
 ) error {
 	return fmt.Errorf("mapping mode %q (%d) does not support profiles", e.mode, int(e.mode))
 }
@@ -429,8 +466,7 @@ func encodeAttributes(prefix string, document *objmodel.Document, attributes pco
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
-	for i := 0; i < spanLinkSlice.Len(); i++ {
-		spanLink := spanLinkSlice.At(i)
+	for _, spanLink := range spanLinkSlice.All() {
 		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
 		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
@@ -532,7 +568,7 @@ func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.
 	}
 }
 
-func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
 	//
 	// "One of these following values should be used (lowercase): linux, macos, unix, windows.

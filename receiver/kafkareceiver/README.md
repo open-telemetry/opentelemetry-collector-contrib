@@ -20,6 +20,18 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 
 ## Getting Started
 
+> [!NOTE]
+> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> `receiver.kafkareceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+>
+> The `franz-go` client supports directly consuming from multiple topics by specifying a regex expression.
+> To enable this feature, prefix your topic with the `^` character. This is identical to how the `librdkafka`
+> client works.
+>
+> If you use the `^` prefix, in the deprecated `topic` setting, if **any** of the topics have the `^` prefix,
+> regex consuming will be enabled.
+
 There are no required settings.
 
 The following settings can be optionally configured:
@@ -65,9 +77,9 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use.
-    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
-    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
+    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+    - `aws_msk`
+      - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
@@ -82,6 +94,7 @@ The following settings can be optionally configured:
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the
     startup.
+  - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
   - `retry`
     - `max` (default = 3): The number of retries to get metadata
     - `backoff` (default = 250ms): How long to wait between metadata retries
@@ -103,6 +116,10 @@ The following settings can be optionally configured:
   - `multiplier`: The value multiplied by the backoff interval bounds
   - `randomization_factor`: A random factor used to calculate next backoff. Randomized interval = RetryInterval * (1 ± RandomizationFactor)
   - `max_elapsed_time`: The maximum amount of time trying to backoff before giving up. If set to 0, the retries are never stopped.
+- `telemetry`
+  - `metrics`
+    - `kafka_receiver_records_delay`:
+      - `enabled` (default = false) Whether the metric kafka_receiver_records_delay will be reported or not.
 
 ### Supported encodings
 

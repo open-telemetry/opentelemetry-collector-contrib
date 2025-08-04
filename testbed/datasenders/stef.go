@@ -37,7 +37,7 @@ func (sds *stefDataSender) Start() error {
 	factory := stefexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*stefexporter.Config)
 	cfg.Endpoint = sds.GetEndpoint().String()
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	params := exportertest.NewNopSettings(factory.Type())
@@ -59,6 +59,6 @@ func (sds *stefDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, sds.GetEndpoint())
 }
 
-func (sds *stefDataSender) ProtocolName() string {
+func (*stefDataSender) ProtocolName() string {
 	return "stef"
 }

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pipeline"
@@ -103,12 +104,12 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.ServerConfig{
+		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 
@@ -122,12 +123,12 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 
 	cfg.(*Config).ThriftHTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:14268",
-		TLSSetting: &configtls.ServerConfig{
+		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
-		},
+		}),
 	}
 
 	set := receivertest.NewNopSettings(metadata.Type)

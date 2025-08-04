@@ -9,6 +9,7 @@ confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
+connector/countconnector connector/count
 connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
 connector/failoverconnector connector/failover
@@ -22,7 +23,6 @@ connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
@@ -49,9 +49,9 @@ exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
-exporter/lokiexporter exporter/loki
 exporter/mezmoexporter exporter/mezmo
 exporter/opencensusexporter exporter/opencensus
+exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
 exporter/prometheusremotewriteexporter exporter/prometheusremotewrite
@@ -66,6 +66,7 @@ exporter/stefexporter exporter/stef
 exporter/sumologicexporter exporter/sumologic
 exporter/syslogexporter exporter/syslog
 exporter/tencentcloudlogserviceexporter exporter/tencentcloudlogservice
+exporter/tinybirdexporter exporter/tinybird
 exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
@@ -88,7 +89,6 @@ extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
-extension/healthcheckextension extension/healthcheck
 extension/healthcheckv2extension extension/healthcheckv2
 extension/httpforwarderextension extension/httpforwarder
 extension/jaegerremotesampling extension/jaegerremotesampling
@@ -186,7 +186,6 @@ processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourceprocessor processor/resource
-processor/routingprocessor processor/routing
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
 processor/sumologicprocessor processor/sumologic
@@ -205,7 +204,6 @@ receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
-receiver/bigipreceiver receiver/bigip
 receiver/chronyreceiver receiver/chrony
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
@@ -234,6 +232,7 @@ receiver/hostmetricsreceiver/internal/scraper/filesystemscraper receiver/hostmet
 receiver/hostmetricsreceiver/internal/scraper/loadscraper receiver/hostmetrics/internal/scraper/loadscraper
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper receiver/hostmetrics/internal/scraper/memory
 receiver/hostmetricsreceiver/internal/scraper/networkscraper receiver/hostmetrics/internal/scraper/network
+receiver/hostmetricsreceiver/internal/scraper/nfsscraper receiver/hostmetrics/internal/scraper/nfsscraper
 receiver/hostmetricsreceiver/internal/scraper/pagingscraper receiver/hostmetrics/internal/scraper/paging
 receiver/hostmetricsreceiver/internal/scraper/processesscraper receiver/hostmetrics/internal/scraper/processes
 receiver/hostmetricsreceiver/internal/scraper/processscraper receiver/hostmetrics/internal/scraper/process
@@ -316,10 +315,11 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-connector/countconnector connector/count
+exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
-exporter/kineticaexporter exporter/kinetica
-exporter/opensearchexporter exporter/opensearch
+extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
+processor/routingprocessor processor/routing
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
+receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon

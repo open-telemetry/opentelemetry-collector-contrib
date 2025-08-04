@@ -125,8 +125,8 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	hasher.UpdateResource(rm.Resource())
 	hasher.UpdateScope(sm.Scope())
-	for i := 0; i < dps.Len(); i++ {
-		dp := datapoints.NewNumber(m, dps.At(i))
+	for _, dp := range dps.All() {
+		dp := datapoints.NewNumber(m, dp)
 		hasher.UpdateDataPoint(dp)
 		dpHash := hasher.HashKey()
 		dataPoints, ok := groupedDataPoints[dpHash]
@@ -364,28 +364,6 @@ func TestEncodeSpan_Events(t *testing.T) {
 			  "Events.event_3.time": "1970-01-01T00:00:00.000000000Z"
 			}`,
 		},
-		"ecs": {
-			mappingMode: MappingECS,
-			want: `
-			{
-			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
-			  "Duration": 0,
-			  "EndTimestamp": "1970-01-01T00:00:00.000000000Z",
-			  "Scope": {
-			    "name": "",
-			    "version": ""
-			  },
-			  "Kind": "SPAN_KIND_UNSPECIFIED",
-			  "Link": "[]",
-			  "TraceStatus": 0,
-			  "Events": {
-			    "event_0": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_1": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_2": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_3": {"time": "1970-01-01T00:00:00.000000000Z"}
-			  }
-			}`,
-		},
 	}
 
 	for name, test := range tests {
@@ -445,6 +423,102 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want, buf.String())
+}
+
+func TestEncodeSpanECSMode(t *testing.T) {
+	encoder, _ := newEncoder(MappingECS)
+
+	resource := pcommon.NewResource()
+	err := resource.Attributes().FromRaw(map[string]any{
+		string(semconv.CloudProviderKey):         "aws",
+		string(semconv.CloudPlatformKey):         "aws_elastic_beanstalk",
+		string(semconv.DeploymentEnvironmentKey): "BETA",
+		string(semconv.ServiceInstanceIDKey):     "23",
+		string(semconv.ServiceNameKey):           "some-service",
+		string(semconv.ServiceVersionKey):        "env-version-1234",
+	})
+	require.NoError(t, err)
+
+	scope := pcommon.NewInstrumentationScope()
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(resourceSpans.Resource())
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope.CopyTo(scopeSpans.Scope())
+
+	span := scopeSpans.Spans().AppendEmpty()
+	span.SetName("client span")
+	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetParentSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)))
+	span.Status().SetCode(ptrace.StatusCodeError)
+	span.Status().SetMessage("Test")
+	require.NoError(t, err)
+
+	link1 := span.Links().AppendEmpty()
+	link1.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01})
+	link1.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+
+	link2 := span.Links().AppendEmpty()
+	link2.SetTraceID([16]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21})
+	link2.SetSpanID([8]byte{0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38})
+
+	var buf bytes.Buffer
+	err = encoder.encodeSpan(
+		encodingContext{
+			resource: resource,
+			scope:    scope,
+		},
+		span,
+		elasticsearch.Index{},
+		&buf,
+	)
+	assert.NoError(t, err)
+
+	assert.JSONEq(t, `{
+	  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+	  "trace": {
+		"id": "01020304050607080807060504030201"
+	  },
+	  "span": {
+		"id": "1920212223242526",
+		"name": "client span",
+		"links": [
+		  {
+			"span_id": "1112131415161718",
+			"trace_id": "01020304050607080807060504030201"
+		  },
+		  {
+			"span_id": "3132333435363738",
+			"trace_id": "21222324252627282827262524232221"
+		  }
+		]
+	  },
+      "parent": {
+		"id": "0102030405060708"
+	  },
+	  "cloud": {
+		"provider": "aws",
+		"service": {
+		  "name": "aws_elastic_beanstalk"
+		}
+	  },
+	  "event": {
+		"outcome": "failure"
+	  },
+	  "service": {
+		"environment": "BETA",
+		"name": "some-service",
+		"node": {
+		  "name": "23"
+		},
+		"version": "env-version-1234"
+	  }
+	}`, buf.String())
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
@@ -1066,26 +1140,26 @@ func TestMapLogAttributesToECS(t *testing.T) {
 }
 
 // JSON serializable structs for OTel test convenience
-type OTelRecord struct {
-	TraceID                OTelTraceID          `json:"trace_id"`
-	SpanID                 OTelSpanID           `json:"span_id"`
+type oTelRecord struct {
+	TraceID                oTelTraceID          `json:"trace_id"`
+	SpanID                 oTelSpanID           `json:"span_id"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	EventName              string               `json:"event_name"`
 	Attributes             map[string]any       `json:"attributes"`
 	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
-	Scope                  OTelScope            `json:"scope"`
-	Resource               OTelResource         `json:"resource"`
-	Datastream             OTelRecordDatastream `json:"data_stream"`
+	Scope                  oTelScope            `json:"scope"`
+	Resource               oTelResource         `json:"resource"`
+	Datastream             oTelRecordDatastream `json:"data_stream"`
 }
 
-type OTelRecordDatastream struct {
+type oTelRecordDatastream struct {
 	Dataset   string `json:"dataset"`
 	Namespace string `json:"namespace"`
 	Type      string `json:"type"`
 }
 
-type OTelScope struct {
+type oTelScope struct {
 	Name                   string         `json:"name"`
 	Version                string         `json:"version"`
 	Attributes             map[string]any `json:"attributes"`
@@ -1093,19 +1167,19 @@ type OTelScope struct {
 	SchemaURL              string         `json:"schema_url"`
 }
 
-type OTelResource struct {
+type oTelResource struct {
 	Attributes             map[string]any `json:"attributes"`
 	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
 	SchemaURL              string         `json:"schema_url"`
 }
 
-type OTelSpanID pcommon.SpanID
+type oTelSpanID pcommon.SpanID
 
-func (o OTelSpanID) MarshalJSON() ([]byte, error) {
+func (oTelSpanID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (o *OTelSpanID) UnmarshalJSON(data []byte) error {
+func (o *oTelSpanID) UnmarshalJSON(data []byte) error {
 	b, err := decodeOTelID(data)
 	if err != nil {
 		return err
@@ -1114,13 +1188,13 @@ func (o *OTelSpanID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type OTelTraceID pcommon.TraceID
+type oTelTraceID pcommon.TraceID
 
-func (o OTelTraceID) MarshalJSON() ([]byte, error) {
+func (oTelTraceID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (o *OTelTraceID) UnmarshalJSON(data []byte) error {
+func (o *oTelTraceID) UnmarshalJSON(data []byte) error {
 	b, err := decodeOTelID(data)
 	if err != nil {
 		return err
@@ -1145,23 +1219,23 @@ func TestEncodeLogOtelMode(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		rec    OTelRecord
-		wantFn func(OTelRecord) OTelRecord // Allows each test to customized the expectations from the original test record data
+		rec    oTelRecord
+		wantFn func(oTelRecord) oTelRecord // Allows each test to customized the expectations from the original test record data
 	}{
 		{
 			name: "default", // Expecting default data_stream values
 			rec:  buildOTelRecordTestData(t, nil),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				return assignDatastreamData(or)
 			},
 		},
 		{
 			name: "custom dataset",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "custom"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				// Datastream attributes are expected to be deleted from under the attributes
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "custom.otel")
@@ -1169,71 +1243,71 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 		{
 			name: "custom dataset with otel suffix",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "custom.otel"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "custom.otel.otel")
 			},
 		},
 		{
 			name: "custom dataset/namespace",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "customds"
 				or.Attributes["data_stream.namespace"] = "customns"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "customds.otel", "customns")
 			},
 		},
 		{
 			name: "dataset attributes priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "first"
 				or.Scope.Attributes["data_stream.dataset"] = "second"
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "first.otel")
 			},
 		},
 		{
 			name: "dataset scope attribute priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Scope.Attributes["data_stream.dataset"] = "second"
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "second.otel")
 			},
 		},
 		{
 			name: "dataset resource attribute priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "third.otel")
 			},
 		},
 		{
 			name: "sanitize dataset/namespace",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = disallowedDatasetRunes + randomString
 				or.Attributes["data_stream.namespace"] = disallowedNamespaceRunes + randomString
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				ds := strings.Repeat("_", len(disallowedDatasetRunes)) + randomString[:maxLenDataset] + ".otel"
 				ns := strings.Repeat("_", len(disallowedNamespaceRunes)) + randomString[:maxLenNamespace]
@@ -1242,24 +1316,24 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 		{
 			name: "event_name from attributes.event.name",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["event.name"] = "foo"
 				or.EventName = ""
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				or.EventName = "foo"
 				return assignDatastreamData(or)
 			},
 		},
 		{
 			name: "event_name takes precedent over attributes.event.name",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["event.name"] = "foo"
 				or.EventName = "bar"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				or.EventName = "bar"
 				return assignDatastreamData(or)
 			},
@@ -1292,7 +1366,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 			want = tc.wantFn(want)
 		}
 
-		var got OTelRecord
+		var got oTelRecord
 		err = json.Unmarshal(buf.Bytes(), &got)
 
 		require.NoError(t, err)
@@ -1302,7 +1376,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 }
 
 // helper function that creates the OTel LogRecord from the test structure
-func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
+func createTestOTelLogRecord(t *testing.T, rec oTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
@@ -1330,7 +1404,7 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 	return record, scope, resource
 }
 
-func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelRecord {
+func buildOTelRecordTestData(t *testing.T, fn func(oTelRecord) oTelRecord) oTelRecord {
 	s := `{
     "@timestamp": "2024-03-12T20:00:41.123456780Z",
     "attributes": {
@@ -1364,7 +1438,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
     "trace_id": "01020304050607080900010203040506"
 }`
 
-	var record OTelRecord
+	var record oTelRecord
 	err := json.Unmarshal([]byte(s), &record)
 	assert.NoError(t, err)
 	if fn != nil {
@@ -1373,7 +1447,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
 	return record
 }
 
-func deleteDatasetAttributes(or OTelRecord) {
+func deleteDatasetAttributes(or oTelRecord) {
 	deleteDatasetAttributesFromMap(or.Attributes)
 	deleteDatasetAttributesFromMap(or.Scope.Attributes)
 	deleteDatasetAttributesFromMap(or.Resource.Attributes)
@@ -1385,8 +1459,8 @@ func deleteDatasetAttributesFromMap(m map[string]any) {
 	delete(m, "data_stream.type")
 }
 
-func assignDatastreamData(or OTelRecord, a ...string) OTelRecord {
-	r := OTelRecordDatastream{
+func assignDatastreamData(or oTelRecord, a ...string) oTelRecord {
+	r := oTelRecordDatastream{
 		Dataset:   "generic.otel",
 		Namespace: "default",
 		Type:      "logs",

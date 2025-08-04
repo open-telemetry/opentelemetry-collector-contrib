@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -40,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 10 * time.Second
 	clientConfig.Endpoint = "https://splunk:8088/services/collector"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "",
 			CertFile: "",
@@ -90,17 +91,14 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
-				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-					Enabled:      true,
-					FlushTimeout: time.Second,
-					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-						Sizer:   exporterhelper.RequestSizerTypeItems,
-						MinSize: 1,
-						MaxSize: 10,
-					},
+					QueueSize:    1000,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					Batch: configoptional.Some(exporterhelper.BatchConfig{
+						FlushTimeout: time.Second,
+						MinSize:      10,
+						MaxSize:      100,
+						Sizer:        exporterhelper.RequestSizerTypeItems,
+					}),
 				},
 				OtelAttrsToHec: splunk.HecToOtelAttrs{
 					Source:     "mysource",
@@ -144,9 +142,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -246,7 +244,7 @@ func TestConfig_Validate(t *testing.T) {
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {
-				require.EqualError(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			}
 		})
 	}

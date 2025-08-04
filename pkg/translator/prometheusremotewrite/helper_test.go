@@ -11,6 +11,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -20,9 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func Test_isValidAggregationTemporality(t *testing.T) {
@@ -117,7 +116,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 	}
 
 	t.Run("empty_case", func(t *testing.T) {
-		converter := newPrometheusConverter()
+		converter := newPrometheusConverter(Settings{})
 		converter.addSample(nil, nil)
 		assert.Empty(t, converter.unique)
 		assert.Empty(t, converter.conflicts)
@@ -161,7 +160,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
 			converter.addSample(&tt.testCase[0].sample, tt.testCase[0].labels)
 			converter.addSample(&tt.testCase[1].sample, tt.testCase[1].labels)
 			assert.Exactly(t, tt.want, converter.unique)
@@ -370,7 +369,7 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...))
 		})
 	}
 }
@@ -388,7 +387,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		createAttributes(r, m, ext, nil, true)
+		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
 	}
 }
 
@@ -473,7 +472,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
 				},
 			},
 		},
@@ -495,7 +494,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     float64(intVal2),
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
 				},
 			},
 		},
@@ -527,7 +526,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1)},
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1)},
 				},
 			},
 		},
@@ -681,7 +680,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(tc.settings)
 
 			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
 
@@ -813,51 +812,11 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "summary with exportCreatedMetricGate enabled",
-			metric: func() pmetric.Metric {
-				metric := pmetric.NewMetric()
-				metric.SetName("test_summary")
-				metric.SetEmptySummary()
-
-				dp := metric.Summary().DataPoints().AppendEmpty()
-				dp.SetTimestamp(ts)
-				dp.SetStartTimestamp(ts)
-
-				return metric
-			},
-			want: func() map[uint64]*prompb.TimeSeries {
-				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
-				}
-				sumLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
-				}
-				return map[uint64]*prompb.TimeSeries{
-					timeSeriesSignature(labels): {
-						Labels: labels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-					timeSeriesSignature(sumLabels): {
-						Labels: sumLabels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-				}
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldValue := exportCreatedMetricGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, true)
-			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
-
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
 
 			converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
@@ -952,52 +911,11 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "histogram with exportCreatedMetricGate enabled",
-			metric: func() pmetric.Metric {
-				metric := pmetric.NewMetric()
-				metric.SetName("test_hist")
-				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				pt := metric.Histogram().DataPoints().AppendEmpty()
-				pt.SetTimestamp(ts)
-				pt.SetStartTimestamp(ts)
-
-				return metric
-			},
-			want: func() map[uint64]*prompb.TimeSeries {
-				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
-				}
-				infLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
-					{Name: model.BucketLabel, Value: "+Inf"},
-				}
-				return map[uint64]*prompb.TimeSeries{
-					timeSeriesSignature(infLabels): {
-						Labels: infLabels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-					timeSeriesSignature(labels): {
-						Labels: labels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-				}
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldValue := exportCreatedMetricGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, true)
-			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
-
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
 
 			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
@@ -1013,7 +931,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 }
 
 func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
-	converter := newPrometheusConverter()
+	converter := newPrometheusConverter(Settings{})
 	lbls := []prompb.Label{
 		{
 			Name:  "key1",

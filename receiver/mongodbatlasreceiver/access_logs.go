@@ -37,7 +37,7 @@ type accessLogStorageRecord struct {
 type accessLogClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
 	GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error)
-	GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error)
+	GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error)
 }
 
 type accessLogsReceiver struct {

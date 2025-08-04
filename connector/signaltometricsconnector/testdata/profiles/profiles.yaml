@@ -10,13 +10,13 @@ resourceProfiles:
     scopeProfiles:
       - profiles:
           - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.foo
-                value:
-                  stringValue: foo
-              - key: profile.bar
-                value:
-                  stringValue: bar
+            sample:
+              - locationsLength: 0
+                timestampsUnixNano: ["0"]
+            sampleType:
+              - unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [2, 3]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
@@ -25,32 +25,30 @@ resourceProfiles:
             stringTable:
               - count
             duration: 10000
-          - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: notbar
+          - attributeIndices: [5]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
-            duration: 10000
-          - attributeIndices: [0]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: notfoo
-            sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
-            sampleType:
-              - unitStrindex: 0
-            stringTable:
-              - count
         scope: {}
+dictionary:
+  attributeTable:
+    - key: profile.foo
+      value:
+        stringValue: foo
+    - key: profile.bar
+      value:
+        stringValue: bar
+    - key: profile.required
+      value:
+        stringValue: foo
+    - key: profile.optional
+      value:
+        stringValue: notbar
+    - key: profile.optional
+      value:
+        stringValue: notbar
+    - key: profile.required
+      value:
+        stringValue: notfoo

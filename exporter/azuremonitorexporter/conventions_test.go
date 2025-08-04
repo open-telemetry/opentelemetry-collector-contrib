@@ -39,7 +39,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	httpAttributes := &HTTPAttributes{}
+	httpAttributes := &httpAttributes{}
 	attributeMap.Range(httpAttributes.MapAttribute)
 
 	assert.Equal(t, string(conventions.HTTPMethodKey), httpAttributes.HTTPMethod)
@@ -74,7 +74,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	rpcAttributes := &RPCAttributes{}
+	rpcAttributes := &rpcAttributes{}
 	attributeMap.Range(rpcAttributes.MapAttribute)
 
 	assert.Equal(t, string(conventions.RPCSystemKey), rpcAttributes.RPCSystem)
@@ -104,7 +104,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	databaseAttributes := &DatabaseAttributes{}
+	databaseAttributes := &databaseAttributes{}
 	attributeMap.Range(databaseAttributes.MapAttribute)
 
 	assert.Equal(t, string(conventions.DBSystemKey), databaseAttributes.DBSystem)
@@ -141,7 +141,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	messagingAttributes := &MessagingAttributes{}
+	messagingAttributes := &messagingAttributes{}
 	attributeMap.Range(messagingAttributes.MapAttribute)
 
 	assert.Equal(t, string(conventions.MessagingSystemKey), messagingAttributes.MessagingSystem)
@@ -164,7 +164,7 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	attributeMap := pcommon.NewMap()
 	attributeMap.PutStr(string(conventions.NetPeerPortKey), "xx")
 
-	attrs := &NetworkAttributes{}
+	attrs := &networkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
 
 	// unset from default
@@ -181,7 +181,7 @@ func addNetworkAttributes(m pcommon.Map) {
 	m.PutStr(string(conventions.NetHostNameKey), string(conventions.NetHostNameKey))
 }
 
-func networkAttributesValidations(t *testing.T, networkAttributes NetworkAttributes) {
+func networkAttributesValidations(t *testing.T, networkAttributes networkAttributes) {
 	assert.Equal(t, string(conventions.NetTransportKey), networkAttributes.NetTransport)
 	assert.Equal(t, string(conventions.NetPeerIPKey), networkAttributes.NetPeerIP)
 	assert.Equal(t, int64(1), networkAttributes.NetPeerPort)

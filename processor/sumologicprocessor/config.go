@@ -77,6 +77,6 @@ func createDefaultConfig() component.Config {
 }
 
 // Validate config
-func (cfg *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }

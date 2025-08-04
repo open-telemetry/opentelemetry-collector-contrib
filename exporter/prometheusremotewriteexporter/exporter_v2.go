@@ -6,6 +6,8 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"math"
+	"net/http"
+	"strconv"
 	"sync"
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -93,24 +95,52 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 		return nil
 	}
 
-	// TODO implement batching
-	// TODO how do we handle symbolsTable with batching?
-	requests := make([]*writev2.Request, 0)
-	tsArray := make([]writev2.TimeSeries, 0, len(tsMap))
-	for _, v := range tsMap {
-		tsArray = append(tsArray, *v)
+	state := prwe.batchStatePool.Get().(*batchTimeSeriesState)
+	defer prwe.batchStatePool.Put(state)
+	requests, err := batchTimeSeriesV2(tsMap, symbolsTable, prwe.maxBatchSizeBytes, state)
+	if err != nil {
+		return err
 	}
-
-	requests = append(requests, &writev2.Request{
-		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
-		// See:
-		// * https://github.com/open-telemetry/wg-prometheus/issues/10
-		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
-		Timeseries: orderBySampleTimestampV2(tsArray),
-		Symbols:    symbolsTable.Symbols(),
-	})
 
 	// TODO implement WAl support, can be done after #15277 is fixed
 
 	return prwe.exportV2(ctx, requests)
+}
+
+func (prwe *prwExporter) handleHeader(ctx context.Context, resp *http.Response, headerName, metricType string, recordFunc func(context.Context, int64)) {
+	headerValue := resp.Header.Get(headerName)
+	if headerValue == "" {
+		prwe.settings.Logger.Warn(
+			headerName+" header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
+			zap.String("url", resp.Request.URL.String()),
+		)
+		return
+	}
+
+	value, err := strconv.ParseInt(headerValue, 10, 64)
+	if err != nil {
+		prwe.settings.Logger.Warn(
+			"Failed to convert "+headerName+" header to int64, not counting "+metricType+" written",
+			zap.String("url", resp.Request.URL.String()),
+		)
+		return
+	}
+	recordFunc(ctx, value)
+}
+
+func (prwe *prwExporter) handleWrittenHeaders(ctx context.Context, resp *http.Response) {
+	prwe.handleHeader(ctx, resp,
+		"X-Prometheus-Remote-Write-Samples-Written",
+		"samples",
+		prwe.telemetry.recordWrittenSamples)
+
+	prwe.handleHeader(ctx, resp,
+		"X-Prometheus-Remote-Write-Histograms-Written",
+		"histograms",
+		prwe.telemetry.recordWrittenHistograms)
+
+	prwe.handleHeader(ctx, resp,
+		"X-Prometheus-Remote-Write-Exemplars-Written",
+		"exemplars",
+		prwe.telemetry.recordWrittenExemplars)
 }

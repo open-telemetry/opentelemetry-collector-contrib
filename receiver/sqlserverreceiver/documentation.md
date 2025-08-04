@@ -90,6 +90,12 @@ Time a page will stay in the buffer pool.
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| performance_counter.object_name | Category to which this counter belongs | Any Str | false |
+
 ### sqlserver.page.operation.rate
 
 Number of physical database page operations issued.
@@ -102,9 +108,9 @@ This metric is only available when running on Windows.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The page operation types. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The page operation types. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.page.split.rate
 
@@ -214,6 +220,22 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.computer.uptime
+
+Computer uptime.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {seconds} | Gauge | Int |
+
+### sqlserver.cpu.count
+
+Number of CPUs.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {CPUs} | Gauge | Int |
+
 ### sqlserver.database.backup_or_restore.rate
 
 Total number of backups/restores.
@@ -234,9 +256,9 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` | false |
 
 ### sqlserver.database.execution.errors
 
@@ -266,12 +288,12 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| physical_filename | The physical filename of the file being monitored. | Any Str | false |
+| logical_filename | The logical filename of the file being monitored. | Any Str | false |
+| file_type | The type of file being monitored. | Any Str | false |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.database.latency
 
@@ -285,12 +307,12 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| physical_filename | The physical filename of the file being monitored. | Any Str | false |
+| logical_filename | The logical filename of the file being monitored. | Any Str | false |
+| file_type | The type of file being monitored. | Any Str | false |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.database.operations
 
@@ -304,12 +326,12 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| physical_filename | The physical filename of the file being monitored. | Any Str | false |
+| logical_filename | The logical filename of the file being monitored. | Any Str | false |
+| file_type | The type of file being monitored. | Any Str | false |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.database.tempdb.space
 
@@ -321,9 +343,9 @@ Total free space in temporary DB.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used`` | false |
 
 ### sqlserver.database.tempdb.version_store.size
 
@@ -411,10 +433,10 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| wait.category | Category of the reason for a wait. | Any Str |
-| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| wait.category | Category of the reason for a wait. | Any Str | false |
+| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str | false |
 
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
@@ -452,9 +474,9 @@ Throughput rate of replica data.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` | false |
 
 ### sqlserver.resource_pool.disk.operations
 
@@ -468,9 +490,9 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
@@ -502,10 +524,10 @@ The number of tables.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| table.state | The state of the table. | Str: ``active``, ``inactive`` |
-| table.status | The status of the table. | Str: ``temporary``, ``permanent`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| table.state | The state of the table. | Str: ``active``, ``inactive`` | false |
+| table.status | The status of the table. | Str: ``temporary``, ``permanent`` | false |
 
 ### sqlserver.transaction.delay
 
@@ -532,6 +554,58 @@ events:
   <event_name>:
     enabled: false
 ```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.query_sample
+
+query sample
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| client.address | Hostname or address of the client. | Any Str |
+| client.port | TCP port used by the client. | Any Int |
+| db.namespace | The database name. | Any Str |
+| db.query.text | The text of the database query being executed. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| network.peer.address | IP address of the peer client. | Any Str |
+| network.peer.port | TCP port used by the peer client. | Any Int |
+| sqlserver.blocking_session_id | Session ID that is blocking the current session. 0 if none. | Any Int |
+| sqlserver.context_info | Context information for the session, represented as a hexadecimal string. | Any Str |
+| sqlserver.command | SQL command type being executed. | Any Str |
+| sqlserver.cpu_time | CPU time consumed by the query, in seconds. | Any Double |
+| sqlserver.deadlock_priority | Deadlock priority value for the session. | Any Int |
+| sqlserver.estimated_completion_time | Estimated time remaining for the request to complete, in seconds. | Any Double |
+| sqlserver.lock_timeout | Lock timeout value in seconds. | Any Double |
+| sqlserver.logical_reads | Number of logical reads (data read from cache/memory). | Any Int |
+| sqlserver.open_transaction_count | Number of transactions currently open in the session. | Any Int |
+| sqlserver.percent_complete | Percentage of work completed. | Any Double |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| sqlserver.query_start | Timestamp of when the SQL query started (ISO 8601 format). | Any Str |
+| sqlserver.reads | Number of physical reads performed by the query. | Any Int |
+| sqlserver.request_status | Status of the request (e.g., running, suspended). | Any Str |
+| sqlserver.row_count | Number of rows affected or returned by the query. | Any Int |
+| sqlserver.session_id | ID of the SQL Server session. | Any Int |
+| sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str |
+| sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double |
+| sqlserver.transaction_id | Unique ID of the active transaction. | Any Int |
+| sqlserver.transaction_isolation_level | Transaction isolation level used in the session. Represented as numeric constant. | Any Int |
+| sqlserver.wait_resource | The resource for which the session is waiting. | Any Str |
+| sqlserver.wait_time | Duration in seconds the request has been waiting. | Any Double |
+| sqlserver.wait_type | Type of wait encountered by the request. Empty if none. | Any Str |
+| sqlserver.writes | Number of writes performed by the query. | Any Int |
+| user.name | Login name associated with the SQL Server session. | Any Str |
 
 ### db.server.top_query
 

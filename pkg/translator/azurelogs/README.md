@@ -51,3 +51,33 @@ The mapping for this category is as follows:
 | `host`                | `http.request.header.host`                                                                                                            |
 | `trackingReference`   | `azure.ref`                                                                                                                           |
 | `policyMode`          | `azure.frontdoor.waf.policy.mode`                                                                                                     |
+
+### Front Door Access Logs
+
+| Original Field (JSON) | Log Record Attribute                                                                                                                  |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `trackingReference`   | `azure.ref`                                                                                                                           |
+| `httpMethod`          | `http.request.method`                                                                                                                 |
+| `httpVersion`         | `network.protocol.version`                                                                                                            |
+| `requestUri`          | `url.orginal`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
+| `sni`                 | `tls.server.name`                                                                                                                     |
+| `requestBytes`        | `http.request.size`                                                                                                                   |
+| `responseBytes`       | `http.response.size`                                                                                                                  |
+| `userAgent`           | `user_agent.original`                                                                                                                 |
+| `clientIp`            | `client.address`                                                                                                                      |
+| `clientPort`          | `client.port`                                                                                                                         |
+| `socketIp`            | `source.address`                                                                                                                      |
+| `timeToFirstByte`     | `azure.time_to_first_byte`                                                                                                            |
+| `timeTaken`           | `duration`                                                                                                                            |
+| `requestProtocol`     | `network.protocol.name`                                                                                                               |
+| `securityProtocol`    | 1. `tls.protocol.name`<br>2. `tls.protocol.version`                                                                                   |
+| `httpStatusCode`      | `http.response.status_code`                                                                                                           |
+| `pop`                 | `azure.pop`                                                                                                                           |
+| `cacheStatus`         | `azure.cache_status`                                                                                                                  |
+| `errorInfo`           | `exception.type`                                                                                                                      |
+| `ErrorInfo`           | Same as `errorInfo`                                                                                                                   |
+| `endpoint`            | Either:<br>1. `destination.address` if it is equal to `hostName`<br>2. `network.peer.address` otherwise.                              |
+| `hostName`            | 1. `destination.address` <br>2. `destination.port`, if any                                                                            |
+| `securityCurves`      | `tls.curve`                                                                                                                           |
+| `securityCipher`      | `tls.cipher`                                                                                                                          |
+| `OriginIP`            | Split in:<br>1.`server.address`<br>2.`server.port`                                                                                    |

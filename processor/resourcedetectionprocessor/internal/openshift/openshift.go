@@ -30,7 +30,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		return nil, err
 	}
 
-	tlsCfg, err := userCfg.TLSSettings.LoadTLSConfig(context.Background())
+	tlsCfg, err := userCfg.TLSs.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}

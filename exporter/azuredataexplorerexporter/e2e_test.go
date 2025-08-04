@@ -78,7 +78,7 @@ func TestCreateTracesE2E(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 	// Validate the results
-	recs := []AdxTrace{}
+	recs := []adxTrace{}
 	tableResult := <-dataset.Tables()
 	if tableResult.Err() != nil {
 		panic(tableResult.Err())
@@ -92,7 +92,7 @@ func TestCreateTracesE2E(t *testing.T) {
 		}
 		row := rowResult.Row()
 
-		rec := AdxTrace{}
+		rec := adxTrace{}
 		if err = row.ToStruct(&rec); err != nil {
 			err = rowResult.Err()
 		}
@@ -146,7 +146,7 @@ func TestCreateLogsE2E(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 	// Validate the results
-	recs := []AdxLog{}
+	recs := []adxLog{}
 	tableResult := <-dataset.Tables()
 	if tableResult.Err() != nil {
 		panic(tableResult.Err())
@@ -160,7 +160,7 @@ func TestCreateLogsE2E(t *testing.T) {
 		}
 		row := rowResult.Row()
 
-		rec := AdxLog{}
+		rec := adxLog{}
 		if err = row.ToStruct(&rec); err != nil {
 			err = rowResult.Err()
 		}
@@ -214,7 +214,7 @@ func TestCreateMetricsE2E(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 	// Validate the results
-	recs := []AdxMetric{}
+	recs := []adxMetric{}
 	tableResult := <-dataset.Tables()
 	if err != nil {
 		assert.Fail(t, err.Error())
@@ -231,7 +231,7 @@ func TestCreateMetricsE2E(t *testing.T) {
 		}
 		row := rowResult.Row()
 
-		rec := AdxMetric{}
+		rec := adxMetric{}
 		if err = row.ToStruct(&rec); err != nil {
 			err = rowResult.Err()
 		}

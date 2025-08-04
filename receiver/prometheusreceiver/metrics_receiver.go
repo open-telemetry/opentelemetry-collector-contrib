@@ -184,18 +184,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		return err
 	}
 
-	opts := &scrape.Options{
-		PassMetadataInContext: true,
-		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
-		HTTPClientOptions: []commonconfig.HTTPClientOption{
-			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
-		},
-		EnableCreatedTimestampZeroIngestion: true,
-	}
-
-	if enableNativeHistogramsGate.IsEnabled() {
-		opts.EnableNativeHistogramsIngestion = true
-	}
+	opts := r.initScrapeOptions()
 
 	// for testing only
 	if r.skipOffsetting {
@@ -234,15 +223,29 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	return nil
 }
 
+func (r *pReceiver) initScrapeOptions() *scrape.Options {
+	opts := &scrape.Options{
+		PassMetadataInContext: true,
+		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
+		HTTPClientOptions: []commonconfig.HTTPClientOption{
+			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
+		},
+		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
+		EnableNativeHistogramsIngestion:     enableNativeHistogramsGate.IsEnabled(),
+	}
+
+	return opts
+}
+
 func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) error {
 	r.settings.Logger.Info("Starting Prometheus API server")
 
 	// If allowed CORS origins are provided in the receiver config, combine them into a single regex since the Prometheus API server requires this format.
 	var corsOriginRegexp *grafanaRegexp.Regexp
-	if r.cfg.APIServer.ServerConfig.CORS != nil && len(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins) > 0 {
+	if r.cfg.APIServer.ServerConfig.CORS.HasValue() && len(r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins) > 0 {
 		var combinedOriginsBuilder strings.Builder
-		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[0])
-		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[1:] {
+		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins[0])
+		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins[1:] {
 			combinedOriginsBuilder.WriteString("|")
 			combinedOriginsBuilder.WriteString(origin)
 		}
@@ -343,6 +346,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.AcceptRemoteWriteProtoMsgs,
 		o.EnableOTLPWriteReceiver,
 		o.ConvertOTLPDelta,
+		o.NativeOTLPDeltaIngestion,
 		o.CTZeroIngestionEnabled,
 	)
 

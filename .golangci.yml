@@ -13,6 +13,9 @@ formatters:
         - standard
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+    gofumpt:
+      # Choose whether to use the extra rules.
+      extra-rules: true
 
 issues:
   # Maximum issues count per one linter.
@@ -93,6 +96,9 @@ linters:
             - pkg: math/rand$
               desc: Use math/rand/v2 instead of math/rand
 
+            - pkg: sigs.k8s.io/yaml
+              desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           deny:
@@ -104,9 +110,33 @@ linters:
             - '!**/*_test.go'
 
     exhaustive:
+      # Presence of "default" case in switch statements satisfies exhaustiveness,
+      # even if all enum members are not listed.
+      default-signifies-exhaustive: true
+      # Only run exhaustive check on switches with "//exhaustive:enforce" comment.
       explicit-exhaustive-switch: true
-
+      # Enum members matching the supplied regex do not have to be listed in
+      # switch statements to satisfy exhaustiveness.
       ignore-enum-members: pmetric.MetricTypeEmpty
+
+    gocritic:
+      disabled-checks:
+        - badRegexp
+        - commentedOutCode
+        - deferInLoop
+        - exposedSyncMutex
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - ptrToRefParam
+        - rangeValCopy
+        - returnAfterHttpError
+        - todoCommentWithoutDetail
+        - tooManyResultsChecker
+        - unnamedResult
+        - whyNoLint
+
+      enable-all: true
 
     gosec:
       excludes:
@@ -193,6 +223,8 @@ linters:
         - name: unreachable-code
         # Functions or methods with unused parameters can be a symptom of an unfinished refactoring or a bug.
         - name: unused-parameter
+        # Methods with unused receivers can be a symptom of an unfinished refactoring or a bug.
+        - name: unused-receiver
         # Since Go 1.18, interface{} has an alias: any. This rule proposes to replace instances of interface{} with any.
         - name: use-any
         # identifies calls to fmt.Errorf that can be safely replaced by, the more efficient, errors.New.

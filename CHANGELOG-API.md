@@ -7,6 +7,126 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `metricstransformprocessor`: Unexport Operation, ValueAction, FilterConfig (#40657)
+- `oidcauthextension`: Unexport ProviderContainer (#41633)
+- `pkg/ottl`: Remove experimental transform context option `WithCache` from OTTL Profile context. (#41277)
+- `tailsamplingprocessor`: Latency config name change from `UpperThresholdmsMs` to `UpperThresholdMs` (#41563)
+- `awskinesisexporter`: Unexport Exporter (#40645)
+- `deltatocumulativeprocessor`: Unexport Processor,CountingSink (#40656)
+- `datasetexporter`: Unexport DatasetExporter, ExporterConfig (#40649)
+
+### 💡 Enhancements 💡
+
+- `oidcauthextension`: Add support for multiple OIDC providers. (#40854)
+  Users can now configure multiple OIDC providers in the OIDC Auth extension. Tokens will
+  be matched to a provider based on the `iss` claim.
+  
+- `pkg/ottl`: Add support for combining `scope` with other OTTL contexts. (#39308)
+  Previously, OTTL paths could only use the `instrumentation_scope` context when combined with 
+  lower-level contexts like `log` or `metric`. This change allows the `scope` context to be 
+  used interchangeably with `instrumentation_scope`, improving flexibility and consistency.
+  
+
+<!-- previous-version -->
+
+## v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `splunkhecexporter`: Update 'batcher' config to use internal deprecated struct instead of the one removed from the core. (#41224)
+- `elasticsearchexporter`: Update 'batcher' config to use internal struct instead of the one removed from the core. (#41225)
+- `sumologicprocessor`: Types that do not contribute to intended API surface will be unexported (#40660)
+  https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40641
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add a `GetOr` function to `ottl.Optional` to return a default value when the optional is empty. (#40243)
+- `metricstarttimeprocessor`: Add the start_time_metric, which sets the start time based on another metric in the batch of metrics. (#38383)
+
+<!-- previous-version -->
+
+## v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `azuremonitorexporter`: Unexport MessagingAttributes,ExceptionAttributes,DatabaseAttributes,RPCAttributes,HTTPAttributes,ConnectionVars,NetworkAttributes (#40648)
+- `sentryexporter`: unexport structs and methods which should be private (#40651)
+- `datadogreceiver`: Unexport `Endpoint` struct (#40663)
+- `azureeventhubreceiver`: Unexport AzureResourceLogsEventUnmarshaler (#40661)
+- `kineticaexporter`: unexport structs (#40680)
+  ｜ unexport SumScopeAttribute,ExponentialHistogramResourceAttribute,ExponentialHistogramDataPointAttribute, SummaryResourceAttribute,SummaryDataPointAttribute,Summary,HistogramScopeAttribute,HistogramDatapointExplicitBound, Histogram,GaugeScopeAttribute,ExponentialHistogramDataPointExemplarAttribute,ValueTypePair,HistogramDatapointExemplar, GaugeDataPointExemplarAttribute,HistogramDatapointBucketCount,HistogramDataPointAttribute,GaugeDatapointAttribute, ExponentialHistogramDatapoint,ExponentialHistogram,SumResourceAttribute,SumDatapoint,SummaryDatapointQuantileValues, Sum,KiWriter,HistogramResourceAttribute,HistogramDatapoint,GaugeResourceAttribute,GaugeDatapointExemplar, ExponentialHistogramBucketNegativeCount,SumDataPointExemplarAttribute,GaugeDatapoint,Gauge,ExponentialHistogramScopeAttribute, ExponentialHistogramBucketPositiveCount,AttributeValue,SummaryScopeAttribute,SumDatapointExemplar,SumDataPointAttribute, HistogramDataPointExemplarAttribute,ExponentialHistogramDatapointExemplar,SummaryDatapoint
+- `mysqlreceiver`: Unexport TableStats,TableIoWaitsStats,StatementEventStats,ReplicaStatusStats,IoWaitsStats,IndexIoWaitsStats,MySQLTestConfig structs from mysqlreceiver (#40671)
+- `sumologicextension`: Unexport ErrorAPI (#40655)
+- `prometheusremotewritereceiver`: Unexport MockConsumer,MetricIdentity structs (#40673)
+- `snmpreceiver`: Unexport SNMPData (#40543)
+- `azuredataexplorerexporter`: Unexport Status, Link, AdxTrace, AdxLog, Event, AdxMetric (#40647)
+- `bearertokenauthextension`: Unexport BearerAuthRoundTripper,PerRPCAuth,BearerTokenAuth (#40652)
+- `podmanreceiver`: Unexport ContainerScraper (#40672)
+- `alibabacloudlogserviceexporter`: Unexport KeyValues,KeyValue structs (#40644)
+- `libhoneyreceiver`: remove unused EnvironmentInfo,AuthInfo,TeamInfo (#40669)
+
+### 💡 Enhancements 💡
+
+- `hostmetricsreceiver`: Skeleton nfsscraper -- adds Linux nfs and nfsd metrics from /proc (#39978)
+- `sqlserverreceiver`: do not export Item struct (#40676)
+- `transformprocessor`: Create `With*Functions` factory options to provide custom OTTL functions for logs, metrics or traces to the resulting transform processor. (#39698)
+- `pkg/datadog`: Exposes 'SerializerWithForwarder' interface to allow for direct interaction with the underlying forwarder's lifecycle methods. (#40637)
+- `pkg/datadog`: Creates `agentcomponents` package to be used in Datadog components that rely on external dependencies. (#40532, #40556, #40560)
+  Deprecates `datadog.Zaplogger` in favor of `agentcomponents.ZapLogger`.
+- `pkg/ottl`: Add context inference support for OTTL value expressions (#39158)
+- `pkg/ottl`: Add new ContainsValue converter to check whether a value is present in a slice. (#30420)
+  Add `ottl.PSliceGetter`, a typed getter for `pcommon.Slice`
+  
+- `postgresqlreceiver`: Adopt mdatagen events for postgresqlreceiver. (#40549)
+- `sqlqueryreceiver`: Add SQL connection fields `host`, `port`, `database`, `username`, `password`, and `additional_params`. (#39760)
+  These options can be used instead of the existing `datasource` configuration option.
+
+<!-- previous-version -->
+
+## v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `prometheusremoteexporter`: Delete unused struct `CreatedMetric` (#40266)
+- `k8slogreceiver`: Unexport DockerConfig and CRIConfig (#40274)
+- `several`: Rename fields named `TLSSetting` to `TLS` for consistency with the core repository. (#40452)
+  This change affects the following components:
+    - exporter/datadogexporter
+    - exporter/signalfxexporter
+    - exporter/syslogexporter
+    - extension/awsproxy
+    - extension/oauth2clientauthextension
+    - extension/opampextension
+    - processor/resourcedetectionprocessor/internal/openshift
+    - receiver/awsfirehosereceiver
+    - receiver/cloudfoundryreceiver
+    - receiver/prometheusreceiver/targetallocator
+  
+- `azureblobexporter`: Delete type alias Container (#40268)
+- `headersetterextension`: Unexport Header (#40542)
+- `intervalprocessor`: Unexport Processor (#40273)
+- `splunkenterprisereceiver`: Unexport Info (#40267)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.ValueComparator` API to allow comparing values using the OTTL comparison rules (#40370)
+  This change introduces a new API (`ottl.NewValueComparator`) that allows users to 
+  compare raw values using the OTTL comparison rules. It is useful for implementing 
+  custom logic in OTTL functions where value comparison and consistency is desired.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/prometheusremotewrite`: Fix bug where metric metadata was sent with incorrect metric name if configuration includes 'namespace' (#39826)
+- `prometheusexporter`: Expose Scope Name, Version, Schema URL, and Attributes as labels. (#40004)
+  This work is done to comply with https://github.com/open-telemetry/opentelemetry-specification/issues/4223.
+
+<!-- previous-version -->
+
 ## v0.127.0
 
 ### 🛑 Breaking changes 🛑
