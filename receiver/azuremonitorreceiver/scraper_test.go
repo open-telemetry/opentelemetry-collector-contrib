@@ -94,16 +94,28 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultTestConfig()
 	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	cfgTagsEnabled := createDefaultTestConfig()
-	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.AppendTagsAsAttributes = []string{"*"}
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
 	cfgTagsEnabled.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
+	cfgTagsSelective := createDefaultTestConfig()
+	cfgTagsSelective.AppendTagsAsAttributes = []string{"tagName1"}
+	cfgTagsSelective.MaximumNumberOfMetricsInACall = 2
+	cfgTagsSelective.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
 	cfgSubNameAttr := createDefaultTestConfig()
+	cfgSubNameAttr.AppendTagsAsAttributes = []string{}
 	cfgSubNameAttr.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	cfgSubNameAttr.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled = true
+
+	cfgTagsCaseInsensitive := createDefaultTestConfig()
+	cfgTagsCaseInsensitive.AppendTagsAsAttributes = []string{"TAGNAME1"}
+	cfgTagsCaseInsensitive.MaximumNumberOfMetricsInACall = 2
+	cfgTagsCaseInsensitive.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	tests := []struct {
 		name    string
@@ -130,9 +142,27 @@ func TestAzureScraperScrape(t *testing.T) {
 			},
 		},
 		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsSelective,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
 			name: "metrics_subname_golden",
 			fields: fields{
 				cfg: cfgSubNameAttr,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsCaseInsensitive,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -147,7 +177,7 @@ func TestAzureScraperScrape(t *testing.T) {
 			optionsResolver := newMockClientOptionsResolver(
 				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
-				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
+				getResourcesMockData(),
 				getMetricsDefinitionsMockData(),
 				getMetricsValuesMockData(),
 				nil,
@@ -460,7 +490,7 @@ func getNominalTestScraper() *azureScraper {
 	optionsResolver := newMockClientOptionsResolver(
 		getSubscriptionByIDMockData(),
 		getSubscriptionsMockData(),
-		getResourcesMockData(false),
+		getResourcesMockData(),
 		getMetricsDefinitionsMockData(),
 		getMetricsValuesMockData(),
 		nil,
@@ -570,7 +600,7 @@ func getTimeMock() timeNowIface {
 	return &timeMock{time: time.Now()}
 }
 
-func getResourcesMockData(tags bool) map[string][]armresources.ClientListResponse {
+func getResourcesMockData() map[string][]armresources.ClientListResponse {
 	id1, id2, id3, id4,
 		location1, name1, type1 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
@@ -584,10 +614,14 @@ func getResourcesMockData(tags bool) map[string][]armresources.ClientListRespons
 		Name:     &name1,
 		Type:     &type1,
 	}
-	if tags {
-		tagName1, tagValue1 := "tagName1", "tagValue1"
-		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
+
+	tagName1, tagValue1 := "tagName1", "tagValue1"
+	tagName2, tagValue2 := "tagName2", "tagValue2"
+	resourceID1.Tags = map[string]*string{
+		tagName1: &tagValue1,
+		tagName2: &tagValue2,
 	}
+
 	return map[string][]armresources.ClientListResponse{
 		"subscriptionId1": {
 			{
