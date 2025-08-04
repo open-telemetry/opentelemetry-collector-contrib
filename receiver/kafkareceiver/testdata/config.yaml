@@ -6,6 +6,10 @@ kafka:
   resolve_canonical_bootstrap_servers_only: true
   client_id: the_client_id
   group_id: the_group_id
+  telemetry:
+    metrics:
+      kafka_receiver_records_delay:
+        enabled: true
 kafka/legacy_topic:
   topic: legacy_topic
   metrics:
