@@ -6,12 +6,7 @@ package opensearchexporter
 import (
 	"testing"
 	"time"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
-
-// Helper functions to create test trace data
 
 func TestTraceExporter_ResolveIndexName_WithServiceName(t *testing.T) {
 	resolver := NewIndexResolver()
@@ -125,4 +120,3 @@ func TestTraceExporter_ResolveIndexName_EmptyTimeFormat(t *testing.T) {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
-

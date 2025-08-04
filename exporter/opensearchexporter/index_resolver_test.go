@@ -246,6 +246,19 @@ func createTestTraceData(serviceName string) ptrace.Traces {
 	return td
 }
 
+func createTestLogDataWithCustomAttribute(serviceName, attrKey, attrValue string) plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	if serviceName != "" {
+		rl.Resource().Attributes().PutStr("service.name", serviceName)
+	}
+	rl.Resource().Attributes().PutStr(attrKey, attrValue)
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
+}
+
 func createTestTraceDataWithCustomAttribute(serviceName, attrKey, attrValue string) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
