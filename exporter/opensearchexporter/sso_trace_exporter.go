@@ -68,8 +68,7 @@ func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 	traceTimestamp := time.Now()
 	indexName := s.indexResolver.ResolveTraceIndex(s.config, td, traceTimestamp)
 
-	indexer := newTraceBulkIndexer(s.Dataset, s.Namespace, s.bulkAction, s.model)
-	indexer.indexName = indexName // Set the resolved index name
+	indexer := newTraceBulkIndexer(indexName, s.bulkAction, s.model)
 	startErr := indexer.start(s.client)
 	if startErr != nil {
 		return startErr

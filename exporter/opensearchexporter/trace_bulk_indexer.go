@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
@@ -18,17 +17,15 @@ import (
 )
 
 type traceBulkIndexer struct {
-	dataset     string
-	namespace   string
-	indexName   string // Dynamic index name
+	index       string
 	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(dataset, namespace, bulkAction string, model mappingModel) *traceBulkIndexer {
-	return &traceBulkIndexer{dataset: dataset, namespace: namespace, bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
+func newTraceBulkIndexer(index, bulkAction string, model mappingModel) *traceBulkIndexer {
+	return &traceBulkIndexer{index: index, bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
@@ -139,16 +136,8 @@ func shouldRetryEvent(status int) bool {
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.getIndexName(), Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.index, Body: body}
 	return item
-}
-
-func (tbi *traceBulkIndexer) getIndexName() string {
-	// Use dynamic index name if set, otherwise fallback to default pattern
-	if tbi.indexName != "" {
-		return tbi.indexName
-	}
-	return strings.Join([]string{"ss4o_traces", tbi.dataset, tbi.namespace}, "-")
 }
 
 func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
