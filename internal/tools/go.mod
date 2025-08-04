@@ -11,7 +11,7 @@ require (
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.131.0
-	go.opentelemetry.io/build-tools/checkapi v0.26.0
+	go.opentelemetry.io/build-tools/checkapi v0.23.1
 	go.opentelemetry.io/build-tools/checkfile v0.26.0
 	go.opentelemetry.io/build-tools/chloggen v0.26.0
 	go.opentelemetry.io/build-tools/crosslink v0.26.0
