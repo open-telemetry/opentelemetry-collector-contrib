@@ -29,6 +29,9 @@ func TestResolver(t *testing.T) {
 			IncludeFilePathResolved:   bitString[3] == '1',
 			IncludeFileOwnerName:      bitString[4] == '1' && runtime.GOOS != "windows",
 			IncludeFileOwnerGroupName: bitString[5] == '1' && runtime.GOOS != "windows",
+			MetadataExtraction: MetadataExtraction{
+				Regex: "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$",
+			},
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -86,6 +89,55 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
 			}
 			assert.Len(t, attributes, expectLen)
+		})
+	}
+}
+
+func TestResolver_extractMetadata(t *testing.T) {
+	type fields struct {
+		MetadataExtraction MetadataExtraction
+	}
+	type args struct {
+		path       string
+		attributes map[string]any
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    map[string]any
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			args: args{
+				path:       "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler/1.log",
+				attributes: map[string]any{},
+			},
+			fields: fields{
+				MetadataExtraction: MetadataExtraction{
+					Regex: "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$",
+				},
+			},
+			want: map[string]any{
+				"namespace":      "some",
+				"pod_name":       "kube-scheduler-kind-control-plane",
+				"uid":            "49cc7c1fd3702c40b2686ea7486091d3",
+				"container_name": "kube-scheduler",
+				"restart_count":  "1",
+			},
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Resolver{
+				MetadataExtraction: tt.fields.MetadataExtraction,
+			}
+			got, err := r.extractMetadata(tt.args.path, tt.args.attributes)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractMetadata(%v, %v)", tt.args.path, tt.args.attributes)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "extractMetadata(%v, %v)", tt.args.path, tt.args.attributes)
 		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 )
 
@@ -21,13 +22,19 @@ const (
 	LogFileRecordOffset   = "log.file.record_offset"
 )
 
+type MetadataExtraction struct {
+	Regex   string            `mapstructure:"regex"`
+	Mapping map[string]string `mapstructure:"mapping"`
+}
+
 type Resolver struct {
-	IncludeFileName           bool `mapstructure:"include_file_name,omitempty"`
-	IncludeFilePath           bool `mapstructure:"include_file_path,omitempty"`
-	IncludeFileNameResolved   bool `mapstructure:"include_file_name_resolved,omitempty"`
-	IncludeFilePathResolved   bool `mapstructure:"include_file_path_resolved,omitempty"`
-	IncludeFileOwnerName      bool `mapstructure:"include_file_owner_name,omitempty"`
-	IncludeFileOwnerGroupName bool `mapstructure:"include_file_owner_group_name,omitempty"`
+	IncludeFileName           bool               `mapstructure:"include_file_name,omitempty"`
+	IncludeFilePath           bool               `mapstructure:"include_file_path,omitempty"`
+	IncludeFileNameResolved   bool               `mapstructure:"include_file_name_resolved,omitempty"`
+	IncludeFilePathResolved   bool               `mapstructure:"include_file_path_resolved,omitempty"`
+	IncludeFileOwnerName      bool               `mapstructure:"include_file_owner_name,omitempty"`
+	IncludeFileOwnerGroupName bool               `mapstructure:"include_file_owner_group_name,omitempty"`
+	MetadataExtraction        MetadataExtraction `mapstructure:"metadata_extraction"`
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -50,6 +57,13 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 		return attributes, nil
 	}
 
+	if r.MetadataExtraction.Regex != "" {
+		attributes, err := r.extractMetadata(path, attributes)
+		if err != nil {
+			return attributes, err
+		}
+	}
+
 	resolved := path
 	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
 	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
@@ -69,6 +83,29 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	}
 	if r.IncludeFilePathResolved {
 		attributes[LogFilePathResolved] = abs
+	}
+	return attributes, nil
+}
+
+func (r *Resolver) extractMetadata(path string, attributes map[string]any) (map[string]any, error) {
+	regex, err := regexp.Compile(r.MetadataExtraction.Regex)
+	if err != nil {
+		return attributes, err
+	}
+
+	matches := regex.FindStringSubmatch(path)
+	if matches == nil {
+		return attributes, nil
+	}
+
+	for i, subexp := range regex.SubexpNames() {
+		if i == 0 {
+			// Skip whole match
+			continue
+		}
+		if subexp != "" {
+			attributes[subexp] = matches[i]
+		}
 	}
 	return attributes, nil
 }

@@ -88,6 +88,24 @@ func TestInternalRecombineCfg(t *testing.T) {
 	require.Equal(t, expected, cfg)
 }
 
+func BenchmarkProcess(b *testing.B) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.Nil(b, err)
+
+	for i := 0; i < b.N; i++ {
+		err = op.Process(context.Background(), &entry.Entry{
+			Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+			Attributes: map[string]any{
+				attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+			},
+		})
+		require.NoError(b, err)
+	}
+}
+
 func TestProcess(t *testing.T) {
 	cases := []struct {
 		name   string
