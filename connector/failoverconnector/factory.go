@@ -53,7 +53,7 @@ func createTracesToTraces(
 
 	oCfg := cfg.(*Config)
 
-	// If queue is disabled, return the raw failover connector directly (original behavior)
+	// If queue is disabled, return the raw failover connector
 	if !oCfg.QueueSettings.Enabled {
 		return t, nil
 	}
