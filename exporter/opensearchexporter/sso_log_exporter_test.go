@@ -6,150 +6,206 @@ package opensearchexporter
 import (
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func TestResolveLogIndexName_WithServiceName(t *testing.T) {
+func TestLogExporter_ResolveIndexName_WithServiceName(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "default-service",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{"service.name": "myservice"}
+
+	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-myservice-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_MissingServiceName(t *testing.T) {
+func TestLogExporter_ResolveIndexName_MissingServiceName(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "default-service",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{}
+
+	ld := createTestLogData("")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-default-service-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_NoFallback(t *testing.T) {
+func TestLogExporter_ResolveIndexName_NoFallback(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{}
+
+	ld := createTestLogData("")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-unknown-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_EmptyConfig(t *testing.T) {
-	cfg := &Config{}
-	attrs := map[string]string{}
-	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
-	expected := ""
-	if index != expected {
-		t.Errorf("expected %q, got %q", expected, index)
-	}
-}
-
-func TestResolveLogIndexName_EmptyLogsIndex(t *testing.T) {
+func TestLogExporter_ResolveIndexName_EmptyLogsIndex(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "",
 		LogsIndexFallback:   "",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{}
+
+	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
-	expected := "-2025.06.07"
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
+	expected := "ss4o_logs-default-namespace-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_UnknownPlaceholder(t *testing.T) {
+
+func TestLogExporter_ResolveIndexName_UnknownPlaceholder(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{doesnotexist}",
 		LogsIndexFallback:   "",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{"service.name": "myservice"}
+
+	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-unknown-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_EmptyTimeFormat(t *testing.T) {
+func TestLogExporter_ResolveIndexName_EmptyTimeFormat(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "default-service",
 		LogsIndexTimeFormat: "",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{"service.name": "myservice"}
+
+	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-myservice"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_TwoPlaceholders(t *testing.T) {
+func TestLogExporter_ResolveIndexName_TwoPlaceholders(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}-%{custom.label}",
 		LogsIndexFallback:   "fallback",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{"service.name": "svc", "custom.label": "foo"}
+
+	ld := createTestLogDataWithCustomAttribute("svc", "custom.label", "foo")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-svc-foo-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_TwoPlaceholders_OneMissing(t *testing.T) {
+func TestLogExporter_ResolveIndexName_TwoPlaceholders_OneMissing(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}-%{custom.label}",
 		LogsIndexFallback:   "fallback",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{"service.name": "svc"}
+
+	ld := createTestLogData("svc")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "otel-logs-svc-fallback-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
 
-func TestResolveLogIndexName_AttributeWithSpecialChars(t *testing.T) {
+func TestLogExporter_ResolveIndexName_AttributeWithSpecialChars(t *testing.T) {
+	resolver := NewIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "%{attribute.something}",
 		LogsIndexFallback:   "fallback",
 		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
 	}
-	attrs := map[string]string{"attribute.something": "specialValue"}
+
+	ld := createTestLogDataWithCustomAttribute("", "attribute.something", "specialValue")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolveLogIndexName(cfg, attrs, ts)
+	index := resolver.ResolveLogIndex(cfg, ld, ts)
 	expected := "specialValue-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
+}
+
+// Helper functions to create test log data
+
+func createTestLogData(serviceName string) plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	if serviceName != "" {
+		rl.Resource().Attributes().PutStr("service.name", serviceName)
+	}
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
+}
+
+func createTestLogDataWithCustomAttribute(serviceName, attrKey, attrValue string) plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	if serviceName != "" {
+		rl.Resource().Attributes().PutStr("service.name", serviceName)
+	}
+	rl.Resource().Attributes().PutStr(attrKey, attrValue)
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
 }

@@ -20,6 +20,7 @@ import (
 type traceBulkIndexer struct {
 	dataset     string
 	namespace   string
+	indexName   string // Dynamic index name
 	bulkAction  string
 	model       mappingModel
 	errs        []error
@@ -27,7 +28,7 @@ type traceBulkIndexer struct {
 }
 
 func newTraceBulkIndexer(dataset, namespace, bulkAction string, model mappingModel) *traceBulkIndexer {
-	return &traceBulkIndexer{dataset, namespace, bulkAction, model, nil, nil}
+	return &traceBulkIndexer{dataset: dataset, namespace: namespace, bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
@@ -143,6 +144,10 @@ func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.
 }
 
 func (tbi *traceBulkIndexer) getIndexName() string {
+	// Use dynamic index name if set, otherwise fallback to default pattern
+	if tbi.indexName != "" {
+		return tbi.indexName
+	}
 	return strings.Join([]string{"ss4o_traces", tbi.dataset, tbi.namespace}, "-")
 }
 
