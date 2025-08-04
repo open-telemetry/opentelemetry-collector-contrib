@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.37.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/extension/extensiontest v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/pdata v1.37.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
 	google.golang.org/protobuf v1.36.6
