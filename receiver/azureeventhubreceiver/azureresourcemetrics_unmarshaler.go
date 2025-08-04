@@ -78,8 +78,9 @@ func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// azureMetricRecord represents a single Azure Metric following
+// azureMetricRecord represents a single Azure Platform Metric record following
 // the common schema does not exist (yet):
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/platform/stream-monitoring-data-event-hubs#data-formats
 type azureResourceMetricRecord struct {
 	Time       string `json:"time"`
 	ResourceID string `json:"resourceId"`
@@ -178,8 +179,8 @@ func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger
 	return nil
 }
 
-// azureMetricRecord represents a single Azure Metric following
-// the common schema does not exist (yet):
+// azureMetricRecord represents a single Azure Application Metric record
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appmetrics
 type azureAppMetricRecord struct {
 	Time string `json:"time"`
 
