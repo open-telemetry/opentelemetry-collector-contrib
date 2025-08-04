@@ -6,6 +6,7 @@ package serializeprofiles // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -92,9 +93,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 		frequency = 1
 	}
 
-	for i := 0; i < profile.Sample().Len(); i++ {
-		sample := profile.Sample().At(i)
-
+	for _, sample := range profile.Sample().All() {
 		frames, frameTypes, leafFrame, err := stackFrames(dic, profile, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
@@ -138,8 +137,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 		}
 
 		// Add one event per timestamp and its count value.
-		for j := 0; j < sample.TimestampsUnixNano().Len(); j++ {
-			t := sample.TimestampsUnixNano().At(j)
+		for j, t := range sample.TimestampsUnixNano().All() {
 			event.TimeStamp = newUnixTime64(t)
 
 			count := 1
@@ -299,9 +297,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 		fileNames := make([]string, 0, location.Line().Len())
 		lineNumbers := make([]int32, 0, location.Line().Len())
 
-		for i := 0; i < location.Line().Len(); i++ {
-			line := location.Line().At(i)
-
+		for _, line := range location.Line().All() {
 			if line.FunctionIndex() < int32(dic.FunctionTable().Len()) {
 				functionNames = append(functionNames, getString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).NameStrindex())))
 				fileNames = append(fileNames, getString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).FilenameStrindex())))
@@ -362,13 +358,17 @@ type attributable interface {
 	AttributeIndices() pcommon.Int32Slice
 }
 
+// errMissingAttribute allows to differentiate errors handling the AttributeTable
+// and indicates that a attribute was not included in the AttributeTable.
+var errMissingAttribute = errors.New("missing attribute")
+
 // getStringFromAttribute returns a string from one of attrIndices from the attribute table
 // of the profile if the attribute key matches the expected attrKey.
 func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable, attrKey string) (string, error) {
 	lenAttrTable := dic.AttributeTable().Len()
 
-	for i := 0; i < record.AttributeIndices().Len(); i++ {
-		idx := int(record.AttributeIndices().At(i))
+	for _, idx32 := range record.AttributeIndices().All() {
+		idx := int(idx32)
 
 		if idx >= lenAttrTable {
 			return "", fmt.Errorf("requested attribute index (%d) "+
@@ -379,26 +379,31 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 		}
 	}
 
-	return "", fmt.Errorf("failed to get '%s' from indices %v", attrKey, record.AttributeIndices().AsRaw())
+	return "", fmt.Errorf("failed to get '%s' from indices %v: %w",
+		attrKey, record.AttributeIndices().AsRaw(), errMissingAttribute)
 }
 
-// getBuildID returns the Build ID for the given mapping.
+// getBuildID returns the Build ID for the given mapping. It checks for both
+// old-style Build ID (stored with the mapping) and Build ID as attribute.
+// If the build ID attribute is missing, returns a zero FileID and no error.
 func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libpf.FileID, error) {
 	// Fetch build ID from profiles.attribute_table.
 	buildIDStr, err := getStringFromAttribute(dic, mapping, "process.executable.build_id.htlhash")
-	if err != nil {
+	switch {
+	case err == nil:
+		return libpf.FileIDFromString(buildIDStr)
+	case errors.Is(err, errMissingAttribute):
+		return libpf.NewFileID(0, 0), nil
+	default:
 		return libpf.FileID{}, err
 	}
-	return libpf.FileIDFromString(buildIDStr)
 }
 
 func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
 	metadata := make([]ExeMetadata, 0, mappings.Len())
 	lastSeen := GetStartOfWeekFromTime(time.Now())
 
-	for i := 0; i < mappings.Len(); i++ {
-		mapping := mappings.At(i)
-
+	for _, mapping := range mappings.All() {
 		filename := dic.StringTable().At(int(mapping.FilenameStrindex()))
 		if filename == "" {
 			// This is true for interpreted languages like Python.

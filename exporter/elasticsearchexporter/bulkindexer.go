@@ -71,7 +71,7 @@ func newBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 ) (bulkIndexer, error) {
-	if config.Batcher.enabledSet {
+	if config.Batcher.enabledSet || (config.QueueBatchConfig.Enabled && config.QueueBatchConfig.Batch.HasValue()) {
 		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
 	}
 	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
@@ -415,7 +415,9 @@ func flushBulkIndexer(
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
+	startTime := time.Now()
 	stat, err := bi.Flush(ctx)
+	latency := time.Since(startTime).Seconds()
 	defaultMetaAttrs := getAttributesFromMetadataKeys(ctx, tMetaKeys)
 	defaultAttrsSet := attribute.NewSet(defaultMetaAttrs...)
 	if flushed := bi.BytesFlushed(); flushed > 0 {
@@ -436,6 +438,7 @@ func flushBulkIndexer(
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
+			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		case errors.As(err, &bulkFailedErr):
 			var outcome string
 			code := bulkFailedErr.StatusCode()
@@ -449,32 +452,35 @@ func flushBulkIndexer(
 			}
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
-					semconv.HTTPResponseStatusCode(bulkFailedErr.StatusCode()),
+					semconv.HTTPResponseStatusCode(code),
 					attribute.String("outcome", outcome),
 				}, defaultMetaAttrs...)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
+			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				}, defaultMetaAttrs...)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
+			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		}
 	} else {
 		// Record a successful completed bulk request
-		tb.ElasticsearchBulkRequestsCount.Add(
-			ctx,
-			int64(1),
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "success"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
+		successAttrSet := metric.WithAttributeSet(attribute.NewSet(
+			append([]attribute.KeyValue{
+				attribute.String("outcome", "success"),
+				semconv.HTTPResponseStatusCode(http.StatusOK),
+			}, defaultMetaAttrs...)...,
+		))
+
+		tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), successAttrSet)
+		tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, successAttrSet)
 	}
 
 	var tooManyReqs, clientFailed, serverFailed int64

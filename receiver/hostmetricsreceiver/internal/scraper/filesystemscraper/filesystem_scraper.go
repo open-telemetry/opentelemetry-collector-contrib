@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -132,21 +133,12 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 }
 
 func getMountMode(opts []string) string {
-	if exists(opts, "rw") {
+	if slices.Contains(opts, "rw") {
 		return "rw"
-	} else if exists(opts, "ro") {
+	} else if slices.Contains(opts, "ro") {
 		return "ro"
 	}
 	return "unknown"
-}
-
-func exists(options []string, opt string) bool {
-	for _, o := range options {
-		if o == opt {
-			return true
-		}
-	}
-	return false
 }
 
 func (f *fsFilter) includePartition(partition disk.PartitionStat) bool {

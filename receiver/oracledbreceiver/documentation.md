@@ -273,6 +273,14 @@ Number of DML statements that were executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {statements} | Sum | Int | Cumulative | true |
 
+### oracledb.logons
+
+Number of logon operations
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation} | Sum | Int | Cumulative | true |
+
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
@@ -437,6 +445,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str |
 | oracledb.sql_id | The SQL ID of the query. | Any Str |
 | oracledb.child_number | The child number of the query. | Any Str |
+| oracledb.child_address | Address of the child cursor. | Any Str |
 | oracledb.application_wait_time | The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta). | Any Double |
 | oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int |
 | oracledb.cluster_wait_time | Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta). | Any Double |
