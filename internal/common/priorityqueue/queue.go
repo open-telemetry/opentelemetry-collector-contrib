@@ -1,4 +1,7 @@
-package priorityqueue
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package priorityqueue // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 
 import (
 	"cmp"
