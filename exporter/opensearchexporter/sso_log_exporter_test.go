@@ -6,9 +6,6 @@ package opensearchexporter
 import (
 	"testing"
 	"time"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestLogExporter_ResolveIndexName_WithServiceName(t *testing.T) {
@@ -86,7 +83,6 @@ func TestLogExporter_ResolveIndexName_EmptyLogsIndex(t *testing.T) {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
-
 
 func TestLogExporter_ResolveIndexName_UnknownPlaceholder(t *testing.T) {
 	resolver := NewIndexResolver()
@@ -182,4 +178,3 @@ func TestLogExporter_ResolveIndexName_AttributeWithSpecialChars(t *testing.T) {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
 }
-
