@@ -71,7 +71,7 @@ func newBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 ) (bulkIndexer, error) {
-	if config.Batcher.enabledSet {
+	if config.Batcher.enabledSet || (config.QueueBatchConfig.Enabled && config.QueueBatchConfig.Batch.HasValue()) {
 		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
 	}
 	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
