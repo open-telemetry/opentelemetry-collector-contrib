@@ -16,7 +16,6 @@ import (
 
 type logExporter struct {
 	client        *opensearch.Client
-	Index         string
 	bulkAction    string
 	model         mappingModel
 	httpSettings  confighttp.ClientConfig
@@ -39,7 +38,6 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 
 	return &logExporter{
 		telemetry:     set.TelemetrySettings,
-		Index:         getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex),
 		bulkAction:    cfg.BulkAction,
 		httpSettings:  cfg.ClientConfig,
 		model:         model,

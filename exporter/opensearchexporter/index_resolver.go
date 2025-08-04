@@ -29,7 +29,7 @@ func NewIndexResolver() *IndexResolver {
 func (r *IndexResolver) ResolveLogIndex(cfg *Config, ld plog.Logs, timestamp time.Time) string {
 	if cfg.LogsIndex == "" {
 		// Use default pattern
-		indexName := getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex)
+		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_logs")
 		return r.appendTimeFormat(indexName, cfg.LogsIndexTimeFormat, timestamp)
 	}
 
@@ -41,7 +41,7 @@ func (r *IndexResolver) ResolveLogIndex(cfg *Config, ld plog.Logs, timestamp tim
 func (r *IndexResolver) ResolveTraceIndex(cfg *Config, td ptrace.Traces, timestamp time.Time) string {
 	if cfg.TracesIndex == "" {
 		// Use default pattern
-		indexName := strings.Join([]string{"ss4o_traces", cfg.Dataset, cfg.Namespace}, "-")
+		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_traces")
 		return r.appendTimeFormat(indexName, cfg.TracesIndexTimeFormat, timestamp)
 	}
 
@@ -169,9 +169,6 @@ func convertGoTimeFormat(format string) string {
 }
 
 // getIndexName provides default index naming for backward compatibility
-func getIndexName(dataset, namespace, index string) string {
-	if index != "" {
-		return index
-	}
-	return strings.Join([]string{"ss4o_logs", dataset, namespace}, "-")
+func getIndexName(dataset, namespace, defaultPrefix string) string {
+	return strings.Join([]string{defaultPrefix, dataset, namespace}, "-")
 }
