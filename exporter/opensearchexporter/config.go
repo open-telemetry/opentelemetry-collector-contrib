@@ -47,19 +47,28 @@ type Config struct {
 	LogsIndexFallback   string `mapstructure:"logs_index_fallback"`
 	LogsIndexTimeFormat string `mapstructure:"logs_index_time_format"`
 
+	// TracesIndex configures the index, index alias, or data stream name traces should be indexed in.
+	// https://opensearch.org/docs/latest/im-plugin/index/
+	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+	TracesIndex           string `mapstructure:"traces_index"`
+	TracesIndexFallback   string `mapstructure:"traces_index_fallback"`
+	TracesIndexTimeFormat string `mapstructure:"traces_index_time_format"`
+
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
 	BulkAction string `mapstructure:"bulk_action"`
 }
 
 var (
-	errConfigNoEndpoint            = errors.New("endpoint must be specified")
-	errDatasetNoValue              = errors.New("dataset must be specified")
-	errNamespaceNoValue            = errors.New("namespace must be specified")
-	errBulkActionInvalid           = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid          = errors.New("mapping.mode is invalid")
-	errLogsIndexInvalidPlaceholder = errors.New("logs_index can only have one attribute or context key placeholder")
-	errLogsIndexTimeFormatInvalid  = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errConfigNoEndpoint             = errors.New("endpoint must be specified")
+	errDatasetNoValue               = errors.New("dataset must be specified")
+	errNamespaceNoValue             = errors.New("namespace must be specified")
+	errBulkActionInvalid            = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid           = errors.New("mapping.mode is invalid")
+	errLogsIndexInvalidPlaceholder  = errors.New("logs_index can only have one attribute or context key placeholder")
+	errLogsIndexTimeFormatInvalid   = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errTracesIndexInvalidPlaceholder = errors.New("traces_index can only have one attribute or context key placeholder")
+	errTracesIndexTimeFormatInvalid  = errors.New("traces_index_time_format contains unsupported or invalid tokens")
 )
 
 type MappingsSettings struct {
@@ -155,19 +164,23 @@ func (cfg *Config) Validate() error {
 
 	// Validate LogsIndexTimeFormat if set
 	if cfg.LogsIndexTimeFormat != "" {
-		validTokens := []string{"yyyy", "yy", "MM", "dd", "HH", "mm", "ss"}
-		format := cfg.LogsIndexTimeFormat
-		remaining := format
-		for _, token := range validTokens {
-			remaining = strings.ReplaceAll(remaining, token, "")
+		if err := validateTimeFormat(cfg.LogsIndexTimeFormat); err != nil {
+			multiErr = append(multiErr, errLogsIndexTimeFormatInvalid)
 		}
-		// After removing all valid tokens, only allowed separators should remain
-		allowed := "-._+"
-		for _, r := range remaining {
-			if !strings.ContainsRune(allowed, r) {
-				multiErr = append(multiErr, errLogsIndexTimeFormatInvalid)
-				break
-			}
+	}
+
+	// Validate traces index configuration only contains one placeholder
+	if cfg.TracesIndex != "" {
+		placeholderCount := strings.Count(cfg.TracesIndex, "%{")
+		if placeholderCount > 1 {
+			multiErr = append(multiErr, errTracesIndexInvalidPlaceholder)
+		}
+	}
+
+	// Validate TracesIndexTimeFormat if set
+	if cfg.TracesIndexTimeFormat != "" {
+		if err := validateTimeFormat(cfg.TracesIndexTimeFormat); err != nil {
+			multiErr = append(multiErr, errTracesIndexTimeFormatInvalid)
 		}
 	}
 
@@ -180,4 +193,21 @@ func (cfg *Config) Validate() error {
 	}
 
 	return errors.Join(multiErr...)
+}
+
+// validateTimeFormat validates a time format string contains only valid tokens and separators
+func validateTimeFormat(format string) error {
+	validTokens := []string{"yyyy", "yy", "MM", "dd", "HH", "mm", "ss"}
+	remaining := format
+	for _, token := range validTokens {
+		remaining = strings.ReplaceAll(remaining, token, "")
+	}
+	// After removing all valid tokens, only allowed separators should remain
+	allowed := "-._+"
+	for _, r := range remaining {
+		if !strings.ContainsRune(allowed, r) {
+			return errors.New("invalid time format")
+		}
+	}
+	return nil
 }

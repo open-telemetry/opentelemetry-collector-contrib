@@ -6,6 +6,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"go.opentelemetry.io/collector/component"
@@ -16,13 +17,15 @@ import (
 )
 
 type ssoTracesExporter struct {
-	client       *opensearch.Client
-	Namespace    string
-	Dataset      string
-	bulkAction   string
-	model        mappingModel
-	httpSettings confighttp.ClientConfig
-	telemetry    component.TelemetrySettings
+	client        *opensearch.Client
+	Namespace     string
+	Dataset       string
+	bulkAction    string
+	model         mappingModel
+	httpSettings  confighttp.ClientConfig
+	telemetry     component.TelemetrySettings
+	config        *Config
+	indexResolver *IndexResolver
 }
 
 func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter {
@@ -32,12 +35,14 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 	}
 
 	return &ssoTracesExporter{
-		telemetry:    set.TelemetrySettings,
-		Namespace:    cfg.Namespace,
-		Dataset:      cfg.Dataset,
-		bulkAction:   cfg.BulkAction,
-		model:        model,
-		httpSettings: cfg.ClientConfig,
+		telemetry:     set.TelemetrySettings,
+		Namespace:     cfg.Namespace,
+		Dataset:       cfg.Dataset,
+		bulkAction:    cfg.BulkAction,
+		model:         model,
+		httpSettings:  cfg.ClientConfig,
+		config:        cfg,
+		indexResolver: NewIndexResolver(),
 	}
 }
 
@@ -57,7 +62,13 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 }
 
 func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
+	// Resolve index name using the common index resolver
+	// Use collector time for consistency with logs and elasticsearch exporter
+	traceTimestamp := time.Now()
+	indexName := s.indexResolver.ResolveTraceIndex(s.config, td, traceTimestamp)
+	
 	indexer := newTraceBulkIndexer(s.Dataset, s.Namespace, s.bulkAction, s.model)
+	indexer.indexName = indexName // Set the resolved index name
 	startErr := indexer.start(s.client)
 	if startErr != nil {
 		return startErr
