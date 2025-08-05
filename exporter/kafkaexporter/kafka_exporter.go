@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"iter"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -145,8 +146,14 @@ func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	var m kafkaclient.Messages
 	for key, data := range e.messenger.partitionData(data) {
+		topic := e.messenger.getTopic(ctx, data)
 		partitionMessages, err := e.messenger.marshalData(data)
 		if err != nil {
+			err = fmt.Errorf("issue exporting from topic %q: %w", topic, err)
+			e.logger.Error("kafka records marshal data failed",
+				zap.String("topic", topic),
+				zap.Error(err),
+			)
 			return consumererror.NewPermanent(err)
 		}
 		for i := range partitionMessages {
@@ -158,11 +165,30 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		}
 		m.Count += len(partitionMessages)
 		m.TopicMessages = append(m.TopicMessages, kafkaclient.TopicMessages{
-			Topic:    e.messenger.getTopic(ctx, data),
+			Topic:    topic,
 			Messages: partitionMessages,
 		})
 	}
-	return e.producer.ExportData(ctx, m)
+	err := e.producer.ExportData(ctx, m)
+	if err == nil {
+		if e.logger.Core().Enabled(zap.DebugLevel) {
+			for _, mi := range m.TopicMessages {
+				e.logger.Debug("kafka records exported",
+					zap.Int("records", len(mi.Messages)),
+					zap.String("topic", mi.Topic),
+				)
+			}
+		}
+	} else {
+		for _, mi := range m.TopicMessages {
+			e.logger.Error("kafka records export failed",
+				zap.Int("records", len(mi.Messages)),
+				zap.String("topic", mi.Topic),
+				zap.Error(err),
+			)
+		}
+	}
+	return err
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
