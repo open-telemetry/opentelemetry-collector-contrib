@@ -31,12 +31,11 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps    bool
-	addMetricSuffixes bool
-	namespace         string
-	constLabels       prometheus.Labels
-	metricFamilies    sync.Map
-	metricExpiration  time.Duration
+	sendTimestamps   bool
+	namespace        string
+	constLabels      prometheus.Labels
+	metricFamilies   sync.Map
+	metricExpiration time.Duration
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -48,18 +47,65 @@ type metricFamily struct {
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
-	labelNamer := otlptranslator.LabelNamer{}
+	labelNamer := configureLabelNamer(config)
 	return &collector{
-		accumulator:       newAccumulator(logger, config.MetricExpiration),
-		logger:            logger,
-		namespace:         labelNamer.Build(config.Namespace),
-		sendTimestamps:    config.SendTimestamps,
-		constLabels:       config.ConstLabels,
-		addMetricSuffixes: config.AddMetricSuffixes,
-		metricExpiration:  config.MetricExpiration,
-		metricNamer:       otlptranslator.MetricNamer{WithMetricSuffixes: config.AddMetricSuffixes, Namespace: config.Namespace},
-		labelNamer:        labelNamer,
+		accumulator:      newAccumulator(logger, config.MetricExpiration),
+		logger:           logger,
+		namespace:        labelNamer.Build(config.Namespace),
+		sendTimestamps:   config.SendTimestamps,
+		constLabels:      config.ConstLabels,
+		metricExpiration: config.MetricExpiration,
+		metricNamer:      configureMetricNamer(config),
+		labelNamer:       labelNamer,
 	}
+}
+
+// configureMetricNamer configures the MetricNamer based on the translation strategy or legacy configuration
+func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
+	withSuffixes, utf8Allowed := getTranslationConfiguration(config)
+	return otlptranslator.MetricNamer{
+		WithMetricSuffixes: withSuffixes,
+		Namespace:          config.Namespace,
+		UTF8Allowed:        utf8Allowed,
+	}
+}
+
+// configureLabelNamer configures the LabelNamer based on the translation strategy or legacy configuration
+func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
+	_, utf8Allowed := getTranslationConfiguration(config)
+	return otlptranslator.LabelNamer{
+		UTF8Allowed: utf8Allowed,
+	}
+}
+
+// getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
+// Returns (withSuffixes, allowUTF8)
+func getTranslationConfiguration(config *Config) (bool, bool) {
+	// If TranslationStrategy is explicitly set, use it (takes precedence)
+	if config.TranslationStrategy != "" {
+		switch config.TranslationStrategy {
+		case underscoreEscapingWithSuffixes:
+			return true, false
+		case underscoreEscapingWithoutSuffixes:
+			return false, false
+		case noUTF8EscapingWithSuffixes:
+			return true, true
+		case noTranslation:
+			return false, true
+		default:
+			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
+			return true, false
+		}
+	}
+
+	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
+	if disableAddMetricSuffixesFeatureGate.IsEnabled() {
+		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
+		return true, false
+	}
+
+	// Fall back to legacy AddMetricSuffixes behavior, UTF-8 escaped to underscores.
+	return config.AddMetricSuffixes, false
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {

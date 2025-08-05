@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"sync"
 	"time"
 
@@ -26,6 +27,42 @@ var (
 	errClientNotInit    = errors.New("client not initialized")
 	httpResponseClasses = map[string]int{"1xx": 1, "2xx": 2, "3xx": 3, "4xx": 4, "5xx": 5}
 )
+
+// timingInfo holds timing information for different phases of HTTP request
+type timingInfo struct {
+	dnsStart      time.Time
+	dnsEnd        time.Time
+	connectStart  time.Time
+	connectEnd    time.Time
+	tlsStart      time.Time
+	tlsEnd        time.Time
+	writeStart    time.Time
+	writeEnd      time.Time
+	readStart     time.Time
+	readEnd       time.Time
+	requestStart  time.Time
+	responseStart time.Time
+}
+
+// getDurations calculates the duration for each phase in milliseconds
+func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
+	if !t.dnsStart.IsZero() && !t.dnsEnd.IsZero() {
+		dnsMs = t.dnsEnd.Sub(t.dnsStart).Milliseconds()
+	}
+	if !t.connectStart.IsZero() && !t.connectEnd.IsZero() {
+		tcpMs = t.connectEnd.Sub(t.connectStart).Milliseconds()
+	}
+	if !t.tlsStart.IsZero() && !t.tlsEnd.IsZero() {
+		tlsMs = t.tlsEnd.Sub(t.tlsStart).Milliseconds()
+	}
+	if !t.writeStart.IsZero() && !t.writeEnd.IsZero() {
+		requestMs = t.writeEnd.Sub(t.writeStart).Milliseconds()
+	}
+	if !t.readStart.IsZero() && !t.readEnd.IsZero() {
+		responseMs = t.readEnd.Sub(t.readStart).Milliseconds()
+	}
+	return
+}
 
 type httpcheckScraper struct {
 	clients  []*http.Client
@@ -124,10 +161,43 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			now := pcommon.NewTimestampFromTime(time.Now())
 
+			// Initialize timing info
+			timing := &timingInfo{}
+
+			// Create trace context for timing collection
+			trace := &httptrace.ClientTrace{
+				DNSStart: func(_ httptrace.DNSStartInfo) {
+					timing.dnsStart = time.Now()
+				},
+				DNSDone: func(_ httptrace.DNSDoneInfo) {
+					timing.dnsEnd = time.Now()
+				},
+				ConnectStart: func(_, _ string) {
+					timing.connectStart = time.Now()
+				},
+				ConnectDone: func(_, _ string, _ error) {
+					timing.connectEnd = time.Now()
+				},
+				TLSHandshakeStart: func() {
+					timing.tlsStart = time.Now()
+				},
+				TLSHandshakeDone: func(_ tls.ConnectionState, _ error) {
+					timing.tlsEnd = time.Now()
+				},
+				WroteRequest: func(_ httptrace.WroteRequestInfo) {
+					timing.writeEnd = time.Now()
+				},
+				GotFirstResponseByte: func() {
+					timing.responseStart = time.Now()
+					timing.readStart = time.Now()
+				},
+			}
+
+			// Create request with trace context
 			req, err := http.NewRequestWithContext(
-				ctx,
+				httptrace.WithClientTrace(ctx, trace),
 				h.cfg.Targets[targetIndex].Method,
-				h.cfg.Targets[targetIndex].Endpoint, // Use the ClientConfig.Endpoint
+				h.cfg.Targets[targetIndex].Endpoint,
 				http.NoBody,
 			)
 			if err != nil {
@@ -142,7 +212,10 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Send the request and measure response time
 			start := time.Now()
+			timing.requestStart = start
+			timing.writeStart = start
 			resp, err := targetClient.Do(req)
+			timing.readEnd = time.Now()
 
 			// Always close response body if it exists, even on error
 			if resp != nil && resp.Body != nil {
@@ -172,18 +245,46 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					)
 				}
 			}
+			// Record timing breakdown metrics
+			dnsMs, tcpMs, tlsMs, requestMs, responseMs := timing.getDurations()
+			endpoint := h.cfg.Targets[targetIndex].Endpoint
+
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
 				time.Since(start).Milliseconds(),
-				h.cfg.Targets[targetIndex].Endpoint, // Use the correct endpoint
+				endpoint,
 			)
+
+			// Record detailed timing metrics if enabled
+			// Always record timing metrics regardless of value for enabled metrics
+			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsMs, endpoint)
+			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpMs, endpoint, "tcp")
+			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsMs, endpoint)
+			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestMs, endpoint)
+			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseMs, endpoint)
+
+			// Check if TLS metric is enabled and this is an HTTPS endpoint
+			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
+				// Extract TLS info directly from the HTTP response
+				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
+				if issuer != "" || commonName != "" || len(sans) > 0 {
+					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
+						now,
+						timeLeft,
+						endpoint,
+						issuer,
+						commonName,
+						sans,
+					)
+				}
+			}
 
 			statusCode := 0
 			if err != nil {
 				h.mb.RecordHttpcheckErrorDataPoint(
 					now,
 					int64(1),
-					h.cfg.Targets[targetIndex].Endpoint,
+					endpoint,
 					err.Error(),
 				)
 			} else {
@@ -196,7 +297,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(1),
-						h.cfg.Targets[targetIndex].Endpoint,
+						endpoint,
 						int64(statusCode),
 						req.Method,
 						class,

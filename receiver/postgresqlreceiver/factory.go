@@ -67,11 +67,9 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySampleCollection: QuerySampleCollection{
-			Enabled:         false,
 			MaxRowsPerQuery: 1000,
 		},
 		TopQueryCollection: TopQueryCollection{
-			Enabled:                false,
 			TopNQuery:              1000,
 			MaxRowsPerQuery:        1000,
 			MaxExplainEachInterval: 1000,
@@ -126,7 +124,7 @@ func createLogsReceiver(
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
-	if cfg.QuerySampleCollection.Enabled {
+	if cfg.Events.DbServerQuerySample.Enabled {
 		// query sample collection does not need cache, but we do not want to make it
 		// nil, so create one size 1 cache as a placeholder.
 		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
@@ -144,7 +142,7 @@ func createLogsReceiver(
 		opts = append(opts, opt)
 	}
 
-	if cfg.TopQueryCollection.Enabled {
+	if cfg.Events.DbServerTopQuery.Enabled {
 		// we have 10 updated only attributes. so we set the cache size accordingly.
 		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
