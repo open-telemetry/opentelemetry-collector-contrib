@@ -309,6 +309,10 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			continue
 		}
 		strVal := value.Str()
+		if s.config.RedactAllTypes {
+			strVal = value.AsString()
+		}
+
 		if s.shouldAllowValue(strVal) {
 			allowedKeys = append(allowedKeys, k)
 			continue

@@ -43,6 +43,9 @@ attributes:
   oracledb.child_number:
     description: The child number of the query.
     type: string
+  oracledb.child_address:
+    description: Address of the child cursor.
+    type: string
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
@@ -172,6 +175,7 @@ events:
       - oracledb.query_plan
       - oracledb.sql_id
       - oracledb.child_number
+      - oracledb.child_address
       - oracledb.application_wait_time
       - oracledb.buffer_gets
       - oracledb.cluster_wait_time
@@ -579,6 +583,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.logons:
+    description: Number of logon operations
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+
+
 tests:
   config:
   goleak:
