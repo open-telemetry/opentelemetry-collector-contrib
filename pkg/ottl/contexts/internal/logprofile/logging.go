@@ -161,6 +161,33 @@ func (s ProfileSample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return joinedErr
 }
 
+type ProfileLocation struct {
+	pprofile.Location
+	Dictionary pprofile.ProfilesDictionary
+}
+
+func (loc ProfileLocation) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	var joinedErr error
+
+	encoder.AddInt32("mapping_index", loc.MappingIndex())
+	encoder.AddUint64("address", loc.Address())
+
+	ls := make(lines, 0, loc.Line().Len())
+	lines := loc.Line().All()
+	for _, line := range lines {
+		l, err := newLine(loc.Dictionary, line)
+		joinedErr = errors.Join(joinedErr, err)
+		ls = append(ls, l)
+	}
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("line", ls))
+
+	ats, err := newAttributes(loc.Dictionary, loc.AttributeIndices())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("attributes", ats))
+
+	return joinedErr
+}
+
 type valueTypes []valueType
 
 func (s valueTypes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
