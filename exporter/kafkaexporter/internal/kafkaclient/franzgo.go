@@ -45,7 +45,7 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 		if r.Err != nil {
 			errs = append(
 				errs,
-				fmt.Errorf("issue when exporting from topic %q: %w", r.Record.Topic, r.Err),
+				fmt.Errorf("issue exporting from topic %q: %w", r.Record.Topic, r.Err),
 			)
 		}
 	}
