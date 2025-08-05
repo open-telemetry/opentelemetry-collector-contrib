@@ -149,6 +149,7 @@ func accessTimestamps[K Context]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if ts, ok := val.([]time.Time); ok {
+				tCtx.GetProfileSample().TimestampsUnixNano().FromRaw([]uint64{})
 				for _, t := range ts {
 					tCtx.GetProfileSample().TimestampsUnixNano().Append(uint64(t.UTC().UnixNano()))
 				}
