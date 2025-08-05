@@ -75,17 +75,17 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 		// Process lines based on determined syntax
 		switch syntax {
 		case albAccessLogs:
-			err = f.handleAlbAccessLogs(fields, resourceAttr, scopeLogs)
+			err = f.handleALBAccessLogs(fields, resourceAttr, scopeLogs)
 			if err != nil {
 				return plog.Logs{}, err
 			}
 		case nlbAccessLogs:
-			err = f.handleNlbAccessLogs(fields, resourceAttr, scopeLogs)
+			err = f.handleNLBAccessLogs(fields, resourceAttr, scopeLogs)
 			if err != nil {
 				return plog.Logs{}, err
 			}
 		case clbAccessLogs:
-			err = f.handleClbAccessLogs(fields, resourceAttr, scopeLogs)
+			err = f.handleCLBAccessLogs(fields, resourceAttr, scopeLogs)
 			if err != nil {
 				return plog.Logs{}, err
 			}
@@ -134,19 +134,19 @@ func (*elbAccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, log
 	attr.PutStr(string(conventions.CloudResourceIDKey), r.resourceID)
 }
 
-// handleClbAccessLogs handles clb access logs
-func (f *elbAccessLogUnmarshaler) handleClbAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
-	record, err := convertTextToClbAccessLogRecord(fields)
+// handleCLBAccessLogs handles clb access logs
+func (f *elbAccessLogUnmarshaler) handleCLBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+	record, err := convertTextToCLBAccessLogRecord(fields)
 	if err != nil {
 		return fmt.Errorf("unable to convert log line to CLB record: %w", err)
 	}
-	f.addToClbAccessLogs(resourceAttr, scopeLogs, record)
+	f.addToCLBAccessLogs(resourceAttr, scopeLogs, record)
 	return nil
 }
 
-// addToClbAccessLogs adds clb record to provided logs based
+// addToCLBAccessLogs adds clb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, clbRecord ClbAccessLogRecord) {
+func (f *elbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, clbRecord CLBAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(clbRecord.Time)
 	if err != nil {
@@ -187,19 +187,19 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(resourceAttr *resourceAttri
 	recordLog.MoveTo(rScope)
 }
 
-// handleAlbAccessLogs handles alb access logs
-func (f *elbAccessLogUnmarshaler) handleAlbAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
-	record, err := convertTextToAlbAccessLogRecord(fields)
+// handleALBAccessLogs handles alb access logs
+func (f *elbAccessLogUnmarshaler) handleALBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+	record, err := convertTextToALBAccessLogRecord(fields)
 	if err != nil {
 		return fmt.Errorf("unable to convert log line to ALB record: %w", err)
 	}
-	f.addToAlbAccessLogs(resourceAttr, scopeLogs, record)
+	f.addToALBAccessLogs(resourceAttr, scopeLogs, record)
 	return nil
 }
 
-// addToAlbAccessLogs adds alb record to provided logs based
+// addToALBAccessLogs adds alb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, albRecord AlbAccessLogRecord) {
+func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, albRecord ALBAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(albRecord.Time)
 	if err != nil {
@@ -236,19 +236,19 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(resourceAttr *resourceAttri
 	recordLog.MoveTo(rScope)
 }
 
-// handleNlbAccessLogs handles nlb access logs
-func (f *elbAccessLogUnmarshaler) handleNlbAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
-	record, err := convertTextToNlbAccessLogRecord(fields)
+// handleNLBAccessLogs handles nlb access logs
+func (f *elbAccessLogUnmarshaler) handleNLBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+	record, err := convertTextToNLBAccessLogRecord(fields)
 	if err != nil {
 		return fmt.Errorf("unable to convert log line to ALB record: %w", err)
 	}
-	f.addToNlbAccessLogs(resourceAttr, scopeLogs, record)
+	f.addToNLBAccessLogs(resourceAttr, scopeLogs, record)
 	return nil
 }
 
-// addToNlbAccessLogs adds nlb record to provided logs based
+// addToNLBAccessLogs adds nlb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, nlbRecord NlbAccessLogRecord) {
+func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, nlbRecord NLBAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(nlbRecord.Time)
 	if err != nil {

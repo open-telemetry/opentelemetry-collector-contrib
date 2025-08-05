@@ -23,9 +23,9 @@ const (
 	EnableControlMessage = "Enable"
 )
 
-// ClbAccessLogRecord represents a record of access logs from an AWS Classic Load Balancer.
+// CLBAccessLogRecord represents a record of access logs from an AWS Classic Load Balancer.
 // Documentation Reference: https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html
-type ClbAccessLogRecord struct {
+type CLBAccessLogRecord struct {
 	Time                   string  // Timestamp the load balancer received the request from the client, in ISO 8601 format
 	ELB                    string  // The name of the load balancer
 	ClientIP               string  // Client IP
@@ -47,16 +47,16 @@ type ClbAccessLogRecord struct {
 	SSLProtocol            string  // The SSL protocol negotiated, available for HTTPS listeners
 }
 
-// convertTextToClbAccessLogRecord converts a slice of strings into a ClbAccessLogRecord
-func convertTextToClbAccessLogRecord(fields []string) (ClbAccessLogRecord, error) {
+// convertTextToCLBAccessLogRecord converts a slice of strings into a CLBAccessLogRecord
+func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error) {
 	var err error
 	fieldsCount := len(fields)
 	if fieldsCount < 15 {
-		return ClbAccessLogRecord{}, fmt.Errorf("clb access logs do not have enough fields. Expected 15, got %d", fieldsCount)
+		return CLBAccessLogRecord{}, fmt.Errorf("clb access logs do not have enough fields. Expected 15, got %d", fieldsCount)
 	}
 
 	// Map fields to the struct
-	record := ClbAccessLogRecord{
+	record := CLBAccessLogRecord{
 		Time:              fields[0],  // Timestamp
 		ELB:               fields[1],  // Load balancer name
 		BackendIPPort:     fields[3],  // Backend IP:Port
@@ -113,7 +113,7 @@ func convertTextToClbAccessLogRecord(fields []string) (ClbAccessLogRecord, error
 
 // Network Load Balancer Access Logs record
 // Doc: https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format
-type NlbAccessLogRecord struct {
+type NLBAccessLogRecord struct {
 	Type                      string // Type of request (tls)
 	Version                   string // Version of the log entry
 	Time                      string // Timestamp the load balancer generated a response to the client in ISO 8601 format
@@ -139,18 +139,18 @@ type NlbAccessLogRecord struct {
 	TLSConnectionCreationTime string // Time recorded at the start of the TLS connection, in ISO 8601 format
 }
 
-// convertTextToNlbAccessLogRecord converts a slice of strings into a NlbAccessLogRecord
-func convertTextToNlbAccessLogRecord(fields []string) (NlbAccessLogRecord, error) {
+// convertTextToNLBAccessLogRecord converts a slice of strings into a NLBAccessLogRecord
+func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error) {
 	var err error
 	// Check if the fields contain enough data
 	fieldsCount := len(fields)
 	if fieldsCount < 22 {
-		return NlbAccessLogRecord{}, fmt.Errorf(
+		return NLBAccessLogRecord{}, fmt.Errorf(
 			"nlb access logs do not have enough fields. Expected 22, got %d", fieldsCount)
 	}
 
 	// Map fields to the struct
-	record := NlbAccessLogRecord{
+	record := NLBAccessLogRecord{
 		Type:                      fields[0],  // Type of request
 		Version:                   fields[1],  // Log version
 		Time:                      fields[2],  // Timestamp
@@ -199,7 +199,7 @@ func convertTextToNlbAccessLogRecord(fields []string) (NlbAccessLogRecord, error
 
 // Application Load Balancer Access Logs record
 // Doc: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
-type AlbAccessLogRecord struct {
+type ALBAccessLogRecord struct {
 	Type                   string // Type of request (http, https, etc.)
 	Time                   string // Timestamp the load balancer generated a response to the client in ISO 8601 format
 	ELB                    string // Load balancer resource ID
@@ -235,14 +235,15 @@ type AlbAccessLogRecord struct {
 	ClassificationReason   string // Reason for classification
 }
 
-func convertTextToAlbAccessLogRecord(fields []string) (AlbAccessLogRecord, error) {
+// convertTextToALBAccessLogRecord converts a slice of strings into a ALBAccessLogRecord
+func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error) {
 	var err error
 	fieldsCount := len(fields)
 	if fieldsCount < 29 {
-		return AlbAccessLogRecord{}, fmt.Errorf("alb access logs do not have enough fields. Expected 29, got %d", fieldsCount)
+		return ALBAccessLogRecord{}, fmt.Errorf("alb access logs do not have enough fields. Expected 29, got %d", fieldsCount)
 	}
 	// Map fields to the struct
-	record := AlbAccessLogRecord{
+	record := ALBAccessLogRecord{
 		Type:                   fields[0],
 		Time:                   fields[1],
 		ELB:                    fields[2],

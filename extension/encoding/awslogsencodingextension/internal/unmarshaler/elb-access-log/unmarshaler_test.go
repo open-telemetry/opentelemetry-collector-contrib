@@ -46,7 +46,7 @@ func readAndCompressLogFile(t *testing.T, dir, file string) io.Reader {
 	return compressToGZIPReader(t, data)
 }
 
-func TestUnmarshallElbAccessLogs(t *testing.T) {
+func TestUnmarshallELBAccessLogs(t *testing.T) {
 	t.Parallel()
 
 	filesDirectory := "testdata"
