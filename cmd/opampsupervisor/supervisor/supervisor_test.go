@@ -2026,15 +2026,28 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	}
 	s.cfgState.Store(healthyConfig)
 
-	err := s.startHealthCheckServer()
-	require.NoError(t, err)
-	require.NotNil(t, s.healthCheckServer)
+	t.Run("Health check isn't started when port isn't configured", func(t *testing.T) {
+		err := s.startHealthCheckServer()
+		require.NoError(t, err)
+		require.Nil(t, s.healthCheckServer)
+	})
 
-	addr := s.healthCheckServer.Addr
+	t.Run("Health check server is started when port is configured", func(t *testing.T) {
+		s.config = config.Supervisor{
+			HealthCheck: config.HealthCheck{
+				Port: 23233,
+			},
+		}
+		err := s.startHealthCheckServer()
+		require.NoError(t, err)
+		require.NotNil(t, s.healthCheckServer)
+	})
+
+	addr := fmt.Sprintf("localhost:%d", s.config.HealthCheck.Port)
 	require.NotEmpty(t, addr)
 
 	sendHealthCheckRequest := func() (*http.Response, error) {
-		return http.Get("http://localhost:23233/health")
+		return http.Get(fmt.Sprintf("http://%s/health", addr))
 	}
 
 	t.Run("Health check server startup", func(t *testing.T) {
@@ -2101,8 +2114,13 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			persistentState:   &persistentState{InstanceID: testUUID},
 			cfgState:          &atomic.Value{},
 			doneChan:          make(chan struct{}),
+			config: config.Supervisor{
+				HealthCheck: config.HealthCheck{
+					Port: 23233,
+				},
+			},
 		}
-		err = newSupervisor.startHealthCheckServer()
+		err := newSupervisor.startHealthCheckServer()
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to listen on port 23233")
 	})

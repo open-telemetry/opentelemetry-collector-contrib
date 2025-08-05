@@ -698,6 +698,10 @@ func (s *Supervisor) startOpAMPClient() error {
 }
 
 func (s *Supervisor) startHealthCheckServer() error {
+	if s.config.HealthCheck.Port == 0 {
+		return nil
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		if s.persistentState == nil {
@@ -721,7 +725,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	healthCheckServerPort := 23233
+	healthCheckServerPort := s.config.HealthCheck.Port
 	s.healthCheckServer = &http.Server{
 		Addr:        fmt.Sprintf("localhost:%d", healthCheckServerPort),
 		ReadTimeout: 5 * time.Second,

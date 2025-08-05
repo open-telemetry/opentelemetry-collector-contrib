@@ -34,6 +34,7 @@ type Supervisor struct {
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -80,6 +81,10 @@ func (s Supervisor) Validate() error {
 	}
 
 	if err := s.Agent.Validate(); err != nil {
+		return err
+	}
+
+	if err := s.HealthCheck.Validate(); err != nil {
 		return err
 	}
 
@@ -264,6 +269,17 @@ type Telemetry struct {
 	Traces  telemetry.TracesConfig `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
+}
+
+type HealthCheck struct {
+	Port int `mapstructure:"port"`
+}
+
+func (h HealthCheck) Validate() error {
+	if h.Port < 0 || h.Port > 65535 {
+		return errors.New("healthcheck::port must be a valid port number")
+	}
+	return nil
 }
 
 type Logs struct {
