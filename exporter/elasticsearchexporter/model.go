@@ -466,8 +466,7 @@ func encodeAttributes(prefix string, document *objmodel.Document, attributes pco
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
-	for i := 0; i < spanLinkSlice.Len(); i++ {
-		spanLink := spanLinkSlice.At(i)
+	for _, spanLink := range spanLinkSlice.All() {
 		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
 		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
