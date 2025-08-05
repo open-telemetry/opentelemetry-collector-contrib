@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
 var _ encoding.TextUnmarshaler = (*HashFunction)(nil)
@@ -64,6 +66,9 @@ type Config struct {
 	// information, while it is valuable when integrating and testing a new
 	// configuration. Possible values are `debug`, `info`, and `silent`.
 	Summary string `mapstructure:"summary"`
+
+	// URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
+	URLSanitization url.URLSanitizationConfig `mapstructure:"url_sanitization"`
 }
 
 func (u HashFunction) String() string {

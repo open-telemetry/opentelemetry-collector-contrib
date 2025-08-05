@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
 const attrValuesSeparator = ","
@@ -42,6 +44,8 @@ type redaction struct {
 	config *Config
 	// Logger
 	logger *zap.Logger
+	// URL sanitizer
+	urlSanitizer *url.URLSanitizer
 }
 
 // newRedaction creates a new instance of the redaction processor
@@ -65,6 +69,14 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		return nil, fmt.Errorf("failed to process allow list: %w", err)
 	}
 
+	var urlSanitizer *url.URLSanitizer
+	if config.URLSanitization.Enabled {
+		urlSanitizer, err = url.NewURLSanitizer(config.URLSanitization)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
+		}
+	}
+
 	return &redaction{
 		allowList:         allowList,
 		ignoreList:        ignoreList,
@@ -74,6 +86,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		hashFunction:      config.HashFunction,
 		config:            config,
 		logger:            logger,
+		urlSanitizer:      urlSanitizer,
 	}, nil
 }
 
@@ -122,6 +135,10 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
+
+			if s.config.URLSanitization.SanitizeSpanName && s.urlSanitizer != nil {
+				span.SetName(s.urlSanitizer.SanitizeURL(span.Name()))
+			}
 		}
 	}
 }
@@ -186,7 +203,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			allowedKeys = append(allowedKeys, "body")
 			return
 		}
-		processedValue := s.processStringValue(strVal)
+		processedValue := s.processStringValueForLogBody(strVal)
 		if strVal != processedValue {
 			maskedKeys = append(maskedKeys, "body")
 			body.SetStr(processedValue)
@@ -237,7 +254,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			*allowedKeys = append(*allowedKeys, key)
 			return
 		}
-		processedValue := s.processStringValue(strVal)
+		processedValue := s.processStringValueForLogBody(strVal)
 		if strVal != processedValue {
 			*maskedKeys = append(*maskedKeys, key)
 			value.SetStr(processedValue)
@@ -323,7 +340,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			value.SetStr(maskedValue)
 			continue
 		}
-		processedString := s.processStringValue(strVal)
+		processedString := s.processStringValueForAttribute(strVal, k)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -386,7 +403,22 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
-func (s *redaction) processStringValue(strVal string) string {
+func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) string {
+	for _, compiledRE := range s.blockRegexList {
+		match := compiledRE.MatchString(strVal)
+		if match {
+			strVal = s.maskValue(strVal, compiledRE)
+		}
+	}
+
+	if s.urlSanitizer != nil {
+		strVal = s.urlSanitizer.SanitizeAttributeURL(strVal, attributeKey)
+	}
+
+	return strVal
+}
+
+func (s *redaction) processStringValueForLogBody(strVal string) string {
 	// Mask any blocked values for the other attributes
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
@@ -394,6 +426,11 @@ func (s *redaction) processStringValue(strVal string) string {
 			strVal = s.maskValue(strVal, compiledRE)
 		}
 	}
+
+	if s.urlSanitizer != nil {
+		strVal = s.urlSanitizer.SanitizeURL(strVal)
+	}
+
 	return strVal
 }
 

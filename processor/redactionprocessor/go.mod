@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redac
 go 1.23.0
 
 require (
+	github.com/grafana/clusterurl v0.0.0-20250805184705-fcbdd695359d
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250801020258-8b73477b9810
@@ -20,6 +21,7 @@ require (
 )
 
 require (
+	github.com/AlessandroPomponio/go-gibberish v0.0.0-20191004143433-a2d4156f0396 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -28,6 +30,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
