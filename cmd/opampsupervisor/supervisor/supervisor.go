@@ -723,7 +723,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 
 	healthCheckServerPort := 23233
 	s.healthCheckServer = &http.Server{
-		Addr:        fmt.Sprintf(":%d", healthCheckServerPort),
+		Addr:        fmt.Sprintf("localhost:%d", healthCheckServerPort),
 		ReadTimeout: 5 * time.Second,
 		Handler:     mux,
 	}
