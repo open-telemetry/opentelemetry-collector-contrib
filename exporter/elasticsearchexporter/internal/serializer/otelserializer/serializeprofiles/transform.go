@@ -289,7 +289,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 
 		frameTypeStr, err := getStringFromAttribute(dic, location, "profile.frame.type")
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("profile.frame.type: %w", err)
+			return nil, nil, nil, err
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
@@ -327,10 +327,13 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 
 func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *libpf.FrameID {
 	// The MappingIndex is known to be valid.
-	mapping := dic.MappingTable().At(int(location.MappingIndex()))
-	fileID, err := getBuildID(dic, mapping)
-	if err != nil || fileID.IsZero() {
-		// Synthesize a file ID if the build ID is not available.
+	fileID := libpf.FileID{}
+	if location.HasMappingIndex() {
+		mapping := dic.MappingTable().At(int(location.MappingIndex()))
+		fileID, _ = getBuildID(dic, mapping)
+	}
+	if fileID.IsZero() {
+		// Synthesize a file ID if the htlhash build ID is not available.
 		hasher := xxhash.New()
 		for _, line := range location.Line().All() {
 			f := getFunction(dic, int(line.FunctionIndex()))
@@ -379,7 +382,7 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 		}
 	}
 
-	return "", errMissingAttribute
+	return "", fmt.Errorf("failed to get '%s': %w", attrKey, errMissingAttribute)
 }
 
 // getBuildID returns the Build ID for the given mapping. It checks for both
@@ -392,7 +395,7 @@ func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libp
 	case err == nil:
 		return libpf.FileIDFromString(buildIDStr)
 	case errors.Is(err, errMissingAttribute):
-		return libpf.NewFileID(0, 0), nil
+		return libpf.FileID{}, nil
 	default:
 		return libpf.FileID{}, err
 	}
