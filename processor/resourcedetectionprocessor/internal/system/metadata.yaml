@@ -23,6 +23,14 @@ resource_attributes:
     description: The os.version
     type: string
     enabled: false
+  os.build.id:
+    description: The os.build.id
+    type: string
+    enabled: false
+  os.name:
+    description: The os.name
+    type: string
+    enabled: false
   host.arch:
     description: The host.arch
     type: string
@@ -33,6 +41,10 @@ resource_attributes:
     enabled: false
   host.mac:
     description: MAC addresses for the host
+    type: slice
+    enabled: false
+  host.interface:
+    description: Network interfaces for the host
     type: slice
     enabled: false
   host.cpu.vendor.id:

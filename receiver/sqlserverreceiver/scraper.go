@@ -16,6 +16,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,20 +38,32 @@ const (
 	serverPortKey    = "server.port"
 )
 
+const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
+
+var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	removeServerResourceAttributeFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.129.0"),
+	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are removed from metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141"),
+)
+
 type sqlServerScraperHelper struct {
-	id                 component.ID
-	config             *Config
-	sqlQuery           string
-	instanceName       string
-	clientProviderFunc sqlquery.ClientProviderFunc
-	dbProviderFunc     sqlquery.DbProviderFunc
-	logger             *zap.Logger
-	telemetry          sqlquery.TelemetryConfig
-	client             sqlquery.DbClient
-	db                 *sql.DB
-	mb                 *metadata.MetricsBuilder
-	lb                 *metadata.LogsBuilder
-	cache              *lru.Cache[string, int64]
+	id                     component.ID
+	config                 *Config
+	sqlQuery               string
+	instanceName           string
+	clientProviderFunc     sqlquery.ClientProviderFunc
+	dbProviderFunc         sqlquery.DbProviderFunc
+	logger                 *zap.Logger
+	telemetry              sqlquery.TelemetryConfig
+	client                 sqlquery.DbClient
+	db                     *sql.DB
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	cache                  *lru.Cache[string, int64]
+	lastExecutionTimestamp time.Time
+	obfuscator             *obfuscator
 }
 
 var (
@@ -68,16 +81,18 @@ func newSQLServerScraper(id component.ID,
 	cache *lru.Cache[string, int64],
 ) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
-		id:                 id,
-		config:             cfg,
-		sqlQuery:           query,
-		logger:             params.Logger,
-		telemetry:          telemetry,
-		dbProviderFunc:     dbProviderFunc,
-		clientProviderFunc: clientProviderFunc,
-		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                 metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:              cache,
+		id:                     id,
+		config:                 cfg,
+		sqlQuery:               query,
+		logger:                 params.Logger,
+		telemetry:              telemetry,
+		dbProviderFunc:         dbProviderFunc,
+		clientProviderFunc:     clientProviderFunc,
+		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:                  cache,
+		lastExecutionTimestamp: time.Unix(0, 0),
+		obfuscator:             newObfuscator(),
 	}
 }
 
@@ -124,6 +139,10 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
+		if s.lastExecutionTimestamp.Add(s.config.TopQueryCollection.CollectionInterval).After(time.Now()) {
+			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
@@ -134,7 +153,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	return s.lb.Emit(metadata.WithLogsResource(resources)), err
 }
 
-func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
+func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
 	if s.db != nil {
 		return s.db.Close()
 	}
@@ -168,8 +187,12 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -187,10 +210,11 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val.(float64)/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite)
 		}
 
-		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
+		errs = append(errs,
+			s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead),
+			s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite),
+			s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead),
+			s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -229,6 +253,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const numberOfDeadlocksPerSec = "Number of Deadlocks/sec"
 	const mirrorWritesTransactionPerSec = "Mirrored Write Transactions/sec"
 	const memoryGrantsPending = "Memory Grants Pending"
+	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
 	const processesBlocked = "Processes blocked"
 	const sqlCompilationRate = "SQL Compilations/sec"
@@ -253,8 +278,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -429,6 +458,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverDeadlockRateDataPoint(now, val.(float64))
 			}
+		case pageLifeExpectancy:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageLifeExpectancy)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageLifeExpectancyDataPoint(now, val.(int64), row["object"])
+			}
 		case pageLookupsPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -503,6 +540,8 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbPendingRecovery = "db_recoveryPending"
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
+	const cpuCount = "cpu_count"
+	const computerUptime = "computer_uptime"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -518,15 +557,23 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
+
+		errs = append(errs,
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline),
+			s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]),
+			s.mb.RecordSqlserverComputerUptimeDataPoint(now, row[computerUptime]),
+		)
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -557,8 +604,12 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {
@@ -638,7 +689,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
 
 	resourcesAdded := false
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	s.lastExecutionTimestamp = now
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
 		if totalElapsedTimeDiffsMicrosecond[i] == 0 {
@@ -650,7 +703,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateSQL(row[columnName]) })
+		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return "", nil
+			}
+
+			return obfuscated, nil
+		})
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
 		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
@@ -676,7 +738,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			physicalReadsVal = int64(0)
 		}
 
-		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateXMLPlan(row[columnName]) })
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			return s.obfuscator.obfuscateXMLPlan(row[columnName])
+		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
 		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
@@ -708,6 +772,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			resourcesAdded = true
 		}
 		s.lb.RecordDbServerTopQueryEvent(
+			context.Background(),
 			timestamp,
 			totalWorkerTimeInSecVal,
 			queryTextVal.(string),
@@ -746,7 +811,7 @@ func (s *sqlServerScraperHelper) retrieveValue(
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
-func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val int64) (bool, int64) {
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column string, val int64) (bool, int64) {
 	if val < 0 {
 		return false, 0
 	}
@@ -767,14 +832,14 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash st
 	return true, 0
 }
 
-type Item struct {
+type item struct {
 	row      sqlquery.StringMap
 	priority int64
 	index    int
 }
 
 // reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-type priorityQueue []*Item
+type priorityQueue []*item
 
 func (pq priorityQueue) Len() int { return len(pq) }
 
@@ -790,7 +855,7 @@ func (pq priorityQueue) Swap(i, j int) {
 
 func (pq *priorityQueue) Push(x any) {
 	n := len(*pq)
-	item := x.(*Item)
+	item := x.(*item)
 	item.index = n
 	*pq = append(*pq, item)
 }
@@ -820,7 +885,7 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	pq := make(priorityQueue, len(rows))
 	for i, row := range rows {
 		value := values[i]
-		pq[i] = &Item{
+		pq[i] = &item{
 			row:      row,
 			priority: value,
 			index:    i,
@@ -829,27 +894,10 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	heap.Init(&pq)
 
 	for pq.Len() > 0 && len(results) < int(maximum) {
-		item := heap.Pop(&pq).(*Item)
+		item := heap.Pop(&pq).(*item)
 		results = append(results, item.row)
 	}
 	return results
-}
-
-type internalAttribute struct {
-	key            string
-	columnName     string
-	valueRetriever func(row sqlquery.StringMap, columnName string) (any, error)
-	valueSetter    func(attributes pcommon.Map, key string, value any)
-}
-
-func defaultValueRetriever(defaultValue any) func(row sqlquery.StringMap, columnName string) (any, error) {
-	return func(_ sqlquery.StringMap, _ string) (any, error) {
-		return defaultValue, nil
-	}
-}
-
-func vanillaRetriever(row sqlquery.StringMap, columnName string) (any, error) {
-	return row[columnName], nil
 }
 
 func retrieveInt(row sqlquery.StringMap, columnName string) (any, error) {
@@ -894,20 +942,7 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 	return result, err
 }
 
-func setString(attributes pcommon.Map, key string, value any) {
-	attributes.PutStr(key, value.(string))
-}
-
-func setInt(attributes pcommon.Map, key string, value any) {
-	attributes.PutInt(key, value.(int64))
-}
-
-func setDouble(attributes pcommon.Map, key string, value any) {
-	attributes.PutDouble(key, value.(float64))
-}
-
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
-	const eventName = "db.server.query_sample"
 	const blockingSessionID = "blocking_session_id"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -915,7 +950,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const contextInfo = "context_info"
 	const cpuTimeMillisecond = "cpu_time"
 	const dbName = "db_name"
-	const dbPrefix = "sqlserver."
 	const deadlockPriority = "deadlock_priority"
 	const estimatedCompletionTimeMillisecond = "estimated_completion_time"
 	const hostName = "host_name"
@@ -943,7 +977,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.TopQueryCount),
+		sql.Named("top", s.config.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -958,250 +992,98 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	dbSystemNameVal := "microsoft.sql_server"
 
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		record := plog.NewLogRecord()
-		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		record.SetEventName(eventName)
-
-		// Attributes sorted alphabetically by key
-		attributes := []internalAttribute{
-			{
-				key:            "client.port",
-				columnName:     clientPort,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "db.namespace",
-				columnName:     dbName,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        "db.query.text",
-				columnName: statementText,
-				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateSQL(row[columnName])
-				},
-				valueSetter: setString,
-			},
-			{
-				key:            "db.system.name",
-				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
-				valueSetter:    setString,
-			},
-			{
-				key:            "network.peer.address",
-				columnName:     clientAddress,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            "network.peer.port",
-				columnName:     clientPort,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			// the following ones are the attributes that are not in the semantic conventions
-			{
-				key:            dbPrefix + blockingSessionID,
-				columnName:     blockingSessionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + command,
-				columnName:     command,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + cpuTimeMillisecond,
-				columnName: cpuTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + deadlockPriority,
-				columnName:     deadlockPriority,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:        dbPrefix + estimatedCompletionTimeMillisecond,
-				columnName: estimatedCompletionTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:        dbPrefix + lockTimeoutMillisecond,
-				columnName: lockTimeoutMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + logicalReads,
-				columnName:     logicalReads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + openTransactionCount,
-				columnName:     openTransactionCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + percentComplete,
-				columnName:     percentComplete,
-				valueRetriever: retrieveFloat,
-				valueSetter:    setDouble,
-			},
-			{
-				key:            dbPrefix + queryHash,
-				valueRetriever: defaultValueRetriever(queryHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryPlanHash,
-				valueRetriever: defaultValueRetriever(queryPlanHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryStart,
-				columnName:     queryStart,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + reads,
-				columnName:     reads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + requestStatus,
-				columnName:     requestStatus,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + rowCount,
-				columnName:     rowCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + sessionID,
-				columnName:     sessionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + sessionStatus,
-				columnName:     sessionStatus,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + totalElapsedTimeMillisecond,
-				columnName: totalElapsedTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + transactionID,
-				columnName:     transactionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + transactionIsolationLevel,
-				columnName:     transactionIsolationLevel,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "user.name",
-				columnName:     username,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + waitResource,
-				columnName:     waitResource,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + waitTimeMillisecond,
-				columnName: waitTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + waitType,
-				columnName:     waitType,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + writes,
-				columnName:     writes,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-		}
-
-		spanContext := trace.SpanContextFromContext(propagator.Extract(context.Background(), propagation.MapCarrier{
-			"traceparent": row[contextInfo],
-		}))
-
-		if spanContext.IsValid() {
-			record.SetTraceID(pcommon.TraceID(spanContext.TraceID()))
-			record.SetSpanID(pcommon.SpanID(spanContext.SpanID()))
-		} else {
-			attributes = append(attributes, internalAttribute{
-				key:            dbPrefix + contextInfo,
-				valueRetriever: defaultValueRetriever(hex.EncodeToString([]byte(row[contextInfo]))),
-				valueSetter:    setString,
-			})
-		}
-
-		for _, attr := range attributes {
-			value, err := attr.valueRetriever(row, attr.columnName)
+		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
+		dbNamespaceVal := row[dbName]
+		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				errs = append(errs, err)
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return "", nil
 			}
-			attr.valueSetter(record.Attributes(), attr.key, value)
+			return obfuscated, nil
+		}).(string)
+		networkPeerAddressVal := row[clientAddress]
+		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
+		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
+		commandVal := row[command]
+		cpuTimeSecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		deadlockPriorityVal := s.retrieveValue(row, deadlockPriority, &errs, retrieveInt).(int64)
+		estimatedCompletionTimeSecondVal := s.retrieveValue(row, estimatedCompletionTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		lockTimeoutSecondVal := s.retrieveValue(row, lockTimeoutMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt).(int64)
+		openTransactionCountVal := s.retrieveValue(row, openTransactionCount, &errs, retrieveInt).(int64)
+		percentCompleteVal := s.retrieveValue(row, percentComplete, &errs, retrieveFloat).(float64)
+		queryStartVal := row[queryStart]
+		readsVal := s.retrieveValue(row, reads, &errs, retrieveInt).(int64)
+		requestStatusVal := row[requestStatus]
+		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
+		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
+		sessionStatusVal := row[sessionStatus]
+		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		transactionIDVal := s.retrieveValue(row, transactionID, &errs, retrieveInt).(int64)
+		transactionIsolationLevelVal := s.retrieveValue(row, transactionIsolationLevel, &errs, retrieveInt).(int64)
+		usernameVal := row[username]
+		waitResourceVal := row[waitResource]
+		waitTimeSecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		waitTypeVal := row[waitType]
+		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
+
+		contextFromQuery := propagator.Extract(context.Background(), propagation.MapCarrier{
+			"traceparent": row[contextInfo],
+		})
+
+		spanContext := trace.SpanContextFromContext(contextFromQuery)
+		contextInfoVal := ""
+
+		if !spanContext.IsValid() {
+			contextInfoVal = hex.EncodeToString([]byte(row[contextInfo]))
 		}
 
 		// client.address: use host_name if it has value, if not, use client_net_address.
 		// this value may not be accurate if
 		// - there is proxy in the middle of sql client and sql server. Or
 		// - host_name value is empty or not accurate.
+		var clientAddressVal string
 		if row[hostName] != "" {
-			record.Attributes().PutStr("client.address", row[hostName])
+			clientAddressVal = row[hostName]
 		} else {
-			record.Attributes().PutStr("client.address", row[clientAddress])
+			clientAddressVal = row[clientAddress]
 		}
 
-		s.lb.AppendLogRecord(record)
+		s.lb.RecordDbServerQuerySampleEvent(
+			contextFromQuery,
+			timestamp, clientAddressVal, clientPortVal,
+			dbNamespaceVal, queryTextVal, dbSystemNameVal,
+			networkPeerAddressVal, networkPeerPortVal,
+			blockSessionIDVal, contextInfoVal,
+			commandVal, cpuTimeSecondVal,
+			deadlockPriorityVal, estimatedCompletionTimeSecondVal,
+			lockTimeoutSecondVal, logicalReadsVal,
+			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
+			queryStartVal, readsVal,
+			requestStatusVal, rowCountVal,
+			sessionIDVal, sessionStatusVal,
+			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
+			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
+		)
 
 		if !resourcesAdded {
 			resourceAttributes := resources.Attributes()

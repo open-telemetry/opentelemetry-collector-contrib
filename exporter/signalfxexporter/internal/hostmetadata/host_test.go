@@ -102,7 +102,7 @@ func TestGetCPU(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cpuInfo = tt.fixtures.cpuInfo
 			cpuCounts = tt.fixtures.cpuCounts
-			gotInfo, err := getCPU()
+			gotInfo, err := getCPU(context.Background())
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -115,7 +115,7 @@ func TestGetCPU(t *testing.T) {
 
 func TestGetOS(t *testing.T) {
 	type testfixture struct {
-		hostInfo func() (*host.InfoStat, error)
+		hostInfo func(context.Context) (*host.InfoStat, error)
 		hostEtc  string
 	}
 	tests := []struct {
@@ -127,7 +127,7 @@ func TestGetOS(t *testing.T) {
 		{
 			name: "get kernel info",
 			testfixtures: testfixture{
-				hostInfo: func() (*host.InfoStat, error) {
+				hostInfo: func(context.Context) (*host.InfoStat, error) {
 					return &host.InfoStat{
 						OS:              "linux",
 						KernelVersion:   "4.4.0-112-generic",
@@ -146,7 +146,7 @@ func TestGetOS(t *testing.T) {
 		{
 			name: "get kernel info error",
 			testfixtures: testfixture{
-				hostInfo: func() (*host.InfoStat, error) {
+				hostInfo: func(context.Context) (*host.InfoStat, error) {
 					return nil, errors.New("no host info")
 				},
 				hostEtc: "./testdata/lsb-release",
@@ -164,7 +164,7 @@ func TestGetOS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hostInfo = tt.testfixtures.hostInfo
 			t.Setenv("HOST_ETC", tt.testfixtures.hostEtc)
-			gotInfo, err := getOS()
+			gotInfo, err := getOS(context.Background())
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -175,67 +175,15 @@ func TestGetOS(t *testing.T) {
 	}
 }
 
-func Test_GetLinuxVersion(t *testing.T) {
-	tests := []struct {
-		name    string
-		etc     string
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "lsb-release",
-			etc:  "./testdata/lsb-release",
-			want: "Ubuntu 18.04 LTS",
-		},
-		{
-			name: "os-release",
-			etc:  "./testdata/os-release",
-			want: "Debian GNU/Linux 9 (stretch)",
-		},
-		{
-			name: "centos-release",
-			etc:  "./testdata/centos-release",
-			want: "CentOS Linux release 7.5.1804 (Core)",
-		},
-		{
-			name: "redhat-release",
-			etc:  "./testdata/redhat-release",
-			want: "Red Hat Enterprise Linux Server release 7.5 (Maipo)",
-		},
-		{
-			name: "system-release",
-			etc:  "./testdata/system-release",
-			want: "CentOS Linux release 7.5.1804 (Core)",
-		},
-		{
-			name:    "no release returns error",
-			etc:     "./testdata",
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("HOST_ETC", tt.etc)
-			got, err := getLinuxVersion()
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestGetMemory(t *testing.T) {
 	tests := []struct {
 		name             string
-		memVirtualMemory func() (*mem.VirtualMemoryStat, error)
+		memVirtualMemory func(context.Context) (*mem.VirtualMemoryStat, error)
 		want             map[string]string
 	}{
 		{
 			name: "host_mem_total",
-			memVirtualMemory: func() (*mem.VirtualMemoryStat, error) {
+			memVirtualMemory: func(context.Context) (*mem.VirtualMemoryStat, error) {
 				return &mem.VirtualMemoryStat{
 					Total: 2048,
 				}, nil
@@ -246,32 +194,9 @@ func TestGetMemory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			memVirtualMemory = tt.memVirtualMemory
-			mem, err := getMemory()
+			memory, err := getMemory(context.Background())
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, mem.toStringMap())
-		})
-	}
-}
-
-func TestEtcPath(t *testing.T) {
-	tests := []struct {
-		name string
-		etc  string
-		want string
-	}{
-		{
-			name: "test default host etc",
-			etc:  "",
-			want: "/etc",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.etc != "" {
-				t.Setenv("HOST_ETC", tt.etc)
-			}
-			assert.Equal(t, tt.want, etcPath())
+			assert.Equal(t, tt.want, memory.toStringMap())
 		})
 	}
 }

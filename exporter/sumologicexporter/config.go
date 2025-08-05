@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -66,9 +67,9 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultTimeout
 	clientConfig.Compression = DefaultCompressEncoding
-	clientConfig.Auth = &configauth.Config{
+	clientConfig.Auth = configoptional.Some(configauth.Config{
 		AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
-	}
+	})
 	return clientConfig
 }
 
@@ -110,7 +111,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
-	if len(cfg.Endpoint) == 0 && cfg.Auth == nil {
+	if cfg.Endpoint == "" && !cfg.Auth.HasValue() {
 		return errors.New("no endpoint and no auth extension specified")
 	}
 

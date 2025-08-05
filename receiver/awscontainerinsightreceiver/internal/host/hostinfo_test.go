@@ -19,49 +19,49 @@ import (
 
 type mockNodeCapacity struct{}
 
-func (m *mockNodeCapacity) getMemoryCapacity() int64 {
+func (*mockNodeCapacity) getMemoryCapacity() int64 {
 	return 1024
 }
 
-func (m *mockNodeCapacity) getNumCores() int64 {
+func (*mockNodeCapacity) getNumCores() int64 {
 	return 2
 }
 
 type mockEC2Metadata struct{}
 
-func (m *mockEC2Metadata) getInstanceID() string {
+func (*mockEC2Metadata) getInstanceID() string {
 	return "instance-id"
 }
 
-func (m *mockEC2Metadata) getInstanceIP() string {
+func (*mockEC2Metadata) getInstanceIP() string {
 	return "instance-ip"
 }
 
-func (m *mockEC2Metadata) getInstanceType() string {
+func (*mockEC2Metadata) getInstanceType() string {
 	return "instance-type"
 }
 
-func (m *mockEC2Metadata) getRegion() string {
+func (*mockEC2Metadata) getRegion() string {
 	return "region"
 }
 
 type mockEBSVolume struct{}
 
-func (m *mockEBSVolume) getEBSVolumeID(_ string) string {
+func (*mockEBSVolume) getEBSVolumeID(_ string) string {
 	return "ebs-volume-id"
 }
 
-func (m *mockEBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
+func (*mockEBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	return map[string]string{}
 }
 
 type mockEC2Tags struct{}
 
-func (m *mockEC2Tags) getClusterName() string {
+func (*mockEC2Tags) getClusterName() string {
 	return "cluster-name"
 }
 
-func (m *mockEC2Tags) getAutoScalingGroupName() string {
+func (*mockEC2Tags) getAutoScalingGroupName() string {
 	return "asg"
 }
 
@@ -83,7 +83,7 @@ func TestInfo(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, errors.New("error")
 		}
 	}
@@ -93,7 +93,7 @@ func TestInfo(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, nil
 		}
 	}
@@ -160,7 +160,7 @@ func TestInfoForECS(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, errors.New("error")
 		}
 	}
@@ -170,7 +170,7 @@ func TestInfoForECS(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, nil
 		}
 	}

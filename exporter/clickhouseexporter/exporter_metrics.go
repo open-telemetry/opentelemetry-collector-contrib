@@ -5,57 +5,67 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
 type metricsExporter struct {
-	client *sql.DB
+	db driver.Conn
 
 	logger       *zap.Logger
 	cfg          *Config
-	tablesConfig internal.MetricTablesConfigMapper
+	tablesConfig metrics.MetricTablesConfigMapper
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	client, err := newClickhouseClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 	tablesConfig := generateMetricTablesConfigMapper(cfg)
 
 	return &metricsExporter{
-		client:       client,
 		logger:       logger,
 		cfg:          cfg,
 		tablesConfig: tablesConfig,
-	}, nil
+	}
 }
 
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
-	internal.SetLogger(e.logger)
+	metrics.SetLogger(e.logger)
 
-	if !e.cfg.shouldCreateSchema() {
-		return nil
-	}
-
-	if err := createDatabase(ctx, e.cfg); err != nil {
+	dsn, err := e.cfg.buildDSN()
+	if err != nil {
 		return err
 	}
 
-	ttlExpr := generateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-	return internal.NewMetricsTable(ctx, e.tablesConfig, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+	e.db, err = internal.NewClickhouseClient(dsn)
+	if err != nil {
+		return err
+	}
+
+	if e.cfg.shouldCreateSchema() {
+		database := e.cfg.database()
+		clusterStr := e.cfg.clusterString()
+		if err := internal.CreateDatabase(ctx, e.db, database, clusterStr); err != nil {
+			return err
+		}
+
+		ttlExpr := internal.GenerateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
+		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, clusterStr, e.cfg.tableEngineString(), ttlExpr, e.db)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func generateMetricTablesConfigMapper(cfg *Config) internal.MetricTablesConfigMapper {
-	return internal.MetricTablesConfigMapper{
+func generateMetricTablesConfigMapper(cfg *Config) metrics.MetricTablesConfigMapper {
+	return metrics.MetricTablesConfigMapper{
 		pmetric.MetricTypeGauge:                cfg.MetricsTables.Gauge,
 		pmetric.MetricTypeSum:                  cfg.MetricsTables.Sum,
 		pmetric.MetricTypeSummary:              cfg.MetricsTables.Summary,
@@ -66,14 +76,15 @@ func generateMetricTablesConfigMapper(cfg *Config) internal.MetricTablesConfigMa
 
 // shutdown will shut down the exporter.
 func (e *metricsExporter) shutdown(_ context.Context) error {
-	if e.client != nil {
-		return e.client.Close()
+	if e.db != nil {
+		return e.db.Close()
 	}
+
 	return nil
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := internal.NewMetricsModel(e.tablesConfig)
+	metricsMap := metrics.NewMetricsModel(e.tablesConfig, e.cfg.database())
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
@@ -107,6 +118,6 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			}
 		}
 	}
-	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-	return internal.InsertMetrics(ctx, e.client, metricsMap)
+
+	return metrics.InsertMetrics(ctx, e.db, metricsMap)
 }

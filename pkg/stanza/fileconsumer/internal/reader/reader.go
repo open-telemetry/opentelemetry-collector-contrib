@@ -220,7 +220,10 @@ func (r *Reader) readContents(ctx context.Context) {
 	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc)
 
 	tokenBodies := make([][]byte, r.maxBatchSize)
+	tokenOffsets := make([]int64, r.maxBatchSize+1)
+
 	numTokensBatched := 0
+	tokenOffsets[0] = r.Offset
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -238,7 +241,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets)
 				if err != nil {
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
 				}
@@ -249,6 +252,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		var err error
 		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
+		tokenOffsets[numTokensBatched+1] = s.Pos()
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -258,11 +262,11 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
-			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum); err != nil {
+			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			numTokensBatched = 0
-			r.Offset = s.Pos()
+			r.Offset, tokenOffsets[0] = s.Pos(), s.Pos()
 		}
 	}
 }
@@ -320,7 +324,7 @@ func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return false
 	}
@@ -343,7 +347,7 @@ func (r *Reader) updateFingerprint() {
 	if r.file == nil {
 		return
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return
 	}

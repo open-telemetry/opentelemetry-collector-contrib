@@ -24,30 +24,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type MockClient struct {
+type mockClient struct {
 	PingF   func(context.Context) error
 	StatsF  func(context.Context, url.Values) ([]containerStats, error)
 	ListF   func(context.Context, url.Values) ([]container, error)
 	EventsF func(context.Context, url.Values) (<-chan event, <-chan error)
 }
 
-func (c *MockClient) ping(ctx context.Context) error {
+func (c *mockClient) ping(ctx context.Context) error {
 	return c.PingF(ctx)
 }
 
-func (c *MockClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
+func (c *mockClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
 	return c.StatsF(ctx, options)
 }
 
-func (c *MockClient) list(ctx context.Context, options url.Values) ([]container, error) {
+func (c *mockClient) list(ctx context.Context, options url.Values) ([]container, error) {
 	return c.ListF(ctx, options)
 }
 
-func (c *MockClient) events(ctx context.Context, options url.Values) (<-chan event, <-chan error) {
+func (c *mockClient) events(ctx context.Context, options url.Values) (<-chan event, <-chan error) {
 	return c.EventsF(ctx, options)
 }
 
-var baseClient = MockClient{
+var baseClient = mockClient{
 	PingF: func(context.Context) error {
 		return nil
 	},

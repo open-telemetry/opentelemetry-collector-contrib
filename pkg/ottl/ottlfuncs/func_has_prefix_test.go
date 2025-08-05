@@ -47,7 +47,7 @@ func Test_HasPrefix(t *testing.T) {
 				ottl.FunctionContext{},
 				&HasPrefixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
 						},
 					},
@@ -63,7 +63,7 @@ func Test_HasPrefix(t *testing.T) {
 
 func Test_HasPrefix_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return true, nil
 		},
 	}

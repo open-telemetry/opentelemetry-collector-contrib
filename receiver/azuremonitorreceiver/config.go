@@ -28,6 +28,7 @@ var (
 	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
 	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
 	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
+	errInvalidMaxResPerBatch  = errors.New(`"MaximumResourcesPerBatch" should be greater than 0`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -251,9 +252,10 @@ type Config struct {
 	CacheResourcesDefinitions         float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
-	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
+	AppendTagsAsAttributes            []string                      `mapstructure:"append_tags_as_attributes"`
 	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
+	MaximumResourcesPerBatch          int                           `mapstructure:"maximum_resources_per_batch"`
 
 	// Authentication accepts the component azureauthextension,
 	// and uses it to get an access token to make requests.
@@ -261,7 +263,7 @@ type Config struct {
 	// useless.
 	Authentication *AuthConfig `mapstructure:"auth"`
 
-	// Credentials is deprecated.
+	// Deprecated: Credentials is deprecated.
 	Credentials        string `mapstructure:"credentials"`
 	ClientID           string `mapstructure:"client_id"`
 	ClientSecret       string `mapstructure:"client_secret"`
@@ -273,6 +275,8 @@ type AuthConfig struct {
 	// AuthenticatorID specifies the name of the azure extension to authenticate the
 	// requests to azure monitor.
 	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 const (
@@ -281,6 +285,8 @@ const (
 	workloadIdentity   = "workload_identity"
 	managedIdentity    = "managed_identity"
 )
+
+const defaultMaximumResourcesPerBatch = 50
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
@@ -325,6 +331,10 @@ func (c Config) Validate() (err error) {
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {
 		err = multierr.Append(err, errInvalidCloud)
+	}
+
+	if c.UseBatchAPI && c.MaximumResourcesPerBatch < 0 {
+		err = multierr.Append(err, errInvalidMaxResPerBatch)
 	}
 
 	return

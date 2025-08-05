@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatCloudWatchLogsSubscriptionFilter,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatPlainText,
+					FileFormat: fileFormatPlainText,
 				},
 			},
 		},
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatPlainText,
+					FileFormat: fileFormatPlainText,
 				},
 			},
 		},
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatParquet,
+					FileFormat: fileFormatParquet,
 				},
 			},
 		},
@@ -72,7 +72,34 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatS3AccessLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatPlainText,
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "waf_log"),
+			expected: &Config{
+				Format: formatWAFLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "cloudtrail_log"),
+			expected: &Config{
+				Format: formatCloudTrailLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "elb_access_log"),
+			expected: &Config{
+				Format: formatELBAccessLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
 				},
 			},
 		},

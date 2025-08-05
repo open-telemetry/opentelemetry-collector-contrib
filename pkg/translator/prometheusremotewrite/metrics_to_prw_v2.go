@@ -9,18 +9,18 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
 func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.TimeSeries, writev2.SymbolsTable, error) {
-	c := newPrometheusConverterV2()
+	c := newPrometheusConverterV2(settings)
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*writev2.TimeSeries, len(tss))
@@ -36,12 +36,25 @@ type prometheusConverterV2 struct {
 	// TODO handle conflicts
 	unique      map[uint64]*writev2.TimeSeries
 	symbolTable writev2.SymbolsTable
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
+	unitNamer   otlptranslator.UnitNamer
 }
 
-func newPrometheusConverterV2() *prometheusConverterV2 {
+type metadata struct {
+	Type writev2.Metadata_MetricType
+	Help string
+	Unit string
+}
+
+func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 	return &prometheusConverterV2{
 		unique:      map[uint64]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
+		labelNamer:  otlptranslator.LabelNamer{},
+		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
 
@@ -68,7 +81,12 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				m := metadata{
+					Type: otelMetricTypeToPromMetricTypeV2(metric),
+					Help: metric.Description(),
+					Unit: c.unitNamer.Build(metric.Unit()),
+				}
 
 				// handle individual metrics based on type
 				//exhaustive:enforce
@@ -78,30 +96,37 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
+					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m)
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					if !metric.Sum().IsMonotonic() {
-						c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
+						c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m)
 					} else {
-						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
+						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m)
 					}
 				case pmetric.MetricTypeHistogram:
-					// TODO implement
+					dataPoints := metric.Histogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)
 				case pmetric.MetricTypeExponentialHistogram:
 					// TODO implement
 				case pmetric.MetricTypeSummary:
-					// TODO implement
+					dataPoints := metric.Summary().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					c.addSummaryDataPoints(dataPoints, resource, settings, promName, m)
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
 		}
-		// TODO implement
-		// addResourceTargetInfov2(resource, settings, mostRecentTimestamp, c)
+		c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp)
 	}
 
 	return
@@ -116,7 +141,8 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) {
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
+	// TODO consider how to accommodate metadata in the symbol table when allocating the buffer, given not all metrics might have metadata.
 	buf := make([]uint32, 0, len(lbls)*2)
 
 	// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
@@ -134,6 +160,11 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 	ts := writev2.TimeSeries{
 		LabelsRefs: buf,
 		Samples:    []writev2.Sample{*sample},
+		Metadata: writev2.Metadata{
+			Type:    metadata.Type,
+			HelpRef: c.symbolTable.Symbolize(metadata.Help),
+			UnitRef: c.symbolTable.Symbolize(metadata.Unit),
+		},
 	}
 	c.unique[timeSeriesSignature(lbls)] = &ts
 }

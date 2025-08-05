@@ -7,6 +7,10 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.computer.uptime:
+      enabled: true
+    sqlserver.cpu.count:
+      enabled: true
     sqlserver.database.backup_or_restore.rate:
       enabled: true
     sqlserver.database.count:
@@ -98,6 +102,8 @@ all_set:
     sqlserver.user.connection.count:
       enabled: true
   events:
+    db.server.query_sample:
+      enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
@@ -121,6 +127,10 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.computer.uptime:
+      enabled: false
+    sqlserver.cpu.count:
+      enabled: false
     sqlserver.database.backup_or_restore.rate:
       enabled: false
     sqlserver.database.count:
@@ -212,6 +222,8 @@ none_set:
     sqlserver.user.connection.count:
       enabled: false
   events:
+    db.server.query_sample:
+      enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:

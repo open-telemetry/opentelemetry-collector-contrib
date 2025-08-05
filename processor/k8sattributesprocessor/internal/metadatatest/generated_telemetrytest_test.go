@@ -10,9 +10,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
-
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -20,6 +20,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.OtelsvcK8sDeploymentAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sDeploymentDeleted.Add(context.Background(), 1)
+	tb.OtelsvcK8sDeploymentUpdated.Add(context.Background(), 1)
 	tb.OtelsvcK8sIPLookupMiss.Add(context.Background(), 1)
 	tb.OtelsvcK8sNamespaceAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sNamespaceDeleted.Add(context.Background(), 1)
@@ -34,6 +37,18 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
+	tb.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
+	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	AssertEqualOtelsvcK8sDeploymentAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDeploymentDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDeploymentUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sIPLookupMiss(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -74,6 +89,15 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sReplicasetUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sStatefulsetAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sStatefulsetDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sStatefulsetUpdated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

@@ -69,3 +69,34 @@ Cons:
 
 * The absolute value of counters is modified. This is generally not an issue, since counters are usually used to compute rates.
 * The initial point is dropped, which loses information.
+
+### Strategy: Start Time Metric
+
+The `start_time_metric` strategy handles missing start times by looking for the
+`process_start_time` metric, which is commonly supported by Prometheus exporters.
+If found, it uses the value of the `process_start_time` metric as the start time
+for all other cumulative points in the batch of metrics.
+
+Use the `start_time_metric_regex` configuration option to change the name of the
+metric used for the start time.
+
+If the start time metric is not found, it falls back to the time at which the
+collector started.
+
+This strategy should only be used in limited circumstances:
+
+* When your application has a metric with the start time in Unix nanoseconds,
+  such as `process_start_time`.
+* The metricstarttime processor is used _before_ any batching, so that the
+  batch of metrics all originate from a single application.
+* This strategy can be used when the collector is run as a sidecar to the
+  application, where the collector's start time is a good approximation of the
+  application's start time.
+
+Cons:
+
+* If the collector's start time is used as a fallback and the collector
+  restarts, it can produce rates that are incorrect and higher than expected.
+* The process' start time isn't the time at which individual instruments or
+  timeseries are initialized. It may result in lower rates if the first
+  observation is significantly later than the process' start time.

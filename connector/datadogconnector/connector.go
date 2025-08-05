@@ -123,10 +123,8 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
-	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
-		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
-	} else {
-		logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This flag will be made stable in a future release. If you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention. See the migration guide at https://docs.datadoghq.com/opentelemetry/guide/migrate/migrate_operation_names/")
+	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 	}
 	if v := cfg.BucketInterval; v > 0 {
 		acfg.BucketInterval = v
@@ -135,7 +133,7 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(context.Context, component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
 	go c.run()
@@ -161,11 +159,11 @@ func (c *traceToMetricConnector) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
+func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *traceToMetricConnector) addToCache(containerID string, key string) {
+func (c *traceToMetricConnector) addToCache(containerID, key string) {
 	if tags, ok := c.containerTagCache.Get(containerID); ok {
 		tagList := tags.(*sync.Map)
 		tagList.Store(key, struct{}{})

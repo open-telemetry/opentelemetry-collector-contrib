@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -125,7 +126,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
-	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig(ctx)
+	apiTLSCfg, err := se.config.APITLSs.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
@@ -157,7 +158,8 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 
 	var hms *hostmetadata.Syncer
 	if se.config.SyncHostMetadata {
-		hms = hostmetadata.NewSyncer(se.logger, dimClient)
+		envMap := gopsutilenv.SetGoPsutilEnvVars(se.config.RootPath)
+		hms = hostmetadata.NewSyncer(se.logger, dimClient, envMap)
 	}
 	se.dimClient = dimClient
 	se.pushMetricsData = dpClient.pushMetricsData
@@ -212,7 +214,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 }
 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
-	se.config.TLSSetting = se.config.IngestTLSSettings
+	se.config.TLS = se.config.IngestTLSs
 
 	return se.config.ToClient(ctx, host, se.telemetrySettings)
 }

@@ -3,10 +3,10 @@ type: prometheusremotewrite
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
-    active: [dashpole, ArthurSens]
+    active: [dashpole, ArthurSens, perebaj]
 tests:
   config:
   goleak:

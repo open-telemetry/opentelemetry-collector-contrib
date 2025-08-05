@@ -13,11 +13,10 @@ assigneeGroups:
     # Approvers
     - ArthurSens
     - braydonk
-    - ChrsMark
+    # - ChrsMark (On leave, back August 25th)
     - crobert-1
-    # - dashpole on leave
+    - dashpole
     - dehaansa
-    - edmocosta
     - mwear
     - fatsheep9146
     # Maintainers
@@ -25,8 +24,8 @@ assigneeGroups:
     - atoulme
     - bogdandrutu
     - codeboten
-    - djaglowski
     - dmitryax
+    - edmocosta
     - evan-bradley
     - MovieStoreGuy
     - mx-psi

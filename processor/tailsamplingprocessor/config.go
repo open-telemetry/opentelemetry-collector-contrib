@@ -140,7 +140,7 @@ type LatencyCfg struct {
 	// Lower bound in milliseconds. Retaining original name for compatibility
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
 	// Upper bound in milliseconds.
-	UpperThresholdmsMs int64 `mapstructure:"upper_threshold_ms"`
+	UpperThresholdMs int64 `mapstructure:"upper_threshold_ms"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
@@ -264,4 +264,6 @@ type Config struct {
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
 	// Options allows for additional configuration of the tail-based sampling processor in code.
 	Options []Option `mapstructure:"-"`
+	// Make decision as soon as a policy matches
+	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
 }

@@ -34,7 +34,7 @@ func TestNewExporter(t *testing.T) {
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &Container{
+		Container: &TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
@@ -179,7 +179,7 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
-	assertFormat := func(blobName string, format string) {
+	assertFormat := func(blobName, format string) {
 		ext := filepath.Ext(format)
 		formatWithoutExt := strings.TrimSuffix(format, ext)
 		assert.True(t, strings.HasPrefix(blobName, formatWithoutExt))
@@ -218,12 +218,12 @@ func (_m *mockAzBlobClient) URL() string {
 	return _m.url
 }
 
-func (_m *mockAzBlobClient) UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
+func (_m *mockAzBlobClient) UploadStream(ctx context.Context, containerName, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
 	args := _m.Called(ctx, containerName, blobName, body, o)
 	return args.Get(0).(azblob.UploadStreamResponse), args.Error(1)
 }
 
-func (_m *mockAzBlobClient) AppendBlock(ctx context.Context, containerName string, blobName string, data []byte, o *appendblob.AppendBlockOptions) error {
+func (_m *mockAzBlobClient) AppendBlock(ctx context.Context, containerName, blobName string, data []byte, o *appendblob.AppendBlockOptions) error {
 	args := _m.Called(ctx, containerName, blobName, data, o)
 	return args.Error(0)
 }
@@ -235,7 +235,7 @@ func TestExporterAppendBlob(t *testing.T) {
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &Container{
+		Container: &TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
@@ -286,7 +286,7 @@ func TestExporterAppendBlobError(t *testing.T) {
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &Container{
+		Container: &TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",

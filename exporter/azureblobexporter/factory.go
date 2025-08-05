@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		Auth: &Authentication{
 			Type: ConnectionString,
 		},
-		Container: &Container{
+		Container: &TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",

@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -77,7 +78,7 @@ type Config struct {
 
 	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	IngestTLSSettings configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
+	IngestTLSs configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
 	// value takes precedence over the value of Realm
@@ -85,7 +86,7 @@ type Config struct {
 
 	// api_tls needs to be set if the exporter's APIURL is pointing to a httpforwarder extension
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	APITLSSettings configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
+	APITLSs configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
 
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`
@@ -113,6 +114,9 @@ type Config struct {
 	//            `host.name` attribute within your k8s cluster. Also keep override
 	//            And keep `override=true` in resourcedetection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
+
+	// RootPath is the host's root directory used when syncing metadata; applies to linux only.
+	RootPath string `mapstructure:"root_path"`
 
 	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
 	// excluded from sending to SignalFx backend. If translations enabled with
@@ -222,6 +226,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
+	}
+
+	if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
+		return fmt.Errorf("invalid root_path: %w", err)
 	}
 
 	return nil

@@ -59,6 +59,7 @@ The following allocatable resource types are available.
   - memory
   - ephemeral-storage
   - storage
+  - pods
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
 - `namespace`: Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed. 
@@ -298,6 +299,8 @@ To use this approach, use the commands below to create the required `Role` and `
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
 metadata:
   name: otelcontribcol
   labels:
@@ -312,6 +315,7 @@ rules:
       - pods/status
       - replicationcontrollers
       - replicationcontrollers/status
+      - resourcequotas
       - services
     verbs:
       - get

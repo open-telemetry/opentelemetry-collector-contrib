@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
@@ -236,7 +237,7 @@ func TestSyncMetadata(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 			dimClient := &fakeDimClient{fail: tt.pushFail}
-			syncer := NewSyncer(logger, dimClient)
+			syncer := NewSyncer(logger, dimClient, common.EnvMap{})
 
 			// mock system stats calls.
 			t.Setenv("HOST_ETC", ".")
@@ -244,10 +245,10 @@ func TestSyncMetadata(t *testing.T) {
 				return []cpu.InfoStat{tt.cpuStat}, tt.cpuStatErr
 			}
 			cpuCounts = func(context.Context, bool) (int, error) { return 1, nil }
-			memVirtualMemory = func() (*mem.VirtualMemoryStat, error) {
+			memVirtualMemory = func(context.Context) (*mem.VirtualMemoryStat, error) {
 				return &tt.memStat, tt.memStatErr
 			}
-			hostInfo = func() (*host.InfoStat, error) {
+			hostInfo = func(context.Context) (*host.InfoStat, error) {
 				return &tt.hostStat, tt.hostStatErr
 			}
 			mockSyscallUname()

@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -25,6 +28,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -49,6 +55,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -77,6 +86,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -105,6 +117,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -129,6 +144,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -153,6 +171,40 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Time a page will stay in the buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "16771"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: SQLServer:Buffer Manager
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.life_expectancy
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -177,6 +229,40 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Time a page will stay in the buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "16771"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: SQLServer:Buffer Node
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.life_expectancy
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -201,6 +287,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -226,6 +315,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -250,6 +342,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -274,6 +369,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -298,6 +396,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -322,6 +423,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -346,6 +450,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -370,6 +477,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -394,6 +504,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -418,6 +531,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -442,6 +558,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -474,6 +593,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -498,6 +620,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -522,6 +647,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -546,6 +674,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -570,6 +701,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -594,6 +728,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -618,6 +755,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -642,6 +782,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -667,6 +810,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -692,6 +838,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -716,6 +865,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -744,6 +896,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -768,6 +923,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -796,6 +954,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -824,6 +985,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -848,6 +1012,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -876,6 +1043,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -900,6 +1070,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -925,6 +1098,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -949,6 +1125,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -973,6 +1152,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -997,6 +1179,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -1026,6 +1211,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -1050,6 +1238,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -1076,6 +1267,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: server.address
           value:
             stringValue: 0.0.0.0

@@ -128,9 +128,9 @@ When `custom_events_enabled` = `true`, azure monitor exporter will export log re
 
 #### Exceptions
 
-This exporter saves exception records to Application Insights `exceptions` table when log records indicate an excetion [specification](https://opentelemetry.io/docs/specs/otel/trace/exceptions/).
+This exporter saves exception records to Application Insights `exceptions` table when log records indicate an exception [specification](https://opentelemetry.io/docs/specs/otel/trace/exceptions/).
 
-When `exception_event_enabled` = `true`, azure monitor exxporter will export log record to exceptions when there's attributes `exception.message` or `exception.type`.
+When `exception_events_enabled` = `true`, azure monitor exporter will export log records to exceptions when either one of `exception.message` or `exception.type` attributes are set.
 
 ### Metrics
 

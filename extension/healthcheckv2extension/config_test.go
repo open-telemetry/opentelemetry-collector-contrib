@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -50,13 +51,13 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: http.LegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:13",
-						TLSSetting: &configtls.ServerConfig{
+						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CAFile:   "/path/to/ca",
 								CertFile: "/path/to/cert",
 								KeyFile:  "/path/to/key",
 							},
-						},
+						}),
 					},
 					CheckCollectorPipeline: &http.CheckCollectorPipelineConfig{
 						Enabled:                  false,

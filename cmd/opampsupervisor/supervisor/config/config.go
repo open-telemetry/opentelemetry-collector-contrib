@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -61,7 +63,7 @@ func Load(configFile string) (Supervisor, error) {
 	}
 
 	cfg := DefaultSupervisor()
-	if err = conf.Unmarshal(&cfg); err != nil {
+	if err := conf.Unmarshal(&cfg); err != nil {
 		return Supervisor{}, err
 	}
 
@@ -150,9 +152,9 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 }
 
 type OpAMPServer struct {
-	Endpoint   string                 `mapstructure:"endpoint"`
-	Headers    http.Header            `mapstructure:"headers"`
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	Endpoint string                 `mapstructure:"endpoint"`
+	Headers  http.Header            `mapstructure:"headers"`
+	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 func (o OpAMPServer) Validate() error {
@@ -171,7 +173,7 @@ func (o OpAMPServer) Validate() error {
 		return fmt.Errorf(`invalid scheme %q for server::endpoint, must be one of "http", "https", "ws", or "wss"`, url.Scheme)
 	}
 
-	err = o.TLSSetting.Validate()
+	err = o.TLS.Validate()
 	if err != nil {
 		return fmt.Errorf("invalid server::tls settings: %w", err)
 	}
@@ -187,6 +189,7 @@ type Agent struct {
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -218,7 +221,34 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	for _, file := range a.ConfigFiles {
+		if !strings.HasPrefix(file, "$") {
+			continue
+		}
+		if !slices.Contains(SpecialConfigFiles, SpecialConfigFile(file)) {
+			return fmt.Errorf("agent::config_files contains invalid special file: %q. Must be one of %v", file, SpecialConfigFiles)
+		}
+	}
+
+	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
+		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
 	return nil
+}
+
+type SpecialConfigFile string
+
+const (
+	SpecialConfigFileOwnTelemetry   SpecialConfigFile = "$OWN_TELEMETRY_CONFIG"
+	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
+	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
+)
+
+var SpecialConfigFiles = []SpecialConfigFile{
+	SpecialConfigFileOwnTelemetry,
+	SpecialConfigFileOpAMPExtension,
+	SpecialConfigFileRemoteConfig,
 }
 
 type AgentDescription struct {
@@ -237,8 +267,9 @@ type Telemetry struct {
 }
 
 type Logs struct {
-	Level       zapcore.Level `mapstructure:"level"`
-	OutputPaths []string      `mapstructure:"output_paths"`
+	Level            zapcore.Level `mapstructure:"level"`
+	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
+	OutputPaths      []string      `mapstructure:"output_paths"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
@@ -288,8 +319,9 @@ func DefaultSupervisor() Supervisor {
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
-				Level:       zapcore.InfoLevel,
-				OutputPaths: []string{"stderr"},
+				Level:            zapcore.InfoLevel,
+				OutputPaths:      []string{"stdout"},
+				ErrorOutputPaths: []string{"stderr"},
 			},
 		},
 	}

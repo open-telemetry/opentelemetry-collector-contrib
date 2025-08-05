@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
@@ -111,7 +111,6 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 						"scope": map[string]any{},
 						"spans": []any{
 							map[string]any{
-								"traceId":           "",
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),

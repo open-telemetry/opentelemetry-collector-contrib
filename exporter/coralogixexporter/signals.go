@@ -12,9 +12,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // signalConfigWrapper wraps configgrpc.ClientConfig to implement signalConfig interface
@@ -52,6 +56,11 @@ func newSignalExporter(oCfg *Config, set exp.Settings, signalEndpoint string, he
 		settings:  set.TelemetrySettings,
 		userAgent: userAgent,
 		metadata:  md,
+		rateError: rateError{
+			enabled:   oCfg.RateLimiter.Enabled,
+			threshold: oCfg.RateLimiter.Threshold,
+			duration:  oCfg.RateLimiter.Duration,
+		},
 	}, nil
 }
 
@@ -75,6 +84,8 @@ type signalExporter struct {
 
 	// Cached metadata for outgoing context
 	metadata metadata.MD
+
+	rateError rateError
 }
 
 func (e *signalExporter) shutdown(_ context.Context) error {
@@ -109,6 +120,10 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 			signalConfigWrapper.config.Headers = make(map[string]configopaque.String)
 		}
 		signalConfigWrapper.config.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
+
+		for k, v := range signalConfigWrapper.config.Headers {
+			e.metadata.Set(k, string(v))
+		}
 	}
 
 	e.callOptions = []grpc.CallOption{
@@ -116,4 +131,49 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 	}
 
 	return nil
+}
+
+func (e *signalExporter) EnableRateLimit() {
+	e.rateError.enableRateLimit()
+}
+
+func (e *signalExporter) canSend() bool {
+	if !e.rateError.isRateLimited() {
+		return true
+	}
+
+	if e.rateError.canDisableRateLimit() {
+		e.rateError.disableRateLimit()
+		return true
+	}
+
+	return false
+}
+
+// processError implements the common OTLP logic around request handling such as retries and throttling.
+// Send a telemetry data request to the server. "perform" function is expected to make
+// the actual gRPC unary call that sends the request.
+func (e *signalExporter) processError(err error) error {
+	st := status.Convert(err)
+	if st.Code() == codes.OK {
+		e.rateError.errorCount.Store(0)
+		return nil
+	}
+
+	retryInfo := getRetryInfo(st)
+
+	shouldRetry, shouldFlagRateLimit := shouldRetry(st.Code(), retryInfo)
+	if !shouldRetry {
+		if shouldFlagRateLimit {
+			e.EnableRateLimit()
+		}
+		return consumererror.NewPermanent(err)
+	}
+
+	throttleDuration := getThrottleDuration(retryInfo)
+	if throttleDuration != 0 {
+		return exporterhelper.NewThrottleRetry(err, throttleDuration)
+	}
+
+	return err
 }

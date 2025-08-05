@@ -9,6 +9,12 @@
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | cloud.account.id | The cloud account id | Any Str | false |
+| cloud.availability_zone | The cloud availability zone | Any Str | false |
 | cloud.platform | The cloud.platform | Any Str | true |
 | cloud.provider | The cloud.provider | Any Str | true |
+| cloud.region | The cloud region | Any Str | false |
+| host.id | The host.id | Any Str | false |
+| host.image.id | The host image id | Any Str | false |
+| host.name | The hostname | Any Str | false |
+| host.type | The host id | Any Str | false |
 | k8s.cluster.name | The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action. | Any Str | false |

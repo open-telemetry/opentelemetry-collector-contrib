@@ -26,12 +26,14 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 collection_interval: "20s"
 timeout: "30s"
 username: "username"
-password: "changeme"`
+password: "changeme"
+endpoint: 1.2.3.4:6379`
 	configRedis := `
 collection_interval: "20s"
 timeout: "130s"
 username: "username"
-password: "changeme"`
+password: "changeme"
+endpoint: 1.2.3.4:6379`
 
 	tests := map[string]struct {
 		inputEndpoint    observer.Endpoint
@@ -109,7 +111,7 @@ password: "changeme"`
 			expectedReceiver: receiverTemplate{
 				receiverConfig: receiverConfig{
 					id:     id,
-					config: userConfigMap{"endpoint": "1.2.3.4:6379"},
+					config: userConfigMap{},
 				}, signals: receiverSignals{metrics: true, logs: false, traces: false},
 			},
 			wantError:       false,
@@ -254,10 +256,11 @@ include:
 - /var/log/pod/x/foo.log`
 
 	tests := map[string]struct {
-		inputEndpoint    observer.Endpoint
-		expectedReceiver receiverTemplate
-		wantError        bool
-		ignoreReceivers  []string
+		inputEndpoint      observer.Endpoint
+		expectedReceiver   receiverTemplate
+		wantError          bool
+		ignoreReceivers    []string
+		defaultAnnotations map[string]string
 	}{
 		`logs_pod_level_hints_only`: {
 			inputEndpoint: observer.Endpoint{
@@ -344,6 +347,60 @@ include:
 			},
 			wantError:       false,
 			ignoreReceivers: []string{},
+		}, `logs_pod_level_hints_default_all`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/filelog(redis)",
+				Target: "1.2.3.4:6379",
+				Details: &observer.PodContainer{
+					Name: "redis", Pod: observer.Pod{
+						Name:        "pod-2",
+						Namespace:   "default",
+						UID:         "pod-2-UID",
+						Labels:      map[string]string{"env": "prod"},
+						Annotations: map[string]string{},
+					},
+				},
+			},
+			expectedReceiver: receiverTemplate{
+				receiverConfig: receiverConfig{
+					id: id,
+					config: userConfigMap{
+						"include":           []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
+						"include_file_name": false,
+						"include_file_path": true,
+						"operators": []any{
+							map[string]any{"id": "container-parser", "type": "container"},
+						},
+					},
+				}, signals: receiverSignals{metrics: false, logs: true, traces: false},
+			},
+			wantError:       false,
+			ignoreReceivers: []string{},
+			defaultAnnotations: map[string]string{
+				otelLogsHints + "/enabled": "true",
+			},
+		}, `logs_pod_level_hints_disable_default_all`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/filelog(redis)",
+				Target: "1.2.3.4:6379",
+				Details: &observer.PodContainer{
+					Name: "redis", Pod: observer.Pod{
+						Name:      "pod-2",
+						Namespace: "default",
+						UID:       "pod-2-UID",
+						Labels:    map[string]string{"env": "prod"},
+						Annotations: map[string]string{
+							otelLogsHints + "/enabled": "false",
+						},
+					},
+				},
+			},
+			expectedReceiver: receiverTemplate{},
+			wantError:        false,
+			ignoreReceivers:  []string{},
+			defaultAnnotations: map[string]string{
+				otelLogsHints + "/enabled": "true",
+			},
 		}, `logs_container_level_hints`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/filelog(redis)",
@@ -506,8 +563,9 @@ include:
 		t.Run(name, func(t *testing.T) {
 			builder := createK8sHintsBuilder(
 				DiscoveryConfig{
-					Enabled:         true,
-					IgnoreReceivers: test.ignoreReceivers,
+					Enabled:            true,
+					IgnoreReceivers:    test.ignoreReceivers,
+					DefaultAnnotations: test.defaultAnnotations,
 				},
 				logger)
 			env, err := test.inputEndpoint.Env()
@@ -568,7 +626,6 @@ nested_example:
 				"io.opentelemetry.discovery.metrics/config":  configNoEndpoint,
 			}, expectedConf: userConfigMap{
 				"collection_interval": "20s",
-				"endpoint":            "1.1.1.1:8080",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
 				"nested_example":      userConfigMap{"foo": "bar"},

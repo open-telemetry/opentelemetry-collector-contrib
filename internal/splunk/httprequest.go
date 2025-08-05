@@ -43,7 +43,7 @@ func HandleHTTPCode(resp *http.Response) error {
 		// Indicate to our caller to pause for the specified number of seconds.
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
 	// Check for permanent errors.
-	case http.StatusBadRequest, http.StatusUnauthorized:
+	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden:
 		err = consumererror.NewPermanent(err)
 	}
 

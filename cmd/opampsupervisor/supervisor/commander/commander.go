@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -95,6 +96,19 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
+func (c *Commander) ReloadConfigFile() error {
+	if c.cmd == nil || c.cmd.Process == nil {
+		return errors.New("agent process is not running")
+	}
+
+	c.logger.Debug("Sending SIGHUP to agent process to reload config", zap.Int("pid", c.cmd.Process.Pid))
+	if err := c.cmd.Process.Signal(syscall.SIGHUP); err != nil {
+		return fmt.Errorf("failed to send SIGHUP to agent process: %w", err)
+	}
+
+	return nil
+}
+
 func (c *Commander) startNormal() error {
 	logFilePath := filepath.Join(c.logsDir, "agent.log")
 	stdoutFile, err := os.Create(logFilePath)
@@ -157,7 +171,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
-			colLogger.Info(line)
+			colLogger.Error(line)
 		}
 		if err := scanner.Err(); err != nil {
 			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
@@ -323,7 +337,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	}
 
 	pid := c.cmd.Process.Pid
-	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
+	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
 	if err := sendShutdownSignal(c.cmd.Process); err != nil {

@@ -26,6 +26,9 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	Targets                        []*targetConfig `mapstructure:"targets"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // targetConfig defines configuration for individual HTTP checks.

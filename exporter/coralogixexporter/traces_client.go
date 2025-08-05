@@ -26,13 +26,13 @@ func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExpo
 	}
 
 	return &tracesExporter{
-		signalExporter: *signalExporter,
+		signalExporter: signalExporter,
 	}, nil
 }
 
 type tracesExporter struct {
 	traceExporter ptraceotlp.GRPCClient
-	signalExporter
+	*signalExporter
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
@@ -45,6 +45,10 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		resourceSpan := rss.At(i)
@@ -55,17 +59,43 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 
 	resp, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
-		e.settings.Logger.Error("Partial success response from Coralogix",
+		logFields := []zap.Field{
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_spans", partialSuccess.RejectedSpans()),
+		}
+
+		if e.settings.Logger.Level() == zap.DebugLevel {
+			// We need to deduplicate the trace IDs because the same trace ID
+			// can be sent multiple times
+			traceIDSet := make(map[string]struct{})
+			rss := td.ResourceSpans()
+			for i := 0; i < rss.Len(); i++ {
+				ss := rss.At(i).ScopeSpans()
+				for j := 0; j < ss.Len(); j++ {
+					spans := ss.At(j).Spans()
+					for k := 0; k < spans.Len(); k++ {
+						traceIDSet[spans.At(k).TraceID().String()] = struct{}{}
+					}
+				}
+			}
+			traceIDs := make([]string, 0, len(traceIDSet))
+			for traceID := range traceIDSet {
+				traceIDs = append(traceIDs, traceID)
+			}
+			logFields = append(logFields, zap.Strings("trace_ids", traceIDs))
+		}
+
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			logFields...,
 		)
 	}
 
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 

@@ -15,7 +15,7 @@ import (
 )
 
 func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string,
+	resource pcommon.Resource, settings Settings, name string, metadata metadata,
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -26,6 +26,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			name,
 		)
@@ -43,12 +44,12 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 		if pt.Flags().NoRecordedValue() {
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
-		c.addSample(sample, labels)
+		c.addSample(sample, labels, metadata)
 	}
 }
 
 func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string,
+	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string, metadata metadata,
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -58,6 +59,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			name,
 		)
@@ -76,7 +78,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
 		// TODO: properly add exemplars to the TimeSeries
-		c.addSample(sample, lbls)
+		c.addSample(sample, lbls, metadata)
 	}
 }
 

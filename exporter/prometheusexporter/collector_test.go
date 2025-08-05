@@ -26,32 +26,46 @@ import (
 type mockAccumulator struct {
 	metrics            []pmetric.Metric
 	resourceAttributes pcommon.Map // Same attributes for all metrics.
+	scopeNames         []string
+	scopeVersions      []string
+	scopeSchemaURLs    []string
+	scopeAttributes    []pcommon.Map
 }
 
-func (a *mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
+func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 	return 0
 }
 
-func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
+func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
+	scopeNames := make([]string, len(a.metrics))
+	scopeVersions := make([]string, len(a.metrics))
+	scopeSchemaURLs := make([]string, len(a.metrics))
+	scopeAttributes := make([]pcommon.Map, len(a.metrics))
 	for i := range rAttrs {
 		rAttrs[i] = a.resourceAttributes
+		scopeNames[i] = a.scopeNames[i]
+		scopeVersions[i] = a.scopeVersions[i]
+		scopeSchemaURLs[i] = a.scopeSchemaURLs[i]
+		scopeAttributes[i] = a.scopeAttributes[i]
 	}
 
-	return a.metrics, rAttrs
+	return a.metrics, rAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
 }
 
 func TestConvertInvalidDataType(t *testing.T) {
 	metric := pmetric.NewMetric()
-	c := collector{
-		accumulator: &mockAccumulator{
-			[]pmetric.Metric{metric},
-			pcommon.NewMap(),
-		},
-		logger: zap.NewNop(),
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		[]pmetric.Metric{metric},
+		pcommon.NewMap(),
+		[]string{"test"},
+		[]string{"1.0.0"},
+		[]string{"http://test.com"},
+		[]pcommon.Map{pcommon.NewMap()},
 	}
 
-	_, err := c.convertMetric(metric, pcommon.NewMap())
+	_, err := c.convertMetric(metric, pcommon.NewMap(), "test", "1.0.0", "http://test.com", pcommon.NewMap())
 	require.Equal(t, errUnknownMetricType, err)
 
 	ch := make(chan prometheus.Metric, 1)
@@ -132,14 +146,12 @@ func TestConvertMetric(t *testing.T) {
 			case pmetric.MetricTypeHistogram:
 				metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 			}
-			c := collector{
-				logger: zap.NewNop(),
-			}
+			c := newCollector(&Config{}, zap.NewNop())
 			for k, v := range tt.mapVals {
 				c.metricFamilies.Store(k, v)
 			}
 
-			_, err := c.convertMetric(metric, pcommon.NewMap())
+			_, err := c.convertMetric(metric, pcommon.NewMap(), "test", "1.0.0", "http://test.com", pcommon.NewMap())
 			if tt.err {
 				require.Error(t, err)
 				return
@@ -218,15 +230,13 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := collector{
-		accumulator: &mockAccumulator{
-			metrics:            []pmetric.Metric{metric},
-			resourceAttributes: pMap,
-		},
-		logger: zap.NewNop(),
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		metrics:            []pmetric.Metric{metric},
+		resourceAttributes: pMap,
 	}
 
-	pbMetric, _ := c.convertDoubleHistogram(metric, pMap)
+	pbMetric, _ := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
 	m := io_prometheus_client.Metric{}
 	err := pbMetric.Write(&m)
 	if err != nil {
@@ -259,15 +269,13 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := collector{
-		accumulator: &mockAccumulator{
-			metrics:            []pmetric.Metric{metric},
-			resourceAttributes: pMap,
-		},
-		logger: zap.NewNop(),
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		metrics:            []pmetric.Metric{metric},
+		resourceAttributes: pMap,
 	}
 
-	promMetric, _ := c.convertSum(metric, pMap)
+	promMetric, _ := c.convertSum(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
 	outMetric := io_prometheus_client.Metric{}
 	err := promMetric.Write(&outMetric)
 	if err != nil {
@@ -312,14 +320,19 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	loggerCore := errorCheckCore{}
-	c := collector{
-		namespace: "test_space",
-		accumulator: &mockAccumulator{
-			[]pmetric.Metric{metric},
-			pcommon.NewMap(),
-		},
-		sendTimestamps: false,
-		logger:         zap.New(&loggerCore),
+
+	c := newCollector(&Config{
+		Namespace:      "test_space",
+		SendTimestamps: false,
+	}, zap.New(&loggerCore))
+	// Replace accumulator with mock for test control
+	c.accumulator = &mockAccumulator{
+		[]pmetric.Metric{metric},
+		pcommon.NewMap(),
+		[]string{""},
+		[]string{""},
+		[]string{""},
+		[]pcommon.Map{pcommon.NewMap()},
 	}
 
 	ch := make(chan prometheus.Metric, 1)
@@ -520,14 +533,19 @@ func TestCollectMetrics(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
-				c := collector{
-					namespace: "test_space",
-					accumulator: &mockAccumulator{
-						[]pmetric.Metric{metric},
-						rAttrs,
-					},
-					sendTimestamps: sendTimestamp,
-					logger:         zap.NewNop(),
+
+				c := newCollector(&Config{
+					Namespace:      "test_space",
+					SendTimestamps: sendTimestamp,
+				}, zap.NewNop())
+				// Replace accumulator with mock for test control
+				c.accumulator = &mockAccumulator{
+					[]pmetric.Metric{metric},
+					rAttrs,
+					[]string{"test"},
+					[]string{"1.0.0"},
+					[]string{"http://test.com"},
+					[]pcommon.Map{pcommon.NewMap()},
 				}
 
 				ch := make(chan prometheus.Metric, 1)
@@ -553,12 +571,12 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,job,instance}`)
+					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,otel_scope_name,otel_scope_version,otel_scope_schema_url,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
 
-					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "job": "prod/testapp", "instance": "localhost:9090"}
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "otel_scope_name": "test", "otel_scope_version": "1.0.0", "otel_scope_schema_url": "http://test.com", "job": "prod/testapp", "instance": "localhost:9090"}
 					for _, l := range pbMetric.Label {
 						require.Equal(t, labelsKeys[*l.Name], *l.Value)
 					}
@@ -644,13 +662,17 @@ func TestAccumulateHistograms(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
-				c := collector{
-					accumulator: &mockAccumulator{
-						[]pmetric.Metric{metric},
-						pcommon.NewMap(),
-					},
-					sendTimestamps: sendTimestamp,
-					logger:         zap.NewNop(),
+				c := newCollector(&Config{
+					SendTimestamps: sendTimestamp,
+				}, zap.NewNop())
+				// Replace accumulator with mock for test control
+				c.accumulator = &mockAccumulator{
+					[]pmetric.Metric{metric},
+					pcommon.NewMap(),
+					[]string{""},
+					[]string{""},
+					[]string{""},
+					[]pcommon.Map{pcommon.NewMap()},
 				}
 
 				ch := make(chan prometheus.Metric, 1)
@@ -754,13 +776,17 @@ func TestAccumulateSummary(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
-				c := collector{
-					accumulator: &mockAccumulator{
-						[]pmetric.Metric{metric},
-						pcommon.NewMap(),
-					},
-					sendTimestamps: sendTimestamp,
-					logger:         zap.NewNop(),
+				c := newCollector(&Config{
+					SendTimestamps: sendTimestamp,
+				}, zap.NewNop())
+				// Replace accumulator with mock for test control
+				c.accumulator = &mockAccumulator{
+					[]pmetric.Metric{metric},
+					pcommon.NewMap(),
+					[]string{""},
+					[]string{""},
+					[]string{""},
+					[]pcommon.Map{pcommon.NewMap()},
 				}
 
 				ch := make(chan prometheus.Metric, 1)

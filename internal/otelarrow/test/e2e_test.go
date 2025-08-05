@@ -15,13 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/datagen"
-	otel_assert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	"github.com/open-telemetry/otel-arrow/go/pkg/datagen"
+	otel_assert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -138,7 +139,7 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	exporterCfg.Endpoint = addr
 	exporterCfg.WaitForReady = true
-	exporterCfg.TLSSetting.Insecure = true
+	exporterCfg.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
 	exporterCfg.RetryConfig.Enabled = true
@@ -281,7 +282,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -612,12 +613,12 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
+		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
-			},
-		}
+			}),
+		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
 
@@ -627,7 +628,7 @@ func nearLimitGenFunc() MkGen {
 	const hardLimit = 1 << 20   // 1 MiB
 
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,

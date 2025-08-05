@@ -22,10 +22,6 @@ type Encodings struct {
 	Traces  *component.ID `mapstructure:"traces"`
 }
 
-type (
-	Container TelemetryConfig
-)
-
 type BlobNameFormat struct {
 	MetricsFormat            string            `mapstructure:"metrics_format"`
 	LogsFormat               string            `mapstructure:"logs_format"`
@@ -55,6 +51,9 @@ type Authentication struct {
 
 	// ConnectionString to the endpoint.
 	ConnectionString string `mapstructure:"connection_string"`
+
+	// FederatedTokenFile is the path to the file containing the federated token. It's needed when type is workload_identity.
+	FederatedTokenFile string `mapstructure:"federated_token_file"`
 }
 
 type AuthType string
@@ -64,6 +63,7 @@ const (
 	SystemManagedIdentity AuthType = "system_managed_identity"
 	UserManagedIdentity   AuthType = "user_managed_identity"
 	ServicePrincipal      AuthType = "service_principal"
+	WorkloadIdentity      AuthType = "workload_identity"
 )
 
 // Config contains the main configuration options for the azure storage blob exporter
@@ -72,8 +72,8 @@ type Config struct {
 	URL string `mapstructure:"url"`
 
 	// A container organizes a set of blobs, similar to a directory in a file system.
-	Container *Container      `mapstructure:"container"`
-	Auth      *Authentication `mapstructure:"auth"`
+	Container *TelemetryConfig `mapstructure:"container"`
+	Auth      *Authentication  `mapstructure:"auth"`
 
 	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
 	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
@@ -107,6 +107,10 @@ func (c *Config) Validate() error {
 	case UserManagedIdentity:
 		if c.Auth.ClientID == "" {
 			return errors.New("client_id cannot be empty when auth type is user_managed_identity")
+		}
+	case WorkloadIdentity:
+		if c.Auth.TenantID == "" || c.Auth.ClientID == "" || c.Auth.FederatedTokenFile == "" {
+			return errors.New("tenant_id, client_id and federated_token_file cannot be empty when auth type is workload_identity")
 		}
 	}
 

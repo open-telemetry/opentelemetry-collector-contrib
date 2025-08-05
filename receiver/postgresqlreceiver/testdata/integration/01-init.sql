@@ -29,3 +29,8 @@ SELECT * FROM test2;
 
 
 CREATE EXTENSION pg_stat_statements;
+
+-- generating temp usage
+SET work_mem = '64kB';
+SELECT * FROM generate_series(1, 100000) AS x ORDER BY x;
+SET work_mem = '4MB';

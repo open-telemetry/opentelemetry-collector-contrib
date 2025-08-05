@@ -129,9 +129,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.Endpoint = "localhost:5432"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
-		expected.QuerySampleCollection.Enabled = true
 		expected.TopNQuery = 1234
-		expected.TopQueryCollection.Enabled = true
+		expected.QueryPlanCacheTTL = time.Second * 123
 		require.Equal(t, expected, cfg)
 	})
 

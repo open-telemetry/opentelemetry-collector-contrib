@@ -619,11 +619,11 @@ func tempFileName(tb testing.TB) string {
 // errorWriter is an io.Writer that will return an error all ways
 type errorWriter struct{}
 
-func (e errorWriter) Write([]byte) (n int, err error) {
+func (errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
 }
 
-func (e *errorWriter) Close() error {
+func (*errorWriter) Close() error {
 	return nil
 }
 
@@ -778,7 +778,7 @@ func TestFlushing(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := &tsBuffer{b: &bytes.Buffer{}}
-	buf := &NopWriteCloser{bbuf}
+	buf := &nopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
@@ -833,7 +833,7 @@ func TestAppend(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := &tsBuffer{b: &bytes.Buffer{}}
-	buf := &NopWriteCloser{bbuf}
+	buf := &nopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.

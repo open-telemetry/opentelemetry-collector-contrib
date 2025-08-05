@@ -115,15 +115,15 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}()
 
 	// if the build and version info has been configured that is pulled here
-	var info infoDict
+	var infoMap infoDict
 	if s.conf.VersionInfo {
-		info = s.scrapeInfo(ctx, now, errChan)
+		infoMap = s.scrapeInfo(ctx, now, errChan)
 	} else {
-		info = make(infoDict)
-		nullInfo := Info{Host: "", Entries: make([]infoEntry, 1)}
-		info[typeCm] = nullInfo
-		info[typeSh] = nullInfo
-		info[typeIdx] = nullInfo
+		infoMap = make(infoDict)
+		nullInfo := info{Host: "", Entries: make([]infoEntry, 1)}
+		infoMap[typeCm] = nullInfo
+		infoMap[typeSh] = nullInfo
+		infoMap[typeIdx] = nullInfo
 	}
 
 	for _, fn := range metricScrapes {
@@ -138,7 +138,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// actual function body
 			defer wg.Done()
 			fn(ctx, now, info, errs)
-		}(fn, ctx, now, info, errChan)
+		}(fn, ctx, now, infoMap, errChan)
 	}
 
 	wg.Wait()
@@ -1649,7 +1649,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Times
 // Scrape dispatch artifacts
 func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// if NONE of the metrics set in this scrape are set we return early
-	if !s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
+	if !s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsAdhocSize.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsScheduledSize.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsCompletedSize.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsIncompleteSize.Enabled {
 		return
 	}
 
@@ -1687,7 +1687,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 	}
 
 	for _, f := range da.Entries {
-		if s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled && f.Content.AdhocCount != "" {
 			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1695,7 +1695,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled && f.Content.ScheduledCount != "" {
 			scheduledCount, err := strconv.ParseInt(f.Content.ScheduledCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1703,7 +1703,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled && f.Content.CompletedCount != "" {
 			completedCount, err := strconv.ParseInt(f.Content.CompletedCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1711,7 +1711,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled && f.Content.IncompleteCount != "" {
 			incompleteCount, err := strconv.ParseInt(f.Content.IncompleteCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1719,7 +1719,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleteCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled && f.Content.InvalidCount != "" {
 			invalidCount, err := strconv.ParseInt(f.Content.InvalidCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1727,7 +1727,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled && f.Content.SavedSearchesCount != "" {
 			savedSearchesCount, err := strconv.ParseInt(f.Content.SavedSearchesCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1735,25 +1735,60 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && f.Content.InfoCacheSize != "" {
 			infoCacheSize, err := strconv.ParseInt(f.Content.InfoCacheSize, 10, 64)
 			if err != nil {
 				errs <- err
 			}
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, infoCacheSize, s.conf.SHEndpoint.Endpoint, "info", i.Build, i.Version)
+		}
+
+		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && f.Content.StatusCacheSize != "" {
 			statusCacheSize, err := strconv.ParseInt(f.Content.StatusCacheSize, 10, 64)
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, infoCacheSize, s.conf.SHEndpoint.Endpoint, "info", i.Build, i.Version)
 			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, statusCacheSize, s.conf.SHEndpoint.Endpoint, "status", i.Build, i.Version)
 		}
 
-		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled && f.Content.CacheTotalEntries != "" {
 			cacheTotalEntries, err := strconv.ParseInt(f.Content.CacheTotalEntries, 10, 64)
 			if err != nil {
 				errs <- err
 			}
 			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+		}
+
+		if s.conf.Metrics.SplunkServerSearchartifactsAdhocSize.Enabled && f.Content.AdhocSize != "" {
+			adhocSize, err := strconv.ParseInt(f.Content.AdhocSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(now, adhocSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+		}
+
+		if s.conf.Metrics.SplunkServerSearchartifactsScheduledSize.Enabled && f.Content.ScheduledSize != "" {
+			scheduledSize, err := strconv.ParseInt(f.Content.ScheduledSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(now, scheduledSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+		}
+
+		if s.conf.Metrics.SplunkServerSearchartifactsCompletedSize.Enabled && f.Content.CompletedSize != "" {
+			completedSize, err := strconv.ParseInt(f.Content.CompletedSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(now, completedSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+		}
+
+		if s.conf.Metrics.SplunkServerSearchartifactsIncompleteSize.Enabled && f.Content.IncompleteSize != "" {
+			incompleteSize, err := strconv.ParseInt(f.Content.IncompleteSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(now, incompleteSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
 		}
 	}
 }
@@ -1810,49 +1845,49 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 }
 
 // somewhat unique scrape function for gathering the info attribute
-func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs chan error) map[any]Info {
+func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs chan error) map[any]info {
 	// there could be an endpoint configured for each type (never more than 3)
 
-	info := make(infoDict)
-	nullInfo := Info{Host: "", Entries: make([]infoEntry, 1)}
-	info[typeCm] = nullInfo
-	info[typeSh] = nullInfo
-	info[typeIdx] = nullInfo
+	infoMap := make(infoDict)
+	nullInfo := info{Host: "", Entries: make([]infoEntry, 1)}
+	infoMap[typeCm] = nullInfo
+	infoMap[typeSh] = nullInfo
+	infoMap[typeIdx] = nullInfo
 
 	for cliType := range s.splunkClient.clients {
-		var i Info
+		var i info
 
 		ept := apiDict[`SplunkInfo`]
 
 		req, err := s.splunkClient.createAPIRequest(cliType, ept)
 		if err != nil {
 			errs <- err
-			return info
+			return infoMap
 		}
 
 		res, err := s.splunkClient.makeRequest(req)
 		if err != nil {
 			errs <- err
-			return info
+			return infoMap
 		}
 		defer res.Body.Close()
 
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			errs <- err
-			return info
+			return infoMap
 		}
 
 		err = json.Unmarshal(body, &i)
 		if err != nil {
 			errs <- err
-			return info
+			return infoMap
 		}
 
-		info[cliType] = i
+		infoMap[cliType] = i
 	}
 
-	return info
+	return infoMap
 }
 
 // Scrape Search Metrics

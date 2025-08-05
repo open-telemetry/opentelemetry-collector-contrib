@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -61,6 +61,13 @@ func TestLoadConfig(t *testing.T) {
 				Topic: "spans",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
+				},
+				Telemetry: TelemetryConfig{
+					Metrics: MetricsConfig{
+						KafkaReceiverRecordsDelay: MetricConfig{
+							Enabled: true,
+						},
+					},
 				},
 			},
 		},

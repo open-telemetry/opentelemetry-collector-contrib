@@ -101,7 +101,7 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	return metrics
 }
 
-func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
+func createTraceData(resourcesNum, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
@@ -129,11 +129,11 @@ func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
 	return traces
 }
 
-func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs {
+func createLogData(numResources, numLibraries, numRecords int) plog.Logs {
 	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
-func repeat(what int, times int) []int {
+func repeat(what, times int) []int {
 	result := make([]int, times)
 	for i := range result {
 		result[i] = what
@@ -826,7 +826,7 @@ func TestReceiveLogs(t *testing.T) {
 								z.Close()
 								require.NoError(t, err)
 							}
-							if strings.Contains(string(batchBody), fmt.Sprintf(`"%s"`, attrVal.Str())) {
+							if strings.Contains(string(batchBody), fmt.Sprintf(`%q`, attrVal.Str())) {
 								assert.False(t, eventFound, "log event %s found in multiple batches", attrVal.Str())
 								eventFound = true
 								droppedCount--
@@ -1324,6 +1324,59 @@ func TestErrorReceived(t *testing.T) {
 	assert.EqualError(t, err, errMsg)
 }
 
+func TestErrorReceivedForbidden(t *testing.T) {
+	rr := make(chan receivedRequest)
+	capture := capturingData{receivedRequest: rr, statusCode: 403}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	defer s.Close()
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			assert.NoError(t, e)
+		}
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
+	// otherwise we will not see the error.
+	cfg.QueueSettings.Enabled = false
+	// Disable retries to not wait too much time for the return error.
+	cfg.Enabled = false
+	cfg.DisableCompression = true
+	cfg.Token = "1234-1234"
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	td := createTraceData(1, 3)
+
+	err = exporter.ConsumeTraces(context.Background(), td)
+	select {
+	case <-rr:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Should have received request")
+	}
+	errMsg := fmt.Sprintf("Permanent error: HTTP \"/services/collector\" %d %q",
+		http.StatusForbidden,
+		http.StatusText(http.StatusForbidden),
+	)
+	assert.EqualError(t, err, errMsg)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
 func TestInvalidLogs(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = false
@@ -1399,7 +1452,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
-		fmt.Sprintf("%s: heartbeat on startup failed: HTTP \"/services/collector\" 403 \"Forbidden\"",
+		fmt.Sprintf("%s: heartbeat on startup failed: Permanent error: HTTP \"/services/collector\" 403 \"Forbidden\"",
 			params.ID.String(),
 		),
 	)
@@ -1558,7 +1611,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 
 	err := c.pushLogData(context.Background(), logs)
 
-	assert.Error(t, err, "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
+	assert.Error(t, err, "Permanent error: unsupported value: +Inf")
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
@@ -1748,7 +1801,7 @@ func Benchmark_pushLogData_compressed_100_200_5M(b *testing.B) {
 	benchPushLogData(b, 100, 200, 5*1024*1024, true)
 }
 
-func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool) {
+func benchPushLogData(b *testing.B, numResources, numRecords int, bufSize uint, compressionEnabled bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
 	config.DisableCompression = !compressionEnabled
@@ -1897,7 +1950,7 @@ func Benchmark_pushMetricData_compressed_100_200_5M_MultiMetric(b *testing.B) {
 	benchPushMetricData(b, 100, 200, 5*1024*1024, true, true)
 }
 
-func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool, useMultiMetricFormat bool) {
+func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uint, compressionEnabled, useMultiMetricFormat bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthMetrics = bufSize
 	config.DisableCompression = !compressionEnabled

@@ -9,7 +9,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
-func (rb *ResourceBuilder) SetFromCallable(set func(string), detect func() (string, error)) error {
+func (*ResourceBuilder) SetFromCallable(set func(string), detect func() (string, error)) error {
 	v, err := detect()
 	if err != nil {
 		return err

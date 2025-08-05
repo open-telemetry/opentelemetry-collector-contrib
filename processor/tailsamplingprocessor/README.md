@@ -28,7 +28,7 @@ The following configuration options are required:
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
 - `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between. Supplying no upper bound will result in a policy sampling anything greater than `threshold_ms`.
-- `numeric_attribute`: Sample based on number attributes (resource and record)
+- `numeric_attribute`: Sample based on number attributes (resource and record) by `min_value` and/or `max_value`
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
@@ -60,6 +60,7 @@ The following configuration options can also be modified:
   - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
+- `sample_on_first_match`: Make decision as soon as a policy matches
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:

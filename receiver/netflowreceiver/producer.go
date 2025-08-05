@@ -15,8 +15,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 )
 
-// OtelLogsProducerWrapper is a wrapper around a producer.ProducerInterface that sends the messages to a log consumer
-type OtelLogsProducerWrapper struct {
+// otelLogsProducerWrapper is a wrapper around a producer.ProducerInterface that sends the messages to a log consumer
+type otelLogsProducerWrapper struct {
 	wrapped     producer.ProducerInterface
 	logConsumer consumer.Logs
 	logger      *zap.Logger
@@ -24,7 +24,7 @@ type OtelLogsProducerWrapper struct {
 }
 
 // Produce converts the message into a list log records and sends them to log consumer
-func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
+func (o *otelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
 	defer func() {
 		if pErr := recover(); pErr != nil {
 			errMessage, _ := pErr.(string)
@@ -72,16 +72,16 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 	return flowMessageSet, nil
 }
 
-func (o *OtelLogsProducerWrapper) Close() {
+func (o *otelLogsProducerWrapper) Close() {
 	o.wrapped.Close()
 }
 
-func (o *OtelLogsProducerWrapper) Commit(flowMessageSet []producer.ProducerMessage) {
+func (o *otelLogsProducerWrapper) Commit(flowMessageSet []producer.ProducerMessage) {
 	o.wrapped.Commit(flowMessageSet)
 }
 
 func newOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs, logger *zap.Logger, sendRaw bool) producer.ProducerInterface {
-	return &OtelLogsProducerWrapper{
+	return &otelLogsProducerWrapper{
 		wrapped:     wrapped,
 		logConsumer: logConsumer,
 		logger:      logger,

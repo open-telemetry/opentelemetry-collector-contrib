@@ -36,14 +36,14 @@ var (
 func TestScraperStart(t *testing.T) {
 	clientConfigNoCA := confighttp.NewDefaultClientConfig()
 	clientConfigNoCA.Endpoint = defaultEndpoint
-	clientConfigNoCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNoCA.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
 	}
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.TLS = configtls.ClientConfig{}
 	clientConfig.Endpoint = defaultEndpoint
 
 	testcases := []struct {
@@ -113,28 +113,30 @@ func TestScraperScrape(t *testing.T) {
 	}
 
 	var taskmanagerMetricsInstances []*models.TaskmanagerMetrics
-	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
-		Host:          "mock-host",
-		TaskmanagerID: "mock-taskmanager-id",
-		Metrics:       *taskmanagerMetricsResponse,
-	})
-	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
-		Host:          "mock-host2",
-		TaskmanagerID: "mock-taskmanager-id2",
-		Metrics:       *taskmanagerMetricsResponse,
-	})
+	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances,
+		&models.TaskmanagerMetrics{
+			Host:          "mock-host",
+			TaskmanagerID: "mock-taskmanager-id",
+			Metrics:       *taskmanagerMetricsResponse,
+		},
+		&models.TaskmanagerMetrics{
+			Host:          "mock-host2",
+			TaskmanagerID: "mock-taskmanager-id2",
+			Metrics:       *taskmanagerMetricsResponse,
+		})
 
 	var jobsMetricsInstances []*models.JobMetrics
-	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
-		Host:    "mock-host",
-		JobName: "mock-job-name",
-		Metrics: *jobsMetricsResponse,
-	})
-	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
-		Host:    "mock-host2",
-		JobName: "mock-job-name2",
-		Metrics: *jobsMetricsResponse,
-	})
+	jobsMetricsInstances = append(jobsMetricsInstances,
+		&models.JobMetrics{
+			Host:    "mock-host",
+			JobName: "mock-job-name",
+			Metrics: *jobsMetricsResponse,
+		},
+		&models.JobMetrics{
+			Host:    "mock-host2",
+			JobName: "mock-job-name2",
+			Metrics: *jobsMetricsResponse,
+		})
 
 	var subtaskMetricsInstances []*models.SubtaskMetrics
 	subtaskMetricsInstances = append(subtaskMetricsInstances, &models.SubtaskMetrics{

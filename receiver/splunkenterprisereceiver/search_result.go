@@ -178,6 +178,10 @@ type dispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+	AdhocSize          string `json:"adhoc_size_mb"`
+	ScheduledSize      string `json:"scheduled_size_mb"`
+	CompletedSize      string `json:"completed_size_mb"`
+	IncompleteSize     string `json:"incomplete_size_mb"`
 }
 
 // '/services/server/health/splunkd/details'
@@ -195,7 +199,7 @@ type healthDetails struct {
 }
 
 // '/services/server/info'
-type Info struct {
+type info struct {
 	Host    string      `json:"origin"`
 	Entries []infoEntry `json:"entry"`
 }
@@ -209,7 +213,7 @@ type infoContent struct {
 	Version string `json:"version"`
 }
 
-type infoDict map[any]Info
+type infoDict map[any]info
 
 // '/services/search/jobs/{search_id}'
 type searchMetaEntries struct {

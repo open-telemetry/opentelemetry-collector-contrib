@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -58,17 +59,17 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Endpoint:    "1.2.3.4:1234",
 					Compression: "gzip",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
 						Insecure: false,
 					},
-					Keepalive: &configgrpc.KeepaliveClientConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 						Time:                20,
 						PermitWithoutStream: true,
 						Timeout:             30,
-					},
+					}),
 					WriteBufferSize: 512 * 1024,
 					BalancerName:    "round_robin",
 				},

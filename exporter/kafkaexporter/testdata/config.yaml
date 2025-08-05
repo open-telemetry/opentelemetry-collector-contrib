@@ -23,6 +23,8 @@ kafka/legacy_topic:
   topic: legacy_topic
   metrics:
     topic: metrics_topic
+  logs:
+    topic_from_metadata_key: metadata_key
 kafka/legacy_encoding:
   encoding: legacy_encoding
   metrics:

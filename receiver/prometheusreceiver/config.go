@@ -4,19 +4,19 @@
 package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"sort"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
 )
@@ -47,7 +47,7 @@ type Config struct {
 
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
-	if !containsScrapeConfig(cfg) && cfg.TargetAllocator == nil {
+	if !cfg.PrometheusConfig.ContainsScrapeConfigs() && cfg.TargetAllocator == nil {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
@@ -60,30 +60,27 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func containsScrapeConfig(cfg *Config) bool {
-	if cfg.PrometheusConfig == nil {
-		return false
-	}
-	scrapeConfigs, err := (*promconfig.Config)(cfg.PrometheusConfig).GetScrapeConfigs()
-	if err != nil {
-		return false
-	}
-
-	return len(scrapeConfigs) > 0
-}
-
 // PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling
 // as prometheus "config" uses `yaml` tags.
 type PromConfig promconfig.Config
 
 var _ confmap.Unmarshaler = (*PromConfig)(nil)
 
+// ContainsScrapeConfigs returns true if the Prometheus config contains any scrape configs.
+func (cfg *PromConfig) ContainsScrapeConfigs() bool {
+	return cfg != nil && (len(cfg.ScrapeConfigs) > 0 || len(cfg.ScrapeConfigFiles) > 0)
+}
+
+func (cfg *PromConfig) Reload() error {
+	return reloadPromConfig(cfg, cfg)
+}
+
 func (cfg *PromConfig) Unmarshal(componentParser *confmap.Conf) error {
 	cfgMap := componentParser.ToStringMap()
 	if len(cfgMap) == 0 {
 		return nil
 	}
-	return unmarshalYAML(cfgMap, (*promconfig.Config)(cfg))
+	return reloadPromConfig(cfg, cfgMap)
 }
 
 func (cfg *PromConfig) Validate() error {
@@ -113,48 +110,56 @@ func (cfg *PromConfig) Validate() error {
 		return fmt.Errorf("unsupported features:\n\t%s", strings.Join(unsupportedFeatures, "\n\t"))
 	}
 
-	scrapeConfigs, err := (*promconfig.Config)(cfg).GetScrapeConfigs()
-	if err != nil {
-		return err
-	}
-	// Since Prometheus 3.0, the scrape manager started to fail scrapes that don't have proper
-	// Content-Type headers, but they provided an extra configuration option to fallback to the
-	// previous behavior. We need to make sure that this option is set for all scrape configs
-	// to avoid introducing a breaking change.
-	for _, sc := range scrapeConfigs {
-		if sc.ScrapeFallbackProtocol == "" {
-			sc.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
-		}
-	}
-
-	for _, sc := range scrapeConfigs {
-		if err := validateHTTPClientConfig(&sc.HTTPClientConfig); err != nil {
-			return err
+	if cfg.ContainsScrapeConfigs() {
+		scrapeConfigs, err := (*promconfig.Config)(cfg).GetScrapeConfigs()
+		if err != nil {
+			return fmt.Errorf("failed to get scrape configs: %w", err)
 		}
 
-		for _, c := range sc.ServiceDiscoveryConfigs {
-			if c, ok := c.(*kubernetes.SDConfig); ok {
-				if err := validateHTTPClientConfig(&c.HTTPClientConfig); err != nil {
-					return err
+		// Since Prometheus 3.0, the scrape manager started to fail scrapes that don't have proper
+		// Content-Type headers, but they provided an extra configuration option to fallback to the
+		// previous behavior. We need to make sure that this option is set for all scrape configs
+		// to avoid introducing a breaking change.
+		for _, sc := range scrapeConfigs {
+			if sc.ScrapeFallbackProtocol == "" {
+				sc.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
+			}
+		}
+
+		for _, sc := range scrapeConfigs {
+			if err := validateHTTPClientConfig(&sc.HTTPClientConfig); err != nil {
+				return err
+			}
+
+			for _, c := range sc.ServiceDiscoveryConfigs {
+				if c, ok := c.(*kubernetes.SDConfig); ok {
+					if err := validateHTTPClientConfig(&c.HTTPClientConfig); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
+
 	return nil
 }
 
-func unmarshalYAML(in map[string]any, out any) error {
-	yamlOut, err := yaml.Marshal(in)
+func reloadPromConfig(dst *PromConfig, src any) error {
+	yamlOut, err := yaml.MarshalWithOptions(
+		src,
+		yaml.CustomMarshaler(func(s commonconfig.Secret) ([]byte, error) {
+			return []byte(s), nil
+		}),
+	)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
 	}
 
-	decoder := yaml.NewDecoder(bytes.NewReader(yamlOut))
-	decoder.KnownFields(true)
-	err = decoder.Decode(out)
+	newCfg, err := promconfig.Load(string(yamlOut), slog.Default())
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
 	}
+	*dst = PromConfig(*newCfg)
 	return nil
 }
 

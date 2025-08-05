@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -55,6 +54,9 @@ type AlertConfig struct {
 type LogConfig struct {
 	Enabled  bool                 `mapstructure:"enabled"`
 	Projects []*LogsProjectConfig `mapstructure:"projects"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // EventsConfig is the configuration options for events collection
@@ -73,6 +75,9 @@ type LogsProjectConfig struct {
 	EnableAuditLogs bool              `mapstructure:"collect_audit_logs"`
 	EnableHostLogs  *bool             `mapstructure:"collect_host_logs"`
 	AccessLogs      *AccessLogsConfig `mapstructure:"access_logs"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AccessLogsConfig struct {
@@ -98,6 +103,9 @@ type ProjectConfig struct {
 
 type OrgConfig struct {
 	ID string `mapstructure:"id"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() {
@@ -114,14 +122,11 @@ func (pc *ProjectConfig) populateIncludesAndExcludes() {
 
 var (
 	// Alerts Receiver Errors
-	errNoEndpoint       = errors.New("an endpoint must be specified")
-	errNoSecret         = errors.New("a webhook secret must be specified")
-	errNoCert           = errors.New("tls was configured, but no cert file was specified")
-	errNoKey            = errors.New("tls was configured, but no key file was specified")
-	errNoModeRecognized = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s", strings.Join([]string{
-		alertModeListen,
-		alertModePoll,
-	}, ","))
+	errNoEndpoint        = errors.New("an endpoint must be specified")
+	errNoSecret          = errors.New("a webhook secret must be specified")
+	errNoCert            = errors.New("tls was configured, but no cert file was specified")
+	errNoKey             = errors.New("tls was configured, but no key file was specified")
+	errNoModeRecognized  = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s,%s", alertModeListen, alertModePoll)
 	errPageSizeIncorrect = errors.New("page size must be a value between 1 and 500")
 
 	// Logs Receiver Errors

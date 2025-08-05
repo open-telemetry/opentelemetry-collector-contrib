@@ -7,12 +7,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,7 +22,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
@@ -63,19 +63,6 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap := attMap.PutEmptyMap("nested")
 	attNestedMap.PutStr("string", "v1")
 	attNestedMap.PutDouble("number", 499)
-}
-
-func fillLogTwo(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberInfo)
-	log.SetSeverityText("Info")
-	attrs := log.Attributes()
-	attrs.PutStr("customer", "acme")
-	attrs.PutDouble("number", 64)
-	attrs.PutBool("bool", true)
-	attrs.PutStr("env", "dev")
-	log.Body().SetStr("something happened")
 }
 
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -257,16 +244,14 @@ func TestPushTraceData(tester *testing.T) {
 	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
 	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
-	var newSpan logzioSpan
+	requests := ptraceotlp.NewExportRequest()
 	decoded, _ := gUnzipData(recordedRequests)
-	requests := strings.Split(string(decoded), "\n")
-	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &newSpan))
-	assert.Equal(tester, testOperation, newSpan.OperationName)
-	assert.Equal(tester, testService, newSpan.Process.ServiceName)
-	var newService logzioService
-	assert.NoError(tester, json.Unmarshal([]byte(requests[1]), &newService))
-	assert.Equal(tester, testOperation, newService.OperationName)
-	assert.Equal(tester, testService, newService.ServiceName)
+	err = requests.UnmarshalProto(decoded)
+	require.NoError(tester, err)
+	resultSpans := requests.Traces()
+	assert.Equal(tester, td.SpanCount(), requests.Traces().SpanCount())
+	assert.Equal(tester, td.ResourceSpans().At(0).Resource().Attributes().AsRaw(), resultSpans.ResourceSpans().At(0).Resource().Attributes().AsRaw())
+	assert.Equal(tester, td.ResourceSpans(), resultSpans.ResourceSpans())
 }
 
 func TestPushLogsData(tester *testing.T) {
@@ -290,18 +275,14 @@ func TestPushLogsData(tester *testing.T) {
 	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
 	err := testLogsExporter(tester, ld, &cfg)
 	require.NoError(tester, err)
-	var jsonLog map[string]any
+	requests := plogotlp.NewExportRequest()
 	decoded, _ := gUnzipData(recordedRequests)
-	requests := strings.Split(string(decoded), "\n")
-	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
-	assert.Equal(tester, testHost, jsonLog["host.name"])
-	assert.Equal(tester, testService, jsonLog["service.name"])
-	assert.Equal(tester, "server", jsonLog["app"])
-	assert.Equal(tester, 1.0, jsonLog["instance_num"])
-	assert.Equal(tester, "logScopeName", jsonLog["scopeName"])
-	assert.Equal(tester, "hello there", jsonLog["message"])
-	assert.Equal(tester, "bar", jsonLog["foo"])
-	assert.Equal(tester, 45.0, jsonLog["23"])
+	err = requests.UnmarshalProto(decoded)
+	require.NoError(tester, err)
+	resultLogs := requests.Logs()
+	assert.Equal(tester, ld.LogRecordCount(), resultLogs.LogRecordCount())
+	assert.Equal(tester, ld.ResourceLogs().At(0).Resource().Attributes().AsRaw(), resultLogs.ResourceLogs().At(0).Resource().Attributes().AsRaw())
+	assert.Equal(tester, ld.ResourceLogs(), resultLogs.ResourceLogs())
 }
 
 func TestMergeMapEntries(tester *testing.T) {

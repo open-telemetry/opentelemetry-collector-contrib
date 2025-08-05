@@ -213,13 +213,14 @@ func getLogicalResourceMetricID(resourceID, logicalMetricID string) string {
 
 func (mb *MetricsBuilder) EmitAllMetrics(ils pmetric.ScopeMetrics) {
 	for _, m := range mb.metrics {
-		if m.data.Gauge().DataPoints().Len() > 0 {
-			metrics := ils.Metrics()
-			m.updateCapacity()
-			name := m.data.Name()
-			unit := m.data.Unit()
-			m.data.MoveTo(metrics.AppendEmpty())
-			m.init(name, unit)
+		if m.data.Gauge().DataPoints().Len() == 0 {
+			continue
 		}
+		metrics := ils.Metrics()
+		m.updateCapacity()
+		name := m.data.Name()
+		unit := m.data.Unit()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init(name, unit)
 	}
 }

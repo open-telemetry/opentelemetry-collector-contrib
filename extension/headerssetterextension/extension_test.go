@@ -15,7 +15,7 @@ import (
 
 type mockRoundTripper struct{}
 
-func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
 	for k, v := range req.Header {
 		resp.Header.Set(k, v[0])
@@ -40,7 +40,7 @@ func TestRoundTripper(t *testing.T) {
 					Metadata: tt.metadata,
 				},
 			)
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", http.NoBody)
 			assert.NoError(t, err)
 			assert.NotNil(t, req)
 
@@ -90,7 +90,7 @@ func TestPerRPCCredentials(t *testing.T) {
 
 var (
 	mrt           = &mockRoundTripper{}
-	header        = "header_name"
+	headername    = "header_name"
 	anotherHeader = "another_header_name"
 	tests         = []struct {
 		cfg             *Config
@@ -101,7 +101,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:         &header,
+						Key:         &headername,
 						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
@@ -118,7 +118,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:    &header,
+						Key:    &headername,
 						Action: INSERT,
 						Value:  stringp("config value"),
 					},
@@ -132,7 +132,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:         &header,
+						Key:         &headername,
 						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
@@ -155,7 +155,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:         &header,
+						Key:         &headername,
 						Action:      INSERT,
 						FromContext: stringp(""),
 					},
@@ -169,7 +169,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:    &header,
+						Key:    &headername,
 						Action: INSERT,
 						Value:  stringp(""),
 					},
@@ -183,7 +183,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:         &header,
+						Key:         &headername,
 						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
@@ -206,7 +206,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:         &header,
+						Key:         &headername,
 						Action:      INSERT,
 						FromContext: stringp("tenant_"),
 					},
@@ -223,7 +223,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:          &header,
+						Key:          &headername,
 						Action:       INSERT,
 						FromContext:  stringp("tenant"),
 						DefaultValue: opaquep("default_tenant"),
@@ -241,7 +241,7 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:          &header,
+						Key:          &headername,
 						Action:       INSERT,
 						FromContext:  stringp("tenant"),
 						DefaultValue: opaquep("default_tenant"),

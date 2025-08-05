@@ -75,9 +75,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		switch f.From {
-		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode:
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromStatefulSet:
 		default:
-			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, node", f.From)
+			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, deployment, statefulset, node", f.From)
 		}
 
 		if f.KeyRegex != "" {
@@ -294,16 +294,25 @@ type PodAssociationConfig struct {
 	// List of pod association sources which should be taken
 	// to identify pod
 	Sources []PodAssociationSourceConfig `mapstructure:"sources"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ExcludeConfig represent a list of Pods to exclude
 type ExcludeConfig struct {
 	Pods []ExcludePodConfig `mapstructure:"pods"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ExcludePodConfig represent a Pod name to ignore
 type ExcludePodConfig struct {
 	Name string `mapstructure:"name"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type PodAssociationSourceConfig struct {
@@ -314,4 +323,7 @@ type PodAssociationSourceConfig struct {
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

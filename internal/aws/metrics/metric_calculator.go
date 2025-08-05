@@ -109,19 +109,48 @@ type MetricValue struct {
 	Timestamp time.Time
 }
 
+// Ticker allows us to mock time.Ticker in unit tests to have more deterministic tests.
+type Ticker interface {
+	C() <-chan time.Time
+	Stop()
+}
+
+type realTicker struct {
+	ticker *time.Ticker
+}
+
+func newRealTicker(d time.Duration) Ticker {
+	return &realTicker{ticker: time.NewTicker(d)}
+}
+
+func (r *realTicker) C() <-chan time.Time {
+	return r.ticker.C
+}
+
+func (r *realTicker) Stop() {
+	r.ticker.Stop()
+}
+
 // MapWithExpiry act like a map which provides a method to clean up expired entries.
 // MapWithExpiry is not thread safe and locks must be managed by the owner of the Map by the use of Lock() and Unlock()
 type MapWithExpiry struct {
-	lock     *sync.Mutex
-	ttl      time.Duration
-	entries  map[any]*MetricValue
-	doneChan chan struct{}
+	lock      *sync.Mutex
+	ttl       time.Duration
+	entries   map[any]*MetricValue
+	doneChan  chan struct{}
+	newTicker func(d time.Duration) Ticker
 }
 
 // NewMapWithExpiry automatically starts a sweeper to enforce the maps TTL. ShutDown() must be called to ensure that these
 // go routines are properly cleaned up ShutDown() must be called.
 func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
-	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[any]*MetricValue), doneChan: make(chan struct{}, 1000)}
+	m := &MapWithExpiry{
+		lock:      &sync.Mutex{},
+		ttl:       ttl,
+		entries:   make(map[any]*MetricValue),
+		doneChan:  make(chan struct{}, 1000),
+		newTicker: newRealTicker,
+	}
 	go m.sweep(m.CleanUp)
 	return m
 }
@@ -136,10 +165,11 @@ func (m *MapWithExpiry) Set(key Key, value MetricValue) {
 }
 
 func (m *MapWithExpiry) sweep(removeFunc func(time2 time.Time)) {
-	ticker := time.NewTicker(m.ttl)
+	ticker := m.newTicker(m.ttl)
+
 	for {
 		select {
-		case currentTime := <-ticker.C:
+		case currentTime := <-ticker.C():
 			m.lock.Lock()
 			removeFunc(currentTime)
 			m.lock.Unlock()

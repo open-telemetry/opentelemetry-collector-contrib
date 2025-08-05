@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					HostRoot:    "/host_root",
 					RuntimeAPIs: []RuntimeAPIConfig{
 						{
-							&DockerConfig{
+							&dockerConfig{
 								baseRuntimeAPIConfig: baseRuntimeAPIConfig{
 									Type: "docker",
 								},
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 						{
-							&CRIConfig{
+							&criConfig{
 								baseRuntimeAPIConfig: baseRuntimeAPIConfig{
 									Type: "cri",
 								},

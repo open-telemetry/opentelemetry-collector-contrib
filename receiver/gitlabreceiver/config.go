@@ -45,6 +45,9 @@ var (
 // Config that is exposed to this gitlab receiver through the OTEL config.yaml
 type Config struct {
 	WebHook WebHook `mapstructure:"webhook"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type WebHook struct {
@@ -62,6 +65,9 @@ type WebHook struct {
 type GitlabHeaders struct {
 	Customizable map[string]string `mapstructure:","` // can be overwritten via required_headers
 	Fixed        map[string]string `mapstructure:","` // are not allowed to be overwritten
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func createDefaultConfig() component.Config {

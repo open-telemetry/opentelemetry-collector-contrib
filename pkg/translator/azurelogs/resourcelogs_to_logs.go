@@ -122,7 +122,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				// TODO @constanca-m This will be removed once the categories
 				// are properly mapped to the semantic conventions in
 				// category_logs.go
-				if err = lr.Body().FromRaw(extractRawAttributes(log)); err != nil {
+				err = lr.Body().FromRaw(extractRawAttributes(log))
+				if err != nil {
 					return plog.Logs{}, err
 				}
 				continue
@@ -282,8 +283,6 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		handleFunc = handleFrontDoorAccessLog
 	case categoryFrontDoorHealthProbeLog:
 		handleFunc = handleFrontDoorHealthProbeLog
-	case categoryFrontdoorWebApplicationFirewallLog:
-		handleFunc = handleFrontdoorWebApplicationFirewallLog
 	case categoryAppServiceAppLogs:
 		handleFunc = handleAppServiceAppLogs
 	case categoryAppServiceAuditLogs:
@@ -299,7 +298,7 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 	case categoryAppServicePlatformLogs:
 		handleFunc = handleAppServicePlatformLogs
 	default:
-		handleFunc = func(field string, value any, _ map[string]any, attrsProps map[string]any) {
+		handleFunc = func(field string, value any, _, attrsProps map[string]any) {
 			attrsProps[field] = value
 		}
 	}

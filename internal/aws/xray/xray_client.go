@@ -50,9 +50,7 @@ func getModVersion() string {
 }
 
 // NewXRayClient creates a new instance of the XRay client with an AWS configuration and session.
-func NewXRayClient(logger *zap.Logger, cfg aws.Config, buildInfo component.BuildInfo) XRayClient {
-	logger.Debug("Using Endpoint: %s", zap.String("endpoint", *cfg.BaseEndpoint))
-
+func NewXRayClient(_ *zap.Logger, cfg aws.Config, buildInfo component.BuildInfo) XRayClient {
 	execEnv, ok := os.LookupEnv("AWS_EXECUTION_ENV")
 	if !ok || execEnv == "" {
 		execEnv = "UNKNOWN"
@@ -113,7 +111,7 @@ func (a *addToUserAgentHeader) HandleSerialize(ctx context.Context, in middlewar
 
 	val := a.val
 	curUA := req.Header.Get("User-Agent")
-	if len(curUA) > 0 {
+	if curUA != "" {
 		val = curUA + " " + val
 	}
 	req.Header.Set("User-Agent", val)

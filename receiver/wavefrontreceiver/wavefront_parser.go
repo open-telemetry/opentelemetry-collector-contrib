@@ -22,6 +22,9 @@ import (
 // into the internal format of the Collector
 type wavefrontParser struct {
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
@@ -113,7 +116,7 @@ func (wp *wavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	return metric, nil
 }
 
-func (wp *wavefrontParser) injectCollectDLabels(
+func (*wavefrontParser) injectCollectDLabels(
 	metricName string,
 	attributes pcommon.Map,
 ) string {
@@ -141,7 +144,7 @@ func (wp *wavefrontParser) injectCollectDLabels(
 func buildLabels(attributes pcommon.Map, tags string) error {
 	for {
 		tags = strings.TrimLeft(tags, " ")
-		if len(tags) == 0 {
+		if tags == "" {
 			return nil
 		}
 
