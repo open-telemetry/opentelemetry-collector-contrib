@@ -1606,3 +1606,61 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	operator.poll(context.TODO())
 	sink.ExpectToken(t, []byte("testlog4"))
 }
+
+func TestArchive(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+	}
+
+	t.Parallel()
+	persister := testutil.NewUnscopedMockPersister()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	// store metadata of last 50 poll cycles
+	cfg.PollsToArchive = 50
+	cfg.PollInterval = 50 * time.Millisecond
+
+	temp := filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+
+	operator, sink := testManager(t, cfg)
+	require.NoError(t, operator.Start(persister))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
+	})
+
+	os.Remove(temp.Name())
+
+	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 50ms and we're waiting 500ms)
+	time.Sleep(500 * time.Millisecond)
+
+	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+	filetest.WriteString(t, temp, "testlog2\n")
+
+	sink.ExpectCall(t, []byte("testlog2"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
+	})
+
+	os.Remove(temp.Name())
+
+	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 50ms and we're waiting 500ms)
+	time.Sleep(500 * time.Millisecond)
+
+	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+	filetest.WriteString(t, temp, "testlog2\n")
+	filetest.WriteString(t, temp, "testlog3\n")
+	filetest.WriteString(t, temp, "testlog4\n")
+
+	log3 := emit.Token{Body: []byte("testlog3"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
+	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
+
+	sink.ExpectCalls(t, log3, log4)
+}
