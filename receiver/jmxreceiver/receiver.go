@@ -107,7 +107,11 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 			select {
 			case <-ctx.Done():
 				return
-			case <-jmx.subprocess.Stdout:
+			case _, ok := <-jmx.subprocess.Stdout:
+				if !ok {
+					// Channel is closed, subprocess has ended, exit the goroutine
+					return
+				}
 				// ensure stdout/stderr buffer is read from.
 				// these messages are already debug logged when captured.
 				continue
