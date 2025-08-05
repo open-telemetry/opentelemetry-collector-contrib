@@ -634,7 +634,7 @@ type metricK8sContainerStatusState struct {
 // init fills k8s.container.status.state metric with initial data.
 func (m *metricK8sContainerStatusState) init() {
 	m.data.SetName("k8s.container.status.state")
-	m.data.SetDescription("Experimental metric.Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
 	m.data.SetUnit("{container}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

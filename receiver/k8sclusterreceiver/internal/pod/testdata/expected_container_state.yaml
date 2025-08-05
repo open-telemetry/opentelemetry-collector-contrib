@@ -55,7 +55,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - name: k8s.container.status.state
-            description: Experimental metric.Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+            description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
             unit: "{container}"
             sum:
               aggregationTemporality: 2
