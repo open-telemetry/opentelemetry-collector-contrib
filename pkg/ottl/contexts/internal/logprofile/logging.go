@@ -90,9 +90,14 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	joinedErr = errors.Join(joinedErr, err)
 	joinedErr = errors.Join(joinedErr, encoder.AddArray("sample_type", vts))
 
-	ss, err := newSamples(p, p.Sample())
-	joinedErr = errors.Join(joinedErr, err)
-	joinedErr = errors.Join(joinedErr, encoder.AddArray("sample", ss))
+	samples := p.Sample()
+	for _, s := range samples.All() {
+		joinedErr = errors.Join(joinedErr, encoder.AddObject("sample", ProfileSample{
+			s,
+			p.Profile,
+			p.Dictionary,
+		}))
+	}
 
 	encoder.AddInt64("time_nanos", int64(p.Time()))
 	encoder.AddInt64("duration_nanos", int64(p.Duration()))
@@ -124,60 +129,36 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return joinedErr
 }
 
-type samples []sample
+type ProfileSample struct {
+	pprofile.Sample
+	Profile    pprofile.Profile
+	Dictionary pprofile.ProfilesDictionary
+}
 
-func (ss samples) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
+func (s ProfileSample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	var joinedErr error
-	for _, s := range ss {
-		joinedErr = errors.Join(joinedErr, encoder.AppendObject(s))
+
+	locs, err := getLocations(s.Dictionary, s.Profile.LocationIndices().AsRaw(), s.LocationsStartIndex(), s.LocationsLength())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("locations", locs))
+
+	values := newValues(s.Value())
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("values", values))
+
+	ats, err := newAttributes(s.Dictionary, s.AttributeIndices())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("attributes", ats))
+
+	if s.HasLinkIndex() {
+		l, err := getLink(s.Dictionary, s.LinkIndex())
+		joinedErr = errors.Join(joinedErr, err)
+		joinedErr = errors.Join(joinedErr, encoder.AddObject("link", l))
 	}
+
+	ts := newTimestamps(s.TimestampsUnixNano())
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("timestamps_unix_nano", ts))
+
 	return joinedErr
-}
-
-func newSamples(p Profile, sampleSlice pprofile.SampleSlice) (samples, error) {
-	var joinedErr error
-	ss := make(samples, 0, sampleSlice.Len())
-	for i := range sampleSlice.Len() {
-		s, err := newSample(p, sampleSlice.At(i))
-		joinedErr = errors.Join(joinedErr, err)
-		ss = append(ss, s)
-	}
-	return ss, joinedErr
-}
-
-type sample struct {
-	timestamps timestamps
-	attributes attributes
-	locations  locations
-	values     values
-	link       *link
-}
-
-func newSample(p Profile, ps pprofile.Sample) (sample, error) {
-	var s sample
-	var err, joinedErr error
-
-	s.timestamps = newTimestamps(ps.TimestampsUnixNano())
-	s.values = newValues(ps.Value())
-	s.attributes, err = newAttributes(p.Dictionary, ps.AttributeIndices())
-	joinedErr = errors.Join(joinedErr, err)
-	s.locations, err = getLocations(p.Dictionary, p.LocationIndices().AsRaw(),
-		ps.LocationsStartIndex(), ps.LocationsLength())
-	joinedErr = errors.Join(joinedErr, err)
-	if ps.HasLinkIndex() { // optional
-		l, err := getLink(p.Dictionary, ps.LinkIndex())
-		joinedErr = errors.Join(joinedErr, err)
-		s.link = &l
-	}
-
-	return s, joinedErr
-}
-
-func (s sample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddArray("timestamps_unix_nano", s.timestamps)
-	err = errors.Join(err, encoder.AddArray("attributes", s.attributes))
-	err = errors.Join(err, encoder.AddArray("locations", s.locations))
-	return errors.Join(err, encoder.AddArray("values", s.values))
 }
 
 type valueTypes []valueType
