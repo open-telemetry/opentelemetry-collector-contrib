@@ -52,6 +52,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
   - `watch` mode will do setup a long connection using the watch API to just get updates.
+- `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
@@ -246,4 +247,3 @@ If receiver returns error similar to below, make sure that resource is added to 
 ```
 {"kind": "receiver", "name": "k8sobjects", "pipeline": "logs", "resource": "events.k8s.io/v1, Resource=events", "error": "unknown"}
 ```
-
