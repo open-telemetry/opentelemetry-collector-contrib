@@ -238,6 +238,9 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
+	case StratifiedProbabilistic:
+                pCfg := cfg.StratifiedProbabilisticCfg
+                return sampling.NewStratifiedProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(settings, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
@@ -353,6 +356,13 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
+
+	// Re-initialize the time-window if strartified sampling is configured
+        for _, p := range tsp.policies {
+                if stratified, ok := p.evaluator.(*sampling.StratifiedProbabilisticSampler); ok {
+                        stratified.ResetWindow()
+                }
+        }
 
 	tsp.loadPendingSamplingPolicy()
 
