@@ -133,6 +133,7 @@ func EnablePathContextNames() ottl.Option[TransformContext] {
 		ottl.WithPathContextNames[TransformContext]([]string{
 			ctxprofilesample.Name,
 			ctxscope.LegacyName,
+			ctxscope.Name,
 			ctxresource.Name,
 		})(p)
 	}
