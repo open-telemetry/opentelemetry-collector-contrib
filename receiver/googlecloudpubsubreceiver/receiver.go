@@ -229,6 +229,8 @@ func (unmarshalLogStrings) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	lr := ills.LogRecords().AppendEmpty()
 
 	lr.Body().SetStr(string(data))
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
 	return out, nil
 }
 
