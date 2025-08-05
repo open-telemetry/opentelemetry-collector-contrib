@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -127,6 +128,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 					Value: 1,
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -147,6 +149,14 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
 				{Value: 43}, // hard-coding the flush bytes since the input is fixed
 			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "success"),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		})
 	}
 }
@@ -162,6 +172,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 		wantESBulkReqs      *metricdata.DataPoint[int64]
 		wantESDocsProcessed *metricdata.DataPoint[int64]
 		wantESDocsRetried   *metricdata.DataPoint[int64]
+		wantESLatency       *metricdata.HistogramDataPoint[float64]
 	}{
 		{
 			name: "500",
@@ -182,6 +193,12 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "failed_server"),
+					semconv.HTTPResponseStatusCode(500),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
 					semconv.HTTPResponseStatusCode(500),
@@ -212,6 +229,12 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					semconv.HTTPResponseStatusCode(429),
 				),
 			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "too_many"),
+					semconv.HTTPResponseStatusCode(429),
+				),
+			},
 		},
 		{
 			name: "429/with_retry",
@@ -228,9 +251,16 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsRetried: &metricdata.DataPoint[int64]{Value: 1},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
+				),
+			},
 		},
 		{
 			name: "500/doc_level",
@@ -246,12 +276,19 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 		},
@@ -265,12 +302,20 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "internal_server_error"),
+					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
 				),
 			},
 		},
@@ -290,12 +335,19 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 		},
@@ -321,12 +373,19 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(http.StatusOK),
 				),
 			},
 		},
@@ -395,6 +454,14 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					t, ct,
 					[]metricdata.DataPoint[int64]{*tt.wantESDocsRetried},
 					metricdatatest.IgnoreTimestamp(),
+				)
+			}
+			if tt.wantESLatency != nil {
+				metadatatest.AssertEqualElasticsearchBulkRequestsLatency(
+					t, ct,
+					[]metricdata.HistogramDataPoint[float64]{*tt.wantESLatency},
+					metricdatatest.IgnoreTimestamp(),
+					metricdatatest.IgnoreValue(),
 				)
 			}
 		})
@@ -489,6 +556,7 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("outcome", "success"),
+				semconv.HTTPResponseStatusCode(http.StatusOK),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
@@ -559,6 +627,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			Attributes: attribute.NewSet(
 				attribute.String("outcome", "success"),
 				attribute.StringSlice("x-test", []string{"test"}),
+				semconv.HTTPResponseStatusCode(http.StatusOK),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
@@ -595,4 +664,132 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestNewBulkIndexer(t *testing.T) {
+	for _, tc := range []struct {
+		name                  string
+		config                map[string]any
+		expectSyncBulkIndexer bool
+	}{
+		{
+			name: "batcher_enabled_unset",
+			config: map[string]any{
+				"batcher": map[string]any{
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
+			name: "batcher_enabled=true",
+			config: map[string]any{
+				"batcher": map[string]any{
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "batcher_enabled=true",
+			config: map[string]any{
+				"batcher": map[string]any{
+					"enabled":  false,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_enabled_without_batcher",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
+			name: "sending_queue__with_batch_enabled",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_disabled_but_batch_configured",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": false,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+				"batcher": map[string]any{
+					// no enabled set
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: false,
+		},
+		{
+			name: "sending_queue_overrides_batcher",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+					"batch": map[string]any{
+						"min_size": 100,
+						"max_size": 200,
+					},
+				},
+				"batcher": map[string]any{
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+		{
+			name: "sending_queue_without_batch_with_batcher_enabled",
+			config: map[string]any{
+				"sending_queue": map[string]any{
+					"enabled": true,
+				},
+				"batcher": map[string]any{
+					"enabled":  true,
+					"min_size": 100,
+					"max_size": 200,
+				},
+			},
+			expectSyncBulkIndexer: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, err := elasticsearch.NewDefaultClient()
+			require.NoError(t, err)
+			cfg := createDefaultConfig()
+			cm := confmap.NewFromStringMap(tc.config)
+			require.NoError(t, cm.Unmarshal(cfg))
+
+			bi, err := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
+			require.NoError(t, err)
+			t.Cleanup(func() { bi.Close(context.Background()) })
+
+			_, ok := bi.(*syncBulkIndexer)
+			assert.Equal(t, tc.expectSyncBulkIndexer, ok)
+		})
+	}
 }

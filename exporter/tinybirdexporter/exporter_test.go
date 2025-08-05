@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal/metadata"
@@ -33,11 +34,16 @@ func TestNewExporter(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost:8080",
 				},
-				Token:   "test-token",
-				Metrics: SignalConfig{Datasource: "metrics_test"},
-				Traces:  SignalConfig{Datasource: "traces_test"},
-				Logs:    SignalConfig{Datasource: "logs_test"},
-				Wait:    true,
+				Token: "test-token",
+				Metrics: metricSignalConfigs{
+					MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
+					MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
+					MetricsHistogram:            SignalConfig{Datasource: "metrics_histogram"},
+					MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+				},
+				Traces: SignalConfig{Datasource: "traces_test"},
+				Logs:   SignalConfig{Datasource: "logs_test"},
+				Wait:   true,
 			},
 		},
 	}
@@ -175,6 +181,301 @@ func TestExportTraces(t *testing.T) {
 			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
 			err := exp.pushTraces(context.Background(), tt.args.traces)
+			if tt.want.err != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestExportMetrics(t *testing.T) {
+	type args struct {
+		metrics pmetric.Metrics
+		config  Config
+	}
+	type want struct {
+		requestQuery   string
+		requestBody    string
+		responseStatus int
+		err            error
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "export without metrics",
+			args: args{
+				metrics: func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.ScopeMetrics().AppendEmpty()
+					return metrics
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
+						MetricsSum:   SignalConfig{Datasource: "metrics_sum"},
+					},
+					Wait: false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=metrics_gauge",
+				requestBody:    "",
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+		{
+			name: "export with gauge metric",
+			args: args{
+				metrics: func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					resource := rm.Resource()
+					resource.Attributes().PutStr("service.name", "test-service")
+					resource.Attributes().PutStr("environment", "production")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					scope := sm.Scope()
+					scope.SetName("test-scope")
+					scope.SetVersion("1.0.0")
+					scope.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
+
+					metric := sm.Metrics().AppendEmpty()
+					metric.SetName("test.gauge")
+					metric.SetDescription("Test gauge metric")
+					metric.SetUnit("bytes")
+					gauge := metric.SetEmptyGauge()
+					dp := gauge.DataPoints().AppendEmpty()
+					dp.SetStartTimestamp(pcommon.Timestamp(1719158400000000000)) // 2024-06-23T16:00:00Z
+					dp.SetTimestamp(pcommon.Timestamp(1719158401000000000))      // 2024-06-23T16:00:01Z
+					dp.SetDoubleValue(1024.5)
+					dp.Attributes().PutStr("host", "server-1")
+					dp.Attributes().PutStr("region", "us-west")
+
+					// Add exemplar
+					exemplar := dp.Exemplars().AppendEmpty()
+					exemplar.SetTimestamp(pcommon.Timestamp(1719158400500000000)) // 2024-06-23T16:00:00.5Z
+					exemplar.SetDoubleValue(1500.0)
+					exemplar.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+					exemplar.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+					exemplar.FilteredAttributes().PutStr("exemplar.type", "outlier")
+
+					return metrics
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
+						MetricsSum:   SignalConfig{Datasource: "metrics_sum"},
+					},
+					Wait: false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=metrics_gauge",
+				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.gauge","metric_description":"Test gauge metric","metric_unit":"bytes","metric_attributes":{"host":"server-1","region":"us-west"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[{"exemplar.type":"outlier"}],"exemplars_timestamp":["2024-06-23T16:00:00.5Z"],"exemplars_value":[1500],"exemplars_span_id":["0102030405060708"],"exemplars_trace_id":["0102030405060708090a0b0c0d0e0f10"],"value":1024.5}`,
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+		{
+			name: "export with sum metric",
+			args: args{
+				metrics: func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					resource := rm.Resource()
+					resource.Attributes().PutStr("service.name", "test-service")
+					resource.Attributes().PutStr("environment", "production")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					scope := sm.Scope()
+					scope.SetName("test-scope")
+					scope.SetVersion("1.0.0")
+					scope.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
+
+					metric := sm.Metrics().AppendEmpty()
+					metric.SetName("test.sum")
+					metric.SetDescription("Test sum metric")
+					metric.SetUnit("requests")
+					sum := metric.SetEmptySum()
+					sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					sum.SetIsMonotonic(true)
+					dp := sum.DataPoints().AppendEmpty()
+					dp.SetStartTimestamp(pcommon.Timestamp(1719158400000000000)) // 2024-06-23T16:00:00Z
+					dp.SetTimestamp(pcommon.Timestamp(1719158401000000000))      // 2024-06-23T16:00:01Z
+					dp.SetIntValue(150)
+					dp.Attributes().PutStr("endpoint", "/api/users")
+					dp.Attributes().PutStr("method", "GET")
+
+					return metrics
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
+						MetricsSum:   SignalConfig{Datasource: "metrics_sum"},
+					},
+					Wait: false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=metrics_sum",
+				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.sum","metric_description":"Test sum metric","metric_unit":"requests","metric_attributes":{"endpoint":"/api/users","method":"GET"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"value":150,"aggregation_temporality":1,"is_monotonic":true}`,
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+		{
+			name: "export with histogram metric",
+			args: args{
+				metrics: func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					resource := rm.Resource()
+					resource.Attributes().PutStr("service.name", "test-service")
+					resource.Attributes().PutStr("environment", "production")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					scope := sm.Scope()
+					scope.SetName("test-scope")
+					scope.SetVersion("1.0.0")
+					scope.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
+
+					metric := sm.Metrics().AppendEmpty()
+					metric.SetName("test.histogram")
+					metric.SetDescription("Test histogram metric")
+					metric.SetUnit("seconds")
+					histogram := metric.SetEmptyHistogram()
+					histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					dp := histogram.DataPoints().AppendEmpty()
+					dp.SetStartTimestamp(pcommon.Timestamp(1719158400000000000)) // 2024-06-23T16:00:00Z
+					dp.SetTimestamp(pcommon.Timestamp(1719158401000000000))      // 2024-06-23T16:00:01Z
+					dp.SetCount(100)
+					dp.SetSum(50.5)
+					dp.SetMin(0.1)
+					dp.SetMax(2.0)
+					dp.BucketCounts().FromRaw([]uint64{10, 20, 30, 40})
+					dp.ExplicitBounds().FromRaw([]float64{0.5, 1.0, 1.5})
+					dp.Attributes().PutStr("operation", "database_query")
+					dp.Attributes().PutStr("table", "users")
+
+					return metrics
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsHistogram: SignalConfig{Datasource: "metrics_histogram"},
+					},
+					Wait: false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=metrics_histogram",
+				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.histogram","metric_description":"Test histogram metric","metric_unit":"seconds","metric_attributes":{"operation":"database_query","table":"users"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"count":100,"sum":50.5,"bucket_counts":[10,20,30,40],"explicit_bounds":[0.5,1,1.5],"min":0.1,"max":2,"aggregation_temporality":1}`,
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+		{
+			name: "export with exponential histogram metric",
+			args: args{
+				metrics: func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					resource := rm.Resource()
+					resource.Attributes().PutStr("service.name", "test-service")
+					resource.Attributes().PutStr("environment", "production")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					scope := sm.Scope()
+					scope.SetName("test-scope")
+					scope.SetVersion("1.0.0")
+					scope.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
+
+					metric := sm.Metrics().AppendEmpty()
+					metric.SetName("test.exponential_histogram")
+					metric.SetDescription("Test exponential histogram metric")
+					metric.SetUnit("seconds")
+					expHistogram := metric.SetEmptyExponentialHistogram()
+					expHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					dp := expHistogram.DataPoints().AppendEmpty()
+					dp.SetStartTimestamp(pcommon.Timestamp(1719158400000000000)) // 2024-06-23T16:00:00Z
+					dp.SetTimestamp(pcommon.Timestamp(1719158401000000000))      // 2024-06-23T16:00:01Z
+					dp.SetCount(200)
+					dp.SetSum(75.25)
+					dp.SetMin(0.05)
+					dp.SetMax(5.0)
+					dp.SetScale(2)
+					dp.SetZeroCount(15)
+					dp.Positive().SetOffset(1)
+					dp.Positive().BucketCounts().FromRaw([]uint64{5, 10, 15, 20, 25})
+					dp.Negative().SetOffset(-2)
+					dp.Negative().BucketCounts().FromRaw([]uint64{3, 7, 12, 18})
+					dp.Attributes().PutStr("operation", "api_request")
+					dp.Attributes().PutStr("endpoint", "/api/data")
+
+					return metrics
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+					},
+					Wait: false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=metrics_exponential_histogram",
+				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.exponential_histogram","metric_description":"Test exponential histogram metric","metric_unit":"seconds","metric_attributes":{"operation":"api_request","endpoint":"/api/data"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"count":200,"sum":75.25,"scale":2,"zero_count":15,"positive_offset":1,"positive_bucket_counts":[5,10,15,20,25],"negative_offset":-2,"negative_bucket_counts":[3,7,12,18],"min":0.05,"max":5,"aggregation_temporality":1}`,
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "POST", r.Method)
+				assert.Equal(t, "/v0/events", r.URL.Path)
+				assert.Equal(t, tt.want.requestQuery, r.URL.RawQuery)
+				assert.Equal(t, "application/x-ndjson", r.Header.Get("Content-Type"))
+				assert.Equal(t, "Bearer "+string(tt.args.config.Token), r.Header.Get("Authorization"))
+				gotBody, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				assert.JSONEq(t, tt.want.requestBody, string(gotBody))
+
+				w.WriteHeader(tt.want.responseStatus)
+			}))
+			defer server.Close()
+
+			tt.args.config.ClientConfig.Endpoint = server.URL
+
+			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
+			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+
+			err := exp.pushMetrics(context.Background(), tt.args.metrics)
 			if tt.want.err != nil {
 				assert.Error(t, err)
 			} else {
@@ -351,10 +652,15 @@ func TestExportErrorHandling(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: server.URL,
 				},
-				Token:   "test-token",
-				Metrics: SignalConfig{Datasource: "metrics_test"},
-				Traces:  SignalConfig{Datasource: "traces_test"},
-				Logs:    SignalConfig{Datasource: "logs_test"},
+				Token: "test-token",
+				Metrics: metricSignalConfigs{
+					MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
+					MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
+					MetricsHistogram:            SignalConfig{Datasource: "metrics_histogram"},
+					MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+				},
+				Traces: SignalConfig{Datasource: "traces_test"},
+				Logs:   SignalConfig{Datasource: "logs_test"},
 			}
 
 			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))

@@ -72,8 +72,8 @@ func createClickhouseContainer(image string) (testcontainers.Container, string, 
 		return nil, "", "", fmt.Errorf("failed to read container host address: %w", err)
 	}
 
-	nativeEndpoint := fmt.Sprintf("tcp://%s:%d?username=default&password=otel&database=otel_int_test", host, port)
-	httpEndpoint := fmt.Sprintf("http://%s:%d?username=default&password=otel&database=otel_int_test", host, httpPort)
+	nativeEndpoint := fmt.Sprintf("tcp://%s:%d?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, port)
+	httpEndpoint := fmt.Sprintf("http://%s:%d?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, httpPort)
 
 	return c, nativeEndpoint, httpEndpoint, nil
 }
@@ -115,73 +115,67 @@ func pushConcurrentlyNoError(t *testing.T, fn func() error) {
 
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
-func TestIntegration(t *testing.T) {
-	c, nativeEndpoint, httpEndpoint, err := createClickhouseContainer("clickhouse/clickhouse-server:25.5-alpine")
+func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
+	c, nativeEndpoint, httpEndpoint, err := createClickhouseContainer(clickhouseImage)
 	if err != nil {
-		panic(fmt.Errorf("failed to create ClickHouse container: %w", err))
+		t.Fatal(fmt.Errorf("failed to create ClickHouse container \"%s\": %w", clickhouseImage, err))
 	}
 	defer func(c testcontainers.Container) {
 		err := c.Terminate(context.Background())
 		if err != nil {
-			fmt.Println(fmt.Errorf("failed to terminate ClickHouse container: %w", err))
+			fmt.Println(fmt.Errorf("failed to terminate ClickHouse container \"%s\": %w", clickhouseImage, err))
 		}
 	}(c)
 
-	t.Run("TestLogsExporter", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testLogsExporter(t, nativeEndpoint, false)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testLogsExporter(t, httpEndpoint, false)
-		})
+	// For regular integration tests that need to be tested with both protocols
+	testProtocols := func(exporterTest func(*testing.T, string)) func(t *testing.T) {
+		return func(t *testing.T) {
+			t.Run("Native", func(t *testing.T) {
+				exporterTest(t, nativeEndpoint)
+			})
+			t.Run("HTTP", func(t *testing.T) {
+				exporterTest(t, httpEndpoint)
+			})
+		}
+	}
+
+	// For log tests where the log Body could be a string or a Map
+	testProtocolsMapBody := func(exporterTest func(*testing.T, string, bool)) func(t *testing.T) {
+		return func(t *testing.T) {
+			t.Run("String Body", func(t *testing.T) {
+				t.Run("Native", func(t *testing.T) {
+					exporterTest(t, nativeEndpoint, false)
+				})
+				t.Run("HTTP", func(t *testing.T) {
+					exporterTest(t, httpEndpoint, false)
+				})
+			})
+
+			t.Run("Map Body", func(t *testing.T) {
+				t.Run("Native", func(t *testing.T) {
+					exporterTest(t, nativeEndpoint, true)
+				})
+				t.Run("HTTP", func(t *testing.T) {
+					exporterTest(t, httpEndpoint, true)
+				})
+			})
+		}
+	}
+
+	t.Run("TestLogsExporter", testProtocolsMapBody(testLogsExporter))
+	t.Run("TestTracesExporter", testProtocols(testTracesExporter))
+	t.Run("TestMetricsExporter", testProtocols(testMetricsExporter))
+	t.Run("TestLogsJSONExporter", testProtocolsMapBody(testLogsJSONExporter))
+	t.Run("TestTracesJSONExporter", testProtocols(testTracesJSONExporter))
+}
+
+func TestIntegration(t *testing.T) {
+	// Update versions according to oldest and newest supported here: https://github.com/clickhouse/clickhouse/security
+	t.Run("25.6", func(t *testing.T) {
+		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.6-alpine")
 	})
-	t.Run("TestLogsExporter Map Body", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testLogsExporter(t, nativeEndpoint, true)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testLogsExporter(t, httpEndpoint, true)
-		})
-	})
-	t.Run("TestTracesExporter", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testTracesExporter(t, nativeEndpoint)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testTracesExporter(t, httpEndpoint)
-		})
-	})
-	t.Run("TestMetricsExporter", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testMetricsExporter(t, nativeEndpoint)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testMetricsExporter(t, httpEndpoint)
-		})
-	})
-	t.Run("TestLogsJSONExporter", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testLogsJSONExporter(t, nativeEndpoint, false)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testLogsJSONExporter(t, httpEndpoint, false)
-		})
-	})
-	t.Run("TestLogsJSONExporter Map Body", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testLogsJSONExporter(t, nativeEndpoint, true)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testLogsJSONExporter(t, httpEndpoint, true)
-		})
-	})
-	t.Run("TestTracesJSONExporter", func(t *testing.T) {
-		t.Run("Native", func(t *testing.T) {
-			testTracesJSONExporter(t, nativeEndpoint)
-		})
-		t.Run("HTTP", func(t *testing.T) {
-			testTracesJSONExporter(t, httpEndpoint)
-		})
+	t.Run("24.11", func(t *testing.T) {
+		testIntegrationWithImage(t, "clickhouse/clickhouse-server:24.11-alpine")
 	})
 
 	// Verify all integration tests, ignoring test container reaper

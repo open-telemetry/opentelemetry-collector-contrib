@@ -125,8 +125,8 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	hasher.UpdateResource(rm.Resource())
 	hasher.UpdateScope(sm.Scope())
-	for i := 0; i < dps.Len(); i++ {
-		dp := datapoints.NewNumber(m, dps.At(i))
+	for _, dp := range dps.All() {
+		dp := datapoints.NewNumber(m, dp)
 		hasher.UpdateDataPoint(dp)
 		dpHash := hasher.HashKey()
 		dataPoints, ok := groupedDataPoints[dpHash]
