@@ -137,7 +137,7 @@ func (r *libhoneyReceiver) registerLogConsumer(tc consumer.Logs) {
 
 func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Request) {
 	authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
-	authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
+	authReq, err := http.NewRequest(http.MethodGet, authURL, http.NoBody)
 	if err != nil {
 		errJSON, _ := json.Marshal(`{"error": "failed to create auth request"}`)
 		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
@@ -147,7 +147,7 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	var authClient http.Client
 	authResp, err := authClient.Do(authReq)
 	if err != nil {
-		errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", "%s"}`, err.Error()))
+		errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", %q}`, err.Error()))
 		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 		return
 	}
@@ -235,16 +235,19 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
+	// Use the request context which already contains client metadata when IncludeMetadata is enabled
+	ctx := req.Context()
+
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
-		ctx := r.obsreport.StartLogsOp(context.Background())
+		ctx = r.obsreport.StartLogsOp(ctx)
 		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
 		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
 	}
 
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
-		ctx := r.obsreport.StartTracesOp(context.Background())
+		ctx = r.obsreport.StartTracesOp(ctx)
 		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
 		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
 	}

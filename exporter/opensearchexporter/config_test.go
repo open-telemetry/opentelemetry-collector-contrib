@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -65,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 					}
 					config.MaxIdleConns = maxIdleConns
 					config.IdleConnTimeout = idleConnTimeout
-					config.Auth = &configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")}
+					config.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")})
 				}),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,

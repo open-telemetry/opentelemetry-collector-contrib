@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-func assertAttributeEquals(t *testing.T, attributes pcommon.Map, key string, value string) {
+func assertAttributeEquals(t *testing.T, attributes pcommon.Map, key, value string) {
 	t.Helper()
 	val, ok := attributes.Get(key)
 	require.True(t, ok)

@@ -256,7 +256,7 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func (s *haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
+func (*haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 	reader := csv.NewReader(bytes.NewReader(bytes.TrimSpace(buf)))
 	headers, err := reader.Read()
 	if err != nil {

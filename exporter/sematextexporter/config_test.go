@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

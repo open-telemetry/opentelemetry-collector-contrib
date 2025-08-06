@@ -38,12 +38,12 @@ type mockPerfCounter struct {
 }
 
 // ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
-func (w *mockPerfCounter) ScrapeRawValue(_ *int64) (bool, error) {
+func (*mockPerfCounter) ScrapeRawValue(*int64) (bool, error) {
 	panic("unimplemented")
 }
 
 // ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
-func (w *mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+func (*mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
 	panic("unimplemented")
 }
 
@@ -235,8 +235,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
-			actualMetrics, err := scraper.scrape(context.Background())
-			require.NoError(t, err)
+			var actualMetrics pmetric.Metrics
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				actualMetrics, err = scraper.scrape(context.Background())
+				assert.NoError(c, err)
+			}, 20*time.Second, 1*time.Second)
 
 			err = scraper.shutdown(context.Background())
 

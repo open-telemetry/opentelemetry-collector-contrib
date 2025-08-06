@@ -19,10 +19,10 @@ type ZapLogger struct {
 }
 
 // Trace implements Logger.
-func (z *ZapLogger) Trace(_ ...any) { /* N/A */ }
+func (*ZapLogger) Trace(...any) { /* N/A */ }
 
 // Tracef implements Logger.
-func (z *ZapLogger) Tracef(_ string, _ ...any) { /* N/A */ }
+func (*ZapLogger) Tracef(string, ...any) { /* N/A */ }
 
 // Debug implements Logger.
 func (z *ZapLogger) Debug(v ...any) {

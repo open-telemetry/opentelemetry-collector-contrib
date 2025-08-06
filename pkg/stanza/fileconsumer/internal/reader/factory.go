@@ -47,6 +47,7 @@ type Factory struct {
 	Attributes              attrs.Resolver
 	DeleteAtEOF             bool
 	IncludeFileRecordNumber bool
+	IncludeFileRecordOffset bool
 	Compression             string
 	AcquireFSLock           bool
 }

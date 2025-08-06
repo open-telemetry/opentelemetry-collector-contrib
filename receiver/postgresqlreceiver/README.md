@@ -8,7 +8,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpostgresql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpostgresql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_postgresql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_postgresql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -58,8 +58,9 @@ We provide functionality to collect the query sample from postgresql. It will ge
 from `pg_stat_activity`. To enable it, you will need the following configuration
 ```
 ...
-    query_sample_collection:
-      enabled: true
+    events:
+      db.server.query_sample:
+        enabled: true
 ...
 ```
 By default, query sample collection is disabled, also note, to use it, you will need 
@@ -70,7 +71,6 @@ GRANT pg_monitor TO otelu;
 ```
 
 The following options are available:
-- `enabled`: (optional, default=false) whether this collection is enabled.
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_activity`.
 
@@ -78,8 +78,9 @@ against `pg_stat_activity`.
 We provide functionality to collect the most executed queries from postgresql. It will get data from `pg_stat_statements` and report incremental value of `total_exec_time`, `total_plan_time`, `calls`, `rows`, `shared_blks_dirtied`, `shared_blks_hit`, `shared_blks_read`, `shared_blks_written`, `temp_blks_read`, `temp_blks_written`. To enable it, you will need the following configuration
 ```
 ...
-  top_query_collection:
-    enabled: true
+    events:
+      db.server.top_query:
+        enabled: true
 ...
 ```
 
@@ -93,7 +94,6 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 ```
 
 The following options are available:
-- `enabled`: (optional, default=false) whether this collection is enabled.
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_statements`.
 - `top_n_query`: (optional, default=1000) The maximum number of active queries to report (to the next consumer) in a single run.
@@ -122,11 +122,14 @@ receivers:
       ca_file: /home/otel/authorities.crt
       cert_file: /home/otel/mypostgrescert.crt
       key_file: /home/otel/mypostgreskey.key
-    query_sample_collection:
-      enabled: false 
+    events:
+      db.server.query_sample:
+        enabled: true
+      db.server.top_query:
+        enabled: true
+      max_rows_per_query: 100 
     top_query_collection:
-      enabled: true
-      top_n_query: 1234
+      top_n_query: 100
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).

@@ -114,7 +114,7 @@ func TestLoadConfig_InvalidProviderKey(t *testing.T) {
 	factories.Processors[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidProviderKey.yaml"), factories)
 
-	require.ErrorContains(t, err, "error reading configuration for \"geoip\": invalid provider key: invalidProviderKey")
+	require.ErrorContains(t, err, "invalid provider key: invalidProviderKey")
 }
 
 func TestLoadConfig_ValidProviderKey(t *testing.T) {

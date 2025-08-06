@@ -128,7 +128,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 
 type channelNotifier chan notifyOp
 
-func (ch channelNotifier) ID() observer.NotifyID {
+func (channelNotifier) ID() observer.NotifyID {
 	return "channel-notifier"
 }
 

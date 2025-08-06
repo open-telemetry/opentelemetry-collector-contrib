@@ -8,7 +8,7 @@ import (
 )
 
 // mergeTraces concatenates two ptrace.Traces into a single ptrace.Traces.
-func mergeTraces(t1 ptrace.Traces, t2 ptrace.Traces) ptrace.Traces {
+func mergeTraces(t1, t2 ptrace.Traces) ptrace.Traces {
 	t2.ResourceSpans().MoveAndAppendTo(t1.ResourceSpans())
 	return t1
 }

@@ -9,6 +9,8 @@ import (
 	"errors"
 	"io"
 	"net"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -29,8 +31,13 @@ var (
 	originalForm = "<165>1 2003-08-24T05:14:15-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
 )
 
-type exporterTest struct {
+type exporterTCPTest struct {
 	srv net.TCPListener
+	exp *syslogexporter
+}
+
+type exporterUnixTest struct {
+	srv *net.UnixListener
 	exp *syslogexporter
 }
 
@@ -74,16 +81,43 @@ func createExporterCreateSettings() exporter.Settings {
 }
 
 func TestInitExporter(t *testing.T) {
-	_, err := initExporter(&Config{
-		Endpoint: "test.com",
-		Network:  "tcp",
-		Port:     514,
-		Protocol: "rfc5424",
-	}, createExporterCreateSettings())
-	assert.NoError(t, err)
+	tests := []struct {
+		name     string
+		endpoint string
+		network  string
+		port     int
+		protocol string
+	}{
+		{
+			name:     "TCP",
+			endpoint: "test.com",
+			network:  "tcp",
+			port:     514,
+			protocol: "rfc5424",
+		},
+		{
+			name:     "Unix socket",
+			endpoint: "test.sock",
+			network:  "unix",
+			port:     0,
+			protocol: "rfc5424",
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			_, err := initExporter(&Config{
+				Endpoint: testInstance.endpoint,
+				Network:  testInstance.network,
+				Port:     testInstance.port,
+				Protocol: testInstance.protocol,
+			}, createExporterCreateSettings())
+			assert.NoError(t, err)
+		})
+	}
 }
 
-func buildValidExporter(t *testing.T, server net.TCPListener, cfg *Config) (*syslogexporter, error) {
+func buildTCPValidExporter(t *testing.T, server net.TCPListener, cfg *Config) (*syslogexporter, error) {
 	var port string
 	var err error
 	hostPort := server.Addr().String()
@@ -96,7 +130,7 @@ func buildValidExporter(t *testing.T, server net.TCPListener, cfg *Config) (*sys
 	return exp, err
 }
 
-func buildInvalidExporter(t *testing.T, server net.TCPListener, cfg *Config) (*syslogexporter, error) {
+func buildTCPInvalidExporter(t *testing.T, server net.TCPListener, cfg *Config) (*syslogexporter, error) {
 	var port string
 	var err error
 	hostPort := server.Addr().String()
@@ -111,7 +145,7 @@ func buildInvalidExporter(t *testing.T, server net.TCPListener, cfg *Config) (*s
 	return exp, err
 }
 
-func createServer() (net.TCPListener, error) {
+func createTCPServer() (net.TCPListener, error) {
 	var addr net.TCPAddr
 	addr.IP = net.IP{127, 0, 0, 1}
 	addr.Port = 0
@@ -119,43 +153,45 @@ func createServer() (net.TCPListener, error) {
 	return *testServer, err
 }
 
-func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *exporterTest {
+func prepareTCPExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *exporterTCPTest {
 	// Start a test syslog server
 	var err error
-	testServer, err := createServer()
+	testServer, err := createTCPServer()
 	require.NoError(t, err, "failed to start test syslog server")
 	var exp *syslogexporter
 	if invalidExporter {
-		exp, err = buildInvalidExporter(t, testServer, cfg)
+		exp, err = buildTCPInvalidExporter(t, testServer, cfg)
 	} else {
-		exp, err = buildValidExporter(t, testServer, cfg)
+		exp, err = buildTCPValidExporter(t, testServer, cfg)
 	}
 	require.NoError(t, err, "Error building exporter")
 	require.NotNil(t, exp)
-	return &exporterTest{
+	return &exporterTCPTest{
 		srv: testServer,
 		exp: exp,
 	}
 }
 
-func createTestConfig() *Config {
+func createTCPTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
 	config.Network = "tcp"
 	config.TLS.Insecure = true
 	return config
 }
 
-func TestSyslogExportSuccess(t *testing.T) {
-	test := prepareExporterTest(t, createTestConfig(), false)
+func sendTestMessage(t *testing.T, exp *syslogexporter) error {
+	buffer := exampleLog(t)
+	logs := logRecordsToLogs(buffer)
+	return exp.pushLogsData(context.Background(), logs)
+}
+
+func TestTCPSyslogExportSuccess(t *testing.T) {
+	test := prepareTCPExporterTest(t, createTCPTestConfig(), false)
 	require.NotNil(t, test.exp)
 	defer test.srv.Close()
-	go func() {
-		buffer := exampleLog(t)
-		logs := logRecordsToLogs(buffer)
-		err := test.exp.pushLogsData(context.Background(), logs)
-		assert.NoError(t, err, "could not send message")
-	}()
-	err := test.srv.SetDeadline(time.Now().Add(time.Second * 1))
+	err := sendTestMessage(t, test.exp)
+	assert.NoError(t, err, "could not send message")
+	err = test.srv.SetDeadline(time.Now().Add(time.Second * 1))
 	require.NoError(t, err, "cannot set deadline")
 	conn, err := test.srv.AcceptTCP()
 	require.NoError(t, err, "could not accept connection")
@@ -165,16 +201,14 @@ func TestSyslogExportSuccess(t *testing.T) {
 	assert.Equal(t, expectedForm, string(b))
 }
 
-func TestSyslogExportFail(t *testing.T) {
-	test := prepareExporterTest(t, createTestConfig(), true)
+func TestTCPSyslogExportFail(t *testing.T) {
+	test := prepareTCPExporterTest(t, createTCPTestConfig(), true)
 	defer test.srv.Close()
-	buffer := exampleLog(t)
-	logs := logRecordsToLogs(buffer)
-	consumerErr := test.exp.pushLogsData(context.Background(), logs)
+	consumerErr := sendTestMessage(t, test.exp)
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
 	assert.True(t, ok)
-	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
+	consumerLogs := consumerErrorLogs.Data()
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())
 	scl := rls.At(0).ScopeLogs()
@@ -191,34 +225,144 @@ func TestSyslogExportFail(t *testing.T) {
 	assert.Equal(t, droppedLog, originalForm)
 }
 
+func createUnixSocketTestConfig(t *testing.T) *Config {
+	socketPath := filepath.Join(t.TempDir(), "test.sock")
+	return &Config{
+		Endpoint: socketPath,
+		Network:  "unix",
+		Protocol: "rfc5424",
+	}
+}
+
+func createUnixSocketServer(socketPath string) (*net.UnixListener, error) {
+	addr := &net.UnixAddr{Name: socketPath, Net: "unix"}
+	listener, err := net.ListenUnix("unix", addr)
+	return listener, err
+}
+
+func prepareUnixSocketExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *exporterUnixTest {
+	var err error
+
+	testServer, err := createUnixSocketServer(cfg.Endpoint)
+	require.NoError(t, err, "failed to start test syslog server")
+
+	var exp *syslogexporter
+	if invalidExporter {
+		invalidCfg := &Config{
+			Endpoint: "invalid.sock",
+			Network:  "unix",
+		}
+		exp, err = initExporter(invalidCfg, createExporterCreateSettings())
+	} else {
+		exp, err = initExporter(cfg, createExporterCreateSettings())
+	}
+	require.NoError(t, err, "Error building exporter")
+	require.NotNil(t, exp)
+	return &exporterUnixTest{
+		srv: testServer,
+		exp: exp,
+	}
+}
+
+func TestUnixSocketExporterSuccess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows (functionality Unix specific)")
+	}
+
+	test := prepareUnixSocketExporterTest(t, createUnixSocketTestConfig(t), false)
+	require.NotNil(t, test.exp)
+	defer test.srv.Close()
+
+	err := sendTestMessage(t, test.exp)
+
+	assert.NoError(t, err, "could not send message")
+	err = test.srv.SetDeadline(time.Now().Add(time.Second * 1))
+	require.NoError(t, err, "cannot set deadline")
+	conn, err := test.srv.AcceptUnix()
+	require.NoError(t, err, "could not accept connection")
+	defer conn.Close()
+	b, err := io.ReadAll(conn)
+	require.NoError(t, err, "could not read all")
+	assert.Equal(t, expectedForm, string(b))
+}
+
+func TestUnixSocketExporterFail(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows (functionality Unix specific)")
+	}
+
+	test := prepareUnixSocketExporterTest(t, createUnixSocketTestConfig(t), true)
+	defer test.srv.Close()
+
+	consumerErr := sendTestMessage(t, test.exp)
+
+	var consumerErrorLogs consumererror.Logs
+	ok := errors.As(consumerErr, &consumerErrorLogs)
+	assert.True(t, ok)
+	consumerLogs := consumerErrorLogs.Data()
+	rls := consumerLogs.ResourceLogs()
+	require.Equal(t, 1, rls.Len())
+	scl := rls.At(0).ScopeLogs()
+	require.Equal(t, 1, scl.Len())
+	lrs := scl.At(0).LogRecords()
+	require.Equal(t, 1, lrs.Len())
+	droppedLog := lrs.At(0).Body().AsString()
+	err := test.srv.SetDeadline(time.Now().Add(time.Second * 1))
+	require.NoError(t, err, "cannot set deadline")
+	conn, err := test.srv.AcceptUnix()
+	require.ErrorContains(t, err, "i/o timeout")
+	require.Nil(t, conn)
+	assert.ErrorContains(t, consumerErr, "dial unix invalid.sock: connect: no such file or directory")
+	assert.Equal(t, droppedLog, originalForm)
+}
+
 func TestTLSConfig(t *testing.T) {
 	tests := []struct {
 		name        string
+		endpoint    string
 		network     string
 		tlsSettings configtls.ClientConfig
 		tlsConfig   *tls.Config
 	}{
 		{
 			name:        "TCP with TLS configuration",
+			endpoint:    "test.com",
 			network:     "tcp",
 			tlsSettings: configtls.ClientConfig{},
 			tlsConfig:   &tls.Config{},
 		},
 		{
 			name:        "TCP insecure",
+			endpoint:    "test.com",
 			network:     "tcp",
 			tlsSettings: configtls.ClientConfig{Insecure: true},
 			tlsConfig:   nil,
 		},
 		{
 			name:        "UDP with TLS configuration",
+			endpoint:    "test.com",
 			network:     "udp",
 			tlsSettings: configtls.ClientConfig{},
 			tlsConfig:   nil,
 		},
 		{
 			name:        "UDP insecure",
+			endpoint:    "test.com",
 			network:     "udp",
+			tlsSettings: configtls.ClientConfig{Insecure: true},
+			tlsConfig:   nil,
+		},
+		{
+			name:        "Unix Socket with TLS configuration",
+			endpoint:    "test.sock",
+			network:     "socket",
+			tlsSettings: configtls.ClientConfig{},
+			tlsConfig:   nil,
+		},
+		{
+			name:        "Unix Socket insecure",
+			endpoint:    "test.sock",
+			network:     "socket",
 			tlsSettings: configtls.ClientConfig{Insecure: true},
 			tlsConfig:   nil,
 		},
@@ -228,7 +372,7 @@ func TestTLSConfig(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			exporter, err := initExporter(
 				&Config{
-					Endpoint: "test.com",
+					Endpoint: testInstance.endpoint,
 					Network:  testInstance.network,
 					Port:     514,
 					Protocol: "rfc5424",

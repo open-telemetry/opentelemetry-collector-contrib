@@ -28,24 +28,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
   check-collector-module-version:
     runs-on: ubuntu-24.04
@@ -84,30 +75,16 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
-      - name: Cache Lint Build
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: ~/.cache/go-build
-          key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
   lint:
@@ -148,26 +125,20 @@ jobs:
           - cmd-0
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    needs: [setup-environment]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
@@ -177,24 +148,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - run: make genotelcontribcol
       - name: CheckDoc
@@ -249,7 +211,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["~1.24", "~1.23"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: [stable, oldstable]
         runner: [ubuntu-24.04]
         group:
           - receiver-0
@@ -273,25 +235,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: ${{ matrix.go-version }}
-          cache: false
-          check-latest: true # Since we're using "~" in the version, check we're using latest
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Test Build
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
@@ -306,7 +258,7 @@ jobs:
       # - On main, with the go version that we didn't run the JUnit tests with.
       - name: Run Unit Tests
         id: tests
-        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, '~1.23' )
+        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, 'oldstable' )
         run: make gotest GROUP=${{ matrix.group }}
 
       # JUnit tests are super long, so we only run them for one go version.
@@ -314,16 +266,16 @@ jobs:
       # merged to main, so we don't run them on every PR.
       - name: Run Unit Tests With JUnit and Coverage
         id: tests-with-junit
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: internal/tools/testresults/
@@ -337,7 +289,7 @@ jobs:
           else
             echo "Tests passed or were skipped. Continuing."
           fi
-          
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
@@ -359,7 +311,7 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           merge-multiple: true
           pattern: coverage-artifacts-*
@@ -393,19 +345,13 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
@@ -426,19 +372,13 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
@@ -470,24 +410,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
@@ -497,24 +428,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
@@ -544,6 +466,7 @@ jobs:
           - arm
           - arm64
           - ppc64le
+          - riscv64
           - s390x
         include:
           - os: linux
@@ -557,6 +480,8 @@ jobs:
           - os: darwin
             arch: ppc64le
           - os: darwin
+            arch: riscv64
+          - os: darwin
             arch: s390x
           - os: windows
             arch: arm
@@ -565,28 +490,21 @@ jobs:
           - os: windows
             arch: ppc64le
           - os: windows
+            arch: riscv64
+          - os: windows
             arch: s390x
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Generate collector files
         run: make genotelcontribcol
@@ -604,7 +522,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Download Binaries
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           merge-multiple: true
           path: ./bin/
@@ -618,31 +536,22 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
-        with:
-          go-version: 1.23.10
-          cache: false
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Download Binaries
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           merge-multiple: true
           path: ./bin/
@@ -725,6 +634,8 @@ jobs:
     # This job updates the "next release" milestone
     # to the latest released version and creates a new milestone
     # named "next release" in its place
+    permissions:
+      issues: write # required for managing milestones
     runs-on: ubuntu-24.04
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
@@ -763,32 +674,24 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           merge-multiple: true
           pattern: test-results-*
           path: ./internal/tools/testresults/
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Generate Issues
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          make install-tools
           ./.tools/issuegenerator -path ./internal/tools/testresults/

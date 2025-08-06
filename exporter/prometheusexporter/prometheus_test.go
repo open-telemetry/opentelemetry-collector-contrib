@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -105,13 +106,13 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
-			TLS: &configtls.ServerConfig{
+			TLS: configoptional.Some(configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
 					CAFile:   "./testdata/certs/ca.crt",
 				},
-			},
+			}),
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -452,7 +453,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	m1 := ms.AppendEmpty()
 	m1.SetName(prefix + "this/one/there(where)")
 	m1.SetDescription("Extra ones")
-	m1.SetUnit("1")
+	m1.SetUnit("By")
 	d1 := m1.SetEmptySum()
 	d1.SetIsMonotonic(true)
 	d1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -466,7 +467,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	m2 := ms.AppendEmpty()
 	m2.SetName(prefix + "this/one/there(where)")
 	m2.SetDescription("Extra ones")
-	m2.SetUnit("1")
+	m2.SetUnit("By")
 	d2 := m2.SetEmptySum()
 	d2.SetIsMonotonic(true)
 	d2.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -478,4 +479,221 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	dp2.SetIntValue(100 + delta)
 
 	return md
+}
+
+func TestPrometheusExporter_TranslationStrategies(t *testing.T) {
+	tests := []struct {
+		name               string
+		featureGateEnabled bool
+		config             *Config
+		extraHeaders       map[string]string
+		want               string
+	}{
+		{
+			name:               "Legacy AddMetricSuffixes=true (no translation_strategy set)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes: true,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "Legacy AddMetricSuffixes=false (no translation_strategy set)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes: false,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "Legacy AddMetricSuffixes=true with feature gate enabled (no translation_strategy set)",
+			featureGateEnabled: true,
+			config: &Config{
+				AddMetricSuffixes: true, // Should be ignored and default 'translation_strategy' is used (UnderscoreEscapingWithSuffixes).
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "TranslationStrategy takes precedence over AddMetricSuffixes (feature gate disabled)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes:   true, // This should be ignored
+				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "UnderscoreEscapingWithSuffixes",
+			config: &Config{
+				TranslationStrategy: underscoreEscapingWithSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "UnderscoreEscapingWithoutSuffixes",
+			config: &Config{
+				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "NoUTF8EscapingWithSuffixes/escaping=allow-utf-8",
+			config: &Config{
+				TranslationStrategy: noUTF8EscapingWithSuffixes,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP "this/one/there(where)_bytes_total" Extra ones
+# TYPE "this/one/there(where)_bytes_total" counter
+{"this/one/there(where)_bytes_total",arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+{"this/one/there(where)_bytes_total",arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "NoUTF8EscapingWithSuffixes/escaping=underscores",
+			config: &Config{
+				TranslationStrategy: noUTF8EscapingWithSuffixes,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=underscores;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=underscores;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where__bytes_total Extra ones
+# TYPE this_one_there_where__bytes_total counter
+this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "NoTranslation/escaping=allow-utf-8",
+			featureGateEnabled: true,
+			config: &Config{
+				TranslationStrategy: noTranslation,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP "this/one/there(where)" Extra ones
+# TYPE "this/one/there(where)" counter
+{"this/one/there(where)",arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+{"this/one/there(where)",arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "NoTranslation/escaping=underscores",
+			config: &Config{
+				TranslationStrategy: noTranslation,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=underscores;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=underscores;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_ Extra ones
+# TYPE this_one_there_where_ counter
+this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set feature gate state for this test
+			originalState := disableAddMetricSuffixesFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
+			defer testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, originalState)
+
+			// Configure the exporter
+			addr := testutil.GetAvailableLocalAddress(t)
+			cfg := tt.config
+			cfg.ServerConfig = confighttp.ServerConfig{
+				Endpoint: addr,
+			}
+			cfg.MetricExpiration = 120 * time.Minute
+
+			factory := NewFactory()
+			set := exportertest.NewNopSettings(metadata.Type)
+			exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			})
+
+			assert.NotNil(t, exp)
+			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+
+			md := metricBuilder(0, "", "test-service", "test-instance")
+			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
+			// Scrape metrics, with the Accept header set to the value specified in the test case
+			req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/metrics", http.NoBody)
+			require.NoError(t, err)
+			for k, v := range tt.extraHeaders {
+				req.Header.Set(k, v)
+			}
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Failed to perform a scrape")
+			assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
+
+			blob, _ := io.ReadAll(res.Body)
+			_ = res.Body.Close()
+			output := string(blob)
+
+			assert.Equal(t, tt.want, output)
+		})
+	}
 }

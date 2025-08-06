@@ -355,7 +355,7 @@ func extractSDKFromKeyVal(kv map[string]string) faroTypes.SDK {
 
 func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKIntegration {
 	sdkIntegrations := make([]faroTypes.SDKIntegration, 0)
-	if len(integrationsString) == 0 {
+	if integrationsString == "" {
 		return sdkIntegrations
 	}
 
@@ -479,25 +479,27 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 
 	brandsMap := make(map[int64]faroTypes.Brand)
 	for key, val := range kv {
-		if suffix, found := strings.CutPrefix(key, faroBrowserBrandPrefix); found {
-			brandAsString := strings.Split(suffix, "_")
-			idx, err := strconv.ParseInt(brandAsString[0], 10, 64)
-			if err != nil {
-				return brands, err
-			}
-			brand, ok := brandsMap[idx]
-			if !ok {
-				brandsMap[idx] = faroTypes.Brand{}
-				brand = brandsMap[idx]
-			}
-			if brandAsString[1] == faroBrand {
-				brand.Brand = val
-			}
-			if brandAsString[1] == faroBrandVersion {
-				brand.Version = val
-			}
-			brandsMap[idx] = brand
+		suffix, found := strings.CutPrefix(key, faroBrowserBrandPrefix)
+		if !found {
+			continue
 		}
+		brandAsString := strings.Split(suffix, "_")
+		idx, err := strconv.ParseInt(brandAsString[0], 10, 64)
+		if err != nil {
+			return brands, err
+		}
+		brand, ok := brandsMap[idx]
+		if !ok {
+			brandsMap[idx] = faroTypes.Brand{}
+			brand = brandsMap[idx]
+		}
+		if brandAsString[1] == faroBrand {
+			brand.Brand = val
+		}
+		if brandAsString[1] == faroBrandVersion {
+			brand.Version = val
+		}
+		brandsMap[idx] = brand
 	}
 	brandsMapLen := len(brandsMap)
 	if brandsMapLen != 0 {
@@ -725,7 +727,7 @@ func extractExceptionContextFromKeyVal(kv map[string]string) faroTypes.Exception
 	return exceptionContext
 }
 
-func extractStacktraceFromKeyVal(kv map[string]string, exceptionType string, exceptionValue string) (*faroTypes.Stacktrace, error) {
+func extractStacktraceFromKeyVal(kv map[string]string, exceptionType, exceptionValue string) (*faroTypes.Stacktrace, error) {
 	stacktraceStr, ok := kv[faroExceptionStacktrace]
 	if !ok {
 		return nil, nil
@@ -759,7 +761,7 @@ func parseStacktraceFromString(stacktraceStr, exceptionType, exceptionValue stri
 
 func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 	var frame faroTypes.Frame
-	if len(frameStr) == 0 {
+	if frameStr == "" {
 		return nil, nil
 	}
 

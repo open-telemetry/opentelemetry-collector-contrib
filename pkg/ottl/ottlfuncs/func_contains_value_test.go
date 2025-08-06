@@ -23,12 +23,12 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "find item in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{"hello", "world"}, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "hello", nil
 				},
 			},
@@ -37,12 +37,12 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "not find item in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{"hello", "world"}, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "unknown", nil
 				},
 			},
@@ -51,12 +51,12 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "find integers in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{0, 1}, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return int64(1), nil
 				},
 			},
@@ -65,12 +65,12 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "find floats in taget",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{0, 3.14159}, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 3.14159, nil
 				},
 			},
@@ -79,12 +79,12 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "find booleans in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{true, false}, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return true, nil
 				},
 			},
@@ -93,14 +93,14 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "find pcommon.Slice in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					s := pcommon.NewSlice()
 					_ = s.FromRaw([]any{1, 2})
 					return s, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return int64(1), nil
 				},
 			},
@@ -109,14 +109,14 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "not find pcommon.Slice in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					s := pcommon.NewSlice()
 					_ = s.FromRaw([]any{1, 2})
 					return s, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return int64(4), nil
 				},
 			},
@@ -125,14 +125,14 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "not find pcommon.Slice in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					s := pcommon.NewSlice()
 					_ = s.FromRaw([]any{1, 2})
 					return s, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return int64(4), nil
 				},
 			},
@@ -141,14 +141,14 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "not find pcommon.Value in target",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					s := pcommon.NewSlice()
 					_ = s.FromRaw([]any{1, 4})
 					return s, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return pcommon.NewValueInt(4), nil
 				},
 			},
@@ -157,12 +157,12 @@ func Test_ContainsValue(t *testing.T) {
 		{
 			name: "Target is []string",
 			target: ottl.StandardPSliceGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []string{"test1", "test2"}, nil
 				},
 			},
 			item: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return pcommon.NewValueStr("test1").AsRaw(), nil
 				},
 			},
@@ -181,12 +181,12 @@ func Test_ContainsValue(t *testing.T) {
 
 func Test_ContainsValue_Error(t *testing.T) {
 	target := &ottl.StandardPSliceGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return make(chan int), nil
 		},
 	}
 	item := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "test", nil
 		},
 	}

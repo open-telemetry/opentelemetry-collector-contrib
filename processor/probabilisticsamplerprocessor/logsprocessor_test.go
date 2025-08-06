@@ -437,7 +437,7 @@ func TestLogsSamplingState(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			cfg := &Config{}
 			if tt.cfg != nil {
@@ -462,7 +462,7 @@ func TestLogsSamplingState(t *testing.T) {
 			err = tsp.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
 
-			if len(tt.log) == 0 {
+			if tt.log == "" {
 				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				require.Empty(t, tt.log)
 			} else {

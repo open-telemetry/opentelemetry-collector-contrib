@@ -5,8 +5,8 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
-	"strconv"
 	"sync"
 	"time"
 
@@ -25,7 +25,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-func newSaramaConsumer(config *Config, set receiver.Settings, topics []string,
+func newSaramaConsumer(
+	config *Config,
+	set receiver.Settings,
+	topics []string,
 	newConsumeFn newConsumeMessageFunc,
 ) (*saramaConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -80,7 +83,6 @@ func (c *saramaConsumer) Start(_ context.Context, host component.Host) error {
 
 	handler := &consumerGroupHandler{
 		host:              host,
-		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.config.AutoCommit.Enable,
@@ -189,7 +191,6 @@ func (c *saramaConsumer) Shutdown(ctx context.Context) error {
 
 type consumerGroupHandler struct {
 	host           component.Host
-	id             component.ID
 	consumeMessage consumeMessageFunc
 	logger         *zap.Logger
 
@@ -205,17 +206,13 @@ type consumerGroupHandler struct {
 func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	c.logger.Debug("Consumer group session established")
 	componentstatus.ReportStatus(c.host, componentstatus.NewEvent(componentstatus.StatusOK))
-	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(
-		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
-	)
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1)
 	return nil
 }
 
 func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
 	c.logger.Debug("Consumer group session stopped")
-	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(
-		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
-	)
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1)
 	return nil
 }
 
@@ -258,12 +255,37 @@ func (c *consumerGroupHandler) handleMessage(
 	}
 
 	attrs := attribute.NewSet(
-		attribute.String(attrInstanceName, c.id.String()),
-		attribute.String(attrTopic, message.Topic),
-		attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
+		attribute.String("topic", message.Topic),
+		attribute.Int64("partition", int64(claim.Partition())),
 	)
-	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(context.Background(),
-		claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs),
+	c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(
+		context.Background(),
+		message.Offset,
+		metric.WithAttributeSet(attrs),
+	)
+	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
+		context.Background(),
+		claim.HighWaterMarkOffset()-message.Offset-1,
+		metric.WithAttributeSet(attrs),
+	)
+	// KafkaReceiverMessages is deprecated in favor of KafkaReceiverRecords.
+	c.telemetryBuilder.KafkaReceiverMessages.Add(
+		context.Background(),
+		1,
+		metric.WithAttributeSet(attrs),
+		metric.WithAttributes(attribute.String("outcome", "success")),
+	)
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
+		context.Background(),
+		1,
+		metric.WithAttributeSet(attrs),
+		metric.WithAttributes(attribute.String("outcome", "success")),
+	)
+	c.telemetryBuilder.KafkaReceiverBytesUncompressed.Add(
+		context.Background(),
+		byteSize(message),
+		metric.WithAttributeSet(attrs),
+		metric.WithAttributes(attribute.String("outcome", "success")),
 	)
 	msg := wrapSaramaMsg(message)
 	if err := c.consumeMessage(session.Context(), msg, attrs); err != nil {
@@ -327,4 +349,20 @@ func (c *consumerGroupHandler) resetBackoff() {
 	c.backOffMutex.Lock()
 	defer c.backOffMutex.Unlock()
 	c.backOff.Reset()
+}
+
+// byteSize calculates kafka message size according to
+// https://pkg.go.dev/github.com/Shopify/sarama#ProducerMessage.ByteSize
+func byteSize(m *sarama.ConsumerMessage) int64 {
+	size := 5*binary.MaxVarintLen32 + binary.MaxVarintLen64 + 1
+	for _, h := range m.Headers {
+		size += len(h.Key) + len(h.Value) + 2*binary.MaxVarintLen32
+	}
+	if m.Key != nil {
+		size += len(m.Key)
+	}
+	if m.Value != nil {
+		size += len(m.Value)
+	}
+	return int64(size)
 }

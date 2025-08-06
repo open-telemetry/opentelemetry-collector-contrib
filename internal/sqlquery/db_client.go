@@ -63,8 +63,9 @@ func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, 
 func (cl DbSQLClient) prepareQueryFields(sql string, args []any) []zap.Field {
 	var logFields []zap.Field
 	if cl.Telemetry.Logs.Query {
-		logFields = append(logFields, zap.String("query", sql))
-		logFields = append(logFields, zap.Any("parameters", args))
+		logFields = append(logFields,
+			zap.String("query", sql),
+			zap.Any("parameters", args))
 	}
 	return logFields
 }
