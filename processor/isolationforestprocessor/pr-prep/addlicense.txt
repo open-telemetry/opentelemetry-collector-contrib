@@ -1,1 +1,2 @@
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/addlicense -trimpath github.com/google/addlicense
 Add License finished successfully

@@ -1,2 +1,3 @@
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/crosslink -trimpath go.opentelemetry.io/build-tools/crosslink
 Executing crosslink
 /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/crosslink --root=/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib --prune
