@@ -1057,6 +1057,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsuper
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol => ../../cmd/otelcontribcol
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol => ../../cmd/oteltestbedcol
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen => ../../cmd/telemetrygen
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest => ../../cmd/telemetrygen/internal/e2etest

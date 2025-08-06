@@ -1,0 +1,2 @@
+Validating versions.yaml
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/multimod verify

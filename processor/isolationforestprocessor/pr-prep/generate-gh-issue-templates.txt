@@ -1,0 +1,1 @@
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/githubgen issue-templates

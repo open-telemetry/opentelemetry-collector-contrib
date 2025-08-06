@@ -1,0 +1,2 @@
+Executing crosslink
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/crosslink --root=/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib --prune

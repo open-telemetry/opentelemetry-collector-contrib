@@ -1,0 +1,4 @@
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/builder -trimpath go.opentelemetry.io/collector/cmd/builder
+./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
+Wrote replace statements to cmd/otelcontribcol/builder-config-replaced.yaml
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/builder --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml

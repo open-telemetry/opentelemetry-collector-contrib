@@ -1,0 +1,1618 @@
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/genqlient -trimpath github.com/Khan/genqlient
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/misspell -trimpath github.com/client9/misspell/cmd/misspell
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gci -trimpath github.com/daixiang0/gci
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/golangci-lint -trimpath github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/addlicense -trimpath github.com/google/addlicense
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/porto -trimpath github.com/jcchavezs/porto/cmd/porto
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/go-junit-report -trimpath github.com/jstemmer/go-junit-report
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/checkapi -trimpath go.opentelemetry.io/build-tools/checkapi
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/checkfile -trimpath go.opentelemetry.io/build-tools/checkfile
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/chloggen -trimpath go.opentelemetry.io/build-tools/chloggen
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/crosslink -trimpath go.opentelemetry.io/build-tools/crosslink
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/githubgen -trimpath go.opentelemetry.io/build-tools/githubgen
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/issuegenerator -trimpath go.opentelemetry.io/build-tools/issuegenerator
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/multimod -trimpath go.opentelemetry.io/build-tools/multimod
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/mdatagen -trimpath go.opentelemetry.io/collector/cmd/mdatagen
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -trimpath golang.org/x/tools/cmd/goimports
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/govulncheck -trimpath golang.org/x/vuln/cmd/govulncheck
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gotestsum -trimpath gotest.tools/gotestsum
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -trimpath mvdan.cc/gofumpt
+cd /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/internal/tools && GOOS="" GOARCH="" go build -o /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/codecovgen -trimpath github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
+PATH="/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools:$PATH" /Library/Developer/CommandLineTools/usr/bin/make for-all CMD="go generate ./..."
+running go generate ./... in ./receiver/activedirectorydsreceiver
+running go generate ./... in ./receiver/aerospikereceiver
+running go generate ./... in ./receiver/apachereceiver
+running go generate ./... in ./receiver/apachesparkreceiver
+running go generate ./... in ./receiver/awscloudwatchmetricsreceiver
+running go generate ./... in ./receiver/awscloudwatchreceiver
+running go generate ./... in ./receiver/awscontainerinsightreceiver
+running go generate ./... in ./receiver/awsecscontainermetricsreceiver
+running go generate ./... in ./receiver/awsfirehosereceiver
+running go generate ./... in ./receiver/awss3receiver
+running go generate ./... in ./receiver/awsxrayreceiver
+running go generate ./... in ./receiver/azureblobreceiver
+running go generate ./... in ./receiver/azureeventhubreceiver
+running go generate ./... in ./receiver/azuremonitorreceiver
+running go generate ./... in ./receiver/bigipreceiver
+running go generate ./... in ./receiver/carbonreceiver
+running go generate ./... in ./receiver/chronyreceiver
+running go generate ./... in ./receiver/cloudflarereceiver
+running go generate ./... in ./receiver/cloudfoundryreceiver
+running go generate ./... in ./receiver/collectdreceiver
+running go generate ./... in ./receiver/couchdbreceiver
+running go generate ./... in ./receiver/datadogreceiver
+running go generate ./... in ./receiver/dockerstatsreceiver
+running go generate ./... in ./receiver/elasticsearchreceiver
+running go generate ./... in ./receiver/envoyalsreceiver
+running go generate ./... in ./receiver/expvarreceiver
+running go generate ./... in ./receiver/faroreceiver
+running go generate ./... in ./receiver/filelogreceiver
+running go generate ./... in ./receiver/filestatsreceiver
+running go generate ./... in ./receiver/flinkmetricsreceiver
+running go generate ./... in ./receiver/fluentforwardreceiver
+running go generate ./... in ./receiver/githubreceiver
+running go generate ./... in ./receiver/gitlabreceiver
+running go generate ./... in ./receiver/googlecloudmonitoringreceiver
+running go generate ./... in ./receiver/googlecloudpubsubreceiver
+running go generate ./... in ./receiver/googlecloudspannerreceiver
+running go generate ./... in ./receiver/haproxyreceiver
+running go generate ./... in ./receiver/hostmetricsreceiver
+running go generate ./... in ./receiver/httpcheckreceiver
+running go generate ./... in ./receiver/huaweicloudcesreceiver
+running go generate ./... in ./receiver/iisreceiver
+running go generate ./... in ./receiver/influxdbreceiver
+running go generate ./... in ./receiver/jaegerreceiver
+running go generate ./... in ./receiver/jmxreceiver
+running go generate ./... in ./receiver/journaldreceiver
+running go generate ./... in ./receiver/k8sclusterreceiver
+running go generate ./... in ./receiver/k8seventsreceiver
+running go generate ./... in ./receiver/k8slogreceiver
+running go generate ./... in ./receiver/k8sobjectsreceiver
+running go generate ./... in ./receiver/kafkametricsreceiver
+running go generate ./... in ./receiver/kafkareceiver
+running go generate ./... in ./receiver/kubeletstatsreceiver
+running go generate ./... in ./receiver/libhoneyreceiver
+running go generate ./... in ./receiver/lokireceiver
+running go generate ./... in ./receiver/memcachedreceiver
+running go generate ./... in ./receiver/mongodbatlasreceiver
+running go generate ./... in ./receiver/mongodbreceiver
+running go generate ./... in ./receiver/mysqlreceiver
+running go generate ./... in ./receiver/namedpipereceiver
+running go generate ./... in ./receiver/netflowreceiver
+running go generate ./... in ./receiver/nginxreceiver
+running go generate ./... in ./receiver/nsxtreceiver
+running go generate ./... in ./receiver/ntpreceiver
+running go generate ./... in ./receiver/opencensusreceiver
+running go generate ./... in ./receiver/oracledbreceiver
+running go generate ./... in ./receiver/osqueryreceiver
+running go generate ./... in ./receiver/otelarrowreceiver
+running go generate ./... in ./receiver/otlpjsonfilereceiver
+running go generate ./... in ./receiver/podmanreceiver
+running go generate ./... in ./receiver/postgresqlreceiver
+running go generate ./... in ./receiver/pprofreceiver
+running go generate ./... in ./receiver/prometheusreceiver
+running go generate ./... in ./receiver/prometheusremotewritereceiver
+running go generate ./... in ./receiver/pulsarreceiver
+running go generate ./... in ./receiver/purefareceiver
+running go generate ./... in ./receiver/purefbreceiver
+running go generate ./... in ./receiver/rabbitmqreceiver
+running go generate ./... in ./receiver/receivercreator
+running go generate ./... in ./receiver/redisreceiver
+running go generate ./... in ./receiver/riakreceiver
+running go generate ./... in ./receiver/saphanareceiver
+running go generate ./... in ./receiver/sapmreceiver
+running go generate ./... in ./receiver/signalfxreceiver
+running go generate ./... in ./receiver/simpleprometheusreceiver
+running go generate ./... in ./receiver/simpleprometheusreceiver/examples/federation/prom-counter
+running go generate ./... in ./receiver/skywalkingreceiver
+running go generate ./... in ./receiver/snmpreceiver
+running go generate ./... in ./receiver/snowflakereceiver
+running go generate ./... in ./receiver/solacereceiver
+running go generate ./... in ./receiver/splunkenterprisereceiver
+running go generate ./... in ./receiver/splunkhecreceiver
+running go generate ./... in ./receiver/sqlqueryreceiver
+running go generate ./... in ./receiver/sqlserverreceiver
+running go generate ./... in ./receiver/sshcheckreceiver
+running go generate ./... in ./receiver/statsdreceiver
+running go generate ./... in ./receiver/stefreceiver
+running go generate ./... in ./receiver/syslogreceiver
+running go generate ./... in ./receiver/systemdreceiver
+running go generate ./... in ./receiver/tcpcheckreceiver
+running go generate ./... in ./receiver/tcplogreceiver
+running go generate ./... in ./receiver/tlscheckreceiver
+running go generate ./... in ./receiver/udplogreceiver
+running go generate ./... in ./receiver/vcenterreceiver
+running go generate ./... in ./receiver/wavefrontreceiver
+running go generate ./... in ./receiver/webhookeventreceiver
+running go generate ./... in ./receiver/windowseventlogreceiver
+running go generate ./... in ./receiver/windowsperfcountersreceiver
+running go generate ./... in ./receiver/windowsservicereceiver
+running go generate ./... in ./receiver/zipkinreceiver
+running go generate ./... in ./receiver/zookeeperreceiver
+running go generate ./... in ./processor/attributesprocessor
+running go generate ./... in ./processor/coralogixprocessor
+running go generate ./... in ./processor/cumulativetodeltaprocessor
+running go generate ./... in ./processor/datadogsemanticsprocessor
+running go generate ./... in ./processor/deltatocumulativeprocessor
+running go generate ./... in ./processor/deltatorateprocessor
+running go generate ./... in ./processor/dnslookupprocessor
+running go generate ./... in ./processor/filterprocessor
+running go generate ./... in ./processor/geoipprocessor
+running go generate ./... in ./processor/groupbyattrsprocessor
+running go generate ./... in ./processor/groupbytraceprocessor
+running go generate ./... in ./processor/intervalprocessor
+running go generate ./... in ./processor/k8sattributesprocessor
+running go generate ./... in ./processor/logdedupprocessor
+running go generate ./... in ./processor/logstransformprocessor
+running go generate ./... in ./processor/metricsgenerationprocessor
+running go generate ./... in ./processor/metricstarttimeprocessor
+running go generate ./... in ./processor/metricstransformprocessor
+running go generate ./... in ./processor/probabilisticsamplerprocessor
+running go generate ./... in ./processor/redactionprocessor
+running go generate ./... in ./processor/remotetapprocessor
+running go generate ./... in ./processor/resourcedetectionprocessor
+running go generate ./... in ./processor/resourceprocessor
+running go generate ./... in ./processor/routingprocessor
+running go generate ./... in ./processor/schemaprocessor
+running go generate ./... in ./processor/spanprocessor
+running go generate ./... in ./processor/sumologicprocessor
+running go generate ./... in ./processor/tailsamplingprocessor
+running go generate ./... in ./processor/transformprocessor
+running go generate ./... in ./exporter/alertmanagerexporter
+running go generate ./... in ./exporter/alibabacloudlogserviceexporter
+running go generate ./... in ./exporter/awscloudwatchlogsexporter
+running go generate ./... in ./exporter/awsemfexporter
+running go generate ./... in ./exporter/awskinesisexporter
+running go generate ./... in ./exporter/awss3exporter
+running go generate ./... in ./exporter/awsxrayexporter
+running go generate ./... in ./exporter/azureblobexporter
+running go generate ./... in ./exporter/azuredataexplorerexporter
+running go generate ./... in ./exporter/azuremonitorexporter
+running go generate ./... in ./exporter/bmchelixexporter
+running go generate ./... in ./exporter/carbonexporter
+running go generate ./... in ./exporter/cassandraexporter
+running go generate ./... in ./exporter/clickhouseexporter
+running go generate ./... in ./exporter/coralogixexporter
+running go generate ./... in ./exporter/datadogexporter
+running go generate ./... in ./exporter/datadogexporter/integrationtest
+running go generate ./... in ./exporter/datasetexporter
+running go generate ./... in ./exporter/dorisexporter
+running go generate ./... in ./exporter/elasticsearchexporter
+running go generate ./... in ./exporter/elasticsearchexporter/integrationtest
+running go generate ./... in ./exporter/faroexporter
+running go generate ./... in ./exporter/fileexporter
+running go generate ./... in ./exporter/googlecloudexporter
+running go generate ./... in ./exporter/googlecloudpubsubexporter
+running go generate ./... in ./exporter/googlemanagedprometheusexporter
+running go generate ./... in ./exporter/honeycombmarkerexporter
+running go generate ./... in ./exporter/influxdbexporter
+running go generate ./... in ./exporter/kafkaexporter
+running go generate ./... in ./exporter/loadbalancingexporter
+running go generate ./... in ./exporter/logicmonitorexporter
+running go generate ./... in ./exporter/logzioexporter
+running go generate ./... in ./exporter/mezmoexporter
+running go generate ./... in ./exporter/opencensusexporter
+running go generate ./... in ./exporter/opensearchexporter
+running go generate ./... in ./exporter/otelarrowexporter
+running go generate ./... in ./exporter/prometheusexporter
+running go generate ./... in ./exporter/prometheusremotewriteexporter
+running go generate ./... in ./exporter/pulsarexporter
+running go generate ./... in ./exporter/rabbitmqexporter
+running go generate ./... in ./exporter/sapmexporter
+running go generate ./... in ./exporter/sematextexporter
+running go generate ./... in ./exporter/sentryexporter
+running go generate ./... in ./exporter/signalfxexporter
+running go generate ./... in ./exporter/splunkhecexporter
+running go generate ./... in ./exporter/stefexporter
+running go generate ./... in ./exporter/sumologicexporter
+running go generate ./... in ./exporter/syslogexporter
+running go generate ./... in ./exporter/tencentcloudlogserviceexporter
+running go generate ./... in ./exporter/tinybirdexporter
+running go generate ./... in ./exporter/zipkinexporter
+running go generate ./... in ./extension/ackextension
+running go generate ./... in ./extension/asapauthextension
+running go generate ./... in ./extension/awsproxy
+running go generate ./... in ./extension/azureauthextension
+running go generate ./... in ./extension/basicauthextension
+running go generate ./... in ./extension/bearertokenauthextension
+running go generate ./... in ./extension/cgroupruntimeextension
+running go generate ./... in ./extension/datadogextension
+running go generate ./... in ./extension/encoding
+running go generate ./... in ./extension/encoding/avrologencodingextension
+running go generate ./... in ./extension/encoding/awscloudwatchmetricstreamsencodingextension
+running go generate ./... in ./extension/encoding/awslogsencodingextension
+running go generate ./... in ./extension/encoding/googlecloudlogentryencodingextension
+running go generate ./... in ./extension/encoding/jaegerencodingextension
+running go generate ./... in ./extension/encoding/jsonlogencodingextension
+running go generate ./... in ./extension/encoding/otlpencodingextension
+running go generate ./... in ./extension/encoding/skywalkingencodingextension
+running go generate ./... in ./extension/encoding/textencodingextension
+running go generate ./... in ./extension/encoding/zipkinencodingextension
+running go generate ./... in ./extension/googleclientauthextension
+running go generate ./... in ./extension/headerssetterextension
+running go generate ./... in ./extension/healthcheckextension
+running go generate ./... in ./extension/healthcheckv2extension
+running go generate ./... in ./extension/httpforwarderextension
+running go generate ./... in ./extension/jaegerremotesampling
+running go generate ./... in ./extension/k8sleaderelector
+running go generate ./... in ./extension/oauth2clientauthextension
+running go generate ./... in ./extension/observer
+running go generate ./... in ./extension/observer/cfgardenobserver
+running go generate ./... in ./extension/observer/dockerobserver
+running go generate ./... in ./extension/observer/ecsobserver
+running go generate ./... in ./extension/observer/ecstaskobserver
+running go generate ./... in ./extension/observer/hostobserver
+running go generate ./... in ./extension/observer/k8sobserver
+running go generate ./... in ./extension/observer/kafkatopicsobserver
+running go generate ./... in ./extension/oidcauthextension
+running go generate ./... in ./extension/opampcustommessages
+running go generate ./... in ./extension/opampextension
+running go generate ./... in ./extension/pprofextension
+running go generate ./... in ./extension/remotetapextension
+running go generate ./... in ./extension/sigv4authextension
+running go generate ./... in ./extension/solarwindsapmsettingsextension
+running go generate ./... in ./extension/storage
+running go generate ./... in ./extension/storage/dbstorage
+running go generate ./... in ./extension/storage/filestorage
+running go generate ./... in ./extension/storage/redisstorageextension
+running go generate ./... in ./extension/sumologicextension
+running go generate ./... in ./connector/countconnector
+running go generate ./... in ./connector/datadogconnector
+running go generate ./... in ./connector/exceptionsconnector
+running go generate ./... in ./connector/failoverconnector
+running go generate ./... in ./connector/grafanacloudconnector
+running go generate ./... in ./connector/otlpjsonconnector
+running go generate ./... in ./connector/roundrobinconnector
+running go generate ./... in ./connector/routingconnector
+running go generate ./... in ./connector/servicegraphconnector
+running go generate ./... in ./connector/signaltometricsconnector
+running go generate ./... in ./connector/spanmetricsconnector
+running go generate ./... in ./connector/sumconnector
+running go generate ./... in ./internal/aws/awsutil
+running go generate ./... in ./internal/aws/containerinsight
+running go generate ./... in ./internal/aws/cwlogs
+running go generate ./... in ./internal/aws/ecsutil
+running go generate ./... in ./internal/aws/k8s
+running go generate ./... in ./internal/aws/metrics
+running go generate ./... in ./internal/aws/proxy
+running go generate ./... in ./internal/aws/xray
+running go generate ./... in ./internal/aws/xray/testdata/sampleapp
+running go generate ./... in ./internal/aws/xray/testdata/sampleserver
+running go generate ./... in ./internal/collectd
+running go generate ./... in ./internal/common
+running go generate ./... in ./internal/coreinternal
+running go generate ./... in ./internal/datadog
+running go generate ./... in ./internal/docker
+running go generate ./... in ./internal/exp/metrics
+running go generate ./... in ./internal/filter
+running go generate ./... in ./internal/gopsutilenv
+running go generate ./... in ./internal/grpcutil
+running go generate ./... in ./internal/k8sconfig
+running go generate ./... in ./internal/kafka
+running go generate ./... in ./internal/kubelet
+running go generate ./... in ./internal/metadataproviders
+running go generate ./... in ./internal/otelarrow
+running go generate ./... in ./internal/pdatautil
+running go generate ./... in ./internal/rabbitmq
+running go generate ./... in ./internal/sharedcomponent
+running go generate ./... in ./internal/splunk
+running go generate ./... in ./internal/sqlquery
+running go generate ./... in ./internal/tools
+running go generate ./... in ./pkg/batchperresourceattr
+running go generate ./... in ./pkg/batchpersignal
+running go generate ./... in ./pkg/core/xidutils
+running go generate ./... in ./pkg/datadog
+running go generate ./... in ./pkg/experimentalmetricmetadata
+running go generate ./... in ./pkg/golden
+running go generate ./... in ./pkg/kafka/configkafka
+running go generate ./... in ./pkg/kafka/topic
+running go generate ./... in ./pkg/ottl
+running go generate ./... in ./pkg/pdatatest
+running go generate ./... in ./pkg/pdatautil
+running go generate ./... in ./pkg/resourcetotelemetry
+running go generate ./... in ./pkg/sampling
+running go generate ./... in ./pkg/stanza
+running go generate ./... in ./pkg/status
+running go generate ./... in ./pkg/translator/azure
+running go generate ./... in ./pkg/translator/azurelogs
+running go generate ./... in ./pkg/translator/faro
+running go generate ./... in ./pkg/translator/jaeger
+running go generate ./... in ./pkg/translator/loki
+running go generate ./... in ./pkg/translator/opencensus
+running go generate ./... in ./pkg/translator/prometheus
+running go generate ./... in ./pkg/translator/prometheusremotewrite
+running go generate ./... in ./pkg/translator/signalfx
+running go generate ./... in ./pkg/translator/skywalking
+running go generate ./... in ./pkg/translator/zipkin
+running go generate ./... in ./pkg/winperfcounters
+running go generate ./... in ./pkg/xk8stest
+running go generate ./... in ./cmd/codecovgen
+running go generate ./... in ./cmd/golden
+running go generate ./... in ./cmd/opampsupervisor
+running go generate ./... in ./cmd/telemetrygen
+running go generate ./... in ./cmd/telemetrygen/internal/e2etest
+running go generate ./... in ./confmap/provider/aesprovider
+running go generate ./... in ./confmap/provider/googlesecretmanagerprovider
+running go generate ./... in ./confmap/provider/s3provider
+running go generate ./... in ./confmap/provider/secretsmanagerprovider
+running go generate ./... in ./scraper/zookeeperscraper
+running go generate ./... in ./testbed
+running go generate ./... in ./testbed/mockdatasenders/mockdatadogagentexporter
+/Library/Developer/CommandLineTools/usr/bin/make gofmt
+/Library/Developer/CommandLineTools/usr/bin/make for-all-target TARGET="fmt"
+Running target 'fmt' in module 'receiver/activedirectorydsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/activedirectorydsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/aerospikereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/aerospikereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/apachereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/apachereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/apachesparkreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/apachesparkreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awscloudwatchmetricsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awscloudwatchmetricsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awscloudwatchreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awscloudwatchreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awscontainerinsightreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awscontainerinsightreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awsecscontainermetricsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awsecscontainermetricsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awsfirehosereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awsfirehosereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awss3receiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awss3receiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/awsxrayreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/awsxrayreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/azureblobreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/azureblobreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/azureeventhubreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/azureeventhubreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/azuremonitorreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/azuremonitorreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/bigipreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/bigipreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/carbonreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/carbonreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/chronyreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/chronyreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/cloudflarereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/cloudflarereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/cloudfoundryreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/cloudfoundryreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/collectdreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/collectdreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/couchdbreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/couchdbreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/datadogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/datadogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/dockerstatsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/dockerstatsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/elasticsearchreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/elasticsearchreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/envoyalsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/envoyalsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/expvarreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/expvarreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/faroreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/faroreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/filelogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/filelogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/filestatsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/filestatsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/flinkmetricsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/flinkmetricsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/fluentforwardreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/fluentforwardreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/githubreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/githubreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/gitlabreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/gitlabreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/googlecloudmonitoringreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/googlecloudmonitoringreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/googlecloudpubsubreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/googlecloudpubsubreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/googlecloudspannerreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/googlecloudspannerreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/haproxyreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/haproxyreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/hostmetricsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/hostmetricsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/httpcheckreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/httpcheckreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/huaweicloudcesreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/huaweicloudcesreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/iisreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/iisreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/influxdbreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/influxdbreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/jaegerreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/jaegerreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/jmxreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/jmxreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/journaldreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/journaldreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/k8sclusterreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/k8sclusterreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/k8seventsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/k8seventsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/k8slogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/k8slogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/k8sobjectsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/k8sobjectsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/kafkametricsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/kafkametricsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/kafkareceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/kafkareceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/kubeletstatsreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/kubeletstatsreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/libhoneyreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/libhoneyreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/lokireceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/lokireceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/memcachedreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/memcachedreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/mongodbatlasreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/mongodbatlasreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/mongodbreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/mongodbreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/mysqlreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/mysqlreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/namedpipereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/namedpipereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/netflowreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/netflowreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/nginxreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/nginxreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/nsxtreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/nsxtreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/ntpreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/ntpreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/opencensusreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/opencensusreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/oracledbreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/oracledbreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/osqueryreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/osqueryreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/otelarrowreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/otelarrowreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/otlpjsonfilereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/otlpjsonfilereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/podmanreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/podmanreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/postgresqlreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/postgresqlreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/pprofreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/pprofreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/prometheusreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/prometheusreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/prometheusremotewritereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/prometheusremotewritereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/pulsarreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/pulsarreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/purefareceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/purefareceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/purefbreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/purefbreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/rabbitmqreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/rabbitmqreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/receivercreator' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/receivercreator fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/redisreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/redisreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/riakreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/riakreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/saphanareceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/saphanareceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/sapmreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/sapmreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/signalfxreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/signalfxreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/simpleprometheusreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/simpleprometheusreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/simpleprometheusreceiver/examples/federation/prom-counter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/simpleprometheusreceiver/examples/federation/prom-counter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/skywalkingreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/skywalkingreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/snmpreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/snmpreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/snowflakereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/snowflakereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/solacereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/solacereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/splunkenterprisereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/splunkenterprisereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/splunkhecreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/splunkhecreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/sqlqueryreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/sqlqueryreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/sqlserverreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/sqlserverreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/sshcheckreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/sshcheckreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/statsdreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/statsdreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/stefreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/stefreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/syslogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/syslogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/systemdreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/systemdreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/tcpcheckreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/tcpcheckreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/tcplogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/tcplogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/tlscheckreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/tlscheckreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/udplogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/udplogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/vcenterreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/vcenterreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/wavefrontreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/wavefrontreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/webhookeventreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/webhookeventreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/windowseventlogreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/windowseventlogreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/windowsperfcountersreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/windowsperfcountersreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/windowsservicereceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/windowsservicereceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/zipkinreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/zipkinreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'receiver/zookeeperreceiver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C receiver/zookeeperreceiver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/attributesprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/attributesprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/coralogixprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/coralogixprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/cumulativetodeltaprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/cumulativetodeltaprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/datadogsemanticsprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/datadogsemanticsprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/deltatocumulativeprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/deltatocumulativeprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/deltatorateprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/deltatorateprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/dnslookupprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/dnslookupprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/filterprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/filterprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/geoipprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/geoipprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/groupbyattrsprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/groupbyattrsprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/groupbytraceprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/groupbytraceprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/intervalprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/intervalprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/k8sattributesprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/k8sattributesprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/logdedupprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/logdedupprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/logstransformprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/logstransformprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/metricsgenerationprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/metricsgenerationprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/metricstarttimeprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/metricstarttimeprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/metricstransformprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/metricstransformprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/probabilisticsamplerprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/probabilisticsamplerprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/redactionprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/redactionprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/remotetapprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/remotetapprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/resourcedetectionprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/resourcedetectionprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/resourceprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/resourceprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/routingprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/routingprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/schemaprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/schemaprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/spanprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/spanprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/sumologicprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/sumologicprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/tailsamplingprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/tailsamplingprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'processor/transformprocessor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C processor/transformprocessor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/alertmanagerexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/alertmanagerexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/alibabacloudlogserviceexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/alibabacloudlogserviceexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/awscloudwatchlogsexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/awscloudwatchlogsexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/awsemfexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/awsemfexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/awskinesisexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/awskinesisexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/awss3exporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/awss3exporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/awsxrayexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/awsxrayexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/azureblobexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/azureblobexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/azuredataexplorerexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/azuredataexplorerexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/azuremonitorexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/azuremonitorexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/bmchelixexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/bmchelixexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/carbonexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/carbonexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/cassandraexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/cassandraexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/clickhouseexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/clickhouseexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/coralogixexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/coralogixexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/datadogexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/datadogexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/datadogexporter/integrationtest' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/datadogexporter/integrationtest fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/datasetexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/datasetexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/dorisexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/dorisexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/elasticsearchexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/elasticsearchexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/elasticsearchexporter/integrationtest' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/elasticsearchexporter/integrationtest fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/faroexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/faroexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/fileexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/fileexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/googlecloudexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/googlecloudexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/googlecloudpubsubexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/googlecloudpubsubexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/googlemanagedprometheusexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/googlemanagedprometheusexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/honeycombmarkerexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/honeycombmarkerexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/influxdbexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/influxdbexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/kafkaexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/kafkaexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/loadbalancingexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/loadbalancingexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/logicmonitorexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/logicmonitorexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/logzioexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/logzioexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/mezmoexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/mezmoexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/opencensusexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/opencensusexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/opensearchexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/opensearchexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/otelarrowexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/otelarrowexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/prometheusexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/prometheusexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/prometheusremotewriteexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/prometheusremotewriteexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/pulsarexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/pulsarexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/rabbitmqexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/rabbitmqexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/sapmexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/sapmexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/sematextexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/sematextexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/sentryexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/sentryexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/signalfxexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/signalfxexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/splunkhecexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/splunkhecexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/stefexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/stefexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/sumologicexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/sumologicexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/syslogexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/syslogexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/tencentcloudlogserviceexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/tencentcloudlogserviceexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/tinybirdexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/tinybirdexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'exporter/zipkinexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C exporter/zipkinexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/ackextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/ackextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/asapauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/asapauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/awsproxy' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/awsproxy fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/azureauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/azureauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/basicauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/basicauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/bearertokenauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/bearertokenauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/cgroupruntimeextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/cgroupruntimeextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/datadogextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/datadogextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/avrologencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/avrologencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/awscloudwatchmetricstreamsencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/awscloudwatchmetricstreamsencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/awslogsencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/awslogsencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/googlecloudlogentryencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/googlecloudlogentryencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/jaegerencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/jaegerencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/jsonlogencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/jsonlogencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/otlpencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/otlpencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/skywalkingencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/skywalkingencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/textencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/textencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/encoding/zipkinencodingextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/encoding/zipkinencodingextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/googleclientauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/googleclientauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/headerssetterextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/headerssetterextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/healthcheckextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/healthcheckextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/healthcheckv2extension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/healthcheckv2extension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/httpforwarderextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/httpforwarderextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/jaegerremotesampling' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/jaegerremotesampling fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/k8sleaderelector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/k8sleaderelector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/oauth2clientauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/oauth2clientauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/cfgardenobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/cfgardenobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/dockerobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/dockerobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/ecsobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/ecsobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/ecstaskobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/ecstaskobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/hostobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/hostobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/k8sobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/k8sobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/observer/kafkatopicsobserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/observer/kafkatopicsobserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/oidcauthextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/oidcauthextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/opampcustommessages' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/opampcustommessages fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/opampextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/opampextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/pprofextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/pprofextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/remotetapextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/remotetapextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/sigv4authextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/sigv4authextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/solarwindsapmsettingsextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/solarwindsapmsettingsextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/storage' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/storage fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/storage/dbstorage' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/storage/dbstorage fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/storage/filestorage' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/storage/filestorage fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/storage/redisstorageextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/storage/redisstorageextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'extension/sumologicextension' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C extension/sumologicextension fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/countconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/countconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/datadogconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/datadogconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/exceptionsconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/exceptionsconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/failoverconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/failoverconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/grafanacloudconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/grafanacloudconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/otlpjsonconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/otlpjsonconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/roundrobinconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/roundrobinconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/routingconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/routingconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/servicegraphconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/servicegraphconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/signaltometricsconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/signaltometricsconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/spanmetricsconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/spanmetricsconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'connector/sumconnector' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C connector/sumconnector fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/awsutil' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/awsutil fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/containerinsight' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/containerinsight fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/cwlogs' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/cwlogs fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/ecsutil' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/ecsutil fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/k8s' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/k8s fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/metrics' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/metrics fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/proxy' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/proxy fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/xray' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/xray fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/xray/testdata/sampleapp' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/xray/testdata/sampleapp fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/aws/xray/testdata/sampleserver' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/aws/xray/testdata/sampleserver fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/collectd' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/collectd fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/common' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/common fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/coreinternal' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/coreinternal fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/datadog' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/datadog fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/docker' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/docker fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/exp/metrics' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/exp/metrics fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/filter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/filter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/gopsutilenv' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/gopsutilenv fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/grpcutil' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/grpcutil fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/k8sconfig' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/k8sconfig fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/kafka' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/kafka fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/kubelet' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/kubelet fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/metadataproviders' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/metadataproviders fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/otelarrow' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/otelarrow fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/pdatautil' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/pdatautil fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/rabbitmq' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/rabbitmq fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/sharedcomponent' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/sharedcomponent fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/splunk' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/splunk fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/sqlquery' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/sqlquery fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'internal/tools' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C internal/tools fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/batchperresourceattr' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/batchperresourceattr fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/batchpersignal' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/batchpersignal fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/core/xidutils' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/core/xidutils fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/datadog' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/datadog fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/experimentalmetricmetadata' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/experimentalmetricmetadata fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/golden' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/golden fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/kafka/configkafka' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/kafka/configkafka fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/kafka/topic' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/kafka/topic fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/ottl' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/ottl fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/pdatatest' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/pdatatest fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/pdatautil' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/pdatautil fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/resourcetotelemetry' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/resourcetotelemetry fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/sampling' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/sampling fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/stanza' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/stanza fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/status' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/status fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/azure' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/azure fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/azurelogs' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/azurelogs fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/faro' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/faro fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/jaeger' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/jaeger fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/loki' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/loki fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/opencensus' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/opencensus fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/prometheus' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/prometheus fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/prometheusremotewrite' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/prometheusremotewrite fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/signalfx' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/signalfx fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/skywalking' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/skywalking fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/translator/zipkin' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/translator/zipkin fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/winperfcounters' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/winperfcounters fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'pkg/xk8stest' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C pkg/xk8stest fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'cmd/codecovgen' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C cmd/codecovgen fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'cmd/golden' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C cmd/golden fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'cmd/opampsupervisor' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C cmd/opampsupervisor fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'cmd/telemetrygen' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C cmd/telemetrygen fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'cmd/telemetrygen/internal/e2etest' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C cmd/telemetrygen/internal/e2etest fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'confmap/provider/aesprovider' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C confmap/provider/aesprovider fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'confmap/provider/googlesecretmanagerprovider' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C confmap/provider/googlesecretmanagerprovider fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'confmap/provider/s3provider' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C confmap/provider/s3provider fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'confmap/provider/secretsmanagerprovider' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C confmap/provider/secretsmanagerprovider fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'scraper/zookeeperscraper' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C scraper/zookeeperscraper fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'testbed' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C testbed fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+Running target 'fmt' in module 'testbed/mockdatasenders/mockdatadogagentexporter' as part of group 'all'
+/Library/Developer/CommandLineTools/usr/bin/make --no-print-directory -C testbed/mockdatasenders/mockdatadogagentexporter fmt
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/gofumpt -l -w -extra .
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/goimports -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./

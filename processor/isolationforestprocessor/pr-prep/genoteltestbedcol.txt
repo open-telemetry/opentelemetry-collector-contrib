@@ -1,0 +1,3 @@
+./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
+Wrote replace statements to cmd/oteltestbedcol/builder-config-replaced.yaml
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/builder --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml

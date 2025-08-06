@@ -286,6 +286,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden => ../../cmd/golden
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor => ../../cmd/opampsupervisor
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol => ../../cmd/otelcontribcol
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol => ../../cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen => ../../cmd/telemetrygen
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest => ../../cmd/telemetrygen/internal/e2etest
   - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider => ../../confmap/provider/aesprovider

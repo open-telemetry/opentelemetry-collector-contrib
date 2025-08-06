@@ -1,0 +1,1 @@
+/Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib/.tools/checkfile --project-path /Users/aarvee/Desktop/PlatformBuilds/repos/github/public/opentelemetry-collector-contrib --component-rel-path cmd/otelcontribcol/components.go --module-name github.com/open-telemetry/opentelemetry-collector-contrib --file-name "metadata.yaml"
