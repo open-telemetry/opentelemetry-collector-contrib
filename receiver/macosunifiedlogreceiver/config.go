@@ -30,14 +30,21 @@ func (cfg *Config) getFileConsumerConfig() fileconsumer.Config {
 	fcConfig := cfg.Config
 	// Set encoding to "nop" since we'll handle decoding via the extension
 	fcConfig.Encoding = "nop"
+
+	// Enable file path attributes so we can access the file paths in the consume function
+	fcConfig.IncludeFilePath = true
+	fcConfig.IncludeFileName = true
+
 	return fcConfig
 }
 
 // Validate checks the receiver configuration is valid
 func (cfg Config) Validate() error {
-	if cfg.Encoding == "" {
-		return errors.New("encoding is required for macOS Unified Logging receiver")
+	if cfg.Encoding != "macosunifiedlogencoding" {
+		return errors.New("encoding must be macosunifiedlogencoding for macOS Unified Logging receiver")
 	}
+
+	// TODO: make sure that only macOS encoding extension is accepted
 
 	return nil
 }

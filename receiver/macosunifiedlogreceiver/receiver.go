@@ -7,9 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -35,6 +38,10 @@ type macosUnifiedLogReceiver struct {
 
 	// Context for cancellation
 	cancel context.CancelFunc
+
+	// Map to track processed files
+	processedFiles map[string]struct{}
+	mu             sync.Mutex
 }
 
 // newMacOSUnifiedLogReceiver creates a new macOS Unified Logging receiver
@@ -52,10 +59,11 @@ func newMacOSUnifiedLogReceiver(
 	}
 
 	return &macosUnifiedLogReceiver{
-		config:   config,
-		set:      set,
-		consumer: consumerretry.NewLogs(config.RetryOnFailure, set.Logger, nextConsumer),
-		obsrecv:  obsrecv,
+		config:         config,
+		set:            set,
+		consumer:       consumerretry.NewLogs(config.RetryOnFailure, set.Logger, nextConsumer),
+		obsrecv:        obsrecv,
+		processedFiles: make(map[string]struct{}),
 	}, nil
 }
 
@@ -143,47 +151,72 @@ func (r *macosUnifiedLogReceiver) createFileConsumer(ctx context.Context) (*file
 func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64, offsets []int64) error {
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 
-	// For traceV3 files, we expect each token to be the entire file content
-	// since traceV3 files are binary and should be processed as a whole
-	for _, token := range tokens {
-		// Use the encoding extension to unmarshal the traceV3 file content
-		logs, err := r.encodingExt.UnmarshalLogs(token)
-		if err != nil {
-			r.set.Logger.Error("Failed to unmarshal traceV3 token",
-				zap.String("file", fmt.Sprintf("%v", attributes["log.file.path"])),
-				zap.Error(err))
-			r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", 0, err)
-			continue
-		}
+	// Debug: Log all available attributes
+	r.set.Logger.Debug("Received attributes", zap.Any("attributes", attributes))
 
-		// Add file metadata to logs
-		r.addFileMetadata(logs, attributes)
-
-		// Send logs to the next consumer
-		logRecordCount := logs.LogRecordCount()
-		err = r.consumer.ConsumeLogs(ctx, logs)
-		if err != nil {
-			r.set.Logger.Error("Failed to consume logs", zap.Error(err))
-		}
-
-		r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", logRecordCount, err)
+	// Get the file path from attributes
+	filePath := "unknown"
+	if fp, ok := attributes["log.file.path"]; ok {
+		filePath = fmt.Sprintf("%v", fp)
 	}
+
+	// Check if we've already processed this file
+	r.mu.Lock()
+	if _, exists := r.processedFiles[filePath]; exists {
+		r.mu.Unlock()
+		// File already processed, skip
+		r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", 0, nil)
+		return nil
+	}
+	// Mark file as processed
+	r.processedFiles[filePath] = struct{}{}
+	r.mu.Unlock()
+
+	// Calculate total size of all tokens for this file
+	totalSize := 0
+	for _, token := range tokens {
+		totalSize += len(token)
+	}
+
+	// TEMPORARY: Skip encoding and create a simple log entry for each file read
+	logs := plog.NewLogs()
+
+	// Create a resource logs entry
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resource := resourceLogs.Resource()
+
+	// Add file metadata as resource attributes
+	resource.Attributes().PutStr("log.file.path", filePath)
+	resource.Attributes().PutStr("log.file.format", "macos_unified_log_tracev3")
+
+	// Create a scope logs entry
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+
+	// Create a single log record for this file
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	r.setLogRecordAttributes(&logRecord, totalSize, len(tokens))
+
+	// Set the log message with file information
+	logRecord.Body().SetStr(fmt.Sprintf("Read traceV3 file: %s (size: %d bytes, tokens: %d)", filePath, totalSize, len(tokens)))
+
+	// Send logs to the consumer
+	logRecordCount := logs.LogRecordCount()
+	err := r.consumer.ConsumeLogs(ctx, logs)
+	if err != nil {
+		r.set.Logger.Error("Failed to consume logs", zap.Error(err))
+	}
+
+	r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", logRecordCount, err)
 
 	return nil
 }
 
-// addFileMetadata adds file-related metadata to the logs
-func (r *macosUnifiedLogReceiver) addFileMetadata(logs plog.Logs, attributes map[string]any) {
-	// Add file metadata as resource attributes
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		resourceLogs := logs.ResourceLogs().At(i)
-		resourceAttrs := resourceLogs.Resource().Attributes()
+func (r *macosUnifiedLogReceiver) setLogRecordAttributes(logRecord *plog.LogRecord, totalSize int, lenTokens int) {
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
+	logRecord.SetSeverityText("INFO")
 
-		// Add file path if available
-		if filePath, ok := attributes["log.file.path"]; ok {
-			resourceAttrs.PutStr("log.file.path", fmt.Sprintf("%v", filePath))
-		}
-
-		resourceAttrs.PutStr("log.file.format", "macos_unified_log_tracev3")
-	}
+	// Add file information as attributes
+	logRecord.Attributes().PutInt("file.total.size", int64(totalSize))
+	logRecord.Attributes().PutInt("file.token.count", int64(lenTokens))
 }
