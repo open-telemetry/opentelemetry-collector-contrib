@@ -736,6 +736,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings(factory.Type())
+	set.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
