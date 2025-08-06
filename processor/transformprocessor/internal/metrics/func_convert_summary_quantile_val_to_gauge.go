@@ -6,7 +6,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"errors"
-	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -61,7 +60,7 @@ func convertSummaryQuantileValToGauge(attrKey, suffix ottl.Optional[string]) (ot
 				q := dp.QuantileValues().At(j)
 				gaugeDp := gauge.DataPoints().AppendEmpty()
 				dp.Attributes().CopyTo(gaugeDp.Attributes())
-				gaugeDp.Attributes().PutStr(attributeKey, quantileToStringValue(q.Quantile()))
+				gaugeDp.Attributes().PutDouble(attributeKey, q.Quantile())
 				gaugeDp.SetDoubleValue(q.Value())
 				gaugeDp.SetStartTimestamp(dp.StartTimestamp())
 				gaugeDp.SetTimestamp(dp.Timestamp())
@@ -69,12 +68,4 @@ func convertSummaryQuantileValToGauge(attrKey, suffix ottl.Optional[string]) (ot
 		}
 		return nil, nil
 	}, nil
-}
-
-func quantileToStringValue(q float64) string {
-	result := strconv.FormatFloat(q, 'f', -1, 64)
-	if len(result) < 4 && result != "0" && result != "1" {
-		result += "0"
-	}
-	return result
 }

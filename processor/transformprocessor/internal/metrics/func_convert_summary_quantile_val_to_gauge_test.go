@@ -34,17 +34,17 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 				gaugeDp := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp.Attributes())
-				gaugeDp.Attributes().PutStr("quantile", "0.99")
+				gaugeDp.Attributes().PutDouble("quantile", 0.99)
 				gaugeDp.SetDoubleValue(1)
 
 				gaugeDp1 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp1.Attributes())
-				gaugeDp1.Attributes().PutStr("quantile", "0.95")
+				gaugeDp1.Attributes().PutDouble("quantile", 0.95)
 				gaugeDp1.SetDoubleValue(2)
 
 				gaugeDp2 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp2.Attributes())
-				gaugeDp2.Attributes().PutStr("quantile", "0.50")
+				gaugeDp2.Attributes().PutDouble("quantile", 0.50)
 				gaugeDp2.SetDoubleValue(3)
 			},
 		},
@@ -66,17 +66,17 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 				gaugeDp := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp.Attributes())
-				gaugeDp.Attributes().PutStr("custom_quantile", "0.99")
+				gaugeDp.Attributes().PutDouble("custom_quantile", 0.99)
 				gaugeDp.SetDoubleValue(1)
 
 				gaugeDp1 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp1.Attributes())
-				gaugeDp1.Attributes().PutStr("custom_quantile", "0.95")
+				gaugeDp1.Attributes().PutDouble("custom_quantile", 0.95)
 				gaugeDp1.SetDoubleValue(2)
 
 				gaugeDp2 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp2.Attributes())
-				gaugeDp2.Attributes().PutStr("custom_quantile", "0.50")
+				gaugeDp2.Attributes().PutDouble("custom_quantile", 0.50)
 				gaugeDp2.SetDoubleValue(3)
 			},
 		},
@@ -99,17 +99,17 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 				gaugeDp := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp.Attributes())
-				gaugeDp.Attributes().PutStr("custom_quantile", "0.99")
+				gaugeDp.Attributes().PutDouble("custom_quantile", 0.99)
 				gaugeDp.SetDoubleValue(1)
 
 				gaugeDp1 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp1.Attributes())
-				gaugeDp1.Attributes().PutStr("custom_quantile", "0.95")
+				gaugeDp1.Attributes().PutDouble("custom_quantile", 0.95)
 				gaugeDp1.SetDoubleValue(2)
 
 				gaugeDp2 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp2.Attributes())
-				gaugeDp2.Attributes().PutStr("custom_quantile", "0.50")
+				gaugeDp2.Attributes().PutDouble("custom_quantile", 0.50)
 				gaugeDp2.SetDoubleValue(3)
 			},
 		},
@@ -147,17 +147,4 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
-}
-
-func TestQuantileToStringSuffix(t *testing.T) {
-	assert.Equal(t, "0", quantileToStringValue(0))
-	assert.Equal(t, "0", quantileToStringValue(0.0))
-	assert.Equal(t, "1", quantileToStringValue(1))
-	assert.Equal(t, "1", quantileToStringValue(1.0))
-	assert.Equal(t, "0.55", quantileToStringValue(0.55))
-	assert.Equal(t, "0.99999", quantileToStringValue(0.99999))
-	assert.Equal(t, "0.01", quantileToStringValue(0.01))
-	assert.Equal(t, "0.00000001", quantileToStringValue(0.00000001))
-	assert.Equal(t, "0.50", quantileToStringValue(0.5))
-	assert.Equal(t, "0.50", quantileToStringValue(0.50))
 }

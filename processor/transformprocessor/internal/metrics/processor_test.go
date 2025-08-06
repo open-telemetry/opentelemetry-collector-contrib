@@ -268,13 +268,13 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				gaugeDp1 := gauge.DataPoints().AppendEmpty()
 
 				summaryDp.Attributes().CopyTo(gaugeDp.Attributes())
-				gaugeDp.Attributes().PutStr("custom_quantile", "0.99")
+				gaugeDp.Attributes().PutDouble("custom_quantile", 0.99)
 				gaugeDp.SetDoubleValue(123)
 				gaugeDp.SetStartTimestamp(StartTimestamp)
 				gaugeDp.SetTimestamp(TestTimeStamp)
 
 				summaryDp.Attributes().CopyTo(gaugeDp1.Attributes())
-				gaugeDp1.Attributes().PutStr("custom_quantile", "0.95")
+				gaugeDp1.Attributes().PutDouble("custom_quantile", 0.95)
 				gaugeDp1.SetDoubleValue(321)
 				gaugeDp1.SetStartTimestamp(StartTimestamp)
 				gaugeDp1.SetTimestamp(TestTimeStamp)
