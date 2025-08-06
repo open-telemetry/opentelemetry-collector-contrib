@@ -425,7 +425,6 @@ func TestSendTraces(t *testing.T) {
 }
 
 func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
-	t.Skip("Temporarily disabled due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41241")
 	tests := []struct {
 		name               string
 		useTLS             bool
@@ -719,7 +718,6 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 }
 
 func TestSendTracesOnResourceExhaustion(t *testing.T) {
-	t.Skip("Temporarily disabled due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41241")
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err)
 	rcv, _ := otelArrowTracesReceiverOnGRPCServer(ln, false)
