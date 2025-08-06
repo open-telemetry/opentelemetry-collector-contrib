@@ -1,0 +1,13 @@
+type: macos_unified_logging_encoding
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: []
+  codeowners:
+    active: [open-telemetry/collector-contrib-maintainers]
+
+tests:
+  config: 
