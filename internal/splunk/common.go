@@ -4,10 +4,11 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
-	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 // Constants for Splunk components.
