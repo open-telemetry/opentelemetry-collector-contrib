@@ -4,8 +4,9 @@
 package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 
 import (
-	"go.opentelemetry.io/collector/client"
 	"strings"
+
+	"go.opentelemetry.io/collector/client"
 )
 
 const claimsPrefix = "claims."
