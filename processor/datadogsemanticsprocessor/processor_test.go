@@ -405,6 +405,192 @@ func TestBasicTranslation(t *testing.T) {
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "specified-error-stack")
 			},
 		},
+		{
+			name:                          "VCS attributes mapping - span level",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name":          "test-operation",
+								"vcs.ref.head.revision":   "9d59409acf479dfa0df1aa568182e43e43df8bbe28d60fcf2bc52e30068802cc",
+								"vcs.repository.url.full": "https://github.com/opentelemetry/opentelemetry-collector-contrib",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				span := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "git.commit.sha", "9d59409acf479dfa0df1aa568182e43e43df8bbe28d60fcf2bc52e30068802cc")
+				assertKeyInAttributesMatchesValue(t, sattr, "git.repository_url", "github.com/opentelemetry/opentelemetry-collector-contrib")
+				// Verify original VCS attributes are still present
+				assertKeyInAttributesMatchesValue(t, sattr, "vcs.ref.head.revision", "9d59409acf479dfa0df1aa568182e43e43df8bbe28d60fcf2bc52e30068802cc")
+				assertKeyInAttributesMatchesValue(t, sattr, "vcs.repository.url.full", "https://github.com/opentelemetry/opentelemetry-collector-contrib")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping - resource level",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "abc123def456",
+						"vcs.repository.url.full":     "https://gitlab.com/my-org/my-project",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name": "test-operation",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "abc123def456")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "gitlab.com/my-org/my-project")
+				// Verify original VCS attributes are still present
+				assertKeyInAttributesMatchesValue(t, rattr, "vcs.ref.head.revision", "abc123def456")
+				assertKeyInAttributesMatchesValue(t, rattr, "vcs.repository.url.full", "https://gitlab.com/my-org/my-project")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping - both levels",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "resource-level-commit",
+						"vcs.repository.url.full":     "https://github.com/resource-repo",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name":          "test-operation",
+								"vcs.ref.head.revision":   "span-level-commit",
+								"vcs.repository.url.full": "https://github.com/span-repo",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				// Resource level mappings
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "resource-level-commit")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "github.com/resource-repo")
+
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				// Span level mappings
+				assertKeyInAttributesMatchesValue(t, sattr, "git.commit.sha", "span-level-commit")
+				assertKeyInAttributesMatchesValue(t, sattr, "git.repository_url", "github.com/span-repo")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping with override",
+			overrideIncomingDatadogFields: true,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "new-commit",
+						"vcs.repository.url.full":     "https://github.com/new-repo",
+						"git.commit.sha":              "old-commit",
+						"git.repository_url":          "github.com/old-repo",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name": "test-operation",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				// Should override existing Datadog attributes with new VCS values
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "new-commit")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "github.com/new-repo")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping without override",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "new-commit",
+						"vcs.repository.url.full":     "https://github.com/new-repo",
+						"git.commit.sha":              "existing-commit",
+						"git.repository_url":          "github.com/existing-repo",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name": "test-operation",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				// Should preserve existing Datadog attributes when override is false
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "existing-commit")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "github.com/existing-repo")
+			},
+		},
 	}
 
 	for _, tt := range tests {

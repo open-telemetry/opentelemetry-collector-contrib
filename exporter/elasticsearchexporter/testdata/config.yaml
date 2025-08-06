@@ -120,3 +120,9 @@ elasticsearch/metadata_keys:
   metadata_keys:
     - x-test-1
     - x-test-2
+elasticsearch/queuebatch_enabled:
+  endpoint: https://elastic.example.com:9200
+  sending_queue:
+    enabled: true
+    num_consumers: 100
+    batch: {}

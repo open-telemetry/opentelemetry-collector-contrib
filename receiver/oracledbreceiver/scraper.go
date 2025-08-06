@@ -650,6 +650,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			s.hostName,
 			hit.queryText,
 			planString, hit.sqlID, hit.childNumber,
+			hit.childAddress,
 			asFloatInSeconds(hit.metrics[applicationWaitTimeMetric]),
 			hit.metrics[bufferGetsMetric],
 			asFloatInSeconds(hit.metrics[clusterWaitTimeMetric]),
