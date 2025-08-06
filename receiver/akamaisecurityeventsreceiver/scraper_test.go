@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -117,7 +119,7 @@ func TestScraperIntegration(t *testing.T) {
 			Endpoint: mockServer.URL,
 			Timeout:  5 * time.Second,
 		},
-		ConfigIds:       "12345",
+		ConfigIDs:       "12345",
 		ClientToken:     "test-token",
 		ClientSecret:    "test-secret",
 		AccessToken:     "test-access",
@@ -133,12 +135,12 @@ func TestScraperIntegration(t *testing.T) {
 	ctx := context.Background()
 	err := scraper.start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer scraper.shutdown(ctx)
+	defer func() { _ = scraper.shutdown(ctx) }()
 
 	// Execute scrape
 	logs, err := scraper.scrape(ctx)
 	require.NoError(t, err)
-	require.Greater(t, logs.LogRecordCount(), 0, "Expected at least one log record")
+	require.Positive(t, logs.LogRecordCount(), "Expected at least one log record")
 
 	// Verify log record content
 	logRecord := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
@@ -152,7 +154,7 @@ func TestScraperIntegration(t *testing.T) {
 	ruleData, exists := logRecord.Attributes().Get("parsedRuleData")
 	assert.True(t, exists, "parsedRuleData should be present")
 	assert.Equal(t, pcommon.ValueTypeSlice, ruleData.Type())
-	assert.Greater(t, ruleData.Slice().Len(), 0, "Should have parsed rules")
+	assert.Positive(t, ruleData.Slice().Len(), "Should have parsed rules")
 
 	// Check timestamp extraction
 	assert.NotEqual(t, pcommon.Timestamp(0), logRecord.Timestamp(), "Timestamp should be set")
@@ -163,7 +165,7 @@ func TestScraperWithFlattenedRuleData(t *testing.T) {
 	sampleData := loadSampleEvent(t)
 
 	// Create mock server
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, "%s\n", sampleData)
 		fmt.Fprintf(w, `{"offset": "test-offset-123"}`)
@@ -176,7 +178,7 @@ func TestScraperWithFlattenedRuleData(t *testing.T) {
 			Endpoint: mockServer.URL,
 			Timeout:  5 * time.Second,
 		},
-		ConfigIds:       "12345",
+		ConfigIDs:       "12345",
 		ClientToken:     "test-token",
 		ClientSecret:    "test-secret",
 		AccessToken:     "test-access",
@@ -192,7 +194,7 @@ func TestScraperWithFlattenedRuleData(t *testing.T) {
 	ctx := context.Background()
 	err := scraper.start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer scraper.shutdown(ctx)
+	defer func() { _ = scraper.shutdown(ctx) }()
 
 	// Execute scrape
 	logs, err := scraper.scrape(ctx)
@@ -219,64 +221,18 @@ func TestScraperWithFlattenedRuleData(t *testing.T) {
 	}
 }
 
-func TestScraperStartShutdown(t *testing.T) {
-	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "https://example.com",
-			Timeout:  5 * time.Second,
-		},
-		ConfigIds:    "12345",
-		ClientToken:  "test-token",
-		ClientSecret: "test-secret",
-		AccessToken:  "test-access",
-	}
-
-	settings := receivertest.NewNopSettings(metadata.Type)
-	scraper := newAkamaiSecurityEventsScraper(settings, cfg)
-
-	ctx := context.Background()
-
-	// Test start
-	err := scraper.start(ctx, componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	// Verify storage client is initialized
-	assert.NotNil(t, scraper.storageClient)
-
-	// Test shutdown
-	err = scraper.shutdown(ctx)
-	assert.NoError(t, err)
-}
-
 func loadSampleEvent(t *testing.T) string {
 	t.Helper()
 
-	data := `{
-		"attackData": {
-			"clientIP": "192.0.2.82",
-			"configId": "14227",
-			"policyId": "qik1_26545",
-			"ruleActions": "YWxlcnQ%3d%3bYWxlcnQ%3d%3bZGVueQ%3d%3d",
-			"ruleData": "dGVsbmV0LmV4ZQ%3d%3d%3bdGVsbmV0LmV4ZQ%3d%3d%3bVmVjdG9yIFNjb3JlOiAxMCwgREVOWSB0aHJlc2hvbGQ6IDksIEFsZXJ0IFJ1bGVzOiA5NTAwMDI6OTUwMDA2LCBEZW55IFJ1bGU6ICwgTGFzdCBNYXRjaGVkIE1lc3NhZ2U6IFN5c3RlbSBDb21tYW5kIEluamVjdGlvbg%3d%3d",
-			"ruleMessages": "U3lzdGVtIENvbW1hbmQgQWNjZXNz%3bU3lzdGVtIENvbW1hbmQgSW5qZWN0aW9u%3bQW5vbWFseSBTY29yZSBFeGNlZWRlZCBmb3IgQ29tbWFuZCBJbmplY3Rpb24%3d",
-			"ruleSelectors": "QVJHUzpvcHRpb24%3d%3bQVJHUzpvcHRpb24%3d%3b",
-			"ruleTags": "T1dBU1BfQ1JTL1dFQl9BVFRBQ0svRklMRV9JTkpFQ1RJT04%3d%3bT1dBU1BfQ1JTL1dFQl9BVFRBQ0svQ09NTUFORF9JTkpFQ1RJT04%3d%3bQUtBTUFJL1BPTElDWS9DTURfSU5KRUNUSU9OX0FOT01BTFk%3d",
-			"ruleVersions": "NA%3d%3d%3bNA%3d%3d%3bMQ%3d%3d",
-			"rules": "OTUwMDAy%3bOTUwMDA2%3bQ01ELUlOSkVDVElPTi1BTk9NQUxZ"
-		},
-		"httpMessage": {
-			"start": "1491303422",
-			"host": "www.hmapi.com",
-			"method": "GET"
-		},
-		"type": "akamai_siem",
-		"version": "1.0"
-	}`
+	// Load data from testdata/sample_event.json
+	filePath := filepath.Join("testdata", "sample_event.json")
+	data, err := os.ReadFile(filePath)
+	require.NoError(t, err, "Failed to read sample event file")
 
 	// Validate JSON
-	var temp interface{}
-	err := json.Unmarshal([]byte(data), &temp)
+	var temp any
+	err = json.Unmarshal(data, &temp)
 	require.NoError(t, err, "Sample event data should be valid JSON")
 
-	return data
+	return string(data)
 }

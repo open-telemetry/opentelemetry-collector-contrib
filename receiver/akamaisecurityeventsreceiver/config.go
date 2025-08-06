@@ -17,8 +17,8 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	confighttp.ClientConfig        `mapstructure:",squash"`
 
-	// ConfigIds is a list of unique Akamai security configuration identifiers. To report on more than one configuration, separate integer identifiers with semicolons.
-	ConfigIds string `mapstructure:"config_ids"`
+	// ConfigIDs is a list of unique Akamai security configuration identifiers. To report on more than one configuration, separate integer identifiers with semicolons.
+	ConfigIDs string `mapstructure:"config_ids"`
 
 	// ClientToken for Akamai EdgeGrid authentication
 	ClientToken string `mapstructure:"client_token"`
@@ -61,7 +61,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("access_token is required")
 	}
 
-	if cfg.ConfigIds == "" {
+	if cfg.ConfigIDs == "" {
 		return errors.New("config_id is required")
 	}
 

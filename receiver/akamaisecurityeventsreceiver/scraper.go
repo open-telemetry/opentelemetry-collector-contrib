@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package akamaisecurityeventsreceiver
 
 import (
@@ -72,9 +75,9 @@ func (r *akamaiSecurityEventsReceiver) start(ctx context.Context, host component
 			return fmt.Errorf("non-storage extension '%s' found", r.cfg.StorageID)
 		}
 
-		storageClient, err := storageExtension.GetClient(ctx, component.KindReceiver, r.settings.ID, "")
-		if err != nil {
-			return fmt.Errorf("failed to get storage client: %w", err)
+		storageClient, clientErr := storageExtension.GetClient(ctx, component.KindReceiver, r.settings.ID, "")
+		if clientErr != nil {
+			return fmt.Errorf("failed to get storage client: %w", clientErr)
 		}
 
 		r.storageClient = storageClient
@@ -104,8 +107,8 @@ func (r *akamaiSecurityEventsReceiver) shutdown(ctx context.Context) error {
 }
 
 func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, error) {
-	url := fmt.Sprintf("%s/siem/v1/configs/%s?offset=%s&limit=%d", r.cfg.Endpoint, r.cfg.ConfigIds, r.offset, r.cfg.Limit)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	url := fmt.Sprintf("%s/siem/v1/configs/%s?offset=%s&limit=%d", r.cfg.Endpoint, r.cfg.ConfigIDs, r.offset, r.cfg.Limit)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -125,9 +128,9 @@ func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, e
 	decoder := json.NewDecoder(resp.Body)
 	for decoder.More() {
 		var evt map[string]any
-		err := decoder.Decode(&evt)
-		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal akamai-security event: %w", err)
+		decodeErr := decoder.Decode(&evt)
+		if decodeErr != nil {
+			return plog.Logs{}, fmt.Errorf("failed to unmarshal akamai-security event: %w", decodeErr)
 		}
 
 		if _, ok := evt["offset"]; ok {
@@ -145,7 +148,7 @@ func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, e
 		if httpMessage, ok := log.Attributes().Get("httpMessage"); ok {
 			if start, ok := httpMessage.Map().Get("start"); ok {
 				if startStr := start.Str(); startStr != "" {
-					if startInt, err := strconv.ParseInt(startStr, 10, 64); err == nil {
+					if startInt, parseErr := strconv.ParseInt(startStr, 10, 64); parseErr == nil {
 						ts = pcommon.NewTimestampFromTime(time.Unix(startInt, 0))
 					}
 				}
@@ -241,9 +244,9 @@ func parseRuleData(log plog.LogRecord) pcommon.Slice {
 		return pcommon.NewSlice()
 	}
 
-	rules := make([]map[string]interface{}, ruleCount)
+	rules := make([]map[string]any, ruleCount)
 	for i := 0; i < ruleCount; i++ {
-		rules[i] = make(map[string]interface{})
+		rules[i] = make(map[string]any)
 	}
 
 	for fieldName, values := range ruleFields {
