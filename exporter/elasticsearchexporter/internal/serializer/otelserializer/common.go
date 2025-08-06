@@ -165,6 +165,11 @@ func writeTimestampField(v *json.Visitor, key string, timestamp pcommon.Timestam
 	_ = v.OnString(strconv.FormatUint(msec, 10) + "." + strconv.FormatUint(nsec, 10))
 }
 
+func writeTimestampEpochMillisField(v *json.Visitor, key string, timestamp pcommon.Timestamp) {
+	_ = v.OnKey(key)
+	_ = v.OnUint64(uint64(timestamp) / 1e6)
+}
+
 func writeUIntField(v *json.Visitor, key string, i uint64) {
 	_ = v.OnKey(key)
 	_ = v.OnUint64(i)
