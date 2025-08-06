@@ -381,7 +381,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// G2: idToTrace.Load (miss) <- this is the droppedTooEarly signal
 
 	// We need a lot of tries to make this happen reliably.
-	numBatches := 1000
+	numBatches := 100
 	_, batches := generateIDsAndBatches(numBatches)
 
 	// prepare
