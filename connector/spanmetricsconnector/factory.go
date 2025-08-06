@@ -14,14 +14,18 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const (
 	DefaultNamespace               = "traces.span.metrics"
 	legacyMetricNamesFeatureGateID = "connector.spanmetrics.legacyMetricNames"
 )
+
+var instances = sharedcomponent.NewSharedComponents()
 
 var legacyMetricNamesFeatureGate *featuregate.Gate
 
@@ -41,6 +45,7 @@ func NewFactory() connector.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		connector.WithTracesToTraces(createTracesToTracesConnector, metadata.TracesToTracesStability),
 	)
 }
 
@@ -56,10 +61,39 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToMetricsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	c, err := newConnector(params.Logger, cfg, clockwork.FromContext(ctx))
+	c, err := getOrCreateConnector(ctx, cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c.metricsConsumer = nextConsumer
 	return c, nil
+}
+
+func createTracesToTracesConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
+	c, err := getOrCreateConnector(ctx, cfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+	c.traceConsumer = nextConsumer
+	return c, nil
+}
+
+// By using a shared component, we ensure that we can forward the traces with exemplars marked as exemplars
+func getOrCreateConnector(ctx context.Context, cfg component.Config, logger *zap.Logger) (*connectorImp, error) {
+	var err error
+	inst := instances.GetOrAdd(cfg, func() component.Component {
+		var c *connectorImp
+		c, err = newConnector(logger, cfg, clockwork.FromContext(ctx))
+		if err != nil {
+			logger.Error("Failed to create spanmetrics connector", zap.Error(err))
+			return nil
+		}
+		return c
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return inst.Unwrap().(*connectorImp), nil
 }
