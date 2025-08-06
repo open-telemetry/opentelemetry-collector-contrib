@@ -6,12 +6,14 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -337,12 +339,16 @@ type SASLConfig struct {
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+	// OIDC_FILE holds configuration for OIDC with file-based secret
+	OIDC_FILE OIDCFileConfig `mapstructure:"oidc_file"`
 }
 
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
 		// TODO validate c.AWSMSK
+	case "OIDC_FILE":
+		// TODO valid c.OIDC_FILE
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -368,6 +374,17 @@ func (c SASLConfig) Validate() error {
 type AWSMSKConfig struct {
 	// Region is the AWS region the MSK cluster is based in
 	Region string `mapstructure:"region"`
+}
+
+// OIDCFileConfig defines the additional configuration fields
+// for the OIDC_FILE mechanism
+type OIDCFileConfig struct {
+	ClientSecretFilePath string           `mapstructure:"client_secret_file_path"`
+	TokenURL             string           `mapstructure:"token_url"`
+	Scopes               []string         `mapstructure:"scopes"`
+	RefreshAheadSecs     int              `mapstructure:"refresh_ahead_secs"`
+	EndPointParams       url.Values       `mapstructure:"endpoint_params"`
+	AuthStyle            oauth2.AuthStyle `mapstructure:"auth_style"`
 }
 
 // KerberosConfig defines kerberos configuration.
