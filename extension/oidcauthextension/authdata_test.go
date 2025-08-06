@@ -29,6 +29,11 @@ func TestAccessingJWTClaims(t *testing.T) {
 		t.Errorf("Expected tenant to be nil, got '%v'", data.GetAttribute("tenant"))
 	}
 
+	// Access claim with proper prefix but non-existent claim should return nil
+	if data.GetAttribute("claims.nonexistent") != nil {
+		t.Errorf("Expected claims.nonexistent to be nil, got '%v'", data.GetAttribute("claims.nonexistent"))
+	}
+
 	attributes := data.GetAttributeNames()
 	attributesExpected := []string{"subject", "membership", "raw", "claims.tenant"}
 
