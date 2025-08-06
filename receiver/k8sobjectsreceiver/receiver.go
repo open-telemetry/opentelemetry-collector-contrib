@@ -245,6 +245,10 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
+	if kr.config.IncludeInitialState {
+		kr.sendInitialState(ctx, config, resource)
+	}
+
 	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = config.FieldSelector
 		options.LabelSelector = config.LabelSelector
@@ -272,6 +276,57 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 		// need to restart with a fresh resource version
 		cfgCopy.ResourceVersion = ""
 	}, 0)
+}
+
+// sendInitialState sends the current state of objects as synthetic Added events
+func (kr *k8sobjectsreceiver) sendInitialState(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
+	kr.setting.Logger.Info("sending initial state",
+		zap.String("resource", config.gvr.String()),
+		zap.Strings("namespaces", config.Namespaces))
+
+	listOption := metav1.ListOptions{
+		FieldSelector: config.FieldSelector,
+		LabelSelector: config.LabelSelector,
+	}
+
+	objects, err := resource.List(ctx, listOption)
+	if err != nil {
+		kr.setting.Logger.Error("error in listing objects for initial state",
+			zap.String("resource", config.gvr.String()),
+			zap.Error(err))
+		return
+	}
+
+	if len(objects.Items) == 0 {
+		kr.setting.Logger.Debug("no objects found for initial state",
+			zap.String("resource", config.gvr.String()))
+		return
+	}
+
+	// Convert each object to a synthetic Added event for consistency with watch mode
+	for _, obj := range objects.Items {
+		event := &apiWatch.Event{
+			Type:   apiWatch.Added,
+			Object: &obj,
+		}
+
+		logs, err := watchObjectsToLogData(event, time.Now(), config)
+		if err != nil {
+			kr.setting.Logger.Error("error converting initial state object to log data",
+				zap.String("resource", config.gvr.String()),
+				zap.Error(err))
+			continue
+		}
+
+		obsCtx := kr.obsrecv.StartLogsOp(ctx)
+		logRecordCount := logs.LogRecordCount()
+		err = kr.consumer.ConsumeLogs(obsCtx, logs)
+		kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+	}
+
+	kr.setting.Logger.Info("initial state sent",
+		zap.String("resource", config.gvr.String()),
+		zap.Int("object_count", len(objects.Items)))
 }
 
 // doWatch returns true when watching is done, false when watching should be restarted.
