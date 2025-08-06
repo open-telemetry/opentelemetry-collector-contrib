@@ -28,8 +28,6 @@ func (a *authData) GetAttribute(name string) any {
 		return a.membership
 	case "raw":
 		return a.raw
-	case "claims":
-		return a.claims
 	default:
 		prefixed := strings.HasPrefix(name, claimsPrefix)
 		if !prefixed {
@@ -49,7 +47,7 @@ func (a *authData) GetAttribute(name string) any {
 }
 
 func (a *authData) GetAttributeNames() []string {
-	attributeNames := []string{"subject", "membership", "raw", "claims"}
+	attributeNames := []string{"subject", "membership", "raw"}
 	for claimName := range a.claims {
 		attributeNames = append(attributeNames, claimsPrefix+claimName)
 	}

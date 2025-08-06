@@ -34,15 +34,8 @@ func TestAccessingJWTClaims(t *testing.T) {
 		t.Errorf("Expected claims.nonexistent to be nil, got '%v'", data.GetAttribute("claims.nonexistent"))
 	}
 
-	// Accessing all claims should return the claims map
-	allClaims := data.GetAttribute("claims")
-	expectedClaims := map[string]any{"tenant": "test-tenant"}
-	if !reflect.DeepEqual(allClaims, expectedClaims) {
-		t.Errorf("Expected claims to be %v, got %v", expectedClaims, allClaims)
-	}
-
 	attributes := data.GetAttributeNames()
-	attributesExpected := []string{"subject", "membership", "raw", "claims", "claims.tenant"}
+	attributesExpected := []string{"subject", "membership", "raw", "claims.tenant"}
 
 	if !reflect.DeepEqual(attributes, attributesExpected) {
 		t.Errorf("Expected attribute names to be %v, got %v", attributesExpected, attributes)
