@@ -113,7 +113,8 @@ func (s *solaceTracesReceiver) Start(ctx context.Context, _ component.Host) erro
 	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateStarting), metric.WithAttributeSet(s.metricAttrs))
 	s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateClear), metric.WithAttributeSet(s.metricAttrs))
 	var cancelableContext context.Context
-	cancelableContext, s.cancel = context.WithCancel(context.Background())
+	// used the context passed into function instead of context.Background()
+	cancelableContext, s.cancel = context.WithCancel(ctx)
 
 	s.settings.Logger.Info("Starting receiver")
 	// start the reconnection loop with a cancellable context and a factory to build new messaging services
@@ -151,7 +152,7 @@ func (s *solaceTracesReceiver) connectAndReceive(ctx context.Context) {
 	disable := false
 
 	// indicate we are in connecting state at the start
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateConnecting), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateConnecting), metric.WithAttributeSet(s.metricAttrs))
 
 reconnectionLoop:
 	for !disable {
@@ -289,6 +290,14 @@ flowControlLoop:
 			continue flowControlLoop
 		case <-ctx.Done():
 			s.settings.Logger.Info("Context was cancelled while attempting redelivery, exiting")
+			// Stop the timer to release resources (fix for potential memory leaks)
+			if !delayTimer.Stop() {
+				// Drain the channel if Stop returns false
+				select {
+				case <-delayTimer.C:
+				default:
+				}
+			}
 			disposition = nil // do not make any network requests, we are shutting down
 			return errors.New("delayed retry interrupted by shutdown request")
 		}
@@ -308,7 +317,14 @@ func sleep(ctx context.Context, d time.Duration) {
 	timer := time.NewTimer(d)
 	select {
 	case <-ctx.Done():
-		timer.Stop()
+		// Stop the timer to release resources (fix for potential memory leaks)
+		if !timer.Stop() {
+			// Drain the channel if Stop returns false
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
 	case <-timer.C:
 	}
 }

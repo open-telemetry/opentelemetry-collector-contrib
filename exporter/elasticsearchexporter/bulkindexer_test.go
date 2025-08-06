@@ -585,85 +585,124 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 }
 
 func TestSyncBulkIndexer_flushBytes(t *testing.T) {
-	var reqCnt atomic.Int64
-	cfg := Config{
-		NumWorkers:   1,
-		Flush:        FlushSettings{Interval: time.Hour, Bytes: 1},
-		MetadataKeys: []string{"x-test"},
+	tests := []struct {
+		name         string
+		responseBody string
+		wantMessage  string
+		wantFields   []zap.Field
+	}{
+		{
+			name:         "success",
+			responseBody: successResp,
+		},
+		{
+			name:         "document_error_with_metadata",
+			responseBody: `{"items":[{"create":{"_index":"foo","status":400,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`,
+			wantMessage:  "failed to index document",
+			wantFields:   []zap.Field{zap.Strings("x-test", []string{"test"})},
+		},
 	}
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-		RoundTripFunc: func(r *http.Request) (*http.Response, error) {
-			if r.URL.Path == "/_bulk" {
-				reqCnt.Add(1)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var reqCnt atomic.Int64
+			cfg := Config{
+				NumWorkers:   1,
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1},
+				MetadataKeys: []string{"x-test"},
 			}
-			return &http.Response{
-				Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-				Body:       io.NopCloser(strings.NewReader(successResp)),
-				StatusCode: http.StatusOK,
-			}, nil
-		},
-	}})
-	require.NoError(t, err)
+			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+				RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+					if r.URL.Path == "/_bulk" {
+						reqCnt.Add(1)
+					}
+					return &http.Response{
+						Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+						Body:       io.NopCloser(strings.NewReader(tt.responseBody)),
+						StatusCode: http.StatusOK,
+					}, nil
+				},
+			}})
+			require.NoError(t, err)
 
-	ct := componenttest.NewTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		metadatatest.NewSettings(ct).TelemetrySettings,
-	)
-	require.NoError(t, err)
-	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop())
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(
+				metadatatest.NewSettings(ct).TelemetrySettings,
+			)
+			require.NoError(t, err)
 
-	info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
-	ctx := client.NewContext(context.Background(), info)
-	session := bi.StartSession(ctx)
-	assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
-	assert.NoError(t, session.Flush(context.Background()))
-	session.End()
-	assert.NoError(t, bi.Close(context.Background()))
-	// Assert internal telemetry metrics
-	metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 1, // empty session flush should be a no-op
-			Attributes: attribute.NewSet(
-				attribute.String("outcome", "success"),
-				attribute.StringSlice("x-test", []string{"test"}),
-				semconv.HTTPResponseStatusCode(http.StatusOK),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.StringSlice("x-test", []string{"test"}),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("outcome", "success"),
-				attribute.StringSlice("x-test", []string{"test"}),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 43, // hard-coding the flush bytes since the input is fixed
-			Attributes: attribute.NewSet(
-				attribute.StringSlice("x-test", []string{"test"}),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchFlushedUncompressedBytes(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 43, // hard-coding the flush bytes since the input is fixed
-			Attributes: attribute.NewSet(
-				attribute.StringSlice("x-test", []string{"test"}),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
+			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+
+			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
+			ctx := client.NewContext(context.Background(), info)
+			session := bi.StartSession(ctx)
+			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			assert.Equal(t, int64(1), reqCnt.Load())
+			assert.NoError(t, session.Flush(ctx))
+			session.End()
+			assert.NoError(t, bi.Close(ctx))
+
+			// Assert internal telemetry metrics
+			expectedOutcome := "success"
+			if tt.wantMessage != "" {
+				expectedOutcome = "failed_client"
+			}
+
+			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "success"), // bulk request itself is successful
+						attribute.StringSlice("x-test", []string{"test"}),
+						semconv.HTTPResponseStatusCode(http.StatusOK),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+					Attributes: attribute.NewSet(
+						attribute.StringSlice("x-test", []string{"test"}),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", expectedOutcome),
+						attribute.StringSlice("x-test", []string{"test"}),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Value: 43, // hard-coding the flush bytes since the input is fixed
+					Attributes: attribute.NewSet(
+						attribute.StringSlice("x-test", []string{"test"}),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualElasticsearchFlushedUncompressedBytes(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Value: 43, // hard-coding the flush bytes since the input is fixed
+					Attributes: attribute.NewSet(
+						attribute.StringSlice("x-test", []string{"test"}),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+
+			// Assert logs
+			if tt.wantMessage != "" {
+				messages := observed.FilterMessage(tt.wantMessage)
+				require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
+				for _, wantField := range tt.wantFields {
+					assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
+				}
+			}
+		})
+	}
 }
 
 func TestNewBulkIndexer(t *testing.T) {
