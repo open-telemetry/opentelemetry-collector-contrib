@@ -481,3 +481,71 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	t.Cleanup(client.Close)
 	return client
 }
+
+func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
+	topic := "test-topic"
+	metadataMaxAge := 25 * time.Millisecond
+	metadataMinAge := 10 * time.Millisecond
+
+	type setupClientFunc func(t *testing.T, clientConfig configkafka.ClientConfig, topic string, metadataMinAge time.Duration)
+	tests := []struct {
+		name        string
+		setupClient setupClientFunc
+	}{
+		{
+			name: "producer",
+			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, _ string, metadataMinAge time.Duration) {
+				tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+				client, err := NewFranzSyncProducer(context.Background(), clientConfig,
+					configkafka.NewDefaultProducerConfig(), time.Second, tl,
+					kgo.MetadataMinAge(metadataMinAge),
+				)
+				require.NoError(t, err)
+				t.Cleanup(client.Close)
+			},
+		},
+		{
+			name: "consumer",
+			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, topic string, metadataMinAge time.Duration) {
+				consumeConfig := configkafka.NewDefaultConsumerConfig()
+				mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{topic}, kgo.MetadataMinAge(metadataMinAge))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+			// Set the metadata refresh interval which is expected to be translated into the franz-go client's metadataMaxAge configuration
+			clientConfig.Metadata.RefreshInterval = metadataMaxAge
+
+			metadataReqCh := make(chan struct{}, 10)
+			cluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
+				if _, ok := req.(*kmsg.MetadataRequest); ok {
+					select {
+					case metadataReqCh <- struct{}{}:
+					default:
+					}
+				}
+				return nil, nil, false
+			})
+
+			tt.setupClient(t, clientConfig, topic, metadataMinAge)
+
+			// Wait for initial metadata request. Due to the configuration passed into franz-go client, the metadataMaxAge should be set to 25 milliseconds.
+			select {
+			case <-metadataReqCh:
+			case <-time.After(2 * time.Second):
+				t.Fatal("timed out waiting for initial metadata request")
+			}
+
+			// Check for second metadata request
+			select {
+			case <-metadataReqCh:
+			case <-time.After(2 * time.Second):
+				t.Fatal("timed out waiting for metadata refresh")
+			}
+		})
+	}
+}
