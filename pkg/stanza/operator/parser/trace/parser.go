@@ -17,7 +17,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.ProcessBatchWithTransform(ctx, entries, p.Parse)
 }
 
 // Process will parse traces from an entry.

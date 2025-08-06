@@ -24,7 +24,7 @@ type Transformer[T interface {
 }
 
 func (t *Transformer[T]) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	return t.ProcessBatchWithTransform(ctx, entries, t.Transform)
 }
 
 // Process will process an entry with a flatten transformation.
