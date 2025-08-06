@@ -31,6 +31,7 @@ type Config struct {
 	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
 	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
 	UseDefault       bool              `mapstructure:"use_default"`
+	Scopes           []string          `mapstructure:"scopes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
