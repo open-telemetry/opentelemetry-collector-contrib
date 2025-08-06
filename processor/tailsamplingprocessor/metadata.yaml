@@ -13,6 +13,19 @@ status:
 tests:
   config:
 
+attributes:
+  policy:
+    description: Name of the policy
+    type: string
+
+  sampled:
+    description: Whether the sampling decision was sampled or not
+    type: bool
+
+  dropped:
+    description: Whether the sampled decision was dropped or not
+    type: bool
+
 telemetry:
   metrics:
     processor_tail_sampling_sampling_decision_latency:
@@ -60,7 +73,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: ["policy", "sampled", "dropped"]
+      attributes: [policy, sampled, dropped]
 
     processor_tail_sampling_count_spans_sampled:
       description: Count of spans that were sampled or not per sampling policy
@@ -69,7 +82,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: ["policy", "sampled", "dropped"]
+      attributes: [policy, sampled, dropped]
 
     processor_tail_sampling_global_count_traces_sampled:
       description: Global count of traces that were sampled or not by at least one policy
@@ -78,7 +91,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: ["sampled", "dropped"]
+      attributes: [sampled, dropped]
 
     processor_tail_sampling_sampling_trace_dropped_too_early:
       description: Count of traces that needed to be dropped before the configured wait time

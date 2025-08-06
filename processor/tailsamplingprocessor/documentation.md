@@ -14,6 +14,14 @@ Count of spans that were sampled or not per sampling policy
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
+| sampled | Whether the sampling decision was sampled or not | Any Bool |
+| dropped | Whether the sampled decision was dropped or not | Any Bool |
+
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
 Count of traces that were sampled or not per sampling policy
@@ -21,6 +29,14 @@ Count of traces that were sampled or not per sampling policy
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
+| sampled | Whether the sampling decision was sampled or not | Any Bool |
+| dropped | Whether the sampled decision was dropped or not | Any Bool |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
@@ -37,6 +53,13 @@ Global count of traces that were sampled or not by at least one policy
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| sampled | Whether the sampling decision was sampled or not | Any Bool |
+| dropped | Whether the sampled decision was dropped or not | Any Bool |
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
