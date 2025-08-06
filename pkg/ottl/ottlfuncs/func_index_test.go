@@ -360,7 +360,7 @@ func Test_index_error_cases(t *testing.T) {
 			name:        "source not string or pcommon.Slice",
 			source:      123,
 			value:       "test",
-			expectedErr: "unsupported `int` type",
+			expectedErr: "expected pcommon.Slice but got int",
 		},
 		{
 			name:        "string source with non-string value",
@@ -387,7 +387,7 @@ func Test_index_error_cases(t *testing.T) {
 				return val
 			}(),
 			value:       "test",
-			expectedErr: "when source is pcommon.Value, only pcommon.ValueTypeSlice is supported",
+			expectedErr: "expected pcommon.Slice but got Str",
 		},
 		{
 			name: "pcommon.Value with non-slice type (int)",
@@ -396,7 +396,7 @@ func Test_index_error_cases(t *testing.T) {
 				return val
 			}(),
 			value:       42,
-			expectedErr: "when source is pcommon.Value, only pcommon.ValueTypeSlice is supported",
+			expectedErr: "expected pcommon.Slice but got Int",
 		},
 		{
 			name: "pcommon.Value with non-slice type (bool)",
@@ -405,7 +405,7 @@ func Test_index_error_cases(t *testing.T) {
 				return val
 			}(),
 			value:       true,
-			expectedErr: "when source is pcommon.Value, only pcommon.ValueTypeSlice is supported",
+			expectedErr: "expected pcommon.Slice but got Bool",
 		},
 	}
 
