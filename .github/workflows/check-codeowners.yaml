@@ -37,7 +37,6 @@ jobs:
           cache-dependency-path: "**/*.sum"
 
       - name: Install tools
-        if: github.repository == 'open-telemetry/opentelemetry-collector-contrib' && steps.go-setup.outputs.cache-hit != 'true'
         run: |
           make install-tools
 

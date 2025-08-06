@@ -693,4 +693,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          make install-tools
           ./.tools/issuegenerator -path ./internal/tools/testresults/
