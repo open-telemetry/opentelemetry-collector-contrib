@@ -39,11 +39,9 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Set namespace from environment variable if not already set
+	cfg.Namespace = os.Getenv("NAMESPACE")
 	if cfg.Namespace == "" {
-		cfg.Namespace = os.Getenv("NAMESPACE")
-		if cfg.Namespace == "" {
-			cfg.Namespace = "opsramp-agent"
-		}
+		cfg.Namespace = "opsramp-agent"
 	}
 
 	return nil
