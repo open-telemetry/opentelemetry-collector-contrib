@@ -280,15 +280,9 @@ func (c *Config) Validate() error {
 	}
 
 	if c.PasswordFile != "" {
-		info, err := os.Stat(c.PasswordFile)
+		err := c.validatePasswordFilePermissions()
 		if err != nil {
-			return fmt.Errorf("`password_file` is inaccessible: %w", err)
-		}
-		switch info.Mode().Perm() {
-		// Matches JMX agent requirements for password file.
-		case 0o400, 0o600:
-		default:
-			return fmt.Errorf("`password_file` read access must be restricted to owner-only: %s", c.PasswordFile)
+			return err
 		}
 		passwordMap, err := parsePasswordFile(c.PasswordFile)
 		if err != nil {
