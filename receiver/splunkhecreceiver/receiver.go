@@ -414,7 +414,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	dec := json.NewDecoder(bodyReader)
-	dec.UseNumber()
 	var events []*splunk.Event
 	var metricEvents []*splunk.Event
 
