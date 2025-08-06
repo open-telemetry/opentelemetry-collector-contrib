@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -30,9 +31,9 @@ func createIndexFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return index(ottl.NewValueComparator(), args.Target, args.Value), nil
 }
 
-func index[K any](valueComparator ottl.ValueComparator, target, value ottl.Getter[K]) ottl.ExprFunc[K] {
+func index[K any](valueComparator ottl.ValueComparator, source, value ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		sourceVal, err := target.Get(ctx, tCtx)
+		sourceVal, err := source.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -40,6 +41,10 @@ func index[K any](valueComparator ottl.ValueComparator, target, value ottl.Gette
 		valueVal, err := value.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
+		}
+
+		if pv, ok := valueVal.(pcommon.Value); ok {
+			valueVal = pv.AsRaw()
 		}
 
 		switch s := sourceVal.(type) {
