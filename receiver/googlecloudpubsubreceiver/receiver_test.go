@@ -170,15 +170,6 @@ func TestReceiver(t *testing.T) {
 		return len(logSink.AllLogs()) == 1
 	}, time.Second, 10*time.Millisecond)
 
-	// Test a plain log message
-	logSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateTextExport(), map[string]string{
-		"content-type": "text/plain",
-	})
-	assert.Eventually(t, func() bool {
-		return len(logSink.AllLogs()) == 1
-	}, time.Second, 10*time.Millisecond)
-
 	assert.NoError(t, receiver.Shutdown(ctx))
 	assert.NoError(t, receiver.Shutdown(ctx))
 }
@@ -274,6 +265,32 @@ func TestEncodingNotFound(t *testing.T) {
 	receiver.tracesConsumer = consumertest.NewNop()
 	receiver.config.Encoding = "foo"
 	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "extension \"foo\" not found")
+}
+
+func TestEncodingRemovedRawText(t *testing.T) {
+	ctx := context.Background()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "raw_text"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in raw_text encoding is removed since v0.132.0")
+}
+
+func TestEncodingRemovedCloudLogging(t *testing.T) {
+	ctx := context.Background()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "cloud_logging"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in cloud_logging encoding is removed since v0.132.0")
 }
 
 func TestEncodingExtension(t *testing.T) {
