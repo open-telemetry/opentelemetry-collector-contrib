@@ -76,8 +76,9 @@ This allows you to implement custom labeling based on received JWT token claims.
 ```yaml
 extensions:
   oidc:
-    issuer_url: http://localhost:8080/auth/realms/opentelemetry
-    audience: account
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        audience: account
 
 receivers:
   otlp:
