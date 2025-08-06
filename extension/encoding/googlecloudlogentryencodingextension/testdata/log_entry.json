@@ -43,5 +43,52 @@
         "file": "test-file",
         "line": "123",
         "function": "testFunction"
+    },
+    "split": {
+        "uid": "",
+        "index": 0,
+        "totalSplits": 0
+    },
+    "errorGroups": [
+        {
+            "id": "g1"
+        },
+        {
+            "id": "g2"
+        }
+    ],
+    "apphub": {
+        "application": {
+            "container": "gke-my-project-cluster",
+            "location": "us-central1",
+            "id": "order-processing-app"
+        },
+        "service": {
+            "id": "payment-service",
+            "environmentType": "PROD",
+            "criticalityType": "MISSION_CRITICAL"
+        },
+        "workload": {
+            "id": "checkout-workload",
+            "environmentType": "PROD",
+            "criticalityType": "HIGH"
+        }
+    },
+    "apphubDestination": {
+        "application": {
+            "container": "gke-analytics-cluster",
+            "location": "us-west1",
+            "id": "data-processing-app"
+        },
+        "service": {
+            "id": "fraud-detection-service",
+            "environmentType": "PROD",
+            "criticalityType": "MISSION_CRITICAL"
+        },
+        "workload": {
+            "id": "analytics-workload",
+            "environmentType": "PROD",
+            "criticalityType": "HIGH"
+        }
     }
 }

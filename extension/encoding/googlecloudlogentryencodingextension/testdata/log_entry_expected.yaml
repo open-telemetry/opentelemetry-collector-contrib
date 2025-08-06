@@ -100,6 +100,80 @@ resourceLogs:
               - key: gcp.operation.last
                 value:
                   boolValue: false
+              - key: gcp.split.index
+                value:
+                  intValue: "0"
+              - key: gcp.split.total
+                value:
+                  intValue: "0"
+              - key: gcp.error_group
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: id
+                              value:
+                                stringValue: g1
+                      - kvlistValue:
+                          values:
+                            - key: id
+                              value:
+                                stringValue: g2
+              - key: gcp.apphub.application.container
+                value:
+                  stringValue: gke-my-project-cluster
+              - key: gcp.apphub.application.location
+                value:
+                  stringValue: us-central1
+              - key: gcp.apphub.application.id
+                value:
+                  stringValue: order-processing-app
+              - key: gcp.apphub.service.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.apphub.service.criticality_type
+                value:
+                  stringValue: MISSION_CRITICAL
+              - key: gcp.apphub.service.id
+                value:
+                  stringValue: payment-service
+              - key: gcp.apphub.workload.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.apphub.workload.criticality_type
+                value:
+                  stringValue: HIGH
+              - key: gcp.apphub.workload.id
+                value:
+                  stringValue: checkout-workload
+              - key: gcp.appub_destination.application.container
+                value:
+                  stringValue: gke-analytics-cluster
+              - key: gcp.appub_destination.application.location
+                value:
+                  stringValue: us-west1
+              - key: gcp.appub_destination.application.id
+                value:
+                  stringValue: data-processing-app
+              - key: gcp.appub_destination.service.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.appub_destination.service.criticality_type
+                value:
+                  stringValue: MISSION_CRITICAL
+              - key: gcp.appub_destination.service.id
+                value:
+                  stringValue: fraud-detection-service
+              - key: gcp.appub_destination.workload.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.appub_destination.workload.criticality_type
+                value:
+                  stringValue: HIGH
+              - key: gcp.appub_destination.workload.id
+                value:
+                  stringValue: analytics-workload
             body: {}
             observedTimeUnixNano: "1714905139455706870"
             severityText: DEFAULT

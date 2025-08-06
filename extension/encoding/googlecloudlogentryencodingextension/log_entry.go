@@ -38,6 +38,24 @@ const (
 
 	refererHeaderField         = "http.request.header.referer"
 	requestServerDurationField = "http.request.server.duration"
+
+	gcpSplitUIDField   = "gcp.split.uid"
+	gcpSplitIndexField = "gcp.split.index"
+	gcpSplitTotalField = "gcp.split.total"
+
+	gcpErrorGroupField = "gcp.error_group"
+
+	gcpAppHubPrefix                       = "gcp.apphub"
+	gcpAppHubDestinationPrefix            = "gcp.appub_destination"
+	gcpAppHubApplicationContainerField    = "application.container"
+	gcpAppHubApplicationLocationField     = "application.location"
+	gcpAppHubApplicationIDField           = "application.id"
+	gcpAppHubServiceIDField               = "service.id"
+	gcpAppHubServiceEnvironmentTypeField  = "service.environment_type"
+	gcpAppHubServiceCriticalityTypeField  = "service.criticality_type"
+	gcpAppHubWorkloadIDField              = "workload.id"
+	gcpAppHubWorkloadEnvironmentTypeField = "workload.environment_type"
+	gcpAppHubWorkloadCriticalityTypeField = "workload.criticality_type"
 )
 
 // See: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
@@ -128,7 +146,7 @@ type appHub struct {
 		EnvironmentType string `json:"environmentType"`
 		CriticalityType string `json:"criticalityType"`
 	} `json:"service"`
-	Workflow *struct {
+	Workload *struct {
 		ID              string `json:"id"`
 		EnvironmentType string `json:"environmentType"`
 		CriticalityType string `json:"criticalityType"`
@@ -141,6 +159,18 @@ func strToInt(numberStr string) (int64, error) {
 		return -1, fmt.Errorf("failed to convert string %q to int64", numberStr)
 	}
 	return num, nil
+}
+
+func addStrAsInt(s, field string, attributes pcommon.Map) error {
+	if s == "" {
+		return nil
+	}
+	n, err := strToInt(s)
+	if err != nil {
+		return err
+	}
+	attributes.PutInt(field, n)
+	return nil
 }
 
 func putStr(attr pcommon.Map, field, value string) {
@@ -167,27 +197,15 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 		return nil
 	}
 
-	addStrAsInt := func(s, field string) error {
-		if s == "" {
-			return nil
-		}
-		n, err := strToInt(s)
-		if err != nil {
-			return err
-		}
-		attributes.PutInt(field, n)
-		return nil
-	}
-
-	if err := addStrAsInt(req.ResponseSize, string(semconv.HTTPResponseSizeKey)); err != nil {
+	if err := addStrAsInt(req.ResponseSize, string(semconv.HTTPResponseSizeKey), attributes); err != nil {
 		return fmt.Errorf("failed to add response size: %w", err)
 	}
 
-	if err := addStrAsInt(req.RequestSize, string(semconv.HTTPRequestSizeKey)); err != nil {
+	if err := addStrAsInt(req.RequestSize, string(semconv.HTTPRequestSizeKey), attributes); err != nil {
 		return fmt.Errorf("failed to add request size: %w", err)
 	}
 
-	if err := addStrAsInt(req.CacheFillBytes, gcpCacheFillBytes); err != nil {
+	if err := addStrAsInt(req.CacheFillBytes, gcpCacheFillBytes, attributes); err != nil {
 		return fmt.Errorf("failed to add cache fill bytes: %w", err)
 	}
 
@@ -265,69 +283,65 @@ func handleSourceLocationField(attributes pcommon.Map, sourceLoc *sourceLocation
 		return nil
 	}
 
-	if sourceLoc.Line != "" {
-		n, err := strToInt(sourceLoc.Line)
-		if err != nil {
-			return fmt.Errorf("expected source location line %q to be a number: %w", sourceLoc.Line, err)
-		}
-		attributes.PutInt(string(semconv.CodeLineNumberKey), n)
+	if err := addStrAsInt(sourceLoc.Line, string(semconv.CodeLineNumberKey), attributes); err != nil {
+		return fmt.Errorf("expected source location line %q to be a number: %w", sourceLoc.Line, err)
 	}
 	putStr(attributes, string(semconv.CodeFilePathKey), sourceLoc.File)
 	putStr(attributes, string(semconv.CodeFunctionNameKey), sourceLoc.Function)
 	return nil
 }
 
-func handleSplitField(logRecord plog.LogRecord, s *split) {
+// handleSplitField will place the split attributes in the log record
+func handleSplitField(attributes pcommon.Map, s *split) {
 	if s == nil {
 		return
 	}
 
-	splitMap := logRecord.Attributes().PutEmptyMap("gcp.split")
-	putStr(splitMap, "uid", s.UID)
-	putInt(splitMap, "index", s.Index)
-	putInt(splitMap, "total_splits", s.TotalSplits)
+	putStr(attributes, gcpSplitUIDField, s.UID)
+	putInt(attributes, gcpSplitIndexField, s.Index)
+	putInt(attributes, gcpSplitTotalField, s.TotalSplits)
 }
 
-func handleErrorGroupField(logRecord plog.LogRecord, errGroup []errorGroup) {
+// handleErrorGroupField will place all ids of the error group in a new log record attribute
+func handleErrorGroupField(attributes pcommon.Map, errGroup []errorGroup) {
 	if len(errGroup) == 0 {
 		return
 	}
-	errorGroupSlice := logRecord.Attributes().PutEmptySlice("gcp.error_group")
+
+	errorGroupSlice := attributes.PutEmptySlice(gcpErrorGroupField)
 	for _, err := range errGroup {
-		errorGroupSlice.AppendEmpty().SetStr(err.ID)
+		obj := errorGroupSlice.AppendEmpty()
+		m := obj.SetEmptyMap()
+		m.PutStr("id", err.ID)
 	}
 }
 
-func handleAppHubField(logRecord plog.LogRecord, appHub *appHub, mapName string) {
+func handleAppHubField(attributes pcommon.Map, appHub *appHub, prefix string) {
 	if appHub == nil {
 		return
 	}
 
-	m := pcommon.NewMap()
+	addAppHubAttr := func(field, value string) {
+		field = prefix + "." + field
+		putStr(attributes, field, value)
+	}
 
 	if application := appHub.Application; application != nil {
-		mApplication := m.PutEmptyMap("application")
-		putStr(mApplication, "container", application.Container)
-		putStr(mApplication, "location", application.Location)
-		putStr(mApplication, "id", application.ID)
+		addAppHubAttr(gcpAppHubApplicationContainerField, application.Container)
+		addAppHubAttr(gcpAppHubApplicationLocationField, application.Location)
+		addAppHubAttr(gcpAppHubApplicationIDField, application.ID)
 	}
 
 	if service := appHub.Service; service != nil {
-		mService := m.PutEmptyMap("service")
-		putStr(mService, "environment_type", service.EnvironmentType)
-		putStr(mService, "criticality_type", service.CriticalityType)
-		putStr(mService, "id", service.ID)
+		addAppHubAttr(gcpAppHubServiceEnvironmentTypeField, service.EnvironmentType)
+		addAppHubAttr(gcpAppHubServiceCriticalityTypeField, service.CriticalityType)
+		addAppHubAttr(gcpAppHubServiceIDField, service.ID)
 	}
 
-	if workflow := appHub.Workflow; workflow != nil {
-		mWorkflow := m.PutEmptyMap("workflow")
-		putStr(mWorkflow, "environment_type", workflow.EnvironmentType)
-		putStr(mWorkflow, "criticality_type", workflow.CriticalityType)
-		putStr(mWorkflow, "id", workflow.ID)
-	}
-
-	if m.Len() > 0 {
-		m.CopyTo(logRecord.Attributes().PutEmptyMap(mapName))
+	if workload := appHub.Workload; workload != nil {
+		addAppHubAttr(gcpAppHubWorkloadEnvironmentTypeField, workload.EnvironmentType)
+		addAppHubAttr(gcpAppHubWorkloadCriticalityTypeField, workload.CriticalityType)
+		addAppHubAttr(gcpAppHubWorkloadIDField, workload.ID)
 	}
 }
 
@@ -536,11 +550,11 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 	}
 
 	handleOperationField(logRecord.Attributes(), log.Operation)
-	handleSplitField(logRecord, log.Split)
-	handleErrorGroupField(logRecord, log.ErrorGroups)
+	handleSplitField(logRecord.Attributes(), log.Split)
+	handleErrorGroupField(logRecord.Attributes(), log.ErrorGroups)
 
-	handleAppHubField(logRecord, log.AppHub, "apphub")
-	handleAppHubField(logRecord, log.AppHubDestination, "apphub_destination")
+	handleAppHubField(logRecord.Attributes(), log.AppHub, gcpAppHubPrefix)
+	handleAppHubField(logRecord.Attributes(), log.AppHubDestination, gcpAppHubDestinationPrefix)
 
 	if len(log.ProtoPayload) > 0 {
 		if err := handleProtoPayloadField(logRecord, log.ProtoPayload, cfg); err != nil {
