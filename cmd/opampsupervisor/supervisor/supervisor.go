@@ -735,7 +735,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	healthCheckServerPort := s.config.HealthCheck.Port()
 	server, err := s.config.HealthCheck.ToServer(
 		context.Background(),
-		nil,
+		nopHost{},
 		s.telemetrySettings.TelemetrySettings,
 		mux,
 	)
@@ -756,6 +756,12 @@ func (s *Supervisor) startHealthCheckServer() error {
 		}
 	}()
 
+	return nil
+}
+
+type nopHost struct{}
+
+func (nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
