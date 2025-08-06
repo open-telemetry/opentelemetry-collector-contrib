@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -31,21 +30,6 @@ const (
 	testClientID = "mock-client-id"
 	testScope    = "mock-scope"
 )
-
-type MockOAuthProvider struct {
-	MockSignin func(clientID, scope string, requestedAuthority ...string) (*sarama.AccessToken, error)
-}
-
-func (m *MockOAuthProvider) Signin(clientID, scope string, requestedAuthority ...string) (*sarama.AccessToken, error) {
-	if m.MockSignin != nil {
-		return m.MockSignin(clientID, scope, requestedAuthority...)
-	}
-	return nil, errors.New("MockSignin function not defined")
-}
-
-func (*MockOAuthProvider) Name() string {
-	return "mock"
-}
 
 func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	secretFile, err := k8sSecretFile()
