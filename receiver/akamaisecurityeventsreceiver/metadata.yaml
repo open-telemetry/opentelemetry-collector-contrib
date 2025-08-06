@@ -10,3 +10,8 @@ status:
 
 tests:
   config:
+    endpoint: "https://example.akamaiapis.net"
+    config_ids: "12345"
+    client_token: "akab-test-token"
+    client_secret: "test-secret"
+    access_token: "akab-test-access"

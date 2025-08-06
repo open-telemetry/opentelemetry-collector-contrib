@@ -1,0 +1,28 @@
+akamaisecurityevents/valid:
+  endpoint: "https://example.akamaiapis.net"
+  config_ids: "12345;67890"
+  client_token: "akab-test-client-token"
+  client_secret: "test-client-secret"
+  access_token: "akab-test-access-token"
+  limit: 5000
+  parse_rule_data: true
+  flatten_rule_data: false
+  collection_interval: 30s
+
+akamaisecurityevents/missing_endpoint:
+  config_ids: "12345"
+  client_token: "akab-test-client-token"
+  client_secret: "test-client-secret"
+  access_token: "akab-test-access-token"
+
+akamaisecurityevents/missing_config_ids:
+  endpoint: "https://example.akamaiapis.net"
+  client_token: "akab-test-client-token"
+  client_secret: "test-client-secret"
+  access_token: "akab-test-access-token"
+
+akamaisecurityevents/missing_credentials:
+  endpoint: "https://example.akamaiapis.net"
+  config_ids: "12345"
+  client_secret: "test-client-secret"
+  access_token: "akab-test-access-token"

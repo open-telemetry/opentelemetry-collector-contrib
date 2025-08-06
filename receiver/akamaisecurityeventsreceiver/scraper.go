@@ -97,7 +97,10 @@ func (r *akamaiSecurityEventsReceiver) start(ctx context.Context, host component
 }
 
 func (r *akamaiSecurityEventsReceiver) shutdown(ctx context.Context) error {
-	return r.storageClient.Close(ctx)
+	if r.storageClient != nil {
+		return r.storageClient.Close(ctx)
+	}
+	return nil
 }
 
 func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, error) {
@@ -184,7 +187,7 @@ func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, e
 func parseRuleData(log plog.LogRecord) pcommon.Slice {
 	attackDataAttr, exists := log.Attributes().Get("attackData")
 	if !exists {
-		return pcommon.Slice{}
+		return pcommon.NewSlice()
 	}
 
 	attackDataMap := attackDataAttr.Map().AsRaw()
@@ -235,7 +238,7 @@ func parseRuleData(log plog.LogRecord) pcommon.Slice {
 	}
 
 	if ruleCount == 0 {
-		return pcommon.Slice{}
+		return pcommon.NewSlice()
 	}
 
 	rules := make([]map[string]interface{}, ruleCount)
