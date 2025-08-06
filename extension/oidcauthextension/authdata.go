@@ -48,8 +48,8 @@ func (a *authData) GetAttribute(name string) any {
 
 func (a *authData) GetAttributeNames() []string {
 	attributeNames := []string{"subject", "membership", "raw"}
-	for n := range a.claims {
-		attributeNames = append(attributeNames, claimsPrefix+n)
+	for claimName := range a.claims {
+		attributeNames = append(attributeNames, claimsPrefix+claimName)
 	}
 
 	return attributeNames
