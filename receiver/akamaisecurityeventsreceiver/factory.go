@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package akamaisecurityeventsreceiver
+package akamaisecurityeventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/akamaisecurityeventsreceiver"
 
 import (
 	"context"

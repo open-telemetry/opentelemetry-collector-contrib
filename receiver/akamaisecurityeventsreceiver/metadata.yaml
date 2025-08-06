@@ -6,7 +6,9 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [newly12]
+    active: []
+    emeritus: []
+    seeking_new: false
 
 tests:
   config:
