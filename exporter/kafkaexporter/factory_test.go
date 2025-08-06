@@ -71,6 +71,15 @@ func TestCreateMetricExporter(t *testing.T) {
 			}),
 			err: nil,
 		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+			}),
+			err: nil,
+		},
 	}
 
 	for _, tc := range tests {
@@ -130,6 +139,15 @@ func TestCreateLogExporter(t *testing.T) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
 				conf.Encoding = "otlp_proto"
+			}),
+			err: nil,
+		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
 			}),
 			err: nil,
 		},
@@ -193,6 +211,15 @@ func TestCreateTraceExporter(t *testing.T) {
 			}),
 			err: nil,
 		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+			}),
+			err: nil,
+		},
 	}
 
 	for _, tc := range tests {
@@ -252,6 +279,15 @@ func TestCreateProfileExporter(t *testing.T) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
 				conf.Encoding = "otlp_proto"
+			}),
+			err: nil,
+		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
 			}),
 			err: nil,
 		},
