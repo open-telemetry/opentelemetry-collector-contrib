@@ -21,6 +21,9 @@ type Config struct {
 	// MaxLogSize sets the maximum size for individual log entries in bytes
 	MaxLogSize int `mapstructure:"max_log_size"`
 
+	// RawOutputFile is the path to write raw decoded entries (bypasses OTel conversion)
+	RawOutputFile string `mapstructure:"raw_output_file"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
