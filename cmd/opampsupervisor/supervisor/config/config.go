@@ -7,16 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -272,12 +275,25 @@ type Telemetry struct {
 }
 
 type HealthCheck struct {
-	Port int `mapstructure:"port"`
+	confighttp.ServerConfig
+}
+
+func (h HealthCheck) Port() int64 {
+	_, port, err := net.SplitHostPort(h.Endpoint)
+	if err != nil {
+		return 0
+	}
+	parsedPort, err := strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return parsedPort
 }
 
 func (h HealthCheck) Validate() error {
-	if h.Port < 0 || h.Port > 65535 {
-		return errors.New("healthcheck::port must be a valid port number")
+	parsedPort := h.Port()
+	if parsedPort < 0 || parsedPort > 65535 {
+		return fmt.Errorf("healthcheck::endpoint must contain a valid port number, got %d", parsedPort)
 	}
 	return nil
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zapcore"
 )
@@ -464,10 +465,12 @@ func TestValidate(t *testing.T) {
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 				HealthCheck: HealthCheck{
-					Port: -1,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:-1",
+					},
 				},
 			},
-			expectedErrorFunc: simpleError("healthcheck::port must be a valid port number"),
+			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
 		},
 	}
 

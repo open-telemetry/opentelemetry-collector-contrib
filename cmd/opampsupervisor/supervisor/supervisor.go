@@ -698,7 +698,7 @@ func (s *Supervisor) startOpAMPClient() error {
 }
 
 func (s *Supervisor) startHealthCheckServer() error {
-	if s.config.HealthCheck.Port == 0 {
+	if s.config.HealthCheck.Port() == 0 {
 		return nil
 	}
 
@@ -725,20 +725,25 @@ func (s *Supervisor) startHealthCheckServer() error {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	healthCheckServerPort := s.config.HealthCheck.Port
-	s.healthCheckServer = &http.Server{
-		Addr:        fmt.Sprintf("localhost:%d", healthCheckServerPort),
-		ReadTimeout: 5 * time.Second,
-		Handler:     mux,
+	healthCheckServerPort := s.config.HealthCheck.Port()
+	server, err := s.config.HealthCheck.ToServer(
+		context.Background(),
+		nil,
+		s.telemetrySettings.TelemetrySettings,
+		mux,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create health check server: %w", err)
 	}
+	s.healthCheckServer = server
 
-	listener, err := net.Listen("tcp", s.healthCheckServer.Addr)
+	listener, err := s.config.HealthCheck.ToListener(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}
 
 	go func() {
-		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int("port", healthCheckServerPort))
+		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int64("port", healthCheckServerPort))
 		if err := s.healthCheckServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
 		}

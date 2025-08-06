@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -2035,7 +2036,9 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	t.Run("Health check server is started when port is configured", func(t *testing.T) {
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
-				Port: 23233,
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:23233",
+				},
 			},
 		}
 		err := s.startHealthCheckServer()
@@ -2043,7 +2046,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		require.NotNil(t, s.healthCheckServer)
 	})
 
-	addr := fmt.Sprintf("localhost:%d", s.config.HealthCheck.Port)
+	addr := fmt.Sprintf("localhost:%d", s.config.HealthCheck.Port())
 	require.NotEmpty(t, addr)
 
 	sendHealthCheckRequest := func() (*http.Response, error) {
@@ -2116,7 +2119,9 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			doneChan:          make(chan struct{}),
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
-					Port: 23233,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:23233",
+					},
 				},
 			},
 		}
