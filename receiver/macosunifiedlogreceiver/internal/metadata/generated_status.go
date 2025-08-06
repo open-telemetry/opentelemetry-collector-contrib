@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type = component.MustNewType("macos_unified_log")
+	Type = component.MustNewType("macosunifiedlog")
 )
 
 const (
