@@ -4,6 +4,7 @@
 package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -14,15 +15,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/arn"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"go.uber.org/zap"
 )
 
@@ -37,40 +36,51 @@ const (
 
 	httpsProxyEnvVar = "HTTPS_PROXY"
 
-	stsEndpointPrefix         = "https://sts."
-	stsEndpointSuffix         = ".amazonaws.com"
-	stsAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
+	awsPartition         = "aws"
+	awsChinaPartition    = "aws-cn"
+	awsGovCloudPartition = "aws-us-gov"
+
+	awsPrimaryRegion         = "us-east-1"
+	awsChinaPrimaryRegion    = "cn-north-1"
+	awsGovCloudPrimaryRegion = "us-gov-west-1"
 )
 
-var newAWSSession = func(roleArn, region string, log *zap.Logger) (*session.Session, error) {
+var newAWSConfig = func(roleArn, region string, log *zap.Logger) (aws.Config, error) {
+	ctx := context.Background()
 	sts := &stsCalls{log: log, getSTSCredsFromRegionEndpoint: getSTSCredsFromRegionEndpoint}
 
 	if roleArn == "" {
-		sess, err := session.NewSession()
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 		if err != nil {
-			return nil, err
+			return aws.Config{}, err
 		}
-		return sess, nil
-	}
-	stsCreds, err := sts.getCreds(region, roleArn)
-	if err != nil {
-		return nil, err
+		return cfg, nil
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: stsCreds,
-	})
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return nil, err
+		return aws.Config{}, err
 	}
-	return sess, nil
+
+	stsCreds, err := sts.getCreds(region, roleArn, cfg)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	cfg.Credentials = stsCreds
+	return cfg, nil
 }
 
-var getEC2Region = func(s *session.Session) (string, error) {
-	return ec2metadata.New(s).Region()
+var getEC2Region = func(cfg aws.Config) (string, error) {
+	client := imds.NewFromConfig(cfg)
+	result, err := client.GetRegion(context.Background(), &imds.GetRegionInput{})
+	if err != nil {
+		return "", err
+	}
+	return result.Region, nil
 }
 
-func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.Session, error) {
+func getAWSConfig(c *Config, logger *zap.Logger) (aws.Config, error) {
 	var (
 		awsRegion string
 		err       error
@@ -91,10 +101,10 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 		awsRegion, err = getRegionFromECSMetadata()
 		if err != nil {
 			logger.Debug("Unable to fetch region from ECS metadata", zap.Error(err))
-			var sess *session.Session
-			sess, err = session.NewSession()
+			var cfg aws.Config
+			cfg, err = config.LoadDefaultConfig(context.Background())
 			if err == nil {
-				awsRegion, err = getEC2Region(sess)
+				awsRegion, err = getEC2Region(cfg)
 				if err != nil {
 					logger.Debug("Unable to fetch region from EC2 metadata", zap.Error(err))
 				} else {
@@ -107,21 +117,19 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 	}
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: %w", err)
+		return aws.Config{}, fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: %w", err)
 	}
 
-	sess, err := newAWSSession(c.RoleARN, awsRegion, logger)
+	cfg, err := newAWSConfig(c.RoleARN, awsRegion, logger)
 	if err != nil {
-		return nil, nil, err
+		return aws.Config{}, err
 	}
 
-	return &aws.Config{
-		Region:                        aws.String(awsRegion),
-		DisableParamValidation:        aws.Bool(true),
-		MaxRetries:                    aws.Int(2),
-		Endpoint:                      aws.String(c.AWSEndpoint),
-		CredentialsChainVerboseErrors: aws.Bool(true),
-	}, sess, nil
+	if c.AWSEndpoint != "" {
+		cfg.BaseEndpoint = &c.AWSEndpoint
+	}
+
+	return cfg, nil
 }
 
 func getProxyAddress(proxyAddress string) string {
@@ -201,81 +209,91 @@ func proxyServerTransport(config *Config) (*http.Transport, error) {
 
 type stsCalls struct {
 	log                           *zap.Logger
-	getSTSCredsFromRegionEndpoint func(log *zap.Logger, sess *session.Session, region, roleArn string) *credentials.Credentials
+	getSTSCredsFromRegionEndpoint func(log *zap.Logger, cfg aws.Config, region, roleArn string) aws.CredentialsProvider
 }
 
 // getCreds gets STS credentials first from the regional endpoint, then from the primary
 // region in the respective AWS partition if the regional endpoint is disabled.
-func (s *stsCalls) getCreds(region, roleArn string) (*credentials.Credentials, error) {
-	sess, err := session.NewSession()
-	if err != nil {
-		return nil, err
+func (s *stsCalls) getCreds(region, roleArn string, baseCfg aws.Config) (aws.CredentialsProvider, error) {
+	stsCred := s.getSTSCredsFromRegionEndpoint(s.log, baseCfg, region, roleArn)
+
+	// Test credentials retrieval to detect RegionDisabledException early.
+	_, err := stsCred.Retrieve(context.Background())
+	var regionDisabledErr *types.RegionDisabledException
+	if err != nil && errors.As(err, &regionDisabledErr) {
+		s.log.Warn("STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
+			zap.String("region", region), zap.Error(regionDisabledErr))
+		stsCred, err = s.getSTSCredsFromPrimaryRegionEndpoint(baseCfg, roleArn, region)
 	}
 
-	stsCred := s.getSTSCredsFromRegionEndpoint(s.log, sess, region, roleArn)
-	// Make explicit call to fetch credentials.
-	_, err = stsCred.Get()
 	if err != nil {
-		var awsErr awserr.Error
-		if errors.As(err, &awsErr) {
-			switch awsErr.Code() {
-			case sts.ErrCodeRegionDisabledException:
-				s.log.Warn("STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
-					zap.String("region", region), zap.Error(awsErr))
-				stsCred, err = s.getSTSCredsFromPrimaryRegionEndpoint(sess, roleArn, region)
-			default:
-				return nil, fmt.Errorf("unable to handle AWS error: %w", awsErr)
-			}
-		}
+		return nil, fmt.Errorf("unable to retrieve STS credentials: %w", err)
 	}
+
 	return stsCred, err
 }
 
 // getSTSCredsFromRegionEndpoint fetches STS credentials for provided roleARN from regional endpoint.
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
 // Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
-var getSTSCredsFromRegionEndpoint = func(log *zap.Logger, sess *session.Session, region, roleArn string) *credentials.Credentials {
+var getSTSCredsFromRegionEndpoint = func(log *zap.Logger, cfg aws.Config, region, roleArn string) aws.CredentialsProvider {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
 	// for other opt-in regions, region value will create STS regional endpoint.
 	// This will only be the case if the provided region is not present in aws_regions.go
-	c := &aws.Config{Region: aws.String(region), Endpoint: &regionalEndpoint}
-	st := sts.New(sess, c)
-	log.Info("STS endpoint to use", zap.String("endpoint", st.Endpoint))
-	return stscreds.NewCredentialsWithClient(st, roleArn)
+
+	cfgCopy := cfg.Copy()
+	cfgCopy.Region = region
+	if regionalEndpoint != "" {
+		cfgCopy.BaseEndpoint = &regionalEndpoint
+	}
+
+	stsClient := sts.NewFromConfig(cfgCopy)
+	log.Info("STS endpoint to use", zap.String("endpoint", regionalEndpoint))
+
+	return stscreds.NewAssumeRoleProvider(stsClient, roleArn)
 }
 
 // getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in the
 // respective partition.
-func (s *stsCalls) getSTSCredsFromPrimaryRegionEndpoint(sess *session.Session, roleArn, region string) (*credentials.Credentials, error) {
+func (s *stsCalls) getSTSCredsFromPrimaryRegionEndpoint(cfg aws.Config, roleArn, region string) (aws.CredentialsProvider, error) {
 	partitionID := getPartition(region)
 	switch partitionID {
-	case endpoints.AwsPartitionID:
-		return s.getSTSCredsFromRegionEndpoint(s.log, sess, endpoints.UsEast1RegionID, roleArn), nil
-	case endpoints.AwsCnPartitionID:
-		return s.getSTSCredsFromRegionEndpoint(s.log, sess, endpoints.CnNorth1RegionID, roleArn), nil
-	case endpoints.AwsUsGovPartitionID:
-		return s.getSTSCredsFromRegionEndpoint(s.log, sess, endpoints.UsGovWest1RegionID, roleArn), nil
+	case awsPartition:
+		return s.getSTSCredsFromRegionEndpoint(s.log, cfg, awsPrimaryRegion, roleArn), nil
+	case awsChinaPartition:
+		return s.getSTSCredsFromRegionEndpoint(s.log, cfg, awsChinaPrimaryRegion, roleArn), nil
+	case awsGovCloudPartition:
+		return s.getSTSCredsFromRegionEndpoint(s.log, cfg, awsGovCloudPrimaryRegion, roleArn), nil
 	default:
 		return nil, fmt.Errorf("unrecognized AWS region: %s, or partition: %s", region, partitionID)
 	}
 }
 
 func getSTSRegionalEndpoint(r string) string {
-	p := getPartition(r)
-
-	var e string
-	switch p {
-	case endpoints.AwsPartitionID, endpoints.AwsUsGovPartitionID:
-		e = stsEndpointPrefix + r + stsEndpointSuffix
-	case endpoints.AwsCnPartitionID:
-		e = stsEndpointPrefix + r + stsAwsCnPartitionIDSuffix
+	endpoint, err := buildServiceEndpoint(r, "sts")
+	if err != nil {
+		return ""
 	}
-	return e
+	return endpoint
 }
 
 // getPartition returns the AWS Partition for the provided region.
 func getPartition(region string) string {
-	p, _ := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
-	return p.ID()
+	if strings.HasPrefix(region, "cn-") {
+		return awsChinaPartition
+	}
+	if strings.HasPrefix(region, "us-gov-") {
+		return awsGovCloudPartition
+	}
+
+	// Check if it looks like a valid AWS region (format: us-east-1, eu-west-1, etc.)
+	if len(region) >= 9 && (strings.HasPrefix(region, "us-") || strings.HasPrefix(region, "eu-") ||
+		strings.HasPrefix(region, "ap-") || strings.HasPrefix(region, "sa-") ||
+		strings.HasPrefix(region, "ca-") || strings.HasPrefix(region, "af-") ||
+		strings.HasPrefix(region, "me-")) {
+		return awsPartition
+	}
+
+	return ""
 }

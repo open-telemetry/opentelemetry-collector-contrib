@@ -7,6 +7,8 @@ package proxy // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -16,16 +18,16 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 const (
-	connHeader = "Connection"
+	connHeader       = "Connection"
+	emptyPayloadHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 )
 
 // Server represents HTTP server.
@@ -48,7 +50,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		cfg.ServiceName = "xray"
 	}
 
-	awsCfg, sess, err := getAWSConfigSession(cfg, logger)
+	awsCfg, err := getAWSConfig(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +66,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		return nil, fmt.Errorf("unable to parse AWS service endpoint: %w", err)
 	}
 
-	signer := &v4.Signer{
-		Credentials: sess.Config.Credentials,
-	}
+	signer := v4.NewSigner()
 
 	transport, err := proxyServerTransport(cfg)
 	if err != nil {
@@ -93,17 +93,19 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			req.URL.Host = awsURL.Host
 			req.Host = awsURL.Host
 
-			// Consume body and convert to io.ReadSeeker for signer to consume
-			body, err := consume(req.Body)
+			payloadHash, err := calculatePayloadHash(req)
 			if err != nil {
-				logger.Error("Unable to consume request body", zap.Error(err))
-
-				// Forward unsigned request
+				logger.Error("unable to calculate payload hash", zap.Error(err))
 				return
 			}
 
-			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
+			creds, err := awsCfg.Credentials.Retrieve(context.Background())
+			if err != nil {
+				logger.Error("unable to retrieve credentials", zap.Error(err))
+				return
+			}
+
+			err = signer.SignHTTP(context.Background(), creds, req, payloadHash, cfg.ServiceName, awsCfg.Region, time.Now())
 			if err != nil {
 				logger.Error("Unable to sign request", zap.Error(err))
 			}
@@ -117,45 +119,48 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	}, nil
 }
 
-// getServiceEndpoint returns X-Ray service endpoint.
-// It is guaranteed that awsCfg config instance is non-nil and the region value is non nil or non empty in awsCfg object.
-// Currently, the caller takes care of it.
-func getServiceEndpoint(awsCfg *aws.Config, serviceName string) (string, error) {
-	if isEmpty(awsCfg.Endpoint) {
-		if isEmpty(awsCfg.Region) {
-			return "", errors.New("unable to generate endpoint from region with nil value")
-		}
-		resolved, err := endpoints.DefaultResolver().EndpointFor(serviceName, *awsCfg.Region, setResolverConfig())
-		return resolved.URL, err
-	}
-	return *awsCfg.Endpoint, nil
-}
-
-func isEmpty(val *string) bool {
-	return val == nil || *val == ""
-}
-
-// consume readsAll() the body and creates a new io.ReadSeeker from the content. v4.Signer
-// requires an io.ReadSeeker to be able to sign requests. May return a nil io.ReadSeeker.
-func consume(body io.ReadCloser) (io.ReadSeeker, error) {
-	var buf []byte
-
-	// Return nil ReadSeeker if body is nil
-	if body == nil {
-		return nil, nil
+// getServiceEndpoint constructs AWS service endpoints using partition-aware logic.
+func getServiceEndpoint(awsCfg aws.Config, serviceName string) (string, error) {
+	if awsCfg.BaseEndpoint != nil && *awsCfg.BaseEndpoint != "" {
+		return *awsCfg.BaseEndpoint, nil
 	}
 
-	// Consume body
-	buf, err := io.ReadAll(body)
+	if awsCfg.Region == "" {
+		return "", errors.New("unable to generate endpoint from region with empty value")
+	}
+
+	return buildServiceEndpoint(awsCfg.Region, serviceName)
+}
+
+// buildServiceEndpoint constructs service endpoints using partition-aware logic.
+func buildServiceEndpoint(region, serviceName string) (string, error) {
+	partition := getPartition(region)
+	switch partition {
+	case awsPartition, awsGovCloudPartition:
+		return fmt.Sprintf("https://%s.%s.amazonaws.com", serviceName, region), nil
+	case awsChinaPartition:
+		return fmt.Sprintf("https://%s.%s.amazonaws.com.cn", serviceName, region), nil
+	default:
+		return fmt.Sprintf("https://%s.%s.amazonaws.com", serviceName, region), nil
+	}
+}
+
+// calculatePayloadHash calculates the SHA256 hash of the request payload.
+// For requests with no body, returns the hash of an empty string.
+func calculatePayloadHash(req *http.Request) (string, error) {
+	if req.Body == nil {
+		return emptyPayloadHash, nil
+	}
+
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("failed to read request body: %w", err)
 	}
 
-	return bytes.NewReader(buf), nil
-}
+	hash := sha256.Sum256(body)
+	payloadHash := hex.EncodeToString(hash[:])
 
-func setResolverConfig() func(*endpoints.Options) {
-	return func(p *endpoints.Options) {
-		p.ResolveUnknownService = true
-	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
+
+	return payloadHash, nil
 }
