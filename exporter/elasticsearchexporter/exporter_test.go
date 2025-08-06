@@ -411,7 +411,7 @@ func TestExporterLogs(t *testing.T) {
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
+				wantDocument: []byte(`{"@timestamp":0,"attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":0,"resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
 				name: "map body",
@@ -423,7 +423,7 @@ func TestExporterLogs(t *testing.T) {
 					m.PutEmptyMap("inner").PutStr("foo", "bar")
 					return vm
 				}(),
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":0,"attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":0,"resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				name: "map body event",
@@ -436,7 +436,7 @@ func TestExporterLogs(t *testing.T) {
 					return vm
 				}(),
 				isEvent:      true,
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":0,"attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":0,"resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				name: "heterogeneous slice body",
@@ -448,7 +448,7 @@ func TestExporterLogs(t *testing.T) {
 					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 					return vs
 				}(),
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":0,"attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":0,"resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
 				name: "heterogeneous slice body event",
@@ -461,7 +461,7 @@ func TestExporterLogs(t *testing.T) {
 					return vs
 				}(),
 				isEvent:      true,
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":0,"attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":0,"resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -1313,19 +1313,19 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":"7200000.0","_metric_names_hash":"f4a8ac5e1b330ad6"}`),
+				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":7200000,"_metric_names_hash":"f4a8ac5e1b330ad6"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"10800000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":"10800000.0","_metric_names_hash":"2f30c89222c9d308"}`),
+				Document: []byte(`{"@timestamp":10800000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":10800000,"_metric_names_hash":"2f30c89222c9d308"}`),
 			},
 		}
 
@@ -1435,7 +1435,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"e446964dc8337bbb"}`),
+				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"e446964dc8337bbb"}`),
 			},
 		}
 
@@ -1485,11 +1485,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
+				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
+				Document: []byte(`{"@timestamp":3600000,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
 			},
 		}
 
@@ -1528,7 +1528,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"9c732a69b35274fe"}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"9c732a69b35274fe"}`),
 			},
 		}
 
@@ -2104,11 +2104,11 @@ func TestExporterTraces(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"0100000000000000","trace_id":"01000000000000000000000000000000","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{},"status":{},"trace_state":"foo"}`),
+				Document: []byte(`{"@timestamp":3600000,"attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"0100000000000000","trace_id":"01000000000000000000000000000000","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{},"status":{},"trace_state":"foo"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"logs-generic.otel-default"}}`),
-				Document: []byte(`{"@timestamp":"0.0","event_name":"exception","attributes":{"event.attr.foo":"event.attr.bar","event.name":"exception"},"event_name":"exception","data_stream":{"dataset":"generic.otel","namespace":"default","type":"logs"},"dropped_attributes_count":1,"resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{}}`),
+				Document: []byte(`{"@timestamp":0,"event_name":"exception","attributes":{"event.attr.foo":"event.attr.bar","event.name":"exception"},"event_name":"exception","data_stream":{"dataset":"generic.otel","namespace":"default","type":"logs"},"dropped_attributes_count":1,"resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{}}`),
 			},
 		}
 
