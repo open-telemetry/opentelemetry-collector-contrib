@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The Supervisor now exposes a health check endpoint at `http://localhost:23233/health`
+note: The Supervisor can now be configured to expose a health check endpoint
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40529]
@@ -16,6 +16,8 @@ issues: [40529]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
+  Use `agent::healthcheck` to configure the Supervisor's health check endpoint. It supports all of
+  the configuration from `confighttp.HTTPServerSettings`.
   The health check endpoint is checking the following conditions:
   - The persistent state is not nil: this should cover the existence of the instance ID, among other things.
   - The config state is not nil: this should cover the existence of the merged config.
