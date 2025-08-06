@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidca
 go 1.23.0
 
 require (
-	github.com/coreos/go-oidc/v3 v3.14.1
+	github.com/coreos/go-oidc/v3 v3.15.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.37.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810
