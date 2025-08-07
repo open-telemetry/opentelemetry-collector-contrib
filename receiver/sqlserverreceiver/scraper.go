@@ -32,11 +32,9 @@ import (
 )
 
 const (
-	computerNameKey  = "computer_name"
-	databaseNameKey  = "database_name"
-	instanceNameKey  = "sql_instance"
-	serverAddressKey = "server.address"
-	serverPortKey    = "server.port"
+	computerNameKey = "computer_name"
+	databaseNameKey = "database_name"
+	instanceNameKey = "sql_instance"
 )
 
 const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
