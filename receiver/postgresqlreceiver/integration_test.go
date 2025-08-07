@@ -96,6 +96,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Insecure = true
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.Metrics.PostgresqlTempIo.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
 				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
 				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
@@ -110,7 +111,41 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricValues(
+				"postgresql.backends",
+				"postgresql.bgwriter.buffers.allocated",
+				"postgresql.bgwriter.buffers.writes",
+				"postgresql.bgwriter.checkpoint.count",
+				"postgresql.bgwriter.duration",
+				"postgresql.bgwriter.maxwritten",
+				"postgresql.blks_hit",
+				"postgresql.blks_read",
+				"postgresql.blocks_read",
+				"postgresql.commits",
+				"postgresql.connection.max",
+				"postgresql.database.count",
+				"postgresql.database.locks",
+				"postgresql.db_size",
+				"postgresql.deadlocks",
+				"postgresql.index.scans",
+				"postgresql.index.size",
+				"postgresql.operations",
+				"postgresql.replication.data_delay",
+				"postgresql.rollbacks",
+				"postgresql.rows",
+				"postgresql.sequential_scans",
+				"postgresql.table.count",
+				"postgresql.table.size",
+				"postgresql.table.vacuum.count",
+				"postgresql.tup_deleted",
+				"postgresql.tup_fetched",
+				"postgresql.tup_inserted",
+				"postgresql.tup_returned",
+				"postgresql.tup_updated",
+				"postgresql.wal.age",
+				"postgresql.wal.delay",
+				"postgresql.wal.lag",
+			),
 			pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
@@ -148,8 +183,9 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					"-c",
 					"shared_preload_libraries=pg_stat_statements",
 				},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
-					WithStartupTimeout(2 * time.Minute),
+				WaitingFor: wait.ForLog(".*port 5432").
+					AsRegexp().
+					WithOccurrence(1),
 			},
 		})
 	assert.NoError(t, err)
@@ -179,12 +215,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		},
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: net.JoinHostPort("localhost", p.Port()),
-		},
-		QuerySampleCollection: QuerySampleCollection{
-			Enabled: true,
-		},
-		TopQueryCollection: TopQueryCollection{
-			Enabled: true,
 		},
 		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}

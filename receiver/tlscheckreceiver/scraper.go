@@ -124,7 +124,7 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 		return
 	}
 
-	s.settings.Logger.Info("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
+	s.settings.Logger.Debug("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
 	if len(state.PeerCertificates) == 0 {
 		err := fmt.Errorf("no TLS certificates found for endpoint: %s. Verify the endpoint serves TLS certificates", endpoint)
 		s.settings.Logger.Error(err.Error(), zap.String("endpoint", endpoint))

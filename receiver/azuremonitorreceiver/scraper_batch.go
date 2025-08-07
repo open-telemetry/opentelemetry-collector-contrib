@@ -233,6 +233,8 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 		Filter: &filter,
 	}
 
+	tagsFilterMap := getTagsFilterMap(s.cfg.AppendTagsAsAttributes)
+
 	resourceTypes := map[string]*azureType{}
 	pager := clientResources.NewListPager(opts)
 
@@ -256,7 +258,7 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 				}
 				s.resources[subscriptionID][*resource.ID] = &azureResource{
 					attributes:   attributes,
-					tags:         resource.Tags,
+					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
 					resourceType: resource.Type,
 				}
 				if resourceTypes[*resource.Type] == nil {
@@ -449,11 +451,9 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 									name := metadataPrefix + *value.Name.Value
 									attributes[name] = value.Value
 								}
-								if s.cfg.AppendTagsAsAttributes {
-									for tagName, value := range res.tags {
-										name := tagPrefix + tagName
-										attributes[name] = value
-									}
+								for tagName, value := range res.tags {
+									name := tagPrefix + tagName
+									attributes[name] = value
 								}
 								attributes["timegrain"] = &compositeKey.timeGrain
 								for i := len(timeseriesElement.Data) - 1; i >= 0; i-- { // reverse for loop because newest timestamp is at the end of the slice

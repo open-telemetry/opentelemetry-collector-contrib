@@ -78,10 +78,11 @@ func makeSaramaMessages(messages Messages) []*sarama.ProducerMessage {
 type kafkaErrors struct {
 	count int
 	err   string
+	topic string
 }
 
 func (ke kafkaErrors) Error() string {
-	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
+	return fmt.Sprintf("Failed to deliver %d messages to topic %s due to %s", ke.count, ke.topic, ke.err)
 }
 
 func wrapKafkaProducerError(err error) error {
@@ -100,5 +101,5 @@ func wrapKafkaProducerError(err error) error {
 		return consumererror.NewPermanent(confErr)
 	}
 
-	return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+	return kafkaErrors{len(prodErr), prodErr[0].Err.Error(), prodErr[0].Msg.Topic}
 }

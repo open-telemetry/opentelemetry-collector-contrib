@@ -3,10 +3,11 @@ type: groupbytrace
 status:
   class: processor
   stability:
-    unmaintained: [traces]
+    beta: [traces]
   distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
+    active: [iblancasa]
     emeritus: [jpkrohling]
     seeking_new: true
 tests:

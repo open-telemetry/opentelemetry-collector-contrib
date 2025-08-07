@@ -31,11 +31,9 @@ import (
 )
 
 const (
-	computerNameKey  = "computer_name"
-	databaseNameKey  = "database_name"
-	instanceNameKey  = "sql_instance"
-	serverAddressKey = "server.address"
-	serverPortKey    = "server.port"
+	computerNameKey = "computer_name"
+	databaseNameKey = "database_name"
+	instanceNameKey = "sql_instance"
 )
 
 const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
@@ -541,6 +539,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
 	const cpuCount = "cpu_count"
+	const computerUptime = "computer_uptime"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -563,13 +562,16 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 			rb.SetServerPort(int64(s.config.Port))
 		}
 
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
+		errs = append(errs,
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect),
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline),
-			s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]))
+			s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]),
+			s.mb.RecordSqlserverComputerUptimeDataPoint(now, row[computerUptime]),
+		)
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

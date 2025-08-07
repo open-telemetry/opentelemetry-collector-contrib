@@ -306,54 +306,66 @@ func TestFileMixedSignals(t *testing.T) {
 }
 
 func TestEmptyLine(t *testing.T) {
-	tempFolder := t.TempDir()
-	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
-	cs := receivertest.NewNopSettings(metadata.Type)
 	t.Run("metrics receiver", func(t *testing.T) {
+		tempFolder := t.TempDir()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Include = []string{filepath.Join(tempFolder, "*")}
+		cfg.StartAt = "beginning"
+		cs := receivertest.NewNopSettings(metadata.Type)
 		ms := new(consumertest.MetricsSink)
-		mr, err := factory.CreateMetrics(context.Background(), cs, cfg, ms)
+		mr, err := NewFactory().CreateMetrics(context.Background(), cs, cfg, ms)
 		assert.NoError(t, err)
 		err = mr.Start(context.Background(), nil)
 		assert.NoError(t, err)
-		defer func() {
+		t.Cleanup(func() {
 			assert.NoError(t, mr.Shutdown(context.Background()))
-		}()
+		})
 		err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), []byte{'\n', '\n'}, 0o600)
 		assert.NoError(t, err)
-		time.Sleep(1 * time.Second)
-		require.Empty(t, ms.AllMetrics())
+		require.EventuallyWithT(t, func(tt *assert.CollectT) {
+			require.Empty(tt, ms.AllMetrics())
+		}, time.Second, 10*time.Millisecond)
 	})
 
 	t.Run("trace receiver", func(t *testing.T) {
+		tempFolder := t.TempDir()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Include = []string{filepath.Join(tempFolder, "*")}
+		cfg.StartAt = "beginning"
+		cs := receivertest.NewNopSettings(metadata.Type)
 		ts := new(consumertest.TracesSink)
-		tr, err := factory.CreateTraces(context.Background(), cs, cfg, ts)
+		tr, err := NewFactory().CreateTraces(context.Background(), cs, cfg, ts)
 		assert.NoError(t, err)
 		err = tr.Start(context.Background(), nil)
 		assert.NoError(t, err)
-		defer func() {
+		t.Cleanup(func() {
 			assert.NoError(t, tr.Shutdown(context.Background()))
-		}()
+		})
 		err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), []byte{'\n', '\n'}, 0o600)
 		assert.NoError(t, err)
-		time.Sleep(1 * time.Second)
-		require.Empty(t, ts.AllTraces())
+		require.EventuallyWithT(t, func(tt *assert.CollectT) {
+			require.Empty(tt, ts.AllTraces())
+		}, time.Second, 10*time.Millisecond)
 	})
 
 	t.Run("log receiver", func(t *testing.T) {
+		tempFolder := t.TempDir()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Include = []string{filepath.Join(tempFolder, "*")}
+		cfg.StartAt = "beginning"
+		cs := receivertest.NewNopSettings(metadata.Type)
 		ls := new(consumertest.LogsSink)
-		lr, err := factory.CreateLogs(context.Background(), cs, cfg, ls)
+		lr, err := NewFactory().CreateLogs(context.Background(), cs, cfg, ls)
 		assert.NoError(t, err)
 		err = lr.Start(context.Background(), nil)
 		assert.NoError(t, err)
-		defer func() {
+		t.Cleanup(func() {
 			assert.NoError(t, lr.Shutdown(context.Background()))
-		}()
+		})
 		err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), []byte{'\n', '\n'}, 0o600)
 		assert.NoError(t, err)
-		time.Sleep(1 * time.Second)
-		require.Empty(t, ls.AllLogs())
+		require.EventuallyWithT(t, func(tt *assert.CollectT) {
+			require.Empty(tt, ls.AllLogs())
+		}, time.Second, 10*time.Millisecond)
 	})
 }

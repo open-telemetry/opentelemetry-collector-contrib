@@ -268,6 +268,30 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
+			name: "metric_msg_with_dashes",
+			req: func() *http.Request {
+				e := buildSplunkHecMetricsMsg("metric", 3, 4, 3)
+				delete(e.Fields, "metric_name:foo")
+				e.Fields["metric_name:name-with-dashes"] = 42
+				msgBytes, err := json.Marshal(e)
+				require.NoError(t, err)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponse(t, resp, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Empty(t, sink.AllLogs())
+			},
+			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
+				assert.Len(t, sink.AllMetrics(), 1)
+				assert.Equal(t, 1, sink.AllMetrics()[0].MetricCount())
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "name-with-dashes", m.Name())
+			},
+		},
+		{
 			name: "msg_accepted_gzipped",
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
@@ -1946,6 +1970,9 @@ func BenchmarkHandleReq(b *testing.B) {
 			totalMessage[offset+bi] = b
 		}
 	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(totalMessage))

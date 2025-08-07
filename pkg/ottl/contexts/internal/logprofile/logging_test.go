@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -26,8 +27,43 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 			profile: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				dic := pprofile.NewProfilesDictionary()
 				p := &pprofiletest.Profile{
-					ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
+					ProfileID: pprofile.ProfileID([]byte("profileid1111111")),
+					SampleType: []pprofiletest.ValueType{
+						{
+							Typ:  "test",
+							Unit: "foobar",
+						},
+					},
+					Sample: []pprofiletest.Sample{
+						{
+							Locations: []pprofiletest.Location{
+								{
+									Address: 0x42,
+								},
+							},
+							Value: []int64{73},
+							Link: &pprofiletest.Link{
+								TraceID: pcommon.TraceID{
+									0xf, 0xe, 0xd, 0xc, 0xb, 0xa, 0x9, 0x8,
+									0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0x0,
+								},
+								SpanID: pcommon.SpanID{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7},
+							},
+						},
+						{
+							Locations: []pprofiletest.Location{
+								{
+									Address: 0x43,
+								},
+							},
+							Value: []int64{74},
+							Attributes: []pprofiletest.Attribute{
+								{Key: "sample2", Value: "value2"},
+							},
+						},
+					},
 					Attributes: []pprofiletest.Attribute{{Key: "container-attr1", Value: "value1"}},
+					Comment:    []string{"comment1", "comment2"},
 				}
 				return dic, p.Transform(dic, pprofile.NewScopeProfiles())
 			},

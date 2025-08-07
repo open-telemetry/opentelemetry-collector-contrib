@@ -54,6 +54,7 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlWalDelay.Enabled = true
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		cfg.Metrics.PostgresqlTupReturned.Enabled = true
 		cfg.Metrics.PostgresqlTupFetched.Enabled = true
@@ -97,6 +98,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -130,6 +133,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = false
 		cfg.Metrics.PostgresqlTempFiles.Enabled = false
+		cfg.Metrics.PostgresqlTempIo.Enabled = false
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = false
 		cfg.Metrics.PostgresqlTupReturned.Enabled = false
 		cfg.Metrics.PostgresqlTupFetched.Enabled = false
@@ -172,6 +176,8 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -223,6 +229,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -274,6 +282,8 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -326,6 +336,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
+		cfg.Metrics.PostgresqlTempIo.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
@@ -395,7 +407,6 @@ var expectedScrapeSampleQuery string
 func TestScrapeQuerySample(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.QuerySampleCollection.Enabled = true
 	cfg.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
@@ -435,7 +446,6 @@ var expectedExplain string
 func TestScrapeTopQueries(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.TopQueryCollection.Enabled = true
 	cfg.Events.DbServerTopQuery.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
@@ -661,6 +671,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				tupDeleted:           int64(idx + 9),
 				blksHit:              int64(idx + 10),
 				blksRead:             int64(idx + 11),
+				tempIo:               int64(idx + 12),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
