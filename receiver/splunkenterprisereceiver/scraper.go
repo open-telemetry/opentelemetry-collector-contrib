@@ -1582,8 +1582,8 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(_ context.Context, now pc
 
 // Scrape introspection kv store status
 func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.Metrics.SplunkKvstoreStatus.Enabled ||
-		!s.conf.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
+	if !s.conf.Metrics.SplunkKvstoreStatus.Enabled &&
+		!s.conf.Metrics.SplunkKvstoreReplicationStatus.Enabled &&
 		!s.conf.Metrics.SplunkKvstoreBackupStatus.Enabled ||
 		!s.splunkClient.isConfigured(typeCm) {
 		return

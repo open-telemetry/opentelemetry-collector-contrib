@@ -65,6 +65,15 @@ func TestNew_WAFLog(t *testing.T) {
 	require.ErrorContains(t, err, `failed to get reader for "waf_log" logs`)
 }
 
+func TestNew_ELBAcessLog(t *testing.T) {
+	e, err := newExtension(&Config{Format: formatELBAccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.NoError(t, err)
+	require.NotNil(t, e)
+
+	_, err = e.UnmarshalLogs([]byte("invalid"))
+	require.ErrorContains(t, err, `failed to unmarshal logs as "elb_access_log" format`)
+}
+
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)

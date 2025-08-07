@@ -1,0 +1,183 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: open-telemetry
+        - key: cloud.resource_id
+          value:
+            stringValue: log-test
+        - key: gcp.resource_type
+          value:
+            stringValue: test
+        - key: gcp.label.owner
+          value:
+            stringValue: test
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: test
+              - key: http.response.size
+                value:
+                  intValue: "8921"
+              - key: http.request.size
+                value:
+                  intValue: "1452"
+              - key: gcp.cache.fill_bytes
+                value:
+                  intValue: "8921"
+              - key: http.request.server.duration
+                value:
+                  doubleValue: 0.45
+              - key: url.full
+                value:
+                  stringValue: https://example.com/api/v1/users?limit=10
+              - key: url.path
+                value:
+                  stringValue: /api/v1/users
+              - key: url.query
+                value:
+                  stringValue: limit=10
+              - key: url.domain
+                value:
+                  stringValue: example.com
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36
+              - key: client.address
+                value:
+                  stringValue: 203.0.113.42
+              - key: server.address
+                value:
+                  stringValue: 10.0.0.1
+              - key: http.request.header.referer
+                value:
+                  stringValue: https://example.com/dashboard
+              - key: gcp.cache.lookup
+                value:
+                  boolValue: true
+              - key: gcp.cache.hit
+                value:
+                  boolValue: false
+              - key: gcp.cache.validated_with_origin_server
+                value:
+                  boolValue: true
+              - key: code.line.number
+                value:
+                  intValue: "123"
+              - key: code.file.path
+                value:
+                  stringValue: test-file
+              - key: code.function.name
+                value:
+                  stringValue: testFunction
+              - key: gcp.label.project
+                value:
+                  stringValue: open telemetry
+              - key: gcp.operation.id
+                value:
+                  stringValue: operation-test
+              - key: gcp.operation.producer
+                value:
+                  stringValue: producer-test
+              - key: gcp.operation.first
+                value:
+                  boolValue: false
+              - key: gcp.operation.last
+                value:
+                  boolValue: false
+              - key: gcp.split.index
+                value:
+                  intValue: "0"
+              - key: gcp.split.total
+                value:
+                  intValue: "0"
+              - key: gcp.error_group
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: id
+                              value:
+                                stringValue: g1
+                      - kvlistValue:
+                          values:
+                            - key: id
+                              value:
+                                stringValue: g2
+              - key: gcp.apphub.application.container
+                value:
+                  stringValue: gke-my-project-cluster
+              - key: gcp.apphub.application.location
+                value:
+                  stringValue: us-central1
+              - key: gcp.apphub.application.id
+                value:
+                  stringValue: order-processing-app
+              - key: gcp.apphub.service.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.apphub.service.criticality_type
+                value:
+                  stringValue: MISSION_CRITICAL
+              - key: gcp.apphub.service.id
+                value:
+                  stringValue: payment-service
+              - key: gcp.apphub.workload.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.apphub.workload.criticality_type
+                value:
+                  stringValue: HIGH
+              - key: gcp.apphub.workload.id
+                value:
+                  stringValue: checkout-workload
+              - key: gcp.appub_destination.application.container
+                value:
+                  stringValue: gke-analytics-cluster
+              - key: gcp.appub_destination.application.location
+                value:
+                  stringValue: us-west1
+              - key: gcp.appub_destination.application.id
+                value:
+                  stringValue: data-processing-app
+              - key: gcp.appub_destination.service.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.appub_destination.service.criticality_type
+                value:
+                  stringValue: MISSION_CRITICAL
+              - key: gcp.appub_destination.service.id
+                value:
+                  stringValue: fraud-detection-service
+              - key: gcp.appub_destination.workload.environment_type
+                value:
+                  stringValue: PROD
+              - key: gcp.appub_destination.workload.criticality_type
+                value:
+                  stringValue: HIGH
+              - key: gcp.appub_destination.workload.id
+                value:
+                  stringValue: analytics-workload
+            body: {}
+            observedTimeUnixNano: "1714905139455706870"
+            severityText: DEFAULT
+            spanId: 2d84b769bfe8de6d
+            timeUnixNano: "1714905079455706870"
+            traceId: 6a4ff0a7376921a0eb18291d8618302c
+        scope: {}

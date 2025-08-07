@@ -462,6 +462,11 @@ func addExtraLabel(dimensions pcommon.Map, label, value string) pcommon.Map {
 	return dimensions
 }
 
+// nowWithOffset returns the current time minus the configured offset
+func (p *serviceGraphConnector) nowWithOffset() time.Time {
+	return time.Now().Add(-p.config.MetricsTimestampOffset)
+}
+
 func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
@@ -493,7 +498,7 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 		for key, c := range p.reqTotal {
 			dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 			dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(p.nowWithOffset()))
 			dpCalls.SetIntValue(c)
 
 			dimensions, ok := p.dimensionsForSeries(key)
@@ -515,7 +520,7 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 		for key, c := range p.reqFailedTotal {
 			dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 			dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(p.nowWithOffset()))
 			dpCalls.SetIntValue(c)
 
 			dimensions, ok := p.dimensionsForSeries(key)
@@ -553,7 +558,7 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 		}
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
+		timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 
 		for key := range p.reqClientDurationSecondsCount {
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
@@ -586,7 +591,7 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 		}
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
+		timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 
 		for key := range p.reqServerDurationSecondsCount {
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
