@@ -33,7 +33,6 @@ func TestCreate(t *testing.T) {
 			name: "default",
 			cfg: &Config{
 				Endpoint: DefaultEndpoint,
-				Key:      "token:name",
 				Interval: DefaultInterval,
 			},
 		},
