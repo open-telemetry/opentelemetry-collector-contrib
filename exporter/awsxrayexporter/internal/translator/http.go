@@ -6,6 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -216,7 +217,10 @@ func constructClientURL(urlParts map[string]string) string {
 		}
 		query, ok := urlParts[conventions.AttributeURLQuery]
 		if ok {
-			url += "?" + query
+			if !strings.HasPrefix(query, "?") {
+				query = "?" + query
+			}
+			url += query
 		}
 	}
 	return url
@@ -273,7 +277,10 @@ func constructServerURL(urlParts map[string]string) string {
 		}
 		query, ok := urlParts[conventions.AttributeURLQuery]
 		if ok {
-			url += "?" + query
+			if !strings.HasPrefix(query, "?") {
+				query = "?" + query
+			}
+			url += query
 		}
 	}
 	return url

@@ -79,7 +79,8 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes[conventions.AttributeHTTPRequestMethod] = "GET"
 	attributes[conventions.AttributeURLScheme] = "https"
 	attributes[conventionsv112.AttributeHTTPHost] = "api.example.com"
-	attributes[conventions.AttributeURLQuery] = "users=junit"
+	attributes[conventions.AttributeURLPath] = "/users/junit"
+	attributes[conventions.AttributeURLQuery] = "v=1"
 	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
@@ -92,7 +93,7 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.Contains(t, jsonStr, "https://api.example.com/?users=junit")
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit?v=1")
 }
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
@@ -279,7 +280,7 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
 	attributes[conventions.AttributeURLScheme] = "https"
 	attributes[conventions.AttributeServerAddress] = "api.example.com"
-	attributes[conventions.AttributeURLQuery] = "users=junit"
+	attributes[conventions.AttributeURLPath] = "/users/junit"
 	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
@@ -292,7 +293,29 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.Contains(t, jsonStr, "https://api.example.com/?users=junit")
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
+}
+
+func TestServerSpanWithNewConventionsWithURLPath(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
+	attributes[conventions.AttributeServerAddress] = "localhost"
+	attributes[conventions.AttributeURLScheme] = "http"
+	attributes[conventions.AttributeURLQuery] = "?version=test"
+	attributes[conventions.AttributeURLPath] = "/api"
+	attributes[conventions.AttributeClientAddress] = "127.0.0.1"
+	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.Contains(t, jsonStr, "http://localhost/api?version=test")
 }
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
