@@ -12,12 +12,10 @@ import (
 	"io"
 	"strings"
 	"sync"
-	"time"
 
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -183,11 +181,9 @@ func (receiver *pubsubReceiver) setMarshallerFromEncodingID(encodingID buildInEn
 		case otlpProtoLog:
 			receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
 		case rawTextLog:
-			receiver.settings.Logger.Warn("build-in raw_text encoding is deprecated and will be removed in v0.132.0, use the text encoding extension instead")
-			receiver.logsUnmarshaler = unmarshalLogStrings{}
+			return errors.New("build-in raw_text encoding is removed since v0.132.0, use the text encoding extension instead")
 		case cloudLogging:
-			receiver.settings.Logger.Warn("build-in cloud_logging encoding is deprecated and will be removed in v0.132.0, use the googlecloudlogentry encoding extension instead")
-			receiver.logsUnmarshaler = unmarshalCloudLoggingLogEntry{}
+			return errors.New("build-in cloud_logging encoding is removed since v0.132.0, use the googlecloudlogentry encoding extension instead")
 		default:
 			return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for logs", receiver.config.Encoding)
 		}
@@ -216,54 +212,6 @@ func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
 	client := receiver.client
 	receiver.client = nil
 	return client.Close()
-}
-
-type unmarshalLogStrings struct{}
-
-func (unmarshalLogStrings) UnmarshalLogs(data []byte) (plog.Logs, error) {
-	out := plog.NewLogs()
-	logs := out.ResourceLogs()
-	rls := logs.AppendEmpty()
-
-	ills := rls.ScopeLogs().AppendEmpty()
-	lr := ills.LogRecords().AppendEmpty()
-
-	lr.Body().SetStr(string(data))
-	return out, nil
-}
-
-func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, payload []byte) error {
-	if receiver.logsConsumer == nil {
-		return nil
-	}
-	unmarshall := unmarshalLogStrings{}
-	out, err := unmarshall.UnmarshalLogs(payload)
-	if err != nil {
-		return err
-	}
-	return receiver.logsConsumer.ConsumeLogs(ctx, out)
-}
-
-type unmarshalCloudLoggingLogEntry struct{}
-
-func (unmarshalCloudLoggingLogEntry) UnmarshalLogs(data []byte) (plog.Logs, error) {
-	resource, lr, err := internal.TranslateLogEntry(data)
-	out := plog.NewLogs()
-
-	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-
-	if err != nil {
-		return out, err
-	}
-
-	logs := out.ResourceLogs()
-	rls := logs.AppendEmpty()
-	resource.CopyTo(rls.Resource())
-
-	ills := rls.ScopeLogs().AppendEmpty()
-	lr.CopyTo(ills.LogRecords().AppendEmpty())
-
-	return out, nil
 }
 
 func decompress(payload []byte, compression buildInCompression) ([]byte, error) {
@@ -423,10 +371,6 @@ func (receiver *pubsubReceiver) createMultiplexingReceiverHandler(ctx context.Co
 			case otlpProtoLog:
 				if receiver.logsConsumer != nil {
 					return receiver.handleLog(ctx, payload, compression)
-				}
-			case rawTextLog:
-				if receiver.logsConsumer != nil {
-					return receiver.handleLogStrings(ctx, payload)
 				}
 			default:
 				return errors.New("unknown encoding")
