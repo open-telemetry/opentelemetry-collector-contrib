@@ -33,14 +33,9 @@ func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArg
 }
 
 func convertSummaryQuantileValToGauge(attrKey, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	metricNameSuffix := ".quantiles"
-	if !suffix.IsEmpty() {
-		metricNameSuffix = suffix.Get()
-	}
-	attributeKey := "quantile"
-	if !attrKey.IsEmpty() {
-		attributeKey = attrKey.Get()
-	}
+	metricNameSuffix := suffix.GetOr(".quantiles")
+	attributeKey := attrKey.GetOr("quantile")
+
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
