@@ -568,7 +568,7 @@ func (mfe *MetricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, resou
 }
 
 // LogsFeatureExtractor extracts numerical features from log records
-type LogsFeatureExtractor struct {
+type logsFeatureExtractor struct {
 	features      []string
 	logger        *zap.Logger
 	lastTimestamp map[string]time.Time
