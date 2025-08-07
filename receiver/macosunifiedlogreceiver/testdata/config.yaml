@@ -1,0 +1,46 @@
+macosunifiedlog/defaults:
+  encoding_extension: "macosunifiedlogencoding"
+  include:
+    - "/var/db/diagnostics/Persist/*.tracev3"
+
+macosunifiedlog/start-at-beginning:
+  encoding_extension: "macosunifiedlogencoding"
+  include: [ /var/db/diagnostics/Persist/*.tracev3 ]
+  start_at: beginning
+
+macosunifiedlog/testdata:
+  encoding_extension: "macosunifiedlogencoding"
+  include:
+    - "testdata/test.tracev3"
+  start_at: beginning
+
+macosunifiedlog/custom-encoding:
+  encoding_extension: custom_encoding_extension
+  include:
+    - "/var/db/diagnostics/Persist/*.tracev3"
+    - "/var/db/diagnostics/Special/*.tracev3"
+  exclude:
+    - "/var/db/diagnostics/Persist/0000000000000001.tracev3"
+  start_at: end
+  poll_interval: 500ms
+  max_concurrent_files: 512
+  max_log_size: 2MiB
+  include_file_path: true
+  include_file_name: true
+
+macosunifiedlog/bad-encoding:
+  encoding_extension: 
+  include:
+    - "/var/db/diagnostics/Persist/*.tracev3"
+
+macosunifiedlog/no-include:
+  encoding_extension: "macosunifiedlogencoding"
+
+macosunifiedlog/empty-include:
+  encoding_extension: "macosunifiedlogencoding"
+  include: []
+
+
+# dummy encoding
+macosunifiedlogencoding:
+

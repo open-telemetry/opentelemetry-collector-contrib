@@ -69,30 +69,34 @@ func newMacOSUnifiedLogReceiver(
 
 // Start implements receiver.Logs
 func (r *macosUnifiedLogReceiver) Start(ctx context.Context, host component.Host) error {
-	// Load the encoding extension now that we have access to the host
+	r.set.Logger.Info("Starting macOS Unified Log receiver")
+
+	// Load the encoding extension
 	encodingExt, err := r.loadEncodingExtension(host)
 	if err != nil {
-		return fmt.Errorf("failed to load encoding extension: %w", err)
+		r.set.Logger.Error("Failed to load encoding extension", zap.Error(err))
+		return err
 	}
 	r.encodingExt = encodingExt
+	r.set.Logger.Info("Encoding extension loaded successfully")
 
-	// Create a cancellable context for the receiver
-	ctx, cancel := context.WithCancel(ctx)
-	r.cancel = cancel
-
-	// Set up file consumer to watch traceV3 files
+	// Create the file consumer
 	fileConsumer, err := r.createFileConsumer(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create file consumer: %w", err)
+		r.set.Logger.Error("Failed to create file consumer", zap.Error(err))
+		return err
 	}
 	r.fileConsumer = fileConsumer
+	r.set.Logger.Info("File consumer created successfully")
 
-	// Start the file consumer with no persister (in-memory only)
-	if err := r.fileConsumer.Start(nil); err != nil {
-		return fmt.Errorf("failed to start file consumer: %w", err)
+	// Start the file consumer
+	err = r.fileConsumer.Start(nil)
+	if err != nil {
+		r.set.Logger.Error("Failed to start file consumer", zap.Error(err))
+		return err
 	}
+	r.set.Logger.Info("File consumer started successfully")
 
-	r.set.Logger.Info("macOS Unified Logging receiver started")
 	return nil
 }
 
@@ -139,12 +143,23 @@ func (r *macosUnifiedLogReceiver) loadEncodingExtension(host component.Host) (en
 
 // createFileConsumer creates and configures the file consumer for traceV3 files
 func (r *macosUnifiedLogReceiver) createFileConsumer(ctx context.Context) (*fileconsumer.Manager, error) {
-	// Create file consumer with our custom emit callback and no encoding (we handle it via extension)
+	r.set.Logger.Info("Creating file consumer", zap.Any("config", r.config))
+
+	// Get the file consumer configuration
 	fcConfig := r.config.getFileConsumerConfig()
-	return fcConfig.Build(
+
+	// Create file consumer with our custom emit callback and no encoding (we handle it via extension)
+	fileConsumer, err := fcConfig.Build(
 		r.set.TelemetrySettings,
 		r.consumeTraceV3Tokens,
 	)
+	if err != nil {
+		r.set.Logger.Error("Failed to create file consumer", zap.Error(err))
+		return nil, fmt.Errorf("failed to create file consumer: %w", err)
+	}
+
+	r.set.Logger.Info("File consumer created successfully")
+	return fileConsumer, nil
 }
 
 // consumeTraceV3Tokens processes tokens (file chunks) from the file consumer
@@ -153,6 +168,7 @@ func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, toke
 
 	// Debug: Log all available attributes
 	r.set.Logger.Debug("Received attributes", zap.Any("attributes", attributes))
+	r.set.Logger.Info("Processing traceV3 tokens", zap.Int("tokenCount", len(tokens)), zap.Any("attributes", attributes))
 
 	// Get the file path from attributes
 	filePath := "unknown"
@@ -168,7 +184,7 @@ func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, toke
 		r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", 0, nil)
 		return nil
 	}
-	// Mark file as processed
+	// Mark this file as processed
 	r.processedFiles[filePath] = struct{}{}
 	r.mu.Unlock()
 
@@ -219,4 +235,5 @@ func (r *macosUnifiedLogReceiver) setLogRecordAttributes(logRecord *plog.LogReco
 	// Add file information as attributes
 	logRecord.Attributes().PutInt("file.total.size", int64(totalSize))
 	logRecord.Attributes().PutInt("file.token.count", int64(lenTokens))
+	logRecord.Attributes().PutStr("receiver.name", "macosunifiedlog")
 }
