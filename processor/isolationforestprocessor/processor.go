@@ -447,7 +447,7 @@ type TraceFeatureExtractor struct {
 	logger   *zap.Logger
 }
 
-func NewTraceFeatureExtractor(features []string, logger *zap.Logger) *TraceFeatureExtractor {
+func newTraceFeatureExtractor(features []string, logger *zap.Logger) *TraceFeatureExtractor {
 	return &TraceFeatureExtractor{
 		features: features,
 		logger:   logger,
