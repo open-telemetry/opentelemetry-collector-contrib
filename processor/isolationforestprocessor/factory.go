@@ -80,7 +80,7 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	processorCfg, ok := cfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("configuration is not of type *Config")
+		return nil, errors.New("configuration is not of type *Config")
 	}
 
 	if err := processorCfg.Validate(); err != nil {
