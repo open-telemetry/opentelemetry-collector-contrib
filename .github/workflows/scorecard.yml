@@ -7,9 +7,9 @@ on:
   # To guarantee Maintained check is occasionally updated. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained
   schedule:
-    - cron: '39 1 * * 3'
+    - cron: "39 1 * * 3"
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 # Declare default permissions as read only.
 permissions: read-all
@@ -17,6 +17,7 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
+    if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     runs-on: ubuntu-latest
     permissions:
       # Needed to upload the results to code-scanning dashboard.
