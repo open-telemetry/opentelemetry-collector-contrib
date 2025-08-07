@@ -1,6 +1,3 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
 // factory.go - OpenTelemetry Collector factory implementation
 package isolationforestprocessor // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 
@@ -18,14 +15,10 @@ import (
 )
 
 const (
-	// typeStr is the type identifier for this processor in OpenTelemetry configurations
 	typeStr = "isolationforest"
-
-	// stability indicates this processor is in alpha stage
 	stability = component.StabilityLevelAlpha
 )
 
-// NewFactory creates a new processor factory for the isolation forest processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		component.MustNewType(typeStr),
@@ -36,7 +29,6 @@ func NewFactory() processor.Factory {
 	)
 }
 
-// createTracesProcessor creates a trace processor instance
 func createTracesProcessor(
 	ctx context.Context,
 	set processor.Settings,
@@ -71,7 +63,6 @@ func createTracesProcessor(
 	}, nil
 }
 
-// createMetricsProcessor creates a metrics processor instance
 func createMetricsProcessor(
 	ctx context.Context,
 	set processor.Settings,
@@ -105,7 +96,6 @@ func createMetricsProcessor(
 	}, nil
 }
 
-// createLogsProcessor creates a logs processor instance
 func createLogsProcessor(
 	ctx context.Context,
 	set processor.Settings,
@@ -139,7 +129,6 @@ func createLogsProcessor(
 	}, nil
 }
 
-// tracesProcessor implements processor.Traces
 type tracesProcessor struct {
 	*isolationForestProcessor
 	nextConsumer consumer.Traces
@@ -166,7 +155,6 @@ func (tp *tracesProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// metricsProcessor implements processor.Metrics
 type metricsProcessor struct {
 	*isolationForestProcessor
 	nextConsumer consumer.Metrics
@@ -193,7 +181,6 @@ func (mp *metricsProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// logsProcessor implements processor.Logs
 type logsProcessor struct {
 	*isolationForestProcessor
 	nextConsumer consumer.Logs
