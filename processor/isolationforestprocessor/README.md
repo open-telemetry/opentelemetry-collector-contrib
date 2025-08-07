@@ -165,7 +165,3 @@ PRs welcome – please include unit tests and doc updates.
 
 ---
 
-## 📜 License
-
-This processor is released under the [Apache 2.0 License](../../LICENSE).
-
