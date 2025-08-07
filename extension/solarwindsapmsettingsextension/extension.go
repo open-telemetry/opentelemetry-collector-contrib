@@ -6,7 +6,6 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -70,9 +69,10 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	if err != nil {
 		return err
 	}
+	serviceName := resolveServiceNameBestEffort()
 	keyArr := strings.Split(extension.config.Key, ":")
-	if len(keyArr) != 2 {
-		return errors.New("valid key is required")
+	if len(keyArr) == 2 {
+		serviceName = keyArr[1]
 	}
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.DisableKeepAlives = true
@@ -80,7 +80,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	if err != nil {
 		return err
 	}
-	extension.request, err = http.NewRequest(http.MethodGet, "https://"+extension.config.Endpoint+"/v1/settings/"+keyArr[1]+"/"+hostname, http.NoBody)
+	extension.request, err = http.NewRequest(http.MethodGet, "https://"+extension.config.Endpoint+"/v1/settings/"+serviceName+"/"+hostname, http.NoBody)
 	if err != nil {
 		return err
 	}
