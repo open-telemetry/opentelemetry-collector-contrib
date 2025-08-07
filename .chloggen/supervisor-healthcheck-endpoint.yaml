@@ -17,7 +17,7 @@ issues: [40529]
 # Use pipe (|) for multiline entries.
 subtext: |
   Use `agent::healthcheck` to configure the Supervisor's health check endpoint. It supports all of
-  the configuration from `confighttp.HTTPServerSettings`.
+  the configuration from `confighttp.ServerConfig`.
   The health check endpoint is checking the following conditions:
   - The persistent state is not nil: this should cover the existence of the instance ID, among other things.
   - The config state is not nil: this should cover the existence of the merged config.
