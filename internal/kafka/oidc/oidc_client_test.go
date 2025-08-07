@@ -455,9 +455,9 @@ func oidcServer(shutdownCh <-chan bool, portCh chan<- int, expireSecs int) {
 	portCh <- port
 
 	go func() {
-		err = s.Serve(listener)
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("OIDC server error: %v", err)
+		serveErr := s.Serve(listener)
+		if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			log.Printf("OIDC server error: %v", serveErr)
 		}
 	}()
 
