@@ -19,6 +19,7 @@ const (
 	// the format of encoded telemetry data
 	formatTypeJSON  = "json"
 	formatTypeProto = "proto"
+	formatTypeJSONL = "jsonl"
 )
 
 // NewFactory creates a factory for Azure Blob exporter.
