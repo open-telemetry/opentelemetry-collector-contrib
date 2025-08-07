@@ -3,8 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.23.0
 
 require (
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.0
+	// TODO(bwplotka): Switch to an official relase, this points to the PR for now https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/1063
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.1-0.20250807084240-31a9305f671a
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.1-0.20250807084240-31a9305f671a
 	github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
 	github.com/stretchr/testify v1.10.0

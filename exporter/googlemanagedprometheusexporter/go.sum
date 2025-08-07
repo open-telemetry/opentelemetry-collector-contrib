@@ -34,10 +34,10 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 h1:oygO0locgZJ
 github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.0 h1:Bx8/0To6dQQzbRMaZX/NBqK/Vtzto9nRb0FySqWUsQs=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.0/go.mod h1:p659xWjqa2ZU6ubOumX1arLc5cY7UTITBkLVedm/qec=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.0 h1:SGCt/0jiiAbH+yCphep+tOSYJu9C8XnV71t0hWphPvw=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.0/go.mod h1:vDuKK7oUma/INMu7QfV4dYvovByh3JWBPlhK+tn0EQE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.1-0.20250807084240-31a9305f671a h1:ZPJwOl0+VJDTyhUoL6hCzam1zLo6pKxMth+7ZFP7KXs=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.1-0.20250807084240-31a9305f671a/go.mod h1:p659xWjqa2ZU6ubOumX1arLc5cY7UTITBkLVedm/qec=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.1-0.20250807084240-31a9305f671a h1:fTbxTvMB7whJozcWDRO2Bybt3bxoHEU6yCoDZxO+N8U=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.1-0.20250807084240-31a9305f671a/go.mod h1:vDuKK7oUma/INMu7QfV4dYvovByh3JWBPlhK+tn0EQE=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.29.0 h1:YVtMlmfRUTaWs3+1acwMBp7rBUo6zrxl6Kn13/R9YW4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.29.0/go.mod h1:rKOFVIPbNs2wZeh7ZeQ0D9p/XLgbNiTr5m7x6KuAshk=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.53.0 h1:4LP6hvB4I5ouTbGgWtixJhgED6xdf67twf9PoY96Tbg=
