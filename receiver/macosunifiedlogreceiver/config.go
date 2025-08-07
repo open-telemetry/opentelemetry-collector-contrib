@@ -6,20 +6,18 @@ package macosunifiedlogreceiver // import "github.com/open-telemetry/opentelemet
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 )
 
-// Config defines configuration for macOS Unified Logging receiver
+// Config defines configuration for the macOS Unified Logging receiver
 type Config struct {
 	fileconsumer.Config `mapstructure:",squash"`
 	adapter.BaseConfig  `mapstructure:",squash"`
 
 	// Encoding specifies the encoding extension to use for decoding traceV3 files.
 	// This should reference an encoding extension ID (e.g., "macos_unified_logging_encoding").
-	Encoding string `mapstructure:"encoding"`
+	Encoding string `mapstructure:"encoding_extension"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -44,12 +42,5 @@ func (cfg Config) Validate() error {
 		return errors.New("encoding must be macosunifiedlogencoding for macOS Unified Logging receiver")
 	}
 
-	// TODO: make sure that only macOS encoding extension is accepted
-
-	return nil
-}
-
-// unmarshalBody unmarshals the body of the receiver configuration
-func (cfg *Config) unmarshalBody(component.Config) error {
 	return nil
 }

@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedlogreceiver/internal/metadata"
 )
 
@@ -33,10 +35,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateLogsReceiver(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Encoding = "test_encoding"
-	cfg.Include = []string{"/tmp/*.tracev3"}
+	cfg := &Config{
+		Config: fileconsumer.Config{
+			Criteria: matcher.Criteria{
+				Include: []string{"/var/db/diagnostics/Persist/*.tracev3"},
+			},
+		},
+		Encoding: "macosunifiedlogencoding", // Correct encoding name
+	}
 
 	// Should succeed in creation, but Start will fail without proper extension
 	_, err := createLogsReceiver(
@@ -57,13 +63,23 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "valid config",
 			config: &Config{
-				Encoding: "macos_unified_logging_encoding",
+				Config: fileconsumer.Config{
+					Criteria: matcher.Criteria{
+						Include: []string{"/var/db/diagnostics/Persist/*.tracev3"},
+					},
+				},
+				Encoding: "macosunifiedlogencoding", // Correct encoding name
 			},
 			expectErr: false,
 		},
 		{
 			name: "missing encoding",
 			config: &Config{
+				Config: fileconsumer.Config{
+					Criteria: matcher.Criteria{
+						Include: []string{"/var/db/diagnostics/Persist/*.tracev3"},
+					},
+				},
 				Encoding: "",
 			},
 			expectErr: true,

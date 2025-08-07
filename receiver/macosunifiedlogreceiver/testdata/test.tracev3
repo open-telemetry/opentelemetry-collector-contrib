@@ -1,0 +1,6 @@
+Mock macOS Unified Logging traceV3 binary data for testing.
+This would normally contain compressed binary log entries.
+For testing purposes, this is just text data.
+Test entry 1: System startup
+Test entry 2: Application launch
+Test entry 3: Error condition 

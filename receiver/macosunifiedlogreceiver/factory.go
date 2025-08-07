@@ -33,8 +33,7 @@ func createDefaultConfig() component.Config {
 			Operators:      []operator.Config{},
 			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
-		Config:   *fileconsumer.NewConfig(),
-		Encoding: "macosunifiedlogencoding",
+		Config: *fileconsumer.NewConfig(),
 	}
 }
 
