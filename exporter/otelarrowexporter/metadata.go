@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 
-	arrowPkg "github.com/apache/arrow/go/v16/arrow"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -64,7 +63,7 @@ func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClie
 		// Ignoring an error because Validate() was called.
 		_ = zstd.SetEncoderConfig(oCfg.Arrow.Zstd)
 
-		userAgent += fmt.Sprintf(" ApacheArrow/%s (NumStreams/%d)", arrowPkg.PkgVersion, oCfg.Arrow.NumStreams)
+		userAgent += fmt.Sprintf(" OTAP (NumStreams/%d)", oCfg.Arrow.NumStreams)
 	}
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(oCfg.MetadataKeys))
