@@ -147,6 +147,10 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
 
+	// The default exporter setting enables the memory queue; we
+	// disable to avoid flaky tests.
+	exporterCfg.QueueSettings.WaitForResult = true
+
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
 	}
