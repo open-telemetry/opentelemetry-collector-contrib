@@ -7,16 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -34,6 +37,7 @@ type Supervisor struct {
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -80,6 +84,10 @@ func (s Supervisor) Validate() error {
 	}
 
 	if err := s.Agent.Validate(); err != nil {
+		return err
+	}
+
+	if err := s.HealthCheck.Validate(); err != nil {
 		return err
 	}
 
@@ -264,6 +272,30 @@ type Telemetry struct {
 	Traces  telemetry.TracesConfig `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
+}
+
+type HealthCheck struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
+}
+
+func (h HealthCheck) Port() int64 {
+	_, port, err := net.SplitHostPort(h.Endpoint)
+	if err != nil {
+		return 0
+	}
+	parsedPort, err := strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return parsedPort
+}
+
+func (h HealthCheck) Validate() error {
+	parsedPort := h.Port()
+	if parsedPort < 0 || parsedPort > 65535 {
+		return fmt.Errorf("healthcheck::endpoint must contain a valid port number, got %d", parsedPort)
+	}
+	return nil
 }
 
 type Logs struct {
