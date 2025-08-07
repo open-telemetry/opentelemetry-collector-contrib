@@ -2445,7 +2445,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	})
 	t.Run("profiles", func(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
-		// the metadata is picked up and an invalid modes is rejected.
+		// the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
