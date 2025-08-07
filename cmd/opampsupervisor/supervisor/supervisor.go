@@ -761,6 +761,8 @@ func (s *Supervisor) startHealthCheckServer() error {
 
 type nopHost struct{}
 
+var _ component.Host = nopHost{}
+
 func (nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
