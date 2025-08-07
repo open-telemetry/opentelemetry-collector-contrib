@@ -17,13 +17,11 @@ import (
 var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  &ptrace.JSONMarshaler{},
 	formatTypeProto: &ptrace.ProtoMarshaler{},
-	formatTypeJSONL: &tracesJSONLMarshaler{},
 }
 
 var metricsMarshalers = map[string]pmetric.Marshaler{
 	formatTypeJSON:  &pmetric.JSONMarshaler{},
 	formatTypeProto: &pmetric.ProtoMarshaler{},
-	formatTypeJSONL: &metricsJSONLMarshaler{},
 }
 
 var logsMarshalers = map[string]plog.Marshaler{
@@ -39,13 +37,22 @@ type marshaller struct {
 }
 
 func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
-	if config.FormatType != formatTypeJSON && config.FormatType != formatTypeProto && config.FormatType != formatTypeJSONL {
-		return nil, fmt.Errorf("unsupported format type %q", config.FormatType)
+	if config.Formats.Logs != formatTypeJSON && config.Formats.Logs != formatTypeProto && config.Formats.Logs != formatTypeJSONL {
+		return nil, errors.New("unknown logs format type: " + config.Formats.Logs)
 	}
+
+	if config.Formats.Metrics != formatTypeJSON && config.Formats.Metrics != formatTypeProto {
+		return nil, errors.New("unknown metrics format type: " + config.Formats.Metrics)
+	}
+
+	if config.Formats.Traces != formatTypeJSON && config.Formats.Traces != formatTypeProto {
+		return nil, errors.New("unknown traces format type: " + config.Formats.Traces)
+	}
+
 	marshaller := &marshaller{
-		tracesMarshaler:  tracesMarshalers[config.FormatType],
-		metricsMarshaler: metricsMarshalers[config.FormatType],
-		logsMarshaler:    logsMarshalers[config.FormatType],
+		tracesMarshaler:  tracesMarshalers[config.Formats.Traces],
+		metricsMarshaler: metricsMarshalers[config.Formats.Metrics],
+		logsMarshaler:    logsMarshalers[config.Formats.Logs],
 	}
 
 	if config.Encodings.Logs != nil {

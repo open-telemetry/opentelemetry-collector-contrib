@@ -46,8 +46,12 @@ func TestNewExporter(t *testing.T) {
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
 		},
-		FormatType: "json",
-		Encodings:  &Encodings{},
+		Formats: &Formats{
+			Logs:    formatTypeJSON,
+			Metrics: formatTypeJSON,
+			Traces:  formatTypeJSON,
+		},
+		Encodings: &Encodings{},
 	}
 
 	me := newAzureBlobExporter(c, logger, pipeline.SignalMetrics)
@@ -246,7 +250,11 @@ func TestExporterAppendBlob(t *testing.T) {
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 		},
-		FormatType: formatTypeJSON,
+		Formats: &Formats{
+			Logs:    formatTypeJSON,
+			Metrics: formatTypeJSON,
+			Traces:  formatTypeJSON,
+		},
 		AppendBlob: &AppendBlob{
 			Enabled:   true,
 			Separator: "\n",
@@ -297,7 +305,11 @@ func TestExporterAppendBlobError(t *testing.T) {
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 		},
-		FormatType: formatTypeJSON,
+		Formats: &Formats{
+			Logs:    formatTypeJSON,
+			Metrics: formatTypeJSON,
+			Traces:  formatTypeJSON,
+		},
 		AppendBlob: &AppendBlob{
 			Enabled:   true,
 			Separator: "\n",

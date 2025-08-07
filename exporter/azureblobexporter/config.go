@@ -22,6 +22,12 @@ type Encodings struct {
 	Traces  *component.ID `mapstructure:"traces"`
 }
 
+type Formats struct {
+	Logs    string `mapstructure:"logs"`
+	Metrics string `mapstructure:"metrics"`
+	Traces  string `mapstructure:"traces"`
+}
+
 type BlobNameFormat struct {
 	MetricsFormat            string            `mapstructure:"metrics_format"`
 	LogsFormat               string            `mapstructure:"logs_format"`
@@ -78,8 +84,8 @@ type Config struct {
 	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
 	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
 
-	// FormatType is the format of encoded telemetry data. Supported values are json and proto.
-	FormatType string `mapstructure:"format"`
+	// Formats is the format of encoded telemetry data. Supported values are json and proto.
+	Formats *Formats `mapstructure:"formats"`
 
 	// AppendBlob configures append blob behavior
 	AppendBlob *AppendBlob `mapstructure:"append_blob"`
@@ -114,8 +120,16 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto && c.FormatType != formatTypeJSONL {
-		return errors.New("unknown format type: " + c.FormatType)
+	if c.Formats.Logs != formatTypeJSON && c.Formats.Logs != formatTypeProto && c.Formats.Logs != formatTypeJSONL {
+		return errors.New("unknown logs format type: " + c.Formats.Logs)
+	}
+
+	if c.Formats.Metrics != formatTypeJSON && c.Formats.Metrics != formatTypeProto {
+		return errors.New("unknown metrics format type: " + c.Formats.Metrics)
+	}
+
+	if c.Formats.Traces != formatTypeJSON && c.Formats.Traces != formatTypeProto {
+		return errors.New("unknown traces format type: " + c.Formats.Traces)
 	}
 
 	return nil

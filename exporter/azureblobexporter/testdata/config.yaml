@@ -13,7 +13,10 @@ azureblob/smi:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "system_managed_identity"
-  format: "proto"
+  formats: 
+    logs: "proto"
+    traces: "proto"
+    metrics: "proto"
   container:
     metrics: "test"
     logs: "test"
@@ -64,11 +67,6 @@ azureblob/err4:
   auth:
     type: "user_managed_identity"
 azureblob/err5:
-  url: "https://fakeaccount.blob.core.windows.net/"
-  auth:
-    type: "system_managed_identity"
-  format: "custom"
-azureblob/err6:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "workload_identity"

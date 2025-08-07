@@ -50,7 +50,11 @@ func createDefaultConfig() component.Config {
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
 		},
-		FormatType: formatTypeJSON,
+		Formats: &Formats{
+			Logs:    formatTypeJSON,
+			Metrics: formatTypeJSON,
+			Traces:  formatTypeJSON,
+		},
 		AppendBlob: &AppendBlob{
 			Enabled:   false,
 			Separator: "\n",

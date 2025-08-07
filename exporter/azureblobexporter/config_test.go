@@ -50,7 +50,11 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType:    "json",
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: &AppendBlob{
@@ -78,7 +82,11 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType:    "proto",
+				Formats: &Formats{
+					Logs:    formatTypeProto,
+					Metrics: formatTypeProto,
+					Traces:  formatTypeProto,
+				},
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: &AppendBlob{
@@ -107,7 +115,11 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType:    "json",
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: &AppendBlob{
@@ -138,7 +150,11 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType:    "json",
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: &AppendBlob{
@@ -166,7 +182,11 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType:    "json",
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: &AppendBlob{
@@ -193,10 +213,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "err5"),
-			errorMessage: "unknown format type: custom",
-		},
-		{
-			id:           component.NewIDWithName(metadata.Type, "err6"),
 			errorMessage: "tenant_id, client_id and federated_token_file cannot be empty when auth type is workload_identity",
 		},
 	}
