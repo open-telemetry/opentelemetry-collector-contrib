@@ -11,8 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/pdata/testdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -77,6 +80,9 @@ func TestCreateMetricExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
 			}),
 			err: nil,
 		},
@@ -101,6 +107,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(2)))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
@@ -148,6 +155,9 @@ func TestCreateLogExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
 			}),
 			err: nil,
 		},
@@ -172,6 +182,7 @@ func TestCreateLogExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.ConsumeLogs(context.Background(), testdata.GenerateLogs(2)))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
@@ -217,6 +228,9 @@ func TestCreateTraceExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
 			}),
 			err: nil,
 		},
@@ -241,6 +255,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.ConsumeTraces(context.Background(), testdata.GenerateTraces(2)))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
@@ -288,6 +303,9 @@ func TestCreateProfileExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
 			}),
 			err: nil,
 		},
@@ -312,6 +330,7 @@ func TestCreateProfileExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(2)))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
