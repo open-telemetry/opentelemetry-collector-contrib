@@ -17,16 +17,19 @@ import (
 var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  &ptrace.JSONMarshaler{},
 	formatTypeProto: &ptrace.ProtoMarshaler{},
+	formatTypeJSONL: &tracesJSONLMarshaler{},
 }
 
 var metricsMarshalers = map[string]pmetric.Marshaler{
 	formatTypeJSON:  &pmetric.JSONMarshaler{},
 	formatTypeProto: &pmetric.ProtoMarshaler{},
+	formatTypeJSONL: &metricsJSONLMarshaler{},
 }
 
 var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeJSON:  &plog.JSONMarshaler{},
 	formatTypeProto: &plog.ProtoMarshaler{},
+	formatTypeJSONL: &logsJSONLMarshaler{},
 }
 
 type marshaller struct {
@@ -36,7 +39,7 @@ type marshaller struct {
 }
 
 func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
-	if config.FormatType != formatTypeJSON && config.FormatType != formatTypeProto {
+	if config.FormatType != formatTypeJSON && config.FormatType != formatTypeProto && config.FormatType != formatTypeJSONL {
 		return nil, fmt.Errorf("unsupported format type %q", config.FormatType)
 	}
 	marshaller := &marshaller{
