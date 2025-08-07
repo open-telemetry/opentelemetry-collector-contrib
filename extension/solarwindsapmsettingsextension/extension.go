@@ -25,6 +25,27 @@ const (
 	httpsContextDeadline = 10 * time.Second
 )
 
+type arguments struct {
+	BucketCapacity               float64 `json:"BucketCapacity"`
+	BucketRate                   float64 `json:"BucketRate"`
+	TriggerRelaxedBucketCapacity float64 `json:"TriggerRelaxedBucketCapacity"`
+	TriggerRelaxedBucketRate     float64 `json:"TriggerRelaxedBucketRate"`
+	TriggerStrictBucketCapacity  float64 `json:"TriggerStrictBucketCapacity"`
+	TriggerStrictBucketRate      float64 `json:"TriggerStrictBucketRate"`
+}
+type setting struct {
+	Value     int64     `json:"value"`
+	Flags     string    `json:"flags"`
+	Timestamp int64     `json:"timestamp"`
+	TTL       int64     `json:"ttl"`
+	Arguments arguments `json:"arguments"`
+}
+
+type settingWithWarning struct {
+	setting
+	Warning string `json:"warning"`
+}
+
 type solarwindsapmSettingsExtension struct {
 	config            *Config
 	cancel            context.CancelFunc
@@ -119,21 +140,21 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 		extension.telemetrySettings.Logger.Error("unable to read response body", zap.Error(err))
 		return
 	}
-	var settingWithWarning SettingWithWarning
-	err = json.Unmarshal(body, &settingWithWarning)
+	var settingObj settingWithWarning
+	err = json.Unmarshal(body, &settingObj)
 	if err != nil {
 		extension.telemetrySettings.Logger.Error("unable to unmarshal setting", zap.Error(err))
 		return
 	}
-	var settings []Setting
-	settings = append(settings, settingWithWarning.Setting)
+	var settings []setting
+	settings = append(settings, settingObj.setting)
 	if content, err := json.Marshal(settings); err != nil {
 		extension.telemetrySettings.Logger.Error("unable to marshal setting JSON[] byte from settings", zap.Error(err))
 	} else {
 		if err := os.WriteFile(filename, content, 0o600); err != nil {
 			extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
 		} else {
-			if settingWithWarning.Warning != "" {
+			if settingObj.Warning != "" {
 				extension.telemetrySettings.Logger.Warn(filename + " is refreshed (soft disabled)")
 			} else {
 				extension.telemetrySettings.Logger.Info(filename + " is refreshed")
