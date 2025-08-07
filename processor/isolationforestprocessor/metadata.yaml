@@ -3,10 +3,10 @@ type: isolationforest
 status:
   class: processor
   stability:
-    alpha: [traces, metrics, logs]
+    development: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [your-username]
+    active: [atoulme]
 
 attributes:
   anomaly.isolation_score:
