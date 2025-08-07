@@ -31,21 +31,12 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
           go-version: oldstable
-          cache: false
-
-      - name: Cache Go Tools
-        id: go-tools-cache
-        timeout-minutes: 5
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ./.tools
-          key: go-tools-${{ runner.os }}-${{ hashFiles('internal/tools/go.sum') }}
+          cache-dependency-path: "**/*.sum"
 
       - name: Install tools
-        if: github.repository == 'open-telemetry/opentelemetry-collector-contrib' && steps.go-tools-cache.outputs.cache-hit != 'true'
         run: |
           make install-tools
 
