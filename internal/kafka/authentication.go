@@ -62,9 +62,9 @@ func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaCon
 	case OIDCFILE:
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider = oidc.NewOIDCfileTokenProvider(ctx, saramaConfig.ClientID,
-			config.OIDC_FILE.ClientSecretFilePath, config.OIDC_FILE.TokenURL,
-			config.OIDC_FILE.Scopes, time.Duration(config.OIDC_FILE.RefreshAheadSecs)*time.Second,
-			config.OIDC_FILE.EndPointParams, config.OIDC_FILE.AuthStyle)
+			config.OIDCFILE.ClientSecretFilePath, config.OIDCFILE.TokenURL,
+			config.OIDCFILE.Scopes, time.Duration(config.OIDCFILE.RefreshAheadSecs)*time.Second,
+			config.OIDCFILE.EndPointParams, config.OIDCFILE.AuthStyle)
 	}
 }
 

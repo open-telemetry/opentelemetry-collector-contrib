@@ -156,8 +156,8 @@ func TestAuthentication(t *testing.T) {
 		{
 			auth: configkafka.AuthenticationConfig{
 				SASL: &configkafka.SASLConfig{
-					Mechanism: "OIDC_FILE",
-					OIDC_FILE: configkafka.OIDCFileConfig{
+					Mechanism: "OIDCFILE",
+					OIDCFILE: configkafka.OIDCFileConfig{
 						ClientSecretFilePath: "/etc/hosts",
 						TokenURL:             "http://127.0.0.1:3000/oidc",
 						Scopes:               []string{"mock-scope"},

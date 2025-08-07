@@ -332,23 +332,23 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OIDC_FILE,
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OIDCFILE,
 	// OIDC_STRING, SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
 	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
-	// OIDC_FILE holds configuration for OIDC with file-based secret
-	OIDC_FILE OIDCFileConfig `mapstructure:"oidc_file"`
+	// OIDCFile holds configuration for OIDC with file-based secret
+	OIDCFILE OIDCFileConfig `mapstructure:"oidc_file"`
 }
 
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
 		// TODO validate c.AWSMSK
-	case "OIDC_FILE":
-		// TODO valid c.OIDC_FILE
+	case "OIDCFILE":
+		// TODO valid c.OIDCFile
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -377,7 +377,7 @@ type AWSMSKConfig struct {
 }
 
 // OIDCFileConfig defines the additional configuration fields
-// for the OIDC_FILE mechanism
+// for the OIDCFILE mechanism
 type OIDCFileConfig struct {
 	ClientSecretFilePath string           `mapstructure:"client_secret_file_path"`
 	TokenURL             string           `mapstructure:"token_url"`
