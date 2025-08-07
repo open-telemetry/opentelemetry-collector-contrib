@@ -275,7 +275,7 @@ type Telemetry struct {
 }
 
 type HealthCheck struct {
-	confighttp.ServerConfig
+	confighttp.ServerConfig `mapstructure:",squash"`
 }
 
 func (h HealthCheck) Port() int64 {
