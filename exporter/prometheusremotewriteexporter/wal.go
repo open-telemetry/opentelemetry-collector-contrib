@@ -244,7 +244,7 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	go func() {
 		defer prweWAL.wg.Done()
 		defer cancel()
-		prweWAL.recordLagLoop(runCtx, logger)
+		prweWAL.recordLagLoop(runCtx)
 	}()
 
 	go func() {
@@ -277,7 +277,7 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	return nil
 }
 
-func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
+func (prweWAL *prweWAL) recordLagLoop(ctx context.Context) {
 	ticker := time.NewTicker(prweWAL.walConfig.lagRecordInterval())
 	defer ticker.Stop()
 

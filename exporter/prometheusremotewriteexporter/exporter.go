@@ -455,7 +455,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			return resp.StatusCode, nil
 		}
 
-		body, err := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		prwe.settings.Logger.Error("failed to send WriteRequest to remote endpoint",
 			zap.Int("status_code", resp.StatusCode),
 			zap.String("status", resp.Status),
@@ -463,7 +463,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			zap.Int("retry_attempt", retryCount),
 			zap.String("error", string(body)),
 		)
-		rerr := fmt.Errorf("remote write request failed")
+		rerr := errors.New("remote write request failed")
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return resp.StatusCode, rerr
 		}
