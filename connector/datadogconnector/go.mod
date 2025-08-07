@@ -38,7 +38,7 @@ require (
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 )
 
 require (
@@ -132,7 +132,7 @@ require (
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.30.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.31.0 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect

@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.37.0
 	go.opentelemetry.io/otel/sdk/log v0.13.0
 	go.opentelemetry.io/otel/trace v1.37.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 )
 
 require (
@@ -136,7 +136,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.30.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.30.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.31.0 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect

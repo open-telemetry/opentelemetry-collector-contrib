@@ -23,7 +23,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.30.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.31.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.131.0
@@ -61,7 +61,7 @@ require (
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/yaml.v3 v3.0.1
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
