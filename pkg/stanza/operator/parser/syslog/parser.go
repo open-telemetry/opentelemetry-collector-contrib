@@ -38,7 +38,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
 }
 
 // Process will parse an entry field as syslog.
