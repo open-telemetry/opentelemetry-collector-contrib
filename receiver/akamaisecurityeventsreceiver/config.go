@@ -45,10 +45,6 @@ type Config struct {
 var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
-	if _, err := url.Parse(cfg.Endpoint); err != nil {
-		return fmt.Errorf("invalid endpoint URL: %w", err)
-	}
-
 	if cfg.ClientToken == "" {
 		return errors.New("client_token is required")
 	}
@@ -63,6 +59,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.ConfigIDs == "" {
 		return errors.New("config_id is required")
+	}
+
+	if _, err := url.Parse(cfg.Endpoint); err != nil {
+		return fmt.Errorf("invalid endpoint URL: %w", err)
 	}
 
 	return nil
