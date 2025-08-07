@@ -2072,7 +2072,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
-	t.Run("/health endpoint returns 412 when persistent state is nil", func(t *testing.T) {
+	t.Run("/health endpoint returns 503 when persistent state is nil", func(t *testing.T) {
 		originalState := s.persistentState
 		t.Cleanup(func() {
 			s.persistentState = originalState
@@ -2082,10 +2082,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		resp, respErr := sendHealthCheckRequest()
 		require.NoError(t, respErr)
 		defer resp.Body.Close()
-		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	})
 
-	t.Run("/health endpoint returns 412 when config state is not loaded", func(t *testing.T) {
+	t.Run("/health endpoint returns 503 when config state is not loaded", func(t *testing.T) {
 		originalCfgState := s.cfgState.Load()
 		t.Cleanup(func() {
 			s.cfgState.Store(originalCfgState)
@@ -2095,10 +2095,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		resp, respErr := sendHealthCheckRequest()
 		require.NoError(t, respErr)
 		defer resp.Body.Close()
-		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	})
 
-	t.Run("/health endpoint returns 412 when config state is nil", func(t *testing.T) {
+	t.Run("/health endpoint returns 503 when config state is nil", func(t *testing.T) {
 		originalCfgState := s.cfgState.Load()
 		t.Cleanup(func() {
 			s.cfgState.Store(originalCfgState)
@@ -2108,7 +2108,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		resp, respErr := sendHealthCheckRequest()
 		require.NoError(t, respErr)
 		defer resp.Body.Close()
-		assert.Equal(t, http.StatusPreconditionFailed, resp.StatusCode)
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	})
 
 	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
