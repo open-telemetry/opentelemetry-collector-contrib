@@ -1,4 +1,4 @@
-# Isolation Forest Processor for OpenTelemetry Collector Contrib
+# Isolation Forest Processor
 
 > **Status:** In Development – interfaces and behaviour may still evolve.
 
