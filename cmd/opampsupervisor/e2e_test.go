@@ -141,6 +141,9 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnected
 	callbacks.OnConnected = func(ctx context.Context, conn types.Connection) {
+		if didShutdown.Load() {
+			return
+		}
 		if onConnectedFunc != nil {
 			onConnectedFunc(ctx, conn)
 		}
@@ -150,6 +153,9 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionClose
 	callbacks.OnConnectionClose = func(conn types.Connection) {
+		if didShutdown.Load() {
+			return
+		}
 		isAgentConnected.Store(false)
 		connectedChan <- false
 		if onConnectionCloseFunc != nil {
@@ -174,6 +180,12 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			err := s.Stop(context.Background())
 			assert.NoError(t, err)
 			httpSrv.Close()
+			// Ensure that the connectedChan is drained and closed.
+			select {
+			case <-connectedChan:
+			default:
+			}
+			close(connectedChan)
 		}
 		didShutdown.Store(true)
 	}
