@@ -11,4 +11,5 @@ status:
 tests:
   config:
     endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+    key: "token:name"
 
