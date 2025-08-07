@@ -498,7 +498,7 @@ func (tfe *TraceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttr
 }
 
 // MetricsFeatureExtractor extracts numerical features from metrics
-type MetricsFeatureExtractor struct {
+type metricsFeatureExtractor struct {
 	features []string
 	logger   *zap.Logger
 
