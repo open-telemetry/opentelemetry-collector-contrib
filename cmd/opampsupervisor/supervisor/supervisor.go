@@ -712,19 +712,19 @@ func (s *Supervisor) startHealthCheckServer() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		if s.persistentState == nil {
-			w.WriteHeader(http.StatusPreconditionFailed)
+			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte("persistent state is nil"))
 			return
 		}
 
 		cfg, ok := s.cfgState.Load().(*configState)
 		if !ok {
-			w.WriteHeader(http.StatusPreconditionFailed)
+			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte("config state is nil"))
 			return
 		}
 		if cfg == nil {
-			w.WriteHeader(http.StatusPreconditionFailed)
+			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte("config state is nil"))
 			return
 		}
