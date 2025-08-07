@@ -1,0 +1,161 @@
+name: build-and-push-dodo
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-environment:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+  
+  build:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - darwin
+          - linux
+          - windows
+        arch:
+          - 386
+          - amd64
+          - arm
+          - arm64
+          - ppc64le
+          - riscv64
+          - s390x
+        include:
+          - os: linux
+            arch: arm
+            arm: 7
+        exclude:
+          - os: darwin
+            arch: 386
+          - os: darwin
+            arch: arm
+          - os: darwin
+            arch: ppc64le
+          - os: darwin
+            arch: riscv64
+          - os: darwin
+            arch: s390x
+          - os: windows
+            arch: arm
+          - os: windows
+            arch: arm64
+          - os: windows
+            arch: ppc64le
+          - os: windows
+            arch: riscv64
+          - os: windows
+            arch: s390x
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+
+        run: make install-tools
+      - name: Generate collector files
+
+        run: make genotelcontribcol
+      - name: Build Collector ${{ matrix.binary }}
+
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
+      - name: Upload Collector Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./bin/*
+    
+  push:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mkdir bin and dist
+        run: |
+          mkdir bin/ dist/
+
+      - uses: actions/setup-go@v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+          
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v5
+        with:
+          merge-multiple: true
+          path: ./bin/
+          pattern: collector-binaries-*
+
+      - run: chmod +x bin/*
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x ./dist
+
+      - name: Verify Distribution Files Exist
+        id: check
+        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
+
+      - name: Build Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          make genotelcontribcol
+          make docker-otelcontribcol
+          docker tag otelcontribcol:latest ghcr.io/${{ github.repository }}:$GITHUB_SHA
+          docker tag otelcontribcol:latest ghcr.io/${{ github.repository }}:latest
+
+      - name: Validate Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          docker run ghcr.io/${{ github.repository }}:$GITHUB_SHA --version
+          docker run ghcr.io/${{ github.repository }}:latest --version
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          docker push ghcr.io/${{ github.repository }}:$GITHUB_SHA
+          docker push ghcr.io/${{ github.repository }}:latest
