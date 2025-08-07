@@ -2292,6 +2292,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
+	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
