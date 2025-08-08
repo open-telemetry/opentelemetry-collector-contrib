@@ -302,10 +302,10 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/splunk/stef/go/grpc v0.0.6 // indirect
-	github.com/splunk/stef/go/otel v0.0.6 // indirect
-	github.com/splunk/stef/go/pdata v0.0.6 // indirect
-	github.com/splunk/stef/go/pkg v0.0.6 // indirect
+	github.com/splunk/stef/go/grpc v0.0.7 // indirect
+	github.com/splunk/stef/go/otel v0.0.7 // indirect
+	github.com/splunk/stef/go/pdata v0.0.7 // indirect
+	github.com/splunk/stef/go/pkg v0.0.7 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.2 // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
