@@ -36,7 +36,8 @@ type logsReceiver struct {
 	imdsEndpoint                  string
 	pollInterval                  time.Duration
 	maxEventsPerRequest           int
-	nextStartTime                 time.Time
+	initialStartTime              time.Time
+	groupNextStartTimes           map[string]time.Time
 	groupRequests                 []groupRequest
 	autodiscover                  *AutodiscoverConfig
 	client                        client
@@ -144,7 +145,8 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
-		nextStartTime:       startTime,
+		initialStartTime:    startTime,
+		groupNextStartTimes: map[string]time.Time{},
 		groupRequests:       groups,
 		wg:                  &sync.WaitGroup{},
 		doneChan:            make(chan bool),
@@ -215,7 +217,10 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	endTime := time.Now()
 	for _, r := range l.groupRequests {
-		startTime := l.nextStartTime
+		startTime, ok := l.groupNextStartTimes[r.groupName()]
+		if !ok {
+			startTime = l.initialStartTime
+		}
 
 		// Retrieve the last persisted timestamp for this log group if exists
 		if l.cloudwatchCheckpointPersister != nil {
@@ -244,7 +249,8 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		}
 
 		// Poll logs for the current log group
-		if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
+		nextStartTime, err := l.pollForLogs(ctx, r, startTime, endTime)
+		if err != nil {
 			errs = errors.Join(errs, err)
 		}
 
@@ -252,7 +258,6 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
 			newCheckpoint := endTime.Format(time.RFC3339)
-			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
 					zap.String("logGroup", logGroup),
@@ -260,17 +265,20 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 					zap.Error(err))
 			}
 		}
-	}
 
-	// Update the receiver's nextStartTime for the next poll cycle
-	l.nextStartTime = endTime
+		// Update the receiver's nextStartTime for the next poll cycle
+		l.groupNextStartTimes[r.groupName()] = nextStartTime
+	}
 	return errs
 }
 
-func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) error {
+func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) (time.Time, error) {
+	// In case of failure, the startTime of the request will be used as the checkpoint for the next poll
+	nextStartTime := startTime
+
 	err := l.ensureSession()
 	if err != nil {
-		return err
+		return nextStartTime, err
 	}
 	logGroup := pc.groupName()
 	nextToken := aws.String("")
@@ -279,7 +287,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 		select {
 		case _, ok := <-l.doneChan:
 			if !ok {
-				return nil
+				return nextStartTime, nil
 			}
 		default:
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
@@ -290,9 +298,9 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 					l.settings.Logger.Warn("log group no longer exists, skipping",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
-					return fmt.Errorf("log group %s no longer exists: %w", logGroup, err)
+					return nextStartTime, fmt.Errorf("log group %s no longer exists: %w", logGroup, err)
 				}
-				return fmt.Errorf("failed to retrieve logs from log group %s: %w", logGroup, err)
+				return nextStartTime, fmt.Errorf("failed to retrieve logs from log group %s: %w", logGroup, err)
 			}
 
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
@@ -302,13 +310,19 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 					l.settings.Logger.Error("unable to consume logs",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
-					return fmt.Errorf("failed to consume logs from log group %s: %w", logGroup, err)
+					return nextStartTime, fmt.Errorf("failed to consume logs from log group %s: %w", logGroup, err)
 				}
+				// the next timestamp should be 1 more millisecond than the last log
+				nextStartTime = time.UnixMilli(*resp.Events[len(resp.Events)-1].Timestamp + 1)
+			} else {
+				// Skip the time range in case there are no logs
+				nextStartTime = endTime
 			}
 			nextToken = resp.NextToken
 		}
 	}
-	return nil
+
+	return nextStartTime, nil
 }
 
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
