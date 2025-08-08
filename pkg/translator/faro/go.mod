@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/zeebo/xxh3 v1.0.2
-	go.opentelemetry.io/collector/pdata v1.37.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/pdata v1.37.1-0.20250808075651-ed09fb912b2f
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -35,7 +35,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.131.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.131.1-0.20250808075651-ed09fb912b2f // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
