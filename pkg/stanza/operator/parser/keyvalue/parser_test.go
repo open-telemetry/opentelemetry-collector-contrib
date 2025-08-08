@@ -697,10 +697,42 @@ key=value`,
 				Attributes: map[string]any{
 					"time":      "2024-11-01T12:38:17.992190505Z",
 					"level":     "warning",
-					"msg":       `cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2`,
+					"msg":       `cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg="starting signal loop" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2`,
 					"namespace": "moby-10000.10000",
 				},
 				Body: `time="2024-11-01T12:38:17.992190505Z" level=warning msg="cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2" namespace=moby-10000.10000`,
+			},
+			false,
+			false,
+		},
+		{
+			"unescape strings",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `time="2025-02-19T17:49:48Z" level=info msg="{\"status\": \"OK\"}"`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"time":  "2025-02-19T17:49:48Z",
+					"level": "info",
+					"msg":   `{"status": "OK"}`,
+				},
+				Body: `time="2025-02-19T17:49:48Z" level=info msg="{\"status\": \"OK\"}"`,
+			},
+			false,
+			false,
+		},
+		{
+			"unescape only first layer",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `d="c=\"b=\\\"a\\\"\""`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"d": `c="b=\"a\""`,
+				},
+				Body: `d="c=\"b=\\\"a\\\"\""`,
 			},
 			false,
 			false,

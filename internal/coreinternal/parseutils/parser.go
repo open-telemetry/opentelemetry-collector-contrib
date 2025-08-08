@@ -43,14 +43,24 @@ func SplitString(input, delimiter string) ([]string, error) {
 				continue
 			}
 			// Only if we weren't escaped could the next character result in escaped state
-			escaped = input[i] == '\\' // potentially escaping next character
+			if input[i] == '\\' {
+				escaped = true // potentially escaping next character
+				continue       // Don't add the backslash itself
+			}
 		} else {
+			if string(input[i]) != quoteChar && string(input[i]) != "\\" {
+				// it's nothing to unescape, put back the backslash
+				current += "\\"
+			}
 			escaped = false
 		}
 
 		current += string(input[i])
 	}
 
+	if escaped { // no escaped char following
+		return nil, errors.New("found a trailing escape character")
+	}
 	if quoteChar != "" { // check for closed quotes
 		return nil, errors.New("never reached the end of a quoted value")
 	}
