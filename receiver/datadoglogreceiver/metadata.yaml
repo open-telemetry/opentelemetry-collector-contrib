@@ -1,0 +1,24 @@
+type: datadoglog
+scope_name: https://github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: []
+# telemetry:
+#   metrics:
+#     processor_thp_received_log_bytes:
+#       enabled: true
+#       description: Total bytes of logs seen by the throughputProcessor
+#       unit: By
+#       sum:
+#         value_type: int
+#         monotonic: true
+#     processor_thp_received_log_records:
+#       enabled: true
+#       description: Number of log record seen by the throughputProcessor
+#       unit: 1
+#       sum:
+#         value_type: int
+#         monotonic: true

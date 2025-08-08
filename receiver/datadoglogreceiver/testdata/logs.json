@@ -1,0 +1,47 @@
+[
+    {
+        "message": "2024-06-28 16:59:23 UTC | TRACE | INFO | (comp/trace/agent/agent.go:211 in handleSignal) | Received signal 15 (terminated)",
+        "status": "info",
+        "timestamp": 1719593963572,
+        "hostname": "orbstack",
+        "service": "agent",
+        "ddsource": "agent",
+        "ddtags": "filename:0.log,dirname:/var/log/pods/default_datadog-agent-d4rnd_c2d2735f-d54b-4ed4-9b27-8021fab3e1c1/trace-agent,kube_ownerref_kind:daemonset,kube_app_managed_by:Helm,kube_container_name:trace-agent,kube_service:datadog-agent,kube_daemon_set:datadog-agent,image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:7.54.0,kube_app_instance:datadog-agent,pod_phase:running,image_id:gcr.io/datadoghq/agent@sha256:b339e6f0dc8553a821eff183710e03947ebbd7b2766010c0290be12f5fe2e31a,kube_app_component:agent,kube_namespace:default,kube_app_name:datadog-agent,kube_qos:BestEffort,git.repository_url:https://github.com/DataDog/datadog-agent,docker_image:gcr.io/datadoghq/agent:7.54.0,pod_name:datadog-agent-d4rnd,kube_ownerref_name:datadog-agent,container_id:95549b65823572b640b82ec23ed94dd10269b9ab295b922d1b780d6dc750fba9,display_container_name:trace-agent_datadog-agent-d4rnd,container_name:trace-agent"
+    },
+    {
+        "message": "2024-06-28 16:59:23 UTC | TRACE | INFO | (pkg/trace/agent/agent.go:213 in loop) | Exiting...",
+        "status": "info",
+        "timestamp": 1719593963572,
+        "hostname": "orbstack",
+        "service": "agent",
+        "ddsource": "agent",
+        "ddtags": "filename:0.log,dirname:/var/log/pods/default_datadog-agent-d4rnd_c2d2735f-d54b-4ed4-9b27-8021fab3e1c1/trace-agent,kube_ownerref_kind:daemonset,kube_app_managed_by:Helm,kube_container_name:trace-agent,kube_service:datadog-agent,kube_daemon_set:datadog-agent,image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:7.54.0,kube_app_instance:datadog-agent,pod_phase:running,image_id:gcr.io/datadoghq/agent@sha256:b339e6f0dc8553a821eff183710e03947ebbd7b2766010c0290be12f5fe2e31a,kube_app_component:agent,kube_namespace:default,kube_app_name:datadog-agent,kube_qos:BestEffort,git.repository_url:https://github.com/DataDog/datadog-agent,docker_image:gcr.io/datadoghq/agent:7.54.0,pod_name:datadog-agent-d4rnd,kube_ownerref_name:datadog-agent,container_id:95549b65823572b640b82ec23ed94dd10269b9ab295b922d1b780d6dc750fba9,display_container_name:trace-agent_datadog-agent-d4rnd,container_name:trace-agent"
+    },
+    {
+        "message": "2024-06-28 16:59:23 UTC | TRACE | INFO | (pkg/trace/stats/concentrator.go:163 in Run) | Exiting concentrator, computing remaining stats",
+        "status": "info",
+        "timestamp": 1719593963572,
+        "hostname": "orbstack",
+        "service": "agent",
+        "ddsource": "agent",
+        "ddtags": "filename:0.log,dirname:/var/log/pods/default_datadog-agent-d4rnd_c2d2735f-d54b-4ed4-9b27-8021fab3e1c1/trace-agent,kube_ownerref_kind:daemonset,kube_app_managed_by:Helm,kube_container_name:trace-agent,kube_service:datadog-agent,kube_daemon_set:datadog-agent,image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:7.54.0,kube_app_instance:datadog-agent,pod_phase:running,image_id:gcr.io/datadoghq/agent@sha256:b339e6f0dc8553a821eff183710e03947ebbd7b2766010c0290be12f5fe2e31a,kube_app_component:agent,kube_namespace:default,kube_app_name:datadog-agent,kube_qos:BestEffort,git.repository_url:https://github.com/DataDog/datadog-agent,docker_image:gcr.io/datadoghq/agent:7.54.0,pod_name:datadog-agent-d4rnd,kube_ownerref_name:datadog-agent,container_id:95549b65823572b640b82ec23ed94dd10269b9ab295b922d1b780d6dc750fba9,display_container_name:trace-agent_datadog-agent-d4rnd,container_name:trace-agent"
+    },
+    {
+        "message": "2024-06-28 16:59:23 UTC | TRACE | WARN | (comp/core/tagger/taggerimpl/remote/tagger.go:293 in run) | error received from remote tagger: rpc error: code = Canceled desc = context canceled",
+        "status": "info",
+        "timestamp": 1719593963572,
+        "hostname": "orbstack",
+        "service": "agent",
+        "ddsource": "agent",
+        "ddtags": "filename:0.log,dirname:/var/log/pods/default_datadog-agent-d4rnd_c2d2735f-d54b-4ed4-9b27-8021fab3e1c1/trace-agent,kube_ownerref_kind:daemonset,kube_app_managed_by:Helm,kube_container_name:trace-agent,kube_service:datadog-agent,kube_daemon_set:datadog-agent,image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:7.54.0,kube_app_instance:datadog-agent,pod_phase:running,image_id:gcr.io/datadoghq/agent@sha256:b339e6f0dc8553a821eff183710e03947ebbd7b2766010c0290be12f5fe2e31a,kube_app_component:agent,kube_namespace:default,kube_app_name:datadog-agent,kube_qos:BestEffort,git.repository_url:https://github.com/DataDog/datadog-agent,docker_image:gcr.io/datadoghq/agent:7.54.0,pod_name:datadog-agent-d4rnd,kube_ownerref_name:datadog-agent,container_id:95549b65823572b640b82ec23ed94dd10269b9ab295b922d1b780d6dc750fba9,display_container_name:trace-agent_datadog-agent-d4rnd,container_name:trace-agent"
+    },
+    {
+        "message": "2024-06-28 16:59:23 UTC | TRACE | INFO | (comp/core/tagger/taggerimpl/remote/tagger.go:178 in Stop) | remote tagger stopped successfully",
+        "status": "info",
+        "timestamp": 1719593963572,
+        "hostname": "orbstack",
+        "service": "agent",
+        "ddsource": "agent",
+        "ddtags": "filename:0.log,dirname:/var/log/pods/default_datadog-agent-d4rnd_c2d2735f-d54b-4ed4-9b27-8021fab3e1c1/trace-agent,kube_ownerref_kind:daemonset,kube_app_managed_by:Helm,kube_container_name:trace-agent,kube_service:datadog-agent,kube_daemon_set:datadog-agent,image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:7.54.0,kube_app_instance:datadog-agent,pod_phase:running,image_id:gcr.io/datadoghq/agent@sha256:b339e6f0dc8553a821eff183710e03947ebbd7b2766010c0290be12f5fe2e31a,kube_app_component:agent,kube_namespace:default,kube_app_name:datadog-agent,kube_qos:BestEffort,git.repository_url:https://github.com/DataDog/datadog-agent,docker_image:gcr.io/datadoghq/agent:7.54.0,pod_name:datadog-agent-d4rnd,kube_ownerref_name:datadog-agent,container_id:95549b65823572b640b82ec23ed94dd10269b9ab295b922d1b780d6dc750fba9,display_container_name:trace-agent_datadog-agent-d4rnd,container_name:trace-agent"
+    }
+]
