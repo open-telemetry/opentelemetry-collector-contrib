@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.37.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/confmap/xconfmap v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/consumer v1.37.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/consumer/consumererror v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/exporter v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/exporter/exportertest v0.131.1-0.20250801020258-8b73477b9810
@@ -87,7 +88,6 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.37.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.37.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.131.1-0.20250801020258-8b73477b9810 // indirect
