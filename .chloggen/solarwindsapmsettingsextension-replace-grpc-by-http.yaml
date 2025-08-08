@@ -10,7 +10,7 @@ component: solarwindsapmsettingsextension
 note: SolarWinds is deprecating apm-proto and now provides an HTTP endpoint for retrieving settings. This change replaces apm-proto with HTTP.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [41860]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
