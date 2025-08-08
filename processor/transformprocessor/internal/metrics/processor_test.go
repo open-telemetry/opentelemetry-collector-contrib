@@ -252,6 +252,35 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			},
 		},
 		{
+			statements: []string{`convert_summary_quantile_val_to_gauge("custom_quantile") where metric.name == "operationD"`},
+			want: func(td pmetric.Metrics) {
+				summaryMetric := pmetric.NewMetric()
+				fillMetricFour(summaryMetric)
+				summaryDp := summaryMetric.Summary().DataPoints().At(0)
+
+				gaugeMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				gaugeMetric.SetDescription(summaryMetric.Description())
+				gaugeMetric.SetName(summaryMetric.Name() + ".quantiles")
+				gaugeMetric.SetUnit(summaryMetric.Unit())
+
+				gauge := gaugeMetric.SetEmptyGauge()
+				gaugeDp := gauge.DataPoints().AppendEmpty()
+				gaugeDp1 := gauge.DataPoints().AppendEmpty()
+
+				summaryDp.Attributes().CopyTo(gaugeDp.Attributes())
+				gaugeDp.Attributes().PutDouble("custom_quantile", 0.99)
+				gaugeDp.SetDoubleValue(123)
+				gaugeDp.SetStartTimestamp(StartTimestamp)
+				gaugeDp.SetTimestamp(TestTimeStamp)
+
+				summaryDp.Attributes().CopyTo(gaugeDp1.Attributes())
+				gaugeDp1.Attributes().PutDouble("custom_quantile", 0.95)
+				gaugeDp1.SetDoubleValue(321)
+				gaugeDp1.SetStartTimestamp(StartTimestamp)
+				gaugeDp1.SetTimestamp(TestTimeStamp)
+			},
+		},
+		{
 			statements: []string{`extract_count_metric(true) where name == "operationB"`},
 			want: func(td pmetric.Metrics) {
 				countMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()

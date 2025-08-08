@@ -191,7 +191,6 @@ jobs:
             exit 1
           fi
 
-          version=${VERSION//-alpha/}
           hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar \
                          | sha256sum \
                          | cut -d ' ' -f 1)

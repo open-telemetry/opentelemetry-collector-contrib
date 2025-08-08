@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: otelarrowexporter
+note: Retract 0.130.0, 0.131.0, fix missing Batch.Sizer regression
+issues: [41241]
+subtext:
+change_logs: [user]
