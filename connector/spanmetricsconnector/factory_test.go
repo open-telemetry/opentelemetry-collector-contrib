@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -49,6 +51,7 @@ func TestNewConnector(t *testing.T) {
 			factory := NewFactory()
 
 			creationParams := connectortest.NewNopSettings(metadata.Type)
+			creationParams.Resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instanceID)
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,
