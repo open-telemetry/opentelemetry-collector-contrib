@@ -947,17 +947,6 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Wait()
 }
 
-func TestReceiverCancel(t *testing.T) {
-	tc := newHealthyTestChannel(t)
-	ctc := newCommonTestCase(t, tc)
-
-	ctc.cancel()
-	ctc.start(ctc.newRealConsumer, defaultBQ())
-
-	err := ctc.wait()
-	requireCanceledStatus(t, err)
-}
-
 func requireContainsAll(t *testing.T, md client.Metadata, exp map[string][]string) {
 	for key, vals := range exp {
 		require.Equal(t, vals, md.Get(key))

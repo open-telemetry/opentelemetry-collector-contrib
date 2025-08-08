@@ -41,6 +41,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryClientCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQuerySlowCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlPageSize.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadTime.Enabled = true
