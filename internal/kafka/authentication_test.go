@@ -62,7 +62,7 @@ func TestAuthentication(t *testing.T) {
 	// Specify 0 seconds for the RefreshAhead, as we don't want to have it launch
 	// the background refresher goroutine - we are just verifying authentication
 	// configuration setup here.
-	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider = oidc.NewOIDCfileTokenProvider(
+	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider, _ = oidc.NewOIDCfileTokenProvider(
 		context.Background(), saramaSASLOIDCFILEConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
 		[]string{"mock-scope"}, time.Duration(0)*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
 

@@ -53,8 +53,9 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
+	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
 		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	defer cancel()
 
 	saramaToken, err := oidcProvider.Token()
 	require.NoError(t, err)
@@ -99,8 +100,9 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), "wrong-client-id", secretFile,
+	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), "wrong-client-id", secretFile,
 		tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	defer cancel()
 
 	saramaToken, err := oidcProvider.Token()
 	require.Error(t, err)
@@ -129,7 +131,8 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	defer cancel()
 
 	token1, err1 := oidcProvider.Token()
 	assert.NoError(t, err1)
@@ -163,7 +166,8 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	defer cancel()
 
 	token1, err1 := oidcProvider.Token()
 	assert.NoError(t, err1)
@@ -199,8 +203,9 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
+	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
 		[]string{testScope}, 2*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
+	defer cancel()
 
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 

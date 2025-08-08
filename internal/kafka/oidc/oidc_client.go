@@ -42,7 +42,9 @@ type OIDCfileTokenProvider struct {
 
 func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
 	scopes []string, refreshAhead time.Duration, endPointParams url.Values, authStyle oauth2.AuthStyle,
-) sarama.AccessTokenProvider {
+) (sarama.AccessTokenProvider, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(ctx)
+
 	prov := &OIDCfileTokenProvider{
 		Ctx:                  ctx,
 		ClientID:             clientID,
@@ -58,7 +60,7 @@ func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePat
 		prov.startBackgroundRefresher()
 	}
 
-	return prov
+	return prov, cancel
 }
 
 func (p *OIDCfileTokenProvider) Token() (*sarama.AccessToken, error) {
@@ -158,12 +160,21 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 				p.mu.RUnlock()
 
 				if sleepDuration > 0 {
-					time.Sleep(sleepDuration)
-					continue
+					select {
+					case <-p.Ctx.Done():
+						return
+					case <-time.After(sleepDuration):
+						continue
+					}
 				}
 
-				if _, err := p.updateToken(); err != nil {
-					log.Printf("background token refresh failed: %v\n", err)
+				select {
+				case <-p.Ctx.Done():
+					return
+				default:
+					if _, err := p.updateToken(); err != nil {
+						log.Printf("background token refresh failed: %v\n", err)
+					}
 				}
 			}
 		}()
