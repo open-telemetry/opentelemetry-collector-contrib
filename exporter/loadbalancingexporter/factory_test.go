@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -29,7 +30,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	creationParams := exportertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
 	}
 
@@ -47,7 +48,7 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	creationParams := exportertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
 	}
 
