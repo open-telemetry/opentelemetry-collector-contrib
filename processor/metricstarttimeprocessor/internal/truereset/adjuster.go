@@ -99,11 +99,12 @@ func (*Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, curr
 		refTsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
-			refTsi.Histogram = *datapointstorage.NewHistogramInfo()
-			refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
-			refTsi.Histogram.StartTime = currentDist.Timestamp()
-			refTsi.Histogram.BucketCounts = currentDist.BucketCounts().AsRaw()
-			refTsi.Histogram.ExplicitBounds = currentDist.ExplicitBounds().AsRaw()
+			refTsi.Histogram = datapointstorage.HistogramInfo{
+				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(),
+				StartTime:      currentDist.Timestamp(),
+				BucketCounts:   currentDist.BucketCounts().AsRaw(),
+				ExplicitBounds: currentDist.ExplicitBounds().AsRaw(),
+			}
 
 			// For the first point, set the start time as the point timestamp.
 			currentDist.SetStartTimestamp(currentDist.Timestamp())
@@ -143,13 +144,13 @@ func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timeseri
 		refTsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
-			ehRef := *datapointstorage.NewExponentialHistogramInfo()
-			ehRef.Scale = currentDist.Scale()
-			ehRef.PreviousCount, ehRef.PreviousSum, ehRef.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
-			ehRef.StartTime = currentDist.Timestamp()
-			ehRef.PositiveBuckets = currentDist.Positive()
-			ehRef.NegativeBuckets = currentDist.Negative()
-			refTsi.ExponentialHistogram = ehRef
+			refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{
+				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(), PreviousZeroCount: currentDist.ZeroCount(),
+				Scale:           currentDist.Scale(),
+				StartTime:       currentDist.Timestamp(),
+				PositiveBuckets: currentDist.Positive(),
+				NegativeBuckets: currentDist.Negative(),
+			}
 
 			// For the first point, set the start time as the point timestamp.
 			currentDist.SetStartTimestamp(currentDist.Timestamp())
@@ -185,8 +186,7 @@ func (*Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pm
 		refTsi, found := tsm.Get(current, currentSum.Attributes())
 		if !found {
 			// initialize everything.
-			refTsi.Number.PreviousValue = currentSum.DoubleValue()
-			refTsi.Number.StartTime = currentSum.Timestamp()
+			refTsi.Number = datapointstorage.NumberInfo{PreviousValue: currentSum.DoubleValue(), StartTime: currentSum.Timestamp()}
 
 			// For the first point, set the start time as the point timestamp.
 			currentSum.SetStartTimestamp(currentSum.Timestamp())
@@ -220,10 +220,10 @@ func (*Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, curren
 		refTsi, found := tsm.Get(current, currentSummary.Attributes())
 		if !found {
 			// initialize everything.
-			sTsi := datapointstorage.NewSummaryDataPoint()
-			sTsi.PreviousCount, sTsi.PreviousSum = currentSummary.Count(), currentSummary.Sum()
-			sTsi.StartTime = currentSummary.Timestamp()
-			refTsi.Summary = *sTsi
+			refTsi.Summary = datapointstorage.SummaryInfo{
+				PreviousCount: currentSummary.Count(), PreviousSum: currentSummary.Sum(),
+				StartTime: currentSummary.Timestamp(),
+			}
 
 			// For the first point, set the start time as the point timestamp.
 			currentSummary.SetStartTimestamp(currentSummary.Timestamp())

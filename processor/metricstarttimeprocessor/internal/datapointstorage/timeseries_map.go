@@ -62,25 +62,6 @@ type SummaryInfo struct {
 	PreviousSum   float64
 }
 
-func NewNumberInfo() *NumberInfo {
-	return &NumberInfo{}
-}
-
-func NewHistogramInfo() *HistogramInfo {
-	return &HistogramInfo{}
-}
-
-func NewExponentialHistogramInfo() *ExponentialHistogramInfo {
-	eh := ExponentialHistogramInfo{}
-	eh.PositiveBuckets = pmetric.NewExponentialHistogramDataPointBuckets()
-	eh.NegativeBuckets = pmetric.NewExponentialHistogramDataPointBuckets()
-	return &eh
-}
-
-func NewSummaryDataPoint() *SummaryInfo {
-	return &SummaryInfo{}
-}
-
 type TimeseriesKey struct {
 	Name           string
 	Attributes     [16]byte
