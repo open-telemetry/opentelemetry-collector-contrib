@@ -1189,7 +1189,10 @@ func TestRetries(t *testing.T) {
 				client:         http.DefaultClient,
 				retryOnHTTP429: tt.RetryOnHTTP429,
 				retrySettings: configretry.BackOffConfig{
-					Enabled: true,
+					Enabled:         true,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Second,
+					MaxElapsedTime:  5 * time.Second,
 				},
 				telemetry: telemetry,
 			}
