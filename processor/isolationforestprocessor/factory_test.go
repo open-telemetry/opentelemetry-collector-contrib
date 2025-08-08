@@ -36,7 +36,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 	rawCfg := factory.CreateDefaultConfig()
 
 	// NewNopSettings() has NO args in current API.
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	next := consumertest.NewNop()
 	p, err := factory.CreateTraces(context.Background(), settings, rawCfg, next)
@@ -50,7 +50,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	rawCfg := factory.CreateDefaultConfig()
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	next := consumertest.NewNop()
 	p, err := factory.CreateMetrics(context.Background(), settings, rawCfg, next)
@@ -64,7 +64,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	rawCfg := factory.CreateDefaultConfig()
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	next := consumertest.NewNop()
 	p, err := factory.CreateLogs(context.Background(), settings, rawCfg, next)
