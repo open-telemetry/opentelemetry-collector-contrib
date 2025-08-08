@@ -13,6 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.131.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/config/confighttp v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/config/configopaque v1.37.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/config/configtelemetry v0.131.1-0.20250801020258-8b73477b9810
 	go.opentelemetry.io/collector/config/configtls v1.37.1-0.20250801020258-8b73477b9810
@@ -143,7 +144,6 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.37.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.131.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/config/confighttp v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.131.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.37.1-0.20250801020258-8b73477b9810 // indirect
 	go.opentelemetry.io/collector/config/configoptional v0.131.1-0.20250801020258-8b73477b9810 // indirect
