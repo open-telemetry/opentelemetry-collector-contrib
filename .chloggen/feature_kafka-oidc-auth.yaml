@@ -7,16 +7,17 @@ change_type: enhancement
 component: kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: This change adds support for authentication via OIDC to the Kafka client. It provides an implementation
-of the sarama.AccessTokenProvider interface, supporting the 'client_credentials' Grant Type, and a background token refresh.
- 
+note: This change adds support for authentication via OIDC to the Kafka client.
+
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [41872]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  It provides an implementation of the sarama.AccessTokenProvider interface, supporting the
+  client_credentials Grant Type, and a background token refresh.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
