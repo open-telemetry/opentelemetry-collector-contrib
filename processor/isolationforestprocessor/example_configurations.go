@@ -11,8 +11,8 @@ import (
 // This file contains example configurations and usage patterns for the isolation forest processor.
 // These examples demonstrate how to configure the processor for different scenarios and use cases.
 
-// ExampleBasicConfiguration shows a simple setup for general anomaly detection
-func ExampleBasicConfiguration() {
+// exampleBasicConfiguration shows a simple setup for general anomaly detection
+func exampleBasicConfiguration() {
 	configYAML := `
 processors:
   isolationforest:
@@ -56,8 +56,8 @@ service:
 	fmt.Println(configYAML)
 }
 
-// ExampleCostOptimizationConfiguration shows how to use filtering to reduce storage costs
-func ExampleCostOptimizationConfiguration() {
+// exampleCostOptimizationConfiguration shows how to use filtering to reduce storage costs
+func exampleCostOptimizationConfiguration() {
 	configYAML := `
 processors:
   isolationforest:
@@ -105,8 +105,8 @@ service:
 	fmt.Println(configYAML)
 }
 
-// ExampleMultiEnvironmentConfiguration demonstrates environment-specific models
-func ExampleMultiEnvironmentConfiguration() {
+// exampleMultiEnvironmentConfiguration demonstrates environment-specific models
+func exampleMultiEnvironmentConfiguration() {
 	configYAML := `
 processors:
   isolationforest:
@@ -201,8 +201,8 @@ service:
 	fmt.Println(configYAML)
 }
 
-// ExampleHighPerformanceConfiguration shows optimization for high-throughput scenarios
-func ExampleHighPerformanceConfiguration() {
+// exampleHighperformanceConfiguration shows optimization for high-throughput scenarios
+func exampleHighperformanceConfiguration() {
 	configYAML := `
 processors:
   isolationforest:
@@ -258,8 +258,8 @@ service:
 	fmt.Println(configYAML)
 }
 
-// ExampleDebuggingConfiguration shows settings optimized for troubleshooting
-func ExampleDebuggingConfiguration() {
+// exampleDebuggingConfiguration shows settings optimized for troubleshooting
+func exampleDebuggingConfiguration() {
 	configYAML := `
 processors:
   isolationforest:

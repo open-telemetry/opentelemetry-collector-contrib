@@ -36,7 +36,7 @@ func baseTestConfig(t *testing.T) *Config {
 	cfg.TrainingWindow = "1h"
 	cfg.UpdateFrequency = "5m"
 	cfg.Performance.BatchSize = 64
-	cfg.Features = FeatureConfig{
+	cfg.Features = featureConfig{
 		Traces:  []string{"duration", "error", "operation.name", "service.name"},
 		Metrics: []string{"value"},
 		Logs:    []string{"severity_number", "message_length"},

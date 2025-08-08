@@ -3,6 +3,7 @@ package isolationforestprocessor // import "github.com/platformbuilds/openteleme
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	typeStr = "isolationforest"
+	typeStr   = "isolationforest"
 	stability = component.StabilityLevelAlpha
 )
 

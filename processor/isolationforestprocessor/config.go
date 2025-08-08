@@ -23,18 +23,18 @@ type Config struct {
 	MinSamples              int               `mapstructure:"min_samples"`
 	ScoreAttribute          string            `mapstructure:"score_attribute"`
 	ClassificationAttribute string            `mapstructure:"classification_attribute"`
-	Features                FeatureConfig     `mapstructure:"features"`
-	Models                  []ModelConfig     `mapstructure:"models"`
-	Performance             PerformanceConfig `mapstructure:"performance"`
+	Features                featureConfig     `mapstructure:"features"`
+	Models                  []modelConfig     `mapstructure:"models"`
+	Performance             performanceConfig `mapstructure:"performance"`
 }
 
-type FeatureConfig struct {
+type featureConfig struct {
 	Traces  []string `mapstructure:"traces"`
 	Metrics []string `mapstructure:"metrics"`
 	Logs    []string `mapstructure:"logs"`
 }
 
-type ModelConfig struct {
+type modelConfig struct {
 	Name              string            `mapstructure:"name"`
 	Selector          map[string]string `mapstructure:"selector"`
 	Features          []string          `mapstructure:"features"`
@@ -44,7 +44,7 @@ type ModelConfig struct {
 	ContaminationRate float64           `mapstructure:"contamination_rate"`
 }
 
-type PerformanceConfig struct {
+type performanceConfig struct {
 	MaxMemoryMB     int `mapstructure:"max_memory_mb"`
 	BatchSize       int `mapstructure:"batch_size"`
 	ParallelWorkers int `mapstructure:"parallel_workers"`
@@ -66,13 +66,13 @@ func createDefaultConfig() component.Config {
 		ScoreAttribute:          "anomaly.isolation_score",
 		ClassificationAttribute: "anomaly.is_anomaly",
 
-		Features: FeatureConfig{
+		Features: featureConfig{
 			Traces:  []string{"duration", "error", "http.status_code"},
 			Metrics: []string{"value", "rate_of_change"},
 			Logs:    []string{"severity_number", "timestamp_gap"},
 		},
 
-		Performance: PerformanceConfig{
+		Performance: performanceConfig{
 			MaxMemoryMB:     512,
 			BatchSize:       1000,
 			ParallelWorkers: 4,
@@ -131,7 +131,7 @@ func (cfg *Config) IsMultiModelMode() bool {
 	return len(cfg.Models) > 0
 }
 
-func (cfg *Config) GetModelForAttributes(attributes map[string]interface{}) *ModelConfig {
+func (cfg *Config) GetModelForAttributes(attributes map[string]interface{}) *modelConfig {
 	if !cfg.IsMultiModelMode() {
 		return nil
 	}

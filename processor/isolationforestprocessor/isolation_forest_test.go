@@ -15,7 +15,7 @@ import (
 )
 
 func TestOnlineIsolationForestCreation(t *testing.T) {
-	forest := NewOnlineIsolationForest(10, 100, 8)
+	forest := newOnlineIsolationForest(10, 100, 8)
 
 	assert.Equal(t, 10, forest.numTrees, "Should create forest with specified number of trees")
 	assert.Equal(t, 8, forest.maxDepth, "Should set specified max depth")
@@ -30,7 +30,7 @@ func TestOnlineIsolationForestCreation(t *testing.T) {
 }
 
 func TestBasicAnomalyDetection(t *testing.T) {
-	forest := NewOnlineIsolationForest(20, 50, 6)
+	forest := newOnlineIsolationForest(20, 50, 6)
 
 	// Generate normal data points (clustered around origin)
 	normalSamples := [][]float64{
@@ -75,7 +75,7 @@ func TestBasicAnomalyDetection(t *testing.T) {
 }
 
 func TestAdaptiveThreshold(t *testing.T) {
-	forest := NewOnlineIsolationForest(10, 100, 6)
+	forest := newOnlineIsolationForest(10, 100, 6)
 
 	// Track how threshold changes with different score patterns
 	initialStats := forest.GetStatistics()
@@ -114,7 +114,7 @@ func TestAdaptiveThreshold(t *testing.T) {
 }
 
 func TestForestStatistics(t *testing.T) {
-	forest := NewOnlineIsolationForest(5, 20, 4)
+	forest := newOnlineIsolationForest(5, 20, 4)
 
 	// Initial statistics
 	stats := forest.GetStatistics()
@@ -141,7 +141,7 @@ func TestForestStatistics(t *testing.T) {
 
 func TestTreePathLength(t *testing.T) {
 	// Test individual tree path length calculation
-	tree := &OnlineIsolationTree{
+	tree := &onlineIsolationTree{
 		maxDepth: 5,
 	}
 
@@ -150,18 +150,18 @@ func TestTreePathLength(t *testing.T) {
 	assert.Equal(t, 0.0, pathLength, "Empty tree should return path length 0")
 
 	// Create simple tree structure for testing
-	tree.root = &OnlineTreeNode{
+	tree.root = &onlineTreeNode{
 		featureIndex: 0,
 		splitValue:   1.5,
 		depth:        0,
 		sampleCount:  10,
 		isLeaf:       false,
-		left: &OnlineTreeNode{
+		left: &onlineTreeNode{
 			depth:       1,
 			sampleCount: 5,
 			isLeaf:      true,
 		},
-		right: &OnlineTreeNode{
+		right: &onlineTreeNode{
 			depth:       1,
 			sampleCount: 5,
 			isLeaf:      true,
@@ -176,7 +176,7 @@ func TestTreePathLength(t *testing.T) {
 }
 
 func TestExpectedPathLength(t *testing.T) {
-	forest := NewOnlineIsolationForest(10, 100, 6)
+	forest := newOnlineIsolationForest(10, 100, 6)
 
 	// Add some samples to the window
 	samples := [][]float64{
@@ -194,7 +194,7 @@ func TestExpectedPathLength(t *testing.T) {
 // Benchmark tests to verify performance characteristics
 
 func BenchmarkIsolationForestProcessing(b *testing.B) {
-	forest := NewOnlineIsolationForest(100, 1000, 10)
+	forest := newOnlineIsolationForest(100, 1000, 10)
 
 	// Prepare test samples
 	samples := make([][]float64, 1000)
@@ -215,7 +215,7 @@ func BenchmarkIsolationForestProcessing(b *testing.B) {
 
 func BenchmarkFeatureExtraction(b *testing.B) {
 	logger := zaptest.NewLogger(b)
-	extractor := NewTraceFeatureExtractor([]string{"duration", "error", "http.status_code"}, logger)
+	extractor := newTraceFeatureExtractor([]string{"duration", "error", "http.status_code"}, logger)
 
 	// Create test span
 	span := ptrace.NewSpan()

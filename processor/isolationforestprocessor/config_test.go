@@ -114,7 +114,7 @@ func TestConfigurationValidation(t *testing.T) {
 		{
 			name: "empty features",
 			modifyConfig: func(cfg *Config) {
-				cfg.Features = FeatureConfig{
+				cfg.Features = featureConfig{
 					Traces:  []string{},
 					Metrics: []string{},
 					Logs:    []string{},
@@ -145,13 +145,13 @@ func TestConfigurationValidation(t *testing.T) {
 	}
 }
 
-func TestMultiModelConfiguration(t *testing.T) {
+func TestMultimodelConfiguration(t *testing.T) {
 	raw := createDefaultConfig()
 	cfg, ok := raw.(*Config)
 	require.True(t, ok, "createDefaultConfig should return *Config")
 
 	// Add multiple models with different configurations
-	cfg.Models = []ModelConfig{
+	cfg.Models = []modelConfig{
 		{
 			Name: "web_service",
 			Selector: map[string]string{
