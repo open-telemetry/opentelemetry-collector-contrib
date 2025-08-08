@@ -47,6 +47,7 @@ func createDefaultConfig() component.Config {
 		FlushTimeout: time.Second,
 		MinSize:      1000,
 		MaxSize:      1500,
+		Sizer:        exporterhelper.RequestSizerTypeItems,
 	})
 	// The default is configured in items, this value represents
 	// 60-100 concurrent batches.
