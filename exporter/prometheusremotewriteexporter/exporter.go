@@ -448,7 +448,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			prwe.settings.Logger.Info("remote write request successful",
+			prwe.settings.Logger.Debug("remote write request successful",
 				zap.Int("status_code", resp.StatusCode),
 				zap.String("status", resp.Status),
 				zap.String("endpoint", prwe.endpointURL.String()),
