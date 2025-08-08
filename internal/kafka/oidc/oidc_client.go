@@ -79,8 +79,6 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	now := time.Now()
 	if now.Sub(p.lastRefreshTime) < p.refreshCooldown {
 		// Someone just refreshed - skip
-		log.Printf("Skipping token refresh for %s, within the quiet window of %s",
-			p.ClientID, p.refreshCooldown)
 		return p.cachedToken, nil
 	}
 
@@ -116,8 +114,6 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	p.cachedToken = oauthTok
 	p.tokenExpiry = now.Add(time.Duration(expiresIn) * time.Second)
 	p.lastRefreshTime = now
-	// log.Printf("Token refreshed for %s, will expire after %s at %s", p.ClientID,
-	// expiresIn.String(), p.tokenExpiry.String())
 
 	return oauthTok, nil
 }
@@ -146,8 +142,6 @@ func (p *OIDCfileTokenProvider) GetToken() (*oauth2.Token, error) {
 }
 
 func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
-	log.Printf("Will refresh access token for client %s and scope %s, %s before expiry",
-		p.ClientID, p.Scopes[0], p.refreshAhead.String())
 	p.backgroundOnce.Do(func() {
 		go func() {
 			for {
@@ -179,10 +173,4 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 			}
 		}()
 	})
-}
-
-func DumpOauth2Token(tok *oauth2.Token) string {
-	return fmt.Sprintf("\nAccessToken: %s...%s\nTokenType: %s\nRefreshToken: %s\nExpiry: %s\nExpiresIn: %d\n",
-		tok.AccessToken[0:8], tok.AccessToken[len(tok.AccessToken)-8:], tok.TokenType,
-		tok.RefreshToken, tok.Expiry.Format(time.RFC3339), tok.ExpiresIn)
 }

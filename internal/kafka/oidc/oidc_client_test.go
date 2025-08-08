@@ -388,8 +388,6 @@ func NewTokenHandler(expireSecs int) func(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		// log.Printf("tokenHandler(): expireSecs = %v", expireSecs)
-
 		response := oauth2.Token{
 			AccessToken: token,
 			TokenType:   "Bearer",
@@ -397,8 +395,6 @@ func NewTokenHandler(expireSecs int) func(w http.ResponseWriter, r *http.Request
 			Expiry:    time.Now().Add(time.Duration(expireSecs) * time.Second),
 			ExpiresIn: int64(expireSecs),
 		}
-
-		// log.Printf("SERVER tokenHandler(): response token = %s\n", DumpOauth2Token(&response))
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
