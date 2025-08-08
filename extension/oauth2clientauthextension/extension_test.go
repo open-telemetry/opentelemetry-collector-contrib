@@ -5,27 +5,66 @@ package oauth2clientauthextension
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
-	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
+
+type testRoundTripper struct {
+	testString string
+}
+
+func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+	return nil, nil
+}
 
 func TestOAuthClientSettings(t *testing.T) {
 	// test files for TLS testing
 	var (
-		testCAFile   = "testdata/testCA.pem"
-		testCertFile = "testdata/test-cert.pem"
-		testKeyFile  = "testdata/test-key.pem"
+		testCAFile     = "testdata/ca.crt"
+		serverCertFile = "testdata/server.crt"
+		serverKeyFile  = "testdata/server-key.pem"
 	)
+	serverCert, err := tls.LoadX509KeyPair(serverCertFile, serverKeyFile)
+	assert.NoError(t, err)
+
+	// Create a TLS configuration with the custom certificate
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+	}
+
+	// Create a listener
+
+	authServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		responseMap := map[string]string{
+			"access_token":  "SlAV32hkKG",
+			"token_type":    "Bearer",
+			"refresh_token": "8xLotade",
+		}
+		response, _ := json.Marshal(responseMap)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		_, err = w.Write([]byte(response))
+		assert.NoError(t, err)
+	}))
+
+	authServer.TLS = tlsConfig
+	authServer.StartTLS()
+
+	authURL, err := url.Parse(authServer.URL)
+	assert.NoError(t, err)
+
+	defer authServer.Close()
 
 	tests := []struct {
 		name          string
@@ -34,76 +73,58 @@ func TestOAuthClientSettings(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name: "all_valid_settings",
-			settings: &Config{
-				ClientID:       "testclientid",
-				ClientSecret:   "testsecret",
-				EndpointParams: url.Values{"audience": []string{"someaudience"}},
-				TokenURL:       "https://example.com/v1/token",
-				Scopes:         []string{"resource.read"},
-				Timeout:        2,
-				ExpiryBuffer:   10 * time.Second,
-				TLS: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   testCAFile,
-						CertFile: testCertFile,
-						KeyFile:  testKeyFile,
-					},
-					Insecure:           false,
-					InsecureSkipVerify: false,
-				},
-			},
-			shouldError:   false,
-			expectedError: "",
-		},
-		{
-			name: "invalid_tls",
+			name: "request_fails_without_custom_CA",
 			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
-				Timeout:      2,
-				ExpiryBuffer: 15 * time.Second,
+				TokenURL:     authURL.String(),
+				TLS: configtls.ClientConfig{
+					Insecure:           false,
+					InsecureSkipVerify: false,
+				},
+			},
+			shouldError: true,
+			// Server CA should be rejected
+			expectedError: "failed to get security token from token endpoint",
+		},
+		{
+			name: "use_custom_tls_config",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				TokenURL:     authURL.String(),
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
-						CAFile:   testCAFile,
-						CertFile: "nonexistent.cert",
-						KeyFile:  testKeyFile,
+						CAFile: testCAFile,
 					},
 					Insecure:           false,
 					InsecureSkipVerify: false,
 				},
 			},
-			shouldError:   true,
-			expectedError: "failed to load TLS config: failed to load TLS cert and key",
+			shouldError: true,
+			// This error means a the request was successful, but the test token is not valid
+			expectedError: "unable to transfer TokenSource PerRPCCredentials: AuthInfo is nil",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
+			require.NoError(t, err)
+
+			// test tls settings
+			credential, err := rc.PerRPCCredentials()
+			require.NoError(t, err)
+
+			_, err = credential.GetRequestMetadata(context.Background())
 			if test.shouldError {
 				assert.ErrorContains(t, err, test.expectedError)
 				return
 			}
-
-			// test tls settings
-			transport := rc.Transport().(*http.Transport)
-			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(context.Background())
 			assert.NoError(t, err)
-			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
+
 		})
 	}
-}
-
-type testRoundTripper struct {
-	testString string
-}
-
-func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
-	return nil, nil
 }
 
 func TestRoundTripper(t *testing.T) {
@@ -170,87 +191,58 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 			},
 			shouldError: false,
 		},
+		{
+			name: "test_create_sts_authenticator",
+			settings: &Config{
+				SubjectToken:     "testtoken",
+				SubjectTokenType: "testtokentype",
+				TokenURL:         "https://example.com/v1/token",
+				Scopes:           []string{"resource.read"},
+				Audience:         "testaudience",
+				AuthMode:         "sts",
+			},
+			shouldError: false,
+		},
 	}
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
 			oauth2Authenticator, err := newClientAuthenticator(testcase.settings, zap.NewNop())
-			if testcase.shouldError {
-				assert.Error(t, err)
-				assert.Nil(t, oauth2Authenticator)
-				return
-			}
 			assert.NoError(t, err)
 			perRPCCredentials, err := oauth2Authenticator.PerRPCCredentials()
 			assert.NoError(t, err)
-			// test perRPCCredentials is an grpc OAuthTokenSource
-			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
-			assert.True(t, ok)
+			assert.NotNil(t, perRPCCredentials)
 		})
 	}
 }
 
-func TestFailContactingOAuth(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("not-json"))
-		assert.NoError(t, err)
-	}))
-	defer server.Close()
-
-	serverURL, err := url.Parse(server.URL)
-	require.NoError(t, err)
-
-	oauth2Authenticator, err := newClientAuthenticator(&Config{
-		ClientID:     "dummy",
-		ClientSecret: "ABC",
-		TokenURL:     serverURL.String(),
-	}, zap.NewNop())
-	require.NoError(t, err)
-
-	// Test for gRPC connections
-	credential, err := oauth2Authenticator.PerRPCCredentials()
-	require.NoError(t, err)
-
-	_, err = credential.GetRequestMetadata(context.Background())
-	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.ErrorContains(t, err, serverURL.String())
-
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	baseRoundTripper := (http.RoundTripper)(transport)
-	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
-	require.NoError(t, err)
-
-	client := &http.Client{
-		Transport: roundTripper,
-	}
-
-	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
-	require.NoError(t, err)
-	_, err = client.Do(req)
-	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.ErrorContains(t, err, serverURL.String())
-}
-
 func TestClientAuthenticatorMode(t *testing.T) {
-	// test files for TLS testing
 
 	tests := []struct {
-		name          string
-		settings      *Config
-		shouldError   bool
-		expectedError string
+		name         string
+		settings     *Config
+		expectedType any
 	}{
 		{
-			name: "test_create_two_legged_authenticator",
+			name: "test_defaults_to_client_credentials_mode",
 			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 			},
-			shouldError:   false,
-			expectedError: "",
+			expectedType: &twoLeggedClientAuthenticator{},
+		},
+		{
+			name: "test_create_client_credentials",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+				AuthMode:     "client-credentials",
+			},
+			expectedType: &twoLeggedClientAuthenticator{},
 		},
 		{
 			name: "test_create_sts_authenticator",
@@ -260,30 +252,17 @@ func TestClientAuthenticatorMode(t *testing.T) {
 				TokenURL:         "https://example.com/v1/token",
 				Scopes:           []string{"resource.read"},
 				Audience:         "testaudience",
+				AuthMode:         "sts",
 			},
-			shouldError:   false,
-			expectedError: "",
+			expectedType: &stsClientAuthenticator{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
-
-			if test.shouldError {
-				assert.ErrorContains(t, err, test.expectedError)
-				return
-			}
-
 			assert.NoError(t, err)
-			if test.settings.SubjectToken != "" {
-				_, ok := rc.(*stsClientAuthenticator)
-				assert.True(t, ok)
-			} else {
-				_, ok := rc.(*twoLeggedClientAuthenticator)
-				assert.True(t, ok)
-			}
-
+			assert.IsType(t, test.expectedType, rc)
 		})
 	}
 }

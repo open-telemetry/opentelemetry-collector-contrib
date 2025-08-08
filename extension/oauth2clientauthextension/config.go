@@ -18,12 +18,14 @@ var (
 	errNoTokenURLProvided        = errors.New("no TokenURL provided in OAuth Client Credentials configuration")
 	errNoClientSecretProvided    = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
 	errNoSecretTokenTypeProvided = errors.New("no SecretTokenType provided in OAuth configuration")
+	errNoSubjectTokenProvided    = errors.New("no SubjectToken or SubjectTokenFiel provided for STS mode")
+	errUnsupportedMode           = errors.New("recieved an invalide auth_mode. Must be one of: client-credentials or sts")
 )
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
 type Config struct {
 	//
-	// ************ 2 Legged Authentication specific fields *********************************
+	// ************ Client Credentials Authentication specific fields *********************************
 
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
@@ -55,11 +57,15 @@ type Config struct {
 	// Name of the target service that we want to access
 	Audience string `mapstructure:"audience"`
 
-	// DisableTLSOnUse turns off TLS when using the credentials. i.e. sets TokenSource.RequireTransportSecurity to false. Only supported for STS mode.
-	DisableTLSOnUse bool `mapstructure:"disable_tls_on_use, omitempty"`
+	// DisablegRPCTransportSecurity turns off TLS when using the credentials. i.e. sets TokenSource.RequireTransportSecurity to false. Only supported for STS mode.
+	DisablegRPCTransportSecurity bool `mapstructure:"disable_grpc_transport_security, omitempty"`
 
 	//
 	// ******************************** Shared fields **********************************************
+
+	// AuthMode specifies whether to use client credentials or STS flow.
+	// Defaults to "client-credentials" unless "sts" is specified
+	AuthMode string `mapstructure:"authmode, omitempty"`
 
 	// TokenURL is the resource server's token endpoint
 	// URL. This is a constant specific to each server.
@@ -86,32 +92,31 @@ type Config struct {
 
 var _ component.Config = (*Config)(nil)
 
-func (cfg *Config) getMode() string {
-	if cfg.SubjectToken != "" || cfg.SubjectTokenFile != "" {
-		return "sts"
-	}
-	return "two-legged"
-}
-
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.TokenURL == "" {
 		return errNoTokenURLProvided
 	}
-	// STS Token Exchange Mode
-	if cfg.getMode() == "sts" {
+	switch cfg.AuthMode {
+	case "", "client-credentials":
+		// 2 Legged Oauth Mode
+		if cfg.ClientID == "" && cfg.ClientIDFile == "" {
+			return errNoClientIDProvided
+		}
+		if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
+			return errNoClientSecretProvided
+		}
+		return nil
+	case "sts":
+		// STS Token Exchange Mode
+		if cfg.SubjectToken == "" && cfg.SubjectTokenFile == "" {
+			return errNoSubjectTokenProvided
+		}
 		if cfg.SubjectTokenType == "" {
 			return errNoSecretTokenTypeProvided
 		}
 		return nil
 	}
+	return errUnsupportedMode
 
-	// 2 Legged Oauth Mode
-	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
-		return errNoClientIDProvided
-	}
-	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
-		return errNoClientSecretProvided
-	}
-	return nil
 }

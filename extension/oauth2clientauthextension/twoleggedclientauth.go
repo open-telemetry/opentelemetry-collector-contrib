@@ -78,7 +78,3 @@ func (o *twoLeggedClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCr
 		},
 	}, nil
 }
-
-func (o *twoLeggedClientAuthenticator) Transport() http.RoundTripper {
-	return o.client.Transport
-}

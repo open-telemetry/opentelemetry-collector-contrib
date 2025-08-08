@@ -7,7 +7,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc/credentials"
-	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -52,13 +51,9 @@ func (o *stsClientAuthenticator) RoundTripper(base http.RoundTripper) (http.Roun
 	}, nil
 }
 
+// Use custom implementation instead of grpcOauth.TokenSource so we are able to disable Transport Security
 func (o *stsClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	return grpcOAuth.TokenSource{
-		TokenSource: errorWrappingTokenSource{
-			ts:       o.tokenSource,
-			tokenURL: o.config.TokenURL,
-		},
-	}, nil
+	return o, nil
 }
 
 func (o *stsClientAuthenticator) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
@@ -73,9 +68,5 @@ func (o *stsClientAuthenticator) GetRequestMetadata(ctx context.Context, uri ...
 
 // Applied when authenticator is returned as PerRPCCredentials
 func (o *stsClientAuthenticator) RequireTransportSecurity() bool {
-	return !o.config.DisableTLSOnUse
-}
-
-func (o *stsClientAuthenticator) Transport() http.RoundTripper {
-	return o.transport
+	return !o.config.DisablegRPCTransportSecurity
 }

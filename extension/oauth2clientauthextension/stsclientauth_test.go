@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -28,12 +29,8 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 func TestStsTokenSource(t *testing.T) {
 	// Create a temporary KSA token file
-	mockKsaTokenFile, err := os.CreateTemp("", "test_ksa_token_path")
-	assert.NoError(t, err)
-	defer os.Remove(mockKsaTokenFile.Name())
-	_, err = mockKsaTokenFile.WriteString("test-ksa-token")
-	assert.NoError(t, err)
-	err = mockKsaTokenFile.Close()
+	mockKsaTokenFile := filepath.Join(t.TempDir(), "test_ksa_token_path")
+	err := os.WriteFile(mockKsaTokenFile, []byte("test-ksa-token"), 0644)
 	assert.NoError(t, err)
 
 	testCases := []struct {
@@ -45,7 +42,7 @@ func TestStsTokenSource(t *testing.T) {
 	}{
 		{
 			name:         "Successful token exchange",
-			ksaTokenPath: mockKsaTokenFile.Name(),
+			ksaTokenPath: mockKsaTokenFile,
 			mockSetup: func(m *mockRoundTripper) {
 				response := &http.Response{
 					StatusCode: 200,
@@ -69,7 +66,7 @@ func TestStsTokenSource(t *testing.T) {
 		},
 		{
 			name:         "STS request failure",
-			ksaTokenPath: mockKsaTokenFile.Name(),
+			ksaTokenPath: mockKsaTokenFile,
 			mockSetup: func(m *mockRoundTripper) {
 				m.On("RoundTrip", mock.Anything).Return((*http.Response)(nil), fmt.Errorf("network error"))
 			},
@@ -77,7 +74,7 @@ func TestStsTokenSource(t *testing.T) {
 		},
 		{
 			name:         "Invalid JSON response",
-			ksaTokenPath: mockKsaTokenFile.Name(),
+			ksaTokenPath: mockKsaTokenFile,
 			mockSetup: func(m *mockRoundTripper) {
 				response := &http.Response{
 					StatusCode: 200,
@@ -85,11 +82,11 @@ func TestStsTokenSource(t *testing.T) {
 				}
 				m.On("RoundTrip", mock.Anything).Return(response, nil)
 			},
-			expectedError: "failed to parse STS Server json response",
+			expectedError: "failed to decode token from response",
 		},
 		{
 			name:         "Missing access_token in response",
-			ksaTokenPath: mockKsaTokenFile.Name(),
+			ksaTokenPath: mockKsaTokenFile,
 			mockSetup: func(m *mockRoundTripper) {
 				response := &http.Response{
 					StatusCode: 200,
@@ -97,19 +94,19 @@ func TestStsTokenSource(t *testing.T) {
 				}
 				m.On("RoundTrip", mock.Anything).Return(response, nil)
 			},
-			expectedError: "access_token not found",
+			expectedError: "access_token missing",
 		},
 		{
-			name:         "Missing expires_in in response",
-			ksaTokenPath: mockKsaTokenFile.Name(),
+			name:         "Expired token",
+			ksaTokenPath: mockKsaTokenFile,
 			mockSetup: func(m *mockRoundTripper) {
 				response := &http.Response{
 					StatusCode: 200,
-					Body:       io.NopCloser(bytes.NewBufferString(`{"access_token": "test_token"}`)),
+					Body:       io.NopCloser(bytes.NewBufferString(`{"access_token": "test_token", "expires_in": 1}`)),
 				}
 				m.On("RoundTrip", mock.Anything).Return(response, nil)
 			},
-			expectedError: "expires_in not found in JSON response",
+			expectedError: "token expired",
 		},
 	}
 
@@ -120,6 +117,7 @@ func TestStsTokenSource(t *testing.T) {
 
 			config := &Config{
 				SubjectTokenFile: tc.ksaTokenPath,
+				AuthMode:         "sts",
 				TokenURL:         "test_sts_url",
 				Audience:         "test_access_audience",
 			}

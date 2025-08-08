@@ -4,9 +4,14 @@
 package oauth2clientauthextension
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -85,4 +90,46 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			assert.Equal(t, test.expectedClientConfig.ClientSecret, cfg.ClientSecret)
 		})
 	}
+}
+
+func TestFailContactingOAuth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte("not-json"))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "dummy",
+		ClientSecret: "ABC",
+		TokenURL:     serverURL.String(),
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	// Test for gRPC connections
+	credential, err := oauth2Authenticator.PerRPCCredentials()
+	require.NoError(t, err)
+
+	_, err = credential.GetRequestMetadata(context.Background())
+	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
+	assert.ErrorContains(t, err, serverURL.String())
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseRoundTripper := (http.RoundTripper)(transport)
+	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
+	require.NoError(t, err)
+
+	client := &http.Client{
+		Transport: roundTripper,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
+	require.NoError(t, err)
+	_, err = client.Do(req)
+	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
+	assert.ErrorContains(t, err, serverURL.String())
 }
