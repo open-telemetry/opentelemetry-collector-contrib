@@ -42,6 +42,28 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"current":   AttributeConnectionTypeCurrent,
 }
 
+// AttributeDbSystemName specifies the value db.system.name attribute.
+type AttributeDbSystemName int
+
+const (
+	_ AttributeDbSystemName = iota
+	AttributeDbSystemNameMongodb
+)
+
+// String returns the string representation of the AttributeDbSystemName.
+func (av AttributeDbSystemName) String() string {
+	switch av {
+	case AttributeDbSystemNameMongodb:
+		return "mongodb"
+	}
+	return ""
+}
+
+// MapAttributeDbSystemName is a helper map of string to AttributeDbSystemName attribute value.
+var MapAttributeDbSystemName = map[string]AttributeDbSystemName{
+	"mongodb": AttributeDbSystemNameMongodb,
+}
+
 // AttributeLockMode specifies the value lock_mode attribute.
 type AttributeLockMode int
 
