@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
@@ -40,6 +41,7 @@ type Config struct {
 	// - span.kind
 	// - span.kind
 	// - status.code
+	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeServiceInstanceID
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
@@ -193,7 +195,7 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey} {
+	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey, string(conventions.ServiceInstanceIDKey)} {
 		labelNames[key] = struct{}{}
 	}
 
