@@ -5,6 +5,7 @@ package tracker // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -36,6 +37,8 @@ type Tracker interface {
 	EndPoll(context.Context)
 	EndConsume() int
 	TotalReaders() int
+	AddUnmatched(*os.File, *fingerprint.Fingerprint)
+	LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata)
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -47,6 +50,9 @@ type fileTracker struct {
 	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
+
+	unmatchedFiles []*os.File
+	unmatchedFps   []*fingerprint.Fingerprint
 
 	archive archive.Archive
 }
@@ -93,6 +99,24 @@ func (t *fileTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadat
 		}
 	}
 	return nil
+}
+
+func (t *fileTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
+	// exclude duplicate fingerprints
+	for _, f := range t.unmatchedFps {
+		if fp.Equal(f) {
+			t.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+			return
+		}
+	}
+	t.unmatchedFps = append(t.unmatchedFps, fp)
+	t.unmatchedFiles = append(t.unmatchedFiles, file)
+}
+
+func (t *fileTracker) LookupArchive(ctx context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
+	// LookupArchive performs fingerprint matching against the archive and returns matched metadata, files and fingerprints.
+	metadata := t.archive.FindFiles(ctx, t.unmatchedFps)
+	return t.unmatchedFiles, t.unmatchedFps, metadata
 }
 
 func (t *fileTracker) GetMetadata() []*reader.Metadata {
@@ -154,6 +178,8 @@ type noStateTracker struct {
 	set              component.TelemetrySettings
 	maxBatchFiles    int
 	currentPollFiles *fileset.Fileset[*reader.Reader]
+	unmatchedFiles   []*os.File
+	unmatchedFps     []*fingerprint.Fingerprint
 }
 
 func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
@@ -187,6 +213,8 @@ func (t *noStateTracker) EndConsume() (filesClosed int) {
 		r.Close()
 		filesClosed++
 	}
+	t.unmatchedFiles = make([]*os.File, 0)
+	t.unmatchedFps = make([]*fingerprint.Fingerprint, 0)
 	return
 }
 
@@ -205,3 +233,12 @@ func (*noStateTracker) ClosePreviousFiles() int { return 0 }
 func (*noStateTracker) EndPoll(context.Context) {}
 
 func (*noStateTracker) TotalReaders() int { return 0 }
+
+func (t *noStateTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
+	t.unmatchedFiles = append(t.unmatchedFiles, file)
+	t.unmatchedFps = append(t.unmatchedFps, fp)
+}
+
+func (t *noStateTracker) LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
+	return t.unmatchedFiles, t.unmatchedFps, make([]*reader.Metadata, len(t.unmatchedFps))
+}
