@@ -27,39 +27,58 @@ type TimeseriesInfo struct {
 
 type NumberInfo struct {
 	StartTime     pcommon.Timestamp
-	InitialValue  float64
 	PreviousValue float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefValue float64
 }
 
 type HistogramInfo struct {
-	StartTime      pcommon.Timestamp
-	InitialCount   uint64
-	InitialSum     float64
-	PreviousCount  uint64
-	PreviousSum    float64
-	BucketCounts   []uint64
-	ExplicitBounds []float64
+	StartTime            pcommon.Timestamp
+	PreviousCount        uint64
+	PreviousSum          float64
+	PreviousBucketCounts []uint64
+	ExplicitBounds       []float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount        uint64
+	RefSum          float64
+	RefBucketCounts []uint64
 }
 
 type ExponentialHistogramInfo struct {
 	StartTime         pcommon.Timestamp
-	InitialCount      uint64
-	InitialSum        float64
-	InitialZeroCount  uint64
 	PreviousCount     uint64
 	PreviousSum       float64
 	PreviousZeroCount uint64
 	Scale             int32
-	PositiveBuckets   pmetric.ExponentialHistogramDataPointBuckets
-	NegativeBuckets   pmetric.ExponentialHistogramDataPointBuckets
+	PreviousPositive  pmetric.ExponentialHistogramDataPointBuckets
+	PreviousNegative  pmetric.ExponentialHistogramDataPointBuckets
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount     uint64
+	RefSum       float64
+	RefZeroCount uint64
+	RefPositive  pmetric.ExponentialHistogramDataPointBuckets
+	RefNegative  pmetric.ExponentialHistogramDataPointBuckets
 }
 
 type SummaryInfo struct {
 	StartTime     pcommon.Timestamp
-	InitialCount  uint64
-	InitialSum    float64
 	PreviousCount uint64
 	PreviousSum   float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount uint64
+	RefSum   float64
 }
 
 type TimeseriesKey struct {
@@ -150,11 +169,11 @@ func (ref *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if len(ref.Histogram.BucketCounts) != h.BucketCounts().Len() {
+	if len(ref.Histogram.PreviousBucketCounts) != h.BucketCounts().Len() {
 		return true
 	}
-	for i := range len(ref.Histogram.BucketCounts) {
-		if h.BucketCounts().At(i) < ref.Histogram.BucketCounts[i] {
+	for i := range len(ref.Histogram.PreviousBucketCounts) {
+		if h.BucketCounts().At(i) < ref.Histogram.PreviousBucketCounts[i] {
 			return true
 		}
 	}
@@ -184,19 +203,19 @@ func (ref *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHis
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if ref.ExponentialHistogram.PositiveBuckets.BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
+	if ref.ExponentialHistogram.PreviousPositive.BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.ExponentialHistogram.PositiveBuckets.BucketCounts().Len() {
-		if eh.Positive().BucketCounts().At(i) < ref.ExponentialHistogram.PositiveBuckets.BucketCounts().At(i) {
+	for i := range ref.ExponentialHistogram.PreviousPositive.BucketCounts().Len() {
+		if eh.Positive().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousPositive.BucketCounts().At(i) {
 			return true
 		}
 	}
-	if ref.ExponentialHistogram.NegativeBuckets.BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
+	if ref.ExponentialHistogram.PreviousNegative.BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.ExponentialHistogram.NegativeBuckets.BucketCounts().Len() {
-		if eh.Negative().BucketCounts().At(i) < ref.ExponentialHistogram.NegativeBuckets.BucketCounts().At(i) {
+	for i := range ref.ExponentialHistogram.PreviousNegative.BucketCounts().Len() {
+		if eh.Negative().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousNegative.BucketCounts().At(i) {
 			return true
 		}
 	}

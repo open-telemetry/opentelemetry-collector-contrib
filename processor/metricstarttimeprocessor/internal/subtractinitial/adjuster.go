@@ -102,11 +102,12 @@ func adjustMetricHistogram(referenceValueTsm *datapointstorage.TimeseriesMap, me
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			refTsi.Histogram = datapointstorage.HistogramInfo{
-				InitialCount: currentDist.Count(), InitialSum: currentDist.Sum(),
-				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(),
-				StartTime:      currentDist.Timestamp(),
-				BucketCounts:   currentDist.BucketCounts().AsRaw(),
-				ExplicitBounds: currentDist.ExplicitBounds().AsRaw(),
+				RefCount: currentDist.Count(), RefSum: currentDist.Sum(),
+				RefBucketCounts: currentDist.BucketCounts().AsRaw(),
+				PreviousCount:   currentDist.Count(), PreviousSum: currentDist.Sum(),
+				PreviousBucketCounts: currentDist.BucketCounts().AsRaw(),
+				StartTime:            currentDist.Timestamp(),
+				ExplicitBounds:       currentDist.ExplicitBounds().AsRaw(),
 			}
 			return true
 		}
@@ -123,12 +124,14 @@ func adjustMetricHistogram(referenceValueTsm *datapointstorage.TimeseriesMap, me
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
 
 			// Update the reference value with the metric point.
-			refTsi.Histogram.InitialCount, refTsi.Histogram.InitialSum = 0, 0
+			refTsi.Histogram.RefCount, refTsi.Histogram.RefSum = 0, 0
 			refTsi.Histogram.StartTime = resetStartTimeStamp
-			refTsi.Histogram.BucketCounts = make([]uint64, currentDist.BucketCounts().Len())
+			refTsi.Histogram.RefBucketCounts = make([]uint64, currentDist.BucketCounts().Len())
 			refTsi.Histogram.ExplicitBounds = currentDist.ExplicitBounds().AsRaw()
+			refTsi.Histogram.PreviousBucketCounts = currentDist.BucketCounts().AsRaw()
 			refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
 		} else {
+			refTsi.Histogram.PreviousBucketCounts = currentDist.BucketCounts().AsRaw()
 			refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
 			subtractHistogramDataPoint(currentDist, refTsi.Histogram)
 		}
@@ -154,12 +157,14 @@ func adjustMetricExponentialHistogram(referenceValueTsm *datapointstorage.Timese
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{
-				InitialCount: currentDist.Count(), InitialSum: currentDist.Sum(), InitialZeroCount: currentDist.ZeroCount(),
+				RefCount: currentDist.Count(), RefSum: currentDist.Sum(), RefZeroCount: currentDist.ZeroCount(),
+				RefPositive:   currentDist.Positive(),
+				RefNegative:   currentDist.Negative(),
 				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(), PreviousZeroCount: currentDist.ZeroCount(),
-				Scale:           currentDist.Scale(),
-				StartTime:       currentDist.Timestamp(),
-				PositiveBuckets: currentDist.Positive(),
-				NegativeBuckets: currentDist.Negative(),
+				PreviousPositive: currentDist.Positive(),
+				PreviousNegative: currentDist.Negative(),
+				Scale:            currentDist.Scale(),
+				StartTime:        currentDist.Timestamp(),
 			}
 			return true
 		}
@@ -175,12 +180,14 @@ func adjustMetricExponentialHistogram(referenceValueTsm *datapointstorage.Timese
 			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
 
-			refTsi.ExponentialHistogram.InitialCount, refTsi.ExponentialHistogram.InitialSum, refTsi.ExponentialHistogram.InitialZeroCount, refTsi.ExponentialHistogram.Scale = 0, 0, 0, currentDist.Scale()
+			refTsi.ExponentialHistogram.RefCount, refTsi.ExponentialHistogram.RefSum, refTsi.ExponentialHistogram.RefZeroCount, refTsi.ExponentialHistogram.Scale = 0, 0, 0, currentDist.Scale()
 			refTsi.ExponentialHistogram.StartTime = resetStartTimeStamp
-			refTsi.ExponentialHistogram.PositiveBuckets.BucketCounts().FromRaw(make([]uint64, currentDist.Positive().BucketCounts().Len()))
-			refTsi.ExponentialHistogram.NegativeBuckets.BucketCounts().FromRaw(make([]uint64, currentDist.Negative().BucketCounts().Len()))
+			refTsi.ExponentialHistogram.RefPositive.BucketCounts().FromRaw(make([]uint64, currentDist.Positive().BucketCounts().Len()))
+			refTsi.ExponentialHistogram.RefNegative.BucketCounts().FromRaw(make([]uint64, currentDist.Negative().BucketCounts().Len()))
+			refTsi.ExponentialHistogram.PreviousPositive, refTsi.ExponentialHistogram.PreviousNegative = currentDist.Positive(), currentDist.Negative()
 			refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
 		} else {
+			refTsi.ExponentialHistogram.PreviousPositive, refTsi.ExponentialHistogram.PreviousNegative = currentDist.Positive(), currentDist.Negative()
 			refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
 			subtractExponentialHistogramDataPoint(currentDist, refTsi.ExponentialHistogram)
 		}
@@ -205,7 +212,7 @@ func adjustMetricSum(referenceValueTsm *datapointstorage.TimeseriesMap, metric p
 		refTsi, found := referenceValueTsm.Get(metric, currentSum.Attributes())
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
-			refTsi.Number = datapointstorage.NumberInfo{PreviousValue: currentSum.DoubleValue(), InitialValue: currentSum.DoubleValue(), StartTime: currentSum.Timestamp()}
+			refTsi.Number = datapointstorage.NumberInfo{PreviousValue: currentSum.DoubleValue(), RefValue: currentSum.DoubleValue(), StartTime: currentSum.Timestamp()}
 			return true
 		}
 
@@ -221,11 +228,11 @@ func adjustMetricSum(referenceValueTsm *datapointstorage.TimeseriesMap, metric p
 			currentSum.SetStartTimestamp(resetStartTimeStamp)
 
 			refTsi.Number.StartTime = resetStartTimeStamp
-			refTsi.Number.InitialValue = 0
+			refTsi.Number.RefValue = 0
 			refTsi.Number.PreviousValue = currentSum.DoubleValue()
 		} else {
 			refTsi.Number.PreviousValue = currentSum.DoubleValue()
-			currentSum.SetDoubleValue(currentSum.DoubleValue() - refTsi.Number.InitialValue)
+			currentSum.SetDoubleValue(currentSum.DoubleValue() - refTsi.Number.RefValue)
 		}
 		return false
 	})
@@ -243,7 +250,7 @@ func adjustMetricSummary(referenceValueTsm *datapointstorage.TimeseriesMap, metr
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			refTsi.Summary = datapointstorage.SummaryInfo{
-				InitialCount: currentSummary.Count(), InitialSum: currentSummary.Sum(),
+				RefCount: currentSummary.Count(), RefSum: currentSummary.Sum(),
 				PreviousCount: currentSummary.Count(), PreviousSum: currentSummary.Sum(),
 				StartTime: currentSummary.Timestamp(),
 			}
@@ -262,12 +269,12 @@ func adjustMetricSummary(referenceValueTsm *datapointstorage.TimeseriesMap, metr
 			currentSummary.SetStartTimestamp(resetStartTimeStamp)
 
 			refTsi.Summary.StartTime = resetStartTimeStamp
-			refTsi.Summary.InitialCount, refTsi.Summary.InitialSum = 0, 0
+			refTsi.Summary.RefCount, refTsi.Summary.RefSum = 0, 0
 			refTsi.Summary.PreviousCount, refTsi.Summary.PreviousSum = currentSummary.Count(), currentSummary.Sum()
 		} else {
 			refTsi.Summary.PreviousCount, refTsi.Summary.PreviousSum = currentSummary.Count(), currentSummary.Sum()
-			currentSummary.SetCount(currentSummary.Count() - refTsi.Summary.InitialCount)
-			currentSummary.SetSum(currentSummary.Sum() - refTsi.Summary.InitialSum)
+			currentSummary.SetCount(currentSummary.Count() - refTsi.Summary.RefCount)
+			currentSummary.SetSum(currentSummary.Sum() - refTsi.Summary.RefSum)
 		}
 		return false
 	})
@@ -276,10 +283,10 @@ func adjustMetricSummary(referenceValueTsm *datapointstorage.TimeseriesMap, metr
 // subtractHistogramDataPoint subtracts b from a.
 func subtractHistogramDataPoint(a pmetric.HistogramDataPoint, ref datapointstorage.HistogramInfo) {
 	a.SetStartTimestamp(ref.StartTime)
-	a.SetCount(a.Count() - ref.InitialCount)
-	a.SetSum(a.Sum() - ref.InitialSum)
+	a.SetCount(a.Count() - ref.RefCount)
+	a.SetSum(a.Sum() - ref.RefSum)
 	aBuckets := a.BucketCounts()
-	bBuckets := ref.BucketCounts
+	bBuckets := ref.RefBucketCounts
 	if len(bBuckets) != aBuckets.Len() {
 		// Post reset, the reference histogram will have no buckets.
 		return
@@ -294,16 +301,16 @@ func subtractHistogramDataPoint(a pmetric.HistogramDataPoint, ref datapointstora
 // subtractExponentialHistogramDataPoint subtracts b from a.
 func subtractExponentialHistogramDataPoint(a pmetric.ExponentialHistogramDataPoint, ref datapointstorage.ExponentialHistogramInfo) {
 	a.SetStartTimestamp(ref.StartTime)
-	a.SetCount(a.Count() - ref.InitialCount)
-	a.SetSum(a.Sum() - ref.InitialSum)
-	a.SetZeroCount(a.ZeroCount() - ref.InitialZeroCount)
-	if a.Positive().BucketCounts().Len() != ref.PositiveBuckets.BucketCounts().Len() ||
-		a.Negative().BucketCounts().Len() != ref.NegativeBuckets.BucketCounts().Len() {
+	a.SetCount(a.Count() - ref.RefCount)
+	a.SetSum(a.Sum() - ref.RefSum)
+	a.SetZeroCount(a.ZeroCount() - ref.RefZeroCount)
+	if a.Positive().BucketCounts().Len() != ref.RefPositive.BucketCounts().Len() ||
+		a.Negative().BucketCounts().Len() != ref.RefNegative.BucketCounts().Len() {
 		// Post reset, the reference histogram will have no buckets.
 		return
 	}
-	a.Positive().BucketCounts().FromRaw(subtractExponentialBuckets(a.Positive(), ref.PositiveBuckets))
-	a.Negative().BucketCounts().FromRaw(subtractExponentialBuckets(a.Negative(), ref.NegativeBuckets))
+	a.Positive().BucketCounts().FromRaw(subtractExponentialBuckets(a.Positive(), ref.RefPositive))
+	a.Negative().BucketCounts().FromRaw(subtractExponentialBuckets(a.Negative(), ref.RefNegative))
 }
 
 // subtractExponentialBuckets subtracts b from a.

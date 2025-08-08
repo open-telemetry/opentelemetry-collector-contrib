@@ -101,9 +101,9 @@ func (*Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, curr
 			// initialize everything.
 			refTsi.Histogram = datapointstorage.HistogramInfo{
 				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(),
-				StartTime:      currentDist.Timestamp(),
-				BucketCounts:   currentDist.BucketCounts().AsRaw(),
-				ExplicitBounds: currentDist.ExplicitBounds().AsRaw(),
+				StartTime:            currentDist.Timestamp(),
+				PreviousBucketCounts: currentDist.BucketCounts().AsRaw(),
+				ExplicitBounds:       currentDist.ExplicitBounds().AsRaw(),
 			}
 
 			// For the first point, set the start time as the point timestamp.
@@ -125,7 +125,7 @@ func (*Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, curr
 
 		// Update only previous values.
 		refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
-		refTsi.Histogram.BucketCounts = currentDist.BucketCounts().AsRaw()
+		refTsi.Histogram.PreviousBucketCounts = currentDist.BucketCounts().AsRaw()
 		currentDist.SetStartTimestamp(refTsi.Histogram.StartTime)
 	}
 }
@@ -146,10 +146,10 @@ func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timeseri
 			// initialize everything.
 			refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{
 				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(), PreviousZeroCount: currentDist.ZeroCount(),
-				Scale:           currentDist.Scale(),
-				StartTime:       currentDist.Timestamp(),
-				PositiveBuckets: currentDist.Positive(),
-				NegativeBuckets: currentDist.Negative(),
+				Scale:            currentDist.Scale(),
+				StartTime:        currentDist.Timestamp(),
+				PreviousPositive: currentDist.Positive(),
+				PreviousNegative: currentDist.Negative(),
 			}
 
 			// For the first point, set the start time as the point timestamp.
@@ -171,8 +171,8 @@ func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timeseri
 		}
 
 		// Update only previous values.
-		refTsi.ExponentialHistogram.PositiveBuckets = currentDist.Positive()
-		refTsi.ExponentialHistogram.NegativeBuckets = currentDist.Negative()
+		refTsi.ExponentialHistogram.PreviousPositive = currentDist.Positive()
+		refTsi.ExponentialHistogram.PreviousNegative = currentDist.Negative()
 		refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
 		currentDist.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 	}

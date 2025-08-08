@@ -172,7 +172,7 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 			name: "Bucket Counts Decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, BucketCounts: []uint64{1, 2, 3, 4}}
+				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, PreviousBucketCounts: []uint64{1, 2, 3, 4}}
 				return tsi
 			},
 			setupH: func() pmetric.HistogramDataPoint {
@@ -189,7 +189,7 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 			name: "No Reset",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, BucketCounts: []uint64{1, 2, 3, 4}}
+				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, PreviousBucketCounts: []uint64{1, 2, 3, 4}}
 				return tsi
 			},
 			setupH: func() pmetric.HistogramDataPoint {
@@ -206,7 +206,7 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 			name: "Bucket Counts Length Mismatch",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, BucketCounts: []uint64{1, 2, 3, 4}}
+				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, PreviousBucketCounts: []uint64{1, 2, 3, 4}}
 				return tsi
 			},
 			setupH: func() pmetric.HistogramDataPoint {
@@ -223,7 +223,7 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 			name: "Zero Bucket Count",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, BucketCounts: []uint64{1, 2, 3, 4}}
+				tsi.Histogram = HistogramInfo{PreviousCount: 10, PreviousSum: 50, ExplicitBounds: []float64{1, 2, 3}, PreviousBucketCounts: []uint64{1, 2, 3, 4}}
 				return tsi
 			},
 			setupH: func() pmetric.HistogramDataPoint {
@@ -240,7 +240,7 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 			name: "Zero Bucket Count but no change",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Histogram = HistogramInfo{ExplicitBounds: []float64{1, 2, 3}, BucketCounts: []uint64{0, 0, 0, 0}}
+				tsi.Histogram = HistogramInfo{ExplicitBounds: []float64{1, 2, 3}, PreviousBucketCounts: []uint64{0, 0, 0, 0}}
 				return tsi
 			},
 			setupH: func() pmetric.HistogramDataPoint {
@@ -275,7 +275,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Count Decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -290,7 +290,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Sum Decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -305,7 +305,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Zero Count Decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousZeroCount: 10, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousZeroCount: 10, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -321,8 +321,8 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Positive Bucket Counts Decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
-				tsi.ExponentialHistogram.PositiveBuckets.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram.PreviousPositive.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -338,8 +338,8 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Negative Bucket Counts Decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
-				tsi.ExponentialHistogram.NegativeBuckets.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram.PreviousNegative.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -355,9 +355,9 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "No Reset",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
-				tsi.ExponentialHistogram.PositiveBuckets.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
-				tsi.ExponentialHistogram.NegativeBuckets.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram.PreviousPositive.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				tsi.ExponentialHistogram.PreviousNegative.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -374,8 +374,8 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Positive Bucket Counts Length Mismatch",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
-				tsi.ExponentialHistogram.PositiveBuckets.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram.PreviousPositive.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -391,8 +391,8 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Negative Bucket Counts Length Mismatch",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
-				tsi.ExponentialHistogram.NegativeBuckets.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram.PreviousNegative.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -408,7 +408,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Scale mismatch",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, Scale: 2, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, Scale: 2, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -424,7 +424,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Reset on zero count",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
@@ -439,7 +439,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			name: "Zero values but no reset",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PositiveBuckets: pmetric.NewExponentialHistogramDataPointBuckets(), NegativeBuckets: pmetric.NewExponentialHistogramDataPointBuckets()}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousPositive: pmetric.NewExponentialHistogramDataPointBuckets(), PreviousNegative: pmetric.NewExponentialHistogramDataPointBuckets()}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
