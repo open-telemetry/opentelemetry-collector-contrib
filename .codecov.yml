@@ -556,6 +556,10 @@ component_management:
     name: receiver_aerospike
     paths:
     - receiver/aerospikereceiver/**
+  - component_id: receiver_akamaisecurityevents
+    name: receiver_akamaisecurityevents
+    paths:
+    - receiver/akamaisecurityeventsreceiver/**
   - component_id: receiver_apache
     name: receiver_apache
     paths:
