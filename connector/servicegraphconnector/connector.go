@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -75,9 +76,11 @@ type serviceGraphConnector struct {
 	reqClientDurationSecondsCount        map[string]uint64
 	reqClientDurationSecondsSum          map[string]float64
 	reqClientDurationSecondsBucketCounts map[string][]uint64
+	reqClientDurationExpHistogram        map[string]*structure.Histogram[float64]
 	reqServerDurationSecondsCount        map[string]uint64
 	reqServerDurationSecondsSum          map[string]float64
 	reqServerDurationSecondsBucketCounts map[string][]uint64
+	reqServerDurationExpHistogram        map[string]*structure.Histogram[float64]
 	reqDurationBounds                    []float64
 
 	metricMutex sync.RWMutex
@@ -95,12 +98,15 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
 	}
 
-	bounds := defaultLatencyHistogramBuckets
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		bounds = legacyDefaultLatencyHistogramBuckets
-	}
-	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
+	var bounds []float64
+	if pConfig.ExponentialHistogramMaxSize == 0 {
+		bounds = defaultLatencyHistogramBuckets
+		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+			bounds = legacyDefaultLatencyHistogramBuckets
+		}
+		if pConfig.LatencyHistogramBuckets != nil {
+			bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
+		}
 	}
 
 	if pConfig.CacheLoop <= 0 {
@@ -141,9 +147,11 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		reqClientDurationSecondsCount:        make(map[string]uint64),
 		reqClientDurationSecondsSum:          make(map[string]float64),
 		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqClientDurationExpHistogram:        make(map[string]*structure.Histogram[float64]),
 		reqServerDurationSecondsCount:        make(map[string]uint64),
 		reqServerDurationSecondsSum:          make(map[string]float64),
 		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqServerDurationExpHistogram:        make(map[string]*structure.Histogram[float64]),
 		reqDurationBounds:                    bounds,
 		keyToMetric:                          make(map[string]metricSeries),
 		shutdownCh:                           make(chan any),
@@ -426,23 +434,53 @@ func (p *serviceGraphConnector) updateDurationMetrics(key string, serverDuration
 }
 
 func (p *serviceGraphConnector) updateServerDurationMetrics(key string, duration float64) {
-	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
-	if _, ok := p.reqServerDurationSecondsBucketCounts[key]; !ok {
-		p.reqServerDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	if p.reqDurationBounds == nil {
+		histogram, ok := p.reqServerDurationExpHistogram[key]
+		if !ok {
+			histogram = new(structure.Histogram[float64])
+			cfg := structure.NewConfig(
+				structure.WithMaxSize(p.config.ExponentialHistogramMaxSize),
+			)
+			histogram.Init(cfg)
+			p.reqServerDurationExpHistogram[key] = histogram
+		}
+
+		histogram.Update(duration)
+	} else {
+		index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
+		if _, ok := p.reqServerDurationSecondsBucketCounts[key]; !ok {
+			p.reqServerDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+		}
+
+		p.reqServerDurationSecondsSum[key] += duration
+		p.reqServerDurationSecondsCount[key]++
+		p.reqServerDurationSecondsBucketCounts[key][index]++
 	}
-	p.reqServerDurationSecondsSum[key] += duration
-	p.reqServerDurationSecondsCount[key]++
-	p.reqServerDurationSecondsBucketCounts[key][index]++
 }
 
 func (p *serviceGraphConnector) updateClientDurationMetrics(key string, duration float64) {
-	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
-	if _, ok := p.reqClientDurationSecondsBucketCounts[key]; !ok {
-		p.reqClientDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	if p.reqDurationBounds == nil {
+		histogram, ok := p.reqClientDurationExpHistogram[key]
+		if !ok {
+			histogram = new(structure.Histogram[float64])
+			cfg := structure.NewConfig(
+				structure.WithMaxSize(p.config.ExponentialHistogramMaxSize),
+			)
+			histogram.Init(cfg)
+			p.reqClientDurationExpHistogram[key] = histogram
+		}
+
+		histogram.Update(duration)
+	} else {
+		index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
+		if _, ok := p.reqClientDurationSecondsBucketCounts[key]; !ok {
+			p.reqClientDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+		}
+
+		p.reqClientDurationSecondsSum[key] += duration
+		p.reqClientDurationSecondsCount[key]++
+		p.reqClientDurationSecondsBucketCounts[key][index]++
 	}
-	p.reqClientDurationSecondsSum[key] += duration
-	p.reqClientDurationSecondsCount[key]++
-	p.reqClientDurationSecondsBucketCounts[key][index]++
 }
 
 func buildDimensions(e *store.Edge) pcommon.Map {
@@ -549,13 +587,30 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	if len(p.reqClientDurationSecondsCount) > 0 {
-		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_client")
-		mDuration.SetUnit(secondsUnit)
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			mDuration.SetUnit(millisecondsUnit)
+	mDuration := pmetric.NewMetric()
+	mDuration.SetName("traces_service_graph_request_client")
+	mDuration.SetUnit(secondsUnit)
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		mDuration.SetUnit(millisecondsUnit)
+	}
+
+	if p.reqDurationBounds == nil {
+		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		for key, expHistogram := range p.reqClientDurationExpHistogram {
+			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpDuration.Attributes())
+			dpDuration.SetCount(expHistogram.Count())
+			dpDuration.SetSum(expHistogram.Sum())
+			pdatautil.ExpoHistToExponentialDataPoint(expHistogram, dpDuration)
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
+	} else if len(p.reqClientDurationSecondsCount) > 0 {
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
@@ -577,18 +632,38 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 
 			dimensions.CopyTo(dpDuration.Attributes())
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
 	}
 	return nil
 }
 
 func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMetrics, mName string) error {
-	if len(p.reqServerDurationSecondsCount) > 0 {
-		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName(mName)
-		mDuration.SetUnit(secondsUnit)
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			mDuration.SetUnit(millisecondsUnit)
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	mDuration := pmetric.NewMetric()
+	mDuration.SetName(mName)
+	mDuration.SetUnit(secondsUnit)
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		mDuration.SetUnit(millisecondsUnit)
+	}
+
+	if p.reqDurationBounds == nil {
+		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		for key, expHistogram := range p.reqServerDurationExpHistogram {
+			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetTimestamp(timestamp)
+			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpDuration.Attributes())
+			dpDuration.SetCount(expHistogram.Count())
+			dpDuration.SetSum(expHistogram.Sum())
+			pdatautil.ExpoHistToExponentialDataPoint(expHistogram, dpDuration)
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
+	} else if len(p.reqServerDurationSecondsCount) > 0 {
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
@@ -610,6 +685,7 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 
 			dimensions.CopyTo(dpDuration.Attributes())
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
 	}
 	return nil
 }

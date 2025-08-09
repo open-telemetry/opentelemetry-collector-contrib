@@ -120,8 +120,9 @@ datasources:
 
 The following settings are required:
 
-- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets. Make sure use either `latency_histogram_buckets` or `exponential_histogram_max_size`.
     - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+- `exponential_histogram_max_size`: (no default) the maximum number of buckets per positive or negative number range. 
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
 
 The following settings can be optionally configured:
