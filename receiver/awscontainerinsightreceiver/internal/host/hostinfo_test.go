@@ -123,6 +123,7 @@ func TestInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
+	assert.NotNil(t, m.awsConfig)
 	// before ebsVolume and ec2Tags are initialized
 	assert.Empty(t, m.GetEBSVolumeID("dev"))
 	assert.Empty(t, m.GetClusterName())
