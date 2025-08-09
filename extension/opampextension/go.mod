@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.131.1-0.20250808075651-ed09fb912b2f
 	go.opentelemetry.io/collector/extension/extensiontest v0.131.1-0.20250808075651-ed09fb912b2f
 	go.opentelemetry.io/collector/service v0.131.1-0.20250808075651-ed09fb912b2f
+	go.opentelemetry.io/collector/service/hostcapabilities v0.131.1-0.20250808075651-ed09fb912b2f
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
@@ -69,7 +70,6 @@ require (
 	go.opentelemetry.io/collector/receiver v1.37.1-0.20250808075651-ed09fb912b2f // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.131.1-0.20250808075651-ed09fb912b2f // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.131.1-0.20250808075651-ed09fb912b2f // indirect
-	go.opentelemetry.io/collector/service/hostcapabilities v0.131.1-0.20250808075651-ed09fb912b2f // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.16.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.37.0 // indirect
