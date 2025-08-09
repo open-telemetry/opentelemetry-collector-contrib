@@ -1,0 +1,7 @@
+processors:
+  isolationforest:
+    forest_size: 50
+    mode: "enrich"
+    threshold: 0.75
+    features:
+      traces: ["duration", "error"]
