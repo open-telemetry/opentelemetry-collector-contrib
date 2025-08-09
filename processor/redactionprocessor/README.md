@@ -103,6 +103,20 @@ processors:
     # - `info` includes just the redacted key counts in the summary
     # - `silent` omits the summary attributes
     summary: debug
+    # url_sanitization configures URL sanitization to remove variable elements from the url, causing high cardinality issues
+    url_sanitization:
+      # enabled controls whether URL sanitization is active
+      enabled: true
+      # attributes is a list of attribute keys that contain URLs to be sanitized
+      attributes: ["http.url", "url"]
+      # max_segments is the maximum number of path segments to retain in the URL
+      max_segments: 4
+      # cache_size is used to cache valid elements from the url
+      cache_size: 1000
+      # replace_with is the string used to replace sanitized segments in the URL
+      replace_with: "***"
+      # sanitize_span_name controls whether to apply URL sanitization to span names
+      sanitize_span_name: true
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
@@ -130,6 +144,8 @@ The value is then masked according to the configuration.
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
 are `md5`, `sha1` and `sha3` (SHA-256).
+
+The `url_sanitization` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. When enabled, it processes URLs to retain only a configured maximum number of path segments and replaces the rest with a specified string. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
