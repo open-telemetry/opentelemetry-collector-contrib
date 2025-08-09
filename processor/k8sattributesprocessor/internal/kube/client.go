@@ -625,6 +625,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[string(conventions.K8SNamespaceNameKey)] = pod.GetNamespace()
 	}
 
+	if c.Rules.ServiceNamespace {
+		tags[string(conventions.ServiceNamespaceKey)] = pod.GetNamespace()
+	}
+
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
