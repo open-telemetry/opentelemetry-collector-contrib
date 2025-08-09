@@ -228,6 +228,7 @@ processor/spanprocessor
 processor/sumologicprocessor
 receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
+receiver/akamaisecurityeventsreceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
 receiver/awscloudwatchmetricsreceiver
