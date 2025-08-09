@@ -32,7 +32,7 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 }
 
 var jmxScraperVersions = map[string]supportedJar{
-	"e791ccfcfee9c0d299d07474d9bfcbfcbebf1181323be601220c8a823062ab99": {
+	"cec26ab77f7600b421d898cf08b2d7cd6fa34c8dcf25a12642223317058ed7a3": {
 		version: "1.48.0-alpha",
 		jar:     "JMX scraper",
 	},
