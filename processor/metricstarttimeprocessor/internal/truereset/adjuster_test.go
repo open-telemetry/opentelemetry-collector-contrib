@@ -264,12 +264,12 @@ func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			Description: "Histogram: round 1 - initial instance, start time is unknown",
 			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
-			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPointNoValue(k1v1k2v2, t1, t1))),
 		},
 		{
 			Description: "Histogram: round 2 - instance unchanged",
 			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
-			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPointNoValue(k1v1k2v2, t1, t2))),
 		},
 	}
 
@@ -325,12 +325,12 @@ func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			Description: "Histogram: round 1 - initial instance, start time is unknown",
 			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(histogram1, testhelper.ExponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
-			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(histogram1, testhelper.ExponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(histogram1, testhelper.ExponentialHistogramPointNoValue(k1v1k2v2, t1, t1))),
 		},
 		{
 			Description: "Histogram: round 2 - instance unchanged",
 			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(histogram1, testhelper.ExponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
-			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(histogram1, testhelper.ExponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(histogram1, testhelper.ExponentialHistogramPointNoValue(k1v1k2v2, t1, t2))),
 		},
 	}
 
@@ -342,12 +342,12 @@ func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			Description: "Summary: round 1 - initial instance, start time is unknown",
 			Metrics:     testhelper.Metrics(testhelper.SummaryMetric(summary1, testhelper.SummaryPointNoValue(k1v1k2v2, tUnknown, t1))),
-			Adjusted:    testhelper.Metrics(testhelper.SummaryMetric(summary1, testhelper.SummaryPointNoValue(k1v1k2v2, tUnknown, t1))),
+			Adjusted:    testhelper.Metrics(testhelper.SummaryMetric(summary1, testhelper.SummaryPointNoValue(k1v1k2v2, t1, t1))),
 		},
 		{
 			Description: "Summary: round 2 - instance unchanged",
 			Metrics:     testhelper.Metrics(testhelper.SummaryMetric(summary1, testhelper.SummaryPointNoValue(k1v1k2v2, tUnknown, t2))),
-			Adjusted:    testhelper.Metrics(testhelper.SummaryMetric(summary1, testhelper.SummaryPointNoValue(k1v1k2v2, tUnknown, t2))),
+			Adjusted:    testhelper.Metrics(testhelper.SummaryMetric(summary1, testhelper.SummaryPointNoValue(k1v1k2v2, t1, t2))),
 		},
 	}
 
@@ -376,12 +376,12 @@ func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			Description: "Sum: round 1 - initial instance, start time is unknown",
 			Metrics:     testhelper.Metrics(testhelper.SumMetric("sum1", testhelper.DoublePointNoValue(k1v1k2v2, tUnknown, t1))),
-			Adjusted:    testhelper.Metrics(testhelper.SumMetric("sum1", testhelper.DoublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric("sum1", testhelper.DoublePointNoValue(k1v1k2v2, t1, t1))),
 		},
 		{
 			Description: "Sum: round 2 - instance unchanged",
 			Metrics:     testhelper.Metrics(testhelper.SumMetric("sum1", testhelper.DoublePointNoValue(k1v1k2v2, tUnknown, t2))),
-			Adjusted:    testhelper.Metrics(testhelper.SumMetric("sum1", testhelper.DoublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric("sum1", testhelper.DoublePointNoValue(k1v1k2v2, t1, t2))),
 		},
 	}
 
