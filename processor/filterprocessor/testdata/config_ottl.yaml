@@ -69,3 +69,92 @@ filter/bad_syntax_log:
   logs:
     log_record:
       - 'attributes[test] == "pass"'
+filter/context_inferred_trace:
+  trace_conditions:
+    - conditions:
+        - span.attributes["test"] == "pass"
+
+filter/context_inferred_metric:
+  metric_conditions:
+    - conditions:
+        - metric.name == "pass"
+
+filter/context_inferred_log:
+  log_conditions:
+    - conditions:
+        - log.attributes["test"] == "pass"
+
+filter/context_inferred_with_error_mode:
+  error_mode: ignore
+  trace_conditions:
+    - conditions:
+        - span.attributes["test"] == "pass"
+
+filter/context_inferred_multiple_conditions:
+  trace_conditions:
+    - conditions:
+        - span.attributes["test"] == "pass"
+        - span.attributes["test2"] == "also pass"
+    - conditions:
+        - span.attributes["event"] == "pass"
+
+# Error cases - mixing old and new formats
+filter/mix_trace_conditions:
+  trace_conditions:
+    - conditions:
+        - attributes["test"] == "pass"
+  traces:
+    span:
+      - attributes["test"] == "pass"
+
+filter/mix_metric_conditions:
+  metric_conditions:
+    - conditions:
+        - name == "pass"
+  metrics:
+    metric:
+      - name == "pass"
+
+filter/mix_log_conditions:
+  log_conditions:
+    - conditions:
+        - attributes["test"] == "pass"
+  logs:
+    log_record:
+      - attributes["test"] == "pass"
+
+filter/mix_metric_conditions_with_include:
+  metric_conditions:
+    - conditions:
+        - name == "pass"
+  metrics:
+    include:
+      match_type: strict
+      metric_names:
+        - test_metric
+
+filter/mix_log_conditions_with_exclude:
+  log_conditions:
+    - conditions:
+        - attributes["test"] == "pass"
+  logs:
+    exclude:
+      match_type: strict
+      bodies:
+        - test_body
+
+# Bad syntax cases for context inferred conditions
+filter/bad_syntax_context_inferred_trace:
+  trace_conditions:
+    - conditions:
+        - invalid_syntax_here ==
+
+filter/bad_syntax_context_inferred_metric:
+  metric_conditions:
+    - conditions:
+        - invalid_function() == "test"
+
+filter/bad_syntax_context_inferred_log:
+  log_conditions:
+    - conditions:
+        - malformed condition without quotes
