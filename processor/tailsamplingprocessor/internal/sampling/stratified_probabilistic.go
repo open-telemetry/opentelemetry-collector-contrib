@@ -13,8 +13,8 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
-	"sync"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -63,28 +63,28 @@ func NewStratifiedProbabilisticSampler(settings component.TelemetrySettings, has
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (s *StratifiedProbabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating spans in stratified probabilistic filter")
-	hash, _ := s.getTraceTrajectoryHash(traceData)
-	s.logger.Debug("Graph representation recieved", zap.String("Trace Identifier", traceID.String()), zap.String("Trace Hash", hash),)
+	hash := s.getTraceTrajectoryHash(traceData)
+	s.logger.Debug("Graph representation received", zap.String("Trace Identifier", traceID.String()), zap.String("Trace Hash", hash))
 
 	var count int
 	var exists bool
 
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	count, exists = s.traceTrajectoryCount[hash]
-	if exists {
-		// Trajectory exist. Update the count
-		s.traceTrajectoryCount[hash] = count + 1
-		s.logger.Debug("Trajectory exists", zap.String("Trace Hash", hash), zap.String("Check for Trace Identifier", traceID.String()), zap.Int("TraceCount", count))
-	} else {
+
+	if !exists {
 		// Trajectory is new for the interval
 		s.traceTrajectoryCount[hash] = 1
-		s.mu.Unlock()
 		s.logger.Debug("New Trajectory", zap.String("Trace Hash", hash), zap.String("Check for Trace Identifier", traceID.String()), zap.Int("TraceCount", count))
 		return Sampled, nil
 	}
-	s.mu.Unlock()
+	// Trajectory exist. Update the count
+	s.traceTrajectoryCount[hash] = count + 1
+	s.logger.Debug("Trajectory exists", zap.String("Trace Hash", hash), zap.String("Check for Trace Identifier", traceID.String()), zap.Int("TraceCount", count))
 
-	// Fallback to probabilistic sampling if the trajectory is seen before 
+	// Fallback to probabilistic sampling if the trajectory is seen before
 
 	if stratifiedHashTraceID(s.hashSalt, traceID[:]) <= s.threshold {
 		return Sampled, nil
@@ -101,7 +101,7 @@ func (s *StratifiedProbabilisticSampler) ResetWindow() {
 	s.traceTrajectoryCount = make(map[string]int)
 }
 
-func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *TraceData) (string, error) {
+func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *TraceData) string {
 	nodes, edges := s.getTraceSpanDetails(traceData)
 
 	// Build adjacency list and in-degree map
@@ -115,7 +115,6 @@ func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *Trace
 			inDegree[node] = 0
 		}
 	}
-
 
 	for _, edge := range edges {
 		if !isEmptyNode(edge.From) {
@@ -131,9 +130,8 @@ func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *Trace
 		allNodes[edge.To] = struct{}{}
 	}
 
-
 	// Canonical topological sort
-	var sorted []Node
+	// var sorted []Node
 	zeroInDegree := []Node{}
 
 	for node := range allNodes {
@@ -148,7 +146,7 @@ func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *Trace
 	for len(zeroInDegree) > 0 {
 		node := zeroInDegree[0]
 		zeroInDegree = zeroInDegree[1:]
-		sorted = append(sorted, node)
+		// sorted = append(sorted, node)
 
 		children := adj[node]
 		sort.Slice(children, func(i, j int) bool {
@@ -165,7 +163,6 @@ func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *Trace
 			return compareNodes(zeroInDegree[i], zeroInDegree[j]) < 0
 		})
 	}
-
 
 	// Serialize edges deterministically with quoting
 	edgeStrs := make([]string, len(edges))
@@ -188,7 +185,7 @@ func (s *StratifiedProbabilisticSampler) getTraceTrajectoryHash(traceData *Trace
 		zap.String("Trace Hash", hash),
 	)
 
-	return hash, nil
+	return hash
 }
 
 func isEmptyNode(n Node) bool {
@@ -212,11 +209,9 @@ func compareString(a, b string) int {
 	return 0
 }
 
-
 func joinWithComma(items []string) string {
 	return strings.Join(items, ",")
 }
-
 
 func (s *StratifiedProbabilisticSampler) getTraceSpanDetails(traceData *TraceData) ([]Node, []Edge) {
 	s.logger.Debug("Extracting span details for the trace")
@@ -252,7 +247,6 @@ func (s *StratifiedProbabilisticSampler) getTraceSpanDetails(traceData *TraceDat
 				nodeSet[node] = struct{}{}
 				spanIDToNode[spanID] = node
 				spanIDToParentID[spanID] = parentSpanID
-
 			}
 		}
 	}
@@ -283,47 +277,47 @@ func (s *StratifiedProbabilisticSampler) getTraceSpanDetails(traceData *TraceDat
 
 // Helper function to insert an edge in sorted order
 func insertSortedEdge(edges []Edge, newEdge Edge) []Edge {
-    // Find the insertion point by comparing the edges (using lexicographical order)
-    idx := sort.Search(len(edges), func(i int) bool {
-        return compareEdges(edges[i], newEdge) >= 0
-    })
+	// Find the insertion point by comparing the edges (using lexicographical order)
+	idx := sort.Search(len(edges), func(i int) bool {
+		return compareEdges(edges[i], newEdge) >= 0
+	})
 
-    // Insert the new edge at the found position
-    edges = append(edges[:idx], append([]Edge{newEdge}, edges[idx:]...)...)
-    return edges
+	// Insert the new edge at the found position
+	edges = append(edges[:idx], append([]Edge{newEdge}, edges[idx:]...)...)
+	return edges
 }
 
 // Helper function to compare two edges lexicographically
 func compareEdges(e1, e2 Edge) int {
-    // Compare "From" (parent node)
-    if e1.From.Service != e2.From.Service {
-        if e1.From.Service < e2.From.Service {
-            return -1
-        }
-        return 1
-    }
-    if e1.From.Operation != e2.From.Operation {
-        if e1.From.Operation < e2.From.Operation {
-            return -1
-        }
-        return 1
-    }
+	// Compare "From" (parent node)
+	if e1.From.Service != e2.From.Service {
+		if e1.From.Service < e2.From.Service {
+			return -1
+		}
+		return 1
+	}
+	if e1.From.Operation != e2.From.Operation {
+		if e1.From.Operation < e2.From.Operation {
+			return -1
+		}
+		return 1
+	}
 
-    // Compare "To" (child node)
-    if e1.To.Service != e2.To.Service {
-        if e1.To.Service < e2.To.Service {
-            return -1
-        }
-        return 1
-    }
-    if e1.To.Operation != e2.To.Operation {
-        if e1.To.Operation < e2.To.Operation {
-            return -1
-        }
-        return 1
-    }
+	// Compare "To" (child node)
+	if e1.To.Service != e2.To.Service {
+		if e1.To.Service < e2.To.Service {
+			return -1
+		}
+		return 1
+	}
+	if e1.To.Operation != e2.To.Operation {
+		if e1.To.Operation < e2.To.Operation {
+			return -1
+		}
+		return 1
+	}
 
-    return 0 // They are equal
+	return 0 // They are equal
 }
 
 // calculateThreshold converts a ratio into a value between 0 and MaxUint64

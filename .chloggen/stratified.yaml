@@ -1,0 +1,27 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: tailsamplingprocessor
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: The current implementation of the probabilistic sampling policy in the tail sampling processor in the OpenTelemetry Collector Contrib repository randomly samples a percentage of traces. This approach does not ensure that all the application service workflows associated with different transaction types get a representation in the sampled set of traces. A user can initiate any specific application functionality/operation, which subsequently triggers a corresponding subset of service components (or a workflow). For instance, in an e-commerce application designed using a microservices architecture, distinct operations, such as browsing, adding to a cart, and others will invoke different microservices. Each functionality will invoke service components in a defined order, with the invocation order representing a subgraph within the broader application workflow. Defining this subgraph of service components for servicing a request as the trajectory, for a sampled set of traces to truly represent an application and thus be of more value to the downstream tasks, all the trajectories must get at least one representation in the sampled set of traces for the given sampling interval. This new sampling policy, called the stratified sampling policy, samples a new trajectory whenever it is encountered for the first time within a sampling interval. If a trajectory has already been observed within that interval, the policy will revert to a probabilistic sampling approach, where trajectories are selected based on predefined probabilities. This ensures that newly encountered trajectories are prioritized for sampling while maintaining flexibility for previously seen trajectories.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [40917]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: 
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

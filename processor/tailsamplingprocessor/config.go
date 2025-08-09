@@ -22,13 +22,13 @@ const (
 	NumericAttribute PolicyType = "numeric_attribute"
 	// Probabilistic samples a given percentage of traces.
 	Probabilistic PolicyType = "probabilistic"
-	// Stratified Probabilistic samples a given percentage of traces considering the trace trajectory as well.
-        StratifiedProbabilistic PolicyType = "stratified"
 	// StatusCode sample traces that have a given status code.
 	StatusCode PolicyType = "status_code"
 	// StringAttribute sample traces that an attribute, of type string, matching
 	// one of the listed values.
 	StringAttribute PolicyType = "string_attribute"
+	// Stratified Probabilistic samples a given percentage of traces considering the trace trajectory as well.
+	StratifiedProbabilistic PolicyType = "stratified"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate_limiting"
 	// Composite allows defining a composite policy, combining the other policies in one
@@ -63,7 +63,7 @@ type sharedPolicyCfg struct {
 	// Configs for probabilistic sampling policy evaluator.
 	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
 	// Configs for stratified probabilistic sampling policy evaluator.
-        StratifiedProbabilisticCfg StratifiedProbabilisticCfg `mapstructure:"stratified"`
+	StratifiedProbabilisticCfg StratifiedProbabilisticCfg `mapstructure:"stratified"`
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 	// Configs for string attribute filter sampling policy evaluator.
@@ -177,13 +177,13 @@ type ProbabilisticCfg struct {
 // StratifiedProbabilisticCfg holds the configurable settings to create a stratified probabilistic
 // sampling policy evaluator.
 type StratifiedProbabilisticCfg struct {
-        // HashSalt allows one to configure the hashing salts. This is important in scenarios where multiple layers of collectors
-        // have different sampling rates: if they use the same salt all passing one layer may pass the other even if they have
-        // different sampling rates, configuring different salts avoids that.
-        HashSalt string `mapstructure:"hash_salt"`
-        // SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
-        // Values greater or equal 100 are treated as "sample all traces".
-        SamplingPercentage float64 `mapstructure:"sampling_percentage"`
+	// HashSalt allows one to configure the hashing salts. This is important in scenarios where multiple layers of collectors
+	// have different sampling rates: if they use the same salt all passing one layer may pass the other even if they have
+	// different sampling rates, configuring different salts avoids that.
+	HashSalt string `mapstructure:"hash_salt"`
+	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
+	// Values greater or equal 100 are treated as "sample all traces".
+	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
 }
 
 // StatusCodeCfg holds the configurable settings to create a status code filter sampling
