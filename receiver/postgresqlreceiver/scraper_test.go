@@ -539,8 +539,9 @@ func (mockSimpleClientFactory) close() error {
 // getClient implements postgreSQLClientFactory.
 func (m mockSimpleClientFactory) getClient(string) (client, error) {
 	return &postgreSQLClient{
-		client:  m.db,
-		closeFn: m.close,
+		client:     m.db,
+		closeFn:    m.close,
+		obfuscator: newObfuscator(),
 	}, nil
 }
 

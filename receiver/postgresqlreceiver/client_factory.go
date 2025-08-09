@@ -48,7 +48,7 @@ func (d *defaultClientFactory) getClient(database string) (client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &postgreSQLClient{client: db, closeFn: db.Close}, nil
+	return &postgreSQLClient{client: db, closeFn: db.Close, obfuscator: newObfuscator()}, nil
 }
 
 func (*defaultClientFactory) close() error {
@@ -92,7 +92,7 @@ func (p *poolClientFactory) getClient(database string) (client, error) {
 		}
 		p.pool[database] = db
 	}
-	return &postgreSQLClient{client: db, closeFn: nil}, nil
+	return &postgreSQLClient{client: db, closeFn: nil, obfuscator: newObfuscator()}, nil
 }
 
 func (p *poolClientFactory) close() error {
