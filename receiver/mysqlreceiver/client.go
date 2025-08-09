@@ -16,6 +16,7 @@ import (
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
+	"go.uber.org/zap"
 )
 
 type client interface {
@@ -30,6 +31,8 @@ type client interface {
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
 	getReplicaStatusStats() ([]replicaStatusStats, error)
 	getQuerySamples(uint64) ([]querySample, error)
+	getTopQueries(uint64, uint64) ([]topQuery, error)
+	explainQuery(statement, schema string, logger *zap.Logger) (string, error)
 	Close() error
 }
 
@@ -206,6 +209,15 @@ type querySample struct {
 	eventID            int64
 	waitEvent          string
 	waitTime           float64
+}
+
+type topQuery struct {
+	schemaName      string
+	digest          string
+	digestText      string
+	countStar       int64
+	sumTimerWait    int64
+	querySampleText string
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -689,6 +701,46 @@ func (c *mySQLClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
 	return stats, nil
 }
 
+//go:embed templates/topQuery.tmpl
+var topQueryTemplate string
+
+func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64) ([]topQuery, error) {
+	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, map[string]any{
+		"topNValue":    topNValue,
+		"lookbackTime": lookbackTime,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	rows, err := c.client.Query(buf.String())
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var topQueries []topQuery
+	for rows.Next() {
+		var tq topQuery
+		err := rows.Scan(
+			&tq.schemaName,
+			&tq.digest,
+			&tq.digestText,
+			&tq.countStar,
+			&tq.sumTimerWait,
+			&tq.querySampleText,
+		)
+		if err != nil {
+			return nil, err
+		}
+		topQueries = append(topQueries, tq)
+	}
+	return topQueries, nil
+}
+
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
@@ -733,6 +785,68 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 	}
 
 	return samples, nil
+}
+
+// explainQuery implements client.
+func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger) (string, error) {
+	if strings.HasSuffix(statement, "...") {
+		logger.Warn("statement is truncated, skipping explain", zap.String("statement", statement))
+		return "", nil
+	}
+
+	if !isQueryExplainable(statement) {
+		logger.Debug("statement is not explainable, skipping explain query", zap.String("statement", statement))
+		return "", nil
+	}
+
+	sqlclient, err := sql.Open("mysql", c.connStr)
+	if err != nil {
+		logger.Error("unable to connect to database for explain", zap.Error(err))
+		return "", nil
+	}
+
+	if schema != "" {
+		if _, err = sqlclient.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
+			logger.Error(fmt.Sprintf("unable to use schema: %s", schema), zap.Error(err))
+			return "", nil
+		}
+	}
+
+	var plan string
+	err = sqlclient.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
+	if err != nil {
+		logger.Error("unable to execute explain statement", zap.Error(err))
+		return "", nil
+	}
+	return plan, nil
+}
+
+func isQueryExplainable(query string) bool {
+	sqlStartingKeywords := []string{
+		"select",
+		"table",
+		"delete",
+		"insert",
+		"replace",
+		"update",
+		"with",
+	}
+
+	// Trim leading and trailing whitespace from the query
+	trimmedQuery := strings.TrimSpace(query)
+
+	// Convert the trimmed query to lowercase for case-insensitive comparison
+	lowerQuery := strings.ToLower(trimmedQuery)
+
+	// Iterate through the predefined keywords
+	for _, keyword := range sqlStartingKeywords {
+		// Check if the query starts with the current keyword
+		// No need to ToLower(keyword) here because sqlStartingKeywords is already lowercased
+		if strings.HasPrefix(lowerQuery, keyword) {
+			return true
+		}
+	}
+	return false
 }
 
 func query(c mySQLClient, query string) (map[string]string, error) {
