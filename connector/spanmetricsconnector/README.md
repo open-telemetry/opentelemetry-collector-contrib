@@ -55,6 +55,7 @@ across all spans:
 - `span.name`
 - `span.kind`
 - `status.code`
+- `collector.instance.id`
 
 
 ## Span to Metrics processor to Span to metrics connector

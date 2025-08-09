@@ -9,21 +9,29 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 )
 
 const (
-	DefaultNamespace               = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID = "connector.spanmetrics.legacyMetricNames"
+	DefaultNamespace                 = "traces.span.metrics"
+	legacyMetricNamesFeatureGateID   = "connector.spanmetrics.legacyMetricNames"
+	includeCollectorInstanceIDGateID = "connector.spanmetrics.includeCollectorInstanceID"
 )
 
-var legacyMetricNamesFeatureGate *featuregate.Gate
+var (
+	legacyMetricNamesFeatureGate *featuregate.Gate
+	includeCollectorInstanceID   *featuregate.Gate
+)
 
 func init() {
 	// TODO: Remove this feature gate when the legacy metric names are removed.
@@ -32,6 +40,12 @@ func init() {
 		featuregate.StageAlpha, // Alpha because we want it disabled by default.
 		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
+	)
+	includeCollectorInstanceID = featuregate.GlobalRegistry().MustRegister(
+		includeCollectorInstanceIDGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, connector add collector_instance_id to default dimensions."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
 }
 
@@ -59,7 +73,14 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToMetricsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	c, err := newConnector(params.Logger, cfg, clockwork.FromContext(ctx))
+	instanceID, ok := params.Resource.Attributes().Get(string(conventions.ServiceInstanceIDKey))
+	// this never happen, just for test
+	if !ok {
+		instanceUUID, _ := uuid.NewRandom()
+		instanceID = pcommon.NewValueStr(instanceUUID.String())
+	}
+
+	c, err := newConnector(params.Logger, cfg, clockwork.FromContext(ctx), instanceID.AsString())
 	if err != nil {
 		return nil, err
 	}
