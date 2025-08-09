@@ -48,7 +48,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 - `autodiscover`
   - `limit`: (optional; default = 50) Limits the number of discovered log groups. This does not limit how large each API call to discover the log groups will be.
   - `prefix`: (optional) A prefix for log groups to limit the number of log groups discovered.
-    - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected from.
+    - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected.
   - `pattern`: (optional) A case-sensitive substring search on the log group names to limit the number of log groups discovered.
     - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected from.
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
