@@ -1837,7 +1837,7 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start())
+	require.NoError(t, s.Start())
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
@@ -2345,6 +2345,160 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
 }
 
+func TestSupervisorUpgradesAgent(t *testing.T) {
+	agentHashes := map[string][]byte{
+		"linux-amd64":  {0x89, 0xb5, 0xd2, 0x81, 0x47, 0xd5, 0x01, 0xb2, 0xd4, 0xaa, 0x4f, 0xee, 0xd4, 0x52, 0x91, 0xa9, 0x7f, 0x80, 0x1e, 0xcb, 0x74, 0x94, 0x30, 0x23, 0x58, 0x39, 0xc7, 0x9c, 0xf1, 0x8d, 0x2c, 0x77},
+		"linux-arm64":  {0x88, 0xe3, 0x93, 0x17, 0xae, 0x4b, 0x01, 0xb5, 0xc8, 0x6c, 0x54, 0xbd, 0x3d, 0x30, 0x2f, 0x7f, 0x08, 0x3e, 0xbf, 0x62, 0x5a, 0xf8, 0x2c, 0x92, 0xbe, 0x0b, 0x59, 0x4a, 0x1b, 0x85, 0x51, 0xec},
+		"darwin-arm64": {0xd5, 0xd9, 0x6c, 0x8a, 0xc0, 0x6c, 0xe0, 0xaf, 0x19, 0xae, 0xfd, 0x21, 0xae, 0xf8, 0x2a, 0x81, 0xaa, 0xb6, 0x68, 0x85, 0x74, 0xad, 0x99, 0x1f, 0xa7, 0x84, 0x9d, 0x66, 0xb1, 0x40, 0xd7, 0xcd},
+		"darwin-amd64": {0x2d, 0x4d, 0x22, 0x1a, 0x30, 0x4a, 0xd9, 0x72, 0xef, 0x11, 0x58, 0xaf, 0xa3, 0xfd, 0x8f, 0x79, 0xb4, 0xbe, 0x32, 0x16, 0x2c, 0xed, 0xc6, 0x73, 0x25, 0xed, 0xa6, 0xb1, 0x01, 0x3b, 0xc4, 0x32},
+	}
+	hash, ok := agentHashes[fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)]
+	if !ok {
+		t.Skipf("Agent package hashes only available for [linux-amd64, linux-arm64, darwin-arm64, darwin-amd64, windows-amd64] and not available for this OS and architecture: %s-%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	tmpDir := t.TempDir()
+	storageDir := filepath.Join(tmpDir, "storage")
+
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+
+	agentFileName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
+
+	agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
+	agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
+
+	// Upgrading will overwrite the agent binary, so we'll copy to a new path to not affect other tests
+	copyFile(t, agentFilePath, agentFileCopyPath)
+
+	agentIDChan := make(chan []byte, 1)
+	agentDescriptionChan := make(chan *protobufs.AgentDescription, 1)
+	packageStatusesChan := make(chan *protobufs.PackageStatuses, 2)
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				if message.AgentDescription != nil {
+					select {
+					case agentDescriptionChan <- message.AgentDescription:
+					default:
+					}
+				}
+
+				if message.PackageStatuses != nil {
+					select {
+					case packageStatusesChan <- message.PackageStatuses:
+					default:
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	s := newSupervisor(t, "upgrade", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"agent_path":  agentFileCopyPath,
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	agentVersion := "0.124.1"
+	agentHash := hash
+	agentName := fmt.Sprintf("otelcol-contrib_0.124.1_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.124.1/%s", agentName)
+	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.124.1/%s.sig", agentName)
+	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.124.1/%s.pem", agentName)
+
+	cert := getFileContents(t, agentCertURL)
+	sig := getFileContents(t, agentSigURL)
+
+	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
+
+	// TODO: Verify intital package statuses makes sense
+	<-packageStatusesChan
+	<-agentDescriptionChan
+	agentID := <-agentIDChan
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		InstanceUid: agentID,
+		PackagesAvailable: &protobufs.PackagesAvailable{
+			Packages: map[string]*protobufs.PackageAvailable{
+				"": {
+					Type:    protobufs.PackageType_PackageType_TopLevel,
+					Version: "v" + agentVersion,
+					Hash:    []byte{0x01, 0x02},
+					File: &protobufs.DownloadableFile{
+						DownloadUrl: agentURL,
+						ContentHash: agentHash,
+						Signature:   signatureField,
+					},
+				},
+			},
+			AllPackagesHash: []byte{0x03, 0x04},
+		},
+	})
+
+	// Wait for new package statuses
+	ps := <-packageStatusesChan
+	require.Equal(t, &protobufs.PackageStatuses{
+		Packages: map[string]*protobufs.PackageStatus{
+			"": {
+				// TODO: Should initital version be filled in?
+				// What about the hash?
+				Name:                 "",
+				AgentHasVersion:      "",
+				AgentHasHash:         nil,
+				ServerOfferedVersion: "v" + agentVersion,
+				ServerOfferedHash:    []byte{0x01, 0x02},
+				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+			},
+		},
+		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+	}, ps)
+
+	ps = <-packageStatusesChan
+	require.Equal(t, &protobufs.PackageStatuses{
+		Packages: map[string]*protobufs.PackageStatus{
+			"": {
+				Name:                 "",
+				AgentHasVersion:      "v" + agentVersion,
+				AgentHasHash:         []byte{0x01, 0x02},
+				ServerOfferedVersion: "v" + agentVersion,
+				ServerOfferedHash:    []byte{0x01, 0x02},
+				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
+			},
+		},
+		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+	}, ps)
+
+	agentDesc := <-agentDescriptionChan
+	versionFound := false
+	for _, v := range agentDesc.IdentifyingAttributes {
+		if v.Key == string(semconv.ServiceVersionKey) {
+			versionFound = true
+			require.Equal(t, agentVersion, v.Value.GetStringValue())
+			break
+		}
+	}
+	require.True(t, versionFound, "Agent description after upgrade did not contain the agent version.")
+}
+
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -2462,4 +2616,31 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
 	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+}
+
+func getFileContents(t *testing.T, url string) []byte {
+	r, err := http.Get(url)
+	require.NoError(t, err)
+	defer r.Body.Close()
+
+	by, err := io.ReadAll(r.Body)
+	require.NoError(t, err)
+
+	return by
+}
+
+func copyFile(t *testing.T, from, to string) {
+	fromFile, err := os.Open(from)
+	require.NoError(t, err)
+	defer fromFile.Close()
+
+	fi, err := fromFile.Stat()
+	require.NoError(t, err)
+
+	toFile, err := os.OpenFile(to, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode())
+	require.NoError(t, err)
+	defer toFile.Close()
+
+	_, err = io.Copy(toFile, fromFile)
+	require.NoError(t, err)
 }
