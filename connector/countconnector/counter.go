@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
@@ -35,34 +36,46 @@ type attrCounter struct {
 	count uint64
 }
 
-func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error {
+func (c *counter[K]) update(ctx context.Context, attrs, scopeAttrs, resourceAttrs pcommon.Map, tCtx K) error {
 	var multiError error
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
-			if attrVal, ok := attrs.Get(attr.Key); ok {
-				switch typeAttr := attrVal.Type(); typeAttr {
+			dimension := utilattri.Dimension{
+				Name: attr.Key,
+				Value: func() *pcommon.Value {
+					if attr.DefaultValue != nil {
+						switch v := attr.DefaultValue.(type) {
+						case string:
+							if v != "" {
+								strV := pcommon.NewValueStr(v)
+								return &strV
+							}
+						case int:
+							if v != 0 {
+								intV := pcommon.NewValueInt(int64(v))
+								return &intV
+							}
+						case float64:
+							if v != 0 {
+								floatV := pcommon.NewValueDouble(v)
+								return &floatV
+							}
+						}
+					}
+
+					return nil
+				}(),
+			}
+			value, ok := utilattri.GetDimensionValue(dimension, attrs, scopeAttrs, resourceAttrs)
+			if ok {
+				switch value.Type() {
 				case pcommon.ValueTypeInt:
-					countAttrs.PutInt(attr.Key, attrVal.Int())
+					countAttrs.PutInt(attr.Key, value.Int())
 				case pcommon.ValueTypeDouble:
-					countAttrs.PutDouble(attr.Key, attrVal.Double())
+					countAttrs.PutDouble(attr.Key, value.Double())
 				default:
-					countAttrs.PutStr(attr.Key, attrVal.Str())
-				}
-			} else if attr.DefaultValue != nil {
-				switch v := attr.DefaultValue.(type) {
-				case string:
-					if v != "" {
-						countAttrs.PutStr(attr.Key, v)
-					}
-				case int:
-					if v != 0 {
-						countAttrs.PutInt(attr.Key, int64(v))
-					}
-				case float64:
-					if v != 0 {
-						countAttrs.PutDouble(attr.Key, float64(v))
-					}
+					countAttrs.PutStr(attr.Key, value.Str())
 				}
 			}
 		}

@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.131.0
@@ -99,3 +100,5 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
