@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// OnlineIsolationForest represents an isolation forest that can learn incrementally
+// onlineIsolationForest represents an isolation forest that can learn incrementally
 // from streaming data. Unlike traditional isolation forests that require batch training,
 // this implementation updates its models continuously as new data arrives.
 type onlineIsolationForest struct {
@@ -86,7 +86,7 @@ type onlineForestStatistics struct {
 }
 
 // NewOnlineIsolationForest creates a new online isolation forest with the specified parameters.
-func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolationForest {
+func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolationForest {
 	if maxDepth <= 0 {
 		maxDepth = int(math.Ceil(math.Log2(float64(windowSize))))
 	}

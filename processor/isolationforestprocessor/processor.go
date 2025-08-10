@@ -69,7 +69,7 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 	if config.IsMultiModelMode() {
 		// Create named models for multi-model configuration
 		for _, modelConfig := range config.Models {
-			forest := NewOnlineIsolationForest(
+			forest := newOnlineIsolationForest(
 				modelConfig.ForestSize,
 				config.Performance.BatchSize, // Use global batch size as window size
 				0,                            // Let forest determine max depth automatically
@@ -84,7 +84,7 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 		}
 	} else {
 		// Create single default model
-		processor.defaultForest = NewOnlineIsolationForest(
+		processor.defaultForest = newOnlineIsolationForest(
 			config.ForestSize,
 			config.Performance.BatchSize,
 			0, // Auto-determine max depth
