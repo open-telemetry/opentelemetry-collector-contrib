@@ -147,31 +147,31 @@ resourceLogs:
               - key: gcp.apphub.workload.id
                 value:
                   stringValue: checkout-workload
-              - key: gcp.appub_destination.application.container
+              - key: gcp.apphub_destination.application.container
                 value:
                   stringValue: gke-analytics-cluster
-              - key: gcp.appub_destination.application.location
+              - key: gcp.apphub_destination.application.location
                 value:
                   stringValue: us-west1
-              - key: gcp.appub_destination.application.id
+              - key: gcp.apphub_destination.application.id
                 value:
                   stringValue: data-processing-app
-              - key: gcp.appub_destination.service.environment_type
+              - key: gcp.apphub_destination.service.environment_type
                 value:
                   stringValue: PROD
-              - key: gcp.appub_destination.service.criticality_type
+              - key: gcp.apphub_destination.service.criticality_type
                 value:
                   stringValue: MISSION_CRITICAL
-              - key: gcp.appub_destination.service.id
+              - key: gcp.apphub_destination.service.id
                 value:
                   stringValue: fraud-detection-service
-              - key: gcp.appub_destination.workload.environment_type
+              - key: gcp.apphub_destination.workload.environment_type
                 value:
                   stringValue: PROD
-              - key: gcp.appub_destination.workload.criticality_type
+              - key: gcp.apphub_destination.workload.criticality_type
                 value:
                   stringValue: HIGH
-              - key: gcp.appub_destination.workload.id
+              - key: gcp.apphub_destination.workload.id
                 value:
                   stringValue: analytics-workload
             body: {}
