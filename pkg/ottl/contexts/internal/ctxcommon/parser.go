@@ -4,6 +4,7 @@
 package ctxcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetadata"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -58,6 +59,10 @@ func PathExpressionParser[K any](
 					return nil, ctxerror.New(pathContext, fullPath, contextName, contextDocRef)
 				}
 			}
+		}
+
+		if path.Name() == ctxmetadata.Name {
+			return ctxmetadata.PathExpressionParser[K]()(path)
 		}
 
 		// Allow cache access only on this context

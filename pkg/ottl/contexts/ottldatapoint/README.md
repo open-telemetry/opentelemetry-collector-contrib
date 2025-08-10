@@ -49,6 +49,8 @@ The following paths are supported.
 | datapoint.scale                                | the scale of the data point being processed                                                                                                                                         | int64                                                                   |
 | datapoint.zero_count                           | the zero_count of the data point being processed                                                                                                                                    | int64                                                                   |
 | datapoint.quantile_values                      | the quantile_values of the data point being processed                                                                                                                               | pmetric.SummaryDataPointValueAtQuantileSlice                            |
+| metadata                                       | client metadata from the incoming request context                                                                                                                                   | client.Metadata                                                         |
+| metadata\[""\]                                 | the value of a specific metadata key from the client context. Returns the first value if multiple values exist, nil if key doesn't exist or has no values                           | string or nil                                                           |
 
 ## Enums
 

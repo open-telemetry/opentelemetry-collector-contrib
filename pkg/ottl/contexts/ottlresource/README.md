@@ -10,13 +10,15 @@ In general, the Resource Context supports accessing pdata using the field names 
 
 The following paths are supported.
 
-| path                              | field accessed                                                                                                                                     | type                                                                    |
-|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| resource.cache                    | the value of the current transform context's temporary cache. cache can be used as a temporary placeholder for data during complex transformations | pcommon.Map                                                             |
-| resource.cache\[""\]              | the value of an item in cache. Supports multiple indexes to access nested fields.                                                                  | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| resource.attributes               | attributes of the resource being processed                                                                                                         | pcommon.Map                                                             |
-| resource.attributes\[""\]         | the value of the attribute of the resource being processed. Supports multiple indexes to access nested fields.                                     | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| resource.dropped_attributes_count | number of dropped attributes of the resource being processed                                                                                       | int64                                                                   |
+| path                              | field accessed                                                                                                                                            | type                                                                    |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| resource.cache                    | the value of the current transform context's temporary cache. cache can be used as a temporary placeholder for data during complex transformations        | pcommon.Map                                                             |
+| resource.cache\[""\]              | the value of an item in cache. Supports multiple indexes to access nested fields.                                                                         | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| resource.attributes               | attributes of the resource being processed                                                                                                                | pcommon.Map                                                             |
+| resource.attributes\[""\]         | the value of the attribute of the resource being processed. Supports multiple indexes to access nested fields.                                            | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| resource.dropped_attributes_count | number of dropped attributes of the resource being processed                                                                                              | int64                                                                   |
+| metadata                          | client metadata from the incoming request context                                                                                                         | client.Metadata                                                         |
+| metadata\[""\]                    | the value of a specific metadata key from the client context. Returns the first value if multiple values exist, nil if key doesn't exist or has no values | string or nil                                                           |
 
 ## Enums
 

@@ -54,6 +54,8 @@ To see a list of available Paths for each Open Telemetry Signal, checkout the li
 | `Log`                   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog/README.md)                     |
 | `Profile`               | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofile/README.md)             |
 
+**Note:** All OTTL contexts support accessing client metadata from the incoming request context using the `metadata` path. This allows you to access HTTP headers, gRPC metadata, and other client-provided information. See the individual context documentation for details.
+
 OTTL does not support cross-signal interactions at this time. That means you cannot write a statement like
 
 ```
