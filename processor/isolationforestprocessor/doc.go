@@ -24,4 +24,4 @@
 //
 // The processor follows OpenTelemetry Collector patterns and can be integrated
 // into existing telemetry pipelines with minimal configuration changes.
-package isolationforestprocessor // import "github.com/opentelemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
+package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"

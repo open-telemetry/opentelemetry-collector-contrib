@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // example_configurations.go - Real-world configuration examples and usage patterns
-package isolationforestprocessor // import "github.com/opentelemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
+package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 
 import (
 	"fmt"
