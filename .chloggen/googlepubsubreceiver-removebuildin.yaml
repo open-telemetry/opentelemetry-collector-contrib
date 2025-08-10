@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: breaking
+
+component: googlepubsubreceiver
+
+note: Remove build-in support for cloud_logging and raw_text encoding.
+
+issues: [41812]
+
+subtext: The build-in encodings now have alternative encoding extensions to replace them.
+
+change_logs: [user]
