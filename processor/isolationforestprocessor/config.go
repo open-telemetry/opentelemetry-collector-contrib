@@ -1,5 +1,4 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
+// config.go - CORRECTED VERSION with proper interface implementations
 
 package isolationforestprocessor // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 

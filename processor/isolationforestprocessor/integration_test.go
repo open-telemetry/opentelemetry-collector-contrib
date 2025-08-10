@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -96,7 +97,7 @@ func TestTraces_Enrich_AddsAttributes(t *testing.T) {
 	cfg := baseConfigEnrich(t)
 
 	trSink := new(consumertest.TracesSink)
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	p, err := factory.CreateTraces(ctx, settings, cfg, trSink)
 	require.NoError(t, err)
@@ -128,7 +129,7 @@ func TestLogs_Enrich_AddsAttributes(t *testing.T) {
 	cfg := baseConfigEnrich(t)
 
 	logSink := new(consumertest.LogsSink)
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	p, err := factory.CreateLogs(ctx, settings, cfg, logSink)
 	require.NoError(t, err)
@@ -160,7 +161,7 @@ func TestMetrics_Enrich_AddsAttributes(t *testing.T) {
 	cfg := baseConfigEnrich(t)
 
 	metSink := new(consumertest.MetricsSink)
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	p, err := factory.CreateMetrics(ctx, settings, cfg, metSink)
 	require.NoError(t, err)

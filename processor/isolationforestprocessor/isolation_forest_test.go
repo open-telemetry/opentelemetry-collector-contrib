@@ -141,7 +141,7 @@ func TestForestStatistics(t *testing.T) {
 
 func TestTreePathLength(t *testing.T) {
 	// Test individual tree path length calculation
-	tree := &OnlineIsolationTree{
+	tree := &onlineIsolationTree{
 		maxDepth: 5,
 	}
 
@@ -150,18 +150,18 @@ func TestTreePathLength(t *testing.T) {
 	assert.Equal(t, 0.0, pathLength, "Empty tree should return path length 0")
 
 	// Create simple tree structure for testing
-	tree.root = &OnlineTreeNode{
+	tree.root = &onlineTreeNode{
 		featureIndex: 0,
 		splitValue:   1.5,
 		depth:        0,
 		sampleCount:  10,
 		isLeaf:       false,
-		left: &OnlineTreeNode{
+		left: &onlineTreeNode{
 			depth:       1,
 			sampleCount: 5,
 			isLeaf:      true,
 		},
-		right: &OnlineTreeNode{
+		right: &onlineTreeNode{
 			depth:       1,
 			sampleCount: 5,
 			isLeaf:      true,
@@ -215,7 +215,7 @@ func BenchmarkIsolationForestProcessing(b *testing.B) {
 
 func BenchmarkFeatureExtraction(b *testing.B) {
 	logger := zaptest.NewLogger(b)
-	extractor := NewTraceFeatureExtractor([]string{"duration", "error", "http.status_code"}, logger)
+	extractor := newTraceFeatureExtractor([]string{"duration", "error", "http.status_code"}, logger)
 
 	// Create test span
 	span := ptrace.NewSpan()

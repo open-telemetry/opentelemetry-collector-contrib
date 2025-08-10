@@ -28,14 +28,14 @@ type isolationForestProcessor struct {
 	logger *zap.Logger
 
 	// Machine learning components
-	defaultForest *OnlineIsolationForest            // Default model for single-model mode
-	modelForests  map[string]*OnlineIsolationForest // Named models for multi-model mode
+	defaultForest *onlineIsolationForest            // Default model for single-model mode
+	modelForests  map[string]*onlineIsolationForest // Named models for multi-model mode
 	forestsMutex  sync.RWMutex                      // Protects forest access
 
 	// Feature extraction components
-	traceExtractor   *TraceFeatureExtractor
-	metricsExtractor *MetricsFeatureExtractor
-	logsExtractor    *LogsFeatureExtractor
+	traceExtractor   *traceFeatureExtractor
+	metricsExtractor *metricsFeatureExtractor
+	logsExtractor    *logsFeatureExtractor
 
 	// Performance tracking
 	processedCount uint64
@@ -55,15 +55,15 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 	processor := &isolationForestProcessor{
 		config:          config,
 		logger:          logger,
-		modelForests:    make(map[string]*OnlineIsolationForest),
+		modelForests:    make(map[string]*onlineIsolationForest),
 		stopChan:        make(chan struct{}),
 		lastModelUpdate: time.Now(),
 	}
 
 	// Initialize feature extractors for different signal types
-	processor.traceExtractor = NewTraceFeatureExtractor(config.Features.Traces, logger)
-	processor.metricsExtractor = NewMetricsFeatureExtractor(config.Features.Metrics, logger)
-	processor.logsExtractor = NewLogsFeatureExtractor(config.Features.Logs, logger)
+	processor.traceExtractor = newTraceFeatureExtractor(config.Features.Traces, logger)
+	processor.metricsExtractor = newMetricsFeatureExtractor(config.Features.Metrics, logger)
+	processor.logsExtractor = newLogsFeatureExtractor(config.Features.Logs, logger)
 
 	// Initialize isolation forest models based on configuration mode
 	if config.IsMultiModelMode() {
@@ -179,7 +179,7 @@ func (p *isolationForestProcessor) processFeatures(features map[string][]float64
 	}
 
 	// Determine which model to use based on configuration
-	var forest *OnlineIsolationForest
+	var forest *onlineIsolationForest
 	var modelName string
 
 	p.forestsMutex.RLock()
@@ -442,19 +442,19 @@ func (p *isolationForestProcessor) addAnomalyAttributesToMetric(metric pmetric.M
 // Feature extraction components for different signal types
 
 // TraceFeatureExtractor extracts numerical features from trace spans
-type TraceFeatureExtractor struct {
+type traceFeatureExtractor struct {
 	features []string
 	logger   *zap.Logger
 }
 
-func newTraceFeatureExtractor(features []string, logger *zap.Logger) *TraceFeatureExtractor {
-	return &TraceFeatureExtractor{
+func newTraceFeatureExtractor(features []string, logger *zap.Logger) *traceFeatureExtractor {
+	return &traceFeatureExtractor{
 		features: features,
 		logger:   logger,
 	}
 }
 
-func (tfe *TraceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttrs map[string]interface{}) map[string][]float64 {
+func (tfe *traceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttrs map[string]interface{}) map[string][]float64 {
 	features := make(map[string][]float64)
 
 	for _, featureName := range tfe.features {
@@ -508,8 +508,8 @@ type metricsFeatureExtractor struct {
 	mutex          sync.Mutex
 }
 
-func NewMetricsFeatureExtractor(features []string, logger *zap.Logger) *MetricsFeatureExtractor {
-	return &MetricsFeatureExtractor{
+func newMetricsFeatureExtractor(features []string, logger *zap.Logger) *metricsFeatureExtractor {
+	return &metricsFeatureExtractor{
 		features:       features,
 		logger:         logger,
 		previousValues: make(map[string]float64),
@@ -517,7 +517,7 @@ func NewMetricsFeatureExtractor(features []string, logger *zap.Logger) *MetricsF
 	}
 }
 
-func (mfe *MetricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, resourceAttrs map[string]interface{}) map[string][]float64 {
+func (mfe *metricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, resourceAttrs map[string]interface{}) map[string][]float64 {
 	features := make(map[string][]float64)
 
 	// Extract primary metric value based on type
@@ -575,15 +575,15 @@ type logsFeatureExtractor struct {
 	mutex         sync.Mutex
 }
 
-func NewLogsFeatureExtractor(features []string, logger *zap.Logger) *LogsFeatureExtractor {
-	return &LogsFeatureExtractor{
+func newLogsFeatureExtractor(features []string, logger *zap.Logger) *logsFeatureExtractor {
+	return &logsFeatureExtractor{
 		features:      features,
 		logger:        logger,
 		lastTimestamp: make(map[string]time.Time),
 	}
 }
 
-func (lfe *LogsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resourceAttrs map[string]interface{}) map[string][]float64 {
+func (lfe *logsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resourceAttrs map[string]interface{}) map[string][]float64 {
 	features := make(map[string][]float64)
 
 	for _, featureName := range lfe.features {

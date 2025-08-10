@@ -14,14 +14,14 @@ import (
 // OnlineIsolationForest represents an isolation forest that can learn incrementally
 // from streaming data. Unlike traditional isolation forests that require batch training,
 // this implementation updates its models continuously as new data arrives.
-type OnlineIsolationForest struct {
+type onlineIsolationForest struct {
 	// Core configuration
 	numTrees   int // Number of trees in the forest
 	maxDepth   int // Maximum depth for trees
 	windowSize int // Size of sliding window for recent data
 
 	// Trees and their associated data
-	trees      []*OnlineIsolationTree // Collection of online isolation trees
+	trees      []*onlineIsolationTree // Collection of online isolation trees
 	treesMutex sync.RWMutex           // Protects concurrent access to trees
 
 	// Sliding window management for incremental learning
@@ -46,8 +46,8 @@ type OnlineIsolationForest struct {
 }
 
 // OnlineIsolationTree represents a single tree that can be updated incrementally.
-type OnlineIsolationTree struct {
-	root        *OnlineTreeNode // Root node of the tree
+type onlineIsolationTree struct {
+	root        *onlineTreeNode // Root node of the tree
 	maxDepth    int             // Maximum allowed depth
 	sampleCount int             // Number of samples seen by this tree
 	updateCount int             // Number of incremental updates performed
@@ -57,7 +57,7 @@ type OnlineIsolationTree struct {
 }
 
 // OnlineTreeNode represents a node in an online isolation tree.
-type OnlineTreeNode struct {
+type onlineTreeNode struct {
 	// Split condition (for internal nodes)
 	featureIndex int     // Index of feature to split on
 	splitValue   float64 // Value to split at
@@ -67,8 +67,8 @@ type OnlineTreeNode struct {
 	depth       int // Depth of this node in the tree
 
 	// Child nodes
-	left  *OnlineTreeNode // Left child (feature < splitValue)
-	right *OnlineTreeNode // Right child (feature >= splitValue)
+	left  *onlineTreeNode // Left child (feature < splitValue)
+	right *onlineTreeNode // Right child (feature >= splitValue)
 
 	// Leaf node properties
 	isLeaf         bool    // Whether this is a leaf node
@@ -76,7 +76,7 @@ type OnlineTreeNode struct {
 }
 
 // OnlineForestStatistics holds performance and monitoring data.
-type OnlineForestStatistics struct {
+type onlineForestStatistics struct {
 	TotalSamples      uint64  // Total samples processed
 	AnomalyCount      uint64  // Total anomalies detected
 	AnomalyRate       float64 // Proportion of anomalies
@@ -86,15 +86,15 @@ type OnlineForestStatistics struct {
 }
 
 // NewOnlineIsolationForest creates a new online isolation forest with the specified parameters.
-func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *OnlineIsolationForest {
+func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolationForest {
 	if maxDepth <= 0 {
 		maxDepth = int(math.Ceil(math.Log2(float64(windowSize))))
 	}
-	forest := &OnlineIsolationForest{
+	forest := &onlineIsolationForest{
 		numTrees:     numTrees,
 		maxDepth:     maxDepth,
 		windowSize:   windowSize,
-		trees:        make([]*OnlineIsolationTree, numTrees),
+		trees:        make([]*onlineIsolationTree, numTrees),
 		dataWindow:   make([][]float64, windowSize),
 		scoreHistory: make([]float64, 0, windowSize),
 		threshold:    0.5, // Initial threshold, will adapt based on data
@@ -103,7 +103,7 @@ func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *OnlineIsolati
 
 	// Initialize trees with minimal structure
 	for i := 0; i < numTrees; i++ {
-		forest.trees[i] = &OnlineIsolationTree{
+		forest.trees[i] = &onlineIsolationTree{
 			maxDepth:       maxDepth,
 			lastUpdateTime: time.Now(),
 		}
@@ -113,7 +113,7 @@ func NewOnlineIsolationForest(numTrees, windowSize, maxDepth int) *OnlineIsolati
 
 // ProcessSample processes a single data point, updating the forest incrementally
 // and returning an anomaly score immediately.
-func (oif *OnlineIsolationForest) ProcessSample(sample []float64) (float64, bool) {
+func (oif *onlineIsolationForest) ProcessSample(sample []float64) (float64, bool) {
 	if len(sample) == 0 {
 		return 0.0, false
 	}
@@ -142,7 +142,7 @@ func (oif *OnlineIsolationForest) ProcessSample(sample []float64) (float64, bool
 }
 
 // calculateAnomalyScore computes the anomaly score by averaging path lengths across all trees.
-func (oif *OnlineIsolationForest) calculateAnomalyScore(sample []float64) float64 {
+func (oif *onlineIsolationForest) calculateAnomalyScore(sample []float64) float64 {
 	oif.treesMutex.RLock()
 	defer oif.treesMutex.RUnlock()
 
@@ -181,7 +181,7 @@ func (oif *OnlineIsolationForest) calculateAnomalyScore(sample []float64) float6
 }
 
 // updateForest incrementally updates the forest with a new sample.
-func (oif *OnlineIsolationForest) updateForest(sample []float64, anomalyScore float64) {
+func (oif *onlineIsolationForest) updateForest(sample []float64, anomalyScore float64) {
 	// Add sample to sliding window
 	oif.updateSlidingWindow(sample)
 
@@ -193,7 +193,7 @@ func (oif *OnlineIsolationForest) updateForest(sample []float64, anomalyScore fl
 }
 
 // updateSlidingWindow maintains a circular buffer of recent samples for tree updates.
-func (oif *OnlineIsolationForest) updateSlidingWindow(sample []float64) {
+func (oif *onlineIsolationForest) updateSlidingWindow(sample []float64) {
 	oif.windowMutex.Lock()
 	defer oif.windowMutex.Unlock()
 
@@ -210,7 +210,7 @@ func (oif *OnlineIsolationForest) updateSlidingWindow(sample []float64) {
 }
 
 // updateAdaptiveThreshold adjusts the anomaly threshold based on recent score distribution.
-func (oif *OnlineIsolationForest) updateAdaptiveThreshold(score float64) {
+func (oif *onlineIsolationForest) updateAdaptiveThreshold(score float64) {
 	oif.thresholdMutex.Lock()
 	defer oif.thresholdMutex.Unlock()
 
@@ -251,7 +251,7 @@ func (oif *OnlineIsolationForest) updateAdaptiveThreshold(score float64) {
 }
 
 // updateTreesIncremental updates a random subset of trees with the new sample.
-func (oif *OnlineIsolationForest) updateTreesIncremental(sample []float64) {
+func (oif *onlineIsolationForest) updateTreesIncremental(sample []float64) {
 	oif.treesMutex.Lock()
 	defer oif.treesMutex.Unlock()
 
@@ -268,10 +268,10 @@ func (oif *OnlineIsolationForest) updateTreesIncremental(sample []float64) {
 }
 
 // updateTree incrementally updates a single tree with a new sample.
-func (oif *OnlineIsolationForest) updateTree(tree *OnlineIsolationTree, sample []float64) {
+func (oif *onlineIsolationForest) updateTree(tree *onlineIsolationTree, sample []float64) {
 	if tree.root == nil {
 		// Initialize tree with first sample
-		tree.root = &OnlineTreeNode{
+		tree.root = &onlineTreeNode{
 			depth:          0,
 			sampleCount:    1,
 			isLeaf:         true,
@@ -290,7 +290,7 @@ func (oif *OnlineIsolationForest) updateTree(tree *OnlineIsolationTree, sample [
 }
 
 // updateNodePath updates all nodes along the path taken by a sample through the tree.
-func (oif *OnlineIsolationForest) updateNodePath(node *OnlineTreeNode, sample []float64, depth, maxDepth int) {
+func (oif *onlineIsolationForest) updateNodePath(node *onlineTreeNode, sample []float64, depth, maxDepth int) {
 	node.sampleCount++
 
 	// If this is a leaf or we've reached max depth, stop here
@@ -315,7 +315,7 @@ func (oif *OnlineIsolationForest) updateNodePath(node *OnlineTreeNode, sample []
 }
 
 // splitNode creates child nodes for a leaf that has accumulated enough samples.
-func (oif *OnlineIsolationForest) splitNode(node *OnlineTreeNode, sample []float64, depth, maxDepth int) {
+func (oif *onlineIsolationForest) splitNode(node *onlineTreeNode, sample []float64, depth, maxDepth int) {
 	if depth >= maxDepth || len(sample) == 0 {
 		return
 	}
@@ -363,13 +363,13 @@ func (oif *OnlineIsolationForest) splitNode(node *OnlineTreeNode, sample []float
 	node.featureIndex = featureIndex
 	node.splitValue = splitValue
 	node.isLeaf = false
-	node.left = &OnlineTreeNode{
+	node.left = &onlineTreeNode{
 		depth:          depth + 1,
 		sampleCount:    1,
 		isLeaf:         true,
 		isolationScore: 0.5,
 	}
-	node.right = &OnlineTreeNode{
+	node.right = &onlineTreeNode{
 		depth:          depth + 1,
 		sampleCount:    1,
 		isLeaf:         true,
@@ -378,7 +378,7 @@ func (oif *OnlineIsolationForest) splitNode(node *OnlineTreeNode, sample []float
 }
 
 // calculatePathLength computes the path length for a sample in a single tree.
-func (tree *OnlineIsolationTree) calculatePathLength(sample []float64) float64 {
+func (tree *onlineIsolationTree) calculatePathLength(sample []float64) float64 {
 	if tree.root == nil {
 		return 0.0
 	}
@@ -386,7 +386,7 @@ func (tree *OnlineIsolationTree) calculatePathLength(sample []float64) float64 {
 }
 
 // traverseNode recursively traverses the tree to find the path length for a sample.
-func (tree *OnlineIsolationTree) traverseNode(node *OnlineTreeNode, sample []float64) float64 {
+func (tree *onlineIsolationTree) traverseNode(node *onlineTreeNode, sample []float64) float64 {
 	if node.isLeaf || node.left == nil || node.right == nil {
 		// For leaf nodes, add expected remaining path length based on sample count
 		return float64(node.depth) + tree.estimateRemainingPath(node.sampleCount)
@@ -400,7 +400,7 @@ func (tree *OnlineIsolationTree) traverseNode(node *OnlineTreeNode, sample []flo
 }
 
 // estimateRemainingPath estimates the remaining path length for a leaf node.
-func (tree *OnlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
+func (tree *onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
 	if sampleCount <= 1 {
 		return 0.0
 	}
@@ -410,7 +410,7 @@ func (tree *OnlineIsolationTree) estimateRemainingPath(sampleCount int) float64 
 }
 
 // getWindowData returns a copy of current window data.
-func (oif *OnlineIsolationForest) getWindowData() [][]float64 {
+func (oif *onlineIsolationForest) getWindowData() [][]float64 {
 	var result [][]float64
 	if !oif.windowFull {
 		// Window not full yet, return data from start to current index
@@ -431,7 +431,7 @@ func (oif *OnlineIsolationForest) getWindowData() [][]float64 {
 }
 
 // getExpectedPathLength returns the expected path length for normalization.
-func (oif *OnlineIsolationForest) getExpectedPathLength() float64 {
+func (oif *onlineIsolationForest) getExpectedPathLength() float64 {
 	// Use adaptive expected path length based on current window size
 	oif.windowMutex.RLock()
 	windowData := oif.getWindowData()
@@ -448,7 +448,7 @@ func (oif *OnlineIsolationForest) getExpectedPathLength() float64 {
 }
 
 // GetStatistics returns performance and health statistics for monitoring.
-func (oif *OnlineIsolationForest) GetStatistics() OnlineForestStatistics {
+func (oif *onlineIsolationForest) GetStatistics() onlineForestStatistics {
 	oif.statsMutex.RLock()
 	defer oif.statsMutex.RUnlock()
 
@@ -465,7 +465,7 @@ func (oif *OnlineIsolationForest) GetStatistics() OnlineForestStatistics {
 		anomalyRate = float64(oif.anomalyCount) / float64(oif.totalSamples)
 	}
 
-	return OnlineForestStatistics{
+	return onlineForestStatistics{
 		TotalSamples:      oif.totalSamples,
 		AnomalyCount:      oif.anomalyCount,
 		AnomalyRate:       anomalyRate,
