@@ -1,5 +1,5 @@
 // factory.go - OpenTelemetry Collector factory implementation
-package isolationforestprocessor // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/isolationforestprocessor"
+package isolationforestprocessor // import "github.com/opentelemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
 
 import (
 	"context"
