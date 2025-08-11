@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
@@ -52,7 +53,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/traces"
-	c.NumTraces = 1
+	c.Rate = 1
+	c.TotalDuration, _ = types.NewDurationWithInf("inf")
 	c.NumChildSpans = 1
 	c.PropagateContext = false
 	c.StatusCode = "0"

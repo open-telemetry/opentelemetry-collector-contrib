@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
@@ -56,7 +57,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/metrics"
-	c.NumMetrics = 1
+	c.Rate = 1
+	c.TotalDuration, _ = types.NewDurationWithInf("inf")
 
 	c.MetricName = "gen"
 	// Use Gauge as default metric type.

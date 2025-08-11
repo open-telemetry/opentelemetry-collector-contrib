@@ -11,6 +11,24 @@ import (
 // DurationWithInf is a custom type that can handle both regular durations and "inf" value
 type DurationWithInf time.Duration
 
+// NewDurationWithInf creates a new DurationWithInf from a string value
+// It accepts duration strings (e.g., "5s", "1m") or "inf" for infinite duration
+func NewDurationWithInf(s string) (DurationWithInf, error) {
+	var d DurationWithInf
+	err := d.Set(s)
+	return d, err
+}
+
+// MustDurationWithInf creates a new DurationWithInf from a string value
+// It panics if the string cannot be parsed as a valid duration or "inf"
+func MustDurationWithInf(s string) DurationWithInf {
+	d, err := NewDurationWithInf(s)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
 func (d *DurationWithInf) String() string {
 	if *d == DurationWithInf(-1) {
 		return "inf"

@@ -156,7 +156,7 @@ func run(c *Config, logger *zap.Logger) error {
 
 		go w.simulateTraces(telemetryAttributes)
 	}
-	if c.TotalDuration.Duration() > 0 || c.TotalDuration.IsInf() {
+	if c.TotalDuration.Duration() > 0 && !c.TotalDuration.IsInf() {
 		time.Sleep(c.TotalDuration.Duration())
 		running.Store(false)
 	}
