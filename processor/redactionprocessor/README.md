@@ -57,9 +57,8 @@ Examples:
 ```yaml
 processors:
   redaction:
-    # allow_all_keys is a flag which when set to true, which can disables the
-    # allowed_keys list. The list of blocked_values is applied regardless. If
-    # you just want to block values, set this to true.
+    # allow_all_keys is a flag that disables the allowed_keys list when set to true.
+    # The list of blocked_values is applied regardless. If you just want to block values, set this to true.
     allow_all_keys: false
     # allowed_keys is a list of span/log/datapoint attribute keys that are kept on the span/log/datapoint and
     # processed. The list is designed to fail closed. If allowed_keys is empty,
