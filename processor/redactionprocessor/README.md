@@ -134,3 +134,52 @@ For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
 number in the `notes` field that matched a regular expression on the list of
 blocked values, then that value is masked.
+
+## Database Query Sanitization
+
+The redaction processor now supports sanitizing database queries and commands to remove sensitive information. This feature supports multiple database systems:
+
+- SQL databases
+- Redis
+- Memcached
+- MongoDB
+- OpenSearch
+- Elasticsearch
+
+Example configuration with database sanitization:
+
+```yaml
+processors:
+  redaction:
+    # ... other redaction settings ...
+    
+    # Database sanitization configuration
+    db_sanitizer:
+      sql:
+        enabled: true
+        attributes: ["db.statement", "db.query"]
+      redis:
+        enabled: true
+        attributes: ["db.statement", "redis.command"]
+      memcached:
+        enabled: true
+        attributes: ["db.statement", "memcached.command"] 
+      mongo:
+        enabled: true
+        attributes: ["db.statement", "mongodb.query"]
+      opensearch:
+        enabled: true
+        attributes: ["db.statement", "opensearch.body"]
+      es:
+        enabled: true
+        attributes: ["db.statement", "elasticsearch.body"]
+```
+
+The database sanitizer will:
+- Remove sensitive data like literal values from SQL queries
+- Redact command arguments from Redis/Memcached commands
+- Sanitize MongoDB queries and JSON payloads
+- Process only specified attributes if provided
+- Preserve query structure while removing sensitive data
+
+This provides an additional layer of protection when collecting telemetry that includes database operations.
