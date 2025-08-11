@@ -457,8 +457,9 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 func TestReceiver_MessageMarking(t *testing.T) {
 	for name, testcase := range map[string]struct {
-		markAfter  bool
-		markErrors bool
+		markAfter           bool
+		markErrors          bool
+		markPermanentErrors bool
 
 		errorShouldRestart bool
 	}{
@@ -469,9 +470,21 @@ func TestReceiver_MessageMarking(t *testing.T) {
 			markAfter:          true,
 			errorShouldRestart: true,
 		},
-		"mark_after_all": {
-			markAfter:  true,
-			markErrors: true,
+		"mark_after_errors": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: true,
+		},
+		"mark_after_non_permanent_only": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: false,
+			errorShouldRestart:  true,
+		},
+		"mark_after_permanent_only": {
+			markAfter:           true,
+			markErrors:          false,
+			markPermanentErrors: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -499,6 +512,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				// Only mark messages after consuming, including for errors.
 				receiverConfig.MessageMarking.After = testcase.markAfter
 				receiverConfig.MessageMarking.OnError = testcase.markErrors
+				receiverConfig.MessageMarking.OnPermanentError = testcase.markPermanentErrors
 				set, tel, observedLogs := mustNewSettings(t)
 				f := NewFactory()
 				r, err := f.CreateTraces(t.Context(), set, receiverConfig, consumer)
