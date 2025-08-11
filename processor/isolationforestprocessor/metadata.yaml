@@ -1,0 +1,18 @@
+type: isolationforest
+
+status:
+  class: processor
+  stability:
+    development: [traces, metrics, logs]
+  distributions: []
+  codeowners:
+    active: [atoulme]
+
+attributes:
+  anomaly.isolation_score:
+    description: Anomaly score between 0 and 1
+    type: double
+    
+  anomaly.is_anomaly:
+    description: Boolean classification
+    type: bool
