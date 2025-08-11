@@ -24,4 +24,4 @@ subtext: It emits an anomaly score (iforest.anomaly_score) and/or a boolean flag
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]
