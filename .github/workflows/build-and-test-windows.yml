@@ -25,7 +25,6 @@ permissions: read-all
 
 jobs:
   setup-environment:
-    runs-on: windows-2025
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
       fail-fast: true
