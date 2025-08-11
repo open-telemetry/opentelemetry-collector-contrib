@@ -258,7 +258,7 @@ func (oif *onlineIsolationForest) updateTreesIncremental(sample []float64) {
 
 	// Update a random subset of trees (e.g., 10% per update)
 	oif.rngMutex.Lock()
-	numTreesToUpdate := max(1, oif.numTrees/10)
+	numTreesToUpdate := maxInt(1, oif.numTrees/10)
 	treesToUpdate := oif.rng.Perm(oif.numTrees)[:numTreesToUpdate]
 	oif.rngMutex.Unlock()
 
@@ -401,7 +401,7 @@ func (tree *onlineIsolationTree) traverseNode(node *onlineTreeNode, sample []flo
 }
 
 // estimateRemainingPath estimates the remaining path length for a leaf node.
-func (tree *onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
+func (_ *onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
 	if sampleCount <= 1 {
 		return 0.0
 	}
@@ -477,7 +477,7 @@ func (oif *onlineIsolationForest) GetStatistics() onlineForestStatistics {
 }
 
 // Utility functions
-func max(a, b int) int {
+func maxInt(a, b int) int {
 	if a > b {
 		return a
 	}

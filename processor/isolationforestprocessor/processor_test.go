@@ -111,7 +111,7 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 	features := map[string][]float64{
 		"duration": {50.0},
 	}
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"service.name": "frontend",
 	}
 
@@ -120,8 +120,6 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 	// We don't assert on isAnomaly (model behavior dependent), but ensure it's a boolean by using it
 	if isAnomaly {
 		assert.NotEmpty(t, model) // if anomalous, a model name should exist (default or specific)
-	} else {
-		// ok even if not anomalous
 	}
 }
 
@@ -185,7 +183,7 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 	switch m.Type() {
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
-		require.True(t, dps.Len() > 0)
+		require.Positive(t, dps.Len())
 		attrs := dps.At(0).Attributes()
 
 		_, ok := attrs.Get(cfg.ScoreAttribute)

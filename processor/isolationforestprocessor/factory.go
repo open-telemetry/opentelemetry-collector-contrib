@@ -34,7 +34,7 @@ func NewFactory() processor.Factory {
 }
 
 func createTracesProcessor(
-	ctx context.Context,
+	_ context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
@@ -68,7 +68,7 @@ func createTracesProcessor(
 }
 
 func createMetricsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
@@ -101,7 +101,7 @@ func createMetricsProcessor(
 }
 
 func createLogsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
@@ -155,7 +155,7 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	return tp.nextConsumer.ConsumeTraces(ctx, processedTraces)
 }
 
-func (tp *tracesProcessor) Capabilities() consumer.Capabilities {
+func (_ *tracesProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -181,7 +181,7 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	return mp.nextConsumer.ConsumeMetrics(ctx, processedMetrics)
 }
 
-func (mp *metricsProcessor) Capabilities() consumer.Capabilities {
+func (_ *metricsProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -207,6 +207,6 @@ func (lp *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return lp.nextConsumer.ConsumeLogs(ctx, processedLogs)
 }
 
-func (lp *logsProcessor) Capabilities() consumer.Capabilities {
+func (_ *logsProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }

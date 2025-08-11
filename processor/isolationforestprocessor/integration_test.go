@@ -182,7 +182,7 @@ func TestMetrics_Enrich_AddsAttributes(t *testing.T) {
 	switch m.Type() {
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
-		require.True(t, dps.Len() > 0)
+		require.Positive(t, dps.Len())
 		attrs := dps.At(0).Attributes()
 
 		_, ok := attrs.Get(cfg.ScoreAttribute)

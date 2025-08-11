@@ -133,7 +133,7 @@ func (cfg *Config) IsMultiModelMode() bool {
 	return len(cfg.Models) > 0
 }
 
-func (cfg *Config) GetModelForAttributes(attributes map[string]interface{}) *ModelConfig {
+func (cfg *Config) GetModelForAttributes(attributes map[string]any) *ModelConfig {
 	if !cfg.IsMultiModelMode() {
 		return nil
 	}
