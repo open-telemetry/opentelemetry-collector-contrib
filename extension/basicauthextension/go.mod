@@ -7,13 +7,13 @@ require (
 	github.com/tg123/go-htpasswd v1.2.4
 	go.opentelemetry.io/collector/client v1.37.1-0.20250811224948-302af250fdf1
 	go.opentelemetry.io/collector/component v1.37.1-0.20250811224948-302af250fdf1
-	go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250808075651-ed09fb912b2f
+	go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250811224948-302af250fdf1
 	go.opentelemetry.io/collector/config/configopaque v1.37.1-0.20250811224948-302af250fdf1
 	go.opentelemetry.io/collector/confmap v1.37.1-0.20250811224948-302af250fdf1
-	go.opentelemetry.io/collector/confmap/xconfmap v0.131.1-0.20250808075651-ed09fb912b2f
+	go.opentelemetry.io/collector/confmap/xconfmap v0.131.1-0.20250811224948-302af250fdf1
 	go.opentelemetry.io/collector/extension v1.37.1-0.20250811224948-302af250fdf1
 	go.opentelemetry.io/collector/extension/extensionauth v1.37.1-0.20250811224948-302af250fdf1
-	go.opentelemetry.io/collector/extension/extensiontest v0.131.1-0.20250808075651-ed09fb912b2f
+	go.opentelemetry.io/collector/extension/extensiontest v0.131.1-0.20250811224948-302af250fdf1
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.74.2
 )
@@ -39,7 +39,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.37.1-0.20250811224948-302af250fdf1 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.131.1-0.20250808075651-ed09fb912b2f // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.131.1-0.20250811224948-302af250fdf1 // indirect
 	go.opentelemetry.io/collector/pdata v1.37.1-0.20250811224948-302af250fdf1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
