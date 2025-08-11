@@ -188,7 +188,7 @@ func TestExpectedPathLength(t *testing.T) {
 
 	expectedLength := forest.getExpectedPathLength()
 	assert.Positive(t, expectedLength, "Expected path length should be positive")
-	assert.Less(t, expectedLength, 100, "Expected path length should be less than 100")
+	assert.Less(t, expectedLength, 100.0, "Expected path length should be less than 100")
 }
 
 // Benchmark tests to verify performance characteristics
