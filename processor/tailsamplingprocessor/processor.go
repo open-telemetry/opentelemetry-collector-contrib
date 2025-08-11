@@ -276,7 +276,7 @@ type policyMetrics struct {
 }
 
 func newPolicyMetrics(numPolicies int) *policyMetrics {
-	tracesSampledByPolicyDecision := make([]map[sampling.Decision]policyDecisionMetrics, 0, numPolicies)
+	tracesSampledByPolicyDecision := make([]map[sampling.Decision]policyDecisionMetrics, numPolicies)
 	for i := range tracesSampledByPolicyDecision {
 		tracesSampledByPolicyDecision[i] = make(map[sampling.Decision]policyDecisionMetrics)
 	}
