@@ -170,17 +170,18 @@ func (fp *filterProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 	// Iterate through all resource metrics
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
-		filteredRM := filteredMetrics.ResourceMetrics().AppendEmpty()
-		rm.Resource().CopyTo(filteredRM.Resource())
 
-		resourceHasMetrics := false
+		// Create a new resource metrics container only if we find matching metrics
+		var filteredRM pmetric.ResourceMetrics
+		resourceHasMatchingMetrics := false
 
 		// Iterate through all scope metrics
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			sm := rm.ScopeMetrics().At(j)
-			hasMetrics := false
-			filteredSM := filteredRM.ScopeMetrics().AppendEmpty()
-			sm.Scope().CopyTo(filteredSM.Scope())
+
+			// Create a new scope metrics container only if we find matching metrics
+			var filteredSM pmetric.ScopeMetrics
+			scopeHasMatchingMetrics := false
 
 			// Iterate through all metrics
 			for k := 0; k < sm.Metrics().Len(); k++ {
@@ -191,27 +192,24 @@ func (fp *filterProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 
 				// Check if this metric should be included
 				if fp.metricsMap[metricName] {
+					// Create containers only when we have a matching metric
+					if !resourceHasMatchingMetrics {
+						filteredRM = filteredMetrics.ResourceMetrics().AppendEmpty()
+						rm.Resource().CopyTo(filteredRM.Resource())
+						resourceHasMatchingMetrics = true
+					}
+
+					if !scopeHasMatchingMetrics {
+						filteredSM = filteredRM.ScopeMetrics().AppendEmpty()
+						sm.Scope().CopyTo(filteredSM.Scope())
+						scopeHasMatchingMetrics = true
+					}
+
 					filteredMetric := filteredSM.Metrics().AppendEmpty()
 					metric.CopyTo(filteredMetric)
-					hasMetrics = true
-					resourceHasMetrics = true
 					totalFilteredMetrics++
 				}
 			}
-
-			// Remove the scope metrics if no metrics were added
-			if !hasMetrics {
-				filteredRM.ScopeMetrics().RemoveIf(func(scopeMetrics pmetric.ScopeMetrics) bool {
-					return scopeMetrics.Scope().Name() == sm.Scope().Name()
-				})
-			}
-		}
-
-		// Remove the resource metrics if no metrics were added
-		if !resourceHasMetrics {
-			filteredMetrics.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-				return true // Remove this empty resource metrics
-			})
 		}
 	}
 
