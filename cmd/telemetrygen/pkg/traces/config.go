@@ -54,7 +54,7 @@ func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/traces"
 	c.Rate = 1
-	c.TotalDuration, _ = types.NewDurationWithInf("inf")
+	c.TotalDuration = types.MustDurationWithInf("inf")
 	c.NumChildSpans = 1
 	c.PropagateContext = false
 	c.StatusCode = "0"
