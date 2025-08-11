@@ -112,6 +112,5 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../../internal/common
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg => ../../pkg
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen => ../..
