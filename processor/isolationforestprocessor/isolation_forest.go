@@ -401,7 +401,7 @@ func (tree *onlineIsolationTree) traverseNode(node *onlineTreeNode, sample []flo
 }
 
 // estimateRemainingPath estimates the remaining path length for a leaf node.
-func (_ *onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
+func (*onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
 	if sampleCount <= 1 {
 		return 0.0
 	}

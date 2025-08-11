@@ -109,7 +109,7 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 }
 
 // Start initializes the processor
-func (p *isolationForestProcessor) Start(_ context.Context, host component.Host) error {
+func (p *isolationForestProcessor) Start(_ context.Context, _ component.Host) error {
 	p.logger.Info("Starting isolation forest processor")
 	// Any additional initialization logic can go here
 	return nil
@@ -237,7 +237,12 @@ func (p *isolationForestProcessor) processFeatures(features map[string][]float64
 }
 
 // processTraces processes trace telemetry
-func (p *isolationForestProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (p *isolationForestProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	// Honor cancellation/deadline; satisfies unparam + uses ctx.
+	if err := ctx.Err(); err != nil {
+		return td, err
+	}
+
 	// Process each resource scope and its spans
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
@@ -295,7 +300,11 @@ func (p *isolationForestProcessor) processTraces(_ context.Context, td ptrace.Tr
 }
 
 // processMetrics processes metric telemetry
-func (p *isolationForestProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (p *isolationForestProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	// Honor cancellation/deadline; satisfies unparam + uses ctx.
+	if err := ctx.Err(); err != nil {
+		return md, err
+	}
 	// Process each resource metric and its data points
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
@@ -325,7 +334,12 @@ func (p *isolationForestProcessor) processMetrics(_ context.Context, md pmetric.
 }
 
 // processLogs processes log telemetry
-func (p *isolationForestProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+func (p *isolationForestProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	// Honor cancellation/deadline; satisfies unparam + uses ctx.
+	if err := ctx.Err(); err != nil {
+		return ld, err
+	}
+
 	// Process each resource log and its records
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rl := ld.ResourceLogs().At(i)
