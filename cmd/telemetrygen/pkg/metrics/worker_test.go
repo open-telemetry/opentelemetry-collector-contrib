@@ -20,6 +20,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 const (
@@ -95,7 +96,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 func TestDurationInf(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: common.DurationWithInf(-1),
+			TotalDuration: types.DurationWithInf(-1),
 		},
 		MetricType: MetricTypeSum,
 	}
@@ -113,7 +114,7 @@ func TestRateOfMetrics(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: common.DurationWithInf(time.Second / 2),
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		MetricType: MetricTypeSum,
@@ -203,7 +204,7 @@ func TestUnthrottled(t *testing.T) {
 	// arrange
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: common.DurationWithInf(1 * time.Second),
+			TotalDuration: types.DurationWithInf(1 * time.Second),
 			WorkerCount:   1,
 		},
 		MetricType: MetricTypeSum,

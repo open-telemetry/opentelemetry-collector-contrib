@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 var (
@@ -62,48 +64,10 @@ func (*KeyValue) Type() string {
 	return "map[string]any"
 }
 
-// DurationWithInf is a custom type that can handle both regular durations and "inf" value
-type DurationWithInf time.Duration
-
-func (d *DurationWithInf) String() string {
-	if *d == DurationWithInf(-1) {
-		return "inf"
-	}
-	return time.Duration(*d).String()
-}
-
-func (d *DurationWithInf) Set(s string) error {
-	if strings.EqualFold(s, "inf") {
-		*d = DurationWithInf(-1)
-		return nil
-	}
-	duration, err := time.ParseDuration(s)
-	if err != nil {
-		return err
-	}
-	*d = DurationWithInf(duration)
-	return nil
-}
-
-func (d *DurationWithInf) Type() string {
-	return "duration|inf"
-}
-
-func (d *DurationWithInf) IsInf() bool {
-	return *d == DurationWithInf(-1)
-}
-
-func (d *DurationWithInf) Duration() time.Duration {
-	if d.IsInf() {
-		return 0
-	}
-	return time.Duration(*d)
-}
-
 type Config struct {
 	WorkerCount           int
 	Rate                  float64
-	TotalDuration         DurationWithInf
+	TotalDuration         types.DurationWithInf
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
 
@@ -239,7 +203,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.WorkerCount = 1
 	c.Rate = 0
-	c.TotalDuration = 0
+	c.TotalDuration = types.DurationWithInf(0)
 	c.ReportingInterval = 1 * time.Second
 	c.CustomEndpoint = ""
 	c.Insecure = false

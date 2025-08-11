@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 type worker struct {
@@ -27,7 +27,7 @@ type worker struct {
 	exemplars              []metricdata.Exemplar[int64] // exemplars to attach to the metric
 	numMetrics             int                          // how many metrics the worker has to generate (only when duration==0)
 	enforceUnique          bool                         // if true, the worker will generate unique timeseries
-	totalDuration          common.DurationWithInf       // how long to run the test for (overrides `numMetrics`)
+	totalDuration          types.DurationWithInf        // how long to run the test for (overrides `numMetrics`)
 	limitPerSecond         rate.Limit                   // how many metrics per second to generate
 	wg                     *sync.WaitGroup              // notify when done
 	logger                 *zap.Logger                  // logger

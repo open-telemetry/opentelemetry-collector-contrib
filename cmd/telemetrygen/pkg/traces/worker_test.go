@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 const (
@@ -78,7 +79,7 @@ func TestNumberOfSpans(t *testing.T) {
 func TestDurationInf(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: common.DurationWithInf(-1),
+			TotalDuration: types.DurationWithInf(-1),
 		},
 		NumTraces:     1,
 		NumChildSpans: 5,
@@ -100,7 +101,7 @@ func TestRateOfSpans(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: common.DurationWithInf(time.Second / 2),
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 	}
@@ -131,7 +132,7 @@ func TestSpanDuration(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: common.DurationWithInf(time.Second / 2),
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		SpanDuration: targetDuration,
@@ -161,7 +162,7 @@ func TestUnthrottled(t *testing.T) {
 
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: common.DurationWithInf(50 * time.Millisecond),
+			TotalDuration: types.DurationWithInf(50 * time.Millisecond),
 			WorkerCount:   1,
 		},
 	}

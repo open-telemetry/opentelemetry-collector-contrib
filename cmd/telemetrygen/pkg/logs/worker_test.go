@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 const (
@@ -69,7 +70,7 @@ func TestFixedNumberOfLogs(t *testing.T) {
 func TestDurationInf(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: common.DurationWithInf(-1),
+			TotalDuration: types.DurationWithInf(-1),
 		},
 		SeverityText:   "Info",
 		SeverityNumber: 9,
@@ -87,7 +88,7 @@ func TestRateOfLogs(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: common.DurationWithInf(time.Second / 2),
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		SeverityText:   "Info",
@@ -111,7 +112,7 @@ func TestRateOfLogs(t *testing.T) {
 func TestUnthrottled(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: common.DurationWithInf(1 * time.Second),
+			TotalDuration: types.DurationWithInf(1 * time.Second),
 			WorkerCount:   1,
 		},
 		SeverityText:   "Info",
