@@ -26,7 +26,7 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr        = "gcp"
-	GCElabelPrefix = "gce.labels."
+	GCElabelPrefix = "gcp.gce.labels."
 )
 
 var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
