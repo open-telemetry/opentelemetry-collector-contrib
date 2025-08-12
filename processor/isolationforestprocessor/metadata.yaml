@@ -3,8 +3,8 @@ type: isolationforest
 status:
   class: processor
   stability:
-    alpha: [traces, metrics, logs]
-  distributions: [contrib]
+    development: [traces, metrics, logs]
+  distributions: []
   codeowners:
     active: [atoulme]
 
