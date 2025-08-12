@@ -12,6 +12,7 @@ import (
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -352,6 +353,8 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	// Get the partioner key from the context
+	// Decode the key to get the info
 	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
 		return err
@@ -628,11 +631,12 @@ func (e *elasticsearchExporter) getRequestMappingMode(ctx context.Context) (Mapp
 	case 1:
 		mode, err := e.parseMappingMode(values[0])
 		if err != nil {
-			return -1, fmt.Errorf("invalid context mapping mode: %w", err)
+			return -1, consumererror.NewPermanent(fmt.Errorf("invalid context mapping mode: %w", err))
 		}
 		return mode, nil
+
 	default:
-		return -1, fmt.Errorf("expected one value for client metadata key %q, got %d", metadataKey, n)
+		return -1, consumererror.NewPermanent(fmt.Errorf("expected one value for client metadata key %q, got %d", metadataKey, n))
 	}
 }
 
@@ -645,7 +649,7 @@ func (e *elasticsearchExporter) getScopeMappingMode(
 	}
 	mode, err := e.parseMappingMode(attr.AsString())
 	if err != nil {
-		return -1, fmt.Errorf("invalid scope mapping mode: %w", err)
+		return -1, consumererror.NewPermanent(fmt.Errorf("invalid scope mapping mode: %w", err))
 	}
 	return mode, nil
 }

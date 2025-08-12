@@ -62,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:      idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
+					ForceAttemptHTTP2:    true,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -98,6 +99,7 @@ func TestLoadConfig(t *testing.T) {
 						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 						MaxConnsPerHost:     defaultMaxConnsPerHost,
 						IdleConnTimeout:     defaultIdleConnTimeout,
+						ForceAttemptHTTP2:   true,
 					},
 					StaleServiceTimeout: 5 * time.Minute,
 					SyncAttributes: map[string]string{
@@ -134,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:      idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
+					ForceAttemptHTTP2:    true,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -231,6 +234,7 @@ func TestLoadConfig(t *testing.T) {
 						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 						MaxConnsPerHost:     defaultMaxConnsPerHost,
 						IdleConnTimeout:     defaultIdleConnTimeout,
+						ForceAttemptHTTP2:   true,
 					},
 					StaleServiceTimeout: 5 * time.Minute,
 					SyncAttributes: map[string]string{

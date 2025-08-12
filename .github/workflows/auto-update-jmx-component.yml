@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   check-jmx-metrics-version:
+    if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     runs-on: ubuntu-24.04
     outputs:
       latest-version: ${{ steps.check-jmx-metrics-version.outputs.latest-version }}
@@ -55,6 +56,7 @@ jobs:
       contents: write # required for pushing changes
     runs-on: ubuntu-24.04
     if: |
+      github.repository == 'open-telemetry/opentelemetry-collector-contrib' &&
       needs.check-jmx-metrics-version.outputs.already-added != 'true' &&
       needs.check-jmx-metrics-version.outputs.already-opened != 'true'
     needs:
@@ -128,6 +130,7 @@ jobs:
 
   check-jmx-scraper-version:
     runs-on: ubuntu-24.04
+    if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     outputs:
       latest-version: ${{ steps.check-jmx-scraper-version.outputs.latest-version }}
       already-added: ${{ steps.check-jmx-scraper-version.outputs.already-added }}
@@ -171,6 +174,7 @@ jobs:
       contents: write # required for pushing changes
     runs-on: ubuntu-24.04
     if: |
+      github.repository == 'open-telemetry/opentelemetry-collector-contrib' &&
       needs.check-jmx-scraper-version.outputs.already-added != 'true' &&
       needs.check-jmx-scraper-version.outputs.already-opened != 'true'
     needs:
@@ -187,7 +191,6 @@ jobs:
             exit 1
           fi
 
-          version=${VERSION//-alpha/}
           hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar \
                          | sha256sum \
                          | cut -d ' ' -f 1)

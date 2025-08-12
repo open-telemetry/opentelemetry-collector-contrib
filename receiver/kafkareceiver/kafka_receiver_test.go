@@ -322,6 +322,18 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
 			metadatatest.AssertEqualKafkaReceiverBytes(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
@@ -358,8 +370,40 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverReadLatency(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "seed_0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverRecordsDelay(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		} else {
 			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
@@ -785,6 +829,7 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	cfg.ClientConfig = clientConfig
 	cfg.InitialOffset = "earliest"
 	cfg.MaxFetchWait = 10 * time.Millisecond
+	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	return kafkaClient, cfg
 }
 
