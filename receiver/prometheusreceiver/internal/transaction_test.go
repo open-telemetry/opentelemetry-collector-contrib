@@ -735,13 +735,13 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 	)
 }
 
-func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
+func nopObsRecv(tb testing.TB) *receiverhelper.ObsReport {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              transport,
 		ReceiverCreateSettings: receivertest.NewNopSettings(receivertest.NopType),
 	})
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return obsrecv
 }
 
