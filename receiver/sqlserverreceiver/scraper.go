@@ -645,7 +645,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		dbSystemNameVal = "microsoft.sql_server"
 	)
 
-	resources := pcommon.NewResource()
+	resources := s.lb.NewResourceBuilder()
 
 	rows, err := s.client.QueryRows(
 		ctx,
@@ -655,7 +655,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
-			return resources, fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
+			return resources.Emit(), fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
 		}
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
@@ -763,11 +763,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
 
 		if !resourcesAdded {
-			resourceAttributes := resources.Attributes()
-			resourceAttributes.PutStr("host.name", s.config.Server)
-			resourceAttributes.PutStr("sqlserver.computer.name", row[computerNameKey])
-			resourceAttributes.PutStr("sqlserver.instance.name", row[instanceNameKey])
-
+			resources.SetHostName(s.config.Server)
+			resources.SetSqlserverComputerName(row[computerNameKey])
+			resources.SetSqlserverInstanceName(row[instanceNameKey])
 			resourcesAdded = true
 		}
 		s.lb.RecordDbServerTopQueryEvent(
@@ -789,7 +787,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			int64(s.config.Port),
 			dbSystemNameVal)
 	}
-	return resources, errors.Join(errs...)
+	return resources.Emit(), errors.Join(errs...)
 }
 
 func (s *sqlServerScraperHelper) retrieveValue(
@@ -940,10 +938,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		ctx,
 		sql.Named("top", s.config.MaxRowsPerQuery),
 	)
-	resources := pcommon.NewResource()
+	resources := s.lb.NewResourceBuilder()
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
-			return resources, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
+			return resources.Emit(), fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
@@ -1047,13 +1045,11 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		)
 
 		if !resourcesAdded {
-			resourceAttributes := resources.Attributes()
-			resourceAttributes.PutStr("host.name", s.config.Server)
-			resourceAttributes.PutStr("sqlserver.computer.name", row[computerNameKey])
-			resourceAttributes.PutStr("sqlserver.instance.name", row[instanceNameKey])
-
+			resources.SetHostName(s.config.Server)
+			resources.SetSqlserverComputerName(row[computerNameKey])
+			resources.SetSqlserverInstanceName(row[instanceNameKey])
 			resourcesAdded = true
 		}
 	}
-	return resources, errors.Join(errs...)
+	return resources.Emit(), errors.Join(errs...)
 }

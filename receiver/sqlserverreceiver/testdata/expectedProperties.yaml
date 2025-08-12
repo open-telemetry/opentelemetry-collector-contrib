@@ -10,6 +10,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: ad8fb2b53dce
