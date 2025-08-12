@@ -32,9 +32,9 @@ func createIndexFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return index(ottl.NewValueComparator(), args.Target, args.Value), nil
 }
 
-func index[K any](valueComparator ottl.ValueComparator, source, value ottl.Getter[K]) ottl.ExprFunc[K] {
+func index[K any](valueComparator ottl.ValueComparator, target, value ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		sourceVal, err := source.Get(ctx, tCtx)
+		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +48,7 @@ func index[K any](valueComparator ottl.ValueComparator, source, value ottl.Gette
 			valueVal = pv.AsRaw()
 		}
 
-		switch s := sourceVal.(type) {
+		switch s := targetVal.(type) {
 		case string:
 			v, ok := valueVal.(string)
 			if !ok {
@@ -58,7 +58,7 @@ func index[K any](valueComparator ottl.ValueComparator, source, value ottl.Gette
 		default:
 			sg := ottl.StandardPSliceGetter[K]{
 				Getter: func(_ context.Context, _ K) (any, error) {
-					return sourceVal, nil
+					return targetVal, nil
 				},
 			}
 			slice, err := sg.Get(ctx, tCtx)
