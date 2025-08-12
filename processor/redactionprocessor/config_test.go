@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
 )
 
@@ -35,6 +36,17 @@ func TestLoadConfig(t *testing.T) {
 				HashFunction:       MD5,
 				AllowedValues:      []string{".+@mycompany.com"},
 				Summary:            debug,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: false,
+					},
+					RedisConfig: db.RedisConfig{
+						Enabled: false,
+					},
+					MongoConfig: db.MongoConfig{
+						Enabled: false,
+					},
+				},
 			},
 		},
 		{
