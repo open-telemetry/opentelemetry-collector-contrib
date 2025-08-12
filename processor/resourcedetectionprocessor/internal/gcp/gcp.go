@@ -5,7 +5,10 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"regexp"
+	"time"
 
+	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"go.opentelemetry.io/collector/featuregate"
@@ -14,6 +17,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
@@ -21,7 +25,8 @@ import (
 
 const (
 	// TypeStr is type of detector.
-	TypeStr = "gcp"
+	TypeStr        = "gcp"
+	GCElabelPrefix = "gce.labels."
 )
 
 var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
@@ -39,20 +44,30 @@ var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
 // * Bare Metal Solutions (BMS).
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
+
+	labelKeyRegexes, err := compileLabelRegexes(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return &detector{
-		logger:   set.Logger,
-		detector: gcp.NewDetector(),
-		rb:       localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
+		logger:           set.Logger,
+		detector:         gcp.NewDetector(),
+		rb:               localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
+		labelKeyRegexes:  labelKeyRegexes,
+		gceClientBuilder: &instancesRESTBuilder{},
 	}, nil
 }
 
 type detector struct {
-	logger   *zap.Logger
-	detector gcpDetector
-	rb       *localMetadata.ResourceBuilder
+	logger           *zap.Logger
+	detector         gcpDetector
+	rb               *localMetadata.ResourceBuilder
+	labelKeyRegexes  []*regexp.Regexp
+	gceClientBuilder instancesBuilder
 }
 
-func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if d.detector.CloudPlatform() == gcp.BareMetalSolution {
 		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
 		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
@@ -155,8 +170,107 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceName, d.detector.GCEInstanceName),
 			d.rb.SetManagedInstanceGroup(d.detector.GCEManagedInstanceGroup),
 		)
+		res := d.rb.Emit()
+
+		if len(d.labelKeyRegexes) != 0 {
+			instClient, err := d.gceClientBuilder.buildClient(ctx)
+			if err != nil {
+				d.logger.Warn("failed to build GCE instances client", zap.Error(err))
+			} else {
+				defer instClient.Close()
+
+				projectID, perr := metadata.ProjectID()
+				zone, zerr := metadata.Zone()
+				name, nerr := metadata.InstanceName()
+				if perr != nil || zerr != nil || nerr != nil {
+					d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
+				} else {
+					labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
+
+					if ferr != nil {
+						d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
+					} else if len(labels) > 0 {
+						attrs := res.Attributes()
+						for key, val := range labels {
+							attrs.PutStr(GCElabelPrefix+key, val)
+						}
+					}
+				}
+			}
+		}
+
+		return res, conventions.SchemaURL, errs
 	default:
 		// We don't support this platform yet, so just return with what we have
 	}
 	return d.rb.Emit(), conventions.SchemaURL, errs
+}
+
+type instancesAPI interface {
+	Get(ctx context.Context, req *computepb.GetInstanceRequest) (*computepb.Instance, error)
+	Close() error
+}
+
+type instancesBuilder interface {
+	buildClient(ctx context.Context) (instancesAPI, error)
+}
+
+type instancesRESTBuilder struct{}
+
+func (*instancesRESTBuilder) buildClient(ctx context.Context) (instancesAPI, error) {
+	cli, err := compute.NewInstancesRESTClient(ctx) // picks up GCE metadata creds automatically
+	if err != nil {
+		return nil, err
+	}
+	return &instancesRESTClient{inner: cli}, nil
+}
+
+type instancesRESTClient struct{ inner *compute.InstancesClient }
+
+func (c *instancesRESTClient) Get(ctx context.Context, req *computepb.GetInstanceRequest) (*computepb.Instance, error) {
+	return c.inner.Get(ctx, req)
+}
+func (c *instancesRESTClient) Close() error { return c.inner.Close() }
+
+func fetchGCELabels(ctx context.Context, svc instancesAPI, project, zone, instance string, labelKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	inst, err := svc.Get(ctx, &computepb.GetInstanceRequest{
+		Project:  project,
+		Zone:     zone,
+		Instance: instance,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]string)
+	for k, v := range inst.GetLabels() {
+		if regexArrayMatch(labelKeyRegexes, k) {
+			out[k] = v
+		}
+	}
+	return out, nil
+}
+
+func compileLabelRegexes(cfg Config) ([]*regexp.Regexp, error) {
+	rs := make([]*regexp.Regexp, len(cfg.Labels))
+	for i, pat := range cfg.Labels {
+		re, err := regexp.Compile(pat)
+		if err != nil {
+			return nil, err
+		}
+		rs[i] = re
+	}
+	return rs, nil
+}
+
+func regexArrayMatch(arr []*regexp.Regexp, val string) bool {
+	for _, r := range arr {
+		if r.MatchString(val) {
+			return true
+		}
+	}
+	return false
 }
