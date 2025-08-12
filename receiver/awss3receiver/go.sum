@@ -86,8 +86,6 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFdJifH4BDsTlE89Zl93FEloxaWZfGcifgq8=
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/open-telemetry/opamp-go v0.20.0 h1:GV4KbQVlRWBorvVm/a9WT9BuWhLHQfpmf0iSe/og5AY=
-github.com/open-telemetry/opamp-go v0.20.0/go.mod h1:/ks8JtVfx2wtZINPRTp/IxaGoMFAB6Uberx1Jcaur6M=
 github.com/open-telemetry/opamp-go v0.21.0 h1:G2e0G4bi2Il3Z4hHqbXUA05m5jajdhQLxq2dBARvT5U=
 github.com/open-telemetry/opamp-go v0.21.0/go.mod h1:d8/1ubFfy2QkTodIC9rd+9A3OCC/6788jSJ6uil1uLk=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

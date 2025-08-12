@@ -1,7 +1,5 @@
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/open-telemetry/opamp-go v0.20.0 h1:GV4KbQVlRWBorvVm/a9WT9BuWhLHQfpmf0iSe/og5AY=
-github.com/open-telemetry/opamp-go v0.20.0/go.mod h1:/ks8JtVfx2wtZINPRTp/IxaGoMFAB6Uberx1Jcaur6M=
 github.com/open-telemetry/opamp-go v0.21.0 h1:G2e0G4bi2Il3Z4hHqbXUA05m5jajdhQLxq2dBARvT5U=
 github.com/open-telemetry/opamp-go v0.21.0/go.mod h1:d8/1ubFfy2QkTodIC9rd+9A3OCC/6788jSJ6uil1uLk=
 google.golang.org/protobuf v1.36.6 h1:z1NpPI8ku2WgiWnf+t9wTPsn6eP1L7ksHUlkfLvd9xY=
