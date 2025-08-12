@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: awscontainerinsightreceiver
+
+note: "Set Aws config in the info to pass the creds"
+
+issues: [41799]
+
+subtext:
+
+change_logs: [user]

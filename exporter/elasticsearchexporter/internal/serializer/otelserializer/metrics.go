@@ -30,9 +30,9 @@ func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	writeTimestampField(v, "@timestamp", dp0.Timestamp())
+	writeTimestampEpochMillisField(v, "@timestamp", dp0.Timestamp())
 	if dp0.StartTimestamp() != 0 {
-		writeTimestampField(v, "start_timestamp", dp0.StartTimestamp())
+		writeTimestampEpochMillisField(v, "start_timestamp", dp0.StartTimestamp())
 	}
 	writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit())
 	writeDataStream(v, idx)
