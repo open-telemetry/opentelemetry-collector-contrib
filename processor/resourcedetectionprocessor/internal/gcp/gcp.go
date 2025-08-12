@@ -26,7 +26,7 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr        = "gcp"
-	GCElabelPrefix = "gcp.gce.labels."
+	GCElabelPrefix = "gcp.gce.instance.labels."
 )
 
 var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
@@ -184,11 +184,13 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 				name, nerr := d.detector.GCEInstanceName()
 				if perr != nil || zerr != nil || nerr != nil {
 					d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
+					return res, conventions.SchemaURL, nil
 				} else {
 					labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
 
 					if ferr != nil {
 						d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
+						return res, conventions.SchemaURL, nil
 					} else if len(labels) > 0 {
 						attrs := res.Attributes()
 						for key, val := range labels {
