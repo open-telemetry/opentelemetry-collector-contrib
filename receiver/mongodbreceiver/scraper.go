@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -12,11 +13,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -26,8 +29,29 @@ import (
 )
 
 var (
-	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
-
+	unknownVersion              = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+	unexplainablePipelineStages = map[string]bool{
+		"$collStats":               true,
+		"$currentOp":               true,
+		"$indexStats":              true,
+		"$listSearchIndexes":       true,
+		"$sample":                  true,
+		"$shardedDataDistribution": true,
+		"$mergeCursors":            true,
+	}
+	unexplainableCommands = map[string]bool{
+		"getMore":         true,
+		"insert":          true,
+		"update":          true,
+		"delete":          true,
+		"explain":         true,
+		"profile":         true,
+		"listCollections": true,
+		"listDatabases":   true,
+		"dbStats":         true,
+		"createIndexes":   true,
+		"shardCollection": true,
+	}
 	_ = featuregate.GlobalRegistry().MustRegister(
 		"receiver.mongodb.removeDatabaseAttr",
 		featuregate.StageStable,
@@ -37,6 +61,15 @@ var (
 		featuregate.WithRegisterToVersion("v0.104.0"))
 )
 
+const (
+	namespaceKey       = "ns"
+	commandKey         = "command"
+	opKey              = "op"
+	durationMicrosKey  = "microsecs_running"
+	clientKey          = "client"
+	applicationNameKey = "appName"
+)
+
 type mongodbScraper struct {
 	logger             *zap.Logger
 	config             *Config
@@ -44,19 +77,25 @@ type mongodbScraper struct {
 	secondaryClients   []client
 	mongoVersion       *version.Version
 	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
+	cache              *lru.Cache[string, int64]
 	prevReplTimestamp  pcommon.Timestamp
 	prevReplCounts     map[string]int64
 	prevTimestamp      pcommon.Timestamp
 	prevFlushTimestamp pcommon.Timestamp
 	prevCounts         map[string]int64
 	prevFlushCount     int64
+	obfuscator         *obfuscator
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
+	cache, _ := lru.New[string, int64](1024)
 	return &mongodbScraper{
 		logger:             settings.Logger,
 		config:             config,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                 metadata.NewLogsBuilder(metadata.DefaultLogsBuilderConfig(), settings),
+		cache:              cache,
 		mongoVersion:       unknownVersion(),
 		prevReplTimestamp:  pcommon.Timestamp(0),
 		prevReplCounts:     make(map[string]int64),
@@ -64,6 +103,7 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		prevFlushTimestamp: pcommon.Timestamp(0),
 		prevCounts:         make(map[string]int64),
 		prevFlushCount:     0,
+		obfuscator:         newObfuscator(),
 	}
 }
 
@@ -141,7 +181,233 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	errs := &scrapererror.ScrapeErrors{}
 	s.collectMetrics(ctx, errs)
+
 	return s.mb.Emit(), errs.Combine()
+}
+
+func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	operations, err := s.client.CurrentOp(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current operations", zap.Error(err))
+		return plog.NewLogs(), err
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	s.processCurrentOp(ctx, operations, now)
+
+	serverStatus, err := s.client.ServerStatus(ctx, "admin")
+	if err != nil {
+		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
+		return s.lb.Emit(), nil
+	}
+
+	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	if err != nil {
+		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
+		return s.lb.Emit(), nil
+	}
+
+	rb := s.lb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+
+	return s.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+}
+
+func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
+	queryCount := 0
+
+	for _, op := range operations {
+		// Filter out irrelevant operations (e.g., internal operations, operations without commands)
+		if !s.shouldIncludeOperation(op) {
+			continue
+		}
+
+		namespace := getValue[string](op, namespaceKey)
+		command := getValue[bson.D](op, commandKey)
+		opType := getValue[string](op, opKey)
+		commandType := command[0].Key
+		durationMicros := float64(getValue[int64](op, durationMicrosKey)) / 1_000_000.0
+		client := getValue[string](op, clientKey)
+		applicationName := getValue[string](op, applicationNameKey)
+		port := 0
+		server := ""
+		if client != "" {
+			clientSplit := strings.Split(client, ":")
+			server = clientSplit[0]
+			if len(clientSplit) > 1 {
+				if p, err := strconv.Atoi(clientSplit[1]); err == nil {
+					port = p
+				}
+			}
+		}
+		cleanedCommand := cleanCommand(command)
+		obfuscatedStatement := s.obfuscator.obfuscateSQLString(cleanedCommand.String())
+		querySignature := generateQuerySignature(obfuscatedStatement)
+
+		// Get explain plan for supported operations
+		explainPlan := ""
+		collectionName := s.getCollectionFromNamespace(namespace)
+		if collectionName != "" && len(command) > 0 && s.shouldExplainOperation(opType, cleanedCommand) {
+			plan, err := s.getExplainPlan(ctx, cleanedCommand)
+			if err != nil {
+				s.logger.Debug("Failed to get explain plan",
+					zap.String("namespace", namespace),
+					zap.String("op", opType),
+					zap.String("appName", applicationName),
+					zap.Error(err))
+			} else {
+				explainPlan = plan
+			}
+		}
+
+		s.logger.Debug("Processing MongoDB operation",
+			zap.String("namespace", namespace),
+			zap.String("commandType", commandType),
+			zap.Float64("duration_micros", durationMicros),
+			zap.String("client", client),
+			zap.String("appName", applicationName),
+			zap.String("query_signature", querySignature),
+			zap.Bool("has_explain_plan", explainPlan != ""))
+
+		s.lb.RecordDbServerQuerySampleEvent(
+			ctx,
+			now,
+			server,
+			int64(port),
+			metadata.AttributeDbSystemNameMongodb,
+			collectionName,
+			commandType,
+			obfuscatedStatement,
+			applicationName,
+			querySignature,
+			durationMicros,
+			explainPlan,
+		)
+
+		queryCount++
+	}
+
+	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)), zap.Int("processed_queries", queryCount))
+}
+
+// shouldExplainOperation determines if we should try to get an explain plan for this operation
+func (*mongodbScraper) shouldExplainOperation(opType string, command bson.D) bool {
+	if opType == "" || opType == "none" {
+		return false
+	}
+
+	if opType == "insert" || opType == "update" || opType == "getmore" || opType == "killcursors" || opType == "remove" {
+		return false
+	}
+
+	for _, cmd := range command {
+		if unexplainableCommands[cmd.Key] {
+			return false
+		}
+	}
+
+	for _, v := range command {
+		if v.Key == "pipeline" {
+			pipelineArray, ok := v.Value.(bson.A)
+			if !ok {
+				continue
+			}
+			for _, stage := range pipelineArray {
+				if stageDoc, ok := stage.(bson.M); ok {
+					for stageName := range stageDoc {
+						if unexplainablePipelineStages[stageName] {
+							return false
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return true
+}
+
+func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
+	if ns := getValue[string](op, namespaceKey); ns == "" {
+		s.logger.Debug("Skipping operation without namespace", zap.Any("operation", op))
+		return false
+	}
+
+	if db := s.getDBFromNamespace(getValue[string](op, namespaceKey)); db == "admin" {
+		s.logger.Debug("Skipping operation for admin database", zap.Any("operation", op))
+		return false
+	}
+
+	command := getValue[bson.D](op, commandKey)
+	if len(command) == 0 {
+		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
+		return false
+	}
+
+	for _, v := range command {
+		if v.Key == "hello" {
+			s.logger.Debug("Skipping hello operation", zap.Any("operation", op))
+			return false
+		}
+	}
+
+	return true
+}
+
+// getValue extracts a value from a BSON document with type assertion
+func getValue[T any](doc bson.M, key string) T {
+	var zero T
+	if val, ok := doc[key]; ok {
+		if typedVal, ok := val.(T); ok {
+			return typedVal
+		}
+	}
+	return zero
+}
+
+func (*mongodbScraper) getDBFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
+}
+
+func (*mongodbScraper) getCollectionFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return ""
+}
+
+// getExplainPlan executes the explain command for a given command and database
+func (s *mongodbScraper) getExplainPlan(ctx context.Context, command bson.D) (string, error) {
+	explainableCommand := prepareCommandForExplain(command)
+	if len(explainableCommand) == 0 {
+		return "", errors.New("command cannot be explained")
+	}
+
+	explainCommand := bson.M{
+		"explain": explainableCommand,
+	}
+
+	result, err := s.client.RunCommand(ctx, "admin", explainCommand)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute explain command: %w", err)
+	}
+
+	cleanedResult := cleanExplainPlan(result)
+
+	obfuscatedResult := obfuscateExplainPlan(cleanedResult)
+
+	jsonBytes, err := json.Marshal(obfuscatedResult)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal explain plan to JSON: %w", err)
+	}
+
+	return string(jsonBytes), nil
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {

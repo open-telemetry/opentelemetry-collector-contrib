@@ -26,6 +26,7 @@ type client interface {
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
 	RunCommand(ctx context.Context, db string, command bson.M) (bson.M, error)
+	CurrentOp(ctx context.Context) ([]bson.M, error)
 }
 
 // mongodbClient is a mongodb metric scraper client
@@ -118,4 +119,34 @@ func (c *mongodbClient) GetVersion(ctx context.Context) (*version.Version, error
 	}
 
 	return version.NewVersion(v)
+}
+
+// CurrentOp returns the result db.aggregate([{$currentOp: {}}])
+// more information can be found here: https://www.mongodb.com/docs/manual/reference/operator/aggregation/currentOp/
+func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
+	cursor, err := c.Database("admin").Aggregate(
+		ctx,
+		mongo.Pipeline{
+			bson.D{
+				{Key: "$currentOp", Value: bson.M{
+					"allUsers":        true,
+					"idleConnections": true,
+					"idleCursors":     true,
+					"idleSessions":    true,
+					"localOps":        true,
+				}},
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var operations []bson.M
+	err = cursor.All(ctx, &operations)
+	if err != nil {
+		return nil, err
+	}
+	return operations, nil
 }

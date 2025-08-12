@@ -95,6 +95,9 @@ all_set:
       enabled: true
     mongodb.wtcache.bytes.read:
       enabled: true
+  events:
+    db.server.query_sample:
+      enabled: true
   resource_attributes:
     database:
       enabled: true
@@ -198,6 +201,9 @@ none_set:
       enabled: false
     mongodb.wtcache.bytes.read:
       enabled: false
+  events:
+    db.server.query_sample:
+      enabled: false
   resource_attributes:
     database:
       enabled: false
@@ -211,13 +217,19 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     server.address:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     server.port:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
@@ -225,11 +237,17 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "database-val"
+      events_exclude:
+        - strict: "database-val"
     server.address:
       enabled: true
       metrics_exclude:
         - strict: "server.address-val"
+      events_exclude:
+        - strict: "server.address-val"
     server.port:
       enabled: true
       metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
         - regexp: ".*"

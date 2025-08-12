@@ -1,0 +1,45 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: localhost
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: client.address
+                value:
+                  stringValue: 127.0.0.1
+              - key: client.port
+                value:
+                  intValue: "27017"
+              - key: db.system.name
+                value:
+                  stringValue: mongodb
+              - key: db.collection.name
+                value:
+                  stringValue: users
+              - key: db.operation.name
+                value:
+                  stringValue: find
+              - key: db.query.text
+                value:
+                  stringValue: '{"find":"?"}'
+              - key: mongodb.application.name
+                value:
+                  stringValue: testapp
+              - key: mongodb.query.signature
+                value:
+                  stringValue: 43ded611d5efea62
+              - key: mongodb.operation.duration
+                value:
+                  doubleValue: 0.0001
+              - key: mongodb.query.plan
+                value:
+                  stringValue: '{}'
+            body: {}
+            eventName: db.server.query_sample
+            timeUnixNano: "1753937727804149809"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+          version: latest

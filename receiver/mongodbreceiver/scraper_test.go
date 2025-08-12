@@ -15,17 +15,20 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/tj/assert"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/drivertest"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -457,4 +460,301 @@ func TestServerAddressAndPort(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestShouldIncludeOperation(t *testing.T) {
+	tests := []struct {
+		name      string
+		operation bson.M
+		expected  bool
+	}{
+		{
+			name: "valid query operation",
+			operation: bson.M{
+				"ns":      "test.collection",
+				"op":      "query",
+				"command": bson.D{{Key: "find", Value: "collection"}},
+			},
+			expected: true,
+		},
+		{
+			name: "missing namespace",
+			operation: bson.M{
+				"op":      "query",
+				"command": bson.D{{Key: "find", Value: "collection"}},
+			},
+			expected: false,
+		},
+		{
+			name: "admin database",
+			operation: bson.M{
+				"ns":      "admin.collection",
+				"op":      "query",
+				"command": bson.D{{Key: "find", Value: "collection"}},
+			},
+			expected: false,
+		},
+		{
+			name: "hello command",
+			operation: bson.M{
+				"ns":      "test.collection",
+				"op":      "query",
+				"command": bson.D{{Key: "hello", Value: 1}},
+			},
+			expected: false,
+		},
+	}
+
+	s := &mongodbScraper{logger: zap.NewNop()}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, s.shouldIncludeOperation(tt.operation))
+		})
+	}
+}
+
+func TestShouldExplainOperation(t *testing.T) {
+	tests := []struct {
+		name     string
+		opType   string
+		command  bson.D
+		expected bool
+	}{
+		{
+			name:     "query operation",
+			opType:   "query",
+			command:  bson.D{{Key: "find", Value: "collection"}},
+			expected: true,
+		},
+		{
+			name:     "insert operation",
+			opType:   "insert",
+			command:  bson.D{{Key: "insert", Value: "collection"}},
+			expected: false,
+		},
+		{
+			name:     "unexplainable command",
+			opType:   "query",
+			command:  bson.D{{Key: "getMore", Value: 12345}},
+			expected: false,
+		},
+		{
+			name:     "unexplainable pipeline stage",
+			opType:   "query",
+			command:  bson.D{{Key: "aggregate", Value: "collection"}, {Key: "pipeline", Value: bson.A{bson.M{"$collStats": bson.M{}}}}},
+			expected: false,
+		},
+	}
+
+	s := &mongodbScraper{logger: zap.NewNop()}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, s.shouldExplainOperation(tt.opType, tt.command))
+		})
+	}
+}
+
+func TestGetExplainPlan(t *testing.T) {
+	mockClient := &fakeClient{}
+	s := &mongodbScraper{
+		client: mockClient,
+		logger: zap.NewNop(),
+	}
+
+	ctx := context.Background()
+	command := bson.D{{Key: "find", Value: "collection"}}
+
+	// Test successful explain plan
+	mockClient.On("RunCommand", ctx, "admin", bson.M{"explain": command}).Return(bson.M{
+		"queryPlanner": bson.M{
+			"winningPlan": bson.M{
+				"stage": "COLLSCAN",
+			},
+		},
+	}, nil).Once()
+
+	plan, err := s.getExplainPlan(ctx, command)
+	require.NoError(t, err)
+	require.Contains(t, plan, "queryPlanner")
+
+	// Test command preparation
+	commandWithExtra := bson.D{
+		{Key: "find", Value: "collection"},
+		{Key: "$db", Value: "testdb"},
+		{Key: "comment", Value: "test"},
+	}
+	mockClient.On("RunCommand", ctx, "admin", bson.M{"explain": bson.D{
+		{Key: "find", Value: "collection"},
+		{Key: "$db", Value: "testdb"},
+	}}).Return(bson.M{}, nil)
+	_, err = s.getExplainPlan(ctx, commandWithExtra)
+	require.NoError(t, err)
+
+	// Test error case
+	mockClient.On("RunCommand", ctx, "admin", mock.Anything).Return(bson.M{}, errors.New("explain failed")).Once()
+	_, err = s.getExplainPlan(ctx, command)
+	require.Error(t, err)
+}
+
+func TestProcessCurrentOp(t *testing.T) {
+	mockClient := &fakeClient{}
+	lb := metadata.NewLogsBuilder(metadata.DefaultLogsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	s := &mongodbScraper{
+		client:     mockClient,
+		logger:     zap.NewNop(),
+		lb:         lb,
+		obfuscator: newObfuscator(),
+	}
+
+	ctx := context.Background()
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	tests := []struct {
+		name         string
+		operations   []bson.M
+		mockExplain  bool
+		expectedLogs int
+		collection   []string
+	}{
+		{
+			name: "query operation",
+			operations: []bson.M{
+				{
+					"ns":                "test.users",
+					"op":                "query",
+					"command":           bson.D{{Key: "find", Value: "users"}, {Key: "filter", Value: bson.M{"name": "test"}}},
+					"microsecs_running": int64(100),
+					"appName":           "testapp",
+					"client":            "127.0.0.1:27017",
+				},
+			},
+			mockExplain:  true,
+			expectedLogs: 1,
+			collection:   []string{"users"},
+		},
+		{
+			name: "insert operation",
+			operations: []bson.M{
+				{
+					"ns":                "test.users",
+					"op":                "insert",
+					"command":           bson.D{{Key: "insert", Value: "users"}, {Key: "documents", Value: bson.A{bson.M{"name": "test"}}}},
+					"microsecs_running": int64(50),
+				},
+			},
+			expectedLogs: 1,
+			collection:   []string{"users"},
+		},
+		{
+			name: "admin database operation",
+			operations: []bson.M{
+				{
+					"ns":      "admin.users",
+					"op":      "query",
+					"command": bson.D{{Key: "find", Value: "users"}},
+				},
+			},
+			expectedLogs: 0,
+			collection:   []string{"users"},
+		},
+		{
+			name: "multiple operations",
+			operations: []bson.M{
+				{
+					"ns":                "test.users",
+					"op":                "query",
+					"command":           bson.D{{Key: "find", Value: "users"}},
+					"microsecs_running": int64(100),
+				},
+				{
+					"ns":                "test.products",
+					"op":                "query",
+					"command":           bson.D{{Key: "find", Value: "products"}},
+					"microsecs_running": int64(200),
+				},
+			},
+			mockExplain:  true,
+			expectedLogs: 2,
+			collection:   []string{"users", "products"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.mockExplain {
+				mockClient.On("RunCommand", ctx, "admin", mock.Anything).Return(bson.M{
+					"queryPlanner": bson.M{
+						"winningPlan": bson.M{
+							"stage": "COLLSCAN",
+						},
+					},
+				}, nil)
+			}
+
+			s.processCurrentOp(ctx, tt.operations, now)
+			logs := s.lb.Emit()
+			require.Equal(t, tt.expectedLogs, logs.LogRecordCount())
+
+			// Verify log attributes for first operation if expected
+			for i := 0; i < tt.expectedLogs; i++ {
+				lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
+				require.Equal(t, now, lr.Timestamp())
+				dbName, ok := lr.Attributes().Get("db.collection.name")
+				require.True(t, ok)
+				require.Equal(t, tt.collection[i], dbName.Str())
+				require.Contains(t, lr.Attributes().AsRaw(), "mongodb.query.signature")
+			}
+		})
+	}
+}
+
+func TestScrapeLogs(t *testing.T) {
+	mockClient := &fakeClient{}
+	lb := metadata.NewLogsBuilder(metadata.DefaultLogsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	s := &mongodbScraper{
+		client:     mockClient,
+		logger:     zap.NewNop(),
+		lb:         lb,
+		obfuscator: newObfuscator(),
+	}
+
+	ctx := context.Background()
+
+	// Test successful case
+	mockClient.On("CurrentOp", ctx).Return([]bson.M{
+		{
+			"ns":                "test.users",
+			"op":                "query",
+			"command":           bson.D{{Key: "find", Value: "users"}},
+			"microsecs_running": int64(100),
+			"appName":           "testapp",
+			"client":            "127.0.0.1:27017",
+		},
+	}, nil).Once()
+	mockClient.On("RunCommand", ctx, "admin", bson.M{"explain": bson.D{bson.E{Key: "find", Value: "users"}}}).Return(bson.M{}, nil).Once()
+	mockClient.On("ServerStatus", ctx, "admin").Return(bson.M{"host": "localhost:27017"}, nil).Once()
+
+	logs, err := s.scrapeLogs(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.LogRecordCount())
+	mockClient.AssertExpectations(t)
+	// golden.WriteLogs(t, filepath.Join("testdata", "query_sample.yaml"), logs)
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "query_sample.yaml"))
+	assert.NoError(t, err)
+	assert.NoError(t, plogtest.CompareLogs(expectedLogs, logs,
+		plogtest.IgnoreTimestamp()))
+
+	// Test error on CurrentOp
+	mockClient.On("CurrentOp", ctx).Return([]bson.M{}, errors.New("current op failed")).Once()
+	_, err = s.scrapeLogs(ctx)
+	require.Error(t, err)
+	mockClient.AssertExpectations(t)
+
+	// Test error on ServerStatus
+	mockClient.On("CurrentOp", ctx).Return([]bson.M{}, nil).Once()
+	mockClient.On("ServerStatus", ctx, "admin").Return(bson.M{}, errors.New("server status failed")).Once()
+	logs, err = s.scrapeLogs(ctx)
+	require.NoError(t, err) // Should not return error, just log it
+	require.Equal(t, 0, logs.LogRecordCount())
+	mockClient.AssertExpectations(t)
 }
