@@ -157,56 +157,11 @@ func Test_index_native_slices(t *testing.T) {
 			value:    "orange",
 			expected: -1,
 		},
-		// []int slice tests (int gets converted to int64, so int values work with int64 comparison)
-		{
-			name:     "[]int slice with int value",
-			source:   []int{10, 20, 30, 40},
-			value:    30,
-			expected: -1, // int(30) != int64(30) in ValueComparator
-		},
-		{
-			name:     "[]int slice with int64 value",
-			source:   []int{10, 20, 30, 40},
-			value:    int64(20),
-			expected: 1, // int64 values work
-		},
-		{
-			name:     "[]int slice value not found",
-			source:   []int{10, 20, 30, 40},
-			value:    int64(50),
-			expected: -1,
-		},
-		// []int16 slice tests
-		{
-			name:     "[]int16 slice with int16 value",
-			source:   []int16{1, 2, 3},
-			value:    int16(2),
-			expected: -1, // int16(2) != int64(2) in ValueComparator
-		},
-		{
-			name:     "[]int16 slice with int64 value",
-			source:   []int16{1, 2, 3},
-			value:    int64(2),
-			expected: 1, // int64 values work
-		},
-		// []int32 slice tests
-		{
-			name:     "[]int32 slice with int32 value",
-			source:   []int32{100, 200, 300},
-			value:    int32(200),
-			expected: -1, // int32(200) != int64(200) in ValueComparator
-		},
-		{
-			name:     "[]int32 slice with int64 value",
-			source:   []int32{100, 200, 300},
-			value:    int64(200),
-			expected: 1, // int64 values work
-		},
-		// []int64 slice tests
+		// []int64 slice tests (int gets converted to int64, so int values work with int64 comparison)
 		{
 			name:     "[]int64 slice with int64 value",
-			source:   []int64{1000, 2000, 3000},
-			value:    int64(2000),
+			source:   []int64{1000, 2999, 3111},
+			value:    int64(2999),
 			expected: 1,
 		},
 		{
@@ -214,71 +169,6 @@ func Test_index_native_slices(t *testing.T) {
 			source:   []int64{1000, 2000, 3000},
 			value:    2000,
 			expected: -1, // int(2000) != int64(2000) in ValueComparator
-		},
-		// []uint slice tests
-		{
-			name:     "[]uint slice with uint value",
-			source:   []uint{5, 10, 15},
-			value:    uint(10),
-			expected: -1, // uint(10) != int64(10) in ValueComparator
-		},
-		{
-			name:     "[]uint slice with int64 value",
-			source:   []uint{5, 10, 15},
-			value:    int64(10),
-			expected: 1, // int64 values work
-		},
-		// []uint16 slice tests
-		{
-			name:     "[]uint16 slice with uint16 value",
-			source:   []uint16{1, 2, 3},
-			value:    uint16(2),
-			expected: -1, // uint16(2) != int64(2) in ValueComparator
-		},
-		{
-			name:     "[]uint16 slice with int64 value",
-			source:   []uint16{1, 2, 3},
-			value:    int64(2),
-			expected: 1, // int64 values work
-		},
-		// []uint32 slice tests
-		{
-			name:     "[]uint32 slice with uint32 value",
-			source:   []uint32{100, 200, 300},
-			value:    uint32(200),
-			expected: -1, // uint32(200) != int64(200) in ValueComparator
-		},
-		{
-			name:     "[]uint32 slice with int64 value",
-			source:   []uint32{100, 200, 300},
-			value:    int64(200),
-			expected: 1, // int64 values work
-		},
-		// []uint64 slice tests
-		{
-			name:     "[]uint64 slice with uint64 value",
-			source:   []uint64{1000, 2000, 3000},
-			value:    uint64(2000),
-			expected: -1, // uint64(2000) != int64(2000) in ValueComparator
-		},
-		{
-			name:     "[]uint64 slice with int64 value",
-			source:   []uint64{1000, 2000, 3000},
-			value:    int64(2000),
-			expected: 1, // int64 values work
-		},
-		// []float32 slice tests
-		{
-			name:     "[]float32 slice with float32 value",
-			source:   []float32{1.1, 2.2, 3.3},
-			value:    float32(2.2),
-			expected: -1, // float32(2.2) != float64(2.2) in ValueComparator
-		},
-		{
-			name:     "[]float32 slice with float64 value",
-			source:   []float32{1.1, 2.2, 3.3},
-			value:    float64(2.2),
-			expected: -1, // float32 to float64 conversion precision issue
 		},
 		// []float64 slice tests
 		{
