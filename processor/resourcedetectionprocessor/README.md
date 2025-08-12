@@ -150,6 +150,9 @@ to read resource information from the [metadata server](https://cloud.google.com
 application is running on, and detect the appropriate attributes for that platform. Regardless
 of the GCP platform the application is running on, use the gcp detector:
 
+It also can optionally gather tags for the GCE instance that the collector is running on.
+Note that in order to fetch GCE tags, the IAM role assigned to the GCE instance must have the `roles/compute.viewer` role.
+
 Example:
 
 ```yaml
@@ -158,6 +161,12 @@ processors:
     detectors: [env, gcp]
     timeout: 2s
     override: false
+    gcp:
+      # A list of regex's to match label keys to add as resource attributes can be specified
+      labels:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
 ```
 
 The list of the populated resource attributes can be found at [GCP Detector Resource Attributes](./internal/gcp/documentation.md).
@@ -320,7 +329,7 @@ processors:
 ### Amazon EKS
 
 This detector reads resource information from the [EC2 instance metadata service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve related resource attributes.
-If IMDS is not available, (example: EKS-AutoMode and POD not on the hostnetwork), it falls back to a combination of [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#-strong-kubernetes-api-v1-25-strong-) 
+If IMDS is not available, (example: EKS-AutoMode and POD not on the hostnetwork), it falls back to a combination of [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#-strong-kubernetes-api-v1-25-strong-)
 and [EC2 API](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) to retrieve related resource attributes.
 
 EC2 API requires the `EC2:DescribeInstances` permission to be granted to the IAM role. If IMDS is not accessible, ex: EKS-AutoMode, you can use [POD Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
