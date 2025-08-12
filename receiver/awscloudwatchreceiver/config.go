@@ -45,6 +45,7 @@ type GroupConfig struct {
 // AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
 	Prefix  string       `mapstructure:"prefix"`
+	Pattern string       `mapstructure:"pattern"`
 	Limit   int          `mapstructure:"limit"`
 	Streams StreamConfig `mapstructure:"streams"`
 }
@@ -62,6 +63,7 @@ var (
 	errInvalidPollInterval            = errors.New("poll interval is incorrect, it must be a duration greater than one second")
 	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
 	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
+	errPrefixAndPatternConfigured     = errors.New("cannot specify both prefix and pattern")
 )
 
 // Validate validates all portions of the relevant config
@@ -137,6 +139,9 @@ func (c *GroupConfig) validate() error {
 func validateAutodiscover(cfg AutodiscoverConfig) error {
 	if cfg.Limit <= 0 {
 		return errInvalidAutodiscoverLimit
+	}
+	if cfg.Pattern != "" && cfg.Prefix != "" {
+		return errPrefixAndPatternConfigured
 	}
 	return nil
 }
