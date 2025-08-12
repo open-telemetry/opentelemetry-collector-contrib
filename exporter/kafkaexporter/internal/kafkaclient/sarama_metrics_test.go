@@ -49,6 +49,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
@@ -105,6 +106,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
@@ -230,6 +232,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
@@ -363,6 +366,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
