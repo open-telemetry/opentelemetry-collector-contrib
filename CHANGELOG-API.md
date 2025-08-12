@@ -7,6 +7,21 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.132.0
+
+### 🛑 Breaking changes 🛑
+
+- `journaldreceiver`: Unexport ReceiverType (#40666)
+- `pulsarexporter`: Use `configoptional.Optional` for authentication fields (#41723)
+- `exporter/loadbalancingexporter`: Use `configoptional` for optional config sections (#41697)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add OTTL support for sample submessage of OTel Profiling signal. (#40161)
+- `internal/common`: Add a priority queue implementation to the common package. (#41755)
+
+<!-- previous-version -->
+
 ## v0.131.0
 
 ### 🛑 Breaking changes 🛑
