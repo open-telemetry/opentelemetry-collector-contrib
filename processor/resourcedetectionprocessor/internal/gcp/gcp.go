@@ -172,32 +172,35 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 		res := d.rb.Emit()
 
-		if len(d.labelKeyRegexes) != 0 {
-			instClient, err := d.gceClientBuilder.buildClient(ctx)
-			if err != nil {
-				d.logger.Warn("failed to build GCE instances client", zap.Error(err))
-			} else {
-				defer instClient.Close()
+		if len(d.labelKeyRegexes) == 0 {
+			return res, conventions.SchemaURL, errs
+		}
 
-				projectID, perr := d.detector.ProjectID()
-				zone, _, zerr := d.detector.GCEAvailabilityZoneAndRegion()
-				name, nerr := d.detector.GCEInstanceName()
-				if perr != nil || zerr != nil || nerr != nil {
-					d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
-					return res, conventions.SchemaURL, nil
-				} else {
-					labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
+		projectID, perr := d.detector.ProjectID()
+		zone, _, zerr := d.detector.GCEAvailabilityZoneAndRegion()
+		name, nerr := d.detector.GCEInstanceName()
+		if perr != nil || zerr != nil || nerr != nil {
+			d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
+			return res, conventions.SchemaURL, errs
+		}
 
-					if ferr != nil {
-						d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
-						return res, conventions.SchemaURL, nil
-					} else if len(labels) > 0 {
-						attrs := res.Attributes()
-						for key, val := range labels {
-							attrs.PutStr(GCElabelPrefix+key, val)
-						}
-					}
-				}
+		instClient, cerr := d.gceClientBuilder.buildClient(ctx)
+		if cerr != nil {
+			d.logger.Warn("failed to build GCE instances client", zap.Error(cerr))
+			return res, conventions.SchemaURL, errs
+		}
+		defer instClient.Close()
+
+		labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
+		if ferr != nil {
+			d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
+			return res, conventions.SchemaURL, errs
+		}
+
+		if len(labels) > 0 {
+			attrs := res.Attributes()
+			for k, v := range labels {
+				attrs.PutStr(GCElabelPrefix+k, v)
 			}
 		}
 
