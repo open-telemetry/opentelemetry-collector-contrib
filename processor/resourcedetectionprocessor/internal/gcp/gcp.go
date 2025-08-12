@@ -179,9 +179,9 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			} else {
 				defer instClient.Close()
 
-				projectID, perr := metadata.ProjectID()
-				zone, zerr := metadata.Zone()
-				name, nerr := metadata.InstanceName()
+				projectID, perr := d.detector.ProjectID()
+				zone, _, zerr := d.detector.GCEAvailabilityZoneAndRegion()
+				name, nerr := d.detector.GCEInstanceName()
 				if perr != nil || zerr != nil || nerr != nil {
 					d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
 				} else {

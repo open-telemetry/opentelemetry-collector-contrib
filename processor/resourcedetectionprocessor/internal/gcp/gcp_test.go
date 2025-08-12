@@ -6,17 +6,49 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
+	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
+
+type mockInstancesClient struct {
+	labels map[string]string
+	err    error
+}
+
+func (m *mockInstancesClient) Get(ctx context.Context, req *computepb.GetInstanceRequest) (*computepb.Instance, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &computepb.Instance{Labels: m.labels}, nil
+}
+func (m *mockInstancesClient) Close() error { return nil }
+
+type mockInstancesBuilder struct {
+	client instancesAPI
+	err    error
+}
+
+func (b *mockInstancesBuilder) buildClient(ctx context.Context) (instancesAPI, error) {
+	return b.client, b.err
+}
+
+func mustRe(p string) *regexp.Regexp {
+	r, err := regexp.Compile(p)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
 
 func TestDetect(t *testing.T) {
 	// Set this before all tests to ensure metadata.onGCE() returns true
@@ -491,6 +523,79 @@ type fakeGCPDetector struct {
 	gcpBareMetalSolutionInstanceID  string
 	gcpBareMetalSolutionCloudRegion string
 	gcpBareMetalSolutionProjectID   string
+}
+
+func TestGCELabels(t *testing.T) {
+	tests := []struct {
+		name            string
+		instanceLabels  map[string]string
+		instanceErr     error
+		labelRegexes    []*regexp.Regexp
+		expectedPresent map[string]string
+		expectedAbsent  []string
+	}{
+		{
+			name: "success case two labels matched",
+			instanceLabels: map[string]string{
+				"tag1":  "val1",
+				"tag2":  "val2",
+				"other": "nope",
+			},
+			labelRegexes: []*regexp.Regexp{mustRe("^tag1$"), mustRe("^tag2$")},
+			expectedPresent: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			expectedAbsent: []string{"other"},
+		},
+		{
+			name:            "error case in Get",
+			instanceErr:     errors.New("compute API is not available"),
+			labelRegexes:    []*regexp.Regexp{mustRe("^tag1$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"tag1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Force metadata.OnGCE() to return true without a real metadata server.
+			t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
+
+			d := newTestDetector(&fakeGCPDetector{
+				projectID:           "test-proj",
+				cloudPlatform:       gcp.GCE,
+				gceAvailabilityZone: "us-central1-a",
+				gceRegion:           "us-central1",
+				gcpGceInstanceName:  "test-vm",
+				gceHostID:           "1234567890",
+				gceHostName:         "test-vm",
+				gceHostType:         "n2-standard-2",
+			})
+
+			d.labelKeyRegexes = tt.labelRegexes
+			d.gceClientBuilder = &mockInstancesBuilder{
+				client: &mockInstancesClient{
+					labels: tt.instanceLabels,
+					err:    tt.instanceErr,
+				},
+			}
+
+			res, _, err := d.Detect(context.Background())
+			assert.NoError(t, err)
+
+			attrs := res.Attributes()
+			for k, v := range tt.expectedPresent {
+				val, ok := attrs.Get(GCElabelPrefix + k)
+				assert.True(t, ok, "expected %s to be present", k)
+				assert.Equal(t, v, val.Str())
+			}
+			for _, k := range tt.expectedAbsent {
+				_, ok := attrs.Get(GCElabelPrefix + k)
+				assert.False(t, ok, "did not expect %s to be present", k)
+			}
+		})
+	}
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
