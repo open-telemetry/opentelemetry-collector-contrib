@@ -214,7 +214,7 @@ func TestLoadConfig(t *testing.T) {
 				MessageMarking: MessageMarking{
 					After:            true,
 					OnError:          true,
-					OnPermanentError: true,
+					OnPermanentError: false,
 				},
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,

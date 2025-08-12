@@ -74,7 +74,7 @@ kafka/message_marking:
   message_marking:
     after: true
     on_error: true
-    on_permanent_error: true
+    on_permanent_error: false
 kafka/message_marking_not_specified:
   metrics:
     topic: otlp_metrics
