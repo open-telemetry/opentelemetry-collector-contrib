@@ -45,7 +45,8 @@ func TestIsGzipFile(t *testing.T) {
 	tempWrite.Close()
 
 	// set offset to start
-	temp.Seek(0, io.SeekStart)
+	_, err = temp.Seek(0, io.SeekStart)
+	require.NoError(t, err)
 
 	require.True(t, IsGzipFile(temp))
 }
