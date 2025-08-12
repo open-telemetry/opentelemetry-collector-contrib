@@ -23,7 +23,7 @@ resourceLogs:
                   stringValue: executing
               - key: db.query.text
                 value:
-                  stringValue: SELECT soh.SalesOrderID, soh.OrderDate, c.CustomerID, p.Name AS ProductName, sod.OrderQty, sod.LineTotal FROM salesorderheader soh JOIN salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID JOIN product p ON sod.ProductID = p.ProductID JOIN customer c ON soh.CustomerID = c.CustomerID ORDER BY soh.OrderDate DESC
+                  stringValue: SELECT soh.SalesOrderID, soh.OrderDate, c.CustomerID, p.Name, sod.OrderQty, sod.LineTotal FROM salesorderheader soh JOIN salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID JOIN product p ON sod.ProductID = p.ProductID JOIN customer c ON soh.CustomerID = c.CustomerID ORDER BY soh.OrderDate DESC
               - key: mysql.events_statements_current.digest
                 value:
                   stringValue: aaaaaa
@@ -50,9 +50,7 @@ resourceLogs:
                   intValue: "1234"
             body: {}
             eventName: db.server.query_sample
-            spanId: ""
-            timeUnixNano: "1751033212422664000"
-            traceId: ""
+            timeUnixNano: "1754284840912240000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest
