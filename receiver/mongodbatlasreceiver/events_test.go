@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -38,14 +39,14 @@ func TestStartAndShutdown(t *testing.T) {
 			desc: "valid config",
 			getConfig: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Events = &EventsConfig{
+				cfg.Events = configoptional.Some(EventsConfig{
 					Projects: []*ProjectConfig{
 						{
 							Name: testProjectName,
 						},
 					},
 					PollInterval: time.Minute,
-				}
+				})
 				return cfg
 			},
 		},
@@ -73,13 +74,13 @@ func TestStartAndShutdown(t *testing.T) {
 
 func TestContextDone(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: testProjectName,
 			},
 		},
-	}
+	})
 	sink := &consumertest.LogsSink{}
 	r, er := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	if er != nil {
@@ -105,7 +106,7 @@ func TestContextDone(t *testing.T) {
 
 func TestPoll(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: testProjectName,
@@ -117,7 +118,7 @@ func TestPoll(t *testing.T) {
 			},
 		},
 		PollInterval: time.Second,
-	}
+	})
 
 	sink := &consumertest.LogsSink{}
 	r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
@@ -151,7 +152,7 @@ func TestPoll(t *testing.T) {
 
 func TestProjectGetFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: "fake-project",
@@ -163,7 +164,7 @@ func TestProjectGetFailure(t *testing.T) {
 			},
 		},
 		PollInterval: time.Second,
-	}
+	})
 
 	sink := &consumertest.LogsSink{}
 	r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)

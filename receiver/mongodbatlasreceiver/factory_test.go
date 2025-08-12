@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -42,14 +43,14 @@ func TestBadAlertsReceiver(t *testing.T) {
 func TestBadStorageExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.StorageID = &component.ID{}
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: testProjectName,
 			},
 		},
 		PollInterval: time.Minute,
-	}
+	})
 
 	params := receivertest.NewNopSettings(metadata.Type)
 	lr, err := createCombinedLogReceiver(context.Background(), params, cfg, consumertest.NewNop())

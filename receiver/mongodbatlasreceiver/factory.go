@@ -61,7 +61,7 @@ func createCombinedLogReceiver(
 ) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
 
-	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil {
+	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && !cfg.Events.HasValue() {
 		return nil, errors.New("one of 'alerts', 'events', or 'logs' must be enabled")
 	}
 
@@ -95,7 +95,7 @@ func createCombinedLogReceiver(
 		}
 	}
 
-	if cfg.Events != nil {
+	if cfg.Events.HasValue() {
 		recv.events, err = newEventsReceiver(params, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Events Receiver instance: %w", err)
