@@ -311,6 +311,10 @@ func TestHistogram(t *testing.T) {
 			Description: "Histogram: round 4 - instance adjusted based on round 3",
 			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12}))),
 			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t2, t4, bounds0, []uint64{7, 4, 2, 12}))),
+		}, {
+			Description: "Histogram: round 5 - instance reset (cause of a bucket value going down without sum going down)",
+			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t5, t5, bounds0, []uint64{7, 4, 20, 11}))),
+			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t4, t5, bounds0, []uint64{7, 4, 20, 11}))),
 		},
 	}
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
@@ -395,6 +399,10 @@ func TestExponentialHistogram(t *testing.T) {
 			Description: "Exponential Histogram: round 4 - instance adjusted based on round 3",
 			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t4, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
 			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t2, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
+		}, {
+			Description: "Exponential Histogram: round 4 - instance reset again",
+			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t5, t5, 3, 1, 0, []uint64{}, -2, []uint64{6, 3, 1, 11}))),
+			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t4, t5, 3, 1, 0, []uint64{}, -2, []uint64{6, 3, 1, 11}))),
 		},
 	}
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
@@ -905,7 +913,6 @@ func TestJobGC(t *testing.T) {
 	// ensure that at least one jobsMap.gc() completed
 	time.Sleep(gcInterval)
 	ma.referenceCache.MaybeGC()
-	ma.previousValueCache.MaybeGC()
 	time.Sleep(5 * time.Second) // Wait for the goroutine to complete.
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	testhelper.RunScript(t, ma, job1Script2, "0")
