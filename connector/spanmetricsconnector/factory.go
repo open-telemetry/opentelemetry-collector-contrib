@@ -73,7 +73,11 @@ func createDefaultConfig() component.Config {
 
 func createTracesToMetricsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
 	instanceID, ok := params.Resource.Attributes().Get(string(conventions.ServiceInstanceIDKey))
-	// this never happen, just for test
+	// This never happens: the OpenTelemetry Collector automatically adds this attribute.
+	// See: https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/internal/resource/config.go#L31
+	//
+	// The fallback logic below exists solely for lifecycle tests in generated_component_test.go,
+	// where the mocked telemetry setting does not include the service.instance.id attribute.
 	if !ok {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = pcommon.NewValueStr(instanceUUID.String())
