@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.131.0
-	github.com/redis/go-redis/v9 v9.12.0
+	github.com/redis/go-redis/v9 v9.12.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	go.opentelemetry.io/collector/component v1.37.1-0.20250811224948-302af250fdf1
