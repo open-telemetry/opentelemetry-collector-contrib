@@ -743,7 +743,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			clientPort = 0
 		}
 
-		queryContext := propagator.Extract(context.Background(), propagation.MapCarrier{
+		queryContext := propagator.Extract(ctx, propagation.MapCarrier{
 			"traceparent": row[action],
 		})
 
