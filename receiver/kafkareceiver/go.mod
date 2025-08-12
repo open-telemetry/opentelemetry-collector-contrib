@@ -44,7 +44,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.37.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.28.0
 )
 
 require (
