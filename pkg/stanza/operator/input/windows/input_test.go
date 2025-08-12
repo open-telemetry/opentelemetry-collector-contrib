@@ -107,7 +107,7 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
@@ -132,7 +132,7 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
 	}
 
