@@ -479,7 +479,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 			markAfter:           true,
 			markErrors:          true,
 			markPermanentErrors: false,
-			errorShouldRestart:  true,
+			errorShouldRestart:  true, // error is permanent, so it isn't marked and will cause a restart
 		},
 		"mark_after_permanent_only": {
 			markAfter:           true,
