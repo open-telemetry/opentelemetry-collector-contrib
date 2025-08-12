@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           false,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         false,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: false,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            true,
 					Separator:          "!",
 					Include:            []string{"blep"},
@@ -116,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: true,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -131,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -148,7 +148,7 @@ func TestLoadConfig(t *testing.T) {
 						Prefixes:  []string{"pattern4"},
 					},
 				},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -163,7 +163,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -171,7 +171,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{true, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -186,7 +186,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -194,7 +194,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{true, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -217,7 +217,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{true, SpanIDAttributeName},
@@ -232,7 +232,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -240,7 +240,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
@@ -255,7 +255,7 @@ func TestLoadConfig(t *testing.T) {
 				AddCloudNamespace:           true,
 				TranslateAttributes:         true,
 				TranslateTelegrafAttributes: true,
-				NestAttributes: &NestingProcessorConfig{
+				NestAttributes: NestingProcessorConfig{
 					Enabled:            false,
 					Separator:          ".",
 					Include:            []string{},
@@ -263,7 +263,7 @@ func TestLoadConfig(t *testing.T) {
 					SquashSingleValues: false,
 				},
 				AggregateAttributes: []aggregationPair{},
-				LogFieldsAttributes: &logFieldAttributesConfig{
+				LogFieldsAttributes: logFieldAttributesConfig{
 					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
 					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
 					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
