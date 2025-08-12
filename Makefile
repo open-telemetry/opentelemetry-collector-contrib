@@ -518,7 +518,7 @@ update-otel:$(MULTIMOD)
 	# Tidy again after generating code
 	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
-	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
+	git add . && git commit -s -m "[chore] mod and toolchain tidy" --allow-empty ; \
 
 .PHONY: otel-from-tree
 otel-from-tree:
