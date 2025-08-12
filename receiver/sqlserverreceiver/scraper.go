@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -830,44 +831,6 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column s
 	return true, 0
 }
 
-type item struct {
-	row      sqlquery.StringMap
-	priority int64
-	index    int
-}
-
-// reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-type priorityQueue []*item
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].priority > pq[j].priority
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *priorityQueue) Push(x any) {
-	n := len(*pq)
-	item := x.(*item)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // don't stop the GC from reclaiming the item eventually
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
-}
-
 // sortRows sorts the rows based on the `values` slice in descending order and return the first M(M=maximum) rows
 // Input: (row: [row1, row2, row3], values: [100, 10, 1000], maximum: 2
 // Expected Output: (row: [row3, row1]
@@ -880,20 +843,20 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 		maximum <= 0 {
 		return []sqlquery.StringMap{}
 	}
-	pq := make(priorityQueue, len(rows))
+	pq := make(priorityqueue.PriorityQueue[sqlquery.StringMap, int64], len(rows))
 	for i, row := range rows {
 		value := values[i]
-		pq[i] = &item{
-			row:      row,
-			priority: value,
-			index:    i,
+		pq[i] = &priorityqueue.QueueItem[sqlquery.StringMap, int64]{
+			Value:    row,
+			Priority: value,
+			Index:    i,
 		}
 	}
 	heap.Init(&pq)
 
 	for pq.Len() > 0 && len(results) < int(maximum) {
-		item := heap.Pop(&pq).(*item)
-		results = append(results, item.row)
+		item := heap.Pop(&pq).(*priorityqueue.QueueItem[sqlquery.StringMap, int64])
+		results = append(results, item.Value)
 	}
 	return results
 }

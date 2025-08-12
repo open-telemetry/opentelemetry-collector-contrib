@@ -24,7 +24,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: equinix-bare-metal
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:

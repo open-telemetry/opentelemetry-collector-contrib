@@ -5,35 +5,52 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/binary"
 	"encoding/json"
-	"math"
+	"io"
+	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
-	"github.com/solarwinds/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
-	jsonOutputFile      = "solarwinds-apm-settings.json"
-	grpcContextDeadline = 1 * time.Second
+	jsonOutputFile       = "solarwinds-apm-settings.json"
+	httpsContextDeadline = 10 * time.Second
 )
+
+type arguments struct {
+	BucketCapacity               float64 `json:"BucketCapacity"`
+	BucketRate                   float64 `json:"BucketRate"`
+	TriggerRelaxedBucketCapacity float64 `json:"TriggerRelaxedBucketCapacity"`
+	TriggerRelaxedBucketRate     float64 `json:"TriggerRelaxedBucketRate"`
+	TriggerStrictBucketCapacity  float64 `json:"TriggerStrictBucketCapacity"`
+	TriggerStrictBucketRate      float64 `json:"TriggerStrictBucketRate"`
+}
+type setting struct {
+	Value     int64     `json:"value"`
+	Flags     string    `json:"flags"`
+	Timestamp int64     `json:"timestamp"`
+	TTL       int64     `json:"ttl"`
+	Arguments arguments `json:"arguments"`
+}
+
+type settingWithWarning struct {
+	setting
+	Warning string `json:"warning"`
+}
 
 type solarwindsapmSettingsExtension struct {
 	config            *Config
 	cancel            context.CancelFunc
-	conn              *grpc.ClientConn
-	client            collectorpb.TraceCollectorClient
 	telemetrySettings component.TelemetrySettings
+	client            *http.Client
+	request           *http.Request
 }
 
 func newSolarwindsApmSettingsExtension(extensionCfg *Config, settings extension.Settings) (extension.Extension, error) {
@@ -48,16 +65,26 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	extension.telemetrySettings.Logger.Info("starting up solarwinds apm settings extension")
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
-	systemCertPool, err := x509.SystemCertPool()
+	hostname, err := os.Hostname()
 	if err != nil {
 		return err
 	}
-	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, configgrpc.WithGrpcDialOption(grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool}))))
+	serviceName := resolveServiceNameBestEffort()
+	keyArr := strings.Split(extension.config.Key, ":")
+	if len(keyArr) == 2 {
+		serviceName = keyArr[1]
+	}
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	httpClientConfig.DisableKeepAlives = true
+	extension.client, err = httpClientConfig.ToClient(ctx, host, extension.telemetrySettings)
 	if err != nil {
 		return err
 	}
-	extension.telemetrySettings.Logger.Info("created a gRPC client", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
-	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
+	extension.request, err = http.NewRequest(http.MethodGet, "https://"+extension.config.Endpoint+"/v1/settings/"+serviceName+"/"+hostname, http.NoBody)
+	if err != nil {
+		return err
+	}
+	extension.request.Header.Add("Authorization", "Bearer "+keyArr[0])
 
 	outputFile := path.Join(os.TempDir(), jsonOutputFile)
 	// initial refresh
@@ -85,98 +112,54 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 	if extension.cancel != nil {
 		extension.cancel()
 	}
-	if extension.conn != nil {
-		return extension.conn.Close()
-	}
 	return nil
 }
 
 func refresh(extension *solarwindsapmSettingsExtension, filename string) {
-	extension.telemetrySettings.Logger.Info("time to refresh", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
-	hostname, err := os.Hostname()
-	if err != nil {
-		extension.telemetrySettings.Logger.Error("unable to call os.Hostname()", zap.Error(err))
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), grpcContextDeadline)
+	extension.telemetrySettings.Logger.Info("time to refresh", zap.String("url", extension.request.URL.String()))
+	ctx, cancel := context.WithTimeout(context.Background(), httpsContextDeadline)
 	defer cancel()
-
-	request := &collectorpb.SettingsRequest{
-		ApiKey: extension.config.Key,
-		Identity: &collectorpb.HostID{
-			Hostname: hostname,
-		},
-		ClientVersion: "2",
-	}
-	response, err := extension.client.GetSettings(ctx, request)
+	req := extension.request.WithContext(ctx)
+	resp, err := extension.client.Do(req)
 	if err != nil {
-		extension.telemetrySettings.Logger.Error("unable to get settings", zap.String("endpoint", extension.config.ClientConfig.Endpoint), zap.Error(err))
+		extension.telemetrySettings.Logger.Error("unable to send request", zap.Error(err))
 		return
 	}
-	switch result := response.GetResult(); result {
-	case collectorpb.ResultCode_OK:
-		if response.GetWarning() != "" {
-			extension.telemetrySettings.Logger.Warn("GetSettings succeed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			extension.telemetrySettings.Logger.Error("unable to close response body", zap.Error(closeErr))
 		}
-		var settings []map[string]any
-		for _, item := range response.GetSettings() {
-			setting := make(map[string]any)
-			setting["flags"] = string(item.GetFlags())
-			setting["timestamp"] = item.GetTimestamp()
-			setting["value"] = item.GetValue()
-			arguments := make(map[string]any)
-			if value, ok := item.Arguments["BucketCapacity"]; ok {
-				arguments["BucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-			}
-			if value, ok := item.Arguments["BucketRate"]; ok {
-				arguments["BucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-			}
-			if value, ok := item.Arguments["TriggerRelaxedBucketCapacity"]; ok {
-				arguments["TriggerRelaxedBucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-			}
-			if value, ok := item.Arguments["TriggerRelaxedBucketRate"]; ok {
-				arguments["TriggerRelaxedBucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-			}
-			if value, ok := item.Arguments["TriggerStrictBucketCapacity"]; ok {
-				arguments["TriggerStrictBucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-			}
-			if value, ok := item.Arguments["TriggerStrictBucketRate"]; ok {
-				arguments["TriggerStrictBucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-			}
-			if value, ok := item.Arguments["MetricsFlushInterval"]; ok {
-				arguments["MetricsFlushInterval"] = int32(binary.LittleEndian.Uint32(value))
-			}
-			if value, ok := item.Arguments["MaxTransactions"]; ok {
-				arguments["MaxTransactions"] = int32(binary.LittleEndian.Uint32(value))
-			}
-			if value, ok := item.Arguments["MaxCustomMetrics"]; ok {
-				arguments["MaxCustomMetrics"] = int32(binary.LittleEndian.Uint32(value))
-			}
-			if value, ok := item.Arguments["EventsFlushInterval"]; ok {
-				arguments["EventsFlushInterval"] = int32(binary.LittleEndian.Uint32(value))
-			}
-			if value, ok := item.Arguments["ProfilingInterval"]; ok {
-				arguments["ProfilingInterval"] = int32(binary.LittleEndian.Uint32(value))
-			}
-			setting["arguments"] = arguments
-			setting["ttl"] = item.GetTtl()
-			settings = append(settings, setting)
-		}
-		if content, err := json.Marshal(settings); err != nil {
-			extension.telemetrySettings.Logger.Error("unable to marshal setting JSON[] byte from settings", zap.Error(err))
+	}()
+	if resp.StatusCode != http.StatusOK {
+		extension.telemetrySettings.Logger.Error("received non-OK HTTP status", zap.Int("StatusCode", resp.StatusCode))
+		return
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		extension.telemetrySettings.Logger.Error("unable to read response body", zap.Error(err))
+		return
+	}
+	var settingObj settingWithWarning
+	err = json.Unmarshal(body, &settingObj)
+	if err != nil {
+		extension.telemetrySettings.Logger.Error("unable to unmarshal setting", zap.Error(err))
+		return
+	}
+	var settings []setting
+	settings = append(settings, settingObj.setting)
+	if content, err := json.Marshal(settings); err != nil {
+		extension.telemetrySettings.Logger.Error("unable to marshal setting JSON[] byte from settings", zap.Error(err))
+	} else {
+		if err := os.WriteFile(filename, content, 0o600); err != nil {
+			extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
 		} else {
-			if err := os.WriteFile(filename, content, 0o600); err != nil {
-				extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
+			if settingObj.Warning != "" {
+				extension.telemetrySettings.Logger.Warn(filename + " is refreshed (soft disabled)")
 			} else {
-				if response.GetWarning() != "" {
-					extension.telemetrySettings.Logger.Warn(filename + " is refreshed (soft disabled)")
-				} else {
-					extension.telemetrySettings.Logger.Info(filename + " is refreshed")
-				}
-				extension.telemetrySettings.Logger.Info(string(content))
+				extension.telemetrySettings.Logger.Info(filename + " is refreshed")
 			}
+			extension.telemetrySettings.Logger.Info(string(content))
 		}
-	default:
-		extension.telemetrySettings.Logger.Warn("GetSettings failed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
 	}
 }

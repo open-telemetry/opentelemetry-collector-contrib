@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
@@ -269,7 +270,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		tempBlksWrittenColumnName:   {finalConverter: convertToInt},
 	}
 
-	pq := make(priorityQueue, 0)
+	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0)
 
 	for i, row := range rows {
 		queryID := row[dbAttributePrefix+queryidColumnName]
@@ -308,10 +309,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		if row[dbAttributePrefix+totalExecTimeColumnName] == 0.0 {
 			continue
 		}
-		item := item{
-			row:      row,
-			priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
-			index:    i,
+		item := priorityqueue.QueueItem[map[string]any, float64]{
+			Value:    row,
+			Priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
+			Index:    i,
 		}
 		pq.Push(&item)
 	}
@@ -320,12 +321,12 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	explained := int64(0)
 	count := 0
 	for pq.Len() > 0 && count < int(topNQuery) {
-		item := heap.Pop(&pq).(*item)
-		query := item.row[QueryTextAttributeName].(string)
-		queryID := item.row[dbAttributePrefix+queryidColumnName].(string)
+		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
+		query := item.Value[QueryTextAttributeName].(string)
+		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
-			database := item.row[DatabaseAttributeName].(string)
+			database := item.Value[DatabaseAttributeName].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(query, queryID, logger)
@@ -347,20 +348,20 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			context.Background(),
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			item.row[DatabaseAttributeName].(string),
+			item.Value[DatabaseAttributeName].(string),
 			query,
-			item.row[dbAttributePrefix+callsColumnName].(int64),
-			item.row[dbAttributePrefix+rowsColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksDirtiedColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksHitColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksReadColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksWrittenColumnName].(int64),
-			item.row[dbAttributePrefix+tempBlksReadColumnName].(int64),
-			item.row[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
+			item.Value[dbAttributePrefix+callsColumnName].(int64),
+			item.Value[dbAttributePrefix+rowsColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksDirtiedColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksHitColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksReadColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksWrittenColumnName].(int64),
+			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
+			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
-			item.row[dbAttributePrefix+"rolname"].(string),
-			item.row[dbAttributePrefix+totalExecTimeColumnName].(float64),
-			item.row[dbAttributePrefix+totalPlanTimeColumnName].(float64),
+			item.Value[dbAttributePrefix+"rolname"].(string),
+			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
+			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
 		)
 		count++
@@ -695,43 +696,4 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Lock()
 	r.activityMap = activityByDB
 	r.Unlock()
-}
-
-// reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-
-type item struct {
-	row      map[string]any
-	priority float64
-	index    int
-}
-
-type priorityQueue []*item
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].priority > pq[j].priority
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *priorityQueue) Push(x any) {
-	n := len(*pq)
-	item := x.(*item)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // don't stop the GC from reclaiming the item eventually
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
 }
