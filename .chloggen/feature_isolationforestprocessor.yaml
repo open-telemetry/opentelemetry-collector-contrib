@@ -25,4 +25,3 @@ subtext: It emits an anomaly score (iforest.anomaly_score) and/or a boolean flag
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
 change_logs: []
-
