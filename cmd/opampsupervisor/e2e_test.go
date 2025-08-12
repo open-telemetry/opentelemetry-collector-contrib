@@ -141,6 +141,9 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnected
 	callbacks.OnConnected = func(ctx context.Context, conn types.Connection) {
+		if didShutdown.Load() {
+			return
+		}
 		if onConnectedFunc != nil {
 			onConnectedFunc(ctx, conn)
 		}
@@ -150,6 +153,9 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionClose
 	callbacks.OnConnectionClose = func(conn types.Connection) {
+		if didShutdown.Load() {
+			return
+		}
 		isAgentConnected.Store(false)
 		connectedChan <- false
 		if onConnectionCloseFunc != nil {
@@ -174,6 +180,12 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			err := s.Stop(context.Background())
 			assert.NoError(t, err)
 			httpSrv.Close()
+			// Ensure that the connectedChan is drained and closed.
+			select {
+			case <-connectedChan:
+			default:
+			}
+			close(connectedChan)
 		}
 		didShutdown.Store(true)
 	}
@@ -2254,6 +2266,83 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 
 		return n != 0
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+}
+
+func TestSupervisorHealthCheckServer(t *testing.T) {
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{},
+	)
+
+	randomPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
+		"url":      server.addr,
+		"endpoint": fmt.Sprintf("localhost:%d", randomPort),
+	})
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Wait for the health check server to start
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", randomPort))
+		if err != nil {
+			t.Logf("Failed health check request: %s", err)
+			return false
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
+}
+
+func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
+	healthcheckPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
+		"url":      "badserver:8080",
+		"endpoint": fmt.Sprintf("localhost:%d", healthcheckPort),
+	})
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	// Wait for the health check server to start
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", healthcheckPort))
+		if err != nil {
+			t.Logf("Failed health check request: %s", err)
+			return false
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
 }
 
 func findRandomPort() (int, error) {
