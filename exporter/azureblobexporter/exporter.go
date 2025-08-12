@@ -244,7 +244,7 @@ func (e *azureBlobExporter) consumeData(ctx context.Context, data []byte, signal
 		return fmt.Errorf("unsupported signal type: %v", signal)
 	}
 
-	if e.config.AppendBlob != nil && e.config.AppendBlob.Enabled {
+	if e.config.AppendBlob.Enabled {
 		// Add separator if configured
 		if e.config.AppendBlob.Separator != "" {
 			data = append(data, []byte(e.config.AppendBlob.Separator)...)
