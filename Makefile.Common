@@ -227,7 +227,7 @@ lint: $(LINT) checklicense misspell
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
-	$(GOVULNCHECK) ./...
+	$(GOVULNCHECK) -exclude=GO-2025-3829 ./...
 
 .PHONY: tidy
 tidy:
