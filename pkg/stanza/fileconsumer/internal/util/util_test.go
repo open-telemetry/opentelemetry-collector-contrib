@@ -36,7 +36,6 @@ func TestMapCopy(t *testing.T) {
 }
 
 func TestIsGzipFile(t *testing.T) {
-
 	temp, err := os.Create(filepath.Join(t.TempDir(), "test.log"))
 	require.NoError(t, err)
 
