@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("macosunifiedlogencoding")
+	Type      = component.MustNewType("macosunifiedlogencoding")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/macosunifiedloggingencodingextension"
 )
 
 const (

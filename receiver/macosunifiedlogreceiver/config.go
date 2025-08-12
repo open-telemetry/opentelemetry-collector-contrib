@@ -38,8 +38,8 @@ func (cfg *Config) getFileConsumerConfig() fileconsumer.Config {
 
 // Validate checks the receiver configuration is valid
 func (cfg Config) Validate() error {
-	if cfg.Encoding != "macosunifiedlogencoding" {
-		return errors.New("encoding must be macosunifiedlogencoding for macOS Unified Logging receiver")
+	if cfg.Encoding == "" {
+		return errors.New("encoding_extension must be specified for macOS Unified Logging receiver")
 	}
 
 	return nil

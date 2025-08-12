@@ -47,12 +47,12 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810 h1:2KxQ9sorx0MHM1yo3R6wDgVKgSvi7Xm16f5EavLgskc=
 go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810/go.mod h1:wWAIsxdTedDsIuQoBNNEAtAqUBVujUGW32ODn6ZUY1c=
-go.opentelemetry.io/collector/component/componenttest v0.131.0 h1:pvBENFUdOSIikdIExUP2+2B4K3LbZIqdUI7Kh7jNGxI=
-go.opentelemetry.io/collector/component/componenttest v0.131.0/go.mod h1:5RdiTb/UaiCp1RvKH2+B6SyggGNvcY8Yd5799lJcEe4=
+go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250801020258-8b73477b9810 h1:W7KKg0OcFylqxDVr2V7dXii0GSQIseXugT/zZ4AoLSM=
+go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250801020258-8b73477b9810/go.mod h1:5Ie6HmsvCqrNE4moAuqlyEqk8jGHo94GVgb+93hc9Bo=
 go.opentelemetry.io/collector/extension v1.37.1-0.20250801020258-8b73477b9810 h1:5009T7j2z27Suy27ropP1CxVtQs784pqeH2goV7Hhc8=
 go.opentelemetry.io/collector/extension v1.37.1-0.20250801020258-8b73477b9810/go.mod h1:/XnPggEcpvvH1XlbKCvnZsYQuUhMzDKhYnAg+koMQBE=
-go.opentelemetry.io/collector/extension/extensiontest v0.131.0 h1:nd4SFLoCiwcbaNYkunIUl36BTMHKyxyF6jFD1p8wIUo=
-go.opentelemetry.io/collector/extension/extensiontest v0.131.0/go.mod h1:GyPzWLgXr8avCoo5/MHtiY8oSICHu/WKyuIFMOPPTY4=
+go.opentelemetry.io/collector/extension/extensiontest v0.131.1-0.20250801020258-8b73477b9810 h1:tl2Pdmk7hxDZ4vMA/RA2QuX42sK7RY29DGIbVIcxQzw=
+go.opentelemetry.io/collector/extension/extensiontest v0.131.1-0.20250801020258-8b73477b9810/go.mod h1:HYaQHWAWqkRf5kAI2U8A5d63/d4xQYk8H/+5n9hs1j0=
 go.opentelemetry.io/collector/featuregate v1.37.1-0.20250801020258-8b73477b9810 h1:usOE44zAtL94CahF8qIoij91ZU2LymNMmCTgjSP6yGY=
 go.opentelemetry.io/collector/featuregate v1.37.1-0.20250801020258-8b73477b9810/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/internal/telemetry v0.131.1-0.20250801020258-8b73477b9810 h1:uTEiXt/+oNJUFwVK39i9HRlLeczCp+rmtMzwayn6Hh8=

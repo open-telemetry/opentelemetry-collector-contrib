@@ -194,35 +194,71 @@ func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, toke
 		totalSize += len(token)
 	}
 
-	// TEMPORARY: Skip encoding and create a simple log entry for each file read
-	logs := plog.NewLogs()
+	// Process each token (file chunk) through the encoding extension
+	var allLogs plog.Logs
+	totalLogRecords := 0
 
-	// Create a resource logs entry
-	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	resource := resourceLogs.Resource()
+	for i, token := range tokens {
+		r.set.Logger.Debug("Processing token", zap.Int("tokenIndex", i), zap.Int("tokenSize", len(token)))
 
-	// Add file metadata as resource attributes
-	resource.Attributes().PutStr("log.file.path", filePath)
-	resource.Attributes().PutStr("log.file.format", "macos_unified_log_tracev3")
+		// Use the encoding extension to decode the binary token
+		decodedLogs, err := r.encodingExt.UnmarshalLogs(token)
+		if err != nil {
+			r.set.Logger.Error("Failed to decode token with encoding extension",
+				zap.Error(err), zap.Int("tokenIndex", i), zap.Int("tokenSize", len(token)))
+			continue
+		}
 
-	// Create a scope logs entry
-	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		// Add file metadata as resource attributes to all decoded logs
+		for j := 0; j < decodedLogs.ResourceLogs().Len(); j++ {
+			resourceLogs := decodedLogs.ResourceLogs().At(j)
+			resource := resourceLogs.Resource()
+			resource.Attributes().PutStr("log.file.path", filePath)
+			resource.Attributes().PutStr("log.file.format", "macos_unified_log_tracev3")
+		}
 
-	// Create a single log record for this file
-	logRecord := scopeLogs.LogRecords().AppendEmpty()
-	r.setLogRecordAttributes(&logRecord, totalSize, len(tokens))
+		// If this is the first token, initialize allLogs
+		if i == 0 {
+			allLogs = decodedLogs
+		} else {
+			// Append additional logs to the first set
+			for j := 0; j < decodedLogs.ResourceLogs().Len(); j++ {
+				decodedResourceLogs := decodedLogs.ResourceLogs().At(j)
+				decodedResourceLogs.CopyTo(allLogs.ResourceLogs().AppendEmpty())
+			}
+		}
 
-	// Set the log message with file information
-	logRecord.Body().SetStr(fmt.Sprintf("Read traceV3 file: %s (size: %d bytes, tokens: %d)", filePath, totalSize, len(tokens)))
+		totalLogRecords += decodedLogs.LogRecordCount()
+	}
 
-	// Send logs to the consumer
-	logRecordCount := logs.LogRecordCount()
-	err := r.consumer.ConsumeLogs(ctx, logs)
+	// If no logs were created, create a fallback entry
+	if totalLogRecords == 0 {
+		allLogs = plog.NewLogs()
+		resourceLogs := allLogs.ResourceLogs().AppendEmpty()
+		resource := resourceLogs.Resource()
+		resource.Attributes().PutStr("log.file.path", filePath)
+		resource.Attributes().PutStr("log.file.format", "macos_unified_log_tracev3")
+
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		logRecord := scopeLogs.LogRecords().AppendEmpty()
+		r.setLogRecordAttributes(&logRecord, totalSize, len(tokens))
+		logRecord.Body().SetStr(fmt.Sprintf("No logs decoded from traceV3 file: %s (size: %d bytes, tokens: %d)", filePath, totalSize, len(tokens)))
+		totalLogRecords = 1
+	}
+
+	// Send all decoded logs to the consumer
+	err := r.consumer.ConsumeLogs(ctx, allLogs)
 	if err != nil {
 		r.set.Logger.Error("Failed to consume logs", zap.Error(err))
 	}
 
-	r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", logRecordCount, err)
+	r.set.Logger.Info("Successfully processed traceV3 file",
+		zap.String("filePath", filePath),
+		zap.Int("totalSize", totalSize),
+		zap.Int("tokens", len(tokens)),
+		zap.Int("logRecords", totalLogRecords))
+
+	r.obsrecv.EndLogsOp(obsrecvCtx, "macos_unified_log", totalLogRecords, err)
 
 	return nil
 }

@@ -1,0 +1,31 @@
+---
+alwaysApply: false
+---
+## Primary Goal
+Develop the mac OS Unified Logging encoding extension at `/extension/encoding/macosunifiedloggingencodingextension`. The final benchmark for this encoding extension is parity with the rust-based unified logging parser.
+
+### Profile
+You are an expert Systems/Binary data engineer tasked with reverse-engineering a tool to decode macOS unified logging files. You will find all the resources you need in the following sections.
+
+### Relevant Information
+1. This encoding extension should replicate the functionality of the rust-based unified logging parser written by mandiant.
+    - This entire repository is cloned into `/local/macOSUnifiedLogging/rust_macos_decoder`.
+    - Reference this code often when iterating on the go encoding extension.
+2. I have created an archive of unified logs from my machine at `/local/macOSUnifiedLogging/system_logs.logarchive`.
+    - All testing should be done against this data, or a subset of it.
+3. Example desired output is located at `/local/macOSUnifiedLogging/output/rust_output.jsonl` and `/local/macOSUnifiedLogging/output/log_command_output.jsonl`
+    - The first file was produced by running the rust tool from point 1. against the syslog archive from point 2.
+    - The second file was produced by running `log show --archive local/macOSUnifiedLogging/system_logs.logarchive --style ndjson > local/macOSUnifiedLogging/output/log-command-output.jsonl`, using the built in `log` command on mac to decode the logs.
+    - These outputs will act as a benchmark to evaluate the progress of this new encoding extension as it approaches parity with the existing rust decoder.
+    - The log command output should be treated as the source-of-truth over the rust parser. If there is ever a mismatch in how things are named, formatted, etc., defer to the log command output.
+4. There is an open-source spec for the binary format used by Unified Logging, documented [here](https://github.com/libyal/dtformats/blob/main/documentation/Apple%20Unified%20Logging%20and%20Activity%20Tracing%20formats.asciidoc#tracev3_file_format).
+    - Utilize this as a secondary source, keeping in mind that it is best-effort with many unknowns.
+5. There is an existing implementation for the encoding, but feel free to re-work the structure and code to better match existing encodings and decode the relevant data.
+6. This encoding is designed to work with the `macosunifiedlogreceiver`. Feel free to make any necessary changes to the receiver.
+7. Use `make otelcontribcol` to build the collector.
+
+
+### Instructions
+1. Assist with a variety of tasks relevant to building out the encoding extension.
+2. Prioritize testing, leveraging the archive and rust tool to test the encoding.
+3. Keep each code iteration minimal, add comments to the code to explain each step.
