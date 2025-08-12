@@ -411,7 +411,7 @@ func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
 	createSettings := ts
 	config := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
 		RoutingKey: svcRoutingStr,
 	}
