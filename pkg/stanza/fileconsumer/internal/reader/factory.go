@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
@@ -62,7 +62,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		return nil, err
 	}
 	var filetype string
-	if filepath.Ext(file.Name()) == gzipExtension {
+	if util.IsGzipFile(file) {
 		filetype = gzipExtension
 	}
 
