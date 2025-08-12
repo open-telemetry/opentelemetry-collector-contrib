@@ -339,7 +339,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if len(c.TargetSystem) > 0 {
+	if c.TargetSystem != "" {
 		for _, system := range strings.Split(c.TargetSystem, ",") {
 			fmt.Println(system)
 			if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
