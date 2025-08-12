@@ -74,6 +74,7 @@ func (i *Input) defaultStartRemoteSession() error {
 		Server:   windows.StringToUTF16Ptr(i.remote.Server),
 		User:     windows.StringToUTF16Ptr(i.remote.Username),
 		Password: windows.StringToUTF16Ptr(i.remote.Password),
+		Domain:   windows.StringToUTF16Ptr(i.remote.Domain),
 	}
 
 	sessionHandle, err := evtOpenSession(EvtRPCLoginClass, &login, 0, 0)

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -106,7 +107,7 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
@@ -131,7 +132,7 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
 	}
 
@@ -147,6 +148,45 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	err := input.Start(persister)
 	assert.ErrorContains(t, err, "failed to open subscription for remote server")
 	assert.ErrorContains(t, err, "The specified channel could not be found")
+}
+
+func TestInputStart_RemoteSessionWithDomainPassesDomainToEvtOpenSession(t *testing.T) {
+	persister := testutil.NewMockPersister("")
+
+	// Mock EvtOpenSession to capture the login struct and verify Domain handling and then restore the original proc
+	originalOpenSessionProc := openSessionProc
+	var capturedDomain string
+	var domainWasNil bool
+	openSessionProc = MockProc{
+		call: func(a ...uintptr) (uintptr, uintptr, error) {
+			// a[1] is pointer to EvtRPCLogin
+			login := (*EvtRPCLogin)(unsafe.Pointer(a[1]))
+			if login.Domain == nil {
+				domainWasNil = true
+			} else {
+				capturedDomain = windows.UTF16PtrToString(login.Domain)
+			}
+			return 1, 0, nil
+		},
+	}
+
+	defer func() { openSessionProc = originalOpenSessionProc }()
+
+	input := newTestInput()
+	input.ignoreChannelErrors = true
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.pollInterval = 1 * time.Second
+	input.remote = RemoteConfig{
+		Server: "remote-server",
+		Domain: "remote-domain",
+	}
+
+	err := input.Start(persister)
+	require.NoError(t, err)
+
+	require.False(t, domainWasNil)
+	require.Equal(t, "remote-domain", capturedDomain)
 }
 
 // TestInputRead_RPCInvalidBound tests that the Input handles RPC_S_INVALID_BOUND errors properly
