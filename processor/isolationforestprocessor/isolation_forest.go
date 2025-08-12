@@ -6,7 +6,7 @@ package isolationforestprocessor // import "github.com/open-telemetry/openteleme
 
 import (
 	"math"
-	"math/rand"
+	rand "math/rand/v2"
 	"sync"
 	"time"
 )
@@ -85,11 +85,12 @@ type onlineForestStatistics struct {
 	ActiveTrees       int     // Number of active trees
 }
 
-// NewOnlineIsolationForest creates a new online isolation forest with the specified parameters.
+// newOnlineIsolationForest creates a new online isolation forest with the specified parameters.
 func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolationForest {
 	if maxDepth <= 0 {
 		maxDepth = int(math.Ceil(math.Log2(float64(windowSize))))
 	}
+	seed := uint64(time.Now().UnixNano())
 	forest := &onlineIsolationForest{
 		numTrees:     numTrees,
 		maxDepth:     maxDepth,
@@ -98,7 +99,7 @@ func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolati
 		dataWindow:   make([][]float64, windowSize),
 		scoreHistory: make([]float64, 0, windowSize),
 		threshold:    0.5, // Initial threshold, will adapt based on data
-		rng:          rand.New(rand.NewSource(time.Now().UnixNano())),
+		rng:          rand.New(rand.NewPCG(seed, seed^0x9e3779e97f4c7c15)),
 	}
 
 	// Initialize trees with minimal structure
@@ -257,7 +258,7 @@ func (oif *onlineIsolationForest) updateTreesIncremental(sample []float64) {
 
 	// Update a random subset of trees (e.g., 10% per update)
 	oif.rngMutex.Lock()
-	numTreesToUpdate := max(1, oif.numTrees/10)
+	numTreesToUpdate := maxInt(1, oif.numTrees/10)
 	treesToUpdate := oif.rng.Perm(oif.numTrees)[:numTreesToUpdate]
 	oif.rngMutex.Unlock()
 
@@ -322,7 +323,7 @@ func (oif *onlineIsolationForest) splitNode(node *onlineTreeNode, sample []float
 
 	// Choose a random feature to split on
 	oif.rngMutex.Lock()
-	featureIndex := oif.rng.Intn(len(sample))
+	featureIndex := oif.rng.IntN(len(sample))
 
 	// Get current window data to determine split value
 	oif.windowMutex.RLock()
@@ -400,7 +401,7 @@ func (tree *onlineIsolationTree) traverseNode(node *onlineTreeNode, sample []flo
 }
 
 // estimateRemainingPath estimates the remaining path length for a leaf node.
-func (tree *onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
+func (*onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
 	if sampleCount <= 1 {
 		return 0.0
 	}
@@ -476,7 +477,7 @@ func (oif *onlineIsolationForest) GetStatistics() onlineForestStatistics {
 }
 
 // Utility functions
-func max(a, b int) int {
+func maxInt(a, b int) int {
 	if a > b {
 		return a
 	}

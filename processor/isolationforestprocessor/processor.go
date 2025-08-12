@@ -109,14 +109,14 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 }
 
 // Start initializes the processor
-func (p *isolationForestProcessor) Start(ctx context.Context, host component.Host) error {
+func (p *isolationForestProcessor) Start(_ context.Context, _ component.Host) error {
 	p.logger.Info("Starting isolation forest processor")
 	// Any additional initialization logic can go here
 	return nil
 }
 
 // Shutdown gracefully stops the processor and cleans up resources.
-func (p *isolationForestProcessor) Shutdown(ctx context.Context) error {
+func (p *isolationForestProcessor) Shutdown(_ context.Context) error {
 	p.logger.Info("Shutting down isolation forest processor")
 
 	// Stop the update ticker
@@ -173,7 +173,7 @@ func (p *isolationForestProcessor) performModelUpdate() {
 
 // processFeatures is the core method that takes extracted features and runs them through
 // the isolation forest algorithm to compute anomaly scores and classifications.
-func (p *isolationForestProcessor) processFeatures(features map[string][]float64, attributes map[string]interface{}) (float64, bool, string) {
+func (p *isolationForestProcessor) processFeatures(features map[string][]float64, attributes map[string]any) (float64, bool, string) {
 	if len(features) == 0 {
 		return 0.0, false, ""
 	}
@@ -238,6 +238,11 @@ func (p *isolationForestProcessor) processFeatures(features map[string][]float64
 
 // processTraces processes trace telemetry
 func (p *isolationForestProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	// Honor cancellation/deadline; satisfies unparam + uses ctx.
+	if err := ctx.Err(); err != nil {
+		return td, err
+	}
+
 	// Process each resource scope and its spans
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
@@ -296,6 +301,10 @@ func (p *isolationForestProcessor) processTraces(ctx context.Context, td ptrace.
 
 // processMetrics processes metric telemetry
 func (p *isolationForestProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	// Honor cancellation/deadline; satisfies unparam + uses ctx.
+	if err := ctx.Err(); err != nil {
+		return md, err
+	}
 	// Process each resource metric and its data points
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
@@ -326,6 +335,11 @@ func (p *isolationForestProcessor) processMetrics(ctx context.Context, md pmetri
 
 // processLogs processes log telemetry
 func (p *isolationForestProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	// Honor cancellation/deadline; satisfies unparam + uses ctx.
+	if err := ctx.Err(); err != nil {
+		return ld, err
+	}
+
 	// Process each resource log and its records
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rl := ld.ResourceLogs().At(i)
@@ -454,7 +468,7 @@ func newTraceFeatureExtractor(features []string, logger *zap.Logger) *traceFeatu
 	}
 }
 
-func (tfe *traceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttrs map[string]interface{}) map[string][]float64 {
+func (tfe *traceFeatureExtractor) ExtractFeatures(span ptrace.Span, resourceAttrs map[string]any) map[string][]float64 {
 	features := make(map[string][]float64)
 
 	for _, featureName := range tfe.features {
@@ -517,7 +531,7 @@ func newMetricsFeatureExtractor(features []string, logger *zap.Logger) *metricsF
 	}
 }
 
-func (mfe *metricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, resourceAttrs map[string]interface{}) map[string][]float64 {
+func (mfe *metricsFeatureExtractor) ExtractFeatures(metric pmetric.Metric, _ map[string]any) map[string][]float64 {
 	features := make(map[string][]float64)
 
 	// Extract primary metric value based on type
@@ -583,7 +597,7 @@ func newLogsFeatureExtractor(features []string, logger *zap.Logger) *logsFeature
 	}
 }
 
-func (lfe *logsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resourceAttrs map[string]interface{}) map[string][]float64 {
+func (lfe *logsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resourceAttrs map[string]any) map[string][]float64 {
 	features := make(map[string][]float64)
 
 	for _, featureName := range lfe.features {
@@ -624,9 +638,9 @@ func (lfe *logsFeatureExtractor) ExtractFeatures(record plog.LogRecord, resource
 
 // Utility functions for attribute handling and feature processing
 
-// attributeMapToGeneric converts OpenTelemetry attribute maps to generic map[string]interface{}
-func attributeMapToGeneric(attrs pcommon.Map) map[string]interface{} {
-	result := make(map[string]interface{})
+// attributeMapToGeneric converts OpenTelemetry attribute maps to generic map[string]any
+func attributeMapToGeneric(attrs pcommon.Map) map[string]any {
+	result := make(map[string]any)
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
@@ -646,8 +660,8 @@ func attributeMapToGeneric(attrs pcommon.Map) map[string]interface{} {
 }
 
 // mergeAttributes combines multiple attribute maps with later maps taking precedence
-func mergeAttributes(maps ...map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func mergeAttributes(maps ...map[string]any) map[string]any {
+	result := make(map[string]any)
 	for _, m := range maps {
 		for k, v := range m {
 			result[k] = v

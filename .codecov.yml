@@ -480,6 +480,10 @@ component_management:
     name: processor_interval
     paths:
     - processor/intervalprocessor/**
+  - component_id: processor_isolationforest
+    name: processor_isolationforest
+    paths:
+    - processor/isolationforestprocessor/**
   - component_id: processor_k8sattributes
     name: processor_k8sattributes
     paths:
