@@ -4,15 +4,18 @@
 package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter"
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -810,6 +813,117 @@ func TestExportErrorHandling(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestExportBuffers(t *testing.T) {
+	tests := []struct {
+		name          string
+		buffers       []*bytes.Buffer
+		status        int
+		wantErr       bool
+		wantPermanent bool
+	}{
+		{
+			name: "successful export",
+			buffers: []*bytes.Buffer{
+				bytes.NewBufferString("data1"),
+				bytes.NewBufferString("data2"),
+			},
+			status:  http.StatusOK,
+			wantErr: false,
+		},
+		{
+			name: "first buffer fails",
+			buffers: []*bytes.Buffer{
+				bytes.NewBufferString("data1"),
+				bytes.NewBufferString("data2"),
+			},
+			status:        http.StatusInternalServerError,
+			wantErr:       true,
+			wantPermanent: false,
+		},
+		{
+			name: "second buffer fails with a retryable error after success",
+			buffers: []*bytes.Buffer{
+				bytes.NewBufferString("data1"),
+				bytes.NewBufferString("data2"),
+			},
+			status:        http.StatusInternalServerError,
+			wantErr:       true,
+			wantPermanent: true,
+		},
+		{
+			name:    "empty buffers",
+			buffers: []*bytes.Buffer{},
+			status:  http.StatusOK,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestCount++
+				r.Header.Set("X-Request-Count", strconv.Itoa(requestCount))
+
+				// Handle the special case for "second buffer fails with a retryable error after success"
+				var status int
+				if tt.name == "second buffer fails with a retryable error after success" {
+					if requestCount == 1 {
+						status = http.StatusOK
+					} else {
+						status = http.StatusInternalServerError
+					}
+				} else {
+					status = tt.status
+				}
+
+				w.WriteHeader(status)
+			}))
+			defer server.Close()
+
+			// Create exporter with test server
+			config := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: server.URL,
+				},
+				Token: "test-token",
+				Wait:  false,
+			}
+			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
+
+			// Start the exporter to initialize the HTTP client
+			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
+
+			// Test exportBuffers
+			err := exp.exportBuffers(t.Context(), "test_datasource", tt.buffers)
+
+			// Verify results
+			if tt.wantErr {
+				assert.Error(t, err, tt.name)
+				if tt.wantPermanent {
+					assert.True(t, consumererror.IsPermanent(err), tt.name)
+				} else {
+					assert.False(t, consumererror.IsPermanent(err), tt.name)
+				}
+			} else {
+				assert.NoError(t, err, tt.name)
+			}
+
+			// Verify that the correct number of requests were made
+			var expectedRequests int
+			if tt.wantErr && !tt.wantPermanent {
+				// For retryable errors, only the first buffer is processed
+				expectedRequests = 1
+			} else if len(tt.buffers) == 0 {
+				expectedRequests = 0
+			} else {
+				expectedRequests = len(tt.buffers)
+			}
+			assert.Equal(t, expectedRequests, requestCount, tt.name)
 		})
 	}
 }
