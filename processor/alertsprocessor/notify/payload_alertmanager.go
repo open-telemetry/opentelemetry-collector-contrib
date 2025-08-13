@@ -1,10 +1,11 @@
 package notify
 
+// AMAlert is a minimal Alertmanager-compatible payload item.
 type AMAlert struct {
-	Status       string            `json:"status"`
-	Labels       map[string]string `json:"labels"`
-	Annotations  map[string]string `json:"annotations,omitempty"`
-	StartsAt     string            `json:"startsAt"`
-	EndsAt       string            `json:"endsAt,omitempty"`
-	GeneratorURL string            `json:"generatorURL,omitempty"`
+	Status       string            `json:"status"`                 // "firing" | "resolved"
+	Labels       map[string]string `json:"labels"`                 // label set (includes rule labels + grouping attrs)
+	Annotations  map[string]string `json:"annotations,omitempty"`  // optional
+	StartsAt     string            `json:"startsAt"`               // RFC3339Nano
+	EndsAt       string            `json:"endsAt,omitempty"`       // RFC3339Nano if resolved
+	GeneratorURL string            `json:"generatorURL,omitempty"` // optional
 }

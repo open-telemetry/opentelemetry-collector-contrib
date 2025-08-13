@@ -43,12 +43,53 @@ type processorImpl struct {
 }
 
 func newProcessor(ctx context.Context, set processor.Settings, cfg *Config, m consumer.Metrics, l consumer.Logs, t consumer.Traces) (*processorImpl, error) {
-	w := slidingwindow.New(cfg.SlidingWindow)
-	e := evaluation.NewEngine(evaluation.Sources{Files: evaluation.RuleFiles{Include: cfg.RuleFiles.Include}, Inline: cfg.Rules}, set.Logger)
+	// Map parent config -> subpackage configs (no parent import in children)
+	w := slidingwindow.New(slidingwindow.Config{
+		Duration:         cfg.SlidingWindow.Duration,
+		MaxSamples:       cfg.SlidingWindow.MaxSamples,
+		OverflowBehavior: cfg.SlidingWindow.OverflowBehavior,
+	})
+
+	e := evaluation.NewEngine(
+		evaluation.Sources{
+			Files:  evaluation.RuleFiles{Include: cfg.RuleFiles.Include},
+			Inline: cfg.Rules,
+		},
+		set.Logger,
+	)
+
 	st := statestore.New(cfg.Statestore, set.Logger)
-	cd := cardinality.New(cfg.Cardinality)
+
+	cdl := cardinality.Config{
+		Labels: cardinality.LabelsCfg{
+			MaxLabelsPerAlert:   cfg.Cardinality.Labels.MaxLabelsPerAlert,
+			MaxLabelValueLength: cfg.Cardinality.Labels.MaxLabelValueLength,
+			MaxTotalLabelSize:   cfg.Cardinality.Labels.MaxTotalLabelSize,
+		},
+		Allowlist:     cfg.Cardinality.Allowlist,
+		Blocklist:     cfg.Cardinality.Blocklist,
+		HashIfExceeds: cfg.Cardinality.HashIfExceeds,
+		HashAlgorithm: cfg.Cardinality.HashAlgorithm,
+		Series: cardinality.SeriesCfg{
+			MaxActiveSeries:  cfg.Cardinality.Series.MaxActiveSeries,
+			MaxSeriesPerRule: cfg.Cardinality.Series.MaxSeriesPerRule,
+		},
+	}
+	cdl.Enforcement.Mode = cfg.Cardinality.Enforcement.Mode
+	cdl.Enforcement.OverflowAction = cfg.Cardinality.Enforcement.OverflowAction
+	cd := cardinality.New(cdl)
+
 	gv := stormcontrol.New(cfg.StormControl)
-	nf := notify.New(cfg.Notifier, set.Logger)
+
+	nf := notify.New(notify.Config{
+		URL:             cfg.Notifier.URL,
+		Timeout:         cfg.Notifier.Timeout,
+		InitialInterval: cfg.Notifier.InitialInterval,
+		MaxInterval:     cfg.Notifier.MaxInterval,
+		MaxBatchSize:    cfg.Notifier.MaxBatchSize,
+		DisableSending:  cfg.Notifier.DisableSending,
+	}, set.Logger)
+
 	ob := output.NewSeriesBuilder(cfg.Statestore.ExternalLabels)
 
 	return &processorImpl{
@@ -67,8 +108,10 @@ func newProcessor(ctx context.Context, set processor.Settings, cfg *Config, m co
 }
 
 func (p *processorImpl) Start(ctx context.Context, _ component.Host) error {
+	// Sliding window size warning (requested behavior)
 	if p.cfg.SlidingWindow.Duration > 15*time.Second {
-		p.set.Logger.Warn("Large sliding_window.duration increases CPU and memory usage; consider keeping it small", "duration", p.cfg.SlidingWindow.Duration)
+		p.set.Logger.Warn("Large sliding_window.duration increases CPU and memory usage; consider keeping it small",
+			"duration", p.cfg.SlidingWindow.Duration)
 	}
 	p.tick = time.NewTicker(p.cfg.Evaluation.Interval)
 	p.wg.Add(1)
@@ -89,10 +132,12 @@ func (p *processorImpl) processMetrics(ctx context.Context, md pmetric.Metrics) 
 	p.win.IngestMetrics(md)
 	return md, nil
 }
+
 func (p *processorImpl) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	p.win.IngestLogs(ld)
 	return ld, nil
 }
+
 func (p *processorImpl) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	p.win.IngestTraces(td)
 	return td, nil
@@ -122,19 +167,27 @@ func (p *processorImpl) evaluate(ctx context.Context, ts time.Time) {
 	results = append(results, p.eval.RunLogs(logs, ts)...)
 	results = append(results, p.eval.RunTraces(trcs, ts)...)
 
+	// Cardinality controls on labels
 	for i := range results {
 		results[i] = p.card.FilterResult(results[i])
 	}
 
+	// State transitions
 	transitions := p.store.Apply(results, ts)
 
+	// Emit synthetic metrics
 	md := p.out.Build(results, transitions, ts)
 	if md.DataPointCount() > 0 && p.nextM != nil {
 		_ = p.nextM.ConsumeMetrics(ctx, md)
 	}
 
+	// Notify
 	p.notif.Notify(ctx, transitions)
+
+	// Self-telemetry
 	p.emitEvalDuration(ctx, time.Since(start), ts)
+
+	// Optional governor hook
 	p.gov.Adapt(&p.tick, results, ts)
 }
 
