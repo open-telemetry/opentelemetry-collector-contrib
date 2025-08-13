@@ -2333,6 +2333,7 @@ func Test_ParseValueExpression_full(t *testing.T) {
 				result := pcommon.NewSlice()
 				_ = result.FromRaw([]any{6, 8})
 				return result
+			},
 		},
 		{
 			name:            "nested list",
