@@ -46,7 +46,7 @@ const (
 	gcpErrorGroupField = "gcp.error_group"
 
 	gcpAppHubPrefix                       = "gcp.apphub"
-	gcpAppHubDestinationPrefix            = "gcp.appub_destination"
+	gcpAppHubDestinationPrefix            = "gcp.apphub_destination"
 	gcpAppHubApplicationContainerField    = "application.container"
 	gcpAppHubApplicationLocationField     = "application.location"
 	gcpAppHubApplicationIDField           = "application.id"

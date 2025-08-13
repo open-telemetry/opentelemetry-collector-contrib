@@ -18,7 +18,7 @@ jobs:
       already-added: ${{ steps.check-jmx-metrics-version.outputs.already-added }}
       already-opened: ${{ steps.check-jmx-metrics-version.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - id: check-jmx-metrics-version
         name: Check versions
@@ -62,7 +62,7 @@ jobs:
     needs:
       - check-jmx-metrics-version
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Update version
         env:
@@ -136,7 +136,7 @@ jobs:
       already-added: ${{ steps.check-jmx-scraper-version.outputs.already-added }}
       already-opened: ${{ steps.check-jmx-scraper-version.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - id: check-jmx-scraper-version
         name: Check versions
@@ -180,7 +180,7 @@ jobs:
     needs:
       - check-jmx-scraper-version
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Update version
         env:
@@ -191,7 +191,6 @@ jobs:
             exit 1
           fi
 
-          version=${VERSION//-alpha/}
           hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar \
                          | sha256sum \
                          | cut -d ' ' -f 1)
