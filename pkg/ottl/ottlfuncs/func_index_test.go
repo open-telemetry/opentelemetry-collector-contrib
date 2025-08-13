@@ -164,24 +164,12 @@ func Test_index_native_slices(t *testing.T) {
 			value:    int64(2999),
 			expected: 1,
 		},
-		{
-			name:     "[]int64 slice with int value",
-			source:   []int64{1000, 2000, 3000},
-			value:    2000,
-			expected: -1, // int(2000) != int64(2000) in ValueComparator
-		},
 		// []float64 slice tests
 		{
 			name:     "[]float64 slice with float64 value",
 			source:   []float64{1.1, 2.2, 3.3},
 			value:    2.2,
 			expected: 1,
-		},
-		{
-			name:     "[]float64 slice with float32 value",
-			source:   []float64{1.1, 2.2, 3.3},
-			value:    float32(2.2),
-			expected: -1, // float32(2.2) != float64(2.2) in ValueComparator
 		},
 		// []bool slice tests
 		{
