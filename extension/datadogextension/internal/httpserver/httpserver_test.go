@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -480,12 +481,7 @@ func TestServerStop(t *testing.T) {
 				return srv, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				ctx, cancel := context.WithCancel(context.Background())
-				go func() {
-					time.Sleep(10 * time.Millisecond)
-					cancel()
-				}()
-				return ctx, cancel
+				return context.WithCancel(context.Background())
 			},
 			expectedLogs:     []string{"Context cancelled while waiting for server shutdown"},
 			expectTimeout:    true,
@@ -495,28 +491,25 @@ func TestServerStop(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "Context cancelled before shutdown completes" {
-				t.Skip("flaky test https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41146")
-			}
 			srv, logs := tt.setupServer()
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
 
 			if srv.server != nil && srv.server.Addr != "" {
+				listener, err := net.Listen("tcp", srv.server.Addr)
+				require.NoError(t, err)
 				go func() {
-					if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					if err := srv.server.Serve(listener); err != nil && err != http.ErrServerClosed {
 						t.Logf("Unexpected server error: %v", err)
 					}
 				}()
-				time.Sleep(10 * time.Millisecond)
 
 				if tt.simulateSlowStop {
-					go func() {
-						resp, err := http.Get("http://" + srv.server.Addr + "/block")
-						if err == nil {
-							_ = resp.Body.Close()
-						}
-					}()
+					cancel()
+					resp, err := http.Get("http://" + srv.server.Addr + "/block")
+					if err == nil {
+						_ = resp.Body.Close()
+					}
 				}
 			}
 
