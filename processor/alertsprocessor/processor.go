@@ -116,6 +116,7 @@ func (p *processorImpl) Start(ctx context.Context, _ component.Host) error {
 			zap.Duration("duration", p.cfg.SlidingWindow.Duration),
 		)
 	}
+
 	p.tick = time.NewTicker(p.cfg.Evaluation.Interval)
 	p.wg.Add(1)
 	go p.loop(ctx)
