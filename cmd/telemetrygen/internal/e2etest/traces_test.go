@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"testing"
 	"time"
 
