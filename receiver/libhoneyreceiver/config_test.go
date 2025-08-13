@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
-func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+// getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
 	if opt.HasValue() {
 		return opt.Get()
 	}
