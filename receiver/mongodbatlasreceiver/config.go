@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -24,17 +25,17 @@ var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	BaseURL                        string                        `mapstructure:"base_url"`
-	PublicKey                      string                        `mapstructure:"public_key"`
-	PrivateKey                     configopaque.String           `mapstructure:"private_key"`
-	Granularity                    string                        `mapstructure:"granularity"`
-	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Projects                       []*ProjectConfig              `mapstructure:"projects"`
-	Alerts                         AlertConfig                   `mapstructure:"alerts"`
-	Events                         *EventsConfig                 `mapstructure:"events"`
-	Logs                           LogConfig                     `mapstructure:"logs"`
-	BackOffConfig                  configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
-	StorageID                      *component.ID                 `mapstructure:"storage"`
+	BaseURL                        string                                `mapstructure:"base_url"`
+	PublicKey                      string                                `mapstructure:"public_key"`
+	PrivateKey                     configopaque.String                   `mapstructure:"private_key"`
+	Granularity                    string                                `mapstructure:"granularity"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig         `mapstructure:",squash"`
+	Projects                       []ProjectConfig                       `mapstructure:"projects"`
+	Alerts                         AlertConfig                           `mapstructure:"alerts"`
+	Events                         configoptional.Optional[EventsConfig] `mapstructure:"events"`
+	Logs                           LogConfig                             `mapstructure:"logs"`
+	BackOffConfig                  configretry.BackOffConfig             `mapstructure:"retry_on_failure"`
+	StorageID                      *component.ID                         `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
@@ -156,8 +157,8 @@ func (c *Config) Validate() error {
 
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
-	if c.Events != nil {
-		errs = multierr.Append(errs, c.Events.validate())
+	if c.Events.HasValue() {
+		errs = multierr.Append(errs, c.Events.Get().validate())
 	}
 
 	return errs
