@@ -149,7 +149,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig()
-			GetOrInsertDefault(t, &cfg.(*Config).HTTP)
+			getOrInsertDefault(t, &cfg.(*Config).HTTP)
 			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
 			require.NoError(t, err)
@@ -380,7 +380,7 @@ func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
 
 			// Create config with metadata setting
 			cfg := createDefaultConfig().(*Config)
-			GetOrInsertDefault(t, &cfg.HTTP).IncludeMetadata = tt.includeMetadata
+			getOrInsertDefault(t, &cfg.HTTP).IncludeMetadata = tt.includeMetadata
 
 			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg, &set)
