@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	evaluation "github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/evaluation"
+	evaluation "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -62,12 +62,12 @@ type cardinalitySeries struct {
 }
 
 type cardinalityConfig struct {
-	Labels        CardinalityLabels `mapstructure:"labels"`
+	Labels        cardinalityLabels `mapstructure:"labels"`
 	Allowlist     []string          `mapstructure:"allowlist"`
 	Blocklist     []string          `mapstructure:"blocklist"`
 	HashIfExceeds int               `mapstructure:"hash_if_exceeds"`
 	HashAlgorithm string            `mapstructure:"hash_algorithm"`
-	Series        CardinalitySeries `mapstructure:"series"`
+	Series        cardinalitySeries `mapstructure:"series"`
 	Enforcement   struct {
 		Mode           string `mapstructure:"mode"`
 		OverflowAction string `mapstructure:"overflow_action"`
@@ -101,6 +101,10 @@ type Config struct {
 
 	RuleFiles ruleFiles         `mapstructure:"rule_files"`
 	Rules     []evaluation.Rule `mapstructure:"rules"` // inline rules
+}
+
+func (c *Config) ID() interface{} {
+	panic("unimplemented")
 }
 
 func createDefaultConfig() component.Config {

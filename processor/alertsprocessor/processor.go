@@ -13,13 +13,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/cardinality"
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/evaluation"
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/notify"
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/output"
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/slidingwindow"
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/statestore"
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/stormcontrol"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/cardinality"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/notify"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/output"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/slidingwindow"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/statestore"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/stormcontrol"
 )
 
 type processorImpl struct {

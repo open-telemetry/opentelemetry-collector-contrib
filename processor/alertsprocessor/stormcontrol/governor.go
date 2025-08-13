@@ -3,7 +3,7 @@ package stormcontrol
 import (
 	"time"
 
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/evaluation"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
 )
 
 type Governor struct{ cfg interface{} }

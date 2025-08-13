@@ -11,7 +11,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor/evaluation"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
 )
 
 type Store struct {
@@ -49,19 +49,24 @@ func (s *Store) key(signal, ruleID, fp string) string { return signal + "|" + ru
 func (s *Store) Sync(_ context.Context, _ time.Time) { /* hook for external state */ }
 
 func (s *Store) Apply(results []evaluation.Result, ts time.Time) []Transition {
-	s.mu.Lock(); defer s.mu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var trans []Transition
 	seen := map[string]bool{}
 
 	for _, r := range results {
 		for _, inst := range r.Instances {
 			fp := inst.Fingerprint
-			if fp == "" { fp = computeFP(inst.Labels) }
+			if fp == "" {
+				fp = computeFP(inst.Labels)
+			}
 			k := s.key(r.Signal, r.Rule.ID, fp)
 			seen[k] = true
 
 			prev, ok := s.state[k]
-			if !ok { prev = alertState{Signal: r.Signal, Labels: inst.Labels, For: r.Rule.For} }
+			if !ok {
+				prev = alertState{Signal: r.Signal, Labels: inst.Labels, For: r.Rule.For}
+			}
 			cur := prev
 			cur.LastEval = ts
 			cur.Labels = inst.Labels
@@ -69,7 +74,9 @@ func (s *Store) Apply(results []evaluation.Result, ts time.Time) []Transition {
 
 			if inst.Active {
 				if !prev.Active {
-					if cur.Since.IsZero() { cur.Since = ts }
+					if cur.Since.IsZero() {
+						cur.Since = ts
+					}
 					if cur.For <= 0 || ts.Sub(cur.Since) >= cur.For {
 						cur.Active = true
 						trans = append(trans, Transition{Signal: r.Signal, RuleID: r.Rule.ID, Fingerprint: fp, From: stateStr(prev.Active), To: "firing", Labels: inst.Labels, At: ts})
@@ -102,16 +109,28 @@ func (s *Store) Apply(results []evaluation.Result, ts time.Time) []Transition {
 	return trans
 }
 
-func stateStr(active bool) string { if active { return "firing" }; return "pending" }
+func stateStr(active bool) string {
+	if active {
+		return "firing"
+	}
+	return "pending"
+}
 
 func computeFP(labels map[string]string) string {
-	if len(labels) == 0 { return "" }
+	if len(labels) == 0 {
+		return ""
+	}
 	keys := make([]string, 0, len(labels))
-	for k := range labels { keys = append(keys, k) }
+	for k := range labels {
+		keys = append(keys, k)
+	}
 	sort.Strings(keys)
 	var b strings.Builder
 	for _, k := range keys {
-		b.WriteString(k); b.WriteString("="); b.WriteString(labels[k]); b.WriteString(",")
+		b.WriteString(k)
+		b.WriteString("=")
+		b.WriteString(labels[k])
+		b.WriteString(",")
 	}
 	sum := sha256.Sum256([]byte(b.String()))
 	return hex.EncodeToString(sum[:8])

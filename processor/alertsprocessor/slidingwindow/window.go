@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/platformbuilds/alertsprocessor/processor/alertsprocessor"
+	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor"
 )
 
 type Window struct {
