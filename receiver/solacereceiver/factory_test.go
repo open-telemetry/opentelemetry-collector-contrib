@@ -4,7 +4,6 @@
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestCreateTraces(t *testing.T) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTraces(
-		context.Background(),
+		t.Context(),
 		set,
 		cfg,
 		consumertest.NewNop(),
@@ -47,7 +46,7 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateTracesWrongConfig(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), nil, nil)
+	_, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), nil, nil)
 	assert.Equal(t, pipeline.ErrSignalNotSupported, err)
 }
 
@@ -55,7 +54,7 @@ func TestCreateTracesBadConfigNoAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	factory := NewFactory()
-	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
@@ -64,7 +63,7 @@ func TestCreateTracesBadConfigIncompleteAuth(t *testing.T) {
 	cfg.Queue = "some-queue"
 	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
 	factory := NewFactory()
-	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
 }
 
@@ -87,7 +86,7 @@ func TestCreateTracesBadMetrics(t *testing.T) {
 		)),
 	)
 	defer func() {
-		require.NoError(t, provider.Shutdown(context.Background()))
+		require.NoError(t, provider.Shutdown(t.Context()))
 	}()
 	set.MeterProvider = provider
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -99,7 +98,7 @@ func TestCreateTracesBadMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 	receiver, err := factory.CreateTraces(
-		context.Background(),
+		t.Context(),
 		set,
 		cfg,
 		consumertest.NewNop(),

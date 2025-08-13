@@ -4,7 +4,6 @@
 package supervisor
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -66,7 +65,7 @@ func Test_flattenedSettings_OnMessage(t *testing.T) {
 		},
 	}
 
-	sta := fs.OnMessage(context.TODO(), &mockConn{}, &protobufs.AgentToServer{})
+	sta := fs.OnMessage(t.Context(), &mockConn{}, &protobufs.AgentToServer{})
 
 	require.True(t, onMessageFuncCalled)
 	require.NotNil(t, sta)

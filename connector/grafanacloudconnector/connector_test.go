@@ -4,7 +4,6 @@
 package grafanacloudconnector
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -47,7 +46,7 @@ func TestNewConnector(t *testing.T) {
 				cfg.MetricsFlushInterval = *tc.metricsFlushInterval
 			}
 
-			c, err := factory.CreateTracesToMetrics(context.Background(), connectortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			c, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			imp := c.(*connectorImp)
 
 			assert.NilError(t, err)
@@ -138,10 +137,10 @@ func TestConsumeTraces(t *testing.T) {
 			tc.cfg.MetricsFlushInterval = 50 * time.Millisecond
 
 			sink := &consumertest.MetricsSink{}
-			c, err := factory.CreateTracesToMetrics(context.Background(), connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
+			c, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			assert.NilError(t, err)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			assert.NilError(t, c.Start(ctx, nil))
 			err = c.ConsumeTraces(ctx, tc.input)
 			assert.NilError(t, err)

@@ -166,7 +166,7 @@ func TestReceiveMessage(t *testing.T) {
 				return testCase.traces, nil
 			}
 
-			err := receiver.receiveMessage(context.Background(), messagingService)
+			err := receiver.receiveMessage(t.Context(), messagingService)
 			if testCase.expectedErr != nil {
 				assert.Equal(t, testCase.expectedErr, err)
 			} else {
@@ -189,7 +189,7 @@ func TestReceiveMessage(t *testing.T) {
 func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	receiver, messagingService, unmarshaller, tt := newReceiver(t)
 	receiveMessagesCalled := false
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	msg := &inboundMessage{}
 	trace := newTestTracesWithSpans(1)
 	messagingService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
@@ -275,11 +275,11 @@ func TestReceiverLifecycle(t *testing.T) {
 		return nil, errors.New("some error")
 	}
 	// start the receiver
-	err := receiver.Start(context.Background(), nil)
+	err := receiver.Start(t.Context(), nil)
 	assert.NoError(t, err)
 	assertChannelClosed(t, dialCalled)
 	assertChannelClosed(t, receiveMessagesCalled)
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	assert.NoError(t, err)
 	assertChannelClosed(t, closeCalled)
 	// we error on receive message, so we should not report any additional metrics
@@ -343,7 +343,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 		}
 	}
 	// start the receiver
-	err := receiver.Start(context.Background(), nil)
+	err := receiver.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	// expect factory to be called twice
@@ -354,7 +354,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	assertChannelClosed(t, closeDone)
 	// assert failed reconnections
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	assert.NoError(t, err)
 	// we error on dial, should never get to receive messages
 	metadatatest.AssertEqualSolacereceiverReceiverStatus(t, tt, []metricdata.DataPoint[int64]{
@@ -407,7 +407,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 		close(closeDone)
 	}
 	// start the receiver
-	err := receiver.Start(context.Background(), nil)
+	err := receiver.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	// expect dial to be called twice
@@ -443,7 +443,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 			Value: 1,
 		},
 	}, metricdatatest.IgnoreTimestamp())
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
@@ -529,7 +529,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 
 			receiveMessageComplete := make(chan error, 1)
 			go func() {
-				receiveMessageComplete <- receiver.receiveMessage(context.Background(), messagingService)
+				receiveMessageComplete <- receiver.receiveMessage(t.Context(), messagingService)
 			}()
 			select {
 			case <-time.After(delay / 2):
@@ -624,7 +624,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 		return ptrace.NewTraces(), nil
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	receiveMessageComplete := make(chan error, 1)
 	go func() {
 		receiveMessageComplete <- receiver.receiveMessage(ctx, messagingService)
@@ -704,7 +704,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 
 	receiveMessageComplete := make(chan error, 1)
 	go func() {
-		receiveMessageComplete <- receiver.receiveMessage(context.Background(), messagingService)
+		receiveMessageComplete <- receiver.receiveMessage(t.Context(), messagingService)
 	}()
 	select {
 	case <-time.After(retryInterval * time.Duration(retryCount) / 2):
@@ -754,7 +754,7 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 		return service
 	}
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	receiver := &solaceTracesReceiver{

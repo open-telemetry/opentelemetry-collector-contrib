@@ -73,7 +73,7 @@ func TestProvider(t *testing.T) {
 				clusterNameProvider: testInstance.clusterNameProvider,
 			}
 
-			src, err := provider.Source(context.Background())
+			src, err := provider.Source(t.Context())
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)
 			} else {

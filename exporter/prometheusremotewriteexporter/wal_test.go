@@ -145,7 +145,7 @@ func TestWAL_persist(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, pwal.retrieveWALIndices())
 	t.Cleanup(func() {
 		assert.NoError(t, pwal.stop())
@@ -214,7 +214,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 	prwe, err := newPRWExporter(cfg, set)
 	assert.NoError(t, err)
 	assert.NotNil(t, prwe)
-	err = prwe.Start(context.Background(), componenttest.NewNopHost())
+	err = prwe.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, prwe.client)
 
@@ -224,19 +224,19 @@ func TestExportWithWALEnabled(t *testing.T) {
 			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
 		},
 	}
-	err = prwe.handleExport(context.Background(), metrics, nil)
+	err = prwe.handleExport(t.Context(), metrics, nil)
 	assert.NoError(t, err)
 
 	// While on Unix systems, t.TempDir() would easily close the WAL files,
 	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.
-	err = prwe.Shutdown(context.Background())
+	err = prwe.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
 func TestWALWrite_Telemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(context.Background()))
+		require.NoError(t, tel.Shutdown(t.Context()))
 	})
 	set := metadatatest.NewSettings(tel)
 
@@ -261,10 +261,10 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	require.NotNil(t, prw)
 	require.NoError(t, err)
 
-	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(context.Background()))
+		assert.NoError(t, prw.Shutdown(t.Context()))
 	})
 	wal := prw.wal
 
@@ -277,7 +277,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	}
 
 	// Test successful WAL write
-	err = prw.handleExport(context.Background(), metrics, nil)
+	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -287,7 +287,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	currentIndex := wal.wWALIndex.Load()
 	wal.wWALIndex.Store(currentIndex - 1)
 
-	err = prw.handleExport(context.Background(), metrics, nil)
+	err = prw.handleExport(t.Context(), metrics, nil)
 	require.Error(t, err)
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -305,7 +305,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	t.Skip("Skipping in CI: test is flaky;still useful for local testing")
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(context.Background()))
+		require.NoError(t, tel.Shutdown(t.Context()))
 	})
 	set := metadatatest.NewSettings(tel)
 
@@ -333,10 +333,10 @@ func TestWALRead_Telemetry(t *testing.T) {
 	require.NotNil(t, prw)
 	require.NoError(t, err)
 
-	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(context.Background()))
+		assert.NoError(t, prw.Shutdown(t.Context()))
 	})
 
 	// Verify initial WAL reads metric
@@ -354,7 +354,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	}
 
 	// Write a successful WAL write first
-	err = prw.handleExport(context.Background(), metrics, nil)
+	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
 	err = wal.wal.Close()
 	require.NoError(t, err)
@@ -366,7 +366,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	require.NoError(t, err)
 	// write the corrupted data and start reading from the index
 
-	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	// Unable to start the WAL cause there is a corrupted entry
 	require.Error(t, err)
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_reads_failures")
@@ -384,7 +384,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 func TestWALLag_Telemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(context.Background()))
+		require.NoError(t, tel.Shutdown(t.Context()))
 	})
 	set := metadatatest.NewSettings(tel)
 
@@ -412,10 +412,10 @@ func TestWALLag_Telemetry(t *testing.T) {
 	require.NotNil(t, prw)
 	require.NoError(t, err)
 
-	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(context.Background()))
+		assert.NoError(t, prw.Shutdown(t.Context()))
 	})
 
 	// Create test data to write to WAL
@@ -427,7 +427,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 	}
 
 	// Write multiple metrics to create lag (wIndex will be ahead of rIndex)
-	err = prw.handleExport(context.Background(), metrics, nil)
+	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
 
 	// Wait for lag recording to happen (longer than lagRecordFrequency)

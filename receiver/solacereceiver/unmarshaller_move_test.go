@@ -4,7 +4,6 @@
 package solacereceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -379,7 +378,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 
 func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, *componenttest.Telemetry) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
 	builder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", metadata.Type.String()))

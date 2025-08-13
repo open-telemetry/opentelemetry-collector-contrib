@@ -85,10 +85,10 @@ func TestLibhoneyReceiver_Start(t *testing.T) {
 	r.registerTraceConsumer(consumertest.NewNop())
 	r.registerLogConsumer(consumertest.NewNop())
 
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 

@@ -4,7 +4,6 @@
 package fileconsumer
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -156,7 +155,7 @@ func TestMoveFile(t *testing.T) {
 	filetest.WriteString(t, temp1, "testlog1\n")
 	temp1.Close()
 
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
@@ -164,7 +163,7 @@ func TestMoveFile(t *testing.T) {
 	err := os.Rename(temp1.Name(), fmt.Sprintf("%s.2", temp1.Name()))
 	require.NoError(t, err)
 
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectNoCalls(t)
 }
 
@@ -184,7 +183,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	filetest.WriteString(t, temp1, "testlog1\n")
 	temp1.Close()
 
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
@@ -201,7 +200,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, movedFile, "testlog2\n")
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 
 	sink.ExpectToken(t, []byte("testlog2"))
 }
@@ -280,7 +279,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	originalFileName := originalFile.Name()
 
 	filetest.WriteString(t, originalFile, "testlog1\n")
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 
 	// write more log, before next poll() begins
@@ -295,7 +294,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	require.NoError(t, err)
 
 	// poll again
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 
 	// expect remaining log from old file as well as all from new file
 	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog4"), []byte("testlog5"))
@@ -335,7 +334,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 
 	originalFile := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
 	filetest.WriteString(t, originalFile, "testlog1\n")
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 
 	// write more log, before next poll() begins
@@ -354,7 +353,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	require.NoError(t, err)
 
 	// poll again
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 
 	sink.ExpectTokens(t, []byte("testlog4"), []byte("testlog5"))
 
@@ -389,7 +388,7 @@ func TestTruncateThenWrite(t *testing.T) {
 	temp1 := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp1, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 
 	require.NoError(t, temp1.Truncate(0))
@@ -397,7 +396,7 @@ func TestTruncateThenWrite(t *testing.T) {
 	require.NoError(t, err)
 
 	filetest.WriteString(t, temp1, "testlog3\n")
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog3"))
 	sink.ExpectNoCalls(t)
 
@@ -431,7 +430,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	temp1 := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp1, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 	operator.wg.Wait() // wait for all goroutines to finish
 
@@ -450,7 +449,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	filetest.WriteString(t, temp1, "testlog4\n")
 
 	// Expect both messages to come through
-	operator.poll(context.Background())
+	operator.poll(t.Context())
 	sink.ExpectTokens(t, []byte("testlog3"), []byte("testlog4"))
 }
 

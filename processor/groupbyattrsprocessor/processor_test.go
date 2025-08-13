@@ -4,7 +4,6 @@
 package groupbyattrsprocessor
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"sort"
@@ -275,21 +274,21 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
 			tel := componenttest.NewTelemetry()
-			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+			t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
 
 			gap, err := createGroupByAttrsProcessor(metadatatest.NewSettings(tel), tt.groupByKeys)
 			require.NoError(t, err)
 
-			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
+			processedLogs, err := gap.processLogs(t.Context(), inputLogs)
 			assert.NoError(t, err)
 
-			processedSpans, err := gap.processTraces(context.Background(), inputTraces)
+			processedSpans, err := gap.processTraces(t.Context(), inputTraces)
 			assert.NoError(t, err)
 
-			processedMetrics, err := gap.processMetrics(context.Background(), inputMetrics)
+			processedMetrics, err := gap.processMetrics(t.Context(), inputMetrics)
 			assert.NoError(t, err)
 
-			processedHistogramMetrics, err := gap.processMetrics(context.Background(), inputHistogramMetrics)
+			processedHistogramMetrics, err := gap.processMetrics(t.Context(), inputHistogramMetrics)
 			assert.NoError(t, err)
 
 			// Following are record-level attributes that should be preserved after processing
@@ -529,25 +528,25 @@ func TestAttributeGrouping(t *testing.T) {
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
 			expectedAttributes := filterAttributeMap(attrMap, tt.nonGroupedKeys)
 
-			processedLogs, err := gap.processLogs(context.Background(), logs)
+			processedLogs, err := gap.processLogs(t.Context(), logs)
 			assert.NoError(t, err)
 
-			processedSpans, err := gap.processTraces(context.Background(), spans)
+			processedSpans, err := gap.processTraces(t.Context(), spans)
 			assert.NoError(t, err)
 
-			processedGaugeMetrics, err := gap.processMetrics(context.Background(), gaugeMetrics)
+			processedGaugeMetrics, err := gap.processMetrics(t.Context(), gaugeMetrics)
 			assert.NoError(t, err)
 
-			processedSumMetrics, err := gap.processMetrics(context.Background(), sumMetrics)
+			processedSumMetrics, err := gap.processMetrics(t.Context(), sumMetrics)
 			assert.NoError(t, err)
 
-			processedSummaryMetrics, err := gap.processMetrics(context.Background(), summaryMetrics)
+			processedSummaryMetrics, err := gap.processMetrics(t.Context(), summaryMetrics)
 			assert.NoError(t, err)
 
-			processedHistogramMetrics, err := gap.processMetrics(context.Background(), histogramMetrics)
+			processedHistogramMetrics, err := gap.processMetrics(t.Context(), histogramMetrics)
 			assert.NoError(t, err)
 
-			processedExponentialHistogramMetrics, err := gap.processMetrics(context.Background(), exponentialHistogramMetrics)
+			processedExponentialHistogramMetrics, err := gap.processMetrics(t.Context(), exponentialHistogramMetrics)
 			assert.NoError(t, err)
 
 			assert.Equal(t, 1, processedLogs.ResourceLogs().Len())
@@ -837,7 +836,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"host.name"})
 	require.NoError(t, err)
 
-	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
+	processedMetrics, err := gap.processMetrics(t.Context(), metrics)
 	assert.NoError(t, err)
 
 	// We must have 3 resulting resources
@@ -922,11 +921,11 @@ func TestCompacting(t *testing.T) {
 	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 	require.NoError(t, err)
 
-	processedSpans, err := gap.processTraces(context.Background(), spans)
+	processedSpans, err := gap.processTraces(t.Context(), spans)
 	assert.NoError(t, err)
-	processedLogs, err := gap.processLogs(context.Background(), logs)
+	processedLogs, err := gap.processLogs(t.Context(), logs)
 	assert.NoError(t, err)
-	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
+	processedMetrics, err := gap.processMetrics(t.Context(), metrics)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, processedSpans.ResourceSpans().Len())
@@ -1036,7 +1035,7 @@ func BenchmarkCompacting(bb *testing.B) {
 
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				_, err := gap.processTraces(context.Background(), spans)
+				_, err := gap.processTraces(bb.Context(), spans)
 				if err != nil {
 					return
 				}

@@ -45,7 +45,7 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 	se, ctr, err := newPostgresTestExtension()
 	t.Cleanup(func() {
 		if ctr != nil {
-			require.NoError(t, ctr.Terminate(context.Background()))
+			require.NoError(t, ctr.Terminate(t.Context()))
 		}
 	})
 	require.NoError(t, err)
@@ -54,18 +54,18 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 }
 
 func testExtensionIntegrity(t *testing.T, se storage.Extension) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37079
 	// DB instantiation fails if we instantly try to connect to it, give it some time to start
 	var err error
 	require.Eventuallyf(t, func() bool {
-		err = se.Start(context.Background(), componenttest.NewNopHost())
+		err = se.Start(t.Context(), componenttest.NewNopHost())
 		return err == nil
 	}, 30*time.Second, 100*time.Millisecond, "timeout waiting for db: %v", err)
 
 	defer func() {
-		err = se.Shutdown(context.Background())
+		err = se.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}()
 

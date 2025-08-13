@@ -87,14 +87,14 @@ func TestLogsExporter_Start(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.logExporter)
 	assert.Contains(t, exp.config.Logs.Headers, "Authorization")
 
 	// Test shutdown
-	err = exp.shutdown(context.Background())
+	err = exp.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -112,7 +112,7 @@ func TestLogsExporter_EnhanceContext(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	enhancedCtx := exp.enhanceContext(ctx)
 	assert.NotEqual(t, ctx, enhancedCtx)
 }
@@ -129,10 +129,10 @@ func TestLogsExporter_PushLogs(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -143,7 +143,7 @@ func TestLogsExporter_PushLogs(t *testing.T) {
 	resource := rl.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
-	err = exp.pushLogs(context.Background(), logs)
+	err = exp.pushLogs(t.Context(), logs)
 	assert.Error(t, err)
 }
 
@@ -180,10 +180,10 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 			require.NoError(t, err)
 
-			err = exp.start(context.Background(), componenttest.NewNopHost())
+			err = exp.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				err = exp.shutdown(context.Background())
+				err = exp.shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 
@@ -196,7 +196,7 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			resource := rl.Resource()
 			resource.Attributes().PutStr("service.name", "test-service")
 
-			err = exp.pushLogs(context.Background(), logs)
+			err = exp.pushLogs(t.Context(), logs)
 			assert.Error(t, err)
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
@@ -277,11 +277,11 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to create logs exporter: %v", err)
 	}
-	if err := exp.start(context.Background(), componenttest.NewNopHost()); err != nil {
+	if err := exp.start(b.Context(), componenttest.NewNopHost()); err != nil {
 		b.Fatalf("failed to start logs exporter: %v", err)
 	}
 	defer func() {
-		_ = exp.shutdown(context.Background())
+		_ = exp.shutdown(b.Context())
 	}()
 
 	testCases := []int{
@@ -304,7 +304,7 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 					logRecord.Body().SetStr("benchmark log message")
 					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				}
-				_ = exp.pushLogs(context.Background(), logs)
+				_ = exp.pushLogs(b.Context(), logs)
 			}
 		})
 	}
@@ -329,10 +329,10 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -359,7 +359,7 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 
-	err = exp.pushLogs(context.Background(), logs)
+	err = exp.pushLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	entries := observed.All()
@@ -398,10 +398,10 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -421,7 +421,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -450,7 +450,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		duration := time.Since(start)
 
 		assert.Error(t, err)
@@ -472,7 +472,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 			testLogRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			testLogRecord.SetSeverityText("INFO")
 
-			errPush := exp.pushLogs(context.Background(), testLogs)
+			errPush := exp.pushLogs(t.Context(), testLogs)
 			return errPush == nil
 		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
 
@@ -495,7 +495,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -526,10 +526,10 @@ func TestLogsExporter_RateLimitErrorCountReset(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -547,13 +547,13 @@ func TestLogsExporter_RateLimitErrorCountReset(t *testing.T) {
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	logRecord.Body().SetStr("test log message")
 
-	err = exp.pushLogs(context.Background(), logs)
+	err = exp.pushLogs(t.Context(), logs)
 	assert.Error(t, err)
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 	assert.Equal(t, 0, srv.recvCount)
 
 	require.Eventually(t, func() bool {
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		return err == nil &&
 			exp.rateError.errorCount.Load() == 0 &&
 			srv.recvCount > 0
@@ -582,10 +582,10 @@ func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -603,7 +603,7 @@ func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Initial successful push", func(t *testing.T) {
 		logs := createTestLogs()
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 1, srv.recvCount)
@@ -619,7 +619,7 @@ func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Successful push after errors", func(t *testing.T) {
 		logs := createTestLogs()
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 2, srv.recvCount)
@@ -627,7 +627,7 @@ func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Verify error count stays at 0", func(t *testing.T) {
 		logs := createTestLogs()
-		err = exp.pushLogs(context.Background(), logs)
+		err = exp.pushLogs(t.Context(), logs)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 3, srv.recvCount)
