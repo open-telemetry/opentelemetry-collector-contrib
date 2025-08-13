@@ -3,7 +3,7 @@ status:
   class: processor
   stability:
     development: [metrics, logs, traces]
-  distributions: []
+  distributions: [contrib]
 
 telemetry:
   metrics:
