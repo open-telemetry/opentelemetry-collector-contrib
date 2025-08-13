@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -50,7 +51,7 @@ func TestGenerateLogs(t *testing.T) {
 	cfg := logs.NewConfig()
 	cfg.WorkerCount = 10
 	cfg.Rate = 10
-	cfg.TotalDuration = 10 * time.Second
+	cfg.TotalDuration = types.DurationWithInf(10 * time.Second)
 	cfg.ReportingInterval = 10
 	cfg.CustomEndpoint = endpoint
 	cfg.Insecure = true
