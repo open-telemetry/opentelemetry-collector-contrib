@@ -211,6 +211,7 @@ body:
       - processor/transform
       - receiver/activedirectoryds
       - receiver/aerospike
+      - receiver/akamaisecurityevents
       - receiver/apache
       - receiver/apachespark
       - receiver/awscloudwatch
