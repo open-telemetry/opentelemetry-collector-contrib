@@ -11,13 +11,14 @@ permissions:
 
 jobs:
   check-jmx-metrics-version:
+    if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     runs-on: ubuntu-24.04
     outputs:
       latest-version: ${{ steps.check-jmx-metrics-version.outputs.latest-version }}
       already-added: ${{ steps.check-jmx-metrics-version.outputs.already-added }}
       already-opened: ${{ steps.check-jmx-metrics-version.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - id: check-jmx-metrics-version
         name: Check versions
@@ -55,12 +56,13 @@ jobs:
       contents: write # required for pushing changes
     runs-on: ubuntu-24.04
     if: |
+      github.repository == 'open-telemetry/opentelemetry-collector-contrib' &&
       needs.check-jmx-metrics-version.outputs.already-added != 'true' &&
       needs.check-jmx-metrics-version.outputs.already-opened != 'true'
     needs:
       - check-jmx-metrics-version
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Update version
         env:
@@ -128,12 +130,13 @@ jobs:
 
   check-jmx-scraper-version:
     runs-on: ubuntu-24.04
+    if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     outputs:
       latest-version: ${{ steps.check-jmx-scraper-version.outputs.latest-version }}
       already-added: ${{ steps.check-jmx-scraper-version.outputs.already-added }}
       already-opened: ${{ steps.check-jmx-scraper-version.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - id: check-jmx-scraper-version
         name: Check versions
@@ -171,12 +174,13 @@ jobs:
       contents: write # required for pushing changes
     runs-on: ubuntu-24.04
     if: |
+      github.repository == 'open-telemetry/opentelemetry-collector-contrib' &&
       needs.check-jmx-scraper-version.outputs.already-added != 'true' &&
       needs.check-jmx-scraper-version.outputs.already-opened != 'true'
     needs:
       - check-jmx-scraper-version
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Update version
         env:
@@ -187,7 +191,6 @@ jobs:
             exit 1
           fi
 
-          version=${VERSION//-alpha/}
           hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar \
                          | sha256sum \
                          | cut -d ' ' -f 1)

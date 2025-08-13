@@ -140,7 +140,7 @@ resourceMetrics:
           - description: Gauge tracking the number of indexing process cpu seconds per instance
             gauge:
               dataPoints:
-                - asDouble: "69.20"
+                - asDouble: 69.2
                   attributes:
                     - key: splunk.host
                       value:
@@ -215,7 +215,7 @@ resourceMetrics:
           - description: Gauge tracking the average runtime of scheduled searches
             gauge:
               dataPoints:
-                - asDouble: 200.40
+                - asDouble: 200.4
                   attributes:
                     - key: splunk.host
                       value:

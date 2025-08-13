@@ -149,3 +149,19 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return traces
 }
+
+var _ component.Host = (*mdatagenNopHost)(nil)
+
+type mdatagenNopHost struct{}
+
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
+}
+
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
+}

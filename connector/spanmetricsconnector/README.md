@@ -123,7 +123,7 @@ The following settings can be optionally configured:
 - `metric_timestamp_cache_size` (default `1000`): Only relevant for delta temporality span metrics. Controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 - `exemplars`:  Use to configure how to attach exemplars to metrics.
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
-  - `max_per_data_point`: set the maximum number of exemplars to be set per data point. If not set, there is no maximum.
+  - `max_per_data_point` (default: `5`): The maximum number of exemplars to attach to a single metric data point.
   - `mark_spans` (default: `false`): enabling will add a boolean attribute `exemplar` to all spans added as Exemplars. This can be used in a `boolean_attribute` policy in a `tail_sampling` processor to ensure spans used as exemplars are selected. Spans will only be mutated in this way if there is a trace consumer after the component.
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
@@ -168,7 +168,6 @@ connectors:
       max_per_data_point: 6
       mark_spans: true
     exclude_dimensions: ['status.code']
-    dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
     metrics_flush_interval: 15s
     metrics_expiration: 5m

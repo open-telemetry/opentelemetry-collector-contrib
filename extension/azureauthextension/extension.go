@@ -25,6 +25,7 @@ import (
 type authenticator struct {
 	credential azcore.TokenCredential
 	logger     *zap.Logger
+	scopes     []string
 }
 
 var (
@@ -100,6 +101,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 	return &authenticator{
 		credential: credential,
 		logger:     logger,
+		scopes:     cfg.Scopes,
 	}, nil
 }
 
@@ -157,15 +159,20 @@ func getHeaderValue(header string, headers map[string][]string) (string, error) 
 // computed from the host value. It will return the token value
 // or an error if request failed.
 func (a *authenticator) getTokenForHost(ctx context.Context, host string) (string, error) {
-	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
-		// TODO Cache the tokens
+	options := policy.TokenRequestOptions{
 		Scopes: []string{
 			// Example: if host is "management.azure.com", then the scope to get the
 			// token will be "https://management.azure.com/.default".
 			// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
 			fmt.Sprintf("https://%s/.default", host),
 		},
-	})
+	}
+
+	if len(a.scopes) > 0 {
+		options.Scopes = a.scopes
+	}
+
+	token, err := a.credential.GetToken(ctx, options)
 	if err != nil {
 		return "", err
 	}

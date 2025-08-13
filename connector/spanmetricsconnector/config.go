@@ -106,7 +106,7 @@ type HistogramConfig struct {
 
 type ExemplarsConfig struct {
 	Enabled         bool `mapstructure:"enabled"`
-	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
+	MaxPerDataPoint int  `mapstructure:"max_per_data_point"`
 	MarkSpans       bool `mapstructure:"mark_spans"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -166,6 +166,10 @@ func (c Config) Validate() error {
 
 	if c.AggregationCardinalityLimit < 0 {
 		return fmt.Errorf("invalid aggregation_cardinality_limit: %v, the limit should be positive", c.AggregationCardinalityLimit)
+	}
+
+	if c.Exemplars.Enabled && c.Exemplars.MaxPerDataPoint < 0 {
+		return fmt.Errorf("invalid max_per_data_point: %v, the value should be positive", c.Exemplars.MaxPerDataPoint)
 	}
 
 	return nil

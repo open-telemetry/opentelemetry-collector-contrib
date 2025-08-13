@@ -69,7 +69,7 @@ spanmetrics/exemplars_enabled:
 spanmetrics/exemplars_enabled_with_all_options:
   exemplars:
     enabled: true
-    max_per_data_point: 5
+    max_per_data_point: 10
     mark_spans: true
 
 # resource metrics key attributes filter
