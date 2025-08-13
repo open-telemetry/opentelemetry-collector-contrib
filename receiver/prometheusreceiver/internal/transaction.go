@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -172,6 +173,8 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	scope := getScopeID(ls)
+
+	t.captureScopeAttributes(*rKey, scope, ls)
 
 	if t.enableNativeHistograms && value.IsStaleNaN(val) {
 		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
@@ -470,13 +473,16 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 func getScopeID(ls labels.Labels) scopeID {
 	var scope scopeID
 	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == prometheus.ScopeNameLabelKey {
+		if !strings.HasPrefix(lbl.Name, prometheus.ScopeLabelPrefix) {
+			return
+		}
+
+		switch strings.TrimPrefix(lbl.Name, prometheus.ScopeLabelPrefix) {
+		case "name":
 			scope.name = lbl.Value
-		}
-		if lbl.Name == prometheus.ScopeVersionLabelKey {
+		case "version":
 			scope.version = lbl.Value
-		}
-		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
+		case "schema_url":
 			scope.schemaURL = lbl.Value
 		}
 	})
@@ -608,14 +614,52 @@ func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 			scope.schemaURL = lbl.Value
 			return
 		}
-		attrs.PutStr(lbl.Name, lbl.Value)
+
+		if isScopeAttributeLabel(lbl.Name) {
+			attrs.PutStr(scopeAttrName(lbl.Name), lbl.Value)
+		} else {
+			attrs.PutStr(lbl.Name, lbl.Value)
+		}
 	})
-	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
-	}
+	t.ensureScopeAttributesMap(key)
 	t.scopeAttributes[key][scope] = attrs
 }
 
+func extractScopeAttributesFromLabels(ls labels.Labels) pcommon.Map {
+	attrs := pcommon.NewMap()
+	ls.Range(func(lbl labels.Label) {
+		if isScopeAttributeLabel(lbl.Name) {
+			attrs.PutStr(scopeAttrName(lbl.Name), lbl.Value)
+		}
+	})
+	return attrs
+}
+
+func (t *transaction) ensureScopeAttributesMap(rKey resourceKey) {
+	if _, ok := t.scopeAttributes[rKey]; !ok {
+		t.scopeAttributes[rKey] = make(map[scopeID]pcommon.Map)
+	}
+}
+
+func (t *transaction) captureScopeAttributes(rKey resourceKey, scope scopeID, ls labels.Labels) {
+	attrs := extractScopeAttributesFromLabels(ls)
+
+	if attrs.Len() > 0 {
+		t.ensureScopeAttributesMap(rKey)
+
+		if existingAttrs, exists := t.scopeAttributes[rKey][scope]; exists {
+			existingAttrs.Range(func(k string, v pcommon.Value) bool {
+				if _, hasKey := attrs.Get(k); !hasKey {
+					v.CopyTo(attrs.PutEmpty(k))
+				}
+				return true
+			})
+		}
+
+		t.scopeAttributes[rKey][scope] = attrs
+	}
+}
+
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
-	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mtype)...)
+	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(ls, mtype)...)
 }

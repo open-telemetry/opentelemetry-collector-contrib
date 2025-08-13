@@ -825,6 +825,8 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 const targetInstrumentationScopes = `
 # HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
 # TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0", otel_scope_environment="prod"} 100
+jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0", otel_scope_dc="test-dc"} 100
 jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0"} 100
 jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 100
 jvm_memory_bytes_used{area="heap"} 100
@@ -859,7 +861,13 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
 	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
 	require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sms.At(0).SchemaUrl())
-	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+	require.Equal(t, 2, sms.At(0).Scope().Attributes().Len(), "Should have 2 scope attributes")
+	envVal, found := sms.At(0).Scope().Attributes().Get("environment")
+	require.True(t, found, "Should have 'environment' scope attribute")
+	require.Equal(t, "prod", envVal.Str())
+	dcVal, found := sms.At(0).Scope().Attributes().Get("dc")
+	require.True(t, found, "Should have 'dc' scope attribute")
+	require.Equal(t, "test-dc", dcVal.Str())
 	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
 	require.Empty(t, sms.At(1).SchemaUrl())
 	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
@@ -870,7 +878,6 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
 	require.True(t, found)
 	require.Equal(t, "bear", scopeAttrVal.Str())
-
 	// Check that otel_scope_name, otel_scope_version, and otel_scope_schema_url are dropped from metric data point attributes
 	require.Equal(t, 1, sms.At(0).Metrics().Len())
 	metric := sms.At(0).Metrics().At(0)
@@ -878,4 +885,8 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	require.Equal(t, 1, dp.Attributes().Len(), "Should only have 'area' attribute")
 	_, found = dp.Attributes().Get("area")
 	require.True(t, found, "Should only have 'area' attribute")
+	_, found = dp.Attributes().Get("otel_scope_environment")
+	require.False(t, found, "otel_scope_environment should be filtered out")
+	_, found = dp.Attributes().Get("otel_scope_dc")
+	require.False(t, found, "otel_scope_dc should be filtered out")
 }

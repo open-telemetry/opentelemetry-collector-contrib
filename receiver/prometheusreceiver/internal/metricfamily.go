@@ -351,7 +351,7 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
 	dest.EnsureCapacity(ls.Len())
-	names := getSortedNotUsefulLabels(mType)
+	names := getSortedNotUsefulLabels(ls, mType)
 	j := 0
 	ls.Range(func(l labels.Label) {
 		for j < len(names) && names[j] < l.Name {

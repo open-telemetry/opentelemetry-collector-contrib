@@ -32,6 +32,10 @@ const (
 	// schema URL of the OpenTelemetry scope which produced the metric:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#instrumentation-scope
 	ScopeSchemaURLLabelKey = "otel_scope_schema_url"
+	// ScopeLabelPrefix is the prefix used for OpenTelemetry scope attribute labels
+	// schema URL of the OpenTelemetry scope which produced the metric:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#instrumentation-scope
+	ScopeLabelPrefix = "otel_scope_"
 	// TargetInfoMetricName is the name of the metric used to preserve resource
 	// attributes in Prometheus format:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#resource-attributes-1

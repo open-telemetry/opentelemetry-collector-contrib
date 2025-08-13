@@ -54,15 +54,39 @@ func sortString(strs []string) []string {
 	return strs
 }
 
-func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
+func getSortedNotUsefulLabels(ls labels.Labels, mType pmetric.MetricType) []string {
+	var baseNotUseful []string
 	switch mType {
 	case pmetric.MetricTypeHistogram:
-		return notUsefulLabelsHistogram
+		baseNotUseful = notUsefulLabelsHistogram
 	case pmetric.MetricTypeSummary:
-		return notUsefulLabelsSummary
+		baseNotUseful = notUsefulLabelsSummary
 	default:
-		return notUsefulLabelsOther
+		baseNotUseful = notUsefulLabelsOther
 	}
+
+	var scopeAttrLabels []string
+	ls.Range(func(lbl labels.Label) {
+		if isScopeAttributeLabel(lbl.Name) {
+			scopeAttrLabels = append(scopeAttrLabels, lbl.Name)
+		}
+	})
+
+	if len(scopeAttrLabels) == 0 {
+		return baseNotUseful
+	}
+
+	allNotUsefulLabels := append(append([]string{}, baseNotUseful...), scopeAttrLabels...)
+	sort.Strings(allNotUsefulLabels)
+	return allNotUsefulLabels
+}
+
+func isScopeAttributeLabel(labelName string) bool {
+	if !strings.HasPrefix(labelName, prometheus.ScopeLabelPrefix) {
+		return false
+	}
+	attrName := strings.TrimPrefix(labelName, prometheus.ScopeLabelPrefix)
+	return attrName != "name" && attrName != "version" && attrName != "schema_url"
 }
 
 func timestampFromFloat64(ts float64) pcommon.Timestamp {
@@ -73,6 +97,10 @@ func timestampFromFloat64(ts float64) pcommon.Timestamp {
 
 func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	return pcommon.Timestamp(timeAtMs * 1e6)
+}
+
+func scopeAttrName(name string) string {
+	return strings.TrimPrefix(name, prometheus.ScopeLabelPrefix)
 }
 
 func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, error) {
