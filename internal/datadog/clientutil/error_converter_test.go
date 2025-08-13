@@ -4,7 +4,7 @@
 package clientutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -16,7 +16,7 @@ func TestWrapError(t *testing.T) {
 	respOK := http.Response{StatusCode: http.StatusOK}
 	respRetriable := http.Response{StatusCode: http.StatusPaymentRequired}
 	respNonRetriable := http.Response{StatusCode: http.StatusNotFound}
-	err := fmt.Errorf("Test error")
+	err := errors.New("Test error")
 	assert.False(t, consumererror.IsPermanent(WrapError(err, &respOK)))
 	assert.False(t, consumererror.IsPermanent(WrapError(err, &respRetriable)))
 	assert.True(t, consumererror.IsPermanent(WrapError(err, &respNonRetriable)))

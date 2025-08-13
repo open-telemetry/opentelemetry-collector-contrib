@@ -4,7 +4,7 @@
 package pipeline
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -192,7 +192,7 @@ func TestPipelineStartOrder(t *testing.T) {
 	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop())
 	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop())
 
-	mockOperator1.On("Start", testutil.NewMockPersister(mockOperator1.ID())).Return(fmt.Errorf("operator 1 failed to start"))
+	mockOperator1.On("Start", testutil.NewMockPersister(mockOperator1.ID())).Return(errors.New("operator 1 failed to start"))
 	mockOperator2.On("Start", testutil.NewMockPersister(mockOperator2.ID())).Run(func(mock.Arguments) { mock2Started = true }).Return(nil)
 	mockOperator3.On("Start", testutil.NewMockPersister(mockOperator3.ID())).Run(func(mock.Arguments) { mock3Started = true }).Return(nil)
 

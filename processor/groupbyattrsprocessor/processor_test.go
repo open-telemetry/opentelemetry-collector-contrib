@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadatatest"
 )
 
@@ -60,7 +61,7 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 	return filteredAttrMap
 }
 
-func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog.Logs {
+func someComplexLogs(withResourceAttrIndex bool, rlCount, illCount int) plog.Logs {
 	logs := plog.NewLogs()
 
 	for i := 0; i < rlCount; i++ {
@@ -79,7 +80,7 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 	return logs
 }
 
-func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) ptrace.Traces {
+func someComplexTraces(withResourceAttrIndex bool, rsCount, ilsCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	for i := 0; i < rsCount; i++ {
@@ -99,7 +100,7 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pt
 	return traces
 }
 
-func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int) pmetric.Metrics {
+func someComplexMetrics(withResourceAttrIndex bool, rmCount, ilmCount, dataPointCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < rmCount; i++ {
@@ -126,7 +127,7 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pmetric.Metrics {
+func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount, ilmCount, dataPointCount, histogramSize int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < rmCount; i++ {
@@ -182,12 +183,11 @@ func randFloat64Arr(size int) []float64 {
 }
 
 func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, attributeMap pcommon.Map) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
-		return true
-	})
+	}
 }
 
 // The "complex" use case has following input data:
@@ -315,7 +315,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				for j := 0; j < rl.ScopeLogs().Len(); j++ {
 					logs := rl.ScopeLogs().At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
-						assert.EqualValues(t, outputRecordAttrs, logs.At(k).Attributes())
+						assert.Equal(t, outputRecordAttrs, logs.At(k).Attributes())
 					}
 				}
 			}
@@ -332,7 +332,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				for j := 0; j < rs.ScopeSpans().Len(); j++ {
 					spans := rs.ScopeSpans().At(j).Spans()
 					for k := 0; k < spans.Len(); k++ {
-						assert.EqualValues(t, outputRecordAttrs, spans.At(k).Attributes())
+						assert.Equal(t, outputRecordAttrs, spans.At(k).Attributes())
 					}
 				}
 			}
@@ -351,7 +351,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
 						for l := 0; l < metric.Gauge().DataPoints().Len(); l++ {
-							assert.EqualValues(t, outputRecordAttrs, metric.Gauge().DataPoints().At(l).Attributes())
+							assert.Equal(t, outputRecordAttrs, metric.Gauge().DataPoints().At(l).Attributes())
 						}
 					}
 				}
@@ -372,7 +372,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 						metric := metrics.At(k)
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Histogram().AggregationTemporality())
 						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
-							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
+							assert.Equal(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
 					}
 				}
@@ -523,7 +523,7 @@ func TestAttributeGrouping(t *testing.T) {
 			histogramMetrics := someHistogramMetrics(attrMap, 1, tt.count)
 			exponentialHistogramMetrics := someExponentialHistogramMetrics(attrMap, 1, tt.count)
 
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), tt.groupByKeys)
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), tt.groupByKeys)
 			require.NoError(t, err)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
@@ -624,7 +624,7 @@ func TestAttributeGrouping(t *testing.T) {
 	}
 }
 
-func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int) ptrace.Traces {
+func someSpans(attrs pcommon.Map, instrumentationLibraryCount, spanCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -640,7 +640,7 @@ func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int
 	return traces
 }
 
-func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) plog.Logs {
+func someLogs(attrs pcommon.Map, instrumentationLibraryCount, logCount int) plog.Logs {
 	logs := plog.NewLogs()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -655,7 +655,7 @@ func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) 
 	return logs
 }
 
-func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -672,7 +672,7 @@ func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metric
 	return metrics
 }
 
-func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -689,7 +689,7 @@ func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCo
 	return metrics
 }
 
-func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -706,7 +706,7 @@ func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metr
 	return metrics
 }
 
-func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -723,7 +723,7 @@ func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, me
 	return metrics
 }
 
-func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -834,7 +834,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Perform the test
-	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{"host.name"})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"host.name"})
 	require.NoError(t, err)
 
 	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
@@ -919,7 +919,7 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 100, logs.ResourceLogs().Len())
 	assert.Equal(t, 100, metrics.ResourceMetrics().Len())
 
-	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 	require.NoError(t, err)
 
 	processedSpans, err := gap.processTraces(context.Background(), spans)
@@ -1031,7 +1031,7 @@ func BenchmarkCompacting(bb *testing.B) {
 	for _, run := range runs {
 		bb.Run(fmt.Sprintf("instrumentation_library_count=%d, spans_per_library_count=%d", run.ilCount, run.spanCount), func(b *testing.B) {
 			spans := someSpans(attrMap, run.ilCount, run.spanCount)
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 			require.NoError(b, err)
 
 			b.ResetTimer()

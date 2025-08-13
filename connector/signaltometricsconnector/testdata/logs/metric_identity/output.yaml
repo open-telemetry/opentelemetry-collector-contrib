@@ -1,0 +1,190 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Logrecords as histogram with log.duration from attributes
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - bucketCounts:
+                    - "0"
+                    - "2"
+                    - "1"
+                    - "0"
+                    - "1"
+                    - "0"
+                  count: "4"
+                  explicitBounds:
+                    - 1
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                  sum: 128
+                  timeUnixNano: "1000000"
+            name: metric.log.duration
+          - description: Logrecords as exponential histogram with log.duration from attributes
+            exponentialHistogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - count: "4"
+                  max: 101.5
+                  min: 7
+                  negative: {}
+                  positive:
+                    bucketCounts:
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "1"
+                    offset: 89
+                  scale: 5
+                  sum: 128
+                  timeUnixNano: "1000000"
+            name: metric.log.duration
+          - description: Logrecords as sum with log.duration from attributes
+            name: metric.log.duration
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: 128
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

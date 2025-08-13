@@ -30,6 +30,9 @@ jmx/missingendpoint:
 jmx/missingtarget:
   jar_path: testdata/fake_jmx.jar
   endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
+jmx/missingtargetandjmxconfig:
+  jar_path: testdata/fake_jmx_scraper.jar
+  endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
 jmx/invalidinterval:
   jar_path: testdata/fake_jmx.jar
   endpoint: myendpoint:23456
@@ -51,6 +54,11 @@ jmx/invalidjar:
   target_system: jvm
 jmx/invalidloglevel:
   jar_path: testdata/fake_jmx.jar
+  endpoint: myendpoint:55555
+  target_system: jvm
+  log_level: truth
+jmx/invalidloglevelscraper:
+  jar_path: testdata/fake_jmx_scraper.jar
   endpoint: myendpoint:55555
   target_system: jvm
   log_level: truth

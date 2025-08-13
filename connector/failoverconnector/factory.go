@@ -26,9 +26,9 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RetryGap:      30 * time.Second,
 		RetryInterval: 10 * time.Minute,
-		MaxRetries:    10,
+		RetryGap:      0,
+		MaxRetries:    0,
 	}
 }
 

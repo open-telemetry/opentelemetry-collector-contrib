@@ -57,11 +57,11 @@ func (f internalFilterStrict) matchMetric(metric pmetric.Metric) bool {
 	return false
 }
 
-func (f internalFilterStrict) submatches(_ pmetric.Metric) []int {
+func (internalFilterStrict) submatches(pmetric.Metric) []int {
 	return nil
 }
 
-func (f internalFilterStrict) expand(_, _ string) string {
+func (internalFilterStrict) expand(string, string) string {
 	return ""
 }
 
@@ -385,10 +385,9 @@ func canBeCombined(metrics []pmetric.Metric) error {
 func metricAttributeKeys(metric pmetric.Metric) map[string]struct{} {
 	attrKeys := map[string]struct{}{}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
-		attrs.Range(func(k string, _ pcommon.Value) bool {
+		for k := range attrs.All() {
 			attrKeys[k] = struct{}{}
-			return true
-		})
+		}
 		return true
 	})
 	return attrKeys

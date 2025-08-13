@@ -43,7 +43,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(params, endpoint)
+		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
 		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
 	}
@@ -60,7 +60,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	}, nil
 }
 
-func (e *logExporterImp) Capabilities() consumer.Capabilities {
+func (*logExporterImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

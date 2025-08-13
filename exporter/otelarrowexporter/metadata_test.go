@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
@@ -39,7 +40,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -48,7 +49,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 
 	cfg.MetadataCardinalityLimit = 10
 	cfg.MetadataKeys = []string{"key1", "key2"}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	bg := context.Background()
@@ -145,7 +146,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -156,7 +157,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 
 	cfg.MetadataCardinalityLimit = cardLimit
 	cfg.MetadataKeys = []string{"key1", "key2"}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	bg := context.Background()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)

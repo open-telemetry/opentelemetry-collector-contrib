@@ -57,18 +57,26 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 
 	_ = v.OnKey("attributes")
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	attributes.Range(func(k string, val pcommon.Value) bool {
+	for k, val := range attributes.All() {
+		// Exclude well-known, Elastic-specific attributes
+		// from the document. These are handled elsewhere.
 		switch k {
-		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace, elasticsearch.MappingHintsAttrKey, elasticsearch.DocumentIDAttributeName:
-			return true
+		case elasticsearch.DataStreamType,
+			elasticsearch.DataStreamDataset,
+			elasticsearch.DataStreamNamespace,
+			elasticsearch.MappingHintsAttrKey,
+			elasticsearch.MappingModeAttributeName,
+			elasticsearch.DocumentIDAttributeName,
+			elasticsearch.DocumentPipelineAttributeName,
+			elasticsearch.IndexAttributeName:
+			continue
 		}
 		if isGeoAttribute(k, val) {
-			return true
+			continue
 		}
 		_ = v.OnKey(k)
 		serializer.WriteValue(v, val, stringifyMapValues)
-		return true
-	})
+	}
 	writeGeolocationAttributes(v, attributes)
 	_ = v.OnObjectFinished()
 }
@@ -108,28 +116,23 @@ func writeGeolocationAttributes(v *json.Visitor, attributes pcommon.Map) {
 		g.latSet = true
 		prefixToGeo[prefix] = g
 	}
-	attributes.Range(func(key string, val pcommon.Value) bool {
+	for key, val := range attributes.All() {
 		if val.Type() != pcommon.ValueTypeDouble {
-			return true
+			continue
 		}
 
 		if key == lonKey {
 			setLon("", val.Double())
-			return true
 		} else if key == latKey {
 			setLat("", val.Double())
-			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
 			prefix := namespace + "."
 			setLon(prefix, val.Double())
-			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
 			prefix := namespace + "."
 			setLat(prefix, val.Double())
-			return true
 		}
-		return true
-	})
+	}
 
 	for prefix, geo := range prefixToGeo {
 		if geo.lonSet && geo.latSet {
@@ -160,6 +163,11 @@ func writeTimestampField(v *json.Visitor, key string, timestamp pcommon.Timestam
 	msec := nsec / 1e6
 	nsec -= msec * 1e6
 	_ = v.OnString(strconv.FormatUint(msec, 10) + "." + strconv.FormatUint(nsec, 10))
+}
+
+func writeTimestampEpochMillisField(v *json.Visitor, key string, timestamp pcommon.Timestamp) {
+	_ = v.OnKey(key)
+	_ = v.OnUint64(uint64(timestamp) / 1e6)
 }
 
 func writeUIntField(v *json.Visitor, key string, i uint64) {

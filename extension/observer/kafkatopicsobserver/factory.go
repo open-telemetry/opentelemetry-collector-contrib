@@ -11,12 +11,12 @@ import (
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 const (
-	defaultBroker            = "localhost:9092"
-	defaultSessionTimeout    = 10 * time.Second
-	defaultHeartbeatInterval = 3 * time.Second
+	defaultTopicsSyncInterval = 5 * time.Second
 )
 
 // NewFactory should be called to create a factory with default values.
@@ -31,9 +31,8 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Brokers:           []string{defaultBroker},
-		SessionTimeout:    defaultSessionTimeout,
-		HeartbeatInterval: defaultHeartbeatInterval,
+		ClientConfig:       configkafka.NewDefaultClientConfig(),
+		TopicsSyncInterval: defaultTopicsSyncInterval,
 	}
 }
 
@@ -43,5 +42,5 @@ func createExtension(
 	cfg component.Config,
 ) (extension.Extension, error) {
 	config := cfg.(*Config)
-	return newObserver(settings.Logger, config)
+	return newObserver(settings.Logger, config, kafka.NewSaramaClusterAdminClient)
 }

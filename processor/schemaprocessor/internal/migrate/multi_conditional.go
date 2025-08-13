@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/otel/schema/v1.0/ast"
 )
 
 type set = map[string]struct{}
@@ -21,7 +20,7 @@ type MultiConditionalAttributeSet struct {
 
 type MultiConditionalAttributeSetSlice []*MultiConditionalAttributeSet
 
-func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches map[string][]Match) MultiConditionalAttributeSet {
+func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]string, matches map[string][]Match) MultiConditionalAttributeSet {
 	keysToPossibleValues := make(map[string]set)
 	for k, values := range matches {
 		on := make(map[string]struct{})
@@ -36,7 +35,7 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap
 	}
 }
 
-func (ca MultiConditionalAttributeSet) IsMigrator() {}
+func (MultiConditionalAttributeSet) IsMigrator() {}
 
 // Do function applies the attribute changes if the passed in values match the expected values provided in the constructor.  Uses the Do method of the embedded AttributeChangeSet
 func (ca *MultiConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, keyToCheckVals map[string]string) (errs error) {

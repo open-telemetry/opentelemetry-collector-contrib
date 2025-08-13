@@ -13,7 +13,6 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
 	jaegerthrift "github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -21,12 +20,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	jaegerconvert "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/jaegerthriftcoverter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver/thriftudp"
 )
 
 var jaegerAgent = component.NewIDWithName(metadata.Type, "agent_test")
@@ -48,7 +48,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -77,7 +77,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -111,7 +111,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocols) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -143,7 +143,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 
 	gotTraces := sink.AllTraces()
 	require.Len(t, gotTraces, 1)
-	assert.EqualValues(t, td, gotTraces[0])
+	assert.Equal(t, td, gotTraces[0])
 }
 
 func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
@@ -164,7 +164,7 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})

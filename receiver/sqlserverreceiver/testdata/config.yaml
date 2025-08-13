@@ -10,3 +10,19 @@ sqlserver/named:
       enabled: true
     sqlserver.instance.name:
       enabled: true
+    server.port:
+      enabled: true
+    server.address:
+      enabled: true
+  top_query_collection:
+    lookback_time: 60
+    max_query_sample_count: 1000
+    top_query_count: 200
+    collection_interval: 80s
+  query_sample_collection:
+    max_rows_per_query: 1450
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true

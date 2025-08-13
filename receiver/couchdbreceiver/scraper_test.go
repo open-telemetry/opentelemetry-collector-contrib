@@ -39,7 +39,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
 		actualMetrics, err := scraper.scrape(context.Background())
@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
-		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
 		actualMetrics, err := scraper.scrape(context.Background())
@@ -73,7 +73,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape returns nothing", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(map[string]any{}, nil)
-		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
 		metrics, err := scraper.scrape(context.Background())
@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
-		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
 		_, err := scraper.scrape(context.Background())
 		require.Error(t, err)
@@ -95,7 +95,7 @@ func TestScrape(t *testing.T) {
 
 	t.Run("scrape error: get stats endpoint error", func(t *testing.T) {
 		obs, logs := observer.New(zap.ErrorLevel)
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		settings.Logger = zap.New(obs)
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats(""))
@@ -125,19 +125,19 @@ func TestStart(t *testing.T) {
 		cfg.Password = "otelp"
 		require.NoError(t, xconfmap.Validate(cfg))
 
-		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err)
 	})
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.ClientConfig.TLSSetting.CAFile = "/non/existent"
+		cfg.TLS.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
 		require.NoError(t, xconfmap.Validate(cfg))
 
-		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.Error(t, err)
 	})
@@ -161,7 +161,7 @@ func TestMetricSettings(t *testing.T) {
 		ClientConfig:         confighttp.NewDefaultClientConfig(),
 		MetricsBuilderConfig: mbc,
 	}
-	scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
+	scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	scraper.client = mockClient
 
 	metrics, err := scraper.scrape(context.Background())

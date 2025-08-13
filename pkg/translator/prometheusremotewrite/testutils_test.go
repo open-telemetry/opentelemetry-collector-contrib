@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 var (
@@ -148,7 +147,7 @@ func getPromLabels(lbs ...string) []prompb.Label {
 	return pbLbs.Labels
 }
 
-func getLabel(name string, value string) prompb.Label {
+func getLabel(name, value string) prompb.Label {
 	return prompb.Label{
 		Name:  name,
 		Value: value,
@@ -173,7 +172,7 @@ func getExemplar(v float64, t int64) prompb.Exemplar {
 	return prompb.Exemplar{
 		Value:     v,
 		Timestamp: t,
-		Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1)},
+		Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1)},
 	}
 }
 
@@ -185,11 +184,11 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time time.Time, value V, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time time.Time, value V, traceID, spanID, attributeKey, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
-	switch v := (any)(value).(type) {
+	switch v := any(value).(type) {
 	case int64:
 		e.SetIntValue(v)
 	case float64:
@@ -221,6 +220,8 @@ func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time ti
 func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.SetDescription("test int gauge description")
+	metric.SetUnit("By")
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -236,6 +237,8 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.SetDescription("test double gauge description")
+	metric.SetUnit("By")
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -306,10 +309,9 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		v.CopyTo(dp.Attributes().PutEmpty(k))
-		return true
-	})
+	}
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))
 

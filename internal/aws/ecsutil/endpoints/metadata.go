@@ -4,6 +4,7 @@
 package endpoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -60,7 +61,7 @@ func GetTMEFromEnv() (endpoint *url.URL, err error) {
 func validateEndpoint(candidate string) (endpoint *url.URL, err error) {
 	candidate = strings.TrimSpace(candidate)
 	if candidate == "" {
-		err = fmt.Errorf("endpoint is empty")
+		err = errors.New("endpoint is empty")
 		return
 	}
 

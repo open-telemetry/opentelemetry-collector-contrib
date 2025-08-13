@@ -70,8 +70,8 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
@@ -90,6 +90,14 @@ type Config struct {
 
 	// HostMetadata defines the host metadata specific configuration
 	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
+
+	// HostnameDetectionTimeout defines the timeout for hostname detection.
+	// This is necessary for initializing datadog exporter
+	// On K8s, it must be set to less than `failureThreshold * periodSeconds` due to
+	// initialization blocking health_check liveness probes on startup.
+	// If set to zero duration, there will be no timeout applied.
+	// Default is 25 seconds.
+	HostnameDetectionTimeout time.Duration `mapstructure:"hostname_detection_timeout"`
 
 	// OnlyMetadata defines whether to only send metadata
 	// This is useful for agent-collector setups, so that
@@ -127,13 +135,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if string(c.API.Key) == "" {
-		return ErrUnsetAPIKey
-	}
-
-	invalidAPIKeyChars := NonHexRegex.FindAllString(string(c.API.Key), -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
+	if err := StaticAPIKeyCheck(string(c.API.Key)); err != nil {
+		return err
 	}
 
 	if err := c.Traces.Validate(); err != nil {
@@ -152,9 +155,22 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
+// It does not validate online; this is handled on startup.
+func StaticAPIKeyCheck(key string) error {
+	if key == "" {
+		return ErrUnsetAPIKey
+	}
+	invalidAPIKeyChars := NonHexRegex.FindAllString(key, -1)
+	if len(invalidAPIKeyChars) > 0 {
+		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
+	}
+	return nil
+}
+
 func validateClientConfig(cfg confighttp.ClientConfig) error {
 	var unsupported []string
-	if cfg.Auth != nil {
+	if cfg.Auth.HasValue() {
 		unsupported = append(unsupported, "auth")
 	}
 	if cfg.Endpoint != "" {
@@ -266,21 +282,25 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
 
+	if c.HostMetadata.HostnameSource == HostnameSourceFirstResource {
+		c.warnings = append(c.warnings, errors.New("first_resource is deprecated, opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead"))
+	}
+
 	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
-		c.Metrics.TCPAddrConfig.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+		c.Metrics.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
 	}
 	if !configMap.IsSet("traces::endpoint") {
-		c.Traces.TCPAddrConfig.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+		c.Traces.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 	if !configMap.IsSet("logs::endpoint") {
-		c.Logs.TCPAddrConfig.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
+		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""
-	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || c.Logs.TCPAddrConfig.Endpoint == "" {
+	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
 		return ErrEmptyEndpoint
 	}
 
@@ -320,7 +340,7 @@ func CreateDefaultConfig() component.Config {
 			DeltaTTL: 3600,
 			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:           false,
-				InstrumentationScopeMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags: true,
 			},
 			HistConfig: HistogramConfig{
 				Mode:             "distributions",
@@ -361,5 +381,7 @@ func CreateDefaultConfig() component.Config {
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
 		},
+
+		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 	}
 }

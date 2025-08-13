@@ -28,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 
 	clientConfigPath := confighttp.NewDefaultClientConfig()
 	clientConfigPath.Endpoint = "localhost:1234"
-	clientConfigPath.TLSSetting = configtls.ClientConfig{
+	clientConfigPath.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "path",
 			CertFile: "path",
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	clientConfigTLS := confighttp.NewDefaultClientConfig()
 	clientConfigTLS.Endpoint = "localhost:1234"
-	clientConfigTLS.TLSSetting = configtls.ClientConfig{
+	clientConfigTLS.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 

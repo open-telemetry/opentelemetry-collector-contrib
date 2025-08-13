@@ -22,9 +22,9 @@ Total CPU seconds broken down by different states.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | false |
 
 ### process.disk.io
 
@@ -36,9 +36,9 @@ Disk bytes transferred.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` | false |
 
 ### process.memory.usage
 
@@ -78,9 +78,9 @@ This metric is only available on Linux.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of context switched. | Str: ``involuntary``, ``voluntary`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of context switched. | Str: ``involuntary``, ``voluntary`` | false |
 
 ### process.cpu.utilization
 
@@ -92,9 +92,9 @@ Percentage of total CPU time used by the process since last scrape, expressed as
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | false |
 
 ### process.disk.operations
 
@@ -106,13 +106,13 @@ Number of disk operations performed by the process.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` | false |
 
 ### process.handles
 
-Number of handles held by the process.
+Number of open handles held by the process.
 
 This metric is only available on Windows.
 
@@ -132,7 +132,7 @@ Percentage of total physical memory that is used by the process.
 
 Number of file descriptors in use by the process.
 
-This metric is only available on Linux.
+On Windows this metric captures the number of open handles currently held by the process. If you want to capture this data on Windows use the `process.handles` metric instead to avoid any confusion.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -150,9 +150,9 @@ This metric is only available on Linux.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of memory paging fault. | Str: ``major``, ``minor`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of memory paging fault. | Str: ``major``, ``minor`` | false |
 
 ### process.signals_pending
 

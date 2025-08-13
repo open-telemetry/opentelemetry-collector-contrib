@@ -3,6 +3,7 @@
 package assignkeys // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/assignkeys"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -55,7 +56,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if len(c.Keys) == 0 {
-		return nil, fmt.Errorf("assign_keys missing required field keys")
+		return nil, errors.New("assign_keys missing required field keys")
 	}
 
 	if _, ok := c.Field.FieldInterface.(entry.BodyField); ok {

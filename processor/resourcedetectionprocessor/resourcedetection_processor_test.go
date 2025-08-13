@@ -28,13 +28,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
-type MockDetector struct {
+type mockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (p *mockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
@@ -150,7 +151,7 @@ func TestResourceProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := &factory{providers: map[component.ID]*internal.ResourceProvider{}}
 
-			md1 := &MockDetector{}
+			md1 := &mockDetector{}
 			res := pcommon.NewResource()
 			require.NoError(t, res.Attributes().FromRaw(tt.detectedResource))
 			md1.On("Detect").Return(res, tt.detectedError)
@@ -171,7 +172,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test trace consumer
 			ttn := new(consumertest.TracesSink)
-			rtp, err := factory.createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, ttn)
+			rtp, err := factory.createTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -202,7 +203,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.createMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, tmn)
+			rmp, err := factory.createMetricsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, tmn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -233,7 +234,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, tln)
+			rlp, err := factory.createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, tln)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -264,7 +265,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test profiles consumer
 			tpn := new(consumertest.ProfilesSink)
-			rpp, err := factory.createProfilesProcessor(context.Background(), processortest.NewNopSettings(), cfg, tpn)
+			rpp, err := factory.createProfilesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, tpn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -299,7 +300,7 @@ func TestResourceProcessor(t *testing.T) {
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.TracesSink)
-	processor, _ := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, sink)
+	processor, _ := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -321,7 +322,7 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.MetricsSink)
-	processor, _ := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, sink)
+	processor, _ := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -343,7 +344,7 @@ func BenchmarkConsumeMetricsAll(b *testing.B) {
 func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.LogsSink)
-	processor, _ := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, sink)
+	processor, _ := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -365,7 +366,7 @@ func BenchmarkConsumeLogsAll(b *testing.B) {
 func benchmarkConsumeProfiles(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.ProfilesSink)
-	processor, _ := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, sink)
+	processor, _ := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

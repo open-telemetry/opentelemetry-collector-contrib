@@ -48,7 +48,7 @@ func NewJaegerGRPCDataSender(host string, port int) testbed.TraceDataSender {
 }
 
 func (je *jaegerGRPCDataSender) Start() error {
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(exportertest.NopType)
 	params.Logger = zap.L()
 
 	exp, err := je.newTracesExporter(params)
@@ -68,14 +68,14 @@ func (je *jaegerGRPCDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, je.GetEndpoint())
 }
 
-func (je *jaegerGRPCDataSender) ProtocolName() string {
+func (*jaegerGRPCDataSender) ProtocolName() string {
 	return "jaeger"
 }
 
 // Config defines configuration for Jaeger gRPC exporter.
 type jaegerConfig struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -97,7 +97,7 @@ func (cfg *jaegerConfig) Validate() error {
 func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (exporter.Traces, error) {
 	cfg := jaegerConfig{}
 	cfg.Endpoint = je.GetEndpoint().String()
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 
@@ -174,7 +174,7 @@ func (s *protoGRPCSender) shutdown(context.Context) error {
 
 func (s *protoGRPCSender) start(ctx context.Context, host component.Host) error {
 	if s.clientSettings == nil {
-		return fmt.Errorf("client settings not found")
+		return errors.New("client settings not found")
 	}
 	conn, err := s.clientSettings.ToClientConn(ctx, host, s.settings)
 	if err != nil {

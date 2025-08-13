@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fprometheus) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_prometheus)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_prometheus&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -30,7 +31,12 @@ The following settings can be optionally configured:
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
-- `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled.
+- `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead. This setting is ignored when `translation_strategy` is explicitly set.
+- `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over `add_metric_suffixes`. Available options:
+  - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
+  - `UnderscoreEscapingWithoutSuffixes`: Metric names will continue to escape special characters to `_`, but suffixes won't be attached.
+  - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.
+  - `NoTranslation`: Bypasses all metric and label name translation, passing them through unaltered.
 
 Example:
 
@@ -49,7 +55,9 @@ exporters:
     send_timestamps: true
     metric_expiration: 180m
     enable_open_metrics: true
+    # Legacy configuration - deprecated, ignored when translation_strategy is set
     add_metric_suffixes: false
+    translation_strategy: "UnderscoreEscapingWithoutSuffixes"
     resource_to_telemetry_conversion:
       enabled: true
 ```
@@ -58,7 +66,9 @@ Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 ## Metric names and labels normalization
 
-OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
+By Default, OpenTelemetry metric names and attributes are normalized to be compliant with [Prometheus naming rules](https://prometheus.io/docs/practices/naming/).
+
+Optionally, users can set different `translation_strategy` options to control how metrics are exposed. Please be aware that Prometheus itself uses content negotiation to decide how to ingest metrics, and underscore escaping might be applied even though this exporter is configured to keep UTF-8 characters. For more details, read [Prometheus' Content Negotiation documentation](https://prometheus.io/docs/instrumenting/content_negotiation/).
 
 ## Setting resource attributes as metric labels
 

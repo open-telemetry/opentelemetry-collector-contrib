@@ -121,7 +121,7 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 			newMap := pcommon.NewMap()
 			newMap.EnsureCapacity(attributes.Len())
 
-			attributes.Range(func(key string, value pcommon.Value) bool {
+			for key, value := range attributes.All() {
 				ok, trimmedKey := getNewKey(key, prefix)
 				if ok {
 					// TODO: Potential name conflict to resolve, eg.:
@@ -136,8 +136,7 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 				} else {
 					value.CopyTo(newMap.PutEmpty(key))
 				}
-				return true
-			})
+			}
 			newMap.CopyTo(attributes)
 		}
 
@@ -163,7 +162,7 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 }
 
 // Checks if the key has given prefix and trims it if so.
-func getNewKey(key string, prefix string) (bool, string) {
+func getNewKey(key, prefix string) (bool, string) {
 	if strings.HasPrefix(key, prefix) {
 		return true, strings.TrimPrefix(key, prefix)
 	}

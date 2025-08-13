@@ -6,8 +6,9 @@ status:
     beta: [extension]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jpkrohling, frzifus]
-    emeritus: [svrakitin]
+    active: [frzifus]
+    emeritus: [jpkrohling, svrakitin]
+    seeking_new: true
 
 tests:
   config:

@@ -27,7 +27,7 @@ import (
 )
 
 func TestEventCallback(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 
 	for _, tt := range []struct {
@@ -109,7 +109,7 @@ func TestEventCallback(t *testing.T) {
 }
 
 func TestEventCallbackNotSet(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename string
@@ -158,7 +158,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 }
 
 func TestEventInvalidPayload(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename         string
@@ -229,7 +229,7 @@ func TestEventInvalidPayload(t *testing.T) {
 }
 
 func TestEventUnknownType(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	logger, err := zap.NewDevelopment()
@@ -254,7 +254,7 @@ func TestEventUnknownType(t *testing.T) {
 }
 
 func TestEventTracePerWorker(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename  string
@@ -359,7 +359,7 @@ func TestEventConsumeConsistency(t *testing.T) {
 }
 
 func TestEventShutdown(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	wg := sync.WaitGroup{}
@@ -487,7 +487,7 @@ func TestPeriodicMetrics(t *testing.T) {
 }
 
 func TestForceShutdown(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, tel)
@@ -569,7 +569,7 @@ func (tt *testTelemetry) newTelemetrySettings() component.TelemetrySettings {
 	return set
 }
 
-func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {

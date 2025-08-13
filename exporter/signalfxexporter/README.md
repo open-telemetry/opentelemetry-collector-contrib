@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsignalfx%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsignalfx) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsignalfx%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsignalfx) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_signalfx)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_signalfx&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -81,7 +82,7 @@ The following configuration options can also be configured:
   updates.
 - `disable_default_translation_rules` (default = `false`): Disable default translation
   of the OTel metrics to a SignalFx compatible format. The default translation rules are
-  defined in `translation/constants.go`.
+  defined in [`internal/translation/constants.go`](./internal/translation/constants.go).
 - `timeout` (default = 10s): Amount of time to wait for a send operation to
   complete.
 - `http2_read_idle_timeout` (default = 10s): Send a ping frame for a health check if the connection has been idle for the configured value.
@@ -101,6 +102,12 @@ The following configuration options can also be configured:
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.name` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `root_path`: Used by the host metadata to identify the root filesystem.
+  This is needed when running in a containerized environment and the host root
+  filesystem is not `/`. Example: if the root filesystem is mounted under `/hostfs`, set
+  `root_path` to `/hostfs`.
+  Note: all components using `root_path` must have the same value; this currently applies
+  to hostmetrics receiver and signalfx exporter.
 - `exclude_properties`: A list of property filters to limit dimension update content.
   Property filters can contain any number of the following fields, supporting (negated)
   string literals, re2 `/regex/`, and [glob](https://github.com/gobwas/glob) syntax values:
@@ -179,7 +186,7 @@ One of `realm` and `api_url` are required.
 ## Default Metric Filters
 [List of metrics excluded by default](./internal/translation/default_metrics.go)
 
-Some OpenTelemetry receivers may send metrics that SignalFx considers to be categorized as custom metrics. In order to prevent unwanted overage usage due to custom metrics from these receivers, the SignalFx exporter has a [set of metrics excluded by default](./internal/translation/default_metrics.go). Some exclusion rules use regex to exclude multiple metric names. Some metrics are only excluded if specific resource labels (dimensions) are present. If `translation_rules` are configured and new metrics match a default exclusion, the new metric will still be excluded. Users may configure the SignalFx exporter's `include_metrics` config option to override the any of the default exclusions, as `include_metrics` will always take precedence over any exclusions. An example of `include_metrics` is shown below.
+Some OpenTelemetry receivers may send metrics that SignalFx considers to be categorized as custom metrics. In order to prevent unwanted overage usage due to custom metrics from these receivers, the SignalFx exporter has a [set of metrics excluded by default](./internal/translation/default_metrics.go). Some exclusion rules use regex to exclude multiple metric names. Some metrics are only excluded if specific resource labels (dimensions) are present. If the default translation rules are enabled and match an exclusion rule, the exclusion takes precedence. Users may configure the SignalFx exporter's `include_metrics` config option to override the any of the default exclusions, as `include_metrics` will always take precedence over any exclusions. An example of `include_metrics` is shown below.
 
 ```
 exporters:
@@ -205,25 +212,9 @@ exporters:
 
 ## Translation Rules and Metric Transformations
 
-The `translation_rules` metrics configuration field accepts a list of metric-transforming actions to
-help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector. It also provides the ability to produce custom metrics by copying, calculating new, or aggregating other metric values without requiring an additional processor.
-The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
-
-* `aggregate_metric` - Aggregates a metric through removal of specified dimensions
-* `calculate_new_metric` - Creates a new metric via operating on two constituent ones
-* `convert_values` - Convert float values to int or int to float for specified metric names
-* `copy_metrics` - Creates a new metric as a copy of another
-* `delta_metric` - Creates a new delta metric for a specified non-delta one
-* `divide_int` - Scales a metric's integer value by a given factor
-* `drop_dimensions` - Drops dimensions for specified metrics, or globally
-* `drop_metrics` - Drops all metrics with a given name
-* `multiply_float` - Scales a metric's float value by a given float factor
-* `multiply_int` - Scales a metric's int value by a given int factor
-* `rename_dimension_keys` - Renames dimensions for specified metrics, or globally
-* `rename_metrics` - Replaces a given metric name with specified one
-* `split_metric` - Splits a given metric into multiple new ones for a specified dimension
-
-The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md):
+The default translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by the SignalFx exporter
+to help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector.
+The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md):
 
 * cpu.idle
 * cpu.interrupt
@@ -264,7 +255,7 @@ The CPU number is assigned to the dimension `cpu`
 * cpu.user
 * cpu.wait
 
-These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via additional translation rules or from their constituent host metrics.
+These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via their constituent host metrics.
 
 ## Example Config
 

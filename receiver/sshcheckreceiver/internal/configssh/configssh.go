@@ -54,7 +54,7 @@ func (c *Client) Dial(endpoint string) (err error) {
 }
 
 func (c *Client) SFTPClient() (*SFTPClient, error) {
-	if c.Client == nil || c.Client.Conn == nil {
+	if c.Client == nil || c.Conn == nil {
 		return nil, errors.New("SSH client not initialized")
 	}
 	client, err := sftp.NewClient(c.Client)
@@ -73,18 +73,18 @@ type SFTPClient struct {
 }
 
 // ToClient creates an SSHClient.
-func (scs *SSHClientSettings) ToClient(_ component.Host, _ component.TelemetrySettings) (*Client, error) {
+func (scs *SSHClientSettings) ToClient(component.Host, component.TelemetrySettings) (*Client, error) {
 	var (
 		auth ssh.AuthMethod
 		hkc  ssh.HostKeyCallback
 	)
-	if len(scs.KeyFile) > 0 {
+	if scs.KeyFile != "" {
 		key, err := os.ReadFile(scs.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read private key: %w", err)
 		}
 
-		if len(scs.Password) > 0 {
+		if scs.Password != "" {
 			sgn, err := ssh.ParsePrivateKeyWithPassphrase(key, []byte(scs.Password))
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse private key with passphrase: %w", err)

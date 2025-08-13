@@ -216,8 +216,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 					var err error
 					b, err = marshalEvent(event, c.config.MaxEventSize)
 					if err != nil {
-						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-							"dropped log event: %v, error: %w", event, err)))
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(err))
 						continue
 					}
 				}
@@ -265,7 +264,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 					// JSON encoding event and writing to buffer.
 					b, err := marshalEvent(event, c.config.MaxEventSize)
 					if err != nil {
-						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(err))
 						continue
 					}
 					tempBuf.Write(b)
@@ -303,7 +302,7 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 		// JSON encoding event and writing to buffer.
 		b, jsonErr := marshalEvent(event, c.config.MaxEventSize)
 		if jsonErr != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, jsonErr)))
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(jsonErr))
 			continue
 		}
 		_, err := buf.Write(b)
@@ -348,7 +347,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 				// JSON encoding event and writing to buffer.
 				b, err := marshalEvent(event, c.config.MaxEventSize)
 				if err != nil {
-					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(err))
 					continue
 				}
 
@@ -637,7 +636,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 }
 
 func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), http.NoBody)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -658,7 +657,7 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.ClientConfig.Compression = ""
+	config.Compression = ""
 	return config.ToClient(ctx, host, telemetrySettings)
 }
 

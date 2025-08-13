@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -33,11 +34,19 @@ type memoryScraper struct {
 	// for mocking gopsutil mem.VirtualMemory
 	bootTime      func(context.Context) (uint64, error)
 	virtualMemory func(context.Context) (*mem.VirtualMemoryStat, error)
+
+	pageSize int64
 }
 
 // newMemoryScraper creates a Memory Scraper
 func newMemoryScraper(_ context.Context, settings scraper.Settings, cfg *Config) *memoryScraper {
-	return &memoryScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, virtualMemory: mem.VirtualMemoryWithContext}
+	return &memoryScraper{
+		settings:      settings,
+		config:        cfg,
+		bootTime:      host.BootTimeWithContext,
+		virtualMemory: mem.VirtualMemoryWithContext,
+		pageSize:      int64(os.Getpagesize()),
+	}
 }
 
 func (s *memoryScraper) start(ctx context.Context, _ component.Host) error {
@@ -70,7 +79,12 @@ func (s *memoryScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.recordMemoryUtilizationMetric(now, memInfo)
 		s.recordMemoryLimitMetric(now, memInfo)
 		s.recordSystemSpecificMetrics(now, memInfo)
+		s.recordMemoryPageSizeMetric(now)
 	}
 
 	return s.mb.Emit(), nil
+}
+
+func (s *memoryScraper) recordMemoryPageSizeMetric(now pcommon.Timestamp) {
+	s.mb.RecordSystemMemoryPageSizeDataPoint(now, s.pageSize)
 }

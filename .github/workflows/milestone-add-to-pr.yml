@@ -8,12 +8,17 @@ on:
     types:
       - closed
 
+permissions:
+  contents: read
+
 jobs:
   update-pr:
-    if: github.event.pull_request.merged
+    permissions:
+      pull-requests: write # required for adding milestone to PRs
+    if: github.event.pull_request.merged && github.repository_owner == 'open-telemetry'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
             const milestones = await github.rest.issues.listMilestones({

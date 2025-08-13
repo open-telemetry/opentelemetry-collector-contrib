@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowCollectorMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
-	otelAssert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowCollectorMock "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1/mock"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
+	arrowRecordMock "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record/mock"
+	otelAssert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -134,7 +134,7 @@ func newUnhealthyTestChannel(t *testing.T) *unhealthyTestChannel {
 	return &unhealthyTestChannel{t: t}
 }
 
-func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
+func (unhealthyTestChannel) onConsume(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -366,8 +366,8 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 	return mock
 }
 
-func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
-	var authServer auth.Server
+func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
+	var authServer extensionauth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
 		gf(&gsettings, &authServer)
@@ -529,7 +529,7 @@ func TestReceiverLogs(t *testing.T) {
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
-	assert.EqualValues(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
+	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
 
 	err = ctc.cancelAndWait()
 	requireCanceledStatus(t, err)
@@ -848,7 +848,7 @@ func TestReceiverEOF(t *testing.T) {
 		actualData = append(actualData, (<-ctc.consume).Data.(ptrace.Traces))
 	}
 
-	assert.Equal(t, len(expectData), len(actualData))
+	assert.Len(t, actualData, len(expectData))
 
 	for i := 0; i < len(expectData); i++ {
 		otelAssert.Equiv(stdTesting, []json.Marshaler{
@@ -882,7 +882,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 
 	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData)).Return(nil)
 
-	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, _ *auth.Server) {
+	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, _ *extensionauth.Server) {
 		gsettings.IncludeMetadata = includeMeta
 	})
 
@@ -945,17 +945,6 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	}
 
 	wg.Wait()
-}
-
-func TestReceiverCancel(t *testing.T) {
-	tc := newHealthyTestChannel(t)
-	ctc := newCommonTestCase(t, tc)
-
-	ctc.cancel()
-	ctc.start(ctc.newRealConsumer, defaultBQ())
-
-	err := ctc.wait()
-	requireCanceledStatus(t, err)
 }
 
 func requireContainsAll(t *testing.T, md client.Metadata, exp map[string][]string) {
@@ -1031,7 +1020,7 @@ func TestHeaderReceiverAuthServerNoIncludeMetadata(t *testing.T) {
 
 		// Headers are returned for the auth server, though
 		// names have been forced to lower case.
-		require.Equal(t, len(hdrs), len(expectForAuth))
+		require.Len(t, expectForAuth, len(hdrs))
 		for k, v := range expectForAuth {
 			require.Equal(t, hdrs[strings.ToLower(k)], v)
 		}
@@ -1116,7 +1105,7 @@ func TestHeaderReceiverAuthServerIsSetNoIncludeMetadata(t *testing.T) {
 		// case.  It's not safe to check that the map sizes
 		// are equal after calling Get() below, so we assert
 		// same size first.
-		require.Equal(t, len(hdrs), len(expect))
+		require.Len(t, expect, len(hdrs))
 
 		requireContainsAll(t, client.FromContext(cc).Metadata, expect)
 
@@ -1223,7 +1212,7 @@ func TestReceiverAuthHeadersStream(t *testing.T) {
 	t.Run("per-data", func(t *testing.T) { testReceiverAuthHeaders(t, true, true) })
 }
 
-func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
+func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
@@ -1243,7 +1232,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 	})
 
 	var authCall *gomock.Call
-	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, authPtr *auth.Server) {
+	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, authPtr *extensionauth.Server) {
 		gsettings.IncludeMetadata = includeMeta
 
 		as := mock.NewMockServer(ctc.ctrl)

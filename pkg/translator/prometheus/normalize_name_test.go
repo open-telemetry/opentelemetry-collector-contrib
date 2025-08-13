@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestByte(t *testing.T) {
@@ -137,27 +135,6 @@ func TestNamespace(t *testing.T) {
 	require.Equal(t, "space_test", normalizeName(createGauge("#test", ""), "space"))
 }
 
-func TestCleanUpString(t *testing.T) {
-	require.Equal(t, "", CleanUpString(""))
-	require.Equal(t, "a_b", CleanUpString("a b"))
-	require.Equal(t, "hello_world", CleanUpString("hello, world!"))
-	require.Equal(t, "hello_you_2", CleanUpString("hello you 2"))
-	require.Equal(t, "1000", CleanUpString("$1000"))
-	require.Equal(t, "", CleanUpString("*+$^=)"))
-}
-
-func TestUnitMapGetOrDefault(t *testing.T) {
-	require.Equal(t, "", unitMapGetOrDefault(""))
-	require.Equal(t, "seconds", unitMapGetOrDefault("s"))
-	require.Equal(t, "invalid", unitMapGetOrDefault("invalid"))
-}
-
-func TestPerUnitMapGetOrDefault(t *testing.T) {
-	require.Equal(t, "", perUnitMapGetOrDefault(""))
-	require.Equal(t, "second", perUnitMapGetOrDefault("s"))
-	require.Equal(t, "invalid", perUnitMapGetOrDefault("invalid"))
-}
-
 func TestRemoveItem(t *testing.T) {
 	require.Equal(t, []string{}, removeItem([]string{}, "test"))
 	require.Equal(t, []string{}, removeItem([]string{}, ""))
@@ -169,7 +146,6 @@ func TestRemoveItem(t *testing.T) {
 }
 
 func TestBuildCompliantNameWithNormalize(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, true)()
 	addUnitAndTypeSuffixes := true
 	require.Equal(t, "system_io_bytes_total", BuildCompliantName(createCounter("system.io", "By"), "", addUnitAndTypeSuffixes))
 	require.Equal(t, "system_network_io_bytes_total", BuildCompliantName(createCounter("network.io", "By"), "system", addUnitAndTypeSuffixes))
@@ -177,28 +153,4 @@ func TestBuildCompliantNameWithNormalize(t *testing.T) {
 	require.Equal(t, "envoy_rule_engine_zlib_buf_error", BuildCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), "", addUnitAndTypeSuffixes))
 	require.Equal(t, "foo_bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 	require.Equal(t, "foo_bar_total", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
-}
-
-func TestBuildCompliantNameWithSuffixesFeatureGateDisabled(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, false)()
-	addUnitAndTypeSuffixes := true
-	require.Equal(t, "system_io", BuildCompliantName(createCounter("system.io", "By"), "", addUnitAndTypeSuffixes))
-	require.Equal(t, "system_network_io", BuildCompliantName(createCounter("network.io", "By"), "system", addUnitAndTypeSuffixes))
-	require.Equal(t, "system_network_I_O", BuildCompliantName(createCounter("network (I/O)", "By"), "system", addUnitAndTypeSuffixes))
-	require.Equal(t, "_3_14_digits", BuildCompliantName(createGauge("3.14 digits", "By"), "", addUnitAndTypeSuffixes))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), "", addUnitAndTypeSuffixes))
-	require.Equal(t, ":foo::bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
-	require.Equal(t, ":foo::bar", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
-}
-
-func TestBuildCompliantNameWithoutSuffixes(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, false)()
-	addUnitAndTypeSuffixes := false
-	require.Equal(t, "system_io", BuildCompliantName(createCounter("system.io", "By"), "", addUnitAndTypeSuffixes))
-	require.Equal(t, "system_network_io", BuildCompliantName(createCounter("network.io", "By"), "system", addUnitAndTypeSuffixes))
-	require.Equal(t, "system_network_I_O", BuildCompliantName(createCounter("network (I/O)", "By"), "system", addUnitAndTypeSuffixes))
-	require.Equal(t, "_3_14_digits", BuildCompliantName(createGauge("3.14 digits", "By"), "", addUnitAndTypeSuffixes))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), "", addUnitAndTypeSuffixes))
-	require.Equal(t, ":foo::bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
-	require.Equal(t, ":foo::bar", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 }

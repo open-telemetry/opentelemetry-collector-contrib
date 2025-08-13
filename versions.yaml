@@ -3,15 +3,17 @@
 
 module-sets:
   contrib-base:
-    version: v0.119.0
+    version: v0.132.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
+      - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
@@ -24,8 +26,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector
-      - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
-      - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
@@ -33,6 +33,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter
@@ -46,6 +47,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/faroexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
@@ -53,11 +55,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
@@ -75,18 +75,23 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
-      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
@@ -136,6 +141,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
@@ -152,6 +158,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
@@ -163,6 +170,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
@@ -176,13 +184,16 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
@@ -226,6 +237,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
@@ -246,6 +258,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8slogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
@@ -268,6 +281,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
@@ -292,8 +306,10 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
@@ -302,6 +318,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
@@ -313,3 +330,7 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/badpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/testpkg/receiver/validreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver

@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsimpleprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsimpleprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsimpleprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsimpleprometheus) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_prometheus_simple)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_prometheus_simple&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@fatsheep9146](https://www.github.com/fatsheep9146) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -28,8 +29,9 @@ The following settings are optional:
 
 - `collection_interval` (default = `10s`): The internal at which metrics should
 be emitted by this receiver.
-- `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
 - `job_name` (default = `prometheus_simple/${endpoint}`): Prometheus scrape job name.
+- `labels` (default = `{}`): Static prometheus labels to assign to all metrics scraped from this endpoint.
+- `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
 - `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
 - `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.

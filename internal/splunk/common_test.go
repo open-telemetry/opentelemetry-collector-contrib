@@ -4,10 +4,10 @@
 package splunk
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,6 +50,22 @@ func TestIsMetric(t *testing.T) {
 	assert.False(t, ev.IsMetric())
 	metric := Event{
 		Event: "metric",
+	}
+	assert.True(t, metric.IsMetric())
+	metric = Event{
+		Event: "",
+		Fields: map[string]any{
+			"metric_name": "foo",
+			"_value":      123,
+		},
+	}
+	assert.True(t, metric.IsMetric())
+	metric = Event{
+		Event: "any value",
+		Fields: map[string]any{
+			"metric_name": "foo",
+			"_value":      123,
+		},
 	}
 	assert.True(t, metric.IsMetric())
 	arr := Event{

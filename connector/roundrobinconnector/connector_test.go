@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector/internal/metadata"
 )
 
 func newPipelineMap[T any](signal pipeline.Signal, consumers ...T) map[pipeline.ID]T {
@@ -34,7 +36,7 @@ func TestLogsRoundRobin(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopSettings()
+	set := connectortest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost()
 
 	sink1 := new(consumertest.LogsSink)
@@ -71,7 +73,7 @@ func TestMetricsRoundRobin(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopSettings()
+	set := connectortest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost()
 
 	sink1 := new(consumertest.MetricsSink)
@@ -108,7 +110,7 @@ func TestTracesRoundRobin(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopSettings()
+	set := connectortest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost()
 
 	sink1 := new(consumertest.TracesSink)

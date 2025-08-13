@@ -29,7 +29,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -70,7 +69,7 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: 127.0.0.1:%d
+      level: none
     logs:
       level: %s
       sampling:
@@ -90,7 +89,6 @@ service:
 		debugVerbosity,
 		processorSection,
 		extensionSection,
-		testutil.GetAvailablePort(tb),
 		logLevel,
 		extensionList,
 		pipelineType,
@@ -134,17 +132,17 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 		err       error
 		factories otelcol.Factories
 	)
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		otlpreceiver.NewFactory(),
 	)
 	require.NoError(tb, err)
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		filestorage.NewFactory(),
 	)
 	require.NoError(tb, err)
-	factories.Processors, err = processor.MakeFactoryMap()
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory]()
 	require.NoError(tb, err)
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		elasticsearchexporter.NewFactory(),
 		debugexporter.NewFactory(),
 	)
@@ -155,7 +153,7 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 	}
 }
 
-func (c *recreatableOtelCol) PrepareConfig(configStr string) (func(), error) {
+func (c *recreatableOtelCol) PrepareConfig(_ *testing.T, configStr string) (func(), error) {
 	configCleanup := func() {
 		// NoOp
 	}
@@ -171,7 +169,7 @@ func (c *recreatableOtelCol) Start(_ testbed.StartParams) error {
 		return err
 	}
 
-	if _, err = confFile.Write([]byte(c.configStr)); err != nil {
+	if _, err = confFile.WriteString(c.configStr); err != nil {
 		os.Remove(confFile.Name())
 		return err
 	}
@@ -242,15 +240,15 @@ func (c *recreatableOtelCol) Restart(graceful bool, shutdownFor time.Duration) e
 	return c.run()
 }
 
-func (c *recreatableOtelCol) WatchResourceConsumption() error {
+func (*recreatableOtelCol) WatchResourceConsumption() error {
 	return nil
 }
 
-func (c *recreatableOtelCol) GetProcessMon() *process.Process {
+func (*recreatableOtelCol) GetProcessMon() *process.Process {
 	return nil
 }
 
-func (c *recreatableOtelCol) GetTotalConsumption() *testbed.ResourceConsumption {
+func (*recreatableOtelCol) GetTotalConsumption() *testbed.ResourceConsumption {
 	return &testbed.ResourceConsumption{
 		CPUPercentAvg: 0,
 		CPUPercentMax: 0,
@@ -259,7 +257,7 @@ func (c *recreatableOtelCol) GetTotalConsumption() *testbed.ResourceConsumption 
 	}
 }
 
-func (c *recreatableOtelCol) GetResourceConsumption() string {
+func (*recreatableOtelCol) GetResourceConsumption() string {
 	return ""
 }
 

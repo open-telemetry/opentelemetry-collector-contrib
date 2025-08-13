@@ -11,9 +11,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
-
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -21,31 +21,14 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	require.NoError(t, tb.RegisterDeltatocumulativeStreamsTrackedLinearCallback(func(_ context.Context, observer metric.Int64Observer) error {
+	require.NoError(t, tb.RegisterDeltatocumulativeStreamsTrackedCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.DeltatocumulativeDatapointsDropped.Add(context.Background(), 1)
-	tb.DeltatocumulativeDatapointsLinear.Add(context.Background(), 1)
-	tb.DeltatocumulativeDatapointsProcessed.Add(context.Background(), 1)
-	tb.DeltatocumulativeGapsLength.Add(context.Background(), 1)
-	tb.DeltatocumulativeStreamsEvicted.Add(context.Background(), 1)
+	tb.DeltatocumulativeDatapoints.Add(context.Background(), 1)
 	tb.DeltatocumulativeStreamsLimit.Record(context.Background(), 1)
 	tb.DeltatocumulativeStreamsMaxStale.Record(context.Background(), 1)
-	tb.DeltatocumulativeStreamsTracked.Add(context.Background(), 1)
-	AssertEqualDeltatocumulativeDatapointsDropped(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualDeltatocumulativeDatapointsLinear(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualDeltatocumulativeDatapointsProcessed(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualDeltatocumulativeGapsLength(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualDeltatocumulativeStreamsEvicted(t, testTel,
+	AssertEqualDeltatocumulativeDatapoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualDeltatocumulativeStreamsLimit(t, testTel,
@@ -55,9 +38,6 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualDeltatocumulativeStreamsTracked(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualDeltatocumulativeStreamsTrackedLinear(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

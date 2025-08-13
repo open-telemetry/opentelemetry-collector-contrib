@@ -38,21 +38,29 @@ type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
 	// Traces related configurations
 	Traces TracesConfig `mapstructure:"traces"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type EventHubConfig struct {
 	// Azure Event Hub endpoint triggering on the `Blob Create` event
 	EndPoint string `mapstructure:"endpoint"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type LogsConfig struct {
 	// Name of the blob container with the logs (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TracesConfig struct {
 	// Name of the blob container with the traces (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ServicePrincipalConfig struct {
@@ -62,6 +70,8 @@ type ServicePrincipalConfig struct {
 	ClientID string `mapstructure:"client_id"`
 	// Client secret, used with Service Principal authentication
 	ClientSecret configopaque.String `mapstructure:"client_secret"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AuthType string
@@ -103,7 +113,8 @@ func (e *CloudType) UnmarshalText(text []byte) error {
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.Authentication == ServicePrincipalAuth {
+	switch c.Authentication {
+	case ServicePrincipalAuth:
 		if c.ServicePrincipal.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
@@ -119,7 +130,7 @@ func (c Config) Validate() (err error) {
 		if c.StorageAccountURL == "" {
 			err = multierr.Append(err, errMissingStorageAccountURL)
 		}
-	} else if c.Authentication == ConnectionStringAuth {
+	case ConnectionStringAuth:
 		if c.ConnectionString == "" {
 			err = multierr.Append(err, errMissingConnectionString)
 		}

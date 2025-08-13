@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
@@ -59,7 +58,7 @@ func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) start(ctx context.Context, host component.Host) (err error) {
-	m.client, err = m.config.ClientConfig.ToClient(ctx, host, m.settings)
+	m.client, err = m.config.ToClient(ctx, host, m.settings)
 	return err
 }
 
@@ -105,10 +104,9 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					attrs["span.id"] = hex.EncodeToString(spanID[:])
 				}
 
-				log.Attributes().Range(func(k string, v pcommon.Value) bool {
+				for k, v := range log.Attributes().All() {
 					attrs[k] = truncateString(v.Str(), maxMetaDataSize)
-					return true
-				})
+				}
 
 				s, _ := log.Attributes().Get("appname")
 				app := s.Str()
@@ -149,7 +147,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 		if newBufSize >= maxBodySize-2 {
 			str := b.String()
 			str = str[:len(str)-1] + "]}"
-			if errs = m.sendLinesToMezmo(str); errs != nil {
+			if errs := m.sendLinesToMezmo(str); errs != nil {
 				return errs
 			}
 			b.Reset()

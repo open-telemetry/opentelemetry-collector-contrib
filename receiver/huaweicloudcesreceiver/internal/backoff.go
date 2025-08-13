@@ -5,7 +5,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -37,9 +37,9 @@ func MakeAPICallWithRetry[T any](
 	// Immediately check for context cancellation or server shutdown.
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("request was cancelled or timed out")
+		return nil, errors.New("request was cancelled or timed out")
 	case <-shutdownChan:
-		return nil, fmt.Errorf("request is cancelled due to server shutdown")
+		return nil, errors.New("request is cancelled due to server shutdown")
 	case <-time.After(50 * time.Millisecond):
 	}
 
@@ -81,9 +81,9 @@ func MakeAPICallWithRetry[T any](
 		// Handle context cancellation or shutdown before retrying.
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("request was cancelled or timed out")
+			return nil, errors.New("request was cancelled or timed out")
 		case <-shutdownChan:
-			return nil, fmt.Errorf("request is cancelled due to server shutdown")
+			return nil, errors.New("request is cancelled due to server shutdown")
 		case <-time.After(delay):
 		}
 

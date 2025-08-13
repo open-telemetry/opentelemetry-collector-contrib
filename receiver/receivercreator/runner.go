@@ -117,13 +117,13 @@ func (run *receiverRunner) start(
 }
 
 // shutdown the given receiver.
-func (run *receiverRunner) shutdown(rcvr component.Component) error {
+func (*receiverRunner) shutdown(rcvr component.Component) error {
 	return rcvr.Shutdown(context.Background())
 }
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
-func (run *receiverRunner) loadRuntimeReceiverConfig(
+func (*receiverRunner) loadRuntimeReceiverConfig(
 	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
@@ -158,11 +158,8 @@ func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discove
 			endpointConfigKey: targetEndpoint,
 		})
 		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err != nil {
-			// rather than attach to error content that can change over time,
-			// confirm the error only arises w/ ErrorUnused mapstructure setting ("invalid keys")
-			if err = endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithIgnoreUnused()); err == nil {
-				delete(discovered, endpointConfigKey)
-			}
+			// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
+			delete(discovered, endpointConfigKey)
 		}
 	}
 	discoveredConfig := confmap.NewFromStringMap(discovered)

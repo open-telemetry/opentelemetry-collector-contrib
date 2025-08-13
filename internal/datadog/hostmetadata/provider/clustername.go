@@ -5,6 +5,7 @@ package provider // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -34,7 +35,7 @@ func (p *chainClusterProvider) ClusterName(ctx context.Context) (string, error) 
 		p.logger.Debug("Unavailable cluster name provider", zapSource, zap.Error(err))
 	}
 
-	return "", fmt.Errorf("no cluster name provider was available")
+	return "", errors.New("no cluster name provider was available")
 }
 
 // Chain providers into a single provider that returns the first available hostname.

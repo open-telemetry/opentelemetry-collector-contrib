@@ -108,7 +108,7 @@ func TestLog10kDPSNoProcessors(t *testing.T) {
 				receiver.WithBatcher(fmt.Sprintf(`
     batcher:
       enabled: true
-      min_size_items: %d
+      min_size: %d
 `, test.batchSize))
 			}
 
@@ -236,7 +236,7 @@ func TestLog10kDPSWithProcessors(t *testing.T) {
 				receiver.WithBatcher(fmt.Sprintf(`
     batcher:
       enabled: true
-      min_size_items: %d
+      min_size: %d
 `, test.batchSize))
 			}
 

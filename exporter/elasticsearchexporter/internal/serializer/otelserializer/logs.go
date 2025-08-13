@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
-func SerializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx elasticsearch.Index, buf *bytes.Buffer) error {
+func (*Serializer) SerializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx elasticsearch.Index, buf *bytes.Buffer) error {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -60,10 +60,9 @@ func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	case pcommon.ValueTypeSlice:
 		// output must be an array of objects due to ES limitations
 		// otherwise, wrap the array in an object
-		s := body.Slice()
 		allMaps := true
-		for i := 0; i < s.Len(); i++ {
-			if s.At(i).Type() != pcommon.ValueTypeMap {
+		for _, o := range body.Slice().All() {
+			if o.Type() != pcommon.ValueTypeMap {
 				allMaps = false
 			}
 		}

@@ -6,7 +6,7 @@ status:
     beta: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [schmikei]
+    active: [justinianvoss22]
     seeking_new: true
 
 resource_attributes:

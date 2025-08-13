@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.30.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -76,12 +76,12 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			spans, err := FromTranslator{}.FromTraces(test.td)
-			assert.EqualValues(t, test.err, err)
+			assert.Equal(t, test.err, err)
 			if test.name == "empty" {
 				assert.Nil(t, spans)
 			} else {
-				assert.Equal(t, len(test.zs), len(spans))
-				assert.EqualValues(t, test.zs, spans)
+				assert.Len(t, spans, len(test.zs))
+				assert.Equal(t, test.zs, spans)
 			}
 		})
 	}
@@ -97,7 +97,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, zipkinSpans, td.SpanCount())
 		tdFromZS, zErr := ToTranslator{}.ToTraces(zipkinSpans)
-		assert.NoError(t, zErr, zipkinSpans)
+		assert.NoError(t, zErr, "%+v", zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
 
@@ -168,10 +168,10 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_OK"
+		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_OK"
 	case ptrace.StatusCodeError:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_ERROR"
-		spanTags[conventions.OtelStatusDescription] = "error message"
+		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_ERROR"
+		spanTags[string(conventions.OTelStatusDescriptionKey)] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")
 	}

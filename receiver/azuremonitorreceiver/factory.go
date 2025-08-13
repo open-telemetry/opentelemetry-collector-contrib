@@ -32,6 +32,7 @@ func NewFactory() receiver.Factory {
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
+// createDefaultConfig creates the default configuration for the receiver
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
@@ -44,7 +45,7 @@ func createDefaultConfig() component.Config {
 		MaximumNumberOfMetricsInACall:     20,
 		MaximumNumberOfRecordsPerResource: 10,
 		Services:                          monitorServices,
-		Authentication:                    servicePrincipal,
+		Credentials:                       servicePrincipal,
 		Cloud:                             defaultCloud,
 	}
 }
@@ -55,11 +56,17 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf co
 		return nil, errConfigNotAzureMonitor
 	}
 
-	azureScraper := newScraper(cfg, params)
-	s, err := scraper.NewMetrics(azureScraper.scrape, scraper.WithStart(azureScraper.start))
+	var metrics scraper.Metrics
+	var err error
+	if cfg.UseBatchAPI {
+		azureBatchScraper := newBatchScraper(cfg, params)
+		metrics, err = scraper.NewMetrics(azureBatchScraper.scrape, scraper.WithStart(azureBatchScraper.start))
+	} else {
+		azureScraper := newScraper(cfg, params)
+		metrics, err = scraper.NewMetrics(azureScraper.scrape, scraper.WithStart(azureScraper.start))
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, metrics))
 }

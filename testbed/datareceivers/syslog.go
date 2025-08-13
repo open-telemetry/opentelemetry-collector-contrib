@@ -43,7 +43,7 @@ func (cr *SyslogDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc co
 	}
 	cfg.InputConfig.Protocol = cr.protocol
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	var err error
 	cr.receiver, err = factory.CreateLogs(context.Background(), set, cfg, lc)
 	if err != nil {
@@ -67,6 +67,6 @@ func (cr *SyslogDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (cr *SyslogDataReceiver) ProtocolName() string {
+func (*SyslogDataReceiver) ProtocolName() string {
 	return "tcp"
 }

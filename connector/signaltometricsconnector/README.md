@@ -8,6 +8,7 @@ logs, or metrics).
 | ------------- |-----------|
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fsignaltometrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fsignaltometrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fsignaltometrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fsignaltometrics) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_signaltometrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_signaltometrics&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ChrsMark](https://www.github.com/ChrsMark), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -20,6 +21,7 @@ logs, or metrics).
 | traces | metrics | [alpha] |
 | logs | metrics | [alpha] |
 | metrics | metrics | [alpha] |
+| profiles | metrics | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
@@ -42,7 +44,7 @@ signaltometrics:
     - name: span.count
       description: Count of spans
       sum:
-        value: Int(AbsoluteCount()) # Count of total spans represented by each span
+        value: Int(AdjustedCount()) # Count of total spans represented by each span
   datapoints:
     - name: datapoint.count
       description: Count of datapoints
@@ -53,15 +55,21 @@ signaltometrics:
       description: Count of log records
       sum:
         value: "1" # increment by 1 for each log record
+  profiles:
+    - name: profile.count
+      description: Count of profiles
+      sum:
+        value: "1" # increment by 1 for each profile
 ```
 
 ### Metrics types
 
 `signaltometrics` produces a variety of metric types by utilizing [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
 to extract the relevant data for a metric type from the incoming data. The
-component can produce the following metric types for each signal types:
+component can produce the following metric types for each signal type:
 
 - [Sum](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums)
+- [Gauge](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#gauge)
 - [Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram)
 - [Exponential Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram)
 
@@ -83,6 +91,43 @@ sum:
   returned value determines the value type of the `sum` metric (`int` or `double`).
   [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
+
+#### Gauge
+
+Gauge metrics aggregate the last value of a signal and have the following configuration:
+
+```yaml
+gauge:
+  value: <ottl_value_expression>
+```
+
+- [**Required**] `value`represents an OTTL expression to extract a numeric value from 
+  the signal. Only OTTL expressions that return a value are accepted. The returned 
+  value determines the value type of the `gauge` metric (`int` or `double`).
+  - For logs: Use e.g. `ExtractGrokPatterns` with a single key selector (see below). 
+  - For other signals: Use a field such as `value_int`, `value_double`, or a valid OTTL expression.
+
+**Examples:**
+
+_Logs (with Grok pattern):_
+```yaml
+signaltometrics:
+  logs:
+    - name: logs.memory_mb
+      description: Extract memory_mb from log records
+      gauge:
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]
+```
+
+_Traces:_
+```yaml
+signaltometrics:
+  spans:
+    - name: span.duration.gauge
+      description: Span duration as gauge
+      gauge:
+        value: Int(Seconds(end_time - start_time))
+```
 
 #### Histogram
 
@@ -146,12 +191,38 @@ attributes:
   - key: datapoint.foo
   - key: datapoint.bar
     default_value: bar
+  - key: datapoint.baz
+    optional: true
 ```
 
 If attributes are specified then a separate metric will be generated for each unique
-set of attribute values. Optionally, a `default_value` can be used to always include
-the attribute with the value of the attribute defaulting to the value specified in
-`default_value` if the incoming data is missing that attribute.
+set of attribute values. There are three behaviors that can be configured for an
+attribute:
+
+- Without any extra parameters: `datapoint.foo` in the above yaml is an example
+  of such configuration. In this configuration, only the signals which have the said
+  attribute are processed with the attribute's value as one of the attributes for
+  the output metric. If the attribute is missing then the signal is not processed.
+- With `default_value`: `datapoint.bar` in the above yaml is an example of such
+  configuration. In this configuration all the signals are processed irrespective
+  of the attribute being present or not in the input signal. The output metric
+  is categorized as per the incoming value of the attribute and an extra bucket
+  exists with the attribute set to the configured default value for all the signals
+  that were missing the configured attribute.
+- With `optional` set to `true`: `datapoint.baz` in the above yaml is an example
+  of such configuration. If the attribute is configured with `optional` and present
+  in the incoming signal then it will be added directly to the output metric. If
+  it is absent then a new metric with missing attributes will be created. In addition,
+  the `optional` attribute will not impact the decision i.e. even if the `optional`
+  attributes are not present in the incoming signal, the signal will be processed
+  and will produce a metric given all other non-optional attributes are present
+  or have a default value defined.
+
+Note that resource attributes are handled differently, check the resource attributes
+section for more details on this. Think of `attributes` as conditional filters for
+choosing which attributes should be included in the output metric whereas
+`include_resource_attributes` is an include list for customizing resource attributes
+of the output metric.
 
 ### Conditions
 
@@ -201,16 +272,23 @@ include_resource_attributes:
   - key: resource.foo # Include resource.foo attribute if present
   - key: resource.bar # Always include resource.bar attribute, default to bar
     default_value: bar
+  - key: resource.baz # Optional resource.baz attribute is added if present
+    optional: true
 ```
 
-With the above configuration the produced metrics would only have the couple of
-resource attributes specified in the list:
+With the above configuration the produced metrics would have the following
+resource attributes:
 
 - `resource.foo` will be present for the produced metrics if the incoming data also
-  has the attribute defined.
+  has the attribute defined. If the attribute is missing in the incoming data the
+  output metric will be produced without the said attribute.
 - `resource.bar` will always be present because of the `default_value`. If the incoming
   data does not have a resource attribute with name `resource.bar` then the configured
   `default_value` of `bar` will be used.
+- `resource.baz` will behave exactly same as `resource.foo`. Since resource attributes
+  are basically an include list, the `optional` option is a no-op i.e. the resource
+  attributes with `optional` set to `true` behaves identical to an attribute configured
+  without `default_value` or `optional`.
 
 ### Single writer
 
@@ -229,9 +307,6 @@ signaltometrics.service.instance.id: <service_instance_id_of_the_otel_collector>
 
 ### Custom OTTL functions
 
-The component implements a couple of custom OTTL functions:
+The component implements the following custom OTTL functions:
 
 1. `AdjustedCount`: a converter capable of calculating [adjusted count for a span](https://github.com/open-telemetry/oteps/blob/main/text/trace/0235-sampling-threshold-in-trace-state.md).
-2. `get`: a temporary solution to parse OTTL expressions with only values. This is
-only for internal usage and MUST NOT be used explicitly as it is a stopgap measure
-([see this for more details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35621)).

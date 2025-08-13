@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
 
@@ -28,8 +28,12 @@ const (
 
 	memory = "Memory"
 
+	// The counters below are per second rates, but, instead of reading the calculated rates,
+	// we read the raw values and post them as cumulative metrics.
 	pageReadsPerSec  = "Page Reads/sec"
 	pageWritesPerSec = "Page Writes/sec"
+	pageFaultsPerSec = "Page Faults/sec" // All page faults, including minor and major, aka soft and hard faults
+	pageMajPerSec    = "Pages/sec"       // Only major, aka hard, page faults.
 )
 
 // scraper for Paging Metrics
@@ -38,12 +42,16 @@ type pagingScraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
-	perfCounterScraper perfcounters.PerfCounterScraper
-	skipScrape         bool
+	pageReadsPerfCounter     winperfcounters.PerfCounterWatcher
+	pageWritesPerfCounter    winperfcounters.PerfCounterWatcher
+	pageFaultsPerfCounter    winperfcounters.PerfCounterWatcher
+	pageMajFaultsPerfCounter winperfcounters.PerfCounterWatcher
+	skipScrape               bool
 
 	// for mocking
-	bootTime      func(context.Context) (uint64, error)
-	pageFileStats func() ([]*pageFileStats, error)
+	bootTime           func(context.Context) (uint64, error)
+	pageFileStats      func() ([]*pageFileStats, error)
+	perfCounterFactory func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
 }
 
 // newPagingScraper creates a Paging Scraper
@@ -51,9 +59,9 @@ func newPagingScraper(_ context.Context, settings scraper.Settings, cfg *Config)
 	return &pagingScraper{
 		settings:           settings,
 		config:             cfg,
-		perfCounterScraper: &perfcounters.PerfLibScraper{},
 		bootTime:           host.BootTimeWithContext,
 		pageFileStats:      getPageFileStats,
+		perfCounterFactory: winperfcounters.NewWatcher,
 	}
 }
 
@@ -65,10 +73,30 @@ func (s *pagingScraper) start(ctx context.Context, _ component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
-	if err = s.perfCounterScraper.Initialize(memory); err != nil {
-		s.settings.Logger.Error("Failed to initialize performance counter, paging metrics will not scrape", zap.Error(err))
+	s.pageReadsPerfCounter, err = s.perfCounterFactory(memory, "", pageReadsPerSec)
+	if err != nil {
+		s.settings.Logger.Error("Failed to create performance counter to read pages read / sec", zap.Error(err))
 		s.skipScrape = true
 	}
+
+	s.pageWritesPerfCounter, err = s.perfCounterFactory(memory, "", pageWritesPerSec)
+	if err != nil {
+		s.settings.Logger.Error("Failed to create performance counter to write pages read / sec", zap.Error(err))
+		s.skipScrape = true
+	}
+
+	s.pageFaultsPerfCounter, err = s.perfCounterFactory(memory, "", pageFaultsPerSec)
+	if err != nil {
+		s.settings.Logger.Error("Failed to create performance counter for page faults / sec", zap.Error(err))
+		s.skipScrape = true
+	}
+
+	s.pageMajFaultsPerfCounter, err = s.perfCounterFactory(memory, "", pageMajPerSec)
+	if err != nil {
+		s.settings.Logger.Error("Failed to create performance counter for major, aka hard, page faults / sec", zap.Error(err))
+		s.skipScrape = true
+	}
+
 	return nil
 }
 
@@ -88,6 +116,8 @@ func (s *pagingScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
+
+	s.scrapePagingFaultsMetric(&errors)
 
 	return s.mb.Emit(), errors.Combine()
 }
@@ -122,28 +152,53 @@ func (s *pagingScraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp,
 func (s *pagingScraper) scrapePagingOperationsMetric() error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	counters, err := s.perfCounterScraper.Scrape()
+	var pageReadsPerSecValue int64
+	pageReadsHasValue, err := s.pageReadsPerfCounter.ScrapeRawValue(&pageReadsPerSecValue)
 	if err != nil {
 		return err
 	}
+	if pageReadsHasValue {
+		s.mb.RecordSystemPagingOperationsDataPoint(now, pageReadsPerSecValue, metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
+	}
 
-	memoryObject, err := counters.GetObject(memory)
+	var pageWritesPerSecValue int64
+	pageWritesHasValue, err := s.pageWritesPerfCounter.ScrapeRawValue(&pageWritesPerSecValue)
 	if err != nil {
 		return err
 	}
-
-	memoryCounterValues, err := memoryObject.GetValues(pageReadsPerSec, pageWritesPerSec)
-	if err != nil {
-		return err
+	if pageWritesHasValue {
+		s.mb.RecordSystemPagingOperationsDataPoint(now, pageWritesPerSecValue, metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
 	}
 
-	if len(memoryCounterValues) > 0 {
-		s.recordPagingOperationsDataPoints(now, memoryCounterValues[0])
-	}
 	return nil
 }
 
-func (s *pagingScraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
-	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
+func (s *pagingScraper) scrapePagingFaultsMetric(errors *scrapererror.ScrapeErrors) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	var pageMajFaultsPerSecValue int64
+	pageMajFaultsHasValue, err := s.pageMajFaultsPerfCounter.ScrapeRawValue(&pageMajFaultsPerSecValue)
+	if err != nil {
+		// Count is 2 since without major page faults none of the paging metrics will be recorded
+		errors.AddPartial(2, err)
+		return
+	}
+	if !pageMajFaultsHasValue {
+		s.settings.Logger.Debug(
+			"Skipping paging faults metrics as no value was scraped for 'Pages/sec' performance counter")
+		return
+	}
+	s.mb.RecordSystemPagingFaultsDataPoint(now, pageMajFaultsPerSecValue, metadata.AttributeTypeMajor)
+
+	var pageFaultsPerSecValue int64
+	pageFaultsHasValue, err := s.pageFaultsPerfCounter.ScrapeRawValue(&pageFaultsPerSecValue)
+	if err != nil {
+		errors.AddPartial(1, err)
+	}
+	if pageFaultsHasValue {
+		s.mb.RecordSystemPagingFaultsDataPoint(now, pageFaultsPerSecValue-pageMajFaultsPerSecValue, metadata.AttributeTypeMinor)
+	} else {
+		s.settings.Logger.Debug(
+			"Skipping minor paging faults metric as no value was scraped for 'Page Faults/sec' performance counter")
+	}
 }

@@ -64,7 +64,7 @@ func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 		metadata: metadata.New(nil),
 		settings: settings,
 	}
-	for k, v := range cfg.ClientConfig.Headers {
+	for k, v := range cfg.Headers {
 		oce.metadata.Set(k, string(v))
 	}
 	return oce, nil
@@ -72,7 +72,7 @@ func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 
 // start creates the gRPC client Connection
 func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
-	clientConn, err := oce.cfg.ClientConfig.ToClientConn(ctx, host, oce.settings)
+	clientConn, err := oce.cfg.ToClientConn(ctx, host, oce.settings)
 	if err != nil {
 		return err
 	}

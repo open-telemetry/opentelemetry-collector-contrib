@@ -45,12 +45,12 @@ type Config struct {
 
 	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
 	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
-	LogRetention int64 `mapstructure:"log_retention"`
+	LogRetention int32 `mapstructure:"log_retention"`
 
 	// Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add at most 50 tags.  Input is a string to string map like so: { 'key': 'value' }
 	// Keys must be between 1-128 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$
 	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
-	Tags map[string]*string `mapstructure:"tags"`
+	Tags map[string]string `mapstructure:"tags"`
 
 	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
 	// Those strings will be decoded to its original json structure.

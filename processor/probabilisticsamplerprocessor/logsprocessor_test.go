@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 func TestNewLogs(t *testing.T) {
@@ -47,7 +48,7 @@ func TestNewLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -150,12 +151,63 @@ func TestLogsSampling(t *testing.T) {
 			received: 29, // probabilistic... doesn't yield the same results as foo
 		},
 		{
-			name: "sampling_priority",
+			name: "sampling_priority_0_record",
 			cfg: &Config{
 				SamplingPercentage: 0,
 				SamplingPriority:   "priority",
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "rando",
 			},
 			received: 25,
+		},
+		{
+			name: "sampling_priority_50_record",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				SamplingPriority:   "priority",
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "rando",
+			},
+			// Expected value is (0.5*75)+25 == 62.5
+			received: 64,
+		},
+		{
+			name: "sampling_priority_100_record",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				SamplingPriority:   "priority",
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "rando",
+			},
+			received: 100,
+		},
+		{
+			name: "sampling_priority_0_traceid",
+			cfg: &Config{
+				SamplingPercentage: 0,
+				SamplingPriority:   "priority",
+				AttributeSource:    traceIDAttributeSource,
+			},
+			received: 25,
+		},
+		{
+			name: "sampling_priority_50_traceid",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				SamplingPriority:   "priority",
+				AttributeSource:    traceIDAttributeSource,
+			},
+			// Expected value is (0.5*75)+25 == 62.5
+			received: 57,
+		},
+		{
+			name: "sampling_priority_100_traceid",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				SamplingPriority:   "priority",
+				AttributeSource:    traceIDAttributeSource,
+			},
+			received: 100,
 		},
 		{
 			name: "sampling_priority with sampling field",
@@ -171,7 +223,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), sink, tt.cfg)
+			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -184,6 +236,7 @@ func TestLogsSampling(t *testing.T) {
 				// encodes historical behavior, we leave it as-is.
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
+				record.Attributes().PutInt("rando", int64(computeHash(traceID[:], 123)))
 				// set half of records with a foo (bytes) and a bar (string) attribute
 				if i%2 == 0 {
 					b := record.Attributes().PutEmptyBytes("foo")
@@ -384,14 +437,14 @@ func TestLogsSamplingState(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			cfg := &Config{}
 			if tt.cfg != nil {
 				*cfg = *tt.cfg
 			}
 
-			set := processortest.NewNopSettings()
+			set := processortest.NewNopSettings(metadata.Type)
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
@@ -409,9 +462,9 @@ func TestLogsSamplingState(t *testing.T) {
 			err = tsp.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
 
-			if len(tt.log) == 0 {
+			if tt.log == "" {
 				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
-				require.Equal(t, "", tt.log)
+				require.Empty(t, tt.log)
 			} else {
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "logs sampler")
@@ -488,7 +541,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 				}
 
 				sink := new(consumertest.LogsSink)
-				set := processortest.NewNopSettings()
+				set := processortest.NewNopSettings(metadata.Type)
 				// Note: there is a debug-level log we are expecting when FailClosed
 				// causes a drop.
 				logger, observed := observer.New(zap.DebugLevel)

@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -33,6 +35,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerMemoryRequest:           MetricConfig{Enabled: true},
 					K8sContainerReady:                   MetricConfig{Enabled: true},
 					K8sContainerRestarts:                MetricConfig{Enabled: true},
+					K8sContainerStatusState:             MetricConfig{Enabled: true},
 					K8sContainerStorageLimit:            MetricConfig{Enabled: true},
 					K8sContainerStorageRequest:          MetricConfig{Enabled: true},
 					K8sCronjobActiveJobs:                MetricConfig{Enabled: true},
@@ -85,6 +88,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sDeploymentName:                      ResourceAttributeConfig{Enabled: true},
 					K8sDeploymentUID:                       ResourceAttributeConfig{Enabled: true},
 					K8sHpaName:                             ResourceAttributeConfig{Enabled: true},
+					K8sHpaScaletargetrefApiversion:         ResourceAttributeConfig{Enabled: true},
+					K8sHpaScaletargetrefKind:               ResourceAttributeConfig{Enabled: true},
+					K8sHpaScaletargetrefName:               ResourceAttributeConfig{Enabled: true},
 					K8sHpaUID:                              ResourceAttributeConfig{Enabled: true},
 					K8sJobName:                             ResourceAttributeConfig{Enabled: true},
 					K8sJobUID:                              ResourceAttributeConfig{Enabled: true},
@@ -123,6 +129,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerMemoryRequest:           MetricConfig{Enabled: false},
 					K8sContainerReady:                   MetricConfig{Enabled: false},
 					K8sContainerRestarts:                MetricConfig{Enabled: false},
+					K8sContainerStatusState:             MetricConfig{Enabled: false},
 					K8sContainerStorageLimit:            MetricConfig{Enabled: false},
 					K8sContainerStorageRequest:          MetricConfig{Enabled: false},
 					K8sCronjobActiveJobs:                MetricConfig{Enabled: false},
@@ -175,6 +182,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sDeploymentName:                      ResourceAttributeConfig{Enabled: false},
 					K8sDeploymentUID:                       ResourceAttributeConfig{Enabled: false},
 					K8sHpaName:                             ResourceAttributeConfig{Enabled: false},
+					K8sHpaScaletargetrefApiversion:         ResourceAttributeConfig{Enabled: false},
+					K8sHpaScaletargetrefKind:               ResourceAttributeConfig{Enabled: false},
+					K8sHpaScaletargetrefName:               ResourceAttributeConfig{Enabled: false},
 					K8sHpaUID:                              ResourceAttributeConfig{Enabled: false},
 					K8sJobName:                             ResourceAttributeConfig{Enabled: false},
 					K8sJobUID:                              ResourceAttributeConfig{Enabled: false},
@@ -217,7 +227,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -247,6 +257,9 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sDeploymentName:                      ResourceAttributeConfig{Enabled: true},
 				K8sDeploymentUID:                       ResourceAttributeConfig{Enabled: true},
 				K8sHpaName:                             ResourceAttributeConfig{Enabled: true},
+				K8sHpaScaletargetrefApiversion:         ResourceAttributeConfig{Enabled: true},
+				K8sHpaScaletargetrefKind:               ResourceAttributeConfig{Enabled: true},
+				K8sHpaScaletargetrefName:               ResourceAttributeConfig{Enabled: true},
 				K8sHpaUID:                              ResourceAttributeConfig{Enabled: true},
 				K8sJobName:                             ResourceAttributeConfig{Enabled: true},
 				K8sJobUID:                              ResourceAttributeConfig{Enabled: true},
@@ -289,6 +302,9 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sDeploymentName:                      ResourceAttributeConfig{Enabled: false},
 				K8sDeploymentUID:                       ResourceAttributeConfig{Enabled: false},
 				K8sHpaName:                             ResourceAttributeConfig{Enabled: false},
+				K8sHpaScaletargetrefApiversion:         ResourceAttributeConfig{Enabled: false},
+				K8sHpaScaletargetrefKind:               ResourceAttributeConfig{Enabled: false},
+				K8sHpaScaletargetrefName:               ResourceAttributeConfig{Enabled: false},
 				K8sHpaUID:                              ResourceAttributeConfig{Enabled: false},
 				K8sJobName:                             ResourceAttributeConfig{Enabled: false},
 				K8sJobUID:                              ResourceAttributeConfig{Enabled: false},

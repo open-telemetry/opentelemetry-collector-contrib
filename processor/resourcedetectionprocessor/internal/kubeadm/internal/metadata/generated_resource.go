@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetK8sClusterName(val string) {
 	}
 }
 
+// SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
+func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
+	if rb.config.K8sClusterUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.uid", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 func TestCreateNewLogReceiver(t *testing.T) {
@@ -36,7 +38,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc:     "Default config fails (no endpoint)",
 			cfg:      *defaultConfig,
 			consumer: consumertest.NewNop(),
-			err:      errMissingEndpoint,
+			err:      errMissingEndpointFromConfig,
 		},
 		{
 			desc: "User defined config success",
@@ -44,8 +46,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8080",
 				},
-				ReadTimeout:  "543",
-				WriteTimeout: "210",
+				ReadTimeout:  "5s",
+				WriteTimeout: "5s",
 				Path:         "/event",
 				HealthPath:   "/health",
 				RequiredHeader: RequiredHeader{
@@ -55,11 +57,84 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			},
 			consumer: consumertest.NewNop(),
 		},
+		{
+			desc: "User defined config success with header_attribute_regex supplied",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "5s",
+				WriteTimeout: "5s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+				HeaderAttributeRegex: ".+",
+			},
+			consumer: consumertest.NewNop(),
+		},
+		{
+			desc: "User defined read timeout exceeds max value",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "11s",
+				WriteTimeout: "5s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+			},
+			consumer: consumertest.NewNop(),
+			err:      errReadTimeoutExceedsMaxValue,
+		},
+		{
+			desc: "User defined write timeout exceeds max value",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "5s",
+				WriteTimeout: "11s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+			},
+			consumer: consumertest.NewNop(),
+			err:      errWriteTimeoutExceedsMaxValue,
+		},
+		{
+			desc: "User defined regex fails to compile",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "5s",
+				WriteTimeout: "5s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+				HeaderAttributeRegex: "\\q", // some bogus regex value that will not compile
+			},
+			consumer: consumertest.NewNop(),
+			err:      errHeaderAttributeRegexCompile,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			rec, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, test.consumer)
+			rec, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, test.consumer)
 			if test.err == nil {
 				require.NotNil(t, rec)
 			} else {
@@ -121,7 +196,7 @@ func TestHandleReq(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			consumer := consumertest.NewNop()
-			receiver, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, consumer)
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, consumer)
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
@@ -160,7 +235,7 @@ func TestFailedReq(t *testing.T) {
 		{
 			desc:   "Invalid method",
 			cfg:    *cfg,
-			req:    httptest.NewRequest(http.MethodGet, "http://localhost/events", nil),
+			req:    httptest.NewRequest(http.MethodGet, "http://localhost/events", http.NoBody),
 			status: http.StatusBadRequest,
 		},
 		{
@@ -203,7 +278,7 @@ func TestFailedReq(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			consumer := consumertest.NewNop()
-			receiver, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, consumer)
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, consumer)
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
@@ -225,7 +300,7 @@ func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
-	receiver, err := newLogsReceiver(receivertest.NewNopSettings(), *defaultConfig, consumer)
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver.(*eventReceiver)
@@ -235,7 +310,7 @@ func TestHealthCheck(t *testing.T) {
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil), httprouter.ParamsFromContext(context.Background()))
+	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", http.NoBody), httprouter.ParamsFromContext(context.Background()))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)

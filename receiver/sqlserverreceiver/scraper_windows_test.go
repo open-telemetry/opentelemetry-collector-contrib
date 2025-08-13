@@ -28,9 +28,19 @@ type mockPerfCounterWatcher struct {
 	mock.Mock
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Close provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) Close() error {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) Close() error {
+	ret := w.Called()
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -43,8 +53,8 @@ func (_m *mockPerfCounterWatcher) Close() error {
 }
 
 // Path provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) Path() string {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) Path() string {
+	ret := w.Called()
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
@@ -57,8 +67,8 @@ func (_m *mockPerfCounterWatcher) Path() string {
 }
 
 // ScrapeData provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
+	ret := w.Called()
 
 	var r0 []winperfcounters.CounterValue
 	if rf, ok := ret.Get(0).(func() []winperfcounters.CounterValue); ok {
@@ -77,7 +87,7 @@ func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, 
 	return r0, r1
 }
 
-func (_m *mockPerfCounterWatcher) Reset() error {
+func (*mockPerfCounterWatcher) Reset() error {
 	return nil
 }
 
@@ -85,7 +95,7 @@ func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(logger)
 	s := newSQLServerPCScraper(settings, cfg)
 
@@ -119,7 +129,7 @@ func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
@@ -163,7 +173,7 @@ func TestScrape(t *testing.T) {
 		cfg.ComputerName = "CustomServer"
 		cfg.InstanceName = "CustomInstance"
 
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {

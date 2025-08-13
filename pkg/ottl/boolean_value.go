@@ -11,10 +11,12 @@ import (
 // boolExpressionEvaluator is a function that returns the result.
 type boolExpressionEvaluator[K any] func(ctx context.Context, tCtx K) (bool, error)
 
+// BoolExpr represents a condition in OTTL
 type BoolExpr[K any] struct {
 	boolExpressionEvaluator[K]
 }
 
+// Eval evaluates an OTTL condition
 func (e BoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return e.boolExpressionEvaluator(ctx, tCtx)
 }
@@ -82,6 +84,7 @@ func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (BoolExpr[K],
 		return BoolExpr[K]{}, err
 	}
 
+	comparator := NewValueComparator()
 	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
 	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
 		a, leftErr := left.Get(ctx, tCtx)
@@ -92,7 +95,7 @@ func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (BoolExpr[K],
 		if rightErr != nil {
 			return false, rightErr
 		}
-		return p.compare(a, b, comparison.Op), nil
+		return comparator.compare(a, b, comparison.Op), nil
 	}}, nil
 }
 

@@ -1,0 +1,9 @@
+type: pprof
+
+status:
+  class: receiver
+  stability:
+    development: [profiles]
+  distributions: []
+  codeowners:
+    active: [MovieStoreGuy, atoulme]

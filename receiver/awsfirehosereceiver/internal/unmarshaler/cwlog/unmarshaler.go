@@ -4,19 +4,22 @@
 package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/compress/gzip"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -26,19 +29,25 @@ const (
 	attributeAWSCloudWatchLogStreamName = "aws.cloudwatch.log_stream_name"
 )
 
-var errInvalidRecords = errors.New("record format invalid")
+var (
+	errInvalidRecords   = errors.New("record format invalid")
+	errMissingOwner     = errors.New("cloudwatch log record is missing owner field")
+	errMissingLogGroup  = errors.New("cloudwatch log record is missing logGroup field")
+	errMissingLogStream = errors.New("cloudwatch log record is missing logStream field")
+)
 
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
-	logger   *zap.Logger
-	gzipPool sync.Pool
+	logger    *zap.Logger
+	buildInfo component.BuildInfo
+	gzipPool  sync.Pool
 }
 
 var _ plog.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger: logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger: logger, buildInfo: buildInfo}
 }
 
 // UnmarshalLogs deserializes the given record as CloudWatch Logs events
@@ -49,10 +58,6 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	var err error
 	r, ok := u.gzipPool.Get().(*gzip.Reader)
 	if !ok {
-		u.logger.Error(fmt.Sprintf("Expected *gzip.Reader, got %T", r))
-		// Fall through and create a new *gzip.Reader (r == nil)
-	}
-	if r == nil {
 		r, err = gzip.NewReader(bytes.NewReader(compressedRecord))
 	} else {
 		err = r.Reset(bytes.NewReader(compressedRecord))
@@ -62,78 +67,80 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	}
 	defer u.gzipPool.Put(r)
 
-	type resourceKey struct {
-		owner     string
-		logGroup  string
-		logStream string
+	data, err := io.ReadAll(r)
+	if err != nil {
+		u.logger.Error("Error reading log data", zap.Error(err))
+		return plog.Logs{}, fmt.Errorf("error reading log data: %w", err)
 	}
-	byResource := make(map[resourceKey]plog.LogRecordSlice)
 
-	// Multiple logs in each record separated by newline character
-	scanner := bufio.NewScanner(r)
-	for datumIndex := 0; scanner.Scan(); datumIndex++ {
-		var log cWLog
-		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &log); err != nil {
-			u.logger.Error(
-				"Unable to unmarshal input",
-				zap.Error(err),
-				zap.Int("datum_index", datumIndex),
+	cwLog, control, err := parseLog(data)
+	if err != nil {
+		u.logger.Error("Error unmarshalling log message", zap.Error(err))
+		return plog.Logs{}, fmt.Errorf("%w: %w", errInvalidRecords, err)
+	}
+
+	if control {
+		for _, event := range cwLog.LogEvents {
+			u.logger.Debug(
+				"Skipping CloudWatch control message event",
+				zap.Time("timestamp", time.UnixMilli(event.Timestamp)),
+				zap.String("message", event.Message),
 			)
-			continue
 		}
-		if !isValid(log) {
-			u.logger.Error(
-				"Invalid log",
-				zap.Int("datum_index", datumIndex),
-			)
-			continue
-		}
-
-		key := resourceKey{
-			owner:     log.Owner,
-			logGroup:  log.LogGroup,
-			logStream: log.LogStream,
-		}
-		logRecords, ok := byResource[key]
-		if !ok {
-			logRecords = plog.NewLogRecordSlice()
-			byResource[key] = logRecords
-		}
-
-		for _, event := range log.LogEvents {
-			logRecord := logRecords.AppendEmpty()
-			// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
-			// but timestamp in cloudwatch logs are in milliseconds.
-			logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
-			logRecord.Body().SetStr(event.Message)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		// Treat this as a non-fatal error, and handle the data below.
-		u.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
-	}
-	if len(byResource) == 0 {
-		return plog.Logs{}, errInvalidRecords
+		return plog.NewLogs(), nil
 	}
 
 	logs := plog.NewLogs()
-	for resourceKey, logRecords := range byResource {
-		rl := logs.ResourceLogs().AppendEmpty()
-		resourceAttrs := rl.Resource().Attributes()
-		resourceAttrs.PutStr(conventions.AttributeCloudAccountID, resourceKey.owner)
-		resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, resourceKey.logGroup)
-		resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, resourceKey.logStream)
-		logRecords.MoveAndAppendTo(rl.ScopeLogs().AppendEmpty().LogRecords())
+	rl := logs.ResourceLogs().AppendEmpty()
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
+	resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
+	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
+	resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName(metadata.ScopeName)
+	sl.Scope().SetVersion(u.buildInfo.Version)
+
+	for _, event := range cwLog.LogEvents {
+		logRecord := sl.LogRecords().AppendEmpty()
+		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+		// but timestamp in cloudwatch logs are in milliseconds.
+		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
+		logRecord.Body().SetStr(event.Message)
 	}
+
 	return logs, nil
 }
 
-// isValid validates that the cWLog has been unmarshalled correctly.
-func isValid(log cWLog) bool {
-	return log.Owner != "" && log.LogGroup != "" && log.LogStream != ""
+func parseLog(data []byte) (log cWLog, control bool, _ error) {
+	if err := jsoniter.ConfigFastest.Unmarshal(data, &log); err != nil {
+		return cWLog{}, false, err
+	}
+	switch log.MessageType {
+	case "DATA_MESSAGE":
+		if log.Owner == "" {
+			return cWLog{}, false, errMissingOwner
+		}
+		if log.LogGroup == "" {
+			return cWLog{}, false, errMissingLogGroup
+		}
+		if log.LogStream == "" {
+			return cWLog{}, false, errMissingLogStream
+		}
+		return log, false, nil
+	case "CONTROL_MESSAGE":
+		return log, true, nil
+	default:
+		return cWLog{}, false, fmt.Errorf("invalid message type %q", log.MessageType)
+	}
 }
 
 // Type of the serialized messages.
-func (u *Unmarshaler) Type() string {
+func (*Unmarshaler) Type() string {
 	return TypeStr
 }

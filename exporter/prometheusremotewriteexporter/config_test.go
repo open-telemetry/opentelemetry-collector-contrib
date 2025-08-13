@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
+	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "localhost:8888"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 		},
@@ -81,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
-				CreatedMetric: &CreatedMetric{Enabled: true},
+				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 			},
 		},
 		{
@@ -96,6 +97,14 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "less_than_1_max_batch_request_parallelism"),
 			errorMessage: "max_batch_request_parallelism can't be set to below 1",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "non_snappy_compression_type"),
+			errorMessage: "compression type must be snappy",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "unknown_protobuf_message"),
+			errorMessage: "unknown remote write protobuf message io.prometheus.write.v4.Request, supported: prometheus.WriteRequest, io.prometheus.write.v2.Request",
+		},
 	}
 
 	for _, tt := range tests {
@@ -108,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))

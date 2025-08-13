@@ -41,9 +41,3 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Trac
 	}
 	return Sampled, nil
 }
-
-// OnDroppedSpans is called when the trace needs to be dropped, due to memory
-// pressure, before the decision_wait time has been reached.
-func (c *And) OnDroppedSpans(pcommon.TraceID, *TraceData) (Decision, error) {
-	return Sampled, nil
-}

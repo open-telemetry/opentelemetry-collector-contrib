@@ -45,7 +45,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 
 	wgDeleted := &sync.WaitGroup{} // we wait for the next (mock) processor to receive the trace
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), mockProcessor, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), mockProcessor, config)
 	backing := newMemoryStorage(p.telemetryBuilder)
 	st := &mockStorage{
 		onCreateOrAppend: backing.createOrAppend,
@@ -98,7 +98,7 @@ func TestInternalCacheLimit(t *testing.T) {
 		return nil
 	}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), mockProcessor, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), mockProcessor, config)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 	ctx := context.Background()
@@ -145,7 +145,7 @@ func TestProcessorCapabilities(t *testing.T) {
 		NumWorkers:   1,
 	}
 	// test
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), config)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 	caps := p.Capabilities()
@@ -172,7 +172,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	span.SetTraceID(traceID)
 	span.SetSpanID([8]byte{1, 2, 3, 4})
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), config)
 	assert.NotNil(t, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
@@ -193,7 +193,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), config)
 	require.NotNil(t, p)
 
 	p.st = st
@@ -232,7 +232,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), config)
 	require.NotNil(t, p)
 	p.st = st
 
@@ -270,7 +270,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), config)
 	require.NotNil(t, p)
 	p.st = st
 
@@ -306,14 +306,13 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	next := &mockProcessor{
 		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			require.Equal(t, 2, traces.ResourceSpans().Len())
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0))
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(1))
+			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0), traces.ResourceSpans().At(1))
 			wg.Done()
 			return nil
 		},
 	}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(t, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
@@ -354,7 +353,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(t, p)
 	p.st = st
 
@@ -403,7 +402,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(t, p)
 	p.st = st
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
@@ -429,7 +428,7 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(t, p)
 	p.st = st
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
@@ -460,7 +459,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(t, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
@@ -509,7 +508,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(t, p)
 	p.st = st
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
@@ -541,7 +540,7 @@ func TestAsyncOnRelease(t *testing.T) {
 	blocker := &blockingConsumer{
 		blockCh: blockCh,
 	}
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	sp := &groupByTraceProcessor{
 		logger:           zap.NewNop(),
@@ -567,7 +566,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 		return nil
 	}}
 
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), next, config)
 	require.NotNil(b, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
@@ -600,15 +599,15 @@ func (m *mockProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (m *mockProcessor) Capabilities() consumer.Capabilities {
+func (*mockProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (m *mockProcessor) Shutdown(context.Context) error {
+func (*mockProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *mockProcessor) Start(_ context.Context, _ component.Host) error {
+func (*mockProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -663,7 +662,7 @@ type blockingConsumer struct {
 
 var _ consumer.Traces = (*blockingConsumer)(nil)
 
-func (b *blockingConsumer) Capabilities() consumer.Capabilities {
+func (*blockingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

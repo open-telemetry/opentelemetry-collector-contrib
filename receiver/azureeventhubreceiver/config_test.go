@@ -31,8 +31,8 @@ func TestLoadConfig(t *testing.T) {
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)
-	assert.Equal(t, "", r0.(*Config).Offset)
-	assert.Equal(t, "", r0.(*Config).Partition)
+	assert.Empty(t, r0.(*Config).Offset)
+	assert.Empty(t, r0.(*Config).Partition)
 	assert.Equal(t, defaultLogFormat, logFormat(r0.(*Config).Format))
 	assert.False(t, r0.(*Config).ApplySemanticConventions)
 

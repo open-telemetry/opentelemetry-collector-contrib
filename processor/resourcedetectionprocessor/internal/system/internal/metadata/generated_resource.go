@@ -77,6 +77,13 @@ func (rb *ResourceBuilder) SetHostID(val string) {
 	}
 }
 
+// SetHostInterface sets provided value as "host.interface" attribute.
+func (rb *ResourceBuilder) SetHostInterface(val []any) {
+	if rb.config.HostInterface.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.interface").FromRaw(val)
+	}
+}
+
 // SetHostIP sets provided value as "host.ip" attribute.
 func (rb *ResourceBuilder) SetHostIP(val []any) {
 	if rb.config.HostIP.Enabled {
@@ -98,6 +105,13 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 	}
 }
 
+// SetOsBuildID sets provided value as "os.build.id" attribute.
+func (rb *ResourceBuilder) SetOsBuildID(val string) {
+	if rb.config.OsBuildID.Enabled {
+		rb.res.Attributes().PutStr("os.build.id", val)
+	}
+}
+
 // SetOsDescription sets provided value as "os.description" attribute.
 func (rb *ResourceBuilder) SetOsDescription(val string) {
 	if rb.config.OsDescription.Enabled {
@@ -105,10 +119,24 @@ func (rb *ResourceBuilder) SetOsDescription(val string) {
 	}
 }
 
+// SetOsName sets provided value as "os.name" attribute.
+func (rb *ResourceBuilder) SetOsName(val string) {
+	if rb.config.OsName.Enabled {
+		rb.res.Attributes().PutStr("os.name", val)
+	}
+}
+
 // SetOsType sets provided value as "os.type" attribute.
 func (rb *ResourceBuilder) SetOsType(val string) {
 	if rb.config.OsType.Enabled {
 		rb.res.Attributes().PutStr("os.type", val)
+	}
+}
+
+// SetOsVersion sets provided value as "os.version" attribute.
+func (rb *ResourceBuilder) SetOsVersion(val string) {
+	if rb.config.OsVersion.Enabled {
+		rb.res.Attributes().PutStr("os.version", val)
 	}
 }
 

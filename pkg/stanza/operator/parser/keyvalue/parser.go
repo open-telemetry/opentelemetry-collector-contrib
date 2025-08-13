@@ -19,9 +19,13 @@ type Parser struct {
 	pairDelimiter string
 }
 
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return p.ProcessBatchWith(ctx, entries, p.parse)
+}
+
 // Process will parse an entry for key value pairs.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	return p.ParserOperator.ProcessWith(ctx, entry, p.parse)
+	return p.ProcessWith(ctx, entry, p.parse)
 }
 
 // parse will parse a value as key values.
@@ -34,7 +38,7 @@ func (p *Parser) parse(value any) (any, error) {
 	}
 }
 
-func (p *Parser) parser(input string, delimiter string, pairDelimiter string) (map[string]any, error) {
+func (p *Parser) parser(input, delimiter, pairDelimiter string) (map[string]any, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", p.ParseFrom.String())
 	}

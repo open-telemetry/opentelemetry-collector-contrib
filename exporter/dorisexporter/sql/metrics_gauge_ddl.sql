@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS %s_gauge
 (
     service_name          VARCHAR(200),
     timestamp             DATETIME(6),
+    service_instance_id   VARCHAR(200),
     metric_name           VARCHAR(200),
     metric_description    STRING,
     metric_unit           STRING,
@@ -14,6 +15,7 @@ CREATE TABLE IF NOT EXISTS %s_gauge
     scope_version         STRING,
     INDEX idx_service_name(service_name) USING INVERTED,
     INDEX idx_timestamp(timestamp) USING INVERTED,
+    INDEX idx_service_instance_id(service_instance_id) USING INVERTED,
     INDEX idx_metric_name(metric_name) USING INVERTED,
     INDEX idx_metric_description(metric_description) USING INVERTED,
     INDEX idx_metric_unit(metric_unit) USING INVERTED,
@@ -26,5 +28,5 @@ CREATE TABLE IF NOT EXISTS %s_gauge
 ENGINE = OLAP
 DUPLICATE KEY(service_name, timestamp)
 PARTITION BY RANGE(timestamp) ()
-DISTRIBUTED BY HASH(metric_name) BUCKETS AUTO
+DISTRIBUTED BY RANDOM BUCKETS AUTO
 %s;

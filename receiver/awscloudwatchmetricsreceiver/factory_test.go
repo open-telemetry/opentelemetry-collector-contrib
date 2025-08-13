@@ -16,14 +16,14 @@ import (
 func TestFactoryType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, metadata.Type, ft)
+	require.Equal(t, metadata.Type, ft)
 }
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "eu-west-2"
 	_, err := NewFactory().CreateMetrics(
-		context.Background(), receivertest.NewNopSettings(),
+		context.Background(), receivertest.NewNopSettings(metadata.Type),
 		cfg, nil)
 	require.NoError(t, err)
 }

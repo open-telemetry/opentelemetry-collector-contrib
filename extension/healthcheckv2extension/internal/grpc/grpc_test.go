@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/pipeline"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -39,8 +40,8 @@ func TestCheck(t *testing.T) {
 		},
 	}
 	var server *Server
-	traces := testhelpers.NewPipelineMetadata("traces")
-	metrics := testhelpers.NewPipelineMetadata("metrics")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
 	type teststep struct {
 		step           func()
@@ -754,8 +755,8 @@ func TestWatch(t *testing.T) {
 		},
 	}
 	var server *Server
-	traces := testhelpers.NewPipelineMetadata("traces")
-	metrics := testhelpers.NewPipelineMetadata("metrics")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
 	// statusUnchanged is a sentinel value to signal that a step does not result
 	// in a status change. This is important, because checking for a status

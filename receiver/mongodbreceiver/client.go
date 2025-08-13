@@ -9,16 +9,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-version"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
 )
 
 // client is an interface that exposes functionality towards a mongo environment
 type client interface {
-	ListDatabaseNames(ctx context.Context, filters any, opts ...*options.ListDatabasesOptions) ([]string, error)
+	ListDatabaseNames(ctx context.Context, filters any, opts ...options.Lister[options.ListDatabasesOptions]) ([]string, error)
 	ListCollectionNames(ctx context.Context, DBName string) ([]string, error)
 	Disconnect(context.Context) error
 	GetVersion(context.Context) (*version.Version, error)
@@ -26,6 +25,7 @@ type client interface {
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
+	RunCommand(ctx context.Context, db string, command bson.M) (bson.M, error)
 }
 
 // mongodbClient is a mongodb metric scraper client
@@ -37,12 +37,11 @@ type mongodbClient struct {
 
 // newClient creates a new client to connect and query mongo for the
 // mongodbreceiver
-func newClient(ctx context.Context, config *Config, logger *zap.Logger) (client, error) {
-	driver, err := mongo.Connect(ctx, config.ClientOptions())
+var newClient = func(_ context.Context, config *Config, logger *zap.Logger, secondary bool) (client, error) {
+	driver, err := mongo.Connect(config.ClientOptions(secondary))
 	if err != nil {
 		return nil, err
 	}
-
 	return &mongodbClient{
 		cfg:    config,
 		logger: logger,
@@ -89,16 +88,17 @@ func (c *mongodbClient) ListCollectionNames(ctx context.Context, database string
 // IndexStats returns the index stats per collection for a given database
 // more information can be found here: https://www.mongodb.com/docs/manual/reference/operator/aggregation/indexStats/
 func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName string) ([]bson.M, error) {
-	db := c.Client.Database(database)
+	db := c.Database(database)
 	collection := db.Collection(collectionName)
-	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{primitive.E{Key: "$indexStats", Value: bson.M{}}}})
+	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{bson.E{Key: "$indexStats", Value: bson.M{}}}})
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var indexStats []bson.M
-	if err = cursor.All(context.Background(), &indexStats); err != nil {
+	err = cursor.All(context.Background(), &indexStats)
+	if err != nil {
 		return nil, err
 	}
 	return indexStats, nil

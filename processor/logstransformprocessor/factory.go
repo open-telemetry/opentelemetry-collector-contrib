@@ -44,7 +44,7 @@ func createLogsProcessor(
 		return nil, errors.New("could not initialize logs transform processor")
 	}
 
-	if len(pCfg.BaseConfig.Operators) == 0 {
+	if len(pCfg.Operators) == 0 {
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 

@@ -11,13 +11,9 @@ failover/full:
     - [ traces/third ]
     - [ traces/fourth ]
   retry_interval: 5m
-  retry_gap: 1m
-  max_retries: 10
 
 failover/invalid:
   priority_levels:
     - [ traces/first ]
     - [ traces/second ]
-  retry_interval: 3m
-  retry_gap: 2m
-  max_retries: 10
+  retry_interval: 0m

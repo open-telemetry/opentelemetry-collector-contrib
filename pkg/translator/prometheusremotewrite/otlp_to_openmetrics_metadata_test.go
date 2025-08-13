@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -152,9 +154,10 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 func TestOtelMetricsToMetadata(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	tests := []struct {
-		name    string
-		metrics pmetric.Metrics
-		want    []*prompb.MetricMetadata
+		name      string
+		metrics   pmetric.Metrics
+		want      []*prompb.MetricMetadata
+		namespace string
 	}{
 		{
 			name:    "all types§",
@@ -162,67 +165,109 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 			want: []*prompb.MetricMetadata{
 				{
 					Type: prompb.MetricMetadata_GAUGE,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestGaugeDoubleMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
+					MetricFamilyName: func() string {
+						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+							testdata.TestGaugeDoubleMetricName,
+							pcommon.NewMap(),
+							1, ts,
+						)))
+					}(),
+					Unit: "bytes_per_second",
 					Help: "gauge description",
 				},
 				{
 					Type: prompb.MetricMetadata_GAUGE,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestGaugeIntMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
+					MetricFamilyName: func() string {
+						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+							testdata.TestGaugeIntMetricName,
+							pcommon.NewMap(),
+							1, ts,
+						)))
+					}(),
+					Unit: "per_second",
 					Help: "gauge description",
 				},
 				{
 					Type: prompb.MetricMetadata_COUNTER,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestSumDoubleMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
+					MetricFamilyName: func() string {
+						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+							testdata.TestSumDoubleMetricName,
+							pcommon.NewMap(),
+							1, ts,
+						)))
+					}(),
+					Unit: "seconds",
 					Help: "sum description",
 				},
 				{
 					Type: prompb.MetricMetadata_COUNTER,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestSumIntMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
+					MetricFamilyName: func() string {
+						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+							testdata.TestSumIntMetricName,
+							pcommon.NewMap(),
+							1, ts,
+						)))
+					}(),
+					Unit: "connections",
 					Help: "sum description",
 				},
 				{
 					Type: prompb.MetricMetadata_HISTOGRAM,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestDoubleHistogramMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
+					MetricFamilyName: func() string {
+						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+							testdata.TestDoubleHistogramMetricName,
+							pcommon.NewMap(),
+							1, ts,
+						)))
+					}(),
+					Unit: "",
 					Help: "histogram description",
 				},
 				{
 					Type: prompb.MetricMetadata_SUMMARY,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestDoubleSummaryMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
+					MetricFamilyName: func() string {
+						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+							testdata.TestDoubleSummaryMetricName,
+							pcommon.NewMap(),
+							1, ts,
+						)))
+					}(),
+					Unit: "",
 					Help: "summary description",
 				},
 			},
 		},
+		{
+			name:    "gauge_namespace",
+			metrics: GenerateMetricsGauge(),
+			want: []*prompb.MetricMetadata{
+				{
+					Type: prompb.MetricMetadata_GAUGE,
+					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+						testdata.TestGaugeDoubleMetricName,
+						pcommon.NewMap(),
+						1, ts,
+					), "ns", false),
+					Unit: "bytes_per_second",
+					Help: "gauge description",
+				},
+			},
+			namespace: "ns",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false)
+			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
 
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
+				assert.Equal(t, tt.want[i].Unit, metaData[i].Unit)
 				assert.Equal(t, tt.want[i].MetricFamilyName, metaData[i].MetricFamilyName)
 				assert.Equal(t, tt.want[i].Help, metaData[i].Help)
 			}
@@ -230,21 +275,30 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}
 }
 
+func GenerateMetricsGauge() pmetric.Metrics {
+	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+	ms := ilm0.Metrics()
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "By/s", "gauge description")
+	return md
+}
+
 func GenerateMetricsAllTypesNoDataPointsHelp() pmetric.Metrics {
 	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm0.Metrics()
-	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "gauge description")
-	initMetric(ms.AppendEmpty(), testdata.TestGaugeIntMetricName, pmetric.MetricTypeGauge, "gauge description")
-	initMetric(ms.AppendEmpty(), testdata.TestSumDoubleMetricName, pmetric.MetricTypeSum, "sum description")
-	initMetric(ms.AppendEmpty(), testdata.TestSumIntMetricName, pmetric.MetricTypeSum, "sum description")
-	initMetric(ms.AppendEmpty(), testdata.TestDoubleHistogramMetricName, pmetric.MetricTypeHistogram, "histogram description")
-	initMetric(ms.AppendEmpty(), testdata.TestDoubleSummaryMetricName, pmetric.MetricTypeSummary, "summary description")
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "By/s", "gauge description")
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeIntMetricName, pmetric.MetricTypeGauge, "{objects}/s", "gauge description")
+	initMetric(ms.AppendEmpty(), testdata.TestSumDoubleMetricName, pmetric.MetricTypeSum, "s", "sum description")
+	initMetric(ms.AppendEmpty(), testdata.TestSumIntMetricName, pmetric.MetricTypeSum, "connections", "sum description")
+	initMetric(ms.AppendEmpty(), testdata.TestDoubleHistogramMetricName, pmetric.MetricTypeHistogram, "1", "histogram description")
+	initMetric(ms.AppendEmpty(), testdata.TestDoubleSummaryMetricName, pmetric.MetricTypeSummary, "", "summary description")
 	return md
 }
 
-func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType, desc string) {
+func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType, unit, desc string) {
 	m.SetName(name)
+	m.SetUnit(unit)
 	m.SetDescription(desc)
 	//exhaustive:enforce
 	switch ty {

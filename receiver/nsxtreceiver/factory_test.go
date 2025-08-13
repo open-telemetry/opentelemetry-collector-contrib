@@ -20,7 +20,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, metadata.Type, ft)
+	require.Equal(t, metadata.Type, ft)
 }
 
 func TestDefaultConfig(t *testing.T) {
@@ -34,7 +34,7 @@ func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
@@ -50,7 +50,7 @@ func TestCreateMetricsNotNSX(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		receivertest.NewNopFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)

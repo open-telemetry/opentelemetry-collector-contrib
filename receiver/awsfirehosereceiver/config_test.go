@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -20,7 +21,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	for _, configType := range []string{
-		"cwmetrics", "cwlogs", "otlp_v1", "invalid",
+		"cwmetrics", "cwlogs", "otlp_v1",
 	} {
 		t.Run(configType, func(t *testing.T) {
 			fileName := configType + "_config.yaml"
@@ -35,24 +36,35 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			err = xconfmap.Validate(cfg)
-			if configType == "invalid" {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				require.Equal(t, &Config{
-					RecordType: configType,
-					AccessKey:  "some_access_key",
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "0.0.0.0:4433",
-						TLSSetting: &configtls.ServerConfig{
-							Config: configtls.Config{
-								CertFile: "server.crt",
-								KeyFile:  "server.key",
-							},
+			assert.NoError(t, err)
+			require.Equal(t, &Config{
+				RecordType: configType,
+				AccessKey:  "some_access_key",
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "0.0.0.0:4433",
+					TLS: configoptional.Some(configtls.ServerConfig{
+						Config: configtls.Config{
+							CertFile: "server.crt",
+							KeyFile:  "server.key",
 						},
-					},
-				}, cfg)
-			}
+					}),
+				},
+			}, cfg)
 		})
 	}
+}
+
+func TestLoadConfigInvalid(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	err = xconfmap.Validate(cfg)
+	assert.ErrorIs(t, err, errRecordTypeEncodingSet)
 }

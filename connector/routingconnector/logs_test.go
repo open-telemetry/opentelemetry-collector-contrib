@@ -17,7 +17,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
@@ -50,7 +53,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -72,9 +75,8 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	require.Equal(t, routeConsumer, route.consumer)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -117,7 +119,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -221,7 +223,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -356,7 +358,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -407,7 +409,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -432,6 +434,12 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isLogF := `body == "logF"`
 	isLogX := `body == "logX"`
 	isLogY := `body == "logY"`
+
+	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
+	isBodyString := `IsString(body) == true`
+	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsString")
+	isBodyMap := `IsMap(body) == true`
+	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsMap")
 
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
@@ -845,6 +853,30 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSink1: plogutiltest.NewLogs("AB", "CD", "E"),
 			expectSinkD: plog.Logs{},
 		},
+		{
+			name: "log/with_converter_function_is_string",
+			cfg: testConfig(
+				withRoute("log", isBodyString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/with_converter_function_is_map",
+			cfg: testConfig(
+				withRoute("log", isBodyMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A", plogutiltest.Scope("B", setLogRecordMap(plogutiltest.LogRecord("C"), "key", "value"))),
+			),
+			expectSink0: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A", plogutiltest.Scope("B", setLogRecordMap(plogutiltest.LogRecord("C"), "key", "value"))),
+			),
+			expectSinkD: plog.Logs{},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -858,7 +890,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateLogsToLogs(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Logs),
 			)
@@ -884,4 +916,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func setLogRecordMap(lr plog.LogRecord, key, value string) plog.LogRecord {
+	lr.Body().SetEmptyMap().PutStr(key, value)
+	return lr
 }

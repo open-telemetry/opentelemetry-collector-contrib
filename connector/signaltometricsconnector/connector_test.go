@@ -16,11 +16,12 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
@@ -37,6 +38,8 @@ func TestConnectorWithTraces(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"metric_identity",
+		"gauge",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -69,6 +72,7 @@ func TestConnectorWithMetrics(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"gauge",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -101,6 +105,8 @@ func TestConnectorWithLogs(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"metric_identity",
+		"gauge",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -128,10 +134,44 @@ func TestConnectorWithLogs(t *testing.T) {
 	}
 }
 
+func TestConnectorWithProfiles(t *testing.T) {
+	testCases := []string{
+		"sum",
+		"histograms",
+		"exponential_histograms",
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for _, tc := range testCases {
+		t.Run(tc, func(t *testing.T) {
+			profileTestDataDir := filepath.Join(testDataDir, "profiles")
+			inputProfiles, err := golden.ReadProfiles(filepath.Join(profileTestDataDir, "profiles.yaml"))
+			require.NoError(t, err)
+
+			next := &consumertest.MetricsSink{}
+			tcTestDataDir := filepath.Join(profileTestDataDir, tc)
+			factory, settings, cfg := setupConnector(t, tcTestDataDir)
+			connector, err := factory.CreateProfilesToMetrics(ctx, settings, cfg, next)
+			require.NoError(t, err)
+			require.IsType(t, &signalToMetrics{}, connector)
+
+			require.NoError(t, connector.ConsumeProfiles(ctx, inputProfiles))
+			require.Len(t, next.AllMetrics(), 1)
+
+			expectedMetrics, err := golden.ReadMetrics(filepath.Join(tcTestDataDir, "output.yaml"))
+			require.NoError(t, err)
+
+			assertAggregatedMetrics(t, expectedMetrics, next.AllMetrics()[0])
+		})
+	}
+}
+
 func BenchmarkConnectorWithTraces(b *testing.B) {
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
-	settings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+	settings := connectortest.NewNopSettings(metadata.Type)
+	settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
 	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
 	})
@@ -156,8 +196,8 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 
 func BenchmarkConnectorWithMetrics(b *testing.B) {
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
-	settings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+	settings := connectortest.NewNopSettings(metadata.Type)
+	settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
 	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
 	})
@@ -182,8 +222,8 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 
 func BenchmarkConnectorWithLogs(b *testing.B) {
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
-	settings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+	settings := connectortest.NewNopSettings(metadata.Type)
+	settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
 	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
 	})
@@ -285,12 +325,12 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 
 func setupConnector(
 	t *testing.T, testFilePath string,
-) (connector.Factory, connector.Settings, component.Config) {
+) (xconnector.Factory, connector.Settings, component.Config) {
 	t.Helper()
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
-	telemetryResource(t).CopyTo(settings.TelemetrySettings.Resource)
-	settings.TelemetrySettings.Logger = zaptest.NewLogger(t, zaptest.Level(zapcore.DebugLevel))
+	settings := connectortest.NewNopSettings(metadata.Type)
+	telemetryResource(t).CopyTo(settings.Resource)
+	settings.Logger = zaptest.NewLogger(t, zaptest.Level(zapcore.DebugLevel))
 
 	cfg := createDefaultConfig()
 	cm, err := confmaptest.LoadConf(filepath.Join(testFilePath, "config.yaml"))
@@ -300,16 +340,16 @@ func setupConnector(
 	require.NoError(t, sub.Unmarshal(&cfg))
 	require.NoError(t, xconfmap.Validate(cfg))
 
-	return factory, settings, cfg
+	return factory.(xconnector.Factory), settings, cfg
 }
 
 func telemetryResource(t *testing.T) pcommon.Resource {
 	t.Helper()
 
 	r := pcommon.NewResource()
-	r.Attributes().PutStr(semconv.AttributeServiceInstanceID, "627cc493-f310-47de-96bd-71410b7dec09")
-	r.Attributes().PutStr(semconv.AttributeServiceName, "signaltometrics")
-	r.Attributes().PutStr(semconv.AttributeServiceNamespace, "test")
+	r.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "627cc493-f310-47de-96bd-71410b7dec09")
+	r.Attributes().PutStr(string(semconv.ServiceNameKey), "signaltometrics")
+	r.Attributes().PutStr(string(semconv.ServiceNamespaceKey), "test")
 	return r
 }
 

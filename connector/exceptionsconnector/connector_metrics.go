@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -66,7 +66,7 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsCo
 }
 
 // Capabilities implements the consumer interface.
-func (c *metricsConnector) Capabilities() consumer.Capabilities {
+func (*metricsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -76,7 +76,7 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
-		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
+		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
 		if !ok {
 			continue
 		}
@@ -176,7 +176,7 @@ func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, 
 	e.SetDoubleValue(float64(exc.count))
 }
 
-func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) pcommon.Map {
+func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, span ptrace.Span, eventAttrs, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(3 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
@@ -196,7 +196,7 @@ func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, spa
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) {
+func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, eventAttrs, resourceAttrs pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
 	concatDimensionValue(dest, span.Name(), true)
 	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)

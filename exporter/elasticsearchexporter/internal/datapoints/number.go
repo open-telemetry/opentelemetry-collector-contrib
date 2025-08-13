@@ -4,7 +4,7 @@
 package datapoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 
 import (
-	"errors"
+	"fmt"
 	"math"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -12,8 +12,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
-
-var errInvalidNumber = errors.New("invalid number data point")
 
 type Number struct {
 	pmetric.NumberDataPoint
@@ -34,19 +32,19 @@ func (dp Number) Value() (pcommon.Value, error) {
 	case pmetric.NumberDataPointValueTypeDouble:
 		value := dp.DoubleValue()
 		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return pcommon.Value{}, errInvalidNumber
+			return pcommon.Value{}, fmt.Errorf("invalid number data point %q", dp.metric.Name())
 		}
 		return pcommon.NewValueDouble(value), nil
 	case pmetric.NumberDataPointValueTypeInt:
 		return pcommon.NewValueInt(dp.IntValue()), nil
 	}
-	return pcommon.Value{}, errInvalidNumber
+	return pcommon.Value{}, fmt.Errorf("invalid number data point %q", dp.metric.Name())
 }
 
 func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
-		switch dp.NumberDataPoint.ValueType() {
+		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
 			if metric.Sum().IsMonotonic() {
 				return "counter_double"
@@ -61,7 +59,7 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
 		}
 	case pmetric.MetricTypeGauge:
-		switch dp.NumberDataPoint.ValueType() {
+		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
 			return "gauge_double"
 		case pmetric.NumberDataPointValueTypeInt:
@@ -73,7 +71,7 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 	return ""
 }
 
-func (dp Number) DocCount() uint64 {
+func (Number) DocCount() uint64 {
 	return 1
 }
 

@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,21 +21,13 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
-			return tCtx, nil
-		},
-	}
-
 	tests := []struct {
 		name    string
-		target  ottl.PMapGetter[pcommon.Map]
 		pattern string
 		want    func(pcommon.Map)
 	}{
 		{
 			name:    "delete everything",
-			target:  target,
 			pattern: "test.*",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.EnsureCapacity(3)
@@ -42,7 +35,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "delete attributes that end in a number",
-			target:  target,
 			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
@@ -50,7 +42,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "delete nothing",
-			target:  target,
 			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
@@ -64,11 +55,27 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := deleteMatchingKeys(tt.target, tt.pattern)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := deleteMatchingKeys(target, tt.pattern)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -80,9 +87,12 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -94,9 +104,12 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -107,10 +120,10 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil, nil
+			return pcommon.Map{}, nil
 		},
 	}
 

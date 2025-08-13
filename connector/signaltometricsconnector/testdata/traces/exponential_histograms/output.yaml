@@ -135,7 +135,147 @@ resourceMetrics:
                   scale: 3
                   sum: 31402
                   timeUnixNano: "1000000"
-            name: with_resource_foo_only
+            name: with_resource_filter
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Spans with resource attribute including resource.bar as a exponential histogram metric
+            exponentialHistogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - count: "8"
+                  max: 17000
+                  min: 2
+                  negative: {}
+                  positive:
+                    bucketCounts:
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "3"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "1"
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "0"
+                      - "1"
+                    offset: 7
+                  scale: 3
+                  sum: 31402
+                  timeUnixNano: "1000000"
+            name: with_resource_filter
             unit: ms
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

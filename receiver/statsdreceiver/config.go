@@ -6,13 +6,14 @@ package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 // Config defines configuration for StatsD receiver.
@@ -24,6 +25,8 @@ type Config struct {
 	EnableSimpleTags        bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
 	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+	// Will only be used when transport set to 'unixgram'.
+	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
 }
 
 func (c *Config) Validate() error {
@@ -43,8 +46,6 @@ func (c *Config) Validate() error {
 		switch eachMap.StatsdType {
 		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName, protocol.DistributionTypeName:
 			// do nothing
-		case protocol.CounterTypeName, protocol.GaugeTypeName:
-			fallthrough
 		default:
 			errs = multierr.Append(errs, fmt.Errorf("statsd_type is not a supported mapping for histogram and timing metrics: %s", eachMap.StatsdType))
 		}
@@ -57,8 +58,6 @@ func (c *Config) Validate() error {
 		switch eachMap.ObserverType {
 		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver:
 			// do nothing
-		case protocol.DisableObserver:
-			fallthrough
 		default:
 			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported for histogram and timing metrics: %s", eachMap.ObserverType))
 		}

@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -135,7 +136,7 @@ func TestTraceIntegrity(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -152,13 +153,13 @@ func TestTraceIntegrity(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 4, mpe1.EvaluationCount)
+	require.Equal(t, 4, mpe1.EvaluationCount)
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -190,7 +191,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 			withTickerFrequency(time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -226,7 +227,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 			withTickerFrequency(time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -283,7 +284,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 			withTickerFrequency(time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -330,7 +331,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 			withTickerFrequency(100 * time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -367,7 +368,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 			withTickerFrequency(100 * time.Millisecond),
 		},
 	}
-	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, sp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, sp.Shutdown(context.Background()))
@@ -387,7 +388,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
 	tsp := sp.(*tailSamplingSpanProcessor)
-	tsp.idToTrace.Range(func(_ any, _ any) bool {
+	tsp.idToTrace.Range(func(_, _ any) bool {
 		cnt++
 		return true
 	})
@@ -413,7 +414,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -449,7 +450,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIDs {
 		trace := findTrace(t, receivedTraces, traceID)
-		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+		require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIDs[i]
 		got := collectSpanIDs(trace)
@@ -463,7 +464,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			return a < b
 		})
 
-		require.EqualValues(t, expected, got)
+		require.Equal(t, expected, got)
 	}
 }
 
@@ -486,7 +487,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -558,7 +559,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
-	tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, Config{
+	tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, Config{
 		DecisionWait: 500 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs:   testPolicy,
@@ -615,7 +616,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 		Type: AlwaysSample,
 	}
 
-	_, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, Config{
+	_, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -645,7 +646,7 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              policy,
 	}
-	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -666,6 +667,39 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 	assert.EqualValues(t, 5, metrics.decisionNotSampled)
 	assert.EqualValues(t, 0, metrics.idNotFoundOnMapCount)
 	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
+}
+
+func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "regular-policy",
+					Type: AlwaysSample,
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "drop-policy",
+					Type: Drop,
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(idb),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	tsp := p.(*tailSamplingSpanProcessor)
+	require.GreaterOrEqual(t, len(tsp.policies), 2)
+	assert.Equal(t, "drop-policy", tsp.policies[0].name)
 }
 
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
@@ -777,7 +811,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	return firstBatch, true
 }
 
-func (s *syncIDBatcher) Stop() {
+func (*syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {
@@ -788,4 +822,99 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
+}
+
+// TestNumericAttributeCases tests cases for the numeric attribute filter
+func TestNumericAttributeCases(t *testing.T) {
+	tests := []struct {
+		name           string
+		minValue       int64
+		maxValue       int64
+		testValue      int64
+		expectedResult sampling.Decision
+		description    string
+	}{
+		{
+			name:           "Only min_value set (positive)",
+			minValue:       400,
+			maxValue:       0, // not set (default)
+			testValue:      500,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when value >= min_value and max_value not set",
+		},
+		{
+			name:           "Only min_value set (negative value)",
+			minValue:       -100,
+			maxValue:       0, // not set (default)
+			testValue:      50,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when value >= min_value (negative) and max_value not set",
+		},
+		{
+			name:           "Only max_value set (positive)",
+			minValue:       0, // not set (default)
+			maxValue:       1000,
+			testValue:      500,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when value <= max_value and min_value not set",
+		},
+		{
+			name:           "Both min and max set",
+			minValue:       100,
+			maxValue:       200,
+			testValue:      150,
+			expectedResult: sampling.Sampled,
+			description:    "Should sample when min_value <= value <= max_value",
+		},
+		{
+			name:           "Value below min_value",
+			minValue:       400,
+			maxValue:       0, // not set (default)
+			testValue:      300,
+			expectedResult: sampling.NotSampled,
+			description:    "Should not sample when value < min_value",
+		},
+		{
+			name:           "Value above max_value",
+			minValue:       0, // not set (default)
+			maxValue:       100,
+			testValue:      200,
+			expectedResult: sampling.NotSampled,
+			description:    "Should not sample when value > max_value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NumericAttributeCfg{
+				Key:      "test_attribute",
+				MinValue: tt.minValue,
+				MaxValue: tt.maxValue,
+			}
+
+			settings := componenttest.NewNopTelemetrySettings()
+
+			evaluator, err := getSharedPolicyEvaluator(settings, &sharedPolicyCfg{
+				Name:                "test-policy",
+				Type:                NumericAttribute,
+				NumericAttributeCfg: cfg,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, evaluator)
+
+			// Create test trace data
+			trace := &sampling.TraceData{}
+			trace.ReceivedBatches = ptrace.NewTraces()
+
+			rs := trace.ReceivedBatches.ResourceSpans().AppendEmpty()
+			ils := rs.ScopeSpans().AppendEmpty()
+			span := ils.Spans().AppendEmpty()
+			span.Attributes().PutInt("test_attribute", tt.testValue)
+
+			decision, err := evaluator.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4}), trace)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedResult, decision, tt.description)
+		})
+	}
 }

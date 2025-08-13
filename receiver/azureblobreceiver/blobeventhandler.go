@@ -89,13 +89,13 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		if err != nil {
 			return err
 		}
-		switch {
-		case containerName == p.logsContainerName:
+		switch containerName {
+		case p.logsContainerName:
 			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
 			if err != nil {
 				return err
 			}
-		case containerName == p.tracesContainerName:
+		case p.tracesContainerName:
 			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
 			if err != nil {
 				return err
@@ -127,7 +127,7 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubConnectionString string, logsContainerName string, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
+func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,

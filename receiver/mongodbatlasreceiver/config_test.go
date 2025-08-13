@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -28,12 +30,14 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Empty config",
 			input: Config{
+				BaseURL:          mongodbatlas.CloudURL,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
 			name: "Valid alerts config",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
@@ -46,6 +50,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Alerts missing endpoint",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled: true,
 					Secret:  "some_secret",
@@ -58,6 +63,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Alerts missing secret",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
@@ -70,6 +76,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid endpoint",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "7706",
@@ -83,6 +90,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS config missing key",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
@@ -101,6 +109,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS config missing cert",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
@@ -119,7 +128,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid Metrics Config",
 			input: Config{
-				Projects: []*ProjectConfig{
+				BaseURL: mongodbatlas.CloudURL,
+				Projects: []ProjectConfig{
 					{
 						Name: "Project1",
 					},
@@ -130,7 +140,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid Metrics Config with multiple projects with an inclusion or exclusion",
 			input: Config{
-				Projects: []*ProjectConfig{
+				BaseURL: mongodbatlas.CloudURL,
+				Projects: []ProjectConfig{
 					{
 						Name:            "Project1",
 						IncludeClusters: []string{"Cluster1"},
@@ -146,7 +157,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid Metrics Config",
 			input: Config{
-				Projects: []*ProjectConfig{
+				BaseURL: mongodbatlas.CloudURL,
+				Projects: []ProjectConfig{
 					{
 						Name:            "Project1",
 						IncludeClusters: []string{"Cluster1"},
@@ -160,6 +172,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid Logs Config",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Logs: LogConfig{
 					Enabled: true,
 					Projects: []*LogsProjectConfig{
@@ -177,6 +190,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid Logs Config",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Logs: LogConfig{
 					Enabled: true,
 				},
@@ -187,6 +201,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid ProjectConfig",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Logs: LogConfig{
 					Enabled: true,
 					Projects: []*LogsProjectConfig{
@@ -207,6 +222,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid Alerts Retrieval ProjectConfig",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled: true,
 					Mode:    alertModePoll,
@@ -226,6 +242,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid Alerts Poll No Projects",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Mode:     alertModePoll,
@@ -239,6 +256,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid Alerts Config",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled: true,
 					Mode:    alertModePoll,
@@ -255,6 +273,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid Alerts Mode",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Mode:     "invalid type",
@@ -267,6 +286,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid Page Size",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Alerts: AlertConfig{
 					Enabled: true,
 					Mode:    alertModePoll,
@@ -284,9 +304,10 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid events config - no projects",
 			input: Config{
-				Events: &EventsConfig{
+				BaseURL: mongodbatlas.CloudURL,
+				Events: configoptional.Some(EventsConfig{
 					Projects: []*ProjectConfig{},
-				},
+				}),
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoEvents.Error(),
@@ -294,6 +315,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid Access Logs Config",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Logs: LogConfig{
 					Projects: []*LogsProjectConfig{
 						{
@@ -314,6 +336,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid Access Logs Config - bad project config",
 			input: Config{
+				BaseURL: mongodbatlas.CloudURL,
 				Logs: LogConfig{
 					Enabled: true,
 					Projects: []*LogsProjectConfig{
@@ -361,6 +384,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.BaseURL = "https://cloud.mongodb.com/"
 	expected.PrivateKey = "my-private-key"
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{
@@ -393,7 +417,7 @@ func TestLoadConfig(t *testing.T) {
 		PollInterval: time.Minute,
 	}
 
-	expected.Events = &EventsConfig{
+	expected.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: "Project 0",
@@ -407,6 +431,6 @@ func TestLoadConfig(t *testing.T) {
 		PollInterval: time.Minute,
 		MaxPages:     defaultEventsMaxPages,
 		PageSize:     defaultEventsPageSize,
-	}
+	})
 	require.Equal(t, expected, cfg)
 }

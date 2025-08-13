@@ -126,9 +126,7 @@ func TestBasicStart(t *testing.T) {
 	}())
 	t.Cleanup(func() { srv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = "collector_name"
@@ -198,9 +196,7 @@ func TestStoreCredentials(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("dir does not exist", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -224,9 +220,7 @@ func TestStoreCredentials(t *testing.T) {
 	})
 
 	t.Run("dir exists before launch with 600 permissions", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -250,9 +244,7 @@ func TestStoreCredentials(t *testing.T) {
 	})
 
 	t.Run("ensure dir gets created with 700 permissions", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -275,9 +267,7 @@ func TestStoreCredentials(t *testing.T) {
 	})
 
 	t.Run("by default use sha256 for hashing", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -340,9 +330,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 	t.Logf("Using dir: %s", dir)
 
 	store, err := credentials.NewLocalFsStore(
@@ -437,15 +425,11 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 	}
 
 	getDir := func(t *testing.T) string {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-multiple-extensions-test-*")
-		require.NoError(t, err)
-		return dir
+		return t.TempDir()
 	}
 
 	dir1 := getDir(t)
-	t.Cleanup(func() { os.RemoveAll(dir1) })
 	dir2 := getDir(t)
-	t.Cleanup(func() { os.RemoveAll(dir2) })
 
 	srv1 := getServer()
 	t.Cleanup(func() { srv1.Close() })
@@ -536,12 +520,10 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
-	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -623,12 +605,10 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
-	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -699,9 +679,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 
 	t.Cleanup(func() { srv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -718,9 +696,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 	t.Parallel()
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cStore, err := credentials.NewLocalFsStore(
 		credentials.WithCredentialsDirectory(dir),
@@ -1069,10 +1045,9 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
 	require.NoError(t, err)
 
@@ -1118,11 +1093,9 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 		})
 	}())
 
-	var dir string
-	dir, err = os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
 	require.NoError(t, err)
 
@@ -1220,9 +1193,7 @@ func TestRegistrationRedirect(t *testing.T) {
 	))
 	t.Cleanup(func() { origSrv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-redirect-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	configFn := func() *Config {
 		cfg := createDefaultConfig().(*Config)
@@ -1335,9 +1306,7 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 
 	t.Cleanup(func() { srv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-reregistration-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -1389,7 +1358,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 				assert.Equal(t, hostname, reqPayload.Hostname)
 				assert.Equal(t, "my description", reqPayload.Description)
 				assert.Equal(t, "my category/", reqPayload.Category)
-				assert.EqualValues(t,
+				assert.Equal(t,
 					map[string]any{
 						"field1": "value1",
 						"field2": "value2",
@@ -1417,12 +1386,10 @@ func TestRegistrationRequestPayload(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-registration-payload-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
-	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -1458,10 +1425,10 @@ func TestWatchCredentialKey(t *testing.T) {
 	ctxc, cancel := context.WithCancel(ctx)
 	cancel()
 	v := se.WatchCredentialKey(ctxc, "")
-	require.Equal(t, "", v)
+	require.Empty(t, v)
 
 	v = se.WatchCredentialKey(context.Background(), "foobar")
-	require.Equal(t, "", v)
+	require.Empty(t, v)
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
@@ -1517,8 +1484,8 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 			// @sumo-drosiek: It happened to be empty OsVersion on my machine
 			// require.NotEmpty(t, reqPayload.HostDetails.OsVersion)
 			assert.NotEmpty(t, reqPayload.NetworkDetails.HostIPAddress)
-			assert.EqualValues(t, "EKS-1.20.2", reqPayload.HostDetails.Environment)
-			assert.EqualValues(t, "1.0.0", reqPayload.CollectorDetails.RunningVersion)
+			assert.Equal(t, "EKS-1.20.2", reqPayload.HostDetails.Environment)
+			assert.Equal(t, "1.0.0", reqPayload.CollectorDetails.RunningVersion)
 			assert.EqualValues(t, "A", reqPayload.TagDetails["team"])
 			assert.EqualValues(t, "linux", reqPayload.TagDetails["app"])
 			assert.EqualValues(t, "true", reqPayload.TagDetails["sumo.disco.enabled"])
@@ -1554,4 +1521,74 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 	err = se.updateMetadataWithHTTPClient(context.TODO(), httpClient)
 	require.NoError(t, err)
+}
+
+func Test_cleanupBuildVersion(t *testing.T) {
+	type args struct {
+		version string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "already ok",
+			args: args{version: "0.108.0-sumo-2"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "no hash fips",
+			args: args{version: "0.108.0-sumo-2-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "with hash",
+			args: args{version: "0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "hash fips",
+			args: args{version: "0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "v already ok",
+			args: args{version: "v0.108.0-sumo-2"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "v no hash fips",
+			args: args{version: "v0.108.0-sumo-2-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "v with hash",
+			args: args{version: "v0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "v hash fips",
+			args: args{version: "v0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "no patch version",
+			args: args{version: "0.108-sumo-2"},
+			want: "0.108-sumo-2",
+		}, {
+			name: "v no patch version",
+			args: args{version: "v0.108-sumo-2"},
+			want: "v0.108-sumo-2",
+		}, {
+			name: "no sumo version",
+			args: args{version: "0.108-0-sumo"},
+			want: "0.108-0-sumo",
+		}, {
+			name: "v no patch version",
+			args: args{version: "v0.108-0-sumo"},
+			want: "v0.108-0-sumo",
+		}, {
+			name: "nonsense",
+			args: args{version: "hfiwe-23rhc8eg.fhf"},
+			want: "hfiwe-23rhc8eg.fhf",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, cleanupBuildVersion(tt.args.version), "cleanupBuildVersion(%v)", tt.args.version)
+		})
+	}
 }

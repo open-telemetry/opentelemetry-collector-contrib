@@ -5,33 +5,14 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"runtime"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	"go.uber.org/zap"
 )
-
-type tracesExporter struct {
-	// Input configuration.
-	config *Config
-
-	traceExporter ptraceotlp.GRPCClient
-	clientConn    *grpc.ClientConn
-	callOptions   []grpc.CallOption
-
-	settings component.TelemetrySettings
-
-	// Default user-agent header.
-	userAgent string
-}
 
 func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExporter, error) {
 	oCfg, ok := cfg.(*Config)
@@ -39,41 +20,35 @@ func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExpo
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Traces.Endpoint) {
-		return nil, errors.New("coralogix exporter config requires `domain` or `traces.endpoint` configuration")
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Traces.Endpoint, oCfg.Traces.Headers)
+	if err != nil {
+		return nil, err
 	}
-	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &tracesExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	return &tracesExporter{
+		signalExporter: signalExporter,
+	}, nil
+}
+
+type tracesExporter struct {
+	traceExporter ptraceotlp.GRPCClient
+	*signalExporter
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
-	switch {
-	case !isEmpty(e.config.Traces.Endpoint):
-		if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
-			return err
-		}
-	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
-			return err
-		}
+	wrapper := &signalConfigWrapper{config: &e.config.Traces}
+	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
+		return err
 	}
-
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
-	if e.config.Traces.Headers == nil {
-		e.config.Traces.Headers = make(map[string]configopaque.String)
-	}
-	e.config.Traces.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
-
-	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.Traces.WaitForReady),
-	}
-
 	return nil
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		resourceSpan := rss.At(i)
@@ -82,25 +57,48 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 		resourceSpan.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 	}
 
-	_, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
+	resp, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
+	partialSuccess := resp.PartialSuccess()
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
+		logFields := []zap.Field{
+			zap.String("message", partialSuccess.ErrorMessage()),
+			zap.Int64("rejected_spans", partialSuccess.RejectedSpans()),
+		}
+
+		if e.settings.Logger.Level() == zap.DebugLevel {
+			// We need to deduplicate the trace IDs because the same trace ID
+			// can be sent multiple times
+			traceIDSet := make(map[string]struct{})
+			rss := td.ResourceSpans()
+			for i := 0; i < rss.Len(); i++ {
+				ss := rss.At(i).ScopeSpans()
+				for j := 0; j < ss.Len(); j++ {
+					spans := ss.At(j).Spans()
+					for k := 0; k < spans.Len(); k++ {
+						traceIDSet[spans.At(k).TraceID().String()] = struct{}{}
+					}
+				}
+			}
+			traceIDs := make([]string, 0, len(traceIDSet))
+			for traceID := range traceIDSet {
+				traceIDs = append(traceIDs, traceID)
+			}
+			logFields = append(logFields, zap.Strings("trace_ids", traceIDs))
+		}
+
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			logFields...,
+		)
+	}
+
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 
-func (e *tracesExporter) shutdown(context.Context) error {
-	if e.clientConn == nil {
-		return nil
-	}
-	return e.clientConn.Close()
-}
-
 func (e *tracesExporter) enhanceContext(ctx context.Context) context.Context {
-	md := metadata.New(nil)
-	for k, v := range e.config.Traces.Headers {
-		md.Set(k, string(v))
-	}
-	return metadata.NewOutgoingContext(ctx, md)
+	return e.signalExporter.enhanceContext(ctx)
 }

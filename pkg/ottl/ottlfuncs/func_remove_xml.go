@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -27,7 +28,7 @@ func createRemoveXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	args, ok := oArgs.(*RemoveXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("RemoveXML args must be of type *RemoveXMLAguments[K]")
+		return nil, errors.New("RemoveXML args must be of type *RemoveXMLAguments[K]")
 	}
 
 	if err := validateXPath(args.XPath); err != nil {
@@ -42,9 +43,14 @@ func createRemoveXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 func removeXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		var doc *xmlquery.Node
-		if targetVal, err := target.Get(ctx, tCtx); err != nil {
+		targetVal, err := target.Get(ctx, tCtx)
+		if err != nil {
 			return nil, err
-		} else if doc, err = parseNodesXML(targetVal); err != nil {
+		}
+		if targetVal == "" {
+			return "", nil
+		}
+		if doc, err = parseNodesXML(targetVal); err != nil {
 			return nil, err
 		}
 

@@ -29,12 +29,12 @@ func TestExtensionStartStop(t *testing.T) {
 	refreshInterval := 100 * time.Millisecond
 
 	createTestExt := func(c *ecsmock.Cluster, output string) extension.Extension {
-		f := newTestTaskFetcher(t, c)
+		f := newTestTaskFetcher(t, c, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		cs := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
+		cs := extensiontest.NewNopSettings(extensiontest.NopType)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
 		return ext
@@ -54,12 +54,12 @@ func TestExtensionStartStop(t *testing.T) {
 
 	t.Run("critical error", func(t *testing.T) {
 		c := ecsmock.NewClusterWithName("different than default config")
-		f := newTestTaskFetcher(t, c)
+		f := newTestTaskFetcher(t, c, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
 		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
-		cs := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
+		cs := extensiontest.NewNopSettings(extensiontest.NopType)
 		statusEventChan := make(chan *componentstatus.Event)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
@@ -81,7 +81,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

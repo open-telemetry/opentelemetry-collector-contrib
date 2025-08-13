@@ -71,9 +71,9 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
-					watcher.MetricRep.Name = counterCfg.MetricRep.Name
-					if counterCfg.MetricRep.Attributes != nil {
-						watcher.MetricRep.Attributes = counterCfg.MetricRep.Attributes
+					watcher.Name = counterCfg.MetricRep.Name
+					if counterCfg.Attributes != nil {
+						watcher.Attributes = counterCfg.Attributes
 					}
 				}
 
@@ -145,16 +145,16 @@ func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, e
 
 		for _, val := range counterVals {
 			var metric pmetric.Metric
-			if builtmetric, ok := metrics[watcher.MetricRep.Name]; ok {
+			if builtmetric, ok := metrics[watcher.Name]; ok {
 				metric = builtmetric
 			} else {
 				metric = metricSlice.AppendEmpty()
-				metric.SetName(watcher.MetricRep.Name)
+				metric.SetName(watcher.Name)
 				metric.SetUnit("1")
 				metric.SetEmptyGauge()
 			}
 
-			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
+			initializeMetricDps(metric, now, val, watcher.Attributes)
 		}
 	}
 

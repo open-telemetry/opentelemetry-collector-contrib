@@ -6,6 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fwebhookevent%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fwebhookevent) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fwebhookevent%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fwebhookevent) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_webhookevent)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_webhookevent&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@shalper2](https://www.github.com/shalper2) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -31,8 +32,40 @@ The following settings are optional:
 * `required_header` (optional):  
     * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
     * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
+* `split_logs_at_newline` (default: false): If true, the receiver will create a separate log record for each line in the request body.
+* `convert_headers_to_attributes` (optional): add all request headers (excluding `required_header` if also set) log attributes
+* `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
 
-Example:
+### Split logs at newline example
+
+If the setting is unconfigured or set to `false`, the receiver will create a single log record with the entire request body as the "body" of that record.
+
+If the webhook body looks like the following, use `split_logs_at_newline: false`: 
+
+```yaml
+{
+"name": "francis",
+"city": "newyork"
+}
+a fifth line
+```
+
+A single log record will be created with the multi-line JSON object as the "body" of that record, even the "fifth line" outside the JSON object will be included.
+
+If the body looks like the following, use `split_logs_at_newline: true`:
+
+```yaml
+{ "name": "francis", "city": "newyork" }
+{ "name": "john", "city": "paris" }
+a third line
+```
+
+Three log records will be created from this example. The first two are JSON body objects and the third is just the string "a third line".
+
+This receiver does not attempt to marshal the body into a structured format as it is received so it cannot make a more intelligent determination about where the split records. 
+
+### Configuration Example
+
 ```yaml
 receivers:
     webhookevent:
@@ -43,6 +76,8 @@ receivers:
         required_header:
             key: "required-header-key"
             value: "required-header-value"
+        split_logs_at_newline: false
 ```
+
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)
 

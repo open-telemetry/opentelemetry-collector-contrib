@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package s3provider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -14,7 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -49,15 +52,11 @@ func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newWithSettings)
 }
 
-func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
+func newWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{client: nil}
 }
 
 func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	if !strings.HasPrefix(uri, schemeName+":") {
-		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
-	}
-
 	// initialize the s3 client in the first call of Retrieve
 	if fmp.client == nil {
 		cfg, err := config.LoadDefaultConfig(context.Background())
@@ -130,7 +129,7 @@ func s3URISplit(uri string) (string, string, string, error) {
 	// check empty fields
 	if bucket == "" || region == "" || key == "" {
 		// This error should never happen because of the regexp pattern
-		return "", "", "", fmt.Errorf("invalid s3-uri with empty fields")
+		return "", "", "", errors.New("invalid s3-uri with empty fields")
 	}
 
 	return bucket, region, key, nil

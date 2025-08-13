@@ -64,7 +64,7 @@ func newConnector(logger *zap.Logger, set component.TelemetrySettings, config co
 }
 
 // Capabilities implements connector.Traces.
-func (c *connectorImp) Capabilities() consumer.Capabilities {
+func (*connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

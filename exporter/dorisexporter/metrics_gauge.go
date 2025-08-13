@@ -24,14 +24,14 @@ type dMetricGauge struct {
 }
 
 type metricModelGauge struct {
-	data []*dMetricGauge
+	metricModelCommon[dMetricGauge]
 }
 
-func (m *metricModelGauge) metricType() pmetric.MetricType {
+func (*metricModelGauge) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeGauge
 }
 
-func (m *metricModelGauge) tableSuffix() string {
+func (*metricModelGauge) tableSuffix() string {
 	return "_gauge"
 }
 
@@ -72,16 +72,4 @@ func (m *metricModelGauge) add(pm pmetric.Metric, dm *dMetric, e *metricsExporte
 	}
 
 	return nil
-}
-
-func (m *metricModelGauge) raw() any {
-	return m.data
-}
-
-func (m *metricModelGauge) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelGauge) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
 }

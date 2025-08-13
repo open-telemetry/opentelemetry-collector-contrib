@@ -5,6 +5,7 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fawss3%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fawss3) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fawss3%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fawss3) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_awss3)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_awss3&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@adcharre](https://www.github.com/adcharre) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -19,8 +20,8 @@ The following exporter configuration parameters are supported.
 
 | Name                    | Description                                                                                                                                | Default     | Required |
 |:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------|
-| `starttime`             | The time at which to start retrieving data.                                                                                                |             | Required |
-| `endtime`               | The time at which to stop retrieving data.                                                                                                 |             | Required |
+| `starttime`             | The time at which to start retrieving data.                                                                                                |             | Required if fetching by time |
+| `endtime`               | The time at which to stop retrieving data.                                                                                                 |             | Required if fetching by time |
 | `s3downloader:`         |                                                                                                                                            |             |          |
 | `region`                | AWS region.                                                                                                                                | "us-east-1" | Optional |
 | `s3_bucket`             | S3 bucket                                                                                                                                  |             | Required |
@@ -30,11 +31,37 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
 | `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                            | "aws"       | Optional |
 | `s3_force_path_style`   | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| `sqs:`                  |                                                                                                                                            |             |          |
+| `queue_url`             | The URL of the SQS queue that receives S3 bucket notifications                                                                             |             | Required if fetching by SQS notification |
+| `region`                | AWS region of the SQS queue                                                                                                                |             | Required if fetching by SQS notification |
+| `endpoint`              | Custom endpoint for the SQS service                                                                                                        |             | Optional |
+| `max_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
+| `wait_time`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
 | `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
-| `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                               |             |          |
+| `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                                  |             |          |
+
+There are two modes of operation:
+
+1. **Time Range Mode** - Specify `starttime` and `endtime` to fetch data from a specific time range.
+2. **SQS Message Mode** - Subscribe to SQS messages to process new objects as they arrive.
+
+### SQS Message Configuration
+
+The receiver can subscribe to an SQS queue that receives S3 event notifications:
+
+```yaml
+sqs:
+  # Required: The ARN of the SQS queue that receives S3 bucket notifications
+  queue_url: "https:https://sqs.us-east-1.amazonaws.com/123456789012/test-queue" 
+  # Required: The AWS region of the SQS queue
+  region: "us-east-1"
+```
+
+**Note:** You must configure your S3 bucket to send event notifications to the SQS queue.
+Time-based configuration (`starttime`/`endtime`) and SQS configuration cannot be used together.
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
@@ -70,6 +97,30 @@ receivers:
     encodings:
       - extension: text_encoding
         suffix: ".txt"
+
+receivers:
+  awss3/sqs_traces:
+    s3downloader:
+      region: us-east-1
+      s3_bucket: mybucket
+      s3_prefix: mytrace
+    sqs:
+      queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
+      region: "us-east-1"
+
+exporters:
+  otlp:
+    endpoint: otelcol:4317
+
+service:
+  pipelines:
+    traces:
+      receivers: [awss3/traces]
+      exporters: [otlp]
+      
+    traces/sqs:
+      receivers: [awss3/sqs_traces]
+      exporters: [otlp]
 ```
 
 ## Notifications

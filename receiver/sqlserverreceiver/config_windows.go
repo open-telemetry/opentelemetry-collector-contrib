@@ -5,14 +5,14 @@
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
-import "fmt"
+import "errors"
 
 func (cfg *Config) validateInstanceAndComputerName() error {
 	if cfg.InstanceName != "" && cfg.ComputerName == "" {
-		return fmt.Errorf("'instance_name' may not be specified without 'computer_name'")
+		return errors.New("'instance_name' may not be specified without 'computer_name'")
 	}
 	if cfg.InstanceName == "" && cfg.ComputerName != "" {
-		return fmt.Errorf("'computer_name' may not be specified without 'instance_name'")
+		return errors.New("'computer_name' may not be specified without 'instance_name'")
 	}
 
 	return nil

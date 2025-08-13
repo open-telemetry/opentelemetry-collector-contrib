@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var noopTelemetrySettings = componenttest.NewNopTelemetrySettings()
@@ -29,7 +31,7 @@ var noopTelemetrySettings = componenttest.NewNopTelemetrySettings()
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := processortest.NewNopSettings()
+	creationParams := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
@@ -107,7 +109,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := processortest.NewNopSettings()
+	creationParams := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
@@ -120,7 +122,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -139,10 +141,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(otlpExporterFactory.Type()), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(context.Background(), exportertest.NewNopSettings(otlpExporterFactory.Type()), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
@@ -180,7 +182,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := processortest.NewNopSettings()
+	creationParams := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
@@ -205,7 +207,7 @@ func TestShutdown(t *testing.T) {
 
 type mockProcessor struct{}
 
-func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
+func (*mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
 	return ptrace.NewTraces(), nil
 }
 

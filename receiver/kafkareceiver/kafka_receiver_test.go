@@ -6,22 +6,33 @@ package kafkareceiver
 import (
 	"context"
 	"errors"
+	"io"
+	"net"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -30,1308 +41,824 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
 
-func TestNewTracesReceiver_version_err(t *testing.T) {
-	c := Config{
-		Encoding:        defaultEncoding,
-		ProtocolVersion: "none",
-	}
-	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
+func init() {
+	// Disable the go-metrics registry, as there's a goroutine leak in the Sarama
+	// code that uses it. See this stale issue: https://github.com/IBM/sarama/issues/1321
+	//
+	// Sarama docs suggest setting UseNilMetrics to true to disable metrics if they
+	// are not needed, which is the case here. We only disable in tests to avoid
+	// affecting other components that rely on go-metrics.
+	metrics.UseNilMetrics = true
 }
 
-func TestNewTracesReceiver_encoding_err(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-	c.Encoding = "foo"
-	r, err := newTracesReceiver(*c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+func runTestForClients(t *testing.T, fn func(t *testing.T)) {
+	clients := []string{"Sarama", "Franz"}
+	for _, client := range clients {
+		if client == "Franz" {
+			setFranzGo(t, true)
+		}
+		t.Run(client, fn)
+	}
 }
 
-func TestNewTracesReceiver_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: kafkaexporter.Metadata{
-			Full: false,
-		},
-	}
-	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-}
+func TestReceiver(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
 
-func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
-	c := Config{
-		InitialOffset: "foo",
-		Encoding:      defaultEncoding,
-	}
-	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errInvalidInitialOffset.Error())
-}
+		// Send some traces to the otlp_spans topic.
+		traces := testdata.GenerateTraces(5)
+		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+		require.NoError(t, err)
+		results := kafkaClient.ProduceSync(context.Background(), &kgo.Record{
+			Topic: "otlp_spans",
+			Value: data,
+		})
+		require.NoError(t, results.FirstErr())
 
-func TestTracesReceiverStart(t *testing.T) {
-	c := kafkaTracesConsumer{
-		config:           Config{Encoding: defaultEncoding},
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         receivertest.NewNopSettings(),
-		consumerGroup:    &testConsumerGroup{},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
-}
-
-func TestTracesReceiverStartConsume(t *testing.T) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
-	require.NoError(t, err)
-	c := kafkaTracesConsumer{
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         receivertest.NewNopSettings(),
-		consumerGroup:    &testConsumerGroup{},
-		telemetryBuilder: telemetryBuilder,
-	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	c.cancelConsumeLoop = cancelFunc
-	require.NoError(t, c.Shutdown(context.Background()))
-	c.consumeLoopWG.Add(1)
-	c.consumeLoop(ctx, &tracesConsumerGroupHandler{
-		ready:            make(chan bool),
-		telemetryBuilder: telemetryBuilder,
+		// Wait for message to be consumed.
+		received := make(chan consumerArgs[ptrace.Traces], 1)
+		mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+		args := <-received
+		assert.NoError(t, ptracetest.CompareTraces(traces, args.data))
 	})
 }
 
-func TestTracesReceiver_error(t *testing.T) {
-	zcore, logObserver := observer.New(zapcore.ErrorLevel)
-	logger := zap.New(zcore)
-	settings := receivertest.NewNopSettings()
-	settings.Logger = logger
-
-	expectedErr := errors.New("handler error")
-	c := kafkaTracesConsumer{
-		config:           Config{Encoding: defaultEncoding},
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         settings,
-		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestTracesConsumerGroupHandler(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	testSession := testConsumerGroupSession{ctx: context.Background()}
-	require.NoError(t, c.Setup(testSession))
-	_, ok := <-c.ready
-	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 0)
-
-	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1)
-
-	groupClaim := testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
-		wg.Done()
-	}()
-
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
-	close(groupClaim.messageChan)
-	wg.Wait()
-}
-
-func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	testSession := testConsumerGroupSession{ctx: ctx}
-	require.NoError(t, c.Setup(testSession))
-	_, ok := <-c.ready
-	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 0)
-
-	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1)
-
-	groupClaim := testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	defer close(groupClaim.messageChan)
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
-		wg.Done()
-	}()
-
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
-	cancelFunc()
-	wg.Wait()
-}
-
-func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.Error(t, err)
-		wg.Done()
-	}()
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
-	close(groupClaim.messageChan)
-	wg.Wait()
-	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 3,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 0,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value:      1,
-			Attributes: attribute.NewSet(attribute.String("name", "")),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-}
-
-func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
-	consumerError := errors.New("failed to consume")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewErr(consumerError),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.EqualError(t, e, consumerError.Error())
-		wg.Done()
-	}()
-
-	td := ptrace.NewTraces()
-	td.ResourceSpans().AppendEmpty()
-	unmarshaler := &ptrace.ProtoMarshaler{}
-	bts, err := unmarshaler.MarshalTraces(td)
-	require.NoError(t, err)
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
-	close(groupClaim.messageChan)
-	wg.Wait()
-}
-
-func TestTracesReceiver_encoding_extension(t *testing.T) {
-	zcore, logObserver := observer.New(zapcore.ErrorLevel)
-	logger := zap.New(zcore)
-	settings := receivertest.NewNopSettings()
-	settings.Logger = logger
-
-	expectedErr := errors.New("handler error")
-	c := kafkaTracesConsumer{
-		config:           Config{Encoding: "traces_encoding"},
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         settings,
-		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), &testComponentHost{}))
-	require.NoError(t, c.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestNewMetricsReceiver_version_err(t *testing.T) {
-	c := Config{
-		Encoding:        defaultEncoding,
-		ProtocolVersion: "none",
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
-
-func TestNewMetricsReceiver_encoding_err(t *testing.T) {
-	c := Config{
-		Encoding: "foo",
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewMetricsExporter_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: kafkaexporter.Metadata{
-			Full: false,
-		},
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-}
-
-func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
-	c := Config{
-		InitialOffset: "foo",
-		Encoding:      defaultEncoding,
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errInvalidInitialOffset.Error())
-}
-
-func TestMetricsReceiverStartConsume(t *testing.T) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
-	require.NoError(t, err)
-	c := kafkaMetricsConsumer{
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         receivertest.NewNopSettings(),
-		consumerGroup:    &testConsumerGroup{},
-		telemetryBuilder: telemetryBuilder,
-	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	c.cancelConsumeLoop = cancelFunc
-	require.NoError(t, c.Shutdown(context.Background()))
-	c.consumeLoopWG.Add(1)
-	c.consumeLoop(ctx, &logsConsumerGroupHandler{
-		ready:            make(chan bool),
-		telemetryBuilder: telemetryBuilder,
-	})
-}
-
-func TestMetricsReceiver_error(t *testing.T) {
-	zcore, logObserver := observer.New(zapcore.ErrorLevel)
-	logger := zap.New(zcore)
-	settings := receivertest.NewNopSettings()
-	settings.Logger = logger
-
-	expectedErr := errors.New("handler error")
-	c := kafkaMetricsConsumer{
-		config:           Config{Encoding: defaultEncoding},
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         settings,
-		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestMetricsConsumerGroupHandler(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	testSession := testConsumerGroupSession{ctx: context.Background()}
-	require.NoError(t, c.Setup(testSession))
-	_, ok := <-c.ready
-	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 0)
-
-	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1)
-
-	groupClaim := testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
-		wg.Done()
-	}()
-
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
-	close(groupClaim.messageChan)
-	wg.Wait()
-}
-
-func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	testSession := testConsumerGroupSession{ctx: ctx}
-	require.NoError(t, c.Setup(testSession))
-	_, ok := <-c.ready
-	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 0)
-
-	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1)
-
-	groupClaim := testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	defer close(groupClaim.messageChan)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
-		wg.Done()
-	}()
-
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
-	cancelFunc()
-	wg.Wait()
-}
-
-func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.Error(t, err)
-		wg.Done()
-	}()
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
-	close(groupClaim.messageChan)
-	wg.Wait()
-	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 3,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 0,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value:      1,
-			Attributes: attribute.NewSet(attribute.String("name", "")),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-}
-
-func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
-	consumerError := errors.New("failed to consume")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewErr(consumerError),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.EqualError(t, e, consumerError.Error())
-		wg.Done()
-	}()
-
-	ld := testdata.GenerateMetrics(1)
-	unmarshaler := &pmetric.ProtoMarshaler{}
-	bts, err := unmarshaler.MarshalMetrics(ld)
-	require.NoError(t, err)
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
-	close(groupClaim.messageChan)
-	wg.Wait()
-}
-
-func TestMetricsReceiver_encoding_extension(t *testing.T) {
-	zcore, logObserver := observer.New(zapcore.ErrorLevel)
-	logger := zap.New(zcore)
-	settings := receivertest.NewNopSettings()
-	settings.Logger = logger
-
-	expectedErr := errors.New("handler error")
-	c := kafkaMetricsConsumer{
-		config:           Config{Encoding: "metrics_encoding"},
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         settings,
-		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), &testComponentHost{}))
-	require.NoError(t, c.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestNewLogsReceiver_version_err(t *testing.T) {
-	c := Config{
-		Encoding:        defaultEncoding,
-		ProtocolVersion: "none",
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
-
-func TestNewLogsReceiver_encoding_err(t *testing.T) {
-	c := Config{
-		Encoding: "foo",
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewLogsExporter_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: kafkaexporter.Metadata{
-			Full: false,
-		},
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-}
-
-func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
-	c := Config{
-		InitialOffset: "foo",
-		Encoding:      defaultEncoding,
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errInvalidInitialOffset.Error())
-}
-
-func TestLogsReceiverStart(t *testing.T) {
-	c := kafkaLogsConsumer{
-		config:           *createDefaultConfig().(*Config),
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         receivertest.NewNopSettings(),
-		consumerGroup:    &testConsumerGroup{},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
-}
-
-func TestLogsReceiverStartConsume(t *testing.T) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
-	require.NoError(t, err)
-	c := kafkaLogsConsumer{
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         receivertest.NewNopSettings(),
-		consumerGroup:    &testConsumerGroup{},
-		telemetryBuilder: telemetryBuilder,
-	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	c.cancelConsumeLoop = cancelFunc
-	require.NoError(t, c.Shutdown(context.Background()))
-	c.consumeLoopWG.Add(1)
-	c.consumeLoop(ctx, &logsConsumerGroupHandler{
-		ready:            make(chan bool),
-		telemetryBuilder: telemetryBuilder,
-	})
-}
-
-func TestLogsReceiver_error(t *testing.T) {
-	zcore, logObserver := observer.New(zapcore.ErrorLevel)
-	logger := zap.New(zcore)
-	settings := receivertest.NewNopSettings()
-	settings.Logger = logger
-
-	expectedErr := errors.New("handler error")
-	c := kafkaLogsConsumer{
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         settings,
-		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		config:           *createDefaultConfig().(*Config),
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestLogsConsumerGroupHandler(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	testSession := testConsumerGroupSession{ctx: context.Background()}
-	require.NoError(t, c.Setup(testSession))
-	_, ok := <-c.ready
-	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 0)
-
-	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1)
-
-	groupClaim := testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
-		wg.Done()
-	}()
-
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
-	close(groupClaim.messageChan)
-	wg.Wait()
-}
-
-func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	testSession := testConsumerGroupSession{ctx: ctx}
-	require.NoError(t, c.Setup(testSession))
-	_, ok := <-c.ready
-	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 0)
-
-	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1)
-
-	groupClaim := testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	defer close(groupClaim.messageChan)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
-		wg.Done()
-	}()
-
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
-	cancelFunc()
-	wg.Wait()
-}
-
-func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
-	require.NoError(t, err)
-	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: telemetryBuilder,
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.Error(t, err)
-		wg.Done()
-	}()
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
-	close(groupClaim.messageChan)
-	wg.Wait()
-	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 3,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 0,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-				attribute.String("partition", "5"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("name", ""),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-}
-
-func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
-	consumerError := errors.New("failed to consume")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-	require.NoError(t, err)
-	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewErr(consumerError),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.EqualError(t, e, consumerError.Error())
-		wg.Done()
-	}()
-
-	ld := testdata.GenerateLogs(1)
-	unmarshaler := &plog.ProtoMarshaler{}
-	bts, err := unmarshaler.MarshalLogs(ld)
-	require.NoError(t, err)
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
-	close(groupClaim.messageChan)
-	wg.Wait()
-}
-
-// Test unmarshaler for different charsets and encodings.
-func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
-	tests := []struct {
-		name string
-		text string
-		enc  string
+func TestReceiver_Headers_Metadata(t *testing.T) {
+	for name, testcase := range map[string]struct {
+		headers  []kgo.RecordHeader
+		expected map[string][]string
 	}{
-		{
-			name: "unmarshal test for English (ASCII characters) with text_utf8",
-			text: "ASCII characters test",
-			enc:  "utf8",
+		"no headers": {},
+		"single header": {
+			headers: []kgo.RecordHeader{
+				{Key: "key1", Value: []byte("value1")},
+			},
+			expected: map[string][]string{
+				"key1": {"value1"},
+			},
 		},
-		{
-			name: "unmarshal test for unicode with text_utf8",
-			text: "UTF8 测试 測試 テスト 테스트 ☺️",
-			enc:  "utf8",
+		"multiple headers": {
+			headers: []kgo.RecordHeader{
+				{Key: "key1", Value: []byte("value1")},
+				{Key: "key2", Value: []byte("value2")},
+			},
+			expected: map[string][]string{
+				"key1": {"value1"},
+				"key2": {"value2"},
+			},
 		},
-		{
-			name: "unmarshal test for Simplified Chinese with text_gbk",
-			text: "GBK 简体中文解码测试",
-			enc:  "gbk",
+		"single header multiple values": {
+			headers: []kgo.RecordHeader{
+				{Key: "key1", Value: []byte("value1")},
+				{Key: "key1", Value: []byte("value2")},
+			},
+			expected: map[string][]string{
+				"key1": {"value1", "value2"},
+			},
 		},
-		{
-			name: "unmarshal test for Japanese with text_shift_jis",
-			text: "Shift_JIS 日本のデコードテスト",
-			enc:  "shift_jis",
-		},
-		{
-			name: "unmarshal test for Korean with text_euc-kr",
-			text: "EUC-KR 한국 디코딩 테스트",
-			enc:  "euc-kr",
-		},
-	}
+	} {
+		t.Run(name, func(t *testing.T) {
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
-			require.NoError(t, err)
-			unmarshaler := newTextLogsUnmarshaler()
-			unmarshaler, err = unmarshaler.WithEnc(test.enc)
-			require.NoError(t, err)
-			sink := &consumertest.LogsSink{}
-			c := logsConsumerGroupHandler{
-				unmarshaler:      unmarshaler,
-				logger:           zap.NewNop(),
-				ready:            make(chan bool),
-				nextConsumer:     sink,
-				obsrecv:          obsrecv,
-				headerExtractor:  &nopHeaderExtractor{},
-				telemetryBuilder: nopTelemetryBuilder(t),
-			}
+				// Send some traces to the otlp_spans topic, including headers.
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(context.Background(), &kgo.Record{
+					Topic:   "otlp_spans",
+					Value:   data,
+					Headers: testcase.headers,
+				})
+				require.NoError(t, results.FirstErr())
 
-			wg := sync.WaitGroup{}
-			wg.Add(1)
-			groupClaim := &testConsumerGroupClaim{
-				messageChan: make(chan *sarama.ConsumerMessage),
-			}
-			go func() {
-				err = c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-				assert.NoError(t, err)
-				wg.Done()
-			}()
-			enc, err := textutils.LookupEncoding(test.enc)
-			require.NoError(t, err)
-			encoder := enc.NewEncoder()
-			encoded, err := encoder.Bytes([]byte(test.text))
-			require.NoError(t, err)
-			t1 := time.Now()
-			groupClaim.messageChan <- &sarama.ConsumerMessage{Value: encoded}
-			close(groupClaim.messageChan)
-			wg.Wait()
-			require.Equal(t, 1, sink.LogRecordCount())
-			log := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-			assert.Equal(t, log.Body().Str(), test.text)
-			assert.LessOrEqual(t, t1, log.ObservedTimestamp().AsTime())
-			assert.LessOrEqual(t, log.ObservedTimestamp().AsTime(), time.Now())
+				// Wait for message to be consumed.
+				received := make(chan consumerArgs[ptrace.Traces], 1)
+				mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+				args := <-received
+				info := client.FromContext(args.ctx)
+				for key, values := range testcase.expected {
+					assert.Equal(t, values, info.Metadata.Get(key))
+				}
+			})
 		})
 	}
 }
 
-func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
-	tests := []struct {
-		name     string
-		encoding string
-	}{
-		{
-			name:     "default text encoding",
-			encoding: "text",
-		},
-		{
-			name:     "utf-8 text encoding",
-			encoding: "text_utf-8",
-		},
-		{
-			name:     "gbk text encoding",
-			encoding: "text_gbk",
-		},
-		{
-			name:     "shift_jis text encoding, which contains an underline",
-			encoding: "text_shift_jis",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers("Test Version", zap.NewNop()))
-			assert.NoError(t, err)
+func TestReceiver_Headers_HeaderExtraction(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		name := "enabled"
+		if !enabled {
+			name = "disabled"
+		}
+		t.Run(name, func(t *testing.T) {
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+				// Send some traces to the otlp_spans topic, including headers.
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(context.Background(), &kgo.Record{
+					Topic: "otlp_spans",
+					Value: data,
+					Headers: []kgo.RecordHeader{{
+						Key:   "extracted",
+						Value: []byte("value1"),
+					}, {
+						Key:   "extracted",
+						Value: []byte("value2"),
+					}, {
+						Key:   "not_extracted",
+						Value: []byte("value3"),
+					}},
+				})
+				require.NoError(t, results.FirstErr())
+
+				// Wait for message to be consumed.
+				received := make(chan consumerArgs[ptrace.Traces], 1)
+				receiverConfig.HeaderExtraction.ExtractHeaders = enabled
+				receiverConfig.HeaderExtraction.Headers = []string{"extracted"}
+				mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+				args := <-received
+
+				resource := args.data.ResourceSpans().At(0).Resource()
+				value, ok := resource.Attributes().Get("kafka.header.extracted")
+				if enabled {
+					require.True(t, ok)
+					assert.Equal(t, "value1", value.Str()) // only first value is extracted
+				} else {
+					require.False(t, ok)
+				}
+			})
 		})
 	}
 }
 
-func TestCreateLogs_encoding_text_error(t *testing.T) {
-	cfg := Config{
-		Encoding: "text_uft-8",
-	}
-	r, err := newLogsReceiver(cfg, receivertest.NewNopSettings(), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	// encoding error comes first
-	assert.Error(t, err, "unsupported encoding")
-}
-
-func TestLogsReceiver_encoding_extension(t *testing.T) {
-	zcore, logObserver := observer.New(zapcore.ErrorLevel)
-	logger := zap.New(zcore)
-	settings := receivertest.NewNopSettings()
-	settings.Logger = logger
-
-	expectedErr := errors.New("handler error")
-	c := kafkaLogsConsumer{
-		config:           Config{Encoding: "logs_encoding"},
-		nextConsumer:     consumertest.NewNop(),
-		consumeLoopWG:    &sync.WaitGroup{},
-		settings:         settings,
-		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		telemetryBuilder: nopTelemetryBuilder(t),
-	}
-
-	require.NoError(t, c.Start(context.Background(), &testComponentHost{}))
-	require.NoError(t, c.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestToSaramaInitialOffset_earliest(t *testing.T) {
-	saramaInitialOffset, err := toSaramaInitialOffset(offsetEarliest)
-
-	require.NoError(t, err)
-	assert.Equal(t, sarama.OffsetOldest, saramaInitialOffset)
-}
-
-func TestToSaramaInitialOffset_latest(t *testing.T) {
-	saramaInitialOffset, err := toSaramaInitialOffset(offsetLatest)
-
-	require.NoError(t, err)
-	assert.Equal(t, sarama.OffsetNewest, saramaInitialOffset)
-}
-
-func TestToSaramaInitialOffset_default(t *testing.T) {
-	saramaInitialOffset, err := toSaramaInitialOffset("")
-
-	require.NoError(t, err)
-	assert.Equal(t, sarama.OffsetNewest, saramaInitialOffset)
-}
-
-func TestToSaramaInitialOffset_invalid(t *testing.T) {
-	_, err := toSaramaInitialOffset("other")
-
-	assert.Equal(t, err, errInvalidInitialOffset)
-}
-
-type testConsumerGroupClaim struct {
-	messageChan chan *sarama.ConsumerMessage
-}
-
-var _ sarama.ConsumerGroupClaim = (*testConsumerGroupClaim)(nil)
-
-const (
-	testTopic               = "otlp_spans"
-	testPartition           = 5
-	testInitialOffset       = 6
-	testHighWatermarkOffset = 4
-)
-
-func (t testConsumerGroupClaim) Topic() string {
-	return testTopic
-}
-
-func (t testConsumerGroupClaim) Partition() int32 {
-	return testPartition
-}
-
-func (t testConsumerGroupClaim) InitialOffset() int64 {
-	return testInitialOffset
-}
-
-func (t testConsumerGroupClaim) HighWaterMarkOffset() int64 {
-	return testHighWatermarkOffset
-}
-
-func (t testConsumerGroupClaim) Messages() <-chan *sarama.ConsumerMessage {
-	return t.messageChan
-}
-
-type testConsumerGroupSession struct {
-	ctx context.Context
-}
-
-func (t testConsumerGroupSession) Commit() {
-}
-
-var _ sarama.ConsumerGroupSession = (*testConsumerGroupSession)(nil)
-
-func (t testConsumerGroupSession) Claims() map[string][]int32 {
-	panic("implement me")
-}
-
-func (t testConsumerGroupSession) MemberID() string {
-	panic("implement me")
-}
-
-func (t testConsumerGroupSession) GenerationID() int32 {
-	panic("implement me")
-}
-
-func (t testConsumerGroupSession) MarkOffset(string, int32, int64, string) {
-}
-
-func (t testConsumerGroupSession) ResetOffset(string, int32, int64, string) {
-	panic("implement me")
-}
-
-func (t testConsumerGroupSession) MarkMessage(*sarama.ConsumerMessage, string) {}
-
-func (t testConsumerGroupSession) Context() context.Context {
-	return t.ctx
-}
-
-type testConsumerGroup struct {
-	once sync.Once
-	err  error
-}
-
-var _ sarama.ConsumerGroup = (*testConsumerGroup)(nil)
-
-func (t *testConsumerGroup) Consume(ctx context.Context, _ []string, handler sarama.ConsumerGroupHandler) error {
-	t.once.Do(func() {
-		_ = handler.Setup(testConsumerGroupSession{ctx: ctx})
-	})
-	return t.err
-}
-
-func (t *testConsumerGroup) Errors() <-chan error {
-	panic("implement me")
-}
-
-func (t *testConsumerGroup) Close() error {
-	return nil
-}
-
-func (t *testConsumerGroup) Pause(_ map[string][]int32) {
-	panic("implement me")
-}
-
-func (t *testConsumerGroup) PauseAll() {
-	panic("implement me")
-}
-
-func (t *testConsumerGroup) Resume(_ map[string][]int32) {
-	panic("implement me")
-}
-
-func (t *testConsumerGroup) ResumeAll() {
-	panic("implement me")
-}
-
-func assertInternalTelemetry(t *testing.T, tel *componenttest.Telemetry, partitionClose int64) {
-	metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{
-		{
-			Value:      1,
-			Attributes: attribute.NewSet(attribute.String("name", "")),
+func TestReceiver_ConsumeError(t *testing.T) {
+	for name, testcase := range map[string]struct {
+		err         error
+		shouldRetry bool
+	}{
+		"retryable error": {
+			err:         exporterhelper.ErrQueueIsFull,
+			shouldRetry: true,
 		},
-	}, metricdatatest.IgnoreTimestamp())
-	if partitionClose > 0 {
-		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{
-			{
-				Value:      partitionClose,
-				Attributes: attribute.NewSet(attribute.String("name", "")),
+		"permanent error": {
+			err: consumererror.NewPermanent(errors.New("failed to consume")),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+				// Send some traces to the otlp_spans topic.
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(context.Background(),
+					&kgo.Record{Topic: "otlp_spans", Value: data},
+				)
+				require.NoError(t, results.FirstErr())
+
+				var calls atomic.Int64
+				consumer := newTracesConsumer(func(context.Context, ptrace.Traces) error {
+					calls.Add(1)
+					return testcase.err
+				})
+
+				// Wait for messages to be consumed.
+				receiverConfig.ErrorBackOff.Enabled = true
+				receiverConfig.ErrorBackOff.InitialInterval = 10 * time.Millisecond
+				receiverConfig.ErrorBackOff.MaxInterval = 10 * time.Millisecond
+				receiverConfig.ErrorBackOff.MaxElapsedTime = 500 * time.Millisecond
+				mustNewTracesReceiver(t, receiverConfig, consumer)
+
+				if testcase.shouldRetry {
+					assert.Eventually(
+						t, func() bool { return calls.Load() > 1 },
+						10*time.Second, 100*time.Millisecond,
+					)
+				} else {
+					assert.Eventually(
+						t, func() bool { return calls.Load() == 1 },
+						10*time.Second, 100*time.Millisecond,
+					)
+					// Verify that no retries have been attempted.
+					time.Sleep(100 * time.Millisecond)
+					assert.Equal(t, int64(1), calls.Load())
+				}
+			})
+		})
+	}
+}
+
+func TestReceiver_InternalTelemetry(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"), kfake.NumBrokers(1))
+
+		// Send some traces to the otlp_spans topic.
+		traces := testdata.GenerateTraces(1)
+		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+		require.NoError(t, err)
+		results := kafkaClient.ProduceSync(context.Background(),
+			&kgo.Record{Topic: "otlp_spans", Value: data},
+			&kgo.Record{Topic: "otlp_spans", Value: data},
+			&kgo.Record{Topic: "otlp_spans", Value: data},
+			&kgo.Record{Topic: "otlp_spans", Value: data},
+			&kgo.Record{Topic: "otlp_spans", Value: []byte("junk")},
+		)
+		require.NoError(t, results.FirstErr())
+
+		// Wait for messages to be consumed.
+		received := make(chan consumerArgs[ptrace.Traces], 1)
+		set, tel, observedLogs := mustNewSettings(t)
+		f := NewFactory()
+		r, err := f.CreateTraces(context.Background(), set, receiverConfig, newChannelTracesConsumer(received))
+		require.NoError(t, err)
+		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			assert.NoError(t, r.Shutdown(context.Background()))
+		})
+		for range 4 {
+			<-received
+		}
+
+		// There should be one failed message due to the invalid third message payload.
+		// It may not be available immediately, as the receiver may not have processed it yet.
+		assert.Eventually(t, func() bool {
+			_, getMetricErr := tel.GetMetric("otelcol_kafka_receiver_unmarshal_failed_spans")
+			return getMetricErr == nil
+		}, 10*time.Second, 100*time.Millisecond)
+		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		// After receiving messages, the internal metrics should be updated.
+		metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+		}}, metricdatatest.IgnoreTimestamp())
+
+		if franzGoConsumerFeatureGate.IsEnabled() {
+			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverBytes(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverLatency(t, tel, []metricdata.HistogramDataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "seed_0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverReadLatency(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "seed_0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverRecordsDelay(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		} else {
+			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		}
+
+		// Shut down and check that the partition close metric is updated.
+		err = r.Shutdown(context.Background())
+		require.NoError(t, err)
+		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+		}}, metricdatatest.IgnoreTimestamp())
+
+		observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+		logEntries := observedErrorLogs.All()
+		assert.Len(t, logEntries, 2)
+		assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
+		assert.Equal(t, "failed to consume message, skipping due to message_marking config", logEntries[1].Message)
+
+		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 4, // offset of the final message
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+
+		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+	})
+}
+
+func TestReceiver_MessageMarking(t *testing.T) {
+	for name, testcase := range map[string]struct {
+		markAfter  bool
+		markErrors bool
+
+		errorShouldRestart bool
+	}{
+		"mark_before": {
+			markAfter: false,
+		},
+		"mark_after_success": {
+			markAfter:          true,
+			errorShouldRestart: true,
+		},
+		"mark_after_all": {
+			markAfter:  true,
+			markErrors: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"), kfake.NumBrokers(1))
+
+				// Send some invalid data to the otlp_spans topic so unmarshaling fails,
+				// and then send some valid data to show that the invalid data does not
+				// block the consumer.
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(context.Background(),
+					&kgo.Record{Topic: "otlp_spans", Value: []byte("junk")},
+					&kgo.Record{Topic: "otlp_spans", Value: data},
+				)
+				require.NoError(t, results.FirstErr())
+
+				var calls atomic.Int64
+				consumer := newTracesConsumer(func(_ context.Context, received ptrace.Traces) error {
+					calls.Add(1)
+					return ptracetest.CompareTraces(traces, received)
+				})
+
+				// Only mark messages after consuming, including for errors.
+				receiverConfig.MessageMarking.After = testcase.markAfter
+				receiverConfig.MessageMarking.OnError = testcase.markErrors
+				set, tel, observedLogs := mustNewSettings(t)
+				f := NewFactory()
+				r, err := f.CreateTraces(context.Background(), set, receiverConfig, consumer)
+				require.NoError(t, err)
+				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+				t.Cleanup(func() {
+					assert.NoError(t, r.Shutdown(context.Background()))
+				})
+
+				if testcase.errorShouldRestart {
+					value := int64(5)
+					timesProcessed := value - 1
+					// Franz doesn't "restart" the consumer
+					if strings.Contains(t.Name(), "Franz") {
+						value = 1
+						timesProcessed = 1
+					}
+
+					// Verify that the consumer restarts at least once.
+					assert.Eventually(t, func() bool {
+						m, err := tel.GetMetric("otelcol_kafka_receiver_partition_start")
+						require.NoError(t, err)
+
+						dataPoints := m.Data.(metricdata.Sum[int64]).DataPoints
+						assert.Len(t, dataPoints, 1)
+						return dataPoints[0].Value >= value
+					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
+
+					// reprocesses of the same message
+					if franzGoConsumerFeatureGate.IsEnabled() {
+						metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+							{
+								Value: timesProcessed,
+								Attributes: attribute.NewSet(
+									attribute.String("node_id", "0"),
+									attribute.String("topic", "otlp_spans"),
+									attribute.Int64("partition", 0),
+									attribute.String("outcome", "success"),
+									attribute.String("compression_codec", "snappy"),
+								),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+					} else {
+						metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+							{
+								Value: timesProcessed,
+								Attributes: attribute.NewSet(
+									attribute.String("topic", "otlp_spans"),
+									attribute.Int64("partition", 0),
+									attribute.String("outcome", "success"),
+								),
+							},
+						}, metricdatatest.IgnoreTimestamp())
+					}
+
+					// The invalid message should block the consumer.
+					assert.Zero(t, calls.Load())
+
+					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+					logEntries := observedErrorLogs.FilterMessage("failed to unmarshal message")
+					require.NotEmpty(t, logEntries)
+				} else {
+					assert.Eventually(t, func() bool {
+						return calls.Load() == 1
+					}, time.Second, 100*time.Millisecond, "unmarshal error should not block consumption")
+
+					// Verify that the consumer did not restart.
+					metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
+						Value: 1,
+					}}, metricdatatest.IgnoreTimestamp())
+
+					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+					logEntries := observedErrorLogs.All()
+					require.Len(t, logEntries, 2)
+					assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
+					assert.Equal(t,
+						"failed to consume message, skipping due to message_marking config",
+						logEntries[1].Message,
+					)
+				}
+			})
+		})
+	}
+}
+
+func TestNewLogsReceiver(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_logs"))
+
+		var sink consumertest.LogsSink
+		receiverConfig.HeaderExtraction.ExtractHeaders = true
+		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
+		set, tel, _ := mustNewSettings(t)
+		r, err := newLogsReceiver(receiverConfig, set, &sink)
+		require.NoError(t, err)
+
+		// Send some logs to the otlp_logs topic.
+		logs := testdata.GenerateLogs(1)
+		data, err := (&plog.ProtoMarshaler{}).MarshalLogs(logs)
+		require.NoError(t, err)
+		results := kafkaClient.ProduceSync(context.Background(),
+			&kgo.Record{
+				Topic: "otlp_logs",
+				Value: data,
+				Headers: []kgo.RecordHeader{
+					{Key: "key1", Value: []byte("value1")},
+				},
 			},
-		}, metricdatatest.IgnoreTimestamp())
+			&kgo.Record{Topic: "otlp_logs", Value: []byte("junk")},
+		)
+		require.NoError(t, results.FirstErr())
+
+		err = r.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, r.Shutdown(context.Background()))
+		})
+
+		// There should be one failed message due to the invalid message payload.
+		// It may not be available immediately, as the receiver may not have processed it yet.
+		assert.Eventually(t, func() bool {
+			_, err := tel.GetMetric("otelcol_kafka_receiver_unmarshal_failed_log_records")
+			return err == nil
+		}, 10*time.Second, 100*time.Millisecond)
+		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_logs"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		// There should be one successfully processed batch of logs.
+		assert.Len(t, sink.AllLogs(), 1)
+		_, ok := sink.AllLogs()[0].ResourceLogs().At(0).Resource().Attributes().Get("kafka.header.key1")
+		require.True(t, ok)
+	})
+}
+
+func TestNewMetricsReceiver(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_metrics"))
+
+		var sink consumertest.MetricsSink
+		receiverConfig.HeaderExtraction.ExtractHeaders = true
+		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
+		set, tel, _ := mustNewSettings(t)
+		r, err := newMetricsReceiver(receiverConfig, set, &sink)
+		require.NoError(t, err)
+
+		// Send some metrics to the otlp_metrics topic.
+		metrics := testdata.GenerateMetrics(1)
+		data, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(metrics)
+		require.NoError(t, err)
+		results := kafkaClient.ProduceSync(context.Background(),
+			&kgo.Record{
+				Topic: "otlp_metrics",
+				Value: data,
+				Headers: []kgo.RecordHeader{
+					{Key: "key1", Value: []byte("value1")},
+				},
+			},
+			&kgo.Record{Topic: "otlp_metrics", Value: []byte("junk")},
+		)
+		require.NoError(t, results.FirstErr())
+
+		err = r.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, r.Shutdown(context.Background()))
+		})
+
+		// There should be one failed message due to the invalid message payload.
+		// It may not be available immediately, as the receiver may not have processed it yet.
+		assert.Eventually(t, func() bool {
+			_, err := tel.GetMetric("otelcol_kafka_receiver_unmarshal_failed_metric_points")
+			return err == nil
+		}, 10*time.Second, 100*time.Millisecond)
+		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_metrics"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		// There should be one successfully processed batch of metrics.
+		assert.Len(t, sink.AllMetrics(), 1)
+		_, ok := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("kafka.header.key1")
+		require.True(t, ok)
+	})
+}
+
+func TestComponentStatus(t *testing.T) {
+	t.Parallel()
+	_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+	statusEventCh := make(chan *componentstatus.Event, 10)
+	waitStatusEvent := func() *componentstatus.Event {
+		select {
+		case event := <-statusEventCh:
+			return event
+		case <-time.After(10 * time.Second):
+			t.Fatal("timed out waiting for status event")
+		}
+		panic("unreachable")
 	}
-}
-
-func nopTelemetryBuilder(t *testing.T) *metadata.TelemetryBuilder {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
-	require.NoError(t, err)
-	return telemetryBuilder
-}
-
-func TestLoadEncodingExtension_logs(t *testing.T) {
-	extension, err := loadEncodingExtension[plog.Unmarshaler](&testComponentHost{}, "logs_encoding")
-	require.NoError(t, err)
-	require.NotNil(t, extension)
-}
-
-func TestLoadEncodingExtension_notfound_error(t *testing.T) {
-	extension, err := loadEncodingExtension[plog.Unmarshaler](&testComponentHost{}, "logs_notfound")
-	require.Error(t, err)
-	require.Nil(t, extension)
-}
-
-func TestLoadEncodingExtension_nounmarshaler_error(t *testing.T) {
-	extension, err := loadEncodingExtension[plog.Unmarshaler](&testComponentHost{}, "logs_nounmarshaler")
-	require.Error(t, err)
-	require.Nil(t, extension)
-}
-
-type testComponentHost struct{}
-
-func (h *testComponentHost) GetExtensions() map[component.ID]component.Component {
-	return map[component.ID]component.Component{
-		component.MustNewID("logs_encoding"):      &nopComponent{},
-		component.MustNewID("logs_nounmarshaler"): &nopNoUnmarshalerComponent{},
-		component.MustNewID("metrics_encoding"):   &nopComponent{},
-		component.MustNewID("traces_encoding"):    &nopComponent{},
+	assertNoStatusEvent := func(t *testing.T) {
+		t.Helper()
+		select {
+		case event := <-statusEventCh:
+			t.Fatalf("unexpected status event received: %+v", event)
+		case <-time.After(100 * time.Millisecond):
+		}
 	}
+
+	// Create an intermediate TCP listener which will proxy the connection to the
+	// fake Kafka cluster. This can be used to verify the initial "OK" status is
+	// reported only after the broker connection is established.
+	lis, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, lis.Close()) })
+	brokers := receiverConfig.Brokers
+	receiverConfig.Brokers = []string{lis.Addr().String()}
+
+	f := NewFactory()
+	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
+	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), &statusReporterHost{
+		report: func(event *componentstatus.Event) {
+			statusEventCh <- event
+		},
+	}))
+	t.Cleanup(func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+	})
+
+	// Connection to the Kafka cluster is asynchronous; the receiver
+	// will report that it is starting before the connection is established.
+	assert.Equal(t, componentstatus.StatusStarting, waitStatusEvent().Status())
+	// The StatusOK event should not be reported yet, as the connection to the
+	// fake Kafka cluster is not established yet.
+	assertNoStatusEvent(t)
+
+	// Accept the connection, proxy to the fake Kafka cluster.
+	var wg sync.WaitGroup
+	conn, err := lis.Accept()
+	require.NoError(t, err)
+	kfakeConn, err := net.Dial("tcp", brokers[0])
+	require.NoError(t, err)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(conn, kfakeConn)
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(kfakeConn, conn)
+	}()
+	defer wg.Wait()
+	defer conn.Close()
+	defer kfakeConn.Close()
+
+	assert.Equal(t, componentstatus.StatusOK, waitStatusEvent().Status())
+	assertNoStatusEvent(t)
+
+	assert.NoError(t, r.Shutdown(context.Background()))
+
+	assert.Equal(t, componentstatus.StatusStopping, waitStatusEvent().Status())
+	assert.Equal(t, componentstatus.StatusStopped, waitStatusEvent().Status())
+	assertNoStatusEvent(t)
 }
 
-type nopComponent struct{}
+func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Traces) {
+	tb.Helper()
 
-func (c *nopComponent) Start(_ context.Context, _ component.Host) error {
+	f := NewFactory()
+	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
+	require.NoError(tb, err)
+	require.NoError(tb, r.Start(context.Background(), componenttest.NewNopHost()))
+	tb.Cleanup(func() {
+		assert.NoError(tb, r.Shutdown(context.Background()))
+	})
+}
+
+func mustNewSettings(tb testing.TB) (receiver.Settings, *componenttest.Telemetry, *observer.ObservedLogs) {
+	zapCore, observedLogs := observer.New(zapcore.DebugLevel)
+	set := receivertest.NewNopSettings(metadata.Type)
+	tel := componenttest.NewTelemetry()
+	tb.Cleanup(func() {
+		assert.NoError(tb, tel.Shutdown(context.Background()))
+	})
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+	set.Logger = zap.New(zapCore)
+	return set, tel, observedLogs
+}
+
+// consumerArgs holds the context and data passed to the consumer function.
+type consumerArgs[T any] struct {
+	ctx  context.Context
+	data T
+}
+
+func newChannelTracesConsumer(ch chan<- consumerArgs[ptrace.Traces]) consumer.Traces {
+	return newTracesConsumer(func(ctx context.Context, data ptrace.Traces) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- consumerArgs[ptrace.Traces]{ctx: ctx, data: data}:
+		}
+		return nil
+	})
+}
+
+func newTracesConsumer(f consumer.ConsumeTracesFunc) consumer.Traces {
+	consumer, _ := consumer.NewTraces(f)
+	return consumer
+}
+
+// mustNewFakeCluster creates a new fake Kafka cluster with the given options,
+// and returns a kgo.Client for operating on the cluster, and a receiver config.
+func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config) {
+	cluster, clientConfig := kafkatest.NewCluster(tb, opts...)
+	kafkaClient := mustNewClient(tb, cluster)
+	tb.Cleanup(func() { deleteConsumerGroups(tb, kafkaClient) })
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig = clientConfig
+	cfg.InitialOffset = "earliest"
+	cfg.MaxFetchWait = 10 * time.Millisecond
+	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
+	return kafkaClient, cfg
+}
+
+func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
+	client, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(tb, err)
+	tb.Cleanup(client.Close)
+	return client
+}
+
+// deleteConsumerGroups deletes all consumer groups in the cluster.
+//
+// It is necessary to call this to exit the group goroutines in the kfake cluster.
+func deleteConsumerGroups(tb testing.TB, client *kgo.Client) {
+	adminClient := kadm.NewClient(client)
+	groups, err := adminClient.ListGroups(context.Background())
+	assert.NoError(tb, err)
+	_, err = adminClient.DeleteGroups(context.Background(), groups.Groups()...)
+	assert.NoError(tb, err)
+}
+
+type statusReporterHost struct {
+	report func(*componentstatus.Event)
+}
+
+func (*statusReporterHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (c *nopComponent) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (c *nopComponent) UnmarshalLogs(_ []byte) (plog.Logs, error) {
-	return plog.NewLogs(), nil
-}
-
-func (c *nopComponent) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
-	return pmetric.NewMetrics(), nil
-}
-
-func (c *nopComponent) UnmarshalTraces(_ []byte) (ptrace.Traces, error) {
-	return ptrace.NewTraces(), nil
-}
-
-type nopNoUnmarshalerComponent struct{}
-
-func (c *nopNoUnmarshalerComponent) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (c *nopNoUnmarshalerComponent) Shutdown(_ context.Context) error {
-	return nil
+func (h *statusReporterHost) Report(event *componentstatus.Event) {
+	h.report(event)
 }

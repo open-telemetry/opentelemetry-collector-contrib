@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkafkametrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkafkametrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkafkametrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkafkametrics) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kafkametrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kafkametrics&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -25,7 +26,6 @@ This receiver supports Kafka versions:
 
 Required settings (no defaults):
 
-- `protocol_version`: Kafka protocol version
 - `scrapers`: any combination of the following scrapers can be enabled.
     - `topics`
     - `consumers`
@@ -36,28 +36,26 @@ Metrics collected by the associated scraper are listed in [metadata.yaml](metada
 Optional Settings (with defaults):
 
 - `cluster_alias`: Alias name of the cluster. Adds `kafka.cluster.alias` resource attribute.
+- `protocol_version` (default = 2.1.0): Kafka protocol version
 - `brokers` (default = localhost:9092): the list of brokers to read from.
 - `resolve_canonical_bootstrap_servers_only` (default = false): whether to resolve then reverse-lookup broker IPs during startup.
 - `topic_match` (default = ^[^_].*$): regex pattern of topics to filter on metrics collection. The default filter excludes internal topics (starting with `_`).
 - `group_match` (default = .*): regex pattern of consumer groups to filter on for metrics.
-- `client_id` (default = otel-metrics-receiver): consumer client id
+- `client_id` (default = otel-collector): consumer client id
 - `collection_interval` (default = 1m): frequency of metric collection/scraping.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth` (default none)
-    - `plain_text`
+    - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
         - `username`: The username to use.
         - `password`: The password to use
-    - `tls`
-        - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used
-          if `insecure` is set to true.
-        - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is
-          set to true.
-        - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set
-          to true.
-        - `insecure` (default = false): Disable verifying the server's certificate chain and host
-          name (`InsecureSkipVerify` in the tls config)
-        - `server_name_override`: ServerName indicates the name of the server requested by the client in order to
-          support virtual hosting.
+    - `sasl`
+        - `username`: The username to use.
+        - `password`: The password to use.
+        - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+        - `aws_msk`
+            - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
+    - `tls` ((Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
     - `kerberos`
         - `service_name`: Kerberos service name
         - `realm`: Kerberos realm
@@ -68,6 +66,11 @@ Optional Settings (with defaults):
         - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
         - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
+- `metadata`
+  - `full` (default = true): Whether to maintain a full set of metadata. When disabled, the client does not make the initial request to broker at the startup.
+  - `retry`
+    - `max` (default = 3): The number of retries to get metadata
+    - `backoff` (default = 250ms): How long to wait between metadata retries
 
 ## Examples:
 
@@ -76,7 +79,6 @@ Optional Settings (with defaults):
 ```yaml
 receivers:
   kafkametrics:
-    protocol_version: 2.0.0
     scrapers:
       - brokers
       - topics
@@ -86,22 +88,25 @@ receivers:
 2) Configuration with more optional settings:
 
 For this example:
+- A non-default broker is specified
+- cluster alias is set to "kafka-prod"
 - collection interval is 5 secs.
+- Kafka protocol version is 3.0.0
+- mTLS is configured
 
 ```yaml
 receivers:
   kafkametrics:
     cluster_alias: kafka-prod
-    brokers: 10.10.10.10:9092
-    protocol_version: 2.0.0
+    brokers: ["10.10.10.10:9092"]
+    protocol_version: 3.0.0
     scrapers:
       - brokers
       - topics
       - consumers
-    auth:
-      tls:
-        ca_file: ca.pem
-        cert_file: cert.pem
-        key_file: key.pem
+    tls:
+      ca_file: ca.pem
+      cert_file: cert.pem
+      key_file: key.pem
     collection_interval: 5s
 ```

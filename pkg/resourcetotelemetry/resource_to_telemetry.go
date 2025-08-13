@@ -32,7 +32,7 @@ func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetri
 	return wme.Metrics.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
 }
 
-func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
+func (*wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	// Always return true since this wrapper modifies data inplace.
 	return consumer.Capabilities{MutatesData: true}
 }
@@ -106,8 +106,7 @@ func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogr
 
 func joinAttributeMaps(from, to pcommon.Map) {
 	to.EnsureCapacity(from.Len() + to.Len())
-	from.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range from.All() {
 		v.CopyTo(to.PutEmpty(k))
-		return true
-	})
+	}
 }

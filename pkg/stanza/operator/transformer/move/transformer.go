@@ -18,6 +18,10 @@ type Transformer struct {
 	To   entry.Field
 }
 
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return t.ProcessBatchWithTransform(ctx, entries, t.Transform)
+}
+
 // Process will process an entry with a move transformation.
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return t.ProcessWith(ctx, entry, t.Transform)

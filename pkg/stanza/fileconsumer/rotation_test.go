@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -291,7 +291,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	require.NoError(t, os.Rename(originalFileName, originalFileName+".old"))
 
 	newFile := filetest.OpenFile(t, originalFileName)
-	_, err := newFile.Write([]byte("testlog4\ntestlog5\n"))
+	_, err := newFile.WriteString("testlog4\ntestlog5\n")
 	require.NoError(t, err)
 
 	// poll again
@@ -350,7 +350,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	_, err = originalFile.Seek(0, 0)
 	require.NoError(t, err)
 	require.NoError(t, originalFile.Truncate(0))
-	_, err = originalFile.Write([]byte("testlog4\ntestlog5\n"))
+	_, err = originalFile.WriteString("testlog4\ntestlog5\n")
 	require.NoError(t, err)
 
 	// poll again

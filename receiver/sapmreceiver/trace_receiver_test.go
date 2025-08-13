@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -31,9 +32,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
@@ -44,7 +46,7 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "issaTest")
 	rs.Resource().Attributes().PutBool("bool", true)
 	rs.Resource().Attributes().PutStr("string", "yes")
 	rs.Resource().Attributes().PutInt("int64", 10000000)
@@ -95,8 +97,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1,
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
-					model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
-					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
+					model.String(string(conventions.OTelStatusDescriptionKey), "Stale indices"),
+					model.String(string(conventions.OTelStatusCodeKey), "ERROR"),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -114,8 +116,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1.Add(10 * time.Minute),
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
-					model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
-					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
+					model.String(string(conventions.OTelStatusDescriptionKey), "Frontend crash"),
+					model.String(string(conventions.OTelStatusCodeKey), "ERROR"),
 					model.Bool("error", true),
 				},
 			},
@@ -245,7 +247,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 }
 
 func setupReceiver(t *testing.T, config *Config, sink consumer.Traces) receiver.Traces {
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
@@ -317,13 +319,13 @@ func TestReception(t *testing.T) {
 				config: &Config{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
-						TLSSetting: &configtls.ServerConfig{
+						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CAFile:   "./testdata/ca.crt",
 								CertFile: "./testdata/server.crt",
 								KeyFile:  "./testdata/server.key",
 							},
-						},
+						}),
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -355,7 +357,7 @@ func TestReception(t *testing.T) {
 
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
-			assert.EqualValues(t, tt.want, got[0])
+			assert.Equal(t, tt.want, got[0])
 		})
 	}
 }
@@ -405,7 +407,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

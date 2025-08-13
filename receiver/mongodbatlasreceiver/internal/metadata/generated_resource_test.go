@@ -45,67 +45,67 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("mongodb_atlas.cluster.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.cluster.name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.cluster.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.db.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.db.name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.db.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.disk.partition")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.disk.partition-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.disk.partition-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.host.name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.host.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.org_name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.org_name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.org_name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.process.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.process.id-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.process.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.process.port")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.process.port-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.process.port-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.process.type_name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.process.type_name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.process.type_name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.project.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.project.id-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.project.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.project.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.project.name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.project.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.provider.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.provider.name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.provider.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.region.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.region.name-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.region.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.user.alias")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "mongodb_atlas.user.alias-val", val.Str())
+				assert.Equal(t, "mongodb_atlas.user.alias-val", val.Str())
 			}
 		})
 	}

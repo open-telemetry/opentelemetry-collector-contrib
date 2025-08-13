@@ -4,6 +4,7 @@
 package errctx
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -13,10 +14,10 @@ import (
 func TestWithValue(t *testing.T) {
 	assert.NoError(t, WithValue(nil, "a", "b"))
 	assert.Panics(t, func() {
-		_ = WithValue(fmt.Errorf("base"), "", nil)
+		_ = WithValue(errors.New("base"), "", nil)
 	})
 
-	e1 := WithValue(fmt.Errorf("base"), "a", "b")
+	e1 := WithValue(errors.New("base"), "a", "b")
 	assert.Equal(t, "base a=b", e1.Error())
 	v1, ok := ValueFrom(e1, "a")
 	assert.True(t, ok)
@@ -37,10 +38,10 @@ func TestWithValue(t *testing.T) {
 func TestWithValues(t *testing.T) {
 	assert.NoError(t, WithValues(nil, map[string]any{"a": "b"}))
 	assert.Panics(t, func() {
-		_ = WithValues(fmt.Errorf("base"), map[string]any{"": "123"})
+		_ = WithValues(errors.New("base"), map[string]any{"": "123"})
 	})
 
-	e1 := WithValues(fmt.Errorf("base"), map[string]any{"a": "b", "c": 123})
+	e1 := WithValues(errors.New("base"), map[string]any{"a": "b", "c": 123})
 	// NOTE: we sort the key in the impl so the test is not flaky
 	assert.Equal(t, "base a=b c=123", e1.Error())
 	v1, ok := ValueFrom(e1, "a")
@@ -59,7 +60,7 @@ func TestValueFrom(t *testing.T) {
 
 	// Chained with value in the middle
 	t.Run("chained", func(t *testing.T) {
-		e1 := fmt.Errorf("base")
+		e1 := errors.New("base")
 		e2 := WithValue(e1, "a", "b")
 		e3 := fmt.Errorf("l2 %w", e2)
 
@@ -70,7 +71,7 @@ func TestValueFrom(t *testing.T) {
 
 	// When there is duplication in the chain, the first one comes out got picked up.
 	t.Run("duplication", func(t *testing.T) {
-		e1 := fmt.Errorf("base")
+		e1 := errors.New("base")
 		e2 := WithValue(e1, "a", "e2")
 		e3 := fmt.Errorf("e3 %w", e2)
 		e4 := WithValue(e3, "a", "e4")

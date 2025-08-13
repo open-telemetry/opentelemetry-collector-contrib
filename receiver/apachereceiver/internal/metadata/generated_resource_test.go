@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("apache.server.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "apache.server.name-val", val.Str())
+				assert.Equal(t, "apache.server.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("apache.server.port")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "apache.server.port-val", val.Str())
+				assert.Equal(t, "apache.server.port-val", val.Str())
 			}
 		})
 	}

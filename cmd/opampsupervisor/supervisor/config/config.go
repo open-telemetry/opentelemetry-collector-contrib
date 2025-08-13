@@ -7,18 +7,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/service/telemetry"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -29,6 +37,7 @@ type Supervisor struct {
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -58,7 +67,7 @@ func Load(configFile string) (Supervisor, error) {
 	}
 
 	cfg := DefaultSupervisor()
-	if err = conf.Unmarshal(&cfg); err != nil {
+	if err := conf.Unmarshal(&cfg); err != nil {
 		return Supervisor{}, err
 	}
 
@@ -78,6 +87,10 @@ func (s Supervisor) Validate() error {
 		return err
 	}
 
+	if err := s.HealthCheck.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -93,8 +106,11 @@ type Capabilities struct {
 	AcceptsOpAMPConnectionSettings bool `mapstructure:"accepts_opamp_connection_settings"`
 	ReportsEffectiveConfig         bool `mapstructure:"reports_effective_config"`
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
+	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
+	ReportsOwnTraces               bool `mapstructure:"reports_own_traces"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
+	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -110,6 +126,14 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 
 	if c.ReportsOwnMetrics {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+	}
+
+	if c.ReportsOwnLogs {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs
+	}
+
+	if c.ReportsOwnTraces {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
 	}
 
 	if c.AcceptsRemoteConfig {
@@ -128,13 +152,17 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
 	}
 
+	if c.ReportsAvailableComponents {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
+	}
+
 	return supportedCapabilities
 }
 
 type OpAMPServer struct {
-	Endpoint   string                 `mapstructure:"endpoint"`
-	Headers    http.Header            `mapstructure:"headers"`
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	Endpoint string                 `mapstructure:"endpoint"`
+	Headers  http.Header            `mapstructure:"headers"`
+	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 func (o OpAMPServer) Validate() error {
@@ -153,7 +181,7 @@ func (o OpAMPServer) Validate() error {
 		return fmt.Errorf(`invalid scheme %q for server::endpoint, must be one of "http", "https", "ws", or "wss"`, url.Scheme)
 	}
 
-	err = o.TLSSetting.Validate()
+	err = o.TLS.Validate()
 	if err != nil {
 		return fmt.Errorf("invalid server::tls settings: %w", err)
 	}
@@ -162,14 +190,17 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string           `mapstructure:"executable"`
-	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
-	HealthCheckPort         int              `mapstructure:"health_check_port"`
-	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
+	Executable              string            `mapstructure:"executable"`
+	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
+	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
+	ConfigFiles             []string          `mapstructure:"config_files"`
+	Arguments               []string          `mapstructure:"args"`
+	Env                     map[string]string `mapstructure:"env"`
 }
 
 func (a Agent) Validate() error {
@@ -179,10 +210,6 @@ func (a Agent) Validate() error {
 
 	if a.BootstrapTimeout <= 0 {
 		return errors.New("agent::bootstrap_timeout must be positive")
-	}
-
-	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
-		return errors.New("agent::health_check_port must be a valid port number")
 	}
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
@@ -202,7 +229,34 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	for _, file := range a.ConfigFiles {
+		if !strings.HasPrefix(file, "$") {
+			continue
+		}
+		if !slices.Contains(SpecialConfigFiles, SpecialConfigFile(file)) {
+			return fmt.Errorf("agent::config_files contains invalid special file: %q. Must be one of %v", file, SpecialConfigFiles)
+		}
+	}
+
+	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
+		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
 	return nil
+}
+
+type SpecialConfigFile string
+
+const (
+	SpecialConfigFileOwnTelemetry   SpecialConfigFile = "$OWN_TELEMETRY_CONFIG"
+	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
+	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
+)
+
+var SpecialConfigFiles = []SpecialConfigFile{
+	SpecialConfigFileOwnTelemetry,
+	SpecialConfigFileOpAMPExtension,
+	SpecialConfigFileRemoteConfig,
 }
 
 type AgentDescription struct {
@@ -213,12 +267,49 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs Logs `mapstructure:"logs"`
+	Logs    Logs                   `mapstructure:"logs"`
+	Metrics Metrics                `mapstructure:"metrics"`
+	Traces  telemetry.TracesConfig `mapstructure:"traces"`
+
+	Resource map[string]*string `mapstructure:"resource"`
+}
+
+type HealthCheck struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
+}
+
+func (h HealthCheck) Port() int64 {
+	_, port, err := net.SplitHostPort(h.Endpoint)
+	if err != nil {
+		return 0
+	}
+	parsedPort, err := strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return parsedPort
+}
+
+func (h HealthCheck) Validate() error {
+	parsedPort := h.Port()
+	if parsedPort < 0 || parsedPort > 65535 {
+		return fmt.Errorf("healthcheck::endpoint must contain a valid port number, got %d", parsedPort)
+	}
+	return nil
 }
 
 type Logs struct {
-	Level       zapcore.Level `mapstructure:"level"`
-	OutputPaths []string      `mapstructure:"output_paths"`
+	Level            zapcore.Level `mapstructure:"level"`
+	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
+	OutputPaths      []string      `mapstructure:"output_paths"`
+	// Processors allow configuration of log record processors to emit logs to
+	// any number of supported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+}
+
+type Metrics struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
+	Readers []config.MetricReader `mapstructure:"readers"`
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -243,8 +334,11 @@ func DefaultSupervisor() Supervisor {
 			AcceptsOpAMPConnectionSettings: false,
 			ReportsEffectiveConfig:         true,
 			ReportsOwnMetrics:              true,
+			ReportsOwnLogs:                 false,
+			ReportsOwnTraces:               false,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+			ReportsAvailableComponents:     false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -257,8 +351,9 @@ func DefaultSupervisor() Supervisor {
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
-				Level:       zapcore.InfoLevel,
-				OutputPaths: []string{"stderr"},
+				Level:            zapcore.InfoLevel,
+				OutputPaths:      []string{"stdout"},
+				ErrorOutputPaths: []string{"stderr"},
 			},
 		},
 	}

@@ -14,13 +14,15 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 )
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 	)
 
 	err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -55,7 +57,7 @@ func TestTrackerStart(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:9090",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
@@ -72,7 +74,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 			)
 
 			err := tracker.Start(context.Background(), componenttest.NewNopHost())

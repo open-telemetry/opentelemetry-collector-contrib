@@ -93,7 +93,7 @@ type (
 
 type missingRandomnessMethod struct{}
 
-func (rm missingRandomnessMethod) randomness() sampling.Randomness {
+func (missingRandomnessMethod) randomness() sampling.Randomness {
 	return sampling.AllProbabilitiesRandomness
 }
 
@@ -236,7 +236,7 @@ type hashingSampler struct {
 	// Logs only: name of attribute to obtain randomness
 	logsRandomnessSourceAttribute string
 
-	// Logs only: name of attribute to obtain randomness
+	// Logs only: whether traceID is being used
 	logsTraceIDEnabled bool
 }
 

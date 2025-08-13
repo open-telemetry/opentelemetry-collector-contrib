@@ -15,13 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/datagen"
-	otel_assert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	"github.com/open-telemetry/otel-arrow/go/pkg/datagen"
+	otel_assert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -134,17 +135,21 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	receiverCfg.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.ClientConfig.Endpoint = addr
-	exporterCfg.ClientConfig.WaitForReady = true
-	exporterCfg.ClientConfig.TLSSetting.Insecure = true
+	exporterCfg.Endpoint = addr
+	exporterCfg.WaitForReady = true
+	exporterCfg.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
 	exporterCfg.RetryConfig.Enabled = true
 	exporterCfg.Arrow.NumStreams = 1
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
+
+	// The default exporter setting enables the memory queue; we
+	// disable to avoid flaky tests.
+	exporterCfg.QueueSettings.WaitForResult = true
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -169,13 +174,13 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	}
 
 	receiver, err := rfact.CreateTraces(ctx, receiver.Settings{
-		ID:                component.MustNewID("otelarrowreceiver"),
+		ID:                component.NewID(rfact.Type()),
 		TelemetrySettings: recvTset,
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
 	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
-		ID:                component.MustNewID("otelarrowexporter"),
+		ID:                component.NewID(efact.Type()),
 		TelemetrySettings: expTset,
 	}, exporterCfg)
 	require.NoError(t, err)
@@ -281,7 +286,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -558,7 +563,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 
 	// Number of export requests: exact match.  This is the
 	// exporterhelper's base span.
-	require.Equal(t, total, expOps["exporter/otelarrowexporter/traces/Unset"])
+	require.Equal(t, total, expOps["exporter/otelarrow/traces/Unset"])
 
 	// Number of export requests: exact match.  This span covers
 	// handling one request in the Arrow exporter.
@@ -585,7 +590,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	require.Equal(t, total, recvOps["otel_arrow_stream_recv/Unset"])
 
 	// This is in request context, the receiverhelper's per-request span.
-	require.Equal(t, total, recvOps["receiver/otelarrowreceiver/TraceDataReceived/Unset"])
+	require.Equal(t, total, recvOps["receiver/otelarrow/TraceDataReceived/Unset"])
 
 	// Exporter and Receiver stream span counts match:
 	require.Equal(t, expStreamsUnset+expStreamsError, recvStreamsUnset+recvStreamsError)
@@ -612,12 +617,12 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
+		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
-			},
-		}
+			}),
+		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
 
@@ -627,7 +632,7 @@ func nearLimitGenFunc() MkGen {
 	const hardLimit = 1 << 20   // 1 MiB
 
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,

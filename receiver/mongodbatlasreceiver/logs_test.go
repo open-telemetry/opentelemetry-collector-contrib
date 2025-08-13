@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func TestParseHostName(t *testing.T) {
@@ -48,7 +50,7 @@ func TestDefaultLoggingConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Logs.Enabled = true
 
-	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, recv, "receiver creation failed")
 
@@ -63,7 +65,7 @@ func TestNoLoggingEnabled(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, recv, "receiver creation failed")
 }

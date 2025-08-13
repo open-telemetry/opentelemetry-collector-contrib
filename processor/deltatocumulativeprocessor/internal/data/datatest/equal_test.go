@@ -5,6 +5,7 @@ package datatest
 
 import (
 	"fmt"
+	"iter"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -35,11 +36,43 @@ func ExampleT_Equal() {
 	is.Equal(want, got)
 
 	// Output:
-	// equal_test.go:35: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
-	// equal_test.go:35: Negative().BucketCounts().Len(): 3 != 1
-	// equal_test.go:35: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
-	// equal_test.go:35: Positive().BucketCounts().Len(): 3 != 1
-	// equal_test.go:35: Scale(): 0 != 1
+	// equal_test.go:36: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
+	// equal_test.go:36: Negative().BucketCounts().Len(): 3 != 1
+	// equal_test.go:36: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
+	// equal_test.go:36: Positive().BucketCounts().Len(): 3 != 1
+	// equal_test.go:36: Scale(): 0 != 1
+}
+
+type structFunc struct {
+	a int
+}
+
+func (s structFunc) Get() int {
+	return s.a
+}
+
+func (structFunc) Func() func() {
+	return func() {}
+}
+
+// iter.Seq is a reflect.Func
+func (structFunc) Seq() iter.Seq[int] {
+	return func(func(v int) bool) {
+	}
+}
+
+// iter.Seq2 is a reflect.Func
+func (structFunc) Seq2() iter.Seq2[int, string] {
+	return func(func(k int, v string) bool) {
+	}
+}
+
+func TestEqualMethodIgnoreFuncReturnType(t *testing.T) {
+	is := datatest.New(t)
+	s := structFunc{a: 42}
+	want := any(s)
+	got := any(s)
+	is.Equal(want, got)
 }
 
 func TestNone(*testing.T) {}
@@ -48,9 +81,9 @@ type fakeT struct {
 	testing.TB
 }
 
-func (t fakeT) Helper() {}
+func (fakeT) Helper() {}
 
-func (t fakeT) Errorf(format string, args ...any) {
+func (fakeT) Errorf(format string, args ...any) {
 	var from string
 	for i := 0; ; i++ {
 		pc, file, line, ok := runtime.Caller(i)

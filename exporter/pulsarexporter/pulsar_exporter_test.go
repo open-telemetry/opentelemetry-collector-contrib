@@ -14,33 +14,34 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
@@ -66,7 +67,7 @@ type customTraceMarshaler struct {
 	encoding string
 }
 
-func (c *customTraceMarshaler) Marshal(ptrace.Traces, string) ([]*pulsar.ProducerMessage, error) {
+func (*customTraceMarshaler) Marshal(ptrace.Traces, string) ([]*pulsar.ProducerMessage, error) {
 	return nil, errors.New("unsupported encoding")
 }
 
@@ -89,24 +90,24 @@ func (c *mockProducer) Name() string {
 	return c.name
 }
 
-func (c *mockProducer) Send(context.Context, *pulsar.ProducerMessage) (pulsar.MessageID, error) {
+func (*mockProducer) Send(context.Context, *pulsar.ProducerMessage) (pulsar.MessageID, error) {
 	return nil, nil
 }
 
-func (c *mockProducer) SendAsync(context.Context, *pulsar.ProducerMessage, func(pulsar.MessageID, *pulsar.ProducerMessage, error)) {
+func (*mockProducer) SendAsync(context.Context, *pulsar.ProducerMessage, func(pulsar.MessageID, *pulsar.ProducerMessage, error)) {
 }
 
-func (c *mockProducer) LastSequenceID() int64 {
+func (*mockProducer) LastSequenceID() int64 {
 	return 1
 }
 
-func (c *mockProducer) Flush() error {
+func (*mockProducer) Flush() error {
 	return nil
 }
 
-func (c *mockProducer) FlushWithCtx(context.Context) error {
+func (*mockProducer) FlushWithCtx(context.Context) error {
 	return nil
 }
 
-func (c *mockProducer) Close() {
+func (*mockProducer) Close() {
 }

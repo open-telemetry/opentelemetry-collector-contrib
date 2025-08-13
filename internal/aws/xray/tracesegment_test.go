@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -687,7 +687,7 @@ func TestValidate(t *testing.T) {
 	for _, tc := range tests {
 		err := tc.input.Validate()
 
-		if len(tc.expectedErrorStr) > 0 {
+		if tc.expectedErrorStr != "" {
 			assert.EqualError(t, err, tc.expectedErrorStr)
 		} else {
 			assert.NoError(t, err, "Validate should not fail")

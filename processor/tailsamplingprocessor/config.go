@@ -33,6 +33,8 @@ const (
 	Composite PolicyType = "composite"
 	// And allows defining a And policy, combining the other policies in one
 	And PolicyType = "and"
+	// Drop allows defining a Drop policy, combining one or more policies to drop traces.
+	Drop PolicyType = "drop"
 	// SpanCount sample traces that are have more spans per Trace than a given threshold.
 	SpanCount PolicyType = "span_count"
 	// TraceState sample traces with specified values by the given key
@@ -100,6 +102,11 @@ type AndCfg struct {
 	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"and_sub_policy"`
 }
 
+// DropCfg holds the common configuration to all policies under drop policy.
+type DropCfg struct {
+	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"drop_sub_policy"`
+}
+
 // CompositeCfg holds the configurable settings to create a composite
 // sampling policy evaluator.
 type CompositeCfg struct {
@@ -123,6 +130,8 @@ type PolicyCfg struct {
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
 	// Configs for defining and policy
 	AndCfg AndCfg `mapstructure:"and"`
+	// Configs for defining drop policy
+	DropCfg DropCfg `mapstructure:"drop"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
@@ -131,7 +140,7 @@ type LatencyCfg struct {
 	// Lower bound in milliseconds. Retaining original name for compatibility
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
 	// Upper bound in milliseconds.
-	UpperThresholdmsMs int64 `mapstructure:"upper_threshold_ms"`
+	UpperThresholdMs int64 `mapstructure:"upper_threshold_ms"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
@@ -255,4 +264,6 @@ type Config struct {
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
 	// Options allows for additional configuration of the tail-based sampling processor in code.
 	Options []Option `mapstructure:"-"`
+	// Make decision as soon as a policy matches
+	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
 }

@@ -18,7 +18,7 @@ type TraceData struct {
 	sync.Mutex
 	// Arrival time the first span for the trace was received.
 	ArrivalTime time.Time
-	// Decisiontime time when sampling decision was taken.
+	// DecisionTime time when sampling decision was taken.
 	DecisionTime time.Time
 	// SpanCount track the number of spans on the trace.
 	SpanCount *atomic.Int64
@@ -42,8 +42,8 @@ const (
 	// NotSampled is used to indicate that the decision was already taken
 	// to not sample the data.
 	NotSampled
-	// Dropped is used when data needs to be purged before the sampling policy
-	// had a chance to evaluate it.
+	// Dropped is used to indicate that a trace should be dropped regardless of
+	// all other decisions.
 	Dropped
 	// Error is used to indicate that policy evaluation was not succeeded.
 	Error

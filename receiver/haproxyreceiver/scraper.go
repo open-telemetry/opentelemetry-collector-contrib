@@ -256,7 +256,7 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func (s *haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
+func (*haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 	reader := csv.NewReader(bytes.NewReader(bytes.TrimSpace(buf)))
 	headers, err := reader.Read()
 	if err != nil {
@@ -282,13 +282,13 @@ func (s *haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 
 func (s *haproxyScraper) start(ctx context.Context, host component.Host) error {
 	var err error
-	s.httpClient, err = s.cfg.ClientConfig.ToClient(ctx, host, s.telemetrySettings)
+	s.httpClient, err = s.cfg.ToClient(ctx, host, s.telemetrySettings)
 	return err
 }
 
 func newScraper(cfg *Config, settings receiver.Settings) *haproxyScraper {
 	return &haproxyScraper{
-		logger:            settings.TelemetrySettings.Logger,
+		logger:            settings.Logger,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		cfg:               cfg,
 		telemetrySettings: settings.TelemetrySettings,

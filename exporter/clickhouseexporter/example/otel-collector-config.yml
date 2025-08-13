@@ -37,6 +37,8 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
+    username: default
+    password: default
 extensions:
   health_check:
   pprof:

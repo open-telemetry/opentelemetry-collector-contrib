@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
@@ -17,23 +19,29 @@ import (
 
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
-	HTTP           *HTTPConfig                  `mapstructure:"http"`
-	AuthAPI        string                       `mapstructure:"auth_api"`
-	Wrapper        string                       `mapstructure:"wrapper"`
-	FieldMapConfig libhoneyevent.FieldMapConfig `mapstructure:"fields"`
+	HTTP           configoptional.Optional[HTTPConfig] `mapstructure:"http"`
+	AuthAPI        string                              `mapstructure:"auth_api"`
+	Wrapper        string                              `mapstructure:"wrapper"`
+	FieldMapConfig libhoneyevent.FieldMapConfig        `mapstructure:"fields"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // HTTPConfig defines the configuration for the HTTP server receiving traces.
 type HTTPConfig struct {
-	*confighttp.ServerConfig `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/" will be used.
 	TracesURLPaths []string `mapstructure:"traces_url_paths,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate ensures the HTTP configuration is set.
 func (cfg *Config) Validate() error {
-	if cfg.HTTP == nil {
+	if !cfg.HTTP.HasValue() {
 		return errors.New("must specify at least one protocol when using the arbitrary JSON receiver")
 	}
 	return nil
@@ -47,13 +55,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if !conf.IsSet("http") {
-		cfg.HTTP = nil
-	} else {
+	if conf.IsSet("http") {
 		var err error
-
-		for idx := range cfg.HTTP.TracesURLPaths {
-			if cfg.HTTP.TracesURLPaths[idx], err = sanitizeURLPath(cfg.HTTP.TracesURLPaths[idx]); err != nil {
+		httpCfg := cfg.HTTP.Get()
+		for idx := range httpCfg.TracesURLPaths {
+			if httpCfg.TracesURLPaths[idx], err = sanitizeURLPath(httpCfg.TracesURLPaths[idx]); err != nil {
 				return err
 			}
 		}
@@ -76,5 +82,10 @@ func sanitizeURLPath(urlPath string) (string, error) {
 	if !path.IsAbs(u.Path) {
 		u.Path = "/" + u.Path
 	}
+
+	if !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
+	}
+
 	return u.Path, nil
 }

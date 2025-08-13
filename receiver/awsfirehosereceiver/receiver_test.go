@@ -22,7 +22,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -41,11 +45,19 @@ func newNopFirehoseConsumer(statusCode int, err error) *nopFirehoseConsumer {
 	return &nopFirehoseConsumer{statusCode, err}
 }
 
+func (*nopFirehoseConsumer) Start(context.Context, component.Host) error {
+	return nil
+}
+
 func (nfc *nopFirehoseConsumer) Consume(context.Context, nextRecordFunc, map[string]string) (int, error) {
 	return nfc.statusCode, nfc.err
 }
 
 type firehoseConsumerFunc func(context.Context, nextRecordFunc, map[string]string) (int, error)
+
+func (firehoseConsumerFunc) Start(context.Context, component.Host) error {
+	return nil
+}
 
 func (f firehoseConsumerFunc) Consume(ctx context.Context, next nextRecordFunc, common map[string]string) (int, error) {
 	return f(ctx, next, common)
@@ -56,9 +68,6 @@ func TestStart(t *testing.T) {
 		host    component.Host
 		wantErr error
 	}{
-		"WithoutHost": {
-			wantErr: errMissingHost,
-		},
 		"WithHost": {
 			host: componenttest.NewNopHost(),
 		},
@@ -251,7 +260,7 @@ func TestFirehoseRequestInvalidJSON(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: receivertest.NewNopSettings(),
+		settings: receivertest.NewNopSettings(metadata.Type),
 		config:   config,
 		consumer: consumer,
 	}
@@ -288,4 +297,45 @@ func newNextRecordFunc(records [][]byte) nextRecordFunc {
 		records = records[1:]
 		return next, nil
 	}
+}
+
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+type plogUnmarshalerExtension struct {
+	logs plog.Logs
+}
+
+func (plogUnmarshalerExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (plogUnmarshalerExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (e plogUnmarshalerExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
+	return e.logs, nil
+}
+
+type pmetricUnmarshalerExtension struct {
+	metrics pmetric.Metrics
+}
+
+func (pmetricUnmarshalerExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (pmetricUnmarshalerExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (e pmetricUnmarshalerExtension) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
+	return e.metrics, nil
 }

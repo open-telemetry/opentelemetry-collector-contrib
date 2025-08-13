@@ -52,11 +52,13 @@ func NewSink(opts ...SinkOpt) *Sink {
 	return &Sink{
 		emitChan: emitChan,
 		timeout:  cfg.timeout,
-		Callback: func(ctx context.Context, token emit.Token) error {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case emitChan <- token:
+		Callback: func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
+			for _, token := range tokens {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case emitChan <- emit.NewToken(token, attributes):
+				}
 			}
 			return nil
 		},

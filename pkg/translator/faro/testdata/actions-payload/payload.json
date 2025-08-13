@@ -1,0 +1,121 @@
+{
+  "events": [
+    {
+      "name": "user-action-event",
+      "domain": "browser",
+      "attributes": {
+        "userActionDuration": "124",
+        "userActionEndTime": "1742203289645",
+        "userActionEventType": "pointerdown",
+        "userActionStartTime": "1742203289521"
+      },
+      "timestamp": "2023-11-16T10:00:55.995Z",
+      "action": {
+        "id": "123",
+        "name": "click-checkout"
+      }
+    }
+  ],
+  "logs": [
+    {
+      "message": "loading price list",
+      "level": "trace",
+      "context": {
+        "component": "AppRoot",
+        "page": "Pricing"
+      },
+      "timestamp": "2021-09-30T10:46:17.680Z",
+      "trace": {
+        "trace_id": "abcd",
+        "span_id": "ghj"
+      },
+      "action": {
+        "parentId": "123",
+        "name": "click-checkout"
+      }
+    }
+  ],
+  "exceptions": [
+    {
+      "type": "Error",
+      "value": "Exception related to user action",
+      "stacktrace": {
+        "frames": [
+          {
+            "colno": 42,
+            "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+            "function": "?",
+            "in_app": true,
+            "lineno": 8639
+          }
+        ]
+      },
+      "timestamp": "2021-09-30T10:46:17.680Z",
+      "trace": {
+        "trace_id": "abcd",
+        "span_id": "def"
+      },
+      "action": {
+        "parentId": "123",
+        "name": "click-checkout"
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "values": {
+        "my-measurement": 20.12
+      },
+      "type": "page load",
+      "timestamp": "2021-09-30T10:46:17.680Z",
+      "trace": {
+        "trace_id": "abcd",
+        "span_id": "def"
+      },
+      "action": {
+        "parentId": "123",
+        "name": "click-checkout"
+      }
+    }
+  ],
+  "meta": {
+    "sdk": {
+      "name": "grafana-frontend-agent",
+      "version": "1.3.5"
+    },
+    "app": {
+      "name": "testapp",
+      "namespace": "testnamespace",
+      "release": "0.8.2",
+      "version": "abcdefg",
+      "environment": "production",
+      "bundleId": "testBundleId"
+    },
+    "user": {
+      "username": "testuser",
+      "id": "123",
+      "email": "geralt@kaermorhen.org",
+      "attributes": {
+        "foo": "bar"
+      }
+    },
+    "session": {
+      "id": "abcd",
+      "attributes": {
+        "time_elapsed": "100s"
+      }
+    },
+    "page": {
+      "url": "https://example.com/page"
+    },
+    "browser": {
+      "name": "chrome",
+      "version": "88.12.1",
+      "os": "linux",
+      "mobile": false
+    },
+    "view": {
+      "name": "foobar"
+    }
+  }
+}

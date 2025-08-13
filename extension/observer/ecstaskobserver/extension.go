@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
@@ -20,14 +21,13 @@ import (
 const runningStatus = "RUNNING"
 
 var (
-	_ extension.Extension      = (*ecsTaskObserver)(nil)
-	_ observer.EndpointsLister = (*ecsTaskObserver)(nil)
-	_ observer.Observable      = (*ecsTaskObserver)(nil)
+	_ extension.Extension = (*ecsTaskObserver)(nil)
+	_ observer.Observable = (*ecsTaskObserver)(nil)
 )
 
 type ecsTaskObserver struct {
 	extension.Extension
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	config           *Config
 	metadataProvider ecsutil.MetadataProvider
 	telemetry        component.TelemetrySettings

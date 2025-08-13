@@ -95,7 +95,7 @@ func (c *couchDBClient) GetStats(nodeName string) (map[string]any, error) {
 
 func (c *couchDBClient) buildReq(path string) (*http.Request, error) {
 	url := c.cfg.Endpoint + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

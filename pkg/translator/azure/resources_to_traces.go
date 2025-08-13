@@ -11,7 +11,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.13.0"
 	"go.uber.org/zap"
 )
 
@@ -79,10 +79,10 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 	resourceTraces := t.ResourceSpans().AppendEmpty()
 	resource := resourceTraces.Resource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, scopeName)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, r.Version)
-	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), scopeName)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.Version)
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 
 	scopeSpans := resourceTraces.ScopeSpans().AppendEmpty()
 
@@ -146,6 +146,12 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 		span.Attributes().PutStr("http.client_country", azureTrace.ClientCountryOrRegion)
 		span.Attributes().PutStr("http.scheme", scheme)
 		span.Attributes().PutStr("http.method", azureTrace.Properties["HTTP Method"])
+
+		for key, value := range azureTrace.Properties {
+			if key != "HTTP Method" { // HTTP Method is already mapped to http.method
+				span.Attributes().PutStr(key, value)
+			}
+		}
 
 		span.SetKind(ptrace.SpanKindServer)
 		span.SetName(azureTrace.Name)

@@ -232,7 +232,7 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -260,7 +260,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -286,7 +286,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -308,7 +308,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -398,7 +398,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -466,7 +466,7 @@ func TestCleanupOnStart(t *testing.T) {
 	cfg.Directory = tempDir
 	cfg.Compaction.Directory = tempDir
 	cfg.Compaction.CleanupOnStart = true
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -495,7 +495,7 @@ func TestCompactionOnStart(t *testing.T) {
 
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
-	set := extensiontest.NewNopSettingsWithType(f.Type())
+	set := extensiontest.NewNopSettings(f.Type())
 	set.Logger = logger
 
 	tempDir := t.TempDir()
@@ -604,11 +604,89 @@ func TestDirectoryCreation(t *testing.T) {
 			f := NewFactory()
 			config := tt.config(t, f)
 			if config != nil {
-				ext, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), config)
+				ext, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), config)
 				require.NoError(t, err)
 				require.NotNil(t, ext)
 				tt.validate(t, config)
 			}
 		})
+	}
+}
+
+func TestRecreate(t *testing.T) {
+	ctx := context.Background()
+	temp := t.TempDir()
+	f := NewFactory()
+
+	config := f.CreateDefaultConfig().(*Config)
+	config.Directory = temp
+
+	// step 1: create an extension with default config and write some data
+	{
+		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		se, ok := ext.(storage.Extension)
+		require.True(t, ok)
+
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		require.NoError(t, err)
+		require.NotNil(t, client)
+
+		// write the data and make sure it is set in the subsequent get.
+		require.NoError(t, client.Set(ctx, "key", []byte("val")))
+		val, err := client.Get(ctx, "key")
+		require.Equal(t, val, []byte("val"))
+		require.NoError(t, err)
+
+		// close the extension
+		require.NoError(t, client.Close(ctx))
+		require.NoError(t, ext.Shutdown(ctx))
+	}
+
+	// step 2: re-create the extension to make sure that the data is therw
+	{
+		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+		se, ok := ext.(storage.Extension)
+		require.True(t, ok)
+
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		require.NoError(t, err)
+		require.NotNil(t, client)
+
+		// make sure that the data exists from the previous pass.
+		val, err := client.Get(ctx, "key")
+		require.Equal(t, val, []byte("val"))
+		require.NoError(t, err)
+
+		// close the extension
+		require.NoError(t, client.Close(ctx))
+		require.NoError(t, ext.Shutdown(ctx))
+	}
+
+	// step 3: re-create the extension, but with Recreate=true and make sure that the data is not preset
+	{
+		config.Recreate = true
+		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+		se, ok := ext.(storage.Extension)
+		require.True(t, ok)
+
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		require.NoError(t, err)
+		require.NotNil(t, client)
+
+		// The data shouldn't exist.
+		val, err := client.Get(ctx, "key")
+		require.Nil(t, val)
+		require.NoError(t, err)
+
+		// close the extension
+		require.NoError(t, client.Close(ctx))
+		require.NoError(t, ext.Shutdown(ctx))
 	}
 }

@@ -8,7 +8,9 @@
 |               | [beta]: traces   |
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fprobabilisticsampler%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fprobabilisticsampler) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fprobabilisticsampler%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fprobabilisticsampler) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@jmacd](https://www.github.com/jmacd) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_probabilistic_sampler)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_probabilistic_sampler&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jmacd](https://www.github.com/jmacd) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -112,10 +114,11 @@ attribute is not configurable, and is called `sampling.priority`.
 
 In logs pipelines, when the priority attribute has value 0, the
 configured probability will by modified to 0%, and the item will not
-pass the sampler.  Otherwise, the logs sampling priority attribute is
+pass the sampler. Otherwise, the logs sampling priority attribute is
 interpreted as a percentage, with values >= 100 equal to 100%
-sampling.  The logs sampling priority attribute is configured via
-`sampling_priority`.
+sampling. The logs sampling priority attribute is configured via
+`sampling_priority`. If the logs sampling priority attribute is not
+set on a log record, the default sampling percentage applies.
 
 ## Mode Selection
 

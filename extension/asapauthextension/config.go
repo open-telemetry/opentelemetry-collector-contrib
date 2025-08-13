@@ -29,6 +29,8 @@ type Config struct {
 	Audience []string `mapstructure:"audience"`
 
 	PrivateKey configopaque.String `mapstructure:"private_key"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

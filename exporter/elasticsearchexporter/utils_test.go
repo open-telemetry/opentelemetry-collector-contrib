@@ -56,7 +56,7 @@ func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrde
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
 
-	require.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	require.Len(t, actualItems, len(expectedItems), "want %d items, got %d", len(expectedItems), len(actualItems))
 	for i, want := range expectedItems {
 		got := actualItems[i]
 		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
@@ -128,12 +128,13 @@ func (r *bulkRecorder) Record(bulk []itemRequest) {
 	r.cond.Broadcast()
 }
 
-func (r *bulkRecorder) WaitItems(n int) {
+func (r *bulkRecorder) WaitItems(n int) []itemRequest {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for n > r.countItems() {
 		r.cond.Wait()
 	}
+	return r.items()
 }
 
 func (r *bulkRecorder) Requests() [][]itemRequest {
@@ -143,7 +144,13 @@ func (r *bulkRecorder) Requests() [][]itemRequest {
 }
 
 func (r *bulkRecorder) Items() (docs []itemRequest) {
-	for _, rec := range r.Requests() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.items()
+}
+
+func (r *bulkRecorder) items() (docs []itemRequest) {
+	for _, rec := range r.recordings {
 		docs = append(docs, rec...)
 	}
 	return docs
@@ -301,20 +308,25 @@ func newTracesWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]a
 	return traces
 }
 
-func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
-	attrs.EnsureCapacity(len(m))
-	for k, v := range m {
-		switch vv := v.(type) {
+func fillAttributeMap(attrs pcommon.Map, inputMap map[string]any) {
+	attrs.EnsureCapacity(len(inputMap))
+	for k, v := range inputMap {
+		switch v := v.(type) {
 		case bool:
-			attrs.PutBool(k, vv)
+			attrs.PutBool(k, v)
 		case string:
-			attrs.PutStr(k, vv)
+			attrs.PutStr(k, v)
 		case []string:
 			slice := attrs.PutEmptySlice(k)
-			slice.EnsureCapacity(len(vv))
-			for _, s := range vv {
+			slice.EnsureCapacity(len(v))
+			for _, s := range v {
 				slice.AppendEmpty().SetStr(s)
 			}
+		case map[string]any:
+			// only valid for logs attributes because its value needs to support any type
+			// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes
+			m := attrs.PutEmptyMap(k)
+			fillAttributeMap(m, v)
 		}
 	}
 }
@@ -322,6 +334,7 @@ func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
 func TestGetSuffixTime(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.LogstashFormat.Enabled = true
+	defaultCfg.LogsIndex = "logs-generic-default"
 	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
 	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)

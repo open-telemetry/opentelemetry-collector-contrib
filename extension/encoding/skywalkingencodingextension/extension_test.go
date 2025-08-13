@@ -24,7 +24,7 @@ func TestExtension_Start(t *testing.T) {
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				return factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(factory.Type()), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 	}

@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -37,7 +38,7 @@ func TestCreateTraces(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	te, err := newSAPMTracesExporter(cfg, params)
 	assert.NoError(t, err)
@@ -196,7 +197,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.NoError(t, err)
@@ -264,7 +265,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.NoError(t, err)
@@ -360,7 +361,7 @@ func TestCompression(t *testing.T) {
 					http.HandlerFunc(
 						func(w http.ResponseWriter, r *http.Request) {
 							compression := r.Header.Get("Content-Encoding")
-							assert.EqualValues(t, compression, tt.receivedCompression)
+							assert.Equal(t, compression, tt.receivedCompression)
 
 							payload, err := decompress(r.Body, compression)
 							assert.NoError(t, err)
@@ -384,7 +385,7 @@ func TestCompression(t *testing.T) {
 					DisableCompression: tt.configDisableCompression,
 					Compression:        tt.configCompression,
 				}
-				params := exportertest.NewNopSettings()
+				params := exportertest.NewNopSettings(metadata.Type)
 
 				se, err := newSAPMExporter(cfg, params)
 				assert.NoError(t, err)

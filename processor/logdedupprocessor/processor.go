@@ -67,12 +67,12 @@ func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
 }
 
 // Capabilities returns the consumer's capabilities.
-func (p *logDedupProcessor) Capabilities() consumer.Capabilities {
+func (*logDedupProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
 // Shutdown stops the processor.
-func (p *logDedupProcessor) Shutdown(_ context.Context) error {
+func (p *logDedupProcessor) Shutdown(context.Context) error {
 	if p.cancel != nil {
 		// Call cancel to stop the export interval goroutine and wait for it to finish.
 		p.cancel()

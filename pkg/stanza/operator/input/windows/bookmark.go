@@ -19,7 +19,7 @@ type Bookmark struct {
 // Open will open the bookmark handle using the supplied xml.
 func (b *Bookmark) Open(offsetXML string) error {
 	if b.handle != 0 {
-		return fmt.Errorf("bookmark handle is already open")
+		return errors.New("bookmark handle is already open")
 	}
 
 	utf16, err := syscall.UTF16PtrFromString(offsetXML)
@@ -56,7 +56,7 @@ func (b *Bookmark) Update(event Event) error {
 // Render will render the bookmark as xml.
 func (b *Bookmark) Render(buffer *Buffer) (string, error) {
 	if b.handle == 0 {
-		return "", fmt.Errorf("bookmark handle is not open")
+		return "", errors.New("bookmark handle is not open")
 	}
 
 	bufferUsed, err := evtRender(0, b.handle, EvtRenderBookmark, buffer.SizeBytes(), buffer.FirstByte())

@@ -5,8 +5,9 @@ package googlecloudlogentryencodingextension // import "github.com/open-telemetr
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
+	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -16,26 +17,50 @@ import (
 var _ encoding.LogsUnmarshalerExtension = (*ext)(nil)
 
 type ext struct {
-	Config Config
+	config Config
 }
 
-func newExtension(cfg *Config) (*ext, error) {
-	if cfg == nil {
-		// this check is to keep the function signature the same as the real function (lint)
-		return nil, errors.New("nil Config")
+func newExtension(cfg *Config) *ext {
+	return &ext{config: *cfg}
+}
+
+func (*ext) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (*ext) Shutdown(context.Context) error {
+	return nil
+}
+
+func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	logs, err := ex.translateLogEntry(buf)
+	if err != nil {
+		return plog.Logs{}, err
 	}
-	return &ext{Config: *cfg}, nil
+
+	return logs, nil
 }
 
-func (ex *ext) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
+// TranslateLogEntry translates a JSON-encoded LogEntry message into plog.Logs,
+// trying to keep as close as possible to the GCP original names.
+//
+// For maximum fidelity, the decoding is done according to the protobuf message
+// schema; this ensures that a numeric value in the input is correctly
+// translated to either an integer or a double in the output. It falls back to
+// plain JSON decoding if payload type is not available in the proto registry.
+func (ex *ext) translateLogEntry(data []byte) (plog.Logs, error) {
+	var log logEntry
+	if err := gojson.Unmarshal(data, &log); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal log entry: %w", err)
+	}
 
-func (ex *ext) Shutdown(_ context.Context) error {
-	return nil
-}
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resource := resourceLogs.Resource()
+	logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-func (ex *ext) UnmarshalLogs(_ []byte) (plog.Logs, error) {
-	out := plog.NewLogs()
-	return out, nil
+	if err := handleLogEntryFields(resource.Attributes(), logRecord, log, ex.config); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to handle log entry: %w", err)
+	}
+	return logs, nil
 }

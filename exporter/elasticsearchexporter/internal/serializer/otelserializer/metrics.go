@@ -6,7 +6,10 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"fmt"
+	"sort"
+	"strconv"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -16,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
-func SerializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
+func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
 	if len(dataPoints) == 0 {
 		return nil, nil
 	}
@@ -27,9 +30,9 @@ func SerializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	writeTimestampField(v, "@timestamp", dp0.Timestamp())
+	writeTimestampEpochMillisField(v, "@timestamp", dp0.Timestamp())
 	if dp0.StartTimestamp() != 0 {
-		writeTimestampField(v, "start_timestamp", dp0.StartTimestamp())
+		writeTimestampEpochMillisField(v, "start_timestamp", dp0.StartTimestamp())
 	}
 	writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit())
 	writeDataStream(v, idx)
@@ -47,10 +50,11 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
-	metricNames := make(map[string]bool, len(dataPoints))
+	metricNamesSet := make(map[string]bool, len(dataPoints))
+	metricNames := make([]string, 0, len(dataPoints))
 	for _, dp := range dataPoints {
 		metric := dp.Metric()
-		if _, present := metricNames[metric.Name()]; present {
+		if _, present := metricNamesSet[metric.Name()]; present {
 			*validationErrors = append(
 				*validationErrors,
 				fmt.Errorf(
@@ -61,7 +65,8 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 			)
 			continue
 		}
-		metricNames[metric.Name()] = true
+		metricNamesSet[metric.Name()] = true
+		metricNames = append(metricNames, metric.Name())
 		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
 		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
@@ -86,5 +91,14 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 	if docCount != 0 {
 		writeUIntField(v, "_doc_count", docCount)
 	}
+	sort.Strings(metricNames)
+	hasher := xxhash.New()
+	for _, name := range metricNames {
+		_, _ = hasher.WriteString(name)
+	}
+	// workaround for https://github.com/elastic/elasticsearch/issues/99123
+	// should use a string field to benefit from run-length encoding
+	writeStringFieldSkipDefault(v, "_metric_names_hash", strconv.FormatUint(hasher.Sum64(), 16))
+
 	return dynamicTemplates
 }

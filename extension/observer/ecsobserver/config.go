@@ -4,7 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"time"
 )
@@ -44,7 +44,7 @@ func (c *Config) Validate() error {
 	if c.ClusterName == "" {
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3188
 		// would allow auto detect cluster name in extension
-		return fmt.Errorf("must specify ECS cluster name directly")
+		return errors.New("must specify ECS cluster name directly")
 	}
 	for _, s := range c.Services {
 		if err := s.validate(); err != nil {

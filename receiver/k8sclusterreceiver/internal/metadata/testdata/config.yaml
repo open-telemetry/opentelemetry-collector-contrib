@@ -17,6 +17,8 @@ all_set:
       enabled: true
     k8s.container.restarts:
       enabled: true
+    k8s.container.status.state:
+      enabled: true
     k8s.container.storage_limit:
       enabled: true
     k8s.container.storage_request:
@@ -117,6 +119,12 @@ all_set:
     k8s.deployment.uid:
       enabled: true
     k8s.hpa.name:
+      enabled: true
+    k8s.hpa.scaletargetref.apiversion:
+      enabled: true
+    k8s.hpa.scaletargetref.kind:
+      enabled: true
+    k8s.hpa.scaletargetref.name:
       enabled: true
     k8s.hpa.uid:
       enabled: true
@@ -182,6 +190,8 @@ none_set:
       enabled: false
     k8s.container.restarts:
       enabled: false
+    k8s.container.status.state:
+      enabled: false
     k8s.container.storage_limit:
       enabled: false
     k8s.container.storage_request:
@@ -282,6 +292,12 @@ none_set:
     k8s.deployment.uid:
       enabled: false
     k8s.hpa.name:
+      enabled: false
+    k8s.hpa.scaletargetref.apiversion:
+      enabled: false
+    k8s.hpa.scaletargetref.kind:
+      enabled: false
+    k8s.hpa.scaletargetref.name:
       enabled: false
     k8s.hpa.uid:
       enabled: false
@@ -384,6 +400,18 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.hpa.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.hpa.scaletargetref.apiversion:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.hpa.scaletargetref.kind:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.hpa.scaletargetref.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -537,6 +565,18 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.hpa.name-val"
+    k8s.hpa.scaletargetref.apiversion:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.hpa.scaletargetref.apiversion-val"
+    k8s.hpa.scaletargetref.kind:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.hpa.scaletargetref.kind-val"
+    k8s.hpa.scaletargetref.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.hpa.scaletargetref.name-val"
     k8s.hpa.uid:
       enabled: true
       metrics_exclude:

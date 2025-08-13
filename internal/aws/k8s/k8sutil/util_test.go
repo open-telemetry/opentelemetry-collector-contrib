@@ -11,14 +11,14 @@ import (
 
 func TestCreatePodKey(t *testing.T) {
 	assert.Equal(t, "namespace:default,podName:testPod", CreatePodKey("default", "testPod"))
-	assert.Equal(t, "", CreatePodKey("", "testPod"))
-	assert.Equal(t, "", CreatePodKey("default", ""))
-	assert.Equal(t, "", CreatePodKey("", ""))
+	assert.Empty(t, CreatePodKey("", "testPod"))
+	assert.Empty(t, CreatePodKey("default", ""))
+	assert.Empty(t, CreatePodKey("", ""))
 }
 
 func TestCreateContainerKey(t *testing.T) {
 	assert.Equal(t, "namespace:default,podName:testPod,containerName:testContainer", CreateContainerKey("default", "testPod", "testContainer"))
-	assert.Equal(t, "", CreateContainerKey("", "testPod", "testContainer"))
-	assert.Equal(t, "", CreateContainerKey("default", "", "testContainer"))
-	assert.Equal(t, "", CreateContainerKey("default", "testPod", ""))
+	assert.Empty(t, CreateContainerKey("", "testPod", "testContainer"))
+	assert.Empty(t, CreateContainerKey("default", "", "testContainer"))
+	assert.Empty(t, CreateContainerKey("default", "testPod", ""))
 }

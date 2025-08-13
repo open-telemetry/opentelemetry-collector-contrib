@@ -36,7 +36,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).scrapeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -103,7 +103,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).closeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -121,7 +121,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -138,6 +138,16 @@ type mockPerfCounterWatcher struct {
 	scrapeErr error
 	closeErr  error
 	closed    bool
+}
+
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
 }
 
 // Reset panics; it should not be called

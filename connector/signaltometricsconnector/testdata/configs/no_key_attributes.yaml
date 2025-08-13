@@ -17,3 +17,9 @@ signaltometrics:
         - default_value: key.1
       sum:
         value: "1"
+  profiles:
+    - name: profile.sum
+      attributes:
+        - default_value: key.1
+      sum:
+        value: "1"

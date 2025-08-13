@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
@@ -258,6 +259,7 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
+		DeleteFunc: rw.onDelete,
 	})
 	if err != nil {
 		rw.logger.Error("error adding event handler to informer", zap.Error(err))
@@ -291,6 +293,17 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
 	rw.syncMetadataUpdate(rw.objMetadata(oldObj), rw.objMetadata(newObj))
 }
 
+func (rw *resourceWatcher) onDelete(oldObj any) {
+	rw.waitForInitialInformerSync()
+
+	// Sync metadata only if there's at least one destination for it to sent.
+	if !rw.hasDestination() {
+		return
+	}
+
+	rw.syncMetadataUpdate(rw.objMetadata(oldObj), map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{})
+}
+
 // objMetadata returns the metadata for the given object.
 func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	switch o := obj.(type) {
@@ -314,6 +327,8 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return cronjob.GetMetadata(o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		return hpa.GetMetadata(o)
+	case *corev1.Namespace:
+		return namespace.GetMetadata(o)
 	}
 	return nil
 }

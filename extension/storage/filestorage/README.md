@@ -6,6 +6,7 @@
 | Stability     | [beta]  |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Ffilestorage%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Ffilestorage) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Ffilestorage%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Ffilestorage) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_file_storage)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_file_storage&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@swiatekm](https://www.github.com/swiatekm), [@VihasMakwana](https://www.github.com/VihasMakwana) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
@@ -30,6 +31,10 @@ The default timeout is `1s`.
 By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
 Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
+`recreate` when set, will rename the existing data storage to `{filename}.backup` and a new data file will be created from scratch. This option is useful if underlying database is corrupted and as a result, it can halt the entire collector process due to a panic. See (#36840)[https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36840] for more details.
+
+> [!Note]
+> Enabling `recreate` will regenerate the database files, which may lead to data duplication or data loss. 
 
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):

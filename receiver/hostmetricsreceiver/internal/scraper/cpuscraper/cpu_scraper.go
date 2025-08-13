@@ -73,7 +73,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled {
+	if s.config.Metrics.SystemCPUPhysicalCount.Enabled {
 		numCPU, err := cpu.Counts(false)
 		if err != nil {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -81,7 +81,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.mb.RecordSystemCPUPhysicalCountDataPoint(now, int64(numCPU))
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.SystemCPULogicalCount.Enabled {
+	if s.config.Metrics.SystemCPULogicalCount.Enabled {
 		numCPU, err := cpu.Counts(true)
 		if err != nil {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -89,7 +89,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.mb.RecordSystemCPULogicalCountDataPoint(now, int64(numCPU))
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.SystemCPUFrequency.Enabled {
+	if s.config.Metrics.SystemCPUFrequency.Enabled {
 		cpuInfos, err := s.getCPUInfo()
 		if err != nil {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)

@@ -171,6 +171,30 @@ func TestDecode(t *testing.T) {
 			encoding:      "base64",
 			expectedError: "illegal base64 data at input byte",
 		},
+		{
+			name:     "base64 with url-safe sensitive characters",
+			value:    "R28/L1p+eA==",
+			encoding: "base64",
+			want:     "Go?/Z~x",
+		},
+		{
+			name:     "base64-raw with url-safe sensitive characters",
+			value:    "R28/L1p+eA",
+			encoding: "base64-raw",
+			want:     "Go?/Z~x",
+		},
+		{
+			name:     "base64-url with url-safe sensitive characters",
+			value:    "R28_L1p-eA==",
+			encoding: "base64-url",
+			want:     "Go?/Z~x",
+		},
+		{
+			name:     "base64-raw-url with url-safe sensitive characters",
+			value:    "R28_L1p-eA",
+			encoding: "base64-raw-url",
+			want:     "Go?/Z~x",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

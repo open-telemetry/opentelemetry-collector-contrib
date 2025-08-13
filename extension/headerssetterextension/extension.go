@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 
@@ -17,70 +19,95 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
 )
 
-type Header struct {
+type header struct {
 	action action.Action
 	source source.Source
 }
 
-func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, error) {
+var (
+	_ extension.Extension      = (*headerSetterExtension)(nil)
+	_ extensionauth.HTTPClient = (*headerSetterExtension)(nil)
+	_ extensionauth.GRPCClient = (*headerSetterExtension)(nil)
+)
+
+type headerSetterExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+
+	headers []header
+}
+
+// PerRPCCredentials implements extensionauth.GRPCClient.
+func (h *headerSetterExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	return &headersPerRPC{headers: h.headers}, nil
+}
+
+// RoundTripper implements extensionauth.HTTPClient.
+func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &headersRoundTripper{
+		base:    base,
+		headers: h.headers,
+	}, nil
+}
+
+func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterExtension, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}
 
-	headers := make([]Header, 0, len(cfg.HeadersConfig))
-	for _, header := range cfg.HeadersConfig {
+	headers := make([]header, 0, len(cfg.HeadersConfig))
+	for _, h := range cfg.HeadersConfig {
 		var s source.Source
-		if header.Value != nil {
+		switch {
+		case h.Value != nil:
 			s = &source.StaticSource{
-				Value: *header.Value,
+				Value: *h.Value,
 			}
-		} else if header.FromContext != nil {
+		case h.FromAttribute != nil:
 			defaultValue := ""
-			if header.DefaultValue != nil {
-				defaultValue = *header.DefaultValue
+			if h.DefaultValue != nil {
+				defaultValue = string(*h.DefaultValue)
+			}
+			s = &source.AttributeSource{
+				Key:          *h.FromAttribute,
+				DefaultValue: defaultValue,
+			}
+		case h.FromContext != nil:
+			defaultValue := ""
+			if h.DefaultValue != nil {
+				defaultValue = string(*h.DefaultValue)
 			}
 			s = &source.ContextSource{
-				Key:          *header.FromContext,
+				Key:          *h.FromContext,
 				DefaultValue: defaultValue,
 			}
 		}
 
 		var a action.Action
-		switch header.Action {
+		switch h.Action {
 		case INSERT:
-			a = action.Insert{Key: *header.Key}
+			a = action.Insert{Key: *h.Key}
 		case UPSERT:
-			a = action.Upsert{Key: *header.Key}
+			a = action.Upsert{Key: *h.Key}
 		case UPDATE:
-			a = action.Update{Key: *header.Key}
+			a = action.Update{Key: *h.Key}
 		case DELETE:
-			a = action.Delete{Key: *header.Key}
+			a = action.Delete{Key: *h.Key}
 		default:
-			a = action.Upsert{Key: *header.Key}
+			a = action.Upsert{Key: *h.Key}
 			logger.Warn("The action was not provided, using 'upsert'." +
 				" In future versions, we'll require this to be explicitly set")
 		}
-		headers = append(headers, Header{action: a, source: s})
+		headers = append(headers, header{action: a, source: s})
 	}
 
-	return auth.NewClient(
-		auth.WithClientRoundTripper(
-			func(base http.RoundTripper) (http.RoundTripper, error) {
-				return &headersRoundTripper{
-					base:    base,
-					headers: headers,
-				}, nil
-			}),
-		auth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
-			return &headersPerRPC{headers: headers}, nil
-		}),
-	), nil
+	return &headerSetterExtension{headers: headers}, nil
 }
 
 // headersPerRPC is a gRPC credentials.PerRPCCredentials implementation sets
 // headers with values extracted from provided sources.
 type headersPerRPC struct {
-	headers []Header
+	headers []header
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
@@ -102,7 +129,7 @@ func (h *headersPerRPC) GetRequestMetadata(
 // RequireTransportSecurity always returns false for this implementation.
 // The header setter is not sending auth data, so it should not require
 // a transport security.
-func (h *headersPerRPC) RequireTransportSecurity() bool {
+func (*headersPerRPC) RequireTransportSecurity() bool {
 	return false
 }
 
@@ -110,7 +137,7 @@ func (h *headersPerRPC) RequireTransportSecurity() bool {
 // values extracted from configured sources.
 type headersRoundTripper struct {
 	base    http.RoundTripper
-	headers []Header
+	headers []header
 }
 
 // RoundTrip copies the original request and sets headers of the new requests

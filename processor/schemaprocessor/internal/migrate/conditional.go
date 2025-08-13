@@ -5,7 +5,6 @@ package migrate // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/otel/schema/v1.0/ast"
 )
 
 // ValueMatch defines the expected match type
@@ -22,7 +21,7 @@ type ConditionalAttributeSet struct {
 
 type ConditionalAttributeSetSlice []*ConditionalAttributeSet
 
-func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches ...Match) ConditionalAttributeSet {
+func NewConditionalAttributeSet[Match ValueMatch](mappings map[string]string, matches ...Match) ConditionalAttributeSet {
 	on := make(map[string]struct{})
 	for _, m := range matches {
 		on[string(m)] = struct{}{}
@@ -33,7 +32,7 @@ func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, mat
 	}
 }
 
-func (ca ConditionalAttributeSet) IsMigrator() {}
+func (ConditionalAttributeSet) IsMigrator() {}
 
 // Do applies the attribute changes specified in the constructor if any of the values in values matches the matches specified in the constructor.
 func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {

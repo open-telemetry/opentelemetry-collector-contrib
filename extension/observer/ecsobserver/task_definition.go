@@ -4,11 +4,12 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +30,7 @@ func (t *TaskDefinitionConfig) validate() error {
 
 func (t *TaskDefinitionConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if t.ArnPattern == "" {
-		return nil, fmt.Errorf("arn_pattern is empty")
+		return nil, errors.New("arn_pattern is empty")
 	}
 
 	arnRegex, err := regexp.Compile(t.ArnPattern)
@@ -76,13 +77,13 @@ type taskDefinitionMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (m *taskDefinitionMatcher) matcherType() matcherType {
+func (*taskDefinitionMatcher) matcherType() matcherType {
 	return matcherTypeTaskDefinition
 }
 
-func (m *taskDefinitionMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (m *taskDefinitionMatcher) matchTargets(t *taskAnnotated, c ecstypes.ContainerDefinition) ([]matchedTarget, error) {
 	// Check arn
-	if !m.arnRegex.MatchString(aws.StringValue(t.Task.TaskDefinitionArn)) {
+	if !m.arnRegex.MatchString(aws.ToString(t.Task.TaskDefinitionArn)) {
 		return nil, errNotMatched
 	}
 	// The rest is same as ServiceMatcher

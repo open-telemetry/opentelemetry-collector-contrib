@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 const (
@@ -106,15 +107,14 @@ func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDa
 }
 
 func assertFiltered(t *testing.T, lm pcommon.Map) {
-	lm.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lm.All() {
 		if k == filteredAttrKey {
 			require.NotEqual(t, v.AsRaw(), filteredAttrVal.AsRaw())
 		}
-		return true
-	})
+	}
 }
 
-func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
+func filterMetrics(t *testing.T, include, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
 	proc, next := testProcessor(t, include, exclude)
 	for _, md := range mds {
 		err := proc.ConsumeMetrics(context.Background(), md)
@@ -123,14 +123,14 @@ func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetr
 	return next.AllMetrics()
 }
 
-func testProcessor(t *testing.T, include []string, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
+func testProcessor(t *testing.T, include, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
 	factory := NewFactory()
 	cfg := exprConfig(factory, include, exclude)
 	ctx := context.Background()
 	next := &consumertest.MetricsSink{}
 	proc, err := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		next,
 	)
@@ -139,7 +139,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	return proc, next
 }
 
-func exprConfig(factory processor.Factory, include []string, exclude []string) component.Config {
+func exprConfig(factory processor.Factory, include, exclude []string) component.Config {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

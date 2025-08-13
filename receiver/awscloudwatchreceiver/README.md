@@ -6,6 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fawscloudwatch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fawscloudwatch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fawscloudwatch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fawscloudwatch) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_awscloudwatch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_awscloudwatch&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@schmikei](https://www.github.com/schmikei) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
@@ -29,14 +30,16 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
 | `imds_endpoint` | *optional* | string | A way of specifying a custom URL to be used by the EC2 IMDS client to validate the session. If unset, and the environment variable `AWS_EC2_METADATA_SERVICE_ENDPOINT` has a value the client will use the value of the environment variable as the endpoint for operation calls. |
 | `logs`          | *optional* | `Logs` | Configuration for Logs ingestion of this receiver                                                                                                                                                                                                                                 |
+| `storage`       | *optional* | string | The ID of a storage extension to be used for state persistence.                                                                                                                                                                                                                   |
 
 ### Logs Parameters
 
-| Parameter                | Notes        | type                   | Description                                                                                |
-| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `poll_interval`          | `default=1m` | duration               | The duration waiting in between requests.                                                  |
-| `max_events_per_request` | `default=50` | int                    | The maximum number of events to process per request to Cloudwatch                          |
-| `groups`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
+| Parameter                | Type     | Default                                    | Description                                                                                            |
+|--------------------------|----------|--------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `start_from`             | String   | Read all available logs from the beginning | Timestamp in `RFC3339` format (e.g., 2006-01-02T15:04:05Z07:00) indicating where to start reading logs |
+| `poll_interval`          | Duration | 1 minute                                   | Time to wait between log requests                                                                      |
+| `max_events_per_request` | Integer  | 1,000                                      | The maximum number of events to process per request to Cloudwatch                                      |
+| `groups`                 | Optional | All Log Groups and Streams                 | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected.             |
 
 ### Group Parameters
 
@@ -45,7 +48,9 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 - `autodiscover`
   - `limit`: (optional; default = 50) Limits the number of discovered log groups. This does not limit how large each API call to discover the log groups will be.
   - `prefix`: (optional) A prefix for log groups to limit the number of log groups discovered.
-    - if omitted, all log streams up to the limit are collected from
+    - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected.
+  - `pattern`: (optional) A case-sensitive substring (not a regular expression) that must be present in the log group names, used to limit the number of log groups discovered.
+    - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected.
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
     - `names`: A list of full log stream names to filter the discovered log groups to collect from.
     - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
@@ -114,4 +119,3 @@ This receiver has a number of sample configs for reference.
    - Specifies the names of the log groups to collect
    - Does not attempt autodiscovery
    - Only collects from log streams matching a prefix
-

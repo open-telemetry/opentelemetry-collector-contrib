@@ -13,13 +13,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -45,10 +46,12 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
+		string(semconv.PeerServiceKey), string(semconv.DBNameKey), string(semconv.DBSystemKey),
 	}
 
-	defaultDatabaseNameAttribute = semconv.AttributeDBName
+	defaultDatabaseNameAttributes = []string{string(semconv.DBNameKey)}
+
+	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
 
 type metricSeries struct {
@@ -73,9 +76,11 @@ type serviceGraphConnector struct {
 	reqClientDurationSecondsCount        map[string]uint64
 	reqClientDurationSecondsSum          map[string]float64
 	reqClientDurationSecondsBucketCounts map[string][]uint64
+	reqClientDurationExpHistogram        map[string]*structure.Histogram[float64]
 	reqServerDurationSecondsCount        map[string]uint64
 	reqServerDurationSecondsSum          map[string]float64
 	reqServerDurationSecondsBucketCounts map[string][]uint64
+	reqServerDurationExpHistogram        map[string]*structure.Histogram[float64]
 	reqDurationBounds                    []float64
 
 	metricMutex sync.RWMutex
@@ -93,12 +98,15 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
 	}
 
-	bounds := defaultLatencyHistogramBuckets
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		bounds = legacyDefaultLatencyHistogramBuckets
-	}
-	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
+	var bounds []float64
+	if pConfig.ExponentialHistogramMaxSize == 0 {
+		bounds = defaultLatencyHistogramBuckets
+		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+			bounds = legacyDefaultLatencyHistogramBuckets
+		}
+		if pConfig.LatencyHistogramBuckets != nil {
+			bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
+		}
 	}
 
 	if pConfig.CacheLoop <= 0 {
@@ -113,8 +121,14 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
-	if pConfig.DatabaseNameAttribute == "" {
-		pConfig.DatabaseNameAttribute = defaultDatabaseNameAttribute
+	if len(pConfig.DatabaseNameAttributes) == 0 {
+		pConfig.DatabaseNameAttributes = defaultDatabaseNameAttributes
+	}
+
+	if pConfig.MetricsFlushInterval == nil {
+		pConfig.MetricsFlushInterval = &defaultMetricsFlushInterval
+	} else if pConfig.MetricsFlushInterval.Nanoseconds() <= 0 {
+		set.Logger.Warn("MetricsFlushInterval is set to 0, metrics will be flushed on every received batch of traces")
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
@@ -133,9 +147,11 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		reqClientDurationSecondsCount:        make(map[string]uint64),
 		reqClientDurationSecondsSum:          make(map[string]float64),
 		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqClientDurationExpHistogram:        make(map[string]*structure.Histogram[float64]),
 		reqServerDurationSecondsCount:        make(map[string]uint64),
 		reqServerDurationSecondsSum:          make(map[string]float64),
 		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqServerDurationExpHistogram:        make(map[string]*structure.Histogram[float64]),
 		reqDurationBounds:                    bounds,
 		keyToMetric:                          make(map[string]metricSeries),
 		shutdownCh:                           make(chan any),
@@ -143,10 +159,10 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	}, nil
 }
 
-func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
+func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	go p.metricFlushLoop(p.config.MetricsFlushInterval)
+	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -191,13 +207,13 @@ func (p *serviceGraphConnector) flushMetrics(ctx context.Context) error {
 	return p.metricsConsumer.ConsumeMetrics(ctx, md)
 }
 
-func (p *serviceGraphConnector) Shutdown(_ context.Context) error {
+func (p *serviceGraphConnector) Shutdown(context.Context) error {
 	p.logger.Info("Shutting down servicegraphconnector")
 	close(p.shutdownCh)
 	return nil
 }
 
-func (p *serviceGraphConnector) Capabilities() consumer.Capabilities {
+func (*serviceGraphConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -207,7 +223,7 @@ func (p *serviceGraphConnector) ConsumeTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	// If metricsFlushInterval is not set, flush metrics immediately.
-	if p.config.MetricsFlushInterval <= 0 {
+	if *p.config.MetricsFlushInterval <= 0 {
 		if err := p.flushMetrics(ctx); err != nil {
 			// Not return error here to avoid impacting traces.
 			p.logger.Error("failed to flush metrics", zap.Error(err))
@@ -265,7 +281,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
-						if dbName, ok := pdatautil.GetAttributeValue(p.config.DatabaseNameAttribute, rAttributes, span.Attributes()); ok {
+						if dbName, ok := getFirstMatchingValue(p.config.DatabaseNameAttributes, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
 							e.ServerLatencySec = spanDuration(span)
@@ -311,7 +327,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 	return nil
 }
 
-func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
+func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]string, resourceAttr, spanAttr pcommon.Map) {
 	for _, dim := range p.config.Dimensions {
 		if v, ok := pdatautil.GetAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
@@ -319,7 +335,7 @@ func (p *serviceGraphConnector) upsertDimensions(kind string, m map[string]strin
 	}
 }
 
-func (p *serviceGraphConnector) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
+func (*serviceGraphConnector) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
 	for _, s := range m {
 		if v, ok := pdatautil.GetAttributeValue(s, spanAttr); ok {
 			peers[s] = v
@@ -352,7 +368,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
-		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
+		if e.ClientService == "" && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
 			if p.config.VirtualNodeExtraLabel {
 				e.VirtualNodeLabel = store.ClientVirtualNode
@@ -360,7 +376,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 			p.onComplete(e)
 		}
 
-		if len(e.ServerService) == 0 {
+		if e.ServerService == "" {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
 			if p.config.VirtualNodeExtraLabel {
 				e.VirtualNodeLabel = store.ServerVirtualNode
@@ -418,23 +434,53 @@ func (p *serviceGraphConnector) updateDurationMetrics(key string, serverDuration
 }
 
 func (p *serviceGraphConnector) updateServerDurationMetrics(key string, duration float64) {
-	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
-	if _, ok := p.reqServerDurationSecondsBucketCounts[key]; !ok {
-		p.reqServerDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	if p.reqDurationBounds == nil {
+		histogram, ok := p.reqServerDurationExpHistogram[key]
+		if !ok {
+			histogram = new(structure.Histogram[float64])
+			cfg := structure.NewConfig(
+				structure.WithMaxSize(p.config.ExponentialHistogramMaxSize),
+			)
+			histogram.Init(cfg)
+			p.reqServerDurationExpHistogram[key] = histogram
+		}
+
+		histogram.Update(duration)
+	} else {
+		index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
+		if _, ok := p.reqServerDurationSecondsBucketCounts[key]; !ok {
+			p.reqServerDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+		}
+
+		p.reqServerDurationSecondsSum[key] += duration
+		p.reqServerDurationSecondsCount[key]++
+		p.reqServerDurationSecondsBucketCounts[key][index]++
 	}
-	p.reqServerDurationSecondsSum[key] += duration
-	p.reqServerDurationSecondsCount[key]++
-	p.reqServerDurationSecondsBucketCounts[key][index]++
 }
 
 func (p *serviceGraphConnector) updateClientDurationMetrics(key string, duration float64) {
-	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
-	if _, ok := p.reqClientDurationSecondsBucketCounts[key]; !ok {
-		p.reqClientDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	if p.reqDurationBounds == nil {
+		histogram, ok := p.reqClientDurationExpHistogram[key]
+		if !ok {
+			histogram = new(structure.Histogram[float64])
+			cfg := structure.NewConfig(
+				structure.WithMaxSize(p.config.ExponentialHistogramMaxSize),
+			)
+			histogram.Init(cfg)
+			p.reqClientDurationExpHistogram[key] = histogram
+		}
+
+		histogram.Update(duration)
+	} else {
+		index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
+		if _, ok := p.reqClientDurationSecondsBucketCounts[key]; !ok {
+			p.reqClientDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+		}
+
+		p.reqClientDurationSecondsSum[key] += duration
+		p.reqClientDurationSecondsCount[key]++
+		p.reqClientDurationSecondsBucketCounts[key][index]++
 	}
-	p.reqClientDurationSecondsSum[key] += duration
-	p.reqClientDurationSecondsCount[key]++
-	p.reqClientDurationSecondsBucketCounts[key][index]++
 }
 
 func buildDimensions(e *store.Edge) pcommon.Map {
@@ -452,6 +498,11 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 func addExtraLabel(dimensions pcommon.Map, label, value string) pcommon.Map {
 	dimensions.PutStr(label, value)
 	return dimensions
+}
+
+// nowWithOffset returns the current time minus the configured offset
+func (p *serviceGraphConnector) nowWithOffset() time.Time {
+	return time.Now().Add(-p.config.MetricsTimestampOffset)
 }
 
 func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
@@ -485,7 +536,7 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 		for key, c := range p.reqTotal {
 			dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 			dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(p.nowWithOffset()))
 			dpCalls.SetIntValue(c)
 
 			dimensions, ok := p.dimensionsForSeries(key)
@@ -507,7 +558,7 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 		for key, c := range p.reqFailedTotal {
 			dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 			dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(p.nowWithOffset()))
 			dpCalls.SetIntValue(c)
 
 			dimensions, ok := p.dimensionsForSeries(key)
@@ -536,18 +587,35 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	if len(p.reqServerDurationSecondsCount) > 0 {
-		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_client")
-		mDuration.SetUnit(secondsUnit)
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			mDuration.SetUnit(millisecondsUnit)
+	mDuration := pmetric.NewMetric()
+	mDuration.SetName("traces_service_graph_request_client")
+	mDuration.SetUnit(secondsUnit)
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		mDuration.SetUnit(millisecondsUnit)
+	}
+
+	if p.reqDurationBounds == nil {
+		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		for key, expHistogram := range p.reqClientDurationExpHistogram {
+			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpDuration.Attributes())
+			dpDuration.SetCount(expHistogram.Count())
+			dpDuration.SetSum(expHistogram.Sum())
+			pdatautil.ExpoHistToExponentialDataPoint(expHistogram, dpDuration)
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
+	} else if len(p.reqClientDurationSecondsCount) > 0 {
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
+		timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 
-		for key := range p.reqServerDurationSecondsCount {
+		for key := range p.reqClientDurationSecondsCount {
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
@@ -564,21 +632,41 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 
 			dimensions.CopyTo(dpDuration.Attributes())
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
 	}
 	return nil
 }
 
 func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMetrics, mName string) error {
-	if len(p.reqServerDurationSecondsCount) > 0 {
-		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName(mName)
-		mDuration.SetUnit(secondsUnit)
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			mDuration.SetUnit(millisecondsUnit)
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	mDuration := pmetric.NewMetric()
+	mDuration.SetName(mName)
+	mDuration.SetUnit(secondsUnit)
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		mDuration.SetUnit(millisecondsUnit)
+	}
+
+	if p.reqDurationBounds == nil {
+		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		for key, expHistogram := range p.reqServerDurationExpHistogram {
+			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetTimestamp(timestamp)
+			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpDuration.Attributes())
+			dpDuration.SetCount(expHistogram.Count())
+			dpDuration.SetSum(expHistogram.Sum())
+			pdatautil.ExpoHistToExponentialDataPoint(expHistogram, dpDuration)
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
+	} else if len(p.reqServerDurationSecondsCount) > 0 {
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
+		timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 
 		for key := range p.reqServerDurationSecondsCount {
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
@@ -597,6 +685,7 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 
 			dimensions.CopyTo(dpDuration.Attributes())
 		}
+		mDuration.CopyTo(ilm.Metrics().AppendEmpty())
 	}
 	return nil
 }
@@ -606,11 +695,13 @@ func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectio
 	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
-		dim, ok := edgeDimensions[dimName]
-		if !ok {
-			continue
+		for _, kind := range []string{clientKind, serverKind} {
+			dim, ok := edgeDimensions[kind+"_"+dimName]
+			if !ok {
+				continue
+			}
+			metricKey.WriteString(metricKeySeparator + kind + "_" + dimName + "_" + dim)
 		}
-		metricKey.WriteString(metricKeySeparator + dim)
 	}
 
 	return metricKey.String()
@@ -629,7 +720,7 @@ func (p *serviceGraphConnector) storeExpirationLoop(d time.Duration) {
 	}
 }
 
-func (p *serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
+func (*serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
 	peerStr := "unknown"
 	for _, s := range m {
 		if peer, ok := peers[s]; ok {

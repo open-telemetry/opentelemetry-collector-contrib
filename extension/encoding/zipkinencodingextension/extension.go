@@ -86,11 +86,11 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 	return ex, err
 }
 
-func (ex *zipkinExtension) Start(_ context.Context, _ component.Host) error {
+func (*zipkinExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (ex *zipkinExtension) Shutdown(_ context.Context) error {
+func (*zipkinExtension) Shutdown(context.Context) error {
 	return nil
 }
 

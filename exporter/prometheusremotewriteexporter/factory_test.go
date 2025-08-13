@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 )
 
 // Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -28,7 +30,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	invalidConfig := createDefaultConfig().(*Config)
 	invalidConfig.ClientConfig = confighttp.NewDefaultClientConfig()
 	invalidTLSConfig := createDefaultConfig().(*Config)
-	invalidTLSConfig.ClientConfig.TLSSetting = configtls.ClientConfig{
+	invalidTLSConfig.ClientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "nonexistent file",
 			CertFile: "",
@@ -47,28 +49,28 @@ func Test_createMetricsExporter(t *testing.T) {
 		{
 			"success_case",
 			createDefaultConfig(),
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			false,
 			false,
 		},
 		{
 			"fail_case",
 			nil,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			true,
 			false,
 		},
 		{
 			"invalid_config_case",
 			invalidConfig,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			true,
 			false,
 		},
 		{
 			"invalid_tls_config_case",
 			invalidTLSConfig,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			false,
 			true,
 		},

@@ -39,7 +39,7 @@ func Test_DataPointFunctions(t *testing.T) {
 
 			actual := DataPointFunctions()
 
-			require.Equal(t, len(expected), len(actual))
+			require.Len(t, actual, len(expected))
 			for k := range actual {
 				assert.Contains(t, expected, k)
 			}
@@ -59,9 +59,10 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["copy_metric"] = newCopyMetricFactory()
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
+	expected["convert_summary_quantile_val_to_gauge"] = newConvertSummaryQuantileValToGaugeFactory()
 
 	actual := MetricFunctions()
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}

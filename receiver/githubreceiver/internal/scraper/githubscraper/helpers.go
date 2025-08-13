@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v74/github"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 	defaultReturnItems = 100
 )
 
-func (ghs *githubScraper) getRepos(
+func (*githubScraper) getRepos(
 	ctx context.Context,
 	client graphql.Client,
 	searchQuery string,
@@ -110,7 +110,7 @@ func (ghs *githubScraper) login(
 
 // Returns the default search query string based on input of owner type
 // and GitHubOrg name with a default of archived:false to ignore archived repos
-func genDefaultSearchQuery(ownertype string, ghorg string) string {
+func genDefaultSearchQuery(ownertype, ghorg string) string {
 	return fmt.Sprintf("%s:%s archived:false", ownertype, ghorg)
 }
 
@@ -127,10 +127,10 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 	rClient = github.NewClient(ghs.client)
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
-	if ghs.cfg.ClientConfig.Endpoint != "" {
+	if ghs.cfg.Endpoint != "" {
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
@@ -138,7 +138,7 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		ru := ghs.cfg.ClientConfig.Endpoint
+		ru := ghs.cfg.Endpoint
 		rClient, err = github.NewClient(ghs.client).WithEnterpriseURLs(ru, ru)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
@@ -216,7 +216,7 @@ func (ghs *githubScraper) evalCommits(
 	client graphql.Client,
 	repoName string,
 	branch BranchNode,
-) (additions int, deletions int, age int64, err error) {
+) (additions, deletions int, age int64, err error) {
 	var cursor *string
 	items := defaultReturnItems
 
@@ -299,13 +299,13 @@ func (ghs *githubScraper) getCommitData(
 	return nil, errors.New("GraphQL query did not return the Commit Target")
 }
 
-func getNumPages(p float64, n float64) int {
+func getNumPages(p, n float64) int {
 	numPages := math.Ceil(n / p)
 
 	return int(numPages)
 }
 
 // Get the age/duration between two times in seconds.
-func getAge(start time.Time, end time.Time) int64 {
+func getAge(start, end time.Time) int64 {
 	return int64(end.Sub(start).Seconds())
 }

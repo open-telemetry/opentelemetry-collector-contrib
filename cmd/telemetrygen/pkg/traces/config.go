@@ -4,12 +4,13 @@
 package traces
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/spf13/pflag"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
@@ -18,7 +19,6 @@ type Config struct {
 	NumTraces        int
 	NumChildSpans    int
 	PropagateContext bool
-	ServiceName      string
 	StatusCode       string
 	Batch            bool
 	LoadSize         int
@@ -41,7 +41,6 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.NumTraces, "traces", c.NumTraces, "Number of traces to generate in each worker (ignored if duration is provided)")
 	fs.IntVar(&c.NumChildSpans, "child-spans", c.NumChildSpans, "Number of child spans to generate for each trace")
 	fs.BoolVar(&c.PropagateContext, "marshal", c.PropagateContext, "Whether to marshal trace context via HTTP headers")
-	fs.StringVar(&c.ServiceName, "service", c.ServiceName, "Service name to use")
 	fs.StringVar(&c.StatusCode, "status-code", c.StatusCode, "Status code to use for the spans, one of (Unset, Error, Ok) or the equivalent integer (0,1,2)")
 	fs.BoolVar(&c.Batch, "batch", c.Batch, "Whether to batch traces")
 	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB of string data for each trace generated. This can be used to test traces with large payloads, i.e. when testing the OTLP receiver endpoint max receive size.")
@@ -54,10 +53,10 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/traces"
-	c.NumTraces = 1
+	c.Rate = 1
+	c.TotalDuration = types.MustDurationWithInf("inf")
 	c.NumChildSpans = 1
 	c.PropagateContext = false
-	c.ServiceName = "telemetrygen"
 	c.StatusCode = "0"
 	c.Batch = true
 	c.LoadSize = 0
@@ -66,8 +65,9 @@ func (c *Config) SetDefaults() {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumTraces <= 0 {
-		return fmt.Errorf("either `traces` or `duration` must be greater than 0")
+	if c.TotalDuration.Duration() <= 0 && c.NumTraces <= 0 && !c.TotalDuration.IsInf() {
+		return errors.New("either `traces` or `duration` must be greater than 0")
 	}
+
 	return nil
 }

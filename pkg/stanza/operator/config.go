@@ -5,6 +5,7 @@ package operator // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -40,7 +41,7 @@ func (c *Config) UnmarshalJSON(bytes []byte) error {
 	}
 
 	if typeUnmarshaller.Type == "" {
-		return fmt.Errorf("missing required field 'type'")
+		return errors.New("missing required field 'type'")
 	}
 
 	builderFunc, ok := DefaultRegistry.Lookup(typeUnmarshaller.Type)
@@ -67,7 +68,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(any) error) error {
 
 	typeInterface, ok := rawConfig["type"]
 	if !ok {
-		return fmt.Errorf("missing required field 'type'")
+		return errors.New("missing required field 'type'")
 	}
 
 	typeString, ok := typeInterface.(string)
@@ -91,7 +92,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(any) error) error {
 
 func (c *Config) Unmarshal(component *confmap.Conf) error {
 	if !component.IsSet("type") {
-		return fmt.Errorf("missing required field 'type'")
+		return errors.New("missing required field 'type'")
 	}
 
 	typeInterface := component.Get("type")

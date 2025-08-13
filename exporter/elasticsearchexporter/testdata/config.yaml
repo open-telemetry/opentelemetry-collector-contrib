@@ -8,6 +8,12 @@ elasticsearch/trace:
   headers:
     myheader: test
   traces_index: trace_index
+  traces_dynamic_index:
+    enabled: false
+  logs_dynamic_index:
+    enabled: false
+  metrics_dynamic_index:
+    enabled: false
   pipeline: mypipeline
   user: elastic
   password: search
@@ -26,6 +32,12 @@ elasticsearch/metric:
     insecure: false
   endpoints: [http://localhost:9200]
   metrics_index: my_metric_index
+  traces_dynamic_index:
+    enabled: false
+  logs_dynamic_index:
+    enabled: false
+  metrics_dynamic_index:
+    enabled: false
   timeout: 2m
   headers:
     myheader: test
@@ -49,6 +61,12 @@ elasticsearch/log:
     insecure: false
   endpoints: [http://localhost:9200]
   logs_index: my_log_index
+  traces_dynamic_index:
+    enabled: false
+  logs_dynamic_index:
+    enabled: false
+  metrics_dynamic_index:
+    enabled: false
   timeout: 2m
   headers:
     myheader: test
@@ -89,3 +107,22 @@ elasticsearch/compression_none:
 elasticsearch/compression_gzip:
   endpoint: https://elastic.example.com:9200
   compression: gzip
+elasticsearch/batcher_minmax_size:
+  endpoint: https://elastic.example.com:9200
+  batcher:
+    min_size: 100
+    max_size: 200
+elasticsearch/include_source_on_error:
+  endpoint: https://elastic.example.com:9200
+  include_source_on_error: true
+elasticsearch/metadata_keys:
+  endpoint: https://elastic.example.com:9200
+  metadata_keys:
+    - x-test-1
+    - x-test-2
+elasticsearch/queuebatch_enabled:
+  endpoint: https://elastic.example.com:9200
+  sending_queue:
+    enabled: true
+    num_consumers: 100
+    batch: {}

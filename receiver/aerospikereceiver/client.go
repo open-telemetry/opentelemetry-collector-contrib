@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v7"
+	as "github.com/aerospike/aerospike-client-go/v8"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
@@ -199,7 +199,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Errorf("mapNodeInfoFunc err: %w", err)
+				logger.Errorf("mapNodeInfoFunc err: %v", err)
 			}
 
 			ns := nodeStats{

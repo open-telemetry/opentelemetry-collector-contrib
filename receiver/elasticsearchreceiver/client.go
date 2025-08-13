@@ -49,7 +49,7 @@ type defaultElasticsearchClient struct {
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
 func newElasticsearchClient(ctx context.Context, settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.ClientConfig.ToClient(ctx, h, settings)
+	client, err := c.ToClient(ctx, h, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -230,9 +230,9 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 		req.Header.Add("Authorization", c.authHeader)
 	}
 
-	// See https://www.elastic.co/guide/en/elasticsearch/reference/8.0/api-conventions.html#api-compatibility
-	// the compatible-with=7 should signal to newer version of Elasticsearch to use the v7.x API format
-	req.Header.Add("Accept", "application/vnd.elasticsearch+json; compatible-with=7")
+	// See https://www.elastic.co/docs/reference/elasticsearch/rest-apis/api-conventions#api-compatibility
+	// the compatible-with=8 should signal to newer version of Elasticsearch to use the v8.x API format
+	req.Header.Add("Accept", "application/vnd.elasticsearch+json; compatible-with=8")
 
 	resp, err := c.client.Do(req)
 	if err != nil {

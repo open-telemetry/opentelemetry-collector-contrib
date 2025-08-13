@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -24,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 func TestNewLogsExporter(t *testing.T) {
@@ -45,7 +48,7 @@ func TestNewLogsExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newLogsExporter(exportertest.NewNopSettings(), tt.config)
+			_, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -63,7 +66,7 @@ func TestLogExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *logExporterImp {
-				p, _ := newLogsExporter(exportertest.NewNopSettings(), simpleConfig())
+				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -74,7 +77,7 @@ func TestLogExporterStart(t *testing.T) {
 				// prepare
 				lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
 				require.NoError(t, err)
-				p, _ := newLogsExporter(exportertest.NewNopSettings(), simpleConfig())
+				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -104,7 +107,7 @@ func TestLogExporterStart(t *testing.T) {
 }
 
 func TestLogExporterShutdown(t *testing.T) {
-	p, err := newLogsExporter(exportertest.NewNopSettings(), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -350,8 +353,6 @@ func TestConsumeLogs_ConcurrentResolverChange(t *testing.T) {
 }
 
 func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
-
 	// this test is based on the discussion in the following issue for this exporter:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	// prepare
@@ -384,10 +385,6 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			defer func() {
-				counter.Add(1)
-			}()
-
 			if counter.Load() <= 2 {
 				return resolve[counter.Load()], nil
 			}
@@ -400,11 +397,11 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 			return resolve[2], nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
+	res.resInterval = 100 * time.Millisecond
 
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
 		},
 	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -414,7 +411,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(exportertest.NewNopSettings(), cfg)
+	p, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -425,11 +422,13 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	counter2 := &atomic.Int64{}
 	id1 := "127.0.0.1:4317"
 	id2 := "127.0.0.2:4317"
+	unreachableCh := make(chan struct{})
 	defaultExporters := map[string]*wrappedExporter{
 		id1: newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
 			counter1.Add(1)
+			counter.Add(1)
 			// simulate an unreachable backend
-			time.Sleep(10 * time.Second)
+			<-unreachableCh
 			return nil
 		}), id1),
 		id2: newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
@@ -455,6 +454,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	var waitWG sync.WaitGroup
 	// keep consuming traces every 2ms
 	consumeCh := make(chan struct{})
 	go func(ctx context.Context) {
@@ -465,22 +465,22 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
+				waitWG.Add(1)
 				go func() {
 					assert.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
+					waitWG.Done()
 				}()
 			}
 		}
 	}(ctx)
 
 	// give limited but enough time to rolling updates. otherwise this test
-	// will still pass due to the 10 secs of sleep that is used to simulate
+	// will still pass due to the unreacheableCh that is used to simulate
 	// unreachable backends.
-	go func() {
-		time.Sleep(1 * time.Second)
-		resolverCh <- struct{}{}
-	}()
-
-	<-resolverCh
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		require.Positive(tt, counter1.Load())
+		require.Positive(tt, counter2.Load())
+	}, 1*time.Second, 100*time.Millisecond)
 	cancel()
 	<-consumeCh
 
@@ -488,8 +488,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Positive(t, counter1.Load())
-	require.Positive(t, counter2.Load())
+
+	close(unreachableCh)
+	waitWG.Wait()
 }
 
 func randomLogs() plog.Logs {
@@ -524,7 +525,7 @@ type mockLogsExporter struct {
 	consumeErr    error
 }
 
-func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
+func (*mockLogsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

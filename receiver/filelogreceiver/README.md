@@ -6,7 +6,9 @@
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ffilelog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ffilelog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ffilelog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ffilelog) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_filelog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_filelog&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel) \| Seeking more code owners! |
+| Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -35,6 +37,7 @@ Tails and parses logs from files.
 | `include_file_owner_name`             | `false`                              | Whether to add the file owner name as the attribute `log.file.owner.name`. Not supported for windows.                                                                                                                                                           |
 | `include_file_owner_group_name`       | `false`                              | Whether to add the file group name as the attribute `log.file.owner.group.name`. Not supported for windows.                                                                                                                                                     |
 | `include_file_record_number`          | `false`                              | Whether to add the record number in the file as the attribute `log.file.record_number`.                                                                                                                                                                         |
+| `include_file_record_offset`          | `false`                              | Whether to add the record offset in the file as the attribute `log.file.record_offset`                                                                                                                                                                          |
 | `poll_interval`                       | 200ms                                | The [duration](#time-parameters) between filesystem polls.                                                                                                                                                                                                      |
 | `fingerprint_size`                    | `1kb`                                | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
 | `initial_buffer_size`                 | `16KiB`                              | The initial size of the to read buffer for headers and logs, the buffer will be grown as necessary. Larger values may lead to unnecessary large buffer allocations, and smaller values may lead to lots of copies while growing the buffer.                     |
@@ -62,7 +65,8 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
-| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are `` or `gzip`                                                                          |
+| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
+| `polls_to_archive`                    |  `0`                                    | This settings controls the number of poll cycles to store on disk, rather than being discarded. By default, the receiver will purge the record of readers that have existed for 3 generations. Refer [archiving](#archiving) and [polling](../../pkg/stanza/fileconsumer/design.md#polling) for more details. **Note: This feature is experimental.** |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -86,14 +90,15 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 ### Supported encodings
 
-| Key        | Description
-| ---        | ---                                                              |
-| `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
-| `utf-8`    | UTF-8 encoding                                                   |
-| `utf-16le` | UTF-16 encoding with little-endian byte order                    |
-| `utf-16be` | UTF-16 encoding with big-endian byte order                       |
-| `ascii`    | ASCII encoding                                                   |
-| `big5`     | The Big5 Chinese character encoding                              |
+| Key         | Description
+| ---         | ---                                                              |
+| `nop`       | No encoding validation. Treats the file as a stream of raw bytes |
+| `utf-8`     | UTF-8 encoding                                                   |
+| `utf-8-raw` | UTF-8 encoding without replacing invalid UTF-8 bytes             |
+| `utf-16le`  | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be`  | UTF-16 encoding with big-endian byte order                       |
+| `ascii`     | ASCII encoding                                                   |
+| `big5`      | The Big5 Chinese character encoding                              |
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
 
@@ -218,6 +223,14 @@ Here is some of the information the file log receiver stores:
 
 Exactly how this information is serialized depends on the type of storage being used.
 
+### Archiving
+
+If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory. 
+
+This is useful when `exclude_older_than` setting is used and the user wants the receiver to remember offsets of files for longer period of times. This helps prevent duplication if a file is modified after the `exclude_older_than` duration has passed.
+
+Note that if the `polls_to_archive` setting is used without specifying `storage`, the receiver will revert to the default behavior i.e. purge the record of readers that have existed for 3 generations.
+
 ## Troubleshooting
 
 ### Tracking symlinked files
@@ -229,3 +242,16 @@ Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-te
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
+
+## Feature Gates
+
+### `filelog.decompressFingerprint`
+
+When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
+
+This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+
+Schedule for this feature gate is:
+
+- Introduce as `Alpha` (disabled by default) in `v0.128.0`
+- Move to `Beta` (enabled by default) in `v0.129.0`

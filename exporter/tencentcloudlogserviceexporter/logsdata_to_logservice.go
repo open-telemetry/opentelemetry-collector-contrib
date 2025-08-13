@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
@@ -64,22 +64,21 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 	attrs := resource.Attributes()
 
 	var hostname, serviceName string
-	if host, ok := attrs.Get(conventions.AttributeHostName); ok {
+	if host, ok := attrs.Get(string(conventions.HostNameKey)); ok {
 		hostname = host.AsString()
 	}
 
-	if service, ok := attrs.Get(conventions.AttributeServiceName); ok {
+	if service, ok := attrs.Get(string(conventions.ServiceNameKey)); ok {
 		serviceName = service.AsString()
 	}
 
 	fields := map[string]any{}
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
-			return true
+	for k, v := range attrs.All() {
+		if k == string(conventions.ServiceNameKey) || k == string(conventions.HostNameKey) {
+			continue
 		}
 		fields[k] = v.AsString()
-		return true
-	})
+	}
 	attributeBuffer, err := json.Marshal(fields)
 	if err != nil {
 		return nil
@@ -128,10 +127,9 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
 	fields := map[string]any{}
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		fields[k] = v.AsString()
-		return true
-	})
+	}
 	attributeBuffer, err := json.Marshal(fields)
 	if err != nil {
 		return nil

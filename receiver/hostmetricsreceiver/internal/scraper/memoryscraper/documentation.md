@@ -22,9 +22,9 @@ Bytes of memory in use.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | false |
 
 ## Optional Metrics
 
@@ -44,6 +44,14 @@ An estimate of how much memory is available for starting new applications, witho
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### system.linux.memory.dirty
+
+The amount of dirty memory according to `/proc/meminfo`.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### system.memory.limit
 
 Total bytes of memory available.
@@ -51,6 +59,14 @@ Total bytes of memory available.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### system.memory.page_size
+
+A constant value for the system's configured page size.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
 
 ### system.memory.utilization
 
@@ -62,6 +78,6 @@ Percentage of memory bytes in use.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | false |

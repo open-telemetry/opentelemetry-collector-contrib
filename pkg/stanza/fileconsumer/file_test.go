@@ -22,9 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -881,6 +881,26 @@ func TestFileBatching(t *testing.T) {
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 }
 
+func TestMaxConcurrentFilesOne(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	temp1 := filetest.OpenTemp(t, tempDir)
+	_, err := temp1.WriteString("file 0: written before start\n")
+	require.NoError(t, err)
+
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.MaxConcurrentFiles = 1
+
+	sink := emittest.NewSink()
+	operator := testManagerWithSink(t, cfg, sink)
+	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.poll(context.Background())
+	sink.ExpectTokens(t, []byte("file 0: written before start"))
+}
+
 func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	t.Parallel()
 
@@ -950,6 +970,12 @@ func TestEncodings(t *testing.T) {
 			[]byte{0xc5, '\n'},
 			"utf8",
 			[][]byte{{0xef, 0xbf, 0xbd}},
+		},
+		{
+			"InvalidUTFWithoutReplacement",
+			[]byte{0xc5, '\n'},
+			"utf8-raw",
+			[][]byte{{0xc5}},
 		},
 		{
 			"ValidUTF8",
@@ -1581,77 +1607,60 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	sink.ExpectToken(t, []byte("testlog4"))
 }
 
-func TestIncludeFileRecordNumber(t *testing.T) {
+func TestArchive(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+	}
+
 	t.Parallel()
+	persister := testutil.NewUnscopedMockPersister()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.IncludeFileRecordNumber = true
-	operator, sink := testManager(t, cfg)
+	// store metadata of last 50 poll cycles
+	cfg.PollsToArchive = 50
+	cfg.PollInterval = 50 * time.Millisecond
 
-	// Create a file, then start
-	temp := filetest.OpenTemp(t, tempDir)
+	temp := filetest.OpenTempWithPattern(t, tempDir, "file.log")
 	filetest.WriteString(t, temp, "testlog1\n")
 
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	operator, sink := testManager(t, cfg)
+	require.NoError(t, operator.Start(persister))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
 
 	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName:         filepath.Base(temp.Name()),
-		attrs.LogFileRecordNumber: int64(1),
+		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-}
 
-func TestIncludeFileRecordNumberWithHeaderConfigured(t *testing.T) {
-	t.Parallel()
+	os.Remove(temp.Name())
 
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.IncludeFileRecordNumber = true
-	cfg = cfg.withHeader("^#", "(?P<header_attr>[A-z]+)")
-	operator, sink := testManager(t, cfg)
+	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 50ms and we're waiting 500ms)
+	time.Sleep(500 * time.Millisecond)
 
-	// Create a file, then start
-	temp := filetest.OpenTemp(t, tempDir)
-	filetest.WriteString(t, temp, "#abc\n#xyz: headerValue2\ntestlog1\n")
-
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName:         filepath.Base(temp.Name()),
-		attrs.LogFileRecordNumber: int64(1),
-		"header_attr":             "xyz",
-	})
-}
-
-func TestIncludeFileRecordNumberWithHeaderConfiguredButMissing(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.IncludeFileRecordNumber = true
-	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
-	operator, sink := testManager(t, cfg)
-
-	// Create a file, then start
-	temp := filetest.OpenTemp(t, tempDir)
+	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
 	filetest.WriteString(t, temp, "testlog1\n")
+	filetest.WriteString(t, temp, "testlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName:         filepath.Base(temp.Name()),
-		attrs.LogFileRecordNumber: int64(1),
+	sink.ExpectCall(t, []byte("testlog2"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
+
+	os.Remove(temp.Name())
+
+	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 50ms and we're waiting 500ms)
+	time.Sleep(500 * time.Millisecond)
+
+	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+	filetest.WriteString(t, temp, "testlog2\n")
+	filetest.WriteString(t, temp, "testlog3\n")
+	filetest.WriteString(t, temp, "testlog4\n")
+
+	log3 := emit.Token{Body: []byte("testlog3"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
+	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
+
+	sink.ExpectCalls(t, log3, log4)
 }

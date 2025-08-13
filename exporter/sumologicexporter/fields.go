@@ -35,19 +35,19 @@ func (f fields) string() string {
 
 	returnValue := make([]string, 0, f.orig.Len())
 
-	f.orig.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range f.orig.All() {
 		// Don't add source related attributes to fields as they are handled separately
 		// and are added to the payload either as special HTTP headers or as resources
 		// attributes.
 		if k == attributeKeySourceCategory || k == attributeKeySourceHost || k == attributeKeySourceName {
-			return true
+			continue
 		}
 
 		sv := v.AsString()
 
 		// Skip empty field
-		if len(sv) == 0 {
-			return true
+		if sv == "" {
+			continue
 		}
 
 		key := []byte(k)
@@ -64,8 +64,7 @@ func (f fields) string() string {
 			returnValue,
 			sb.String(),
 		)
-		return true
-	})
+	}
 	slices.Sort(returnValue)
 
 	return strings.Join(returnValue, ", ")
@@ -73,7 +72,7 @@ func (f fields) string() string {
 
 // sanitizeFields sanitize field (key or value) to be correctly parsed by sumologic receiver
 // It modifies the field in place.
-func (f fields) sanitizeField(fld []byte) {
+func (fields) sanitizeField(fld []byte) {
 	for i := 0; i < len(fld); i++ {
 		switch fld[i] {
 		case ',':

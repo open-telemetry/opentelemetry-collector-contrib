@@ -14,9 +14,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
@@ -49,7 +51,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -62,7 +64,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -74,11 +76,11 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Keepalive: &configgrpc.KeepaliveClientConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,
-					},
+					}),
 				},
 				NumWorkers: 3,
 			},
@@ -123,7 +125,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "testdata/test_cert.pem",
 						},
@@ -137,7 +139,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
@@ -152,7 +154,7 @@ func TestCreateTraces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(metadata.Type)
 			tExporter, tErr := createTracesExporter(context.Background(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 			mExporter, mErr := createMetricsExporter(context.Background(), set, tt.config)

@@ -12,14 +12,14 @@ import (
 	"sync"
 	"sync/atomic"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -71,7 +71,7 @@ type Receiver struct {
 	tracer       trace.Tracer
 	obsrecv      *receiverhelper.ObsReport
 	gsettings    configgrpc.ServerConfig
-	authServer   auth.Server
+	authServer   extensionauth.Server
 	newConsumer  func() arrowRecord.ConsumerAPI
 	netReporter  netstats.Interface
 	boundedQueue admission2.Queue
@@ -89,12 +89,12 @@ func New(
 	set receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	gsettings configgrpc.ServerConfig,
-	authServer auth.Server,
+	authServer extensionauth.Server,
 	newConsumer func() arrowRecord.ConsumerAPI,
 	bq admission2.Queue,
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
-	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
+	tracer := set.TracerProvider.Tracer("otel-arrow-receiver")
 	return &Receiver{
 		Consumers:    cs,
 		obsrecv:      obsrecv,
@@ -136,7 +136,7 @@ type headerReceiver struct {
 	tmpHdrs map[string][]string
 }
 
-func newHeaderReceiver(streamCtx context.Context, as auth.Server, includeMetadata bool) *headerReceiver {
+func newHeaderReceiver(streamCtx context.Context, as extensionauth.Server, includeMetadata bool) *headerReceiver {
 	hr := &headerReceiver{
 		includeMetadata: includeMetadata,
 		hasAuthServer:   as != nil,

@@ -29,7 +29,7 @@ func TestDatacenters(t *testing.T) {
 		}
 		dcs, err := client.Datacenters(ctx)
 		require.NoError(t, err)
-		require.NotEmpty(t, dcs, 0)
+		require.NotEmpty(t, dcs)
 	})
 }
 
@@ -46,7 +46,7 @@ func TestDatastores(t *testing.T) {
 		require.NoError(t, err)
 		dss, err := client.Datastores(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.NotEmpty(t, dss, 0)
+		require.NotEmpty(t, dss)
 	})
 }
 
@@ -66,7 +66,7 @@ func TestEmptyDatastores(t *testing.T) {
 		require.NoError(t, err)
 		dss, err := client.Datastores(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.Empty(t, dss, 0)
+		require.Empty(t, dss)
 	}, vpx)
 }
 
@@ -83,7 +83,7 @@ func TestComputeResources(t *testing.T) {
 		require.NoError(t, err)
 		crs, err := client.ComputeResources(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.NotEmpty(t, crs, 0)
+		require.NotEmpty(t, crs)
 	})
 }
 
@@ -101,7 +101,7 @@ func TestComputeResourcesWithStandalone(t *testing.T) {
 		require.NoError(t, err)
 		crs, err := client.ComputeResources(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.NotEmpty(t, crs, 0)
+		require.NotEmpty(t, crs)
 	}, esx)
 }
 
@@ -118,7 +118,7 @@ func TestHostSystems(t *testing.T) {
 		require.NoError(t, err)
 		hss, err := client.HostSystems(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.NotEmpty(t, hss, 0)
+		require.NotEmpty(t, hss)
 	})
 }
 
@@ -139,7 +139,7 @@ func TestEmptyHostSystems(t *testing.T) {
 		require.NoError(t, err)
 		hss, err := client.HostSystems(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.Empty(t, hss, 0)
+		require.Empty(t, hss)
 	}, vpx)
 }
 
@@ -156,7 +156,7 @@ func TestResourcePools(t *testing.T) {
 		require.NoError(t, err)
 		rps, err := client.ResourcePools(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.NotEmpty(t, rps, 0)
+		require.NotEmpty(t, rps)
 	})
 }
 
@@ -173,7 +173,7 @@ func TestVMs(t *testing.T) {
 		require.NoError(t, err)
 		vms, err := client.VMs(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.NotEmpty(t, vms, 0)
+		require.NotEmpty(t, vms)
 	})
 }
 
@@ -192,7 +192,7 @@ func TestEmptyVMs(t *testing.T) {
 		require.NoError(t, err)
 		vms, err := client.VMs(ctx, dc.Reference())
 		require.NoError(t, err)
-		require.Empty(t, vms, 0)
+		require.Empty(t, vms)
 	}, vpx)
 }
 
@@ -214,7 +214,7 @@ func TestPerfMetricsQuery(t *testing.T) {
 		spec := types.PerfQuerySpec{Format: string(types.PerfFormatNormal), IntervalId: int32(20)}
 		metrics, err := client.PerfMetricsQuery(ctx, spec, hostPerfMetricList, []types.ManagedObjectReference{hs.Reference()})
 		require.NoError(t, err)
-		require.NotEmpty(t, metrics.resultsByRef, 0)
+		require.NotEmpty(t, metrics.resultsByRef)
 	}, esx)
 }
 
@@ -246,7 +246,7 @@ func TestResourcePoolInventoryListObjects(t *testing.T) {
 		require.NoError(t, err)
 		rps, err := client.ResourcePoolInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
-		require.NotEmpty(t, rps, 0)
+		require.NotEmpty(t, rps)
 	}, vpx)
 }
 
@@ -267,7 +267,7 @@ func TestVAppInventoryListObjects(t *testing.T) {
 		require.NoError(t, err)
 		vApps, err := client.VAppInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
-		require.NotEmpty(t, vApps, 0)
+		require.NotEmpty(t, vApps)
 	}, vpx)
 }
 
@@ -284,7 +284,7 @@ func TestEmptyVAppInventoryListObjects(t *testing.T) {
 		require.NoError(t, err)
 		vApps, err := client.VAppInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
-		require.Empty(t, vApps, 0)
+		require.Empty(t, vApps)
 	}, vpx)
 }
 

@@ -14,3 +14,8 @@ signaltometrics:
       attributes:
         - key: key.1
       sum: {}
+  profiles:
+    - name: profile.sum
+      attributes:
+        - key: key.1
+      sum: {}

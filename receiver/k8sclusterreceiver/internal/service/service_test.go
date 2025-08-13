@@ -51,5 +51,5 @@ func TestTransform(t *testing.T) {
 			},
 		},
 	}
-	assert.EqualValues(t, wantService, Transform(originalService))
+	assert.Equal(t, wantService, Transform(originalService))
 }

@@ -43,7 +43,12 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
 
-	pr, err := pFactory.CreateMetrics(ctx, prw.params, pConfig, prw.consumer)
+	params := receiver.Settings{
+		ID:                component.NewIDWithName(pFactory.Type(), prw.params.ID.String()),
+		TelemetrySettings: prw.params.TelemetrySettings,
+		BuildInfo:         prw.params.BuildInfo,
+	}
+	pr, err := pFactory.CreateMetrics(ctx, params, pConfig, prw.consumer)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver: %w", err)
 	}
@@ -56,7 +61,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
-		cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
+		cfg.TLS = configtls.ClientConfig{
 			Config: configtls.Config{
 				CAFile:   cfg.TLSConfig.CAFile,
 				CertFile: cfg.TLSConfig.CertFile,
@@ -87,17 +92,17 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	tlsConfig, err := cfg.TLSSetting.LoadTLSConfig(context.Background())
+	tlsConfig, err := cfg.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("tls config is not valid: %w", err)
 	}
 	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.TLSSetting.CAFile,
-			CertFile:           cfg.TLSSetting.CertFile,
-			KeyFile:            cfg.TLSSetting.KeyFile,
-			InsecureSkipVerify: cfg.TLSSetting.InsecureSkipVerify,
+			CAFile:             cfg.TLS.CAFile,
+			CertFile:           cfg.TLS.CertFile,
+			KeyFile:            cfg.TLS.KeyFile,
+			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 		}
 	}
 
@@ -107,7 +112,6 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	for k, v := range cfg.Labels {
 		labels[model.LabelName(k)] = model.LabelValue(v)
 	}
-	labels[model.AddressLabel] = model.LabelValue(cfg.Endpoint)
 
 	jobName := cfg.JobName
 	if jobName == "" {
@@ -122,11 +126,10 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		MetricsPath:     cfg.MetricsPath,
 		Params:          cfg.Params,
 		ServiceDiscoveryConfigs: discovery.Configs{
-			&discovery.StaticConfig{
+			discovery.StaticConfig{
 				{
-					Targets: []model.LabelSet{
-						labels,
-					},
+					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.Endpoint)}},
+					Labels:  labels,
 				},
 			},
 		},

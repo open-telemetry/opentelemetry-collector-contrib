@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -64,8 +65,8 @@ func HashKeyToEncryptionKeyWith(hasher Hasher, key string) ([]byte, error) {
 }
 
 // encrypt encrypts provided byte slice with AES using the encryption key.
-func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
-	f := func(_ Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
+func encrypt(data, encryptionKey []byte) ([]byte, error) {
+	f := func(_ Hasher, data, encryptionKey []byte) ([]byte, error) {
 		block, err := aes.NewCipher(encryptionKey)
 		if err != nil {
 			return nil, err
@@ -91,8 +92,8 @@ func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 }
 
 // decrypt decrypts provided byte slice with AES using the encryptionKey.
-func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
-	f := func(_ Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
+func decrypt(data, encryptionKey []byte) ([]byte, error) {
+	f := func(_ Hasher, data, encryptionKey []byte) ([]byte, error) {
 		block, err := aes.NewCipher(encryptionKey)
 		if err != nil {
 			return nil, fmt.Errorf("unable tocreate new aes cipher: %w", err)
@@ -103,7 +104,7 @@ func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 		}
 		nonceSize := gcm.NonceSize()
 		if nonceSize > len(data) {
-			return nil, fmt.Errorf("unable to decrypt credentials")
+			return nil, errors.New("unable to decrypt credentials")
 		}
 		nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 		plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)

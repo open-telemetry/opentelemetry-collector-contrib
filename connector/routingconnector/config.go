@@ -39,6 +39,8 @@ type Config struct {
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks if the processor configuration is valid.
@@ -79,16 +81,19 @@ func (c *Config) Validate() error {
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
-	// One of "request", "resource", "log" (other OTTL contexts will be added in the future)
+	// One of "request", "resource", "log", "span", "metric", "datapoint".
 	// Optional. Default "resource".
 	Context string `mapstructure:"context"`
 
-	// Statement is a OTTL statement used for making a routing decision.
-	// One of 'Statement' or 'Condition' must be provided.
+	// Statement is an OTTL statement used for making a routing decision.
+	// 'Statement' is disallowed for the "request" context.
+	// For other contexts, 'Statement' or 'Condition' must be provided.
 	Statement string `mapstructure:"statement"`
 
 	// Condition is an OTTL condition used for making a routing decision.
-	// One of 'Statement' or 'Condition' must be provided.
+	// For the "request" context, 'Condition' is required
+	// and must be of the form 'request["<attribute>"] {== | !=} <value>'.
+	// For all other contexts, 'Statement' or 'Condition' must be provided, and must be a valid OTTL condition.
 	Condition string `mapstructure:"condition"`
 
 	// Pipelines contains the list of pipelines to use when the value from the FromAttribute field
@@ -97,4 +102,6 @@ type RoutingTableItem struct {
 	// The routing processor will fail upon the first failure from these pipelines.
 	// Optional.
 	Pipelines []pipeline.ID `mapstructure:"pipelines"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

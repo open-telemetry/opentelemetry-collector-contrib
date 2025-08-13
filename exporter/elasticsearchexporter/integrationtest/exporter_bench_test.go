@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -56,8 +57,8 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettings()
-	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
+	exporterSettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogs(
 		ctx, exporterSettings, runnerCfg.esCfg,
@@ -86,8 +87,8 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettings()
-	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
+	exporterSettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateMetrics(
 		ctx, exporterSettings, runnerCfg.esCfg,
@@ -116,8 +117,8 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettings()
-	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
+	exporterSettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTraces(
 		ctx, exporterSettings, runnerCfg.esCfg,
@@ -168,11 +169,8 @@ func prepareBenchmark(
 	cfg.esCfg.Mapping.Mode = mappingMode
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
-	cfg.esCfg.LogsDynamicIndex.Enabled = false
 	cfg.esCfg.MetricsIndex = TestMetricsIndex
-	cfg.esCfg.MetricsDynamicIndex.Enabled = false
 	cfg.esCfg.TracesIndex = TestTracesIndex
-	cfg.esCfg.TracesDynamicIndex.Enabled = false
 	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
 

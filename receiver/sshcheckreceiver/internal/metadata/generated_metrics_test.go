@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -141,7 +141,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "error.message-val", attrVal.Str())
+					assert.Equal(t, "error.message-val", attrVal.Str())
 				case "sshcheck.sftp_duration":
 					assert.False(t, validatedMetrics["sshcheck.sftp_duration"], "Found a duplicate in the metrics slice: sshcheck.sftp_duration")
 					validatedMetrics["sshcheck.sftp_duration"] = true
@@ -170,7 +170,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "error.message-val", attrVal.Str())
+					assert.Equal(t, "error.message-val", attrVal.Str())
 				case "sshcheck.sftp_status":
 					assert.False(t, validatedMetrics["sshcheck.sftp_status"], "Found a duplicate in the metrics slice: sshcheck.sftp_status")
 					validatedMetrics["sshcheck.sftp_status"] = true

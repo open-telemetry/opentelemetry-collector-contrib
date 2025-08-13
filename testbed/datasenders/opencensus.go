@@ -23,7 +23,7 @@ type ocDataSender struct {
 
 func (ods *ocDataSender) fillConfig(cfg *opencensusexporter.Config) *opencensusexporter.Config {
 	cfg.Endpoint = ods.GetEndpoint().String()
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg
@@ -36,7 +36,7 @@ func (ods *ocDataSender) GenConfigYAMLStr() string {
     endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *ocDataSender) ProtocolName() string {
+func (*ocDataSender) ProtocolName() string {
 	return "opencensus"
 }
 
@@ -62,7 +62,7 @@ func NewOCTraceDataSender(host string, port int) testbed.TraceDataSender {
 func (ote *ocTracesDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTraces(context.Background(), params, cfg)
@@ -96,7 +96,7 @@ func NewOCMetricDataSender(host string, port int) testbed.MetricDataSender {
 func (ome *ocMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetrics(context.Background(), params, cfg)

@@ -4,6 +4,7 @@
 package udp
 
 import (
+	"fmt"
 	"math/rand/v2"
 	"net"
 	"strconv"
@@ -30,7 +31,7 @@ func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.
 		udpInput, ok := op.(*Input)
 		require.True(t, ok)
 
-		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		udpInput.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -61,7 +62,7 @@ func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -82,7 +83,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		udpInput, ok := op.(*Input)
 		require.True(t, ok)
 
-		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		udpInput.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -131,7 +132,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -191,7 +192,7 @@ func TestFailToBind(t *testing.T) {
 		udpInput, ok := op.(*Input)
 		require.True(t, ok)
 
-		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		udpInput.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -222,7 +223,7 @@ func BenchmarkUDPInput(b *testing.B) {
 
 	fakeOutput := testutil.NewFakeOutput(b)
 	udpInput := op.(*Input)
-	udpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
+	udpInput.OutputOperators = []operator.Operator{fakeOutput}
 
 	err = udpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
@@ -251,5 +252,5 @@ func BenchmarkUDPInput(b *testing.B) {
 		<-fakeOutput.Received
 	}
 
-	defer close(done)
+	close(done)
 }

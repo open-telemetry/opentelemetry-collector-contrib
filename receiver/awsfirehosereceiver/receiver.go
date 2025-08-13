@@ -32,7 +32,6 @@ const (
 )
 
 var (
-	errMissingHost              = errors.New("nil host")
 	errInvalidAccessKey         = errors.New("invalid firehose access key")
 	errInHeaderMissingRequestID = errors.New("missing request id in header")
 	errInBodyMissingRequestID   = errors.New("missing request id in body")
@@ -41,6 +40,8 @@ var (
 
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
+	Start(context.Context, component.Host) error
+
 	// Consume unmarshals and consumes the records returned by f.
 	Consume(ctx context.Context, f nextRecordFunc, commonAttributes map[string]string) (int, error)
 }
@@ -116,20 +117,20 @@ var (
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
 func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
-	if host == nil {
-		return errMissingHost
+	if err := fmr.consumer.Start(ctx, host); err != nil {
+		return fmt.Errorf("failed to start consumer: %w", err)
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.ServerConfig.ToListener(ctx)
+	listener, err = fmr.config.ToListener(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start listening for HTTP requests: %w", err)
 	}
 	fmr.shutdownWG.Add(1)
 	go func() {
@@ -245,7 +246,7 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 }
 
 // getCommonAttributes unmarshalls the common attributes from the request header
-func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
+func (*firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
 	attributes := make(map[string]string)
 	if commonAttributes := r.Header.Get(headerFirehoseCommonAttributes); commonAttributes != "" {
 		var fca firehoseCommonAttributes
@@ -275,4 +276,31 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	if _, err = w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))
 	}
+}
+
+// loadEncodingExtension tries to load an available extension for the given encoding.
+func loadEncodingExtension[T any](host component.Host, encoding, signalType string) (T, error) {
+	var zero T
+	extensionID, err := encodingToComponentID(encoding)
+	if err != nil {
+		return zero, err
+	}
+	encodingExtension, ok := host.GetExtensions()[*extensionID]
+	if !ok {
+		return zero, fmt.Errorf("unknown encoding extension %q", encoding)
+	}
+	unmarshaler, ok := encodingExtension.(T)
+	if !ok {
+		return zero, fmt.Errorf("extension %q is not a %s unmarshaler", encoding, signalType)
+	}
+	return unmarshaler, nil
+}
+
+// encodingToComponentID attempts to parse the encoding string as a component ID.
+func encodingToComponentID(encoding string) (*component.ID, error) {
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
+		return nil, fmt.Errorf("invalid component type: %w", err)
+	}
+	return &id, nil
 }

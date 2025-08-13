@@ -109,7 +109,6 @@ receivers:
       scrape_configs:
         - job_name: 'test'
           scrape_interval: 100ms
-          fallback_scrape_protocol: "PrometheusText1.0.0"
           static_configs:
             - targets: [%q]
 
@@ -131,14 +130,14 @@ service:
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.NoError(t, err)
 	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(cfg))
+	_, err = confFile.WriteString(cfg)
 	require.NoError(t, err)
 	// 4. Run the OpenTelemetry Collector.
-	receivers, err := receiver.MakeFactoryMap(prometheusreceiver.NewFactory())
+	receivers, err := otelcol.MakeFactoryMap[receiver.Factory](prometheusreceiver.NewFactory())
 	require.NoError(t, err)
-	exporters, err := exporter.MakeFactoryMap(prometheusremotewriteexporter.NewFactory())
+	exporters, err := otelcol.MakeFactoryMap[exporter.Factory](prometheusremotewriteexporter.NewFactory())
 	require.NoError(t, err)
-	processors, err := processor.MakeFactoryMap(batchprocessor.NewFactory())
+	processors, err := otelcol.MakeFactoryMap[processor.Factory](batchprocessor.NewFactory())
 	require.NoError(t, err)
 
 	factories := otelcol.Factories{

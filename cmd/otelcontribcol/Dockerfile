@@ -1,4 +1,4 @@
-FROM alpine:latest AS prep
+FROM alpine:latest@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 AS prep
 RUN apk --update add ca-certificates
 
 FROM scratch

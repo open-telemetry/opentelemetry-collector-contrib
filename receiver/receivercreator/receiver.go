@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -38,7 +39,7 @@ func newReceiverCreator(params receiver.Settings, cfg *Config) receiver.Metrics 
 // host is an interface that the component.Host passed to receivercreator's Start function must implement
 type host interface {
 	component.Host
-	GetFactory(component.Kind, component.Type) component.Factory
+	hostcapabilities.ComponentFactory
 }
 
 // Start receiver_creator.

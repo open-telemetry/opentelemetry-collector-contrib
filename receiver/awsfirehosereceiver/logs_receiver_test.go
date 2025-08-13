@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 )
@@ -34,51 +36,81 @@ func (rc *logsRecordConsumer) ConsumeLogs(_ context.Context, logs plog.Logs) err
 	return nil
 }
 
-func (rc *logsRecordConsumer) Capabilities() consumer.Capabilities {
+func (*logsRecordConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
 func TestLogsReceiver_Start(t *testing.T) {
-	unmarshalers := map[string]plog.Unmarshaler{
-		"cwlogs":    &cwlog.Unmarshaler{},
-		"otlp_logs": &plog.ProtoUnmarshaler{},
-	}
-
 	testCases := map[string]struct {
+		encoding            string
 		recordType          string
 		wantUnmarshalerType plog.Unmarshaler
 		wantErr             string
 	}{
-		"WithDefaultRecordType": {
+		"WithDefaultEncoding": {
 			wantUnmarshalerType: &cwlog.Unmarshaler{},
 		},
-		"WithSpecifiedRecordType": {
-			recordType:          "otlp_logs",
-			wantUnmarshalerType: &plog.ProtoUnmarshaler{},
+		"WithBuiltinEncoding": {
+			encoding:            "cwlogs",
+			wantUnmarshalerType: &cwlog.Unmarshaler{},
 		},
-		"WithUnknownRecordType": {
-			recordType: "invalid",
-			wantErr:    errUnrecognizedRecordType.Error() + ": recordType = invalid",
+		"WithExtensionEncoding": {
+			encoding:            "otlp_logs",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
+		"WithExtensionEncodingNamed": {
+			encoding:            "otlp_logs/name",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
+		"WithDeprecatedRecordType": {
+			recordType:          "otlp_logs",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
+		"WithUnknownEncoding": {
+			encoding: "invalid",
+			wantErr:  "failed to start consumer: failed to load encoding extension: unknown encoding extension \"invalid\"",
+		},
+		"WithNonLogUnmarshalerExtension": {
+			encoding: "otlp_metrics",
+			wantErr:  `failed to start consumer: failed to load encoding extension: extension "otlp_metrics" is not a logs unmarshaler`,
 		},
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
+			cfg.Encoding = testCase.encoding
 			cfg.RecordType = testCase.recordType
 			got, err := newLogsReceiver(
 				cfg,
-				receivertest.NewNopSettings(),
-				unmarshalers,
+				receivertest.NewNopSettings(metadata.Type),
 				consumertest.NewNop(),
 			)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			require.IsType(t, &firehoseReceiver{}, got)
+			t.Cleanup(func() {
+				require.NoError(t, got.Shutdown(context.Background()))
+			})
+
+			host := hostWithExtensions{
+				extensions: map[component.ID]component.Component{
+					component.MustNewID("otlp_logs"):                 plogUnmarshalerExtension{},
+					component.MustNewIDWithName("otlp_logs", "name"): plogUnmarshalerExtension{},
+					component.MustNewID("otlp_metrics"):              pmetricUnmarshalerExtension{},
+				},
+			}
+
+			err = got.Start(context.Background(), host)
 			if testCase.wantErr != "" {
 				require.EqualError(t, err, testCase.wantErr)
-				require.Nil(t, got)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, got)
-				require.IsType(t, &firehoseReceiver{}, got)
 			}
+
+			assert.IsType(t,
+				testCase.wantUnmarshalerType,
+				got.(*firehoseReceiver).consumer.(*logsConsumer).unmarshaler,
+			)
 		})
 	}
 }

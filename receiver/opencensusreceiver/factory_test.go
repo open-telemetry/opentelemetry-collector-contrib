@@ -13,10 +13,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -29,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -82,7 +84,7 @@ func TestCreateTraces(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
@@ -133,20 +135,20 @@ func TestCreateMetrics(t *testing.T) {
 			cfg: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: defaultNetAddr,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionAge: 60 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             30 * time.Second,
 							PermitWithoutStream: true,
-						},
-					},
+						}),
+					}),
 				},
 			},
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())

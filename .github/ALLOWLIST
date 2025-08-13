@@ -29,17 +29,13 @@ internal/common
 
 # Start unmaintained components list
 
-exporter/kineticaexporter
-exporter/opensearchexporter
+exporter/awscloudwatchlogsexporter
+exporter/carbonexporter
+extension/healthcheckextension
 extension/observer/ecstaskobserver
+processor/routingprocessor
 receiver/awscloudwatchmetricsreceiver
-receiver/couchdbreceiver
-receiver/elasticsearchreceiver
-receiver/memcachedreceiver
-receiver/mysqlreceiver
-receiver/postgresqlreceiver
-receiver/rabbitmqreceiver
-receiver/zookeeperreceiver
-scraper/zookeeperscraper
+receiver/bigipreceiver
+receiver/carbonreceiver
 
 # End unmaintained components list

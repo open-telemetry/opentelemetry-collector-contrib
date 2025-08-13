@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -28,7 +29,7 @@ func createTestFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	args, ok := oArgs.(*optionalFnTestArgs[K])
 
 	if !ok {
-		return nil, fmt.Errorf("TestFactory args must be of type *optionalFnTestArgs[K]")
+		return nil, errors.New("TestFactory args must be of type *optionalFnTestArgs[K]")
 	}
 
 	return hashString(args.Target), nil
@@ -254,7 +255,7 @@ func Test_replacePattern_bad_input(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -282,7 +283,7 @@ func Test_replacePattern_bad_function_input(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -310,7 +311,7 @@ func Test_replacePattern_bad_function_result(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -343,7 +344,7 @@ func Test_replacePattern_get_nil(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -366,11 +367,11 @@ func Test_replacePattern_get_nil(t *testing.T) {
 
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},

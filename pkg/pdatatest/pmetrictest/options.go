@@ -76,8 +76,6 @@ func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 		dataPointSlice = metric.Sum().DataPoints()
 	case pmetric.MetricTypeEmpty:
 		dataPointSlice = pmetric.NewNumberDataPointSlice()
-	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
-		fallthrough
 	default:
 		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
 	}
@@ -155,6 +153,96 @@ func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precisio
 			dataPoint.SetDoubleValue(math.Round(dataPoint.DoubleValue()*factor) / factor)
 		case dataPoint.IntValue() != 0:
 			panic(fmt.Sprintf("integers can not have float precision ignored: %v", dataPoints.At(i)))
+		}
+	}
+}
+
+// IgnoreExemplars is a CompareMetricsOption that clears exemplar fields on all data points.
+func IgnoreExemplars() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskExemplars(expected)
+		maskExemplars(actual)
+	})
+}
+
+func maskExemplars(metrics pmetric.Metrics) {
+	emptyExemplar := pmetric.NewExemplar()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// IgnoreExemplarSlice is a CompareMetricsOption that clears exemplars slice on all data points.
+func IgnoreExemplarSlice() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskExemplarSlice(expected)
+		maskExemplarSlice(actual)
+	})
+}
+
+func maskExemplarSlice(metrics pmetric.Metrics) {
+	emptyExemplarSlice := pmetric.NewExemplarSlice()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				}
+			}
 		}
 	}
 }
@@ -390,8 +478,6 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 				attribute.SetBool(false)
 			case pcommon.ValueTypeInt:
 				attribute.SetInt(0)
-			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
-				fallthrough
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
@@ -413,8 +499,6 @@ func maskHistogramSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlic
 				attribute.SetBool(false)
 			case pcommon.ValueTypeInt:
 				attribute.SetInt(0)
-			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
-				fallthrough
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
@@ -423,7 +507,7 @@ func maskHistogramSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlic
 }
 
 // MatchMetricAttributeValue is a CompareMetricsOption that transforms a metric attribute value based on a regular expression.
-func MatchMetricAttributeValue(attributeName string, pattern string, metricNames ...string) CompareMetricsOption {
+func MatchMetricAttributeValue(attributeName, pattern string, metricNames ...string) CompareMetricsOption {
 	re := regexp.MustCompile(pattern)
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		matchMetricAttributeValue(expected, attributeName, re, metricNames)
@@ -526,7 +610,7 @@ func matchHistogramDataPointSliceAttributeValues(dataPoints pmetric.HistogramDat
 }
 
 // MatchResourceAttributeValue is a CompareMetricsOption that transforms a resource attribute value based on a regular expression.
-func MatchResourceAttributeValue(attributeName string, pattern string) CompareMetricsOption {
+func MatchResourceAttributeValue(attributeName, pattern string) CompareMetricsOption {
 	re := regexp.MustCompile(pattern)
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		matchResourceAttributeValue(expected, attributeName, re)
@@ -568,6 +652,59 @@ func changeMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName 
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
+	}
+}
+
+// ChangeDatapointAttributeValue changes the metric datapoint value with the specified key
+func ChangeDatapointAttributeValue(attributeName string, changeFn func(string) string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		changeMetricsDatapointAttributeValue(expected, attributeName, changeFn)
+		changeMetricsDatapointAttributeValue(actual, attributeName, changeFn)
+	})
+}
+
+func changeMetricsDatapointAttributeValue(metrics pmetric.Metrics, attributeName string, changeFn func(string) string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
+	}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

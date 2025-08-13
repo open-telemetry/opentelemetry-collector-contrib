@@ -22,12 +22,12 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, _ extension.Settings, config component.Config) (extension.Extension, error) {
-	return newExtension(config.(*Config))
+	return newExtension(config.(*Config)), nil
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HandleJSONPayloadAs:  "json",
-		HandleProtoPayloadAs: "json",
+		HandleJSONPayloadAs:  HandleAsJSON,
+		HandleProtoPayloadAs: HandleAsJSON,
 	}
 }

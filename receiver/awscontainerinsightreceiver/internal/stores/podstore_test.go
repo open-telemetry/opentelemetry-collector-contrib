@@ -382,31 +382,31 @@ func TestGetJobNamePrefix(t *testing.T) {
 	assert.Equal(t, "abcd", getJobNamePrefix("abcd.-efg"))
 	assert.Equal(t, "abcdefg", getJobNamePrefix("abcdefg"))
 	assert.Equal(t, "abcdefg", getJobNamePrefix("abcdefg-"))
-	assert.Equal(t, "", getJobNamePrefix(".abcd-efg"))
-	assert.Equal(t, "", getJobNamePrefix(""))
+	assert.Empty(t, getJobNamePrefix(".abcd-efg"))
+	assert.Empty(t, getJobNamePrefix(""))
 }
 
 type mockReplicaSetInfo1 struct{}
 
-func (m *mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
+func (*mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
 type mockK8sClient1 struct{}
 
-func (m *mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return &mockReplicaSetInfo1{}
 }
 
 type mockReplicaSetInfo2 struct{}
 
-func (m *mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
+func (*mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{"DeploymentTest-sftrz2785": "DeploymentTest"}
 }
 
 type mockK8sClient2 struct{}
 
-func (m *mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return &mockReplicaSetInfo2{}
 }
 
@@ -496,7 +496,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
 	expectedOwnerName = rcName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.FullPodNameKey))
+	assert.Empty(t, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Job
@@ -571,7 +571,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 
 type mockPodClient struct{}
 
-func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
+func (*mockPodClient) ListPods() ([]corev1.Pod, error) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
 	return podList, nil

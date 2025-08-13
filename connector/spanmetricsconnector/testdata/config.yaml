@@ -14,7 +14,6 @@ spanmetrics/full:
       buckets: [ 10ms, 100ms, 250ms ]
   exemplars:
     enabled: true
-  dimensions_cache_size: 1500
   resource_metrics_cache_size: 1600
 
   # Additional list of dimensions on top of:
@@ -70,7 +69,7 @@ spanmetrics/exemplars_enabled:
 spanmetrics/exemplars_enabled_with_max_per_datapoint:
   exemplars:
     enabled: true
-    max_per_data_point: 5
+    max_per_data_point: 10
 
 # resource metrics key attributes filter
 spanmetrics/resource_metrics_key_attributes:
@@ -89,3 +88,13 @@ spanmetrics/invalid_delta_timestamp_cache_size:
 
 spanmetrics/default_delta_timestamp_cache_size:
   aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+
+spanmetrics/separate_calls_and_duration_dimensions:
+  histogram:
+    dimensions:
+      - name: http.status_code
+  dimensions:
+    - name: http.method
+      default: GET
+  calls_dimensions:
+    - name: http.url

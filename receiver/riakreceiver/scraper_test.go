@@ -29,7 +29,7 @@ import (
 func TestScraperStart(t *testing.T) {
 	clientConfigNonexistentCA := confighttp.NewDefaultClientConfig()
 	clientConfigNonexistentCA.Endpoint = defaultEndpoint
-	clientConfigNonexistentCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNonexistentCA.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -187,7 +187,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), tc.setupCfg(), receivertest.NewNopSettings())
+			scraper := newScraper(zap.NewNop(), tc.setupCfg(), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {

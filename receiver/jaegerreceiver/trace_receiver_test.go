@@ -27,24 +27,26 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
 var jaegerReceiver = component.MustNewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, Protocols{}, nil, set)
 	require.NoError(t, err)
 	require.NotNil(t, jr)
@@ -84,7 +86,7 @@ func TestReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -105,7 +107,7 @@ func TestReception(t *testing.T) {
 	gotTraces := sink.AllTraces()
 	assert.Len(t, gotTraces, 1)
 
-	assert.EqualValues(t, td, gotTraces[0])
+	assert.Equal(t, td, gotTraces[0])
 }
 
 func TestPortsNotOpen(t *testing.T) {
@@ -114,7 +116,7 @@ func TestPortsNotOpen(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -149,7 +151,7 @@ func TestGRPCReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -182,12 +184,12 @@ func TestGRPCReception(t *testing.T) {
 
 	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
 
-	assert.EqualValues(t, want, gotTraces[0])
+	assert.Equal(t, want, gotTraces[0])
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
-	tlsCreds := &configtls.ServerConfig{
+	tlsCreds := configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
@@ -199,7 +201,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: tlsCreds,
+		TLS: configoptional.Some(tlsCreds),
 	}
 
 	config := Protocols{
@@ -207,7 +209,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -241,7 +243,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
 	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
-	assert.EqualValues(t, want, gotTraces[0])
+	assert.Equal(t, want, gotTraces[0])
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
@@ -252,7 +254,7 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "issaTest")
 	rs.Resource().Attributes().PutBool("bool", true)
 	rs.Resource().Attributes().PutStr("string", "yes")
 	rs.Resource().Attributes().PutInt("int64", 10000000)
@@ -305,8 +307,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1,
 					Duration:      d1,
 					Tags: []model.KeyValue{
-						model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
-						model.Int64(conventions.AttributeOTelStatusCode, int64(ptrace.StatusCodeError)),
+						model.String(string(conventions.OTelStatusDescriptionKey), "Stale indices"),
+						model.Int64(string(conventions.OTelStatusCodeKey), int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 					References: []model.SpanRef{
@@ -324,8 +326,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1.Add(d1),
 					Duration:      d2,
 					Tags: []model.KeyValue{
-						model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
-						model.Int64(conventions.AttributeOTelStatusCode, int64(ptrace.StatusCodeError)),
+						model.String(string(conventions.OTelStatusDescriptionKey), "Frontend crash"),
+						model.Int64(string(conventions.OTelStatusCodeKey), int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 				},
@@ -343,7 +345,7 @@ func TestSampling(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 

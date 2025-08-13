@@ -35,14 +35,14 @@ type dMetricExponentialHistogram struct {
 }
 
 type metricModelExponentialHistogram struct {
-	data []*dMetricExponentialHistogram
+	metricModelCommon[dMetricExponentialHistogram]
 }
 
-func (m *metricModelExponentialHistogram) metricType() pmetric.MetricType {
+func (*metricModelExponentialHistogram) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeExponentialHistogram
 }
 
-func (m *metricModelExponentialHistogram) tableSuffix() string {
+func (*metricModelExponentialHistogram) tableSuffix() string {
 	return "_exponential_histogram"
 }
 
@@ -106,16 +106,4 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 	}
 
 	return nil
-}
-
-func (m *metricModelExponentialHistogram) raw() any {
-	return m.data
-}
-
-func (m *metricModelExponentialHistogram) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelExponentialHistogram) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
 }

@@ -22,6 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
+        - azureblob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -33,6 +34,7 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -43,7 +45,6 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
         - opencensus
         - opensearch
@@ -56,38 +57,54 @@ components:
         - sentry
         - signalfx
         - splunk_hec
+        - stef
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
         - asapclient
+        - awscloudwatchmetricstreams_encoding
+        - awslogs_encoding
         - awsproxy
+        - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googleclientauth
+        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
         - http_forwarder
+        - jaeger_encoding
         - jaegerremotesampling
+        - json_log_encoding
+        - k8s_leader_elector
         - k8s_observer
         - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
+        - otlp_encoding
         - pprof
         - redis_storage
         - sigv4auth
+        - skywalking_encoding
+        - text_encoding
+        - zipkin_encoding
     processor:
         - attributes
         - cumulativetodelta
+        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -98,6 +115,7 @@ components:
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -109,6 +127,11 @@ components:
         - sumologic
         - tail_sampling
         - transform
+    provider:
+        - aes
+        - googlesecretmanager
+        - s3
+        - secretsmanager
     receiver:
         - active_directory_ds
         - aerospike
@@ -133,7 +156,9 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
+        - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
@@ -163,6 +188,7 @@ components:
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
         - ntp
@@ -174,6 +200,7 @@ components:
         - postgresql
         - prometheus
         - prometheus_simple
+        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -181,6 +208,7 @@ components:
         - receiver_creator
         - redis
         - riak
+        - saphana
         - sapm
         - signalfx
         - skywalking
@@ -193,7 +221,9 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
@@ -202,6 +232,7 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
         - zookeeper
     scraper:
@@ -211,6 +242,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

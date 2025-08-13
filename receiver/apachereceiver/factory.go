@@ -55,9 +55,10 @@ func parseResourceAttributes(endpoint string) (string, string, error) {
 	port := u.Port()
 
 	if port == "" {
-		if u.Scheme == "https" {
+		switch u.Scheme {
+		case "https":
 			port = httpsDefaultPort
-		} else if u.Scheme == "http" {
+		case "http":
 			port = httpDefaultPort
 		}
 		// else: unknown scheme, leave port as empty string

@@ -6,6 +6,7 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsplunkenterprise%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsplunkenterprise) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsplunkenterprise%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsplunkenterprise) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_splunkenterprise)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_splunkenterprise&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@shalper2](https://www.github.com/shalper2), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@greatestusername](https://www.github.com/greatestusername) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -20,6 +21,8 @@ jobs.
 
 ## Configuration
 
+**By default the Splunk Enterprise receiver is not configured to gather any metrics other than `splunk.health`**
+
 The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. 
 
 **NOTE:** These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, per configured receiver instance. This means, for example, that if you have three different "indexer" type instances that you would like to pull metrics from you will need to configure three different `splunkenterprise` receivers for each indexer node you wish to monitor.
@@ -32,6 +35,7 @@ The following settings are optional:
 
 * `collection_interval` (default: 10m): The time between scrape attempts.
 * `timeout` (default: 60s): The time the scrape function will wait for a response before returning empty.
+* `build_version_info` (default: false): Elect to run an additional scrape which will retrieve build and version info for the configured endpoints and attach this as attributes to the selected metrics. A value of false will report an empty string as the attribute value but will speed up the receiver slightly.
 
 Example:
 

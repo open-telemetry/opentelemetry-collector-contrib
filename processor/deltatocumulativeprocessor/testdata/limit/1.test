@@ -47,9 +47,9 @@ resourceMetrics:
                 - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "9"}}]}
 
 -- telemetry --
-counter otelcol_deltatocumulative.datapoints.linear:
+counter otelcol_deltatocumulative_datapoints:
   - int: 10
     attr: {}
 
-updown otelcol_deltatocumulative.streams.tracked.linear:
+updown otelcol_deltatocumulative_streams_tracked:
   - int: 10

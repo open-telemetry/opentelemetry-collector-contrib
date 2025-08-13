@@ -46,6 +46,6 @@ func TestContextWithRequestCounter(t *testing.T) {
 	todo := context.TODO()
 	assert.False(t, counterExists(todo), "plain context shouldn't have a counter")
 	assert.Equal(t, uint32(0), GetRequestCount(todo), "plain context should return count of 0")
-	assert.NotPanics(t, func() { IncrementRequestCount(todo) }, todo, "incrementing a plain counter should not panic")
+	assert.NotPanics(t, func() { IncrementRequestCount(todo) }, "incrementing a plain counter should not panic")
 	assert.Equal(t, uint32(0), GetRequestCount(todo), "incrementing a plain counter should do nothing")
 }

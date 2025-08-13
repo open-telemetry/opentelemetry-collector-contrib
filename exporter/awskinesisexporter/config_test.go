@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -96,4 +96,20 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigCheck(t *testing.T) {
 	cfg := (NewFactory()).CreateDefaultConfig()
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestValidate(t *testing.T) {
+	cfg := &Config{
+		QueueSettings: exporterhelper.QueueBatchConfig{
+			Enabled:      true,
+			NumConsumers: -1,
+		},
+	}
+	err := cfg.Validate()
+	assert.ErrorContains(t, err, "queue settings has invalid configuration",
+		"Validate() error = %v, wantErr %v", err, "queue settings has invalid configuration")
+
+	cfg.QueueSettings.Enabled = false
+	err = cfg.Validate()
+	assert.NoError(t, err, "Validate() error = %v, wantNoErr", err)
 }

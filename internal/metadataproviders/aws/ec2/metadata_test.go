@@ -6,7 +6,7 @@ package ec2
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"reflect"
 	"testing"
@@ -104,7 +104,7 @@ func TestGetMetadataFromImds(t *testing.T) {
 				return mockGetMetadataAPI(func(_ context.Context, params *imds.GetMetadataInput, _ ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
 					t.Helper()
 					if params.Path == "" {
-						return nil, fmt.Errorf("Path cannot be empty")
+						return nil, errors.New("Path cannot be empty")
 					}
 					return nil, nil
 				})

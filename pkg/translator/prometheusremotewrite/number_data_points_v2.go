@@ -9,14 +9,13 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
-	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string,
+	resource pcommon.Resource, settings Settings, name string, metadata metadata,
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -27,6 +26,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			name,
 		)
@@ -44,12 +44,12 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 		if pt.Flags().NoRecordedValue() {
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
-		c.addSample(sample, labels)
+		c.addSample(sample, labels, metadata)
 	}
 }
 
 func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string,
+	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string, metadata metadata,
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -59,6 +59,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			name,
 		)
@@ -77,25 +78,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
 		// TODO: properly add exemplars to the TimeSeries
-		c.addSample(sample, lbls)
-
-		if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
-			startTimestamp := pt.StartTimestamp()
-			if startTimestamp != 0 {
-				return
-			}
-
-			createdLabels := make([]prompb.Label, len(lbls))
-			copy(createdLabels, lbls)
-			for i, l := range createdLabels {
-				if l.Name == model.MetricNameLabel {
-					createdLabels[i].Value = name + createdSuffix
-					break
-				}
-			}
-			// TODO: implement this function.
-			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
-		}
+		c.addSample(sample, lbls, metadata)
 	}
 }
 

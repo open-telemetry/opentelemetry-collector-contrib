@@ -22,12 +22,13 @@ const (
 	Metric    ContextID = "metric"
 	DataPoint ContextID = "datapoint"
 	Log       ContextID = "log"
+	Profile   ContextID = "profile"
 )
 
 func (c *ContextID) UnmarshalText(text []byte) error {
 	str := ContextID(strings.ToLower(string(text)))
 	switch str {
-	case Resource, Scope, Span, SpanEvent, Metric, DataPoint, Log:
+	case Resource, Scope, Span, SpanEvent, Metric, DataPoint, Log, Profile:
 		*c = str
 		return nil
 	default:
@@ -42,10 +43,6 @@ type ContextStatements struct {
 	// ErrorMode determines how the processor reacts to errors that occur while processing
 	// this group of statements. When provided, it overrides the default Config ErrorMode.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
-	// `SharedCache` is an experimental feature that may change or be removed in the future.
-	// When enabled, it allows the statements cache to be shared across all other groups that share the cache.
-	// This feature is not configurable via `mapstructure` and cannot be set in configuration files.
-	SharedCache bool `mapstructure:"-"`
 }
 
 func (c ContextStatements) GetStatements() []string {

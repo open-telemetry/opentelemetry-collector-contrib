@@ -47,18 +47,20 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	var toBody toBodyFunc = func(token []byte) any {
 		return textutils.UnsafeBytesAsString(token)
 	}
-	if textutils.IsNop(c.Config.Encoding) {
+	if textutils.IsNop(c.Encoding) {
 		toBody = func(token []byte) any {
 			return token
 		}
 	}
 
 	input := &Input{
-		InputOperator: inputOperator,
-		toBody:        toBody,
+		InputOperator:           inputOperator,
+		toBody:                  toBody,
+		includeFileRecordNumber: c.IncludeFileRecordNumber,
+		includeFileRecordOffset: c.IncludeFileRecordOffset,
 	}
 
-	input.fileConsumer, err = c.Config.Build(set, input.emit)
+	input.fileConsumer, err = c.Config.Build(set, input.emitBatch)
 	if err != nil {
 		return nil, err
 	}

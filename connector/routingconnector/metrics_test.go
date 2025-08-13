@@ -17,7 +17,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
@@ -50,7 +53,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -72,9 +75,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	require.Equal(t, routeConsumer, route.consumer)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -117,7 +118,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -228,7 +229,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -378,7 +379,7 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -429,7 +430,7 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -449,6 +450,12 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 	isResourceB := `attributes["resourceName"] == "resourceB"`
 	isResourceX := `attributes["resourceName"] == "resourceX"`
 	isResourceY := `attributes["resourceName"] == "resourceY"`
+
+	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
+	isResourceString := `IsString(attributes["resourceName"]) == true`
+	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsString")
+	isAttributesMap := `IsMap(attributes) == true`
+	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsMap")
 
 	isMetricE := `name == "metricE"`
 	isMetricF := `name == "metricF"`
@@ -655,6 +662,26 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			expectSink0: pmetric.Metrics{},
 			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "resource/with_converter_function_is_string",
+			cfg: testConfig(
+				withRoute("resource", isResourceString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "resource/with_converter_function_is_map",
+			cfg: testConfig(
+				withRoute("resource", isAttributesMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			expectSinkD: pmetric.Metrics{},
 		},
 		{
@@ -1097,7 +1124,7 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateMetricsToMetrics(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Metrics),
 			)

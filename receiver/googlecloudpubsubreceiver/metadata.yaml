@@ -21,6 +21,16 @@ telemetry:
         The receiver uses the Google Cloud Pub/Sub StreamingPull API and keeps a open connection. The Pub/Sub servers
         recurrently close the connection after a time period to avoid a long-running sticky connection. This metric
         counts the number of the resets that occurred during the lifetime of the container.
+    receiver.googlecloudpubsub.encoding_error:
+      enabled: true
+      description: Number of times a message couldn't be decoded by the configured encoder
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      extended_documentation: |
+        The receiver reads messages from Google Cloud Pub/Sub and tries to decode the message using the configured
+        encoder. Each time a message fails to decoded the counter is increased. 
 
 tests:
   config:

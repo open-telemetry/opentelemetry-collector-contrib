@@ -728,7 +728,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				// since the max value in the exponential histogram is 245
 				// we can assert that the overflow bucket has a count > 0
 				overflow := dp.BucketCounts().At(dp.BucketCounts().Len() - 1)
-				assert.Positive(t, overflow, uint64(0), "overflow bucket count should be > 0")
+				assert.Positive(t, overflow, "overflow bucket count should be > 0")
 				return
 			}
 

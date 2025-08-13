@@ -19,7 +19,7 @@ type Config struct {
 }
 
 func (c Config) Validate() error {
-	if c.ClientConfig.Endpoint == "" {
+	if c.Endpoint == "" {
 		return errors.New("'endpoint' cannot be empty")
 	}
 	return nil

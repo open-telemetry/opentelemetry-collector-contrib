@@ -1,0 +1,20 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+
+capabilities:
+  reports_available_components: false
+  reports_effective_config: false
+  reports_own_metrics: false
+  reports_own_logs: false
+  reports_own_traces: false
+  reports_health: false
+  accepts_remote_config: false
+  reports_remote_config: false
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ./testdata/collector/no_pipelines_fg.sh
+  env:
+    COLLECTOR_BIN: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -48,6 +49,18 @@ const (
 	// TestTracesIndex for the data receiver to work properly
 	TestTracesIndex = "traces-test-idx"
 )
+
+type errElasticsearch struct {
+	httpStatus    int
+	httpDocStatus int
+}
+
+func (e errElasticsearch) Error() string {
+	if e.httpStatus != http.StatusOK {
+		return fmt.Sprintf("Simulated Elasticsearch returned HTTP status %d", e.httpStatus)
+	}
+	return fmt.Sprintf("Simulated Elasticsearch returned document status %d", e.httpDocStatus)
+}
 
 type esDataReceiver struct {
 	testbed.DataReceiverBase
@@ -87,7 +100,7 @@ func withBatcherEnabled(enabled bool) dataReceiverOption {
 
 func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
-		component.MustNewType("mockelasticsearch"),
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
@@ -98,10 +111,10 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.ServerConfig.Endpoint = esURL.Host
+	cfg.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	logsReceiver, err := factory.CreateLogs(context.Background(), set, cfg, lc)
@@ -138,21 +151,21 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
   elasticsearch:
     endpoints: [%s]
     logs_index: %s
-    logs_dynamic_index:
-      enabled: false
     metrics_index: %s
-    metrics_dynamic_index:
-      enabled: false
     traces_index: %s
-    traces_dynamic_index:
-      enabled: false
     sending_queue:
       enabled: true
+      block_on_overflow: true
+    mapping:
+      mode: otel
     retry:
       enabled: true
       initial_interval: 100ms
-      max_interval: 1s
-      max_requests: 10000`,
+      max_interval: 500ms
+      max_retries: 10000
+      retry_on_status: [429, 503]
+    timeout: 10m
+`,
 		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
 	)
 
@@ -171,7 +184,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
 	return cfgFormat + "\n"
 }
 
-func (es *esDataReceiver) ProtocolName() string {
+func (*esDataReceiver) ProtocolName() string {
 	return "elasticsearch"
 }
 
@@ -262,17 +275,6 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		return fmt.Errorf("failed to bind to address %s: %w", es.config.Endpoint, err)
 	}
 
-	// Ideally bulk request items should be converted to the corresponding event record
-	// however, since we only assert count for now there is no need to do the actual
-	// translation. Instead we use a pre-initialized empty models to
-	// reduce allocation impact on tests and benchmarks.
-	emptyLogs := plog.NewLogs()
-	emptyLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	emptyMetrics := pmetric.NewMetrics()
-	emptyMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
-	emptyTrace := ptrace.NewTraces()
-	emptyTrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-
 	r := mux.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -288,25 +290,71 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			fmt.Fprintln(w, "{}")
 			return
 		}
+		var index string
+		var itemCount int
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
-			for k, item := range itemMap {
-				var consumeErr error
-				switch item.Index {
-				case TestLogsIndex:
-					consumeErr = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
-				case TestMetricsIndex:
-					consumeErr = es.metricsConsumer.ConsumeMetrics(context.Background(), emptyMetrics)
-				case TestTracesIndex:
-					consumeErr = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+			for _, item := range itemMap {
+				if index == "" {
+					index = item.Index
+				} else if item.Index != index {
+					panic("mock ES receiver assumes that all documents target the same index")
 				}
-				if consumeErr != nil {
-					response.HasErrors = true
-					item.Status = http.StatusTooManyRequests
+				itemCount++
+			}
+		}
+
+		// Assuming all documents are of the same type (logs, metrics, traces),
+		// create a pdata struct with the same number of records and send them in 1 Consume* call,
+		// i.e. a 1:1 bulk request to Consume* function call correspondence.
+		// This avoids a race condition where Consume* returns an error halfway through processing a bulk request,
+		// causing duplicates in the mock backend because the first N documents went through and an emulated http error
+		// causes the entire request to be retried, including the first N documents.
+		var consumeErr error
+		switch index {
+		case TestLogsIndex:
+			emptyLogs := plog.NewLogs()
+			lr := emptyLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+			for range itemCount {
+				lr.AppendEmpty()
+			}
+			emptyLogs.MarkReadOnly()
+			consumeErr = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+		case TestMetricsIndex:
+			emptyMetrics := pmetric.NewMetrics()
+			dp := emptyMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
+			for range itemCount {
+				dp.AppendEmpty()
+			}
+			emptyMetrics.MarkReadOnly()
+			consumeErr = es.metricsConsumer.ConsumeMetrics(context.Background(), emptyMetrics)
+		case TestTracesIndex:
+			emptyTrace := ptrace.NewTraces()
+			spans := emptyTrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+			for range itemCount {
+				spans.AppendEmpty()
+			}
+			emptyTrace.MarkReadOnly()
+			consumeErr = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+		}
+		if consumeErr != nil {
+			var errES errElasticsearch
+			if !errors.As(consumeErr, &errES) {
+				// panic to surface test logic error because we only expect error of type errElasticsearch
+				panic("unknown consume error")
+			}
+			if errES.httpStatus != http.StatusOK {
+				w.WriteHeader(errES.httpStatus)
+				return
+			}
+			response.HasErrors = true
+			for _, itemMap := range response.Items {
+				for k, item := range itemMap {
+					item.Status = errES.httpDocStatus
 					item.Error.Type = "simulated_es_error"
 					item.Error.Reason = consumeErr.Error()
+					itemMap[k] = item
 				}
-				itemMap[k] = item
 			}
 		}
 		if jsonErr := json.NewEncoder(w).Encode(response); jsonErr != nil {

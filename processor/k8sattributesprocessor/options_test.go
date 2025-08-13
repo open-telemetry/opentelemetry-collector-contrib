@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -41,7 +41,7 @@ func TestWithFilterNode(t *testing.T) {
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, "", p.filters.Node)
+	assert.Empty(t, p.filters.Node)
 
 	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
@@ -58,14 +58,14 @@ func TestWithPassthrough(t *testing.T) {
 func TestEnabledAttributes(t *testing.T) {
 	// This list needs to be updated when the defaults in metadata.yaml are updated.
 	expected := []string{
-		conventions.AttributeK8SNamespaceName,
-		conventions.AttributeK8SPodName,
-		conventions.AttributeK8SPodUID,
+		string(conventions.K8SNamespaceNameKey),
+		string(conventions.K8SPodNameKey),
+		string(conventions.K8SPodUIDKey),
 		metadataPodStartTime,
-		conventions.AttributeK8SDeploymentName,
-		conventions.AttributeK8SNodeName,
-		conventions.AttributeContainerImageName,
-		conventions.AttributeContainerImageTag,
+		string(conventions.K8SDeploymentNameKey),
+		string(conventions.K8SNodeNameKey),
+		string(conventions.ContainerImageNameKey),
+		string(conventions.ContainerImageTagKey),
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
 }
@@ -89,16 +89,14 @@ func TestWithExtractAnnotations(t *testing.T) {
 				{
 					TagName: "tag1",
 					Key:     "key1",
-					Regex:   "field=(?P<value>.+)",
 					From:    kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -228,16 +226,14 @@ func TestWithExtractLabels(t *testing.T) {
 				{
 					TagName: "tag1",
 					Key:     "key1",
-					Regex:   "field=(?P<value>.+)",
 					From:    kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -359,7 +355,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
+	assert.NoError(t, withExtractMetadata(string(conventions.K8SNamespaceNameKey), string(conventions.K8SPodNameKey), string(conventions.K8SPodUIDKey))(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
@@ -611,18 +607,6 @@ func Test_extractFieldRules(t *testing.T) {
 			},
 		},
 		{
-			name: "badregex",
-			args: args{"field", []FieldExtractConfig{
-				{
-					TagName: "name",
-					Key:     "key",
-					Regex:   "[",
-					From:    kube.MetadataFromPod,
-				},
-			}},
-			wantErr: true,
-		},
-		{
 			name: "keyregex-capture-group",
 			args: args{"labels", []FieldExtractConfig{
 				{
@@ -759,6 +743,39 @@ func TestWithExcludes(t *testing.T) {
 			opt := withExcludes(tt.args)
 			assert.NoError(t, opt(p))
 			assert.Equal(t, tt.want, p.podIgnore)
+		})
+	}
+}
+
+func TestOtelAnnotations(t *testing.T) {
+	tests := []struct {
+		name            string
+		enabled         bool
+		wantAnnotations []kube.FieldExtractionRule
+	}{
+		{
+			name: "no otel annotations",
+		},
+		{
+			name:    "with otel annotations",
+			enabled: true,
+			wantAnnotations: []kube.FieldExtractionRule{
+				{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := kubernetesprocessor{}
+			rules := withOtelAnnotations(tt.enabled)
+			err := rules(&p)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantAnnotations, p.rules.Annotations)
 		})
 	}
 }

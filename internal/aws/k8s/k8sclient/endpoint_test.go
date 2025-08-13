@@ -5,11 +5,11 @@ package k8sclient
 
 import (
 	"log"
+	goruntime "runtime"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -376,7 +376,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 		"namespace:default,podName:guestbook-qbdv8":              {"guestbook"},
 	}
 	resultMap := client.PodKeyToServiceNames()
-	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
+	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), resultMap)
 	assert.Equal(t, expectedMap, resultMap)
 }
 
@@ -392,7 +392,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 		NewService("guestbook", "default"):    3,
 	}
 	resultMap := client.ServiceToPodNum()
-	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
+	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), resultMap)
 	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	time.Sleep(2 * time.Millisecond)
@@ -410,10 +410,13 @@ func TestTransformFuncEndpoint(t *testing.T) {
 }
 
 func TestNewEndpointClient(t *testing.T) {
+	if goruntime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38903")
+	}
 	setKubeConfigPath(t)
 	setOption := epSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	fakeClientSet := fake.NewSimpleClientset(endpointsArray...)
+	fakeClientSet := fake.NewClientset(endpointsArray...)
 	client := newEpClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NotNil(t, client)
 	client.shutdown()

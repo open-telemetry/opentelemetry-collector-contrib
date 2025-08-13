@@ -7,7 +7,8 @@ status:
   distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [MikeGoldsmith, djaglowski]
+    active: [MikeGoldsmith]
+    emeritus: [djaglowski]
 
 tests:
   config:

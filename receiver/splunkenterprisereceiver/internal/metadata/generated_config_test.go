@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,6 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: true},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: true},
 					SplunkIndexerRawWriteTime:                   MetricConfig{Enabled: true},
+					SplunkIndexerRollingrestartStatus:           MetricConfig{Enabled: true},
 					SplunkIndexerThroughput:                     MetricConfig{Enabled: true},
 					SplunkIndexesAvgSize:                        MetricConfig{Enabled: true},
 					SplunkIndexesAvgUsage:                       MetricConfig{Enabled: true},
@@ -55,16 +58,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerAvgExecutionLatency:          MetricConfig{Enabled: true},
 					SplunkSchedulerAvgRunTime:                   MetricConfig{Enabled: true},
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: true},
+					SplunkSearchDuration:                        MetricConfig{Enabled: true},
+					SplunkSearchInitiation:                      MetricConfig{Enabled: true},
+					SplunkSearchStatus:                          MetricConfig{Enabled: true},
+					SplunkSearchSuccess:                         MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsAdhocSize:        MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsCompleted:        MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsCompletedSize:    MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsIncomplete:       MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsIncompleteSize:   MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsInvalid:          MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsJobCacheCount:    MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsJobCacheSize:     MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsSavedsearches:    MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsScheduled:        MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsScheduledSize:    MetricConfig{Enabled: true},
 					SplunkTypingQueueRatio:                      MetricConfig{Enabled: true},
 				},
 			},
@@ -87,6 +98,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: false},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: false},
 					SplunkIndexerRawWriteTime:                   MetricConfig{Enabled: false},
+					SplunkIndexerRollingrestartStatus:           MetricConfig{Enabled: false},
 					SplunkIndexerThroughput:                     MetricConfig{Enabled: false},
 					SplunkIndexesAvgSize:                        MetricConfig{Enabled: false},
 					SplunkIndexesAvgUsage:                       MetricConfig{Enabled: false},
@@ -103,16 +115,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerAvgExecutionLatency:          MetricConfig{Enabled: false},
 					SplunkSchedulerAvgRunTime:                   MetricConfig{Enabled: false},
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: false},
+					SplunkSearchDuration:                        MetricConfig{Enabled: false},
+					SplunkSearchInitiation:                      MetricConfig{Enabled: false},
+					SplunkSearchStatus:                          MetricConfig{Enabled: false},
+					SplunkSearchSuccess:                         MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsAdhocSize:        MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsCompleted:        MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsCompletedSize:    MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsIncomplete:       MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsIncompleteSize:   MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsInvalid:          MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsJobCacheCount:    MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsJobCacheSize:     MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsSavedsearches:    MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsScheduled:        MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsScheduledSize:    MetricConfig{Enabled: false},
 					SplunkTypingQueueRatio:                      MetricConfig{Enabled: false},
 				},
 			},
@@ -133,6 +153,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

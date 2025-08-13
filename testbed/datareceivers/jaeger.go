@@ -33,11 +33,11 @@ func NewJaegerDataReceiver(port int) testbed.DataReceiver {
 func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
-	cfg.Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: confignet.TransportTypeTCP},
 	}
 	var err error
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	jr.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
@@ -61,6 +61,6 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
       insecure: true`, jr.Port)
 }
 
-func (jr *jaegerDataReceiver) ProtocolName() string {
+func (*jaegerDataReceiver) ProtocolName() string {
 	return "otlp/jaeger"
 }

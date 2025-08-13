@@ -5,9 +5,11 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"runtime"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -49,20 +51,21 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	nextConsumer      consumer.Traces
-	maxNumTraces      uint64
-	policies          []*policy
-	idToTrace         sync.Map
-	policyTicker      timeutils.TTicker
-	tickerFrequency   time.Duration
-	decisionBatcher   idbatcher.Batcher
-	sampledIDCache    cache.Cache[bool]
-	nonSampledIDCache cache.Cache[bool]
-	deleteChan        chan pcommon.TraceID
-	numTracesOnMap    *atomic.Uint64
-	recordPolicy      bool
-	setPolicyMux      sync.Mutex
-	pendingPolicy     []PolicyCfg
+	nextConsumer       consumer.Traces
+	maxNumTraces       uint64
+	policies           []*policy
+	idToTrace          sync.Map
+	policyTicker       timeutils.TTicker
+	tickerFrequency    time.Duration
+	decisionBatcher    idbatcher.Batcher
+	sampledIDCache     cache.Cache[bool]
+	nonSampledIDCache  cache.Cache[bool]
+	deleteChan         chan pcommon.TraceID
+	numTracesOnMap     *atomic.Uint64
+	recordPolicy       bool
+	setPolicyMux       sync.Mutex
+	pendingPolicy      []PolicyCfg
+	sampleOnFirstMatch bool
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -74,14 +77,19 @@ type spanAndScope struct {
 }
 
 var (
-	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
-	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
-	decisionToAttribute = map[sampling.Decision]metric.MeasurementOption{
-		sampling.Sampled:          attrSampledTrue,
-		sampling.NotSampled:       attrSampledFalse,
-		sampling.InvertNotSampled: attrSampledFalse,
-		sampling.InvertSampled:    attrSampledTrue,
+	attrDecisionSampled    = metric.WithAttributes(attribute.String("sampled", "true"), attribute.String("decision", "sampled"))
+	attrDecisionNotSampled = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "not_sampled"))
+	attrDecisionDropped    = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "dropped"))
+	decisionToAttributes   = map[sampling.Decision]metric.MeasurementOption{
+		sampling.Sampled:          attrDecisionSampled,
+		sampling.NotSampled:       attrDecisionNotSampled,
+		sampling.InvertNotSampled: attrDecisionNotSampled,
+		sampling.InvertSampled:    attrDecisionSampled,
+		sampling.Dropped:          attrDecisionDropped,
 	}
+
+	attrSampledTrue  = metric.WithAttributes(attribute.String("sampled", "true"))
+	attrSampledFalse = metric.WithAttributes(attribute.String("sampled", "false"))
 )
 
 type Option func(*tailSamplingSpanProcessor)
@@ -111,16 +119,17 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:               ctx,
-		set:               set,
-		telemetry:         telemetry,
-		nextConsumer:      nextConsumer,
-		maxNumTraces:      cfg.NumTraces,
-		sampledIDCache:    sampledDecisions,
-		nonSampledIDCache: nonSampledDecisions,
-		logger:            telemetrySettings.Logger,
-		numTracesOnMap:    &atomic.Uint64{},
-		deleteChan:        make(chan pcommon.TraceID, cfg.NumTraces),
+		ctx:                ctx,
+		set:                set,
+		telemetry:          telemetry,
+		nextConsumer:       nextConsumer,
+		maxNumTraces:       cfg.NumTraces,
+		sampledIDCache:     sampledDecisions,
+		nonSampledIDCache:  nonSampledDecisions,
+		logger:             telemetrySettings.Logger,
+		numTracesOnMap:     &atomic.Uint64{},
+		deleteChan:         make(chan pcommon.TraceID, cfg.NumTraces),
+		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -200,6 +209,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 		return getNewCompositePolicy(settings, &cfg.CompositeCfg)
 	case And:
 		return getNewAndPolicy(settings, &cfg.AndCfg)
+	case Drop:
+		return getNewDropPolicy(settings, &cfg.DropCfg)
 	default:
 		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
 	}
@@ -213,12 +224,17 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewAlwaysSample(settings), nil
 	case Latency:
 		lfCfg := cfg.LatencyCfg
-		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
+		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		minValue := nafCfg.MinValue
-		maxValue := nafCfg.MaxValue
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, &minValue, &maxValue, nafCfg.InvertMatch), nil
+		var minValuePtr, maxValuePtr *int64
+		if nafCfg.MinValue != 0 {
+			minValuePtr = &nafCfg.MinValue
+		}
+		if nafCfg.MaxValue != 0 {
+			maxValuePtr = &nafCfg.MaxValue
+		}
+		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, minValuePtr, maxValuePtr, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
@@ -250,7 +266,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 }
 
 type policyMetrics struct {
-	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
+	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped int64
 }
 
 func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error {
@@ -259,11 +275,12 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 
 	cLen := len(cfgs)
 	policies := make([]*policy, 0, cLen)
+	dropPolicies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
 
 	for _, cfg := range cfgs {
 		if cfg.Name == "" {
-			return fmt.Errorf("policy name cannot be empty")
+			return errors.New("policy name cannot be empty")
 		}
 
 		if _, exists := policyNames[cfg.Name]; exists {
@@ -281,14 +298,20 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, cfg.Name)
 		}
 
-		policies = append(policies, &policy{
+		p := &policy{
 			name:      cfg.Name,
 			evaluator: eval,
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
-		})
-	}
+		}
 
-	tsp.policies = policies
+		if cfg.Type == Drop {
+			dropPolicies = append(dropPolicies, p)
+		} else {
+			policies = append(policies, p)
+		}
+	}
+	// Dropped decision takes precedence over all others, therefore we evaluate them first.
+	tsp.policies = slices.Concat(dropPolicies, policies)
 
 	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
 
@@ -351,8 +374,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		decision := tsp.makeDecision(id, trace, &metrics)
 
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision])
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -361,14 +383,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
-		switch decision {
-		case sampling.Sampled:
+		if decision == sampling.Sampled {
 			tsp.releaseSampledTrace(ctx, id, allSpans)
-		case sampling.NotSampled:
+		} else {
 			tsp.releaseNotSampledTrace(id)
 		}
 	}
 
+	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
 	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
 	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
@@ -377,6 +399,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		zap.Int("batch.len", batchLen),
 		zap.Int64("sampled", metrics.decisionSampled),
 		zap.Int64("notSampled", metrics.decisionNotSampled),
+		zap.Int64("dropped", metrics.decisionDropped),
 		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
@@ -390,6 +413,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		sampling.NotSampled:       nil,
 		sampling.InvertSampled:    nil,
 		sampling.InvertNotSampled: nil,
+		sampling.Dropped:          nil,
 	}
 
 	ctx := context.Background()
@@ -410,23 +434,33 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 			continue
 		}
 
-		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttributes[decision])
 
 		if telemetry.IsMetricStatCountSpansSampledEnabled() {
-			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttributes[decision])
 		}
 
 		// We associate the first policy with the sampling decision to understand what policy sampled a span
 		if samplingDecisions[decision] == nil {
 			samplingDecisions[decision] = p
 		}
+
+		// Break early if dropped. This can drastically reduce tick/decision latency.
+		if decision == sampling.Dropped {
+			break
+		}
+		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
+		if tsp.sampleOnFirstMatch && decision == sampling.Sampled {
+			break
+		}
 	}
 
 	var sampledPolicy *policy
 
-	// InvertNotSampled takes precedence over any other decision
 	switch {
-	case samplingDecisions[sampling.InvertNotSampled] != nil:
+	case samplingDecisions[sampling.Dropped] != nil: // Dropped takes precedence
+		finalDecision = sampling.Dropped
+	case samplingDecisions[sampling.InvertNotSampled] != nil: // Then InvertNotSampled
 		finalDecision = sampling.NotSampled
 	case samplingDecisions[sampling.Sampled] != nil:
 		finalDecision = sampling.Sampled
@@ -445,6 +479,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		metrics.decisionSampled++
 	case sampling.NotSampled:
 		metrics.decisionNotSampled++
+	case sampling.Dropped:
+		metrics.decisionDropped++
 	}
 
 	return finalDecision
@@ -459,7 +495,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
+func (*tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
 	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
@@ -492,7 +528,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			metric.WithAttributeSet(attribute.NewSet())
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 				Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
 			continue
@@ -571,7 +606,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 }
 
-func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
+func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

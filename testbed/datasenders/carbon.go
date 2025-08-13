@@ -49,7 +49,7 @@ func (cs *CarbonDataSender) Start() error {
 			Timeout: 5 * time.Second,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
@@ -70,6 +70,6 @@ func (cs *CarbonDataSender) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (cs *CarbonDataSender) ProtocolName() string {
+func (*CarbonDataSender) ProtocolName() string {
 	return "carbon"
 }

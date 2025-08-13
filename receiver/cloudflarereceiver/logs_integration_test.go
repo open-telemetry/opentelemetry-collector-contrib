@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 const (
@@ -51,7 +52,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 
 			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Logs: LogsConfig{
 						Secret:   testSecret,
@@ -62,7 +63,8 @@ func TestReceiverTLSIntegration(t *testing.T) {
 								KeyFile:  filepath.Join("testdata", "cert", "server.key"),
 							},
 						},
-						TimestampField: "EdgeStartTimestamp",
+						TimestampField:  "EdgeStartTimestamp",
+						TimestampFormat: "rfc3339",
 						Attributes: map[string]string{
 							"ClientIP": "http_request.client_ip",
 						},

@@ -64,7 +64,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newProcessesScraper(context.Background(), scrapertest.NewNopSettings(), &Config{
+			scraper := newProcessesScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -177,7 +177,7 @@ var fakeProcessesData = []proc{
 
 type errProcess struct{}
 
-func (e errProcess) Status() ([]string, error) {
+func (errProcess) Status() ([]string, error) {
 	return []string{""}, errors.New("errProcess")
 }
 

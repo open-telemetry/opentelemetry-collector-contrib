@@ -115,10 +115,11 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.Re
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("foo",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"foo",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -134,11 +135,14 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.Re
 						compareAttributes(map[string]string{"method": "post", "port": "6380"}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 		// renaming config converts any metric type to untyped metric, which then gets converted to gauge double type by metric builder
-		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+		{
+			"http_requests_total",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -154,8 +158,9 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.Re
 						compareAttributes(map[string]string{"method": "post", "port": "6381"}),
 					},
 				},
-			}),
-		assertMetricAbsent("rpc_duration_total"),
+			},
+			nil,
+		},
 	}
 	doCompare(t, "scrape-metricRename-1", wantAttributes, m1, e1)
 }
@@ -171,10 +176,11 @@ func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("rpc_duration_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"rpc_duration_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -191,10 +197,9 @@ func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []
 						compareAttributes(map[string]string{"method": "post", "port": "6381"}),
 					},
 				},
-			}),
-		assertMetricAbsent("http_go_threads"),
-		assertMetricAbsent("http_connected_total"),
-		assertMetricAbsent("redis_http_requests_total"),
+			},
+			nil,
+		},
 	}
 	doCompare(t, "scrape-metricRenameKeepAction-1", wantAttributes, m1, e1)
 }
@@ -278,10 +283,11 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.Res
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("http_go_threads",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"http_go_threads",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -290,10 +296,13 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.Res
 						compareAttributes(map[string]string{"foo": "bar"}),
 					},
 				},
-			}),
-		assertMetricPresent("http_connected_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_connected_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -302,10 +311,13 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.Res
 						compareAttributes(map[string]string{"foo": "bar", "status": "ok"}),
 					},
 				},
-			}),
-		assertMetricPresent("redis_http_requests_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"redis_http_requests_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -323,10 +335,13 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.Res
 						compareAttributes(map[string]string{"exported_job": "sample-app", "statusCode": "200", "foo": "bar"}),
 					},
 				},
-			}),
-		assertMetricPresent("rpc_duration_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"rpc_duration_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -345,7 +360,9 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.Res
 						}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompare(t, "scrape-labelRename-1", wantAttributes, m1, e1)
 }
@@ -386,10 +403,11 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("http_go_threads",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"http_go_threads",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -398,10 +416,13 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 						assertAttributesAbsent(),
 					},
 				},
-			}),
-		assertMetricPresent("http_connected_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_connected_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -410,10 +431,13 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 						assertAttributesAbsent(),
 					},
 				},
-			}),
-		assertMetricPresent("redis_http_requests_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"redis_http_requests_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -429,10 +453,13 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 						assertAttributesAbsent(),
 					},
 				},
-			}),
-		assertMetricPresent("rpc_duration_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"rpc_duration_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -448,7 +475,9 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 						assertAttributesAbsent(),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompare(t, "scrape-LabelRenameKeepAction-1", wantAttributes, m1, e1)
 }

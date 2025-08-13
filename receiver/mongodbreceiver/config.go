@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -59,7 +60,27 @@ func (c *Config) Validate() error {
 	return err
 }
 
-func (c *Config) ClientOptions() *options.ClientOptions {
+func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
+	if secondary {
+		// For secondary nodes, create a direct connection
+		clientOptions := options.Client().
+			SetHosts(c.hostlist()).
+			SetDirect(true).
+			SetReadPreference(readpref.SecondaryPreferred())
+
+		if c.Timeout > 0 {
+			clientOptions.SetConnectTimeout(c.Timeout)
+		}
+
+		if c.Username != "" && c.Password != "" {
+			clientOptions.SetAuth(options.Credential{
+				Username: c.Username,
+				Password: string(c.Password),
+			})
+		}
+
+		return clientOptions
+	}
 	clientOptions := options.Client()
 	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)

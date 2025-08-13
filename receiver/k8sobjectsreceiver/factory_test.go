@@ -27,6 +27,8 @@ func TestDefaultConfig(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		ErrorMode:           PropagateError,
+		IncludeInitialState: false,
 	}, rCfg)
 }
 
@@ -40,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err := createLogsReceiver(
-		context.Background(), receivertest.NewNopSettings(),
+		context.Background(), receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.NoError(t, err)
@@ -52,7 +54,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	r, err = createLogsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.NoError(t, err)

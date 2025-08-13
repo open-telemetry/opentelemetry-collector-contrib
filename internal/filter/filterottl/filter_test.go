@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -68,7 +69,7 @@ func Test_NewBoolExprForSpanWithOptions(t *testing.T) {
 		StandardSpanFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottlspan.Option{ottlspan.EnablePathContextNames()},
+		[]ottl.Option[ottlspan.TransformContext]{ottlspan.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -121,7 +122,7 @@ func Test_NewBoolExprForSpanEventWithOptions(t *testing.T) {
 		StandardSpanEventFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottlspanevent.Option{ottlspanevent.EnablePathContextNames()},
+		[]ottl.Option[ottlspanevent.TransformContext]{ottlspanevent.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -174,7 +175,7 @@ func Test_NewBoolExprForMetricWithOptions(t *testing.T) {
 		StandardMetricFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottlmetric.Option{ottlmetric.EnablePathContextNames()},
+		[]ottl.Option[ottlmetric.TransformContext]{ottlmetric.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -227,7 +228,7 @@ func Test_NewBoolExprForDataPointWithOptions(t *testing.T) {
 		StandardDataPointFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottldatapoint.Option{ottldatapoint.EnablePathContextNames()},
+		[]ottl.Option[ottldatapoint.TransformContext]{ottldatapoint.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -280,7 +281,60 @@ func Test_NewBoolExprForLogWithOptions(t *testing.T) {
 		StandardLogFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottllog.Option{ottllog.EnablePathContextNames()},
+		[]ottl.Option[ottllog.TransformContext]{ottllog.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
+}
+
+func Test_NewBoolExprForProfile(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []string
+		expectedResult bool
+	}{
+		{
+			name: "basic",
+			conditions: []string{
+				"true == true",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "multiple",
+			conditions: []string{
+				"false == true",
+				"true == true",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "With Converter",
+			conditions: []string{
+				`IsMatch("test", "pass")`,
+			},
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			profileBoolExpr, err := NewBoolExprForProfile(tt.conditions, StandardProfileFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+			assert.NotNil(t, profileBoolExpr)
+			result, err := profileBoolExpr.Eval(context.Background(), ottlprofile.TransformContext{})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_NewBoolExprForProfileWithOptions(t *testing.T) {
+	_, err := NewBoolExprForProfileWithOptions(
+		[]string{`profile.duration_unix_nano > 0`},
+		StandardProfileFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottl.Option[ottlprofile.TransformContext]{ottlprofile.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -333,7 +387,7 @@ func Test_NewBoolExprForResourceWithOptions(t *testing.T) {
 		StandardResourceFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottlresource.Option{ottlresource.EnablePathContextNames()},
+		[]ottl.Option[ottlresource.TransformContext]{ottlresource.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -394,7 +448,7 @@ func Test_NewBoolExprForScopeWithOptions(t *testing.T) {
 		StandardScopeFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottlscope.Option{ottlscope.EnablePathContextNames()},
+		[]ottl.Option[ottlscope.TransformContext]{ottlscope.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }

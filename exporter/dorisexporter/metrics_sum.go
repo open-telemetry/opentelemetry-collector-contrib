@@ -26,14 +26,14 @@ type dMetricSum struct {
 }
 
 type metricModelSum struct {
-	data []*dMetricSum
+	metricModelCommon[dMetricSum]
 }
 
-func (m *metricModelSum) metricType() pmetric.MetricType {
+func (*metricModelSum) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeSum
 }
 
-func (m *metricModelSum) tableSuffix() string {
+func (*metricModelSum) tableSuffix() string {
 	return "_sum"
 }
 
@@ -76,16 +76,4 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 	}
 
 	return nil
-}
-
-func (m *metricModelSum) raw() any {
-	return m.data
-}
-
-func (m *metricModelSum) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelSum) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
 }

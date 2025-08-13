@@ -4,7 +4,6 @@
 package translation
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"io"
@@ -27,17 +26,21 @@ const (
 //go:embed testdata
 var testdataFiles embed.FS
 
-func LoadTranslationVersion(tb testing.TB, name string) io.Reader {
+func LoadTranslationVersion(tb testing.TB, name string) string {
 	tb.Helper()
 
 	f, err := testdataFiles.Open(path.Join(prefix, name))
 	if !assert.NoError(tb, err, "Must not error when trying to open file") {
-		return bytes.NewBuffer(nil)
+		return ""
 	}
 	tb.Cleanup(func() {
 		assert.NoError(tb, f.Close(), "Must not have issues trying to close static file")
 	})
-	return f
+	data, err := io.ReadAll(f)
+	if !assert.NoError(tb, err, "Must not error when trying to read file") {
+		return ""
+	}
+	return string(data)
 }
 
 func NewExampleLogs(tb testing.TB, at Version) plog.Logs {
@@ -61,10 +64,9 @@ func NewExampleLogs(tb testing.TB, at Version) plog.Logs {
 			l.Attributes().PutStr("application.stacktrace", "func main() { panic('boom') }")
 			l.SetSeverityText("ERROR")
 			l.Body().SetStr("bad program")
-		case Version{1, 5, 0}, Version{1, 4, 0}:
+		case Version{1, 5, 0}, Version{1, 4, 0},
 			// No changes to log during this versions
-			fallthrough
-		case Version{1, 2, 0}:
+			Version{1, 2, 0}:
 			log.Resource().Attributes().PutStr("test.name", tb.Name())
 
 			l := sl.LogRecords().AppendEmpty()

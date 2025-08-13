@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor/internal/metadata"
 )
 
 type testMetric struct {
@@ -281,7 +282,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)
@@ -529,7 +530,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 
 			mgp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)

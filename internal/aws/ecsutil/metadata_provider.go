@@ -6,6 +6,7 @@ package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,7 +40,7 @@ func NewDetectedTaskMetadataProvider(set component.TelemetrySettings) (MetadataP
 	if err != nil {
 		return nil, err
 	} else if endpoint == nil {
-		return nil, fmt.Errorf("unable to detect task metadata endpoint")
+		return nil, errors.New("unable to detect task metadata endpoint")
 	}
 
 	clientSettings := confighttp.NewDefaultClientConfig()

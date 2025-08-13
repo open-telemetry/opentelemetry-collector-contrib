@@ -78,8 +78,17 @@ func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 }
 
 // CanProcess will always return false for an input operator.
-func (i *InputOperator) CanProcess() bool {
+func (*InputOperator) CanProcess() bool {
 	return false
+}
+
+// ProcessBatch will always return an error if called.
+func (i *InputOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
+	i.Logger().Error("Operator received a batch of entries, but can not process")
+	return errors.NewError(
+		"Operator can not process logs.",
+		"Ensure that operator is not configured to receive logs from other operators",
+	)
 }
 
 // Process will always return an error if called.

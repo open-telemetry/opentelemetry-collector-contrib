@@ -22,8 +22,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
@@ -36,7 +37,7 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	attrs := resource.Attributes()
 	attrs.Clear()
 	attrs.EnsureCapacity(4) // service name + 3 attributes
-	attrs.PutStr(conventions.AttributeServiceName, "unittest-resource")
+	attrs.PutStr(string(conventions.ServiceNameKey), "unittest-resource")
 	attrs.PutStr("attr1", "unittest-foo")
 	attrs.PutInt("attr2", 40)
 	attrs.PutDouble("attr3", 3.14)
@@ -77,7 +78,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(metadata.Type)
 			am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 			require.NotNil(t, am)
 
@@ -109,7 +110,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -150,7 +151,8 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SeverityAttribute = "foo"
-	set := exportertest.NewNopSettings()
+	cfg.EventLabels = []string{}
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -195,10 +197,10 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
-
+	cfg.EventLabels = []string{}
 	// make traces & a span
 	traces, span := createTracesAndSpan()
 
@@ -225,8 +227,9 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	cfg.EventLabels = []string{}
 
 	require.NotNil(t, am)
 
@@ -270,21 +273,63 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings())
+	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings(metadata.Type))
 	fmt.Println(lte)
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 }
 
-type (
-	MockServer struct {
-		mockserver            *httptest.Server // this means MockServer aggregates 'httptest.Server', but can it's more like inheritance in C++
-		fooCalledSuccessfully bool             // this is false by default
-	}
-)
+func TestAlertManagerExporterEventLabels(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
 
-func newMockServer(t *testing.T) *MockServer {
-	mock := MockServer{
+	// make traces & a span
+	_, span := createTracesAndSpan()
+
+	// add a span event w/ 3 attributes
+	event := span.Events().AppendEmpty()
+	// add event attributes
+	startTime := pcommon.Timestamp(time.Now().UnixNano())
+	event.SetTimestamp(startTime + 3)
+	event.SetName("unittest-event")
+	attrs := event.Attributes()
+	attrs.Clear()
+	attrs.EnsureCapacity(4)
+	attrs.PutStr("attr1", "unittest-baz")
+	attrs.PutInt("attr2", 42)
+	attrs.PutDouble("attr3", 5.14)
+
+	var events []*alertmanagerEvent
+	events = append(events, &alertmanagerEvent{
+		spanEvent: event,
+		severity:  am.defaultSeverity,
+		traceID:   "0000000000000002",
+		spanID:    "00000002",
+	})
+
+	got := am.convertEventsToAlertPayload(events)
+
+	// test - count of attributes
+	expect := model.Alert{
+		Labels:       model.LabelSet{"severity": "info", "event_name": "unittest-event", "attr1": "unittest-baz", "attr2": "42"},
+		Annotations:  model.LabelSet{"SpanID": "00000002", "TraceID": "0000000000000002", "attr1": "unittest-baz", "attr2": "42", "attr3": "5.14"},
+		GeneratorURL: "opentelemetry-collector",
+	}
+	assert.Equal(t, expect.Labels, got[0].Labels)
+	assert.Equal(t, expect.Annotations, got[0].Annotations)
+	assert.Equal(t, expect.GeneratorURL, got[0].GeneratorURL)
+}
+
+type mockServer struct {
+	mockserver            *httptest.Server // this means mockServer aggregates 'httptest.Server', but can it's more like inheritance in C++
+	fooCalledSuccessfully bool             // this is false by default
+}
+
+func newMockServer(t *testing.T) *mockServer {
+	mock := mockServer{
 		fooCalledSuccessfully: false,
 	}
 
@@ -317,14 +362,20 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	})
 
 	cfg.Endpoint = mock.mockserver.URL
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(context.Background(), componenttest.NewNopHost())
-
 	assert.NoError(t, err)
+	err = am.postAlert(context.Background(), alerts)
+	assert.Contains(t, err.Error(), "failed - \"404 Not Found\"")
 
+	cfg.APIVersion = "v1"
+	am = newAlertManagerExporter(cfg, set.TelemetrySettings)
+	err = am.start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 	err = am.postAlert(context.Background(), alerts)
 	assert.NoError(t, err)
+
 	assert.True(t, mock.fooCalledSuccessfully, "mock server wasn't called")
 }
 
@@ -342,7 +393,7 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -365,7 +416,7 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "testdata/test_cert.pem",
 						},
@@ -378,7 +429,7 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
@@ -392,7 +443,7 @@ func TestClientConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(metadata.Type)
 			am := newAlertManagerExporter(tt.config, set.TelemetrySettings)
 
 			exp, err := newTracesExporter(context.Background(), tt.config, set)

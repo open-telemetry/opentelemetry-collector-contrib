@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
 
 type wantedBody struct {
@@ -58,7 +59,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings())
+			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings(metadata.Type))
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -145,7 +146,7 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings())
+	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings(metadata.Type))
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -165,7 +166,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.ServerConfig.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)
@@ -211,7 +212,7 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	return testMetrics
 }
 
-func assertMetricsAreEqual(t *testing.T, expectedData []pmetric.Metrics, actualData []pmetric.Metrics) {
+func assertMetricsAreEqual(t *testing.T, expectedData, actualData []pmetric.Metrics) {
 	for i := 0; i < len(expectedData); i++ {
 		err := pmetrictest.CompareMetrics(expectedData[i], actualData[i])
 		require.NoError(t, err)

@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -45,16 +46,17 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoint:                "pulsar://localhost:6650",
 				Topic:                   "spans",
 				Encoding:                "otlp-spans",
 				TLSTrustCertsFilePath:   "ca.pem",
-				Authentication:          Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
+				Authentication:          Authentication{TLS: configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"})},
 				MaxConnectionsPerBroker: 1,
 				ConnectionTimeout:       5 * time.Second,
 				OperationTimeout:        30 * time.Second,

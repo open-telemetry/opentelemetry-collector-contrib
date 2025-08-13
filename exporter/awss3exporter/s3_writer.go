@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -28,6 +29,15 @@ func newUploadManager(
 		configOpts = append(configOpts, config.WithRegion(region))
 	}
 
+	switch conf.S3Uploader.RetryMode {
+	case "nop":
+		configOpts = append(configOpts, config.WithRetryer(func() aws.Retryer {
+			return aws.NopRetryer{}
+		}))
+	default:
+		configOpts = append(configOpts, config.WithRetryMode(aws.RetryMode(conf.S3Uploader.RetryMode)))
+	}
+
 	cfg, err := config.LoadDefaultConfig(ctx, configOpts...)
 	if err != nil {
 		return nil, err
@@ -39,12 +49,14 @@ func newUploadManager(
 				DisableHTTPS: conf.S3Uploader.DisableSSL,
 			}
 			o.UsePathStyle = conf.S3Uploader.S3ForcePathStyle
+			o.Retryer = retry.AddWithMaxAttempts(o.Retryer, conf.S3Uploader.RetryMaxAttempts)
+			o.Retryer = retry.AddWithMaxBackoffDelay(o.Retryer, conf.S3Uploader.RetryMaxBackoff)
 		},
 	}
 
 	if conf.S3Uploader.Endpoint != "" {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String((conf.S3Uploader.Endpoint))
+			o.BaseEndpoint = aws.String(conf.S3Uploader.Endpoint)
 		})
 	}
 
@@ -60,17 +72,33 @@ func newUploadManager(
 		})
 	}
 
+	var managerOpts []upload.ManagerOpt
+	if conf.S3Uploader.ACL != "" {
+		managerOpts = append(managerOpts,
+			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
+	}
+
+	var uniqueKeyFunc func() string
+	switch conf.S3Uploader.UniqueKeyFuncName {
+	case "uuidv7":
+		uniqueKeyFunc = upload.GenerateUUIDv7
+	default:
+		uniqueKeyFunc = nil
+	}
+
 	return upload.NewS3Manager(
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
-			PartitionPrefix:     conf.S3Uploader.S3Prefix,
-			PartitionTruncation: conf.S3Uploader.S3Partition,
-			FilePrefix:          conf.S3Uploader.FilePrefix,
-			Metadata:            metadata,
-			FileFormat:          format,
-			Compression:         conf.S3Uploader.Compression,
+			PartitionPrefix: conf.S3Uploader.S3Prefix,
+			PartitionFormat: conf.S3Uploader.S3PartitionFormat,
+			FilePrefix:      conf.S3Uploader.FilePrefix,
+			Metadata:        metadata,
+			FileFormat:      format,
+			Compression:     conf.S3Uploader.Compression,
+			UniqueKeyFunc:   uniqueKeyFunc,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),
+		managerOpts...,
 	), nil
 }

@@ -4,8 +4,6 @@ receivers:
     protocols:
       http:
         endpoint: ${env:OTLP_HTTP_SERVER}
-      grpc:
-        endpoint: ${env:OTLP_GRPC_SERVER}
 
 processors:
   tail_sampling:
@@ -25,7 +23,6 @@ connectors:
 
 exporters:
   debug:
-    verbosity: detailed
   datadog:
     api:
       key: "aaa"

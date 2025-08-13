@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
@@ -31,7 +32,7 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, xconfmap.Validate(cfg))
 
-	scraper := newNginxScraper(receivertest.NewNopSettings(), cfg)
+	scraper := newNginxScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -60,7 +61,7 @@ func TestScraperError(t *testing.T) {
 		rw.WriteHeader(http.StatusNotFound)
 	}))
 	t.Run("404", func(t *testing.T) {
-		sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
+		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
@@ -72,7 +73,7 @@ func TestScraperError(t *testing.T) {
 	})
 
 	t.Run("parse error", func(t *testing.T) {
-		sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
+		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/status",
 			},
@@ -86,10 +87,10 @@ func TestScraperError(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
+	sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Config: configtls.Config{
 					CAFile: "/non/existent",
 				},

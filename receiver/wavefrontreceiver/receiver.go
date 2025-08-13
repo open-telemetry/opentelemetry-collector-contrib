@@ -49,13 +49,15 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 		TCPIdleTimeout: r.cfg.TCPIdleTimeout,
 		Parser: &protocol.Config{
 			Type: "plaintext", // TODO: update after other parsers are implemented for Carbon receiver.
-			Config: &WavefrontParser{
+			Config: &wavefrontParser{
 				ExtractCollectdTags: r.cfg.ExtractCollectdTags,
 			},
 		},
 	}
 
-	carbonReceiver, err := fact.CreateMetrics(ctx, r.set, carbonCfg, r.nextConsumer)
+	set := r.set
+	set.ID = component.NewIDWithName(fact.Type(), r.set.ID.String())
+	carbonReceiver, err := fact.CreateMetrics(ctx, set, carbonCfg, r.nextConsumer)
 	if err != nil {
 		return err
 	}

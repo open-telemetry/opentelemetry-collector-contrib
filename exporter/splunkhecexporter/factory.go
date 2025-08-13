@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -59,17 +59,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterbatcher.NewDefaultConfig()
-	batcherCfg.Enabled = false
-
 	defaultMaxConns := defaultMaxIdleCons
 	defaultIdleConnTimeout := defaultIdleConnTimeout
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
-	clientConfig.IdleConnTimeout = &defaultIdleConnTimeout
-	clientConfig.MaxIdleConnsPerHost = &defaultMaxConns
-	clientConfig.MaxIdleConns = &defaultMaxConns
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout
+	clientConfig.MaxIdleConnsPerHost = defaultMaxConns
+	clientConfig.MaxIdleConns = defaultMaxConns
 	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
 	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 
@@ -80,7 +77,6 @@ func createDefaultConfig() component.Config {
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
-		BatcherConfig:           batcherCfg,
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
@@ -90,13 +86,13 @@ func createDefaultConfig() component.Config {
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
 			Index:      splunk.DefaultIndexLabel,
-			Host:       conventions.AttributeHostName,
+			Host:       string(conventions.HostNameKey),
 		},
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
 			Index:      splunk.DefaultIndexLabel,
-			Host:       conventions.AttributeHostName,
+			Host:       string(conventions.HostNameKey),
 		},
 		HecFields: OtelToHecFields{
 			SeverityText:   splunk.DefaultSeverityTextLabel,
@@ -119,7 +115,7 @@ func createTracesExporter(
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
-
+	showDeprecationWarnings(cfg, set.Logger)
 	c := newTracesClient(set, cfg)
 
 	e, err := exporterhelper.NewTraces(
@@ -133,7 +129,6 @@ func createTracesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
 	if err != nil {
 		return nil, err
@@ -153,7 +148,7 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-
+	showDeprecationWarnings(cfg, set.Logger)
 	c := newMetricsClient(set, cfg)
 
 	e, err := exporterhelper.NewMetrics(
@@ -167,7 +162,6 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
 	if err != nil {
 		return nil, err
@@ -187,7 +181,7 @@ func createLogsExporter(
 	config component.Config,
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
-
+	showDeprecationWarnings(cfg, set.Logger)
 	c := newLogsClient(set, cfg)
 
 	logsExporter, err := exporterhelper.NewLogs(
@@ -201,7 +195,6 @@ func createLogsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
 	if err != nil {
 		return nil, err
@@ -218,4 +211,10 @@ func createLogsExporter(
 	}
 
 	return wrapped, nil
+}
+
+func showDeprecationWarnings(cfg *Config, logger *zap.Logger) {
+	if cfg.DeprecatedBatcher.isSet {
+		logger.Warn("The 'batcher' field is deprecated and will be removed in a future release. Use 'sending_queue::batch' instead.")
+	}
 }

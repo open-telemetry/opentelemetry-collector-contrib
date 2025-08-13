@@ -1,0 +1,111 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789101"
+        - key: cloud.resource_id
+          value:
+            stringValue: arn:aws:wafv2:us-east-1:123456789101:global/webacl/open-telemetry-waf/e3132a63-134d-4da9-a0c4-b166ddd6de6c
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "2.0"
+              - key: aws.waf.terminating_rule.type
+                value:
+                  stringValue: REGULAR
+              - key: aws.waf.terminating_rule.id
+                value:
+                  stringValue: Default_Action
+              - key: aws.waf.action
+                value:
+                  stringValue: ALLOW
+              - key: aws.waf.source.id
+                value:
+                  stringValue: E3DTJP8YLL6OBQ
+              - key: aws.waf.source.name
+                value:
+                  stringValue: CF
+              - key: http.request.header.host
+                value:
+                  stringValue: dsx1234tsajqz63.cloudfront.net
+              - key: http.request.header.user-agent
+                value:
+                  stringValue: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0
+              - key: http.request.header.accept
+                value:
+                  stringValue: image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5
+              - key: http.request.header.accept-language
+                value:
+                  stringValue: en-US,en;q=0.5
+              - key: http.request.header.accept-encoding
+                value:
+                  stringValue: gzip, deflate, br, zstd
+              - key: http.request.header.referer
+                value:
+                  stringValue: https://dsx88tsajqz63.cloudfront.net/
+              - key: http.request.header.sec-fetch-dest
+                value:
+                  stringValue: image
+              - key: http.request.header.sec-fetch-mode
+                value:
+                  stringValue: no-cors
+              - key: http.request.header.sec-fetch-site
+                value:
+                  stringValue: same-origin
+              - key: http.request.header.dnt
+                value:
+                  stringValue: "1"
+              - key: http.request.header.sec-gpc
+                value:
+                  stringValue: "1"
+              - key: http.request.header.priority
+                value:
+                  stringValue: u=6
+              - key: http.request.header.te
+                value:
+                  stringValue: trailers
+              - key: client.address
+                value:
+                  stringValue: 178.84.204.171
+              - key: server.address
+                value:
+                  stringValue: dsx88tsajqz63.cloudfront.net
+              - key: url.path
+                value:
+                  stringValue: /favicon.ico
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: aws.request_id
+                value:
+                  stringValue: n6LHLPqblIh_4qRsVj0940K9LxKyrkiUUE7lyMol1eTptabtlhHiXQ==
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: geo.country.iso_code
+                value:
+                  stringValue: NL
+              - key: tls.client.ja3
+                value:
+                  stringValue: 6f7889b9fb1a62a9577e685c1fcfa919
+              - key: tls.client.ja4
+                value:
+                  stringValue: t13d1717h2_5b57614c22b0_3cbfd9057e0d
+            body: {}
+            spanId: ""
+            timeUnixNano: "1748208718574000000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

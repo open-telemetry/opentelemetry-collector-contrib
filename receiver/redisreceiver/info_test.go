@@ -4,6 +4,7 @@
 package redisreceiver
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -11,6 +12,9 @@ import (
 )
 
 func TestGetUptime(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38955")
+	}
 	svc := newRedisSvc(newFakeClient())
 	info, _ := svc.info()
 	uptime, err := info.getUptimeInSeconds()

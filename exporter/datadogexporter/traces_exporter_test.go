@@ -28,10 +28,11 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -146,17 +147,17 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}))
 	defer tracesServer.Close()
 
-	cfg := Config{
-		API: APIConfig{
+	cfg := datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "fallbackHostname",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: metricsServer.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
 			TracesConfig: datadogconfig.TracesConfig{
 				IgnoreResources: []string{},
@@ -165,7 +166,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}
 
 	assert := assert.New(t)
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -217,12 +218,12 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 		{
 			attrs: map[string]any{
-				semconv.AttributeCloudProvider:      semconv.AttributeCloudProviderAWS,
-				semconv.AttributeCloudPlatform:      semconv.AttributeCloudPlatformAWSECS,
-				semconv.AttributeAWSECSTaskARN:      "example-task-ARN",
-				semconv.AttributeAWSECSTaskFamily:   "example-task-family",
-				semconv.AttributeAWSECSTaskRevision: "example-task-revision",
-				semconv.AttributeAWSECSLaunchtype:   semconv.AttributeAWSECSLaunchtypeFargate,
+				string(semconv.CloudProviderKey):      semconv.CloudProviderAWS.Value.AsString(),
+				string(semconv.CloudPlatformKey):      semconv.CloudPlatformAWSECS.Value.AsString(),
+				string(semconv.AWSECSTaskARNKey):      "example-task-ARN",
+				string(semconv.AWSECSTaskFamilyKey):   "example-task-family",
+				string(semconv.AWSECSTaskRevisionKey): "example-task-revision",
+				string(semconv.AWSECSLaunchtypeKey):   semconv.AWSECSLaunchtypeFargate.Value.AsString(),
 			},
 			host: "",
 			tags: []string{"version:latest", "command:otelcol", "task_arn:example-task-ARN"},
@@ -243,7 +244,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 					host, tags = getHostTags(data)
 				}
 				assert.Equal(tt.host, host)
-				assert.EqualValues(tt.tags, tags)
+				assert.Equal(tt.tags, tags)
 			case <-timeout:
 				t.Fatal("timeout")
 			}
@@ -278,19 +279,19 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}))
 
 	defer server.Close()
-	cfg := Config{
-		API: APIConfig{
+	cfg := datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: metricsServer.URL,
 			},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
@@ -302,7 +303,7 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -324,10 +325,10 @@ func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &Config{}
+	cfg := &datadogconfig.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
-	params := exportertest.NewNopSettings()
+	cfg.Metrics.Endpoint = metricsServer.URL
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -354,27 +355,26 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}()
 	server := testutil.DatadogServerMock()
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		HostMetadata: HostMetadataConfig{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
 			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -385,7 +385,7 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func TestPushTraceDataNewEnvConvention(t *testing.T) {
@@ -408,28 +408,28 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindInternal))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -444,36 +444,50 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
-func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true)
-	if err != nil {
-		t.Fatal(err)
+func TestPushTraceDataOperationAndResourceName(t *testing.T) {
+	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
+		subtestPushTraceDataOperationAndResourceName(t, false)
+	})
+
+	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
+		subtestPushTraceDataOperationAndResourceName(t, true)
+	})
+}
+
+func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationAndResourceNameV2 bool) {
+	t.Helper()
+	if !enableOperationAndResourceNameV2 {
+		prevVal := pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", prevVal))
+		}()
 	}
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindServer))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindServer))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -486,7 +500,11 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	require.NoError(t, proto.Unmarshal(slurp, &traces))
 	assert.Len(t, traces.TracerPayloads, 1)
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
-	assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	if enableOperationAndResourceNameV2 {
+		assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	} else {
+		assert.Equal(t, "opentelemetry.server", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	}
 }
 
 func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
@@ -499,23 +517,23 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -549,11 +567,11 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Empty(t, span.Meta["version"])
 }
 
-func simpleTraces(rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+func simpleTraces(rattrs, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
 	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, sattrs, kind)
 }
 
-func genTraces(traceID pcommon.TraceID, rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+func genTraces(traceID pcommon.TraceID, rattrs, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()

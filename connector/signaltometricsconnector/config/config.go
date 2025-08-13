@@ -6,6 +6,8 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/component"
@@ -17,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
@@ -34,6 +37,9 @@ var defaultHistogramBuckets = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
+// Regex for [key] selector after ExtractGrokPatterns
+var grokPatternKey = regexp.MustCompile(`ExtractGrokPatterns\([^)]*\)\s*\[[^\]]+\]`)
+
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config for the connector. Each configuration field describes the metrics
@@ -42,11 +48,14 @@ type Config struct {
 	Spans      []MetricInfo `mapstructure:"spans"`
 	Datapoints []MetricInfo `mapstructure:"datapoints"`
 	Logs       []MetricInfo `mapstructure:"logs"`
+	Profiles   []MetricInfo `mapstructure:"profiles"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
-	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 {
-		return fmt.Errorf("no configuration provided, at least one should be specified")
+	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 && len(c.Profiles) == 0 {
+		return errors.New("no configuration provided, at least one should be specified")
 	}
 	var multiError error // collect all errors at once
 	if len(c.Spans) > 0 {
@@ -91,6 +100,20 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+	if len(c.Profiles) > 0 {
+		parser, err := ottlprofile.NewParser(
+			customottl.ProfileFuncs(),
+			component.TelemetrySettings{Logger: zap.NewNop()},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser for OTTL profiles: %w", err)
+		}
+		for _, profile := range c.Profiles {
+			if err := validateMetricInfo(profile, parser); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: %w", err))
+			}
+		}
+	}
 	return multiError
 }
 
@@ -101,7 +124,7 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 	if collectorCfg == nil {
 		return nil
 	}
-	if err := collectorCfg.Unmarshal(c, confmap.WithIgnoreUnused()); err != nil {
+	if err := collectorCfg.Unmarshal(c); err != nil {
 		return err
 	}
 	for i, info := range c.Spans {
@@ -116,11 +139,16 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 		info.ensureDefaults()
 		c.Logs[i] = info
 	}
+	for i, info := range c.Profiles {
+		info.ensureDefaults()
+		c.Profiles[i] = info
+	}
 	return nil
 }
 
 type Attribute struct {
 	Key          string `mapstructure:"key"`
+	Optional     bool   `mapstructure:"optional"`
 	DefaultValue any    `mapstructure:"default_value"`
 }
 
@@ -137,6 +165,10 @@ type ExponentialHistogram struct {
 }
 
 type Sum struct {
+	Value string `mapstructure:"value"`
+}
+
+type Gauge struct {
 	Value string `mapstructure:"value"`
 }
 
@@ -158,6 +190,9 @@ type MetricInfo struct {
 	Histogram            *Histogram            `mapstructure:"histogram"`
 	ExponentialHistogram *ExponentialHistogram `mapstructure:"exponential_histogram"`
 	Sum                  *Sum                  `mapstructure:"sum"`
+	Gauge                *Gauge                `mapstructure:"gauge"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (mi *MetricInfo) ensureDefaults() {
@@ -179,7 +214,10 @@ func (mi *MetricInfo) validateAttributes() error {
 	duplicate := map[string]struct{}{}
 	for _, attr := range mi.Attributes {
 		if attr.Key == "" {
-			return fmt.Errorf("attribute key missing")
+			return errors.New("attribute key missing")
+		}
+		if attr.DefaultValue != nil && attr.Optional {
+			return errors.New("only one of default_value or optional should be set")
 		}
 		if _, ok := duplicate[attr.Key]; ok {
 			return fmt.Errorf("duplicate key found in attributes config: %s", attr.Key)
@@ -223,6 +261,15 @@ func (mi *MetricInfo) validateSum() error {
 	return nil
 }
 
+func (mi *MetricInfo) validateGauge() error {
+	if mi.Gauge != nil {
+		if mi.Gauge.Value == "" {
+			return errors.New("value must be defined for gauge metrics")
+		}
+	}
+	return nil
+}
+
 // validateMetricInfo is an utility method validate all supported metric
 // types defined for the metric info including any ottl expressions.
 func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
@@ -238,39 +285,59 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 	if err := mi.validateSum(); err != nil {
 		return fmt.Errorf("sum validation failed: %w", err)
 	}
+	if err := mi.validateGauge(); err != nil {
+		return fmt.Errorf("gauge validation failed: %w", err)
+	}
 
-	// Exactly one metric should be defined
-	var (
-		metricsDefinedCount int
-		statements          []string
-	)
+	// Exactly one metric should be defined. Also, validate OTTL expressions,
+	// note that, here we only evaluate if statements are valid. Check for
+	// required statements are left to the other validations.
+	var metricsDefinedCount int
 	if mi.Histogram != nil {
 		metricsDefinedCount++
 		if mi.Histogram.Count != "" {
-			statements = append(statements, customottl.ConvertToStatement(mi.Histogram.Count))
+			if _, err := parser.ParseValueExpression(mi.Histogram.Count); err != nil {
+				return fmt.Errorf("failed to parse count OTTL expression for explicit histogram: %w", err)
+			}
 		}
-		statements = append(statements, customottl.ConvertToStatement(mi.Histogram.Value))
+		if _, err := parser.ParseValueExpression(mi.Histogram.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for explicit histogram: %w", err)
+		}
 	}
 	if mi.ExponentialHistogram != nil {
 		metricsDefinedCount++
 		if mi.ExponentialHistogram.Count != "" {
-			statements = append(statements, customottl.ConvertToStatement(mi.ExponentialHistogram.Count))
+			if _, err := parser.ParseValueExpression(mi.ExponentialHistogram.Count); err != nil {
+				return fmt.Errorf("failed to parse count OTTL expression for exponential histogram: %w", err)
+			}
 		}
-		statements = append(statements, customottl.ConvertToStatement(mi.ExponentialHistogram.Value))
+		if _, err := parser.ParseValueExpression(mi.ExponentialHistogram.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for exponential histogram: %w", err)
+		}
 	}
 	if mi.Sum != nil {
 		metricsDefinedCount++
-		statements = append(statements, customottl.ConvertToStatement(mi.Sum.Value))
+		if _, err := parser.ParseValueExpression(mi.Sum.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for summary: %w", err)
+		}
+	}
+	if mi.Gauge != nil {
+		metricsDefinedCount++
+		if _, err := parser.ParseValueExpression(mi.Gauge.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
+		}
+		// if ExtractGrokPatterns is used, validate the key selector
+		if strings.Contains(mi.Gauge.Value, "ExtractGrokPatterns") {
+			// Ensure a [key] selector is present after ExtractGrokPatterns
+			if !grokPatternKey.MatchString(mi.Gauge.Value) {
+				return errors.New("ExtractGrokPatterns: a single key selector[key] is required for signal to gauge")
+			}
+		}
 	}
 	if metricsDefinedCount != 1 {
 		return fmt.Errorf("exactly one of the metrics must be defined, %d found", metricsDefinedCount)
 	}
 
-	// validate OTTL statements, note that, here we only evaluate if statements
-	// are valid. Check for required statements is left to the other validations.
-	if _, err := parser.ParseStatements(statements); err != nil {
-		return fmt.Errorf("failed to parse OTTL statements: %w", err)
-	}
 	// validate OTTL conditions
 	if _, err := parser.ParseConditions(mi.Conditions); err != nil {
 		return fmt.Errorf("failed to parse OTTL conditions: %w", err)

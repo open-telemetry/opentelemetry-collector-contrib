@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -755,7 +756,7 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 }
 
 func TestConsumeLogsShouldSucceed(t *testing.T) {
-	createSettings := exportertest.NewNopSettings()
+	createSettings := exportertest.NewNopSettings(metadata.Type)
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}

@@ -6,6 +6,7 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhttpcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fhttpcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhttpcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fhttpcheck) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_httpcheck)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_httpcheck&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@codeboten](https://www.github.com/codeboten), [@VenuEmmadi](https://www.github.com/VenuEmmadi) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -25,6 +26,8 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
+For HTTPS endpoints, the receiver can collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability. Note that TLS certificate metrics are disabled by default and must be explicitly enabled in the metrics configuration.
+
 ## Configuration
 
 The following configuration settings are available:
@@ -41,12 +44,69 @@ Each target has the following properties:
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
+### Optional Metrics
+
+The receiver provides optional metrics that are disabled by default and can be enabled in the configuration:
+
+#### TLS Certificate Monitoring
+
+For HTTPS endpoints, TLS certificate metrics can be enabled:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.tls.cert_remaining:
+        enabled: true
+```
+
+#### Timing Breakdown Metrics
+
+For detailed performance analysis, timing breakdown metrics are available:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.dns.lookup.duration:
+        enabled: true
+      httpcheck.client.connection.duration:
+        enabled: true
+      httpcheck.tls.handshake.duration:
+        enabled: true
+      httpcheck.client.request.duration:
+        enabled: true
+      httpcheck.response.duration:
+        enabled: true
+```
+
+These metrics provide detailed timing information for different phases of the HTTP request:
+- `dns.lookup.duration`: Time spent performing DNS lookup
+- `client.connection.duration`: Time spent establishing TCP connection
+- `tls.handshake.duration`: Time spent performing TLS handshake (HTTPS only)
+- `client.request.duration`: Time spent sending the HTTP request
+- `response.duration`: Time spent receiving the HTTP response
+
 ### Example Configuration
 
 ```yaml
 receivers:
   httpcheck:
     collection_interval: 30s
+    # Optional: Enable timing breakdown metrics
+    metrics:
+      httpcheck.dns.lookup.duration:
+        enabled: true
+      httpcheck.client.connection.duration:
+        enabled: true
+      httpcheck.tls.handshake.duration:
+        enabled: true
+      httpcheck.client.request.duration:
+        enabled: true
+      httpcheck.response.duration:
+        enabled: true
+      httpcheck.tls.cert_remaining:
+        enabled: true
     targets:
       - method: "GET"
         endpoints:
@@ -61,6 +121,8 @@ receivers:
         endpoint: "http://localhost:8080/hello"
         headers:
           Authorization: "Bearer <your_bearer_token>"
+      - method: "GET"
+        endpoint: "https://example.com"
 processors:
   batch:
     send_batch_max_size: 1000

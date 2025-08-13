@@ -44,7 +44,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
 				ExpiryBuffer:   10 * time.Second,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: testCertFile,
@@ -66,7 +66,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
 				ExpiryBuffer: 15 * time.Second,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: "nonexistent.cert",
@@ -100,7 +100,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig(context.Background())
+			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -187,7 +187,7 @@ type testRoundTripper struct {
 	testString string
 }
 
-func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (*testRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 
@@ -222,7 +222,7 @@ func TestRoundTripper(t *testing.T) {
 			}
 
 			assert.NotNil(t, oauth2Authenticator)
-			roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
+			roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 			assert.NoError(t, err)
 
 			// test roundTripper is an OAuth RoundTripper
@@ -266,7 +266,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			perRPCCredentials, err := oauth2Authenticator.perRPCCredentials()
+			perRPCCredentials, err := oauth2Authenticator.PerRPCCredentials()
 			assert.NoError(t, err)
 			// test perRPCCredentials is an grpc OAuthTokenSource
 			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
@@ -294,7 +294,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test for gRPC connections
-	credential, err := oauth2Authenticator.perRPCCredentials()
+	credential, err := oauth2Authenticator.PerRPCCredentials()
 	require.NoError(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
@@ -302,15 +302,15 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.ErrorContains(t, err, serverURL.String())
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	baseRoundTripper := (http.RoundTripper)(transport)
-	roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
+	baseRoundTripper := http.RoundTripper(transport)
+	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 	require.NoError(t, err)
 
 	client := &http.Client{
 		Transport: roundTripper,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", http.NoBody)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)

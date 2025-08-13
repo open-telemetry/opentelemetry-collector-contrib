@@ -19,9 +19,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
@@ -347,10 +347,8 @@ func BenchmarkFileRead(b *testing.B) {
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
 	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, token emit.Token) error {
-		if len(token.Body) != 0 {
-			counter.Add(1)
-		}
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
+		counter.Add(int64(len(tokens)))
 		return nil
 	})
 	b.ReportAllocs()

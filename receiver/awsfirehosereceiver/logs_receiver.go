@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,11 +19,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 )
 
-const defaultLogsRecordType = cwlog.TypeStr
+const defaultLogsEncoding = cwlog.TypeStr
 
 // logsConsumer implements the firehoseConsumer
 // to use a logs consumer and unmarshaler.
 type logsConsumer struct {
+	config   *Config
+	settings receiver.Settings
+
 	// consumer passes the translated logs on to the
 	// next consumer.
 	consumer consumer.Logs
@@ -38,21 +42,12 @@ var _ firehoseConsumer = (*logsConsumer)(nil)
 func newLogsReceiver(
 	config *Config,
 	set receiver.Settings,
-	unmarshalers map[string]plog.Unmarshaler,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	recordType := config.RecordType
-	if recordType == "" {
-		recordType = defaultLogsRecordType
-	}
-	configuredUnmarshaler := unmarshalers[recordType]
-	if configuredUnmarshaler == nil {
-		return nil, fmt.Errorf("%w: recordType = %s", errUnrecognizedRecordType, recordType)
-	}
-
 	c := &logsConsumer{
-		consumer:    nextConsumer,
-		unmarshaler: configuredUnmarshaler,
+		config:   config,
+		settings: set,
+		consumer: nextConsumer,
 	}
 	return &firehoseReceiver{
 		settings: set,
@@ -61,8 +56,32 @@ func newLogsReceiver(
 	}, nil
 }
 
-// Consume uses the configured unmarshaler to unmarshal each record
-// into a plog.Logs and pass it to the next consumer, one record at a time.
+// Start sets the consumer's log unmarshaler to either a built-in
+// unmarshaler or one loaded from an encoding extension.
+func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
+	encoding := c.config.Encoding
+	if encoding == "" {
+		encoding = c.config.RecordType
+		if encoding == "" {
+			encoding = defaultLogsEncoding
+		}
+	}
+	if encoding == cwlog.TypeStr {
+		// TODO: make cwlogs an encoding extension
+		c.unmarshaler = cwlog.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+	} else {
+		unmarshaler, err := loadEncodingExtension[plog.Unmarshaler](host, encoding, "logs")
+		if err != nil {
+			return fmt.Errorf("failed to load encoding extension: %w", err)
+		}
+		c.unmarshaler = unmarshaler
+	}
+	return nil
+}
+
+// Consume uses the configured unmarshaler to deserialize each record,
+// with each resulting plog.Logs being sent to the next consumer as
+// they are unmarshalled.
 func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, commonAttributes map[string]string) (int, error) {
 	for {
 		record, err := nextRecord()

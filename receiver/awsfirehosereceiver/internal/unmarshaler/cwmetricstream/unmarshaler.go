@@ -7,14 +7,18 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -33,13 +37,15 @@ var errInvalidRecords = errors.New("record format invalid")
 // https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
 type Unmarshaler struct {
 	logger *zap.Logger
+
+	buildInfo component.BuildInfo
 }
 
 var _ pmetric.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger, buildInfo}
 }
 
 // UnmarshalMetrics deserializes the record in CloudWatch Metric Stream JSON
@@ -108,6 +114,33 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		maxQ := dp.QuantileValues().AppendEmpty()
 		maxQ.SetQuantile(1)
 		maxQ.SetValue(cwMetric.Value.Max)
+
+		for key, value := range cwMetric.Value.Percentiles {
+			// Only process percentile fields (those starting with 'p')
+			if len(key) < 2 || key[0] != 'p' {
+				continue
+			}
+
+			// Extract the percentile value from the field name (e.g., "p95" -> 0.95)
+			percentileStr := key[1:]
+			percentileInt, err := strconv.ParseFloat(percentileStr, 64)
+			if err != nil {
+				// Skip if we can't parse the percentile value
+				u.logger.Debug(
+					"Unable to parse percentile",
+					zap.String("percentile", percentileStr),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			// Calculate the quantile value (divide by 100 to get a value between 0 and 1)
+			quantile := percentileInt / 100.0
+
+			q := dp.QuantileValues().AppendEmpty()
+			q.SetQuantile(quantile)
+			q.SetValue(value)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		// Treat this as a non-fatal error, and handle the data below.
@@ -122,6 +155,8 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		setResourceAttributes(resourceKey, rm.Resource())
 		scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+		scopeMetrics.Scope().SetName(metadata.ScopeName)
+		scopeMetrics.Scope().SetVersion(u.buildInfo.Version)
 		for _, metric := range metricsMap {
 			metric.MoveTo(scopeMetrics.Metrics().AppendEmpty())
 		}
@@ -130,12 +165,12 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 }
 
 // isValid validates that the cWMetric has been unmarshalled correctly.
-func (u Unmarshaler) isValid(metric cWMetric) bool {
+func (Unmarshaler) isValid(metric cWMetric) bool {
 	return metric.MetricName != "" && metric.Namespace != "" && metric.Unit != "" && metric.Value.isSet
 }
 
 // Type of the serialized messages.
-func (u Unmarshaler) Type() string {
+func (Unmarshaler) Type() string {
 	return TypeStr
 }
 
@@ -149,14 +184,14 @@ type resourceKey struct {
 // setResourceAttributes sets attributes on a pcommon.Resource from a cwMetric.
 func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 	attributes := resource.Attributes()
-	attributes.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attributes.PutStr(conventions.AttributeCloudAccountID, key.accountID)
-	attributes.PutStr(conventions.AttributeCloudRegion, key.region)
+	attributes.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	attributes.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
+	attributes.PutStr(string(conventions.CloudRegionKey), key.region)
 	serviceNamespace, serviceName := toServiceAttributes(key.namespace)
 	if serviceNamespace != "" {
-		attributes.PutStr(conventions.AttributeServiceNamespace, serviceNamespace)
+		attributes.PutStr(string(conventions.ServiceNamespaceKey), serviceNamespace)
 	}
-	attributes.PutStr(conventions.AttributeServiceName, serviceName)
+	attributes.PutStr(string(conventions.ServiceNameKey), serviceName)
 	attributes.PutStr(attributeAWSCloudWatchMetricStreamName, key.metricStreamName)
 }
 
@@ -165,7 +200,7 @@ func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
 	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], conventions.AttributeCloudProviderAWS) {
+	if index != -1 && strings.EqualFold(namespace[:index], conventions.CloudProviderAWS.Value.AsString()) {
 		return namespace[:index], namespace[index+1:]
 	}
 	return "", namespace
@@ -177,7 +212,7 @@ func setDataPointAttributes(m cWMetric, dp pmetric.SummaryDataPoint) {
 	for k, v := range m.Dimensions {
 		switch k {
 		case dimensionInstanceID:
-			attrs.PutStr(conventions.AttributeServiceInstanceID, v)
+			attrs.PutStr(string(conventions.ServiceInstanceIDKey), v)
 		default:
 			attrs.PutStr(k, v)
 		}

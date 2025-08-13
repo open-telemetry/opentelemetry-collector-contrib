@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeState specifies the value state attribute.
@@ -60,6 +60,36 @@ var MapAttributeState = map[string]AttributeState{
 	"system":    AttributeStateSystem,
 	"user":      AttributeStateUser,
 	"wait":      AttributeStateWait,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemCPUFrequency: metricInfo{
+		Name: "system.cpu.frequency",
+	},
+	SystemCPULogicalCount: metricInfo{
+		Name: "system.cpu.logical.count",
+	},
+	SystemCPUPhysicalCount: metricInfo{
+		Name: "system.cpu.physical.count",
+	},
+	SystemCPUTime: metricInfo{
+		Name: "system.cpu.time",
+	},
+	SystemCPUUtilization: metricInfo{
+		Name: "system.cpu.utilization",
+	},
+}
+
+type metricsInfo struct {
+	SystemCPUFrequency     metricInfo
+	SystemCPULogicalCount  metricInfo
+	SystemCPUPhysicalCount metricInfo
+	SystemCPUTime          metricInfo
+	SystemCPUUtilization   metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemCPUFrequency struct {
@@ -427,7 +457,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemCPUFrequency.emit(ils.Metrics())

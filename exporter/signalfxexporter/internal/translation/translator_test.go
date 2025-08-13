@@ -1883,14 +1883,14 @@ func TestTranslateDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mt, err := NewMetricTranslator(tt.trs, 1, make(chan struct{}))
 			require.NoError(t, err)
-			assert.NotEqualValues(t, tt.want, tt.dps)
+			assert.NotEqual(t, tt.want, tt.dps)
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
 			assertEqualPoints(t, got, tt.want, tt.trs[0].Action)
 		})
 	}
 }
 
-func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataPoint, action Action) {
+func assertEqualPoints(t *testing.T, got, want []*sfxpb.DataPoint, action Action) {
 	// Sort metrics to handle not deterministic order from aggregation
 	if action == ActionAggregateMetric {
 		sort.Sort(byContent(want))
@@ -1915,7 +1915,7 @@ func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataP
 		}
 	}
 
-	assert.EqualValues(t, want, got)
+	assert.Equal(t, want, got)
 }
 
 func TestTestTranslateDimension(t *testing.T) {
@@ -2564,7 +2564,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 
 	deltaPts1, ok := m2["system.cpu.delta"]
 	require.True(t, ok)
-	require.Equal(t, len(origPts), len(deltaPts1))
+	require.Len(t, deltaPts1, len(origPts))
 	counterType := sfxpb.MetricType_GAUGE
 	for _, pt := range deltaPts1 {
 		require.Equal(t, &counterType, pt.MetricType)
@@ -2576,7 +2576,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 
 	deltaPts2, ok := m3["system.cpu.delta"]
 	require.True(t, ok)
-	require.Equal(t, len(origPts), len(deltaPts2))
+	require.Len(t, deltaPts2, len(origPts))
 	for _, pt := range deltaPts2 {
 		require.Equal(t, &counterType, pt.MetricType)
 	}
@@ -2990,7 +2990,7 @@ func doubleMD(secondsDelta int64, valueDelta float64) pmetric.Metrics {
 	return wrapMetric(md)
 }
 
-func intMD(secondsDelta int64, valueDelta int64) pmetric.Metrics {
+func intMD(secondsDelta, valueDelta int64) pmetric.Metrics {
 	md := baseMD()
 	ms := md.SetEmptySum()
 	intTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
@@ -3003,7 +3003,7 @@ func intMD(secondsDelta int64, valueDelta int64) pmetric.Metrics {
 	return wrapMetric(md)
 }
 
-func intMDAfterReset(secondsDelta int64, valueDelta int64) pmetric.Metrics {
+func intMDAfterReset(secondsDelta, valueDelta int64) pmetric.Metrics {
 	md := baseMD()
 	ms := md.SetEmptySum()
 	intTS("cpu0", "user", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
@@ -3023,7 +3023,7 @@ func baseMD() pmetric.Metric {
 	return out
 }
 
-func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64, out pmetric.NumberDataPoint) {
+func dblTS(lbl0, lbl1 string, secondsDelta int64, v, valueDelta float64, out pmetric.NumberDataPoint) {
 	out.Attributes().PutStr("cpu", lbl0)
 	out.Attributes().PutStr("state", lbl1)
 	const startTime = 1600000000
@@ -3031,7 +3031,7 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 	out.SetDoubleValue(v + valueDelta)
 }
 
-func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pmetric.NumberDataPoint) {
+func intTS(lbl0, lbl1 string, secondsDelta, v, valueDelta int64, out pmetric.NumberDataPoint) {
 	out.Attributes().PutStr("cpu", lbl0)
 	out.Attributes().PutStr("state", lbl1)
 	const startTime = 1600000000

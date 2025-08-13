@@ -34,6 +34,7 @@ func Test_ruleEval(t *testing.T) {
 		{"basic k8s.node", args{`type == "k8s.node" && kubelet_endpoint_port == 10250`, k8sNodeEndpoint}, true, false},
 		{"relocated type builtin", args{`type == "k8s.node" && typeOf("some string") == "string"`, k8sNodeEndpoint}, true, false},
 		{"pod container", args{`type == "pod.container" and container_image matches "redis"`, podContainerEndpointWithHints}, true, false},
+		{"kafka topics", args{`type == "kafka.topics"`, kafkaTopicsEndpoint}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

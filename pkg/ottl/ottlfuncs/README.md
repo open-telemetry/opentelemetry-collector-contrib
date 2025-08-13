@@ -126,11 +126,12 @@ Examples:
 
 ### flatten
 
-`flatten(target, Optional[prefix], Optional[depth])`
+`flatten(target, Optional[prefix], Optional[depth], Optional[resolveConflicts])`
 
 The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
 
-`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int, `resolveConflicts` resolves the potential conflicts in the map keys by adding a number suffix starting with `0` from the first duplicated key.
+
 
 For example, the following map
 
@@ -199,6 +200,46 @@ the result would be
 
 A `depth` of `0` means that no flattening will occur.
 
+If `resolveConflicts` is set to `true`, conflicts within the map will be resolved
+
+```json
+{
+  "address": {
+    "street": {
+      "number": "first",
+    },
+    "house": "1234",
+  },
+  "address.street": {
+    "number": ["second", "third"],
+  },
+  "address.street.number": "fourth",
+  "occupants": [
+    "user 1",
+    "user 2",
+  ],
+}
+```
+
+the result would be
+
+```json
+{
+  "address.street.number":   "first",
+  "address.house":           "1234",
+  "address.street.number.0": "second",
+  "address.street.number.1": "third",
+  "occupants":               "user 1",
+  "occupants.0":             "user 2",
+  "address.street.number.2": "fourth",
+}
+
+```
+
+**Note:**
+Please note that when the `resolveConflicts` parameter is set to `true`, the flattening of arrays is managed differently.
+With conflict resolution enabled, arrays and any potentially conflicting keys are handled in a standardized manner. Specifically, a `.<number>` suffix is added to the first conflicting key, with the `number` incrementing for each additional conflict.
+
 Examples:
 
 - `flatten(resource.attributes)`
@@ -208,6 +249,9 @@ Examples:
 
 
 - `flatten(log.body, depth=2)`
+
+
+- `flatten(body, resolveConflicts=true)`
 
 
 ### keep_keys
@@ -412,6 +456,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
 - [Concat](#concat)
+- [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
 - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
 - [ConvertTextToElementsXML](#converttexttoelementsxml)
@@ -424,6 +469,8 @@ Available Converters:
 - [Format](#format)
 - [FormatTime](#formattime)
 - [GetXML](#getxml)
+- [HasPrefix](#hasprefix)
+- [HasSuffix](#hassuffix)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
@@ -437,22 +484,28 @@ Available Converters:
 - [IsMatch](#ismatch)
 - [IsList](#islist)
 - [IsString](#isstring)
+- [Keys](#keys)
 - [Len](#len)
 - [Log](#log)
+- [IsValidLuhn](#isvalidluhn)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [Murmur3Hash](#murmur3hash)
+- [Murmur3Hash128](#murmur3hash128)
 - [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
+- [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
+- [ProfileID](#profileid)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -480,6 +533,9 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [UUIDv7](#UUIDv7)
+- [Values](#values)
+- [Weekday](#weekday)
 - [Year](#year)
 
 ### Base64Decode (Deprecated)
@@ -506,7 +562,7 @@ Examples:
 The `Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
 
 `value` is a valid encoded string or byte array.
-`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml).
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml) or one of `base64`, `base64-raw`, `base64-url` or `base64-raw-url`.
 
 Examples:
 
@@ -534,6 +590,23 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
+
+### ContainsValue
+
+`ContainsValue(target, item)`
+
+The `ContainsValue` Converter checks if an item is present in a given slice `target` using OTTL [comparison rules](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/LANGUAGE.md#comparison-rules). It returns `true` if the `item` is found, and `false` otherwise.
+
+`target` is a slice of any type described in the OTTL comparison rules.
+
+`item` is the value to check for in the `target`.
+
+Examples:
+
+- `ContainsValue(attributes["tags"], "staging")`
+- `ContainsValue([1, 2, 3, 4, 5], 3)`
+- `ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`
+- `ContainsValue(["GET", "PUT", "POST"], "GET")`
 
 ### ConvertCase
 
@@ -845,7 +918,7 @@ If either `time` or `format` are nil, an error is returned. The parser used is t
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
@@ -909,6 +982,44 @@ Get `hello` from `<a><![CDATA[hello]]></a>`
 Get `bar` from `<a foo="bar"/>`
 
 - `GetXML(log.body, "/a/@foo")`
+
+### HasPrefix
+
+`HasPrefix(value, prefix)`
+
+The `HasPrefix` function returns a boolean value indicating whether a given string `value` begins with a given `prefix`.
+
+The returned type is `bool`.
+
+If the `value` is not a string or does not exist, the `HasPrefix` converter will return an error.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `HasPrefix(resource.attributes["service.name"], "ingest_")`
+
+
+- `HasPrefix("ingest_service", "ingest_")`
+
+### HasSuffix
+
+`HasSuffix(value, suffix)`
+
+The `HasSuffix` function returns a boolean value indicating whether a given string `value` ends with a given `suffix`.
+
+The returned type is `bool`.
+
+If the `value` is not a string or does not exist, the `HasSuffix` converter will return an error.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `HasSuffix(resource.attributes["service.name"], "_service")`
+
+
+- `HasSuffix("ingest_service", "_service")`
 
 ### Hex
 
@@ -1170,6 +1281,21 @@ Examples:
 
 - `IsString(resource.attributes["maybe a string"])`
 
+### Keys
+
+`Keys(target)`
+
+The `Keys` Converter returns a slice containing all the keys from the given map.
+
+`target` is a `pcommon.Map`. If `target` is another type an error is returned.
+
+The returned type is `pcommon.Slice`.
+
+Examples:
+- 
+- `Keys(resource.attributes)`
+- `Keys({"k1":"v1", "k2": "v2"})`
+
 ### Len
 
 `Len(target)`
@@ -1209,6 +1335,21 @@ Examples:
 
 
 - `Int(Log(span.attributes["duration_ms"])`
+
+### IsValidLuhn
+
+`IsValidLuhn(value)`
+
+The `IsValidLuhn` converter returns a `boolean` value that indicates whether the value is a valid identification number,
+such as a credit card number according to the [Luhn algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm).
+
+The value must either be a `string` consisting of digits only, or an `integer` number. If it is neither, an error will be returned.
+
+Examples:
+
+- `IsValidLuhn(span.attributes["credit_card_number"])`
+
+- `IsValidLuhn("17893729974")`
 
 ### MD5
 
@@ -1300,6 +1441,34 @@ Examples:
 
 - `Month(Now())`
 
+### Murmur3Hash
+
+`Murmur3Hash(target)`
+
+The `Murmur3Hash` Converter converts the `target` string to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
+
+`target` is a Getter that returns a string.
+
+The returned type is `string`.
+
+Examples:
+
+- `Murmur3Hash(attributes["order.productId"])`
+
+### Murmur3Hash128
+
+`Murmur3Hash128(target)`
+
+The `Murmur3Hash128` Converter converts the `target` string to a hexadecimal string in little-endian of the 128-bit Murmur3 hash.
+
+`target` is a Getter that returns a string.
+
+The returned type is `string`.
+
+Examples:
+
+- `Murmur3Hash128(attributes["order.productId"])`
+
 ### Nanosecond
 
 `Nanosecond(value)`
@@ -1372,6 +1541,36 @@ Examples:
 
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
+
+### ParseInt
+
+`ParseInt(target, base)`
+
+The `ParseInt` Converter interprets a string `target` in the given `base` (0, 2 to 36) and returns its integer representation.
+
+`target` is the string to be converted. `target` should be a valid integer represented in string format. For example, "1234" is a valid `target` value, but "notANumber" is not. The `target` may begin with a leading sign: "+" or "-".
+
+`base` is an `int64` representing the base of the number in the `target` string. An error occurs if the `base` argument is a negative integer.
+
+If the `base` argument is 0, the true base is implied by the string's prefix following the sign (if present): 2 for "0b", 8 for "0" or "0o", 16 for "0x", and 10 otherwise. When the `base` value is 0, underscore characters are permitted as defined by the Go syntax for [integer literals](https://go.dev/ref/spec#Integer_literals).
+
+Examples of `ParseInt` behavior when `base` is 0: 
+- `ParseInt("0b1111_0000", 0) -> 240`
+- `ParseInt("0b10110", 0) -> 22`
+- `ParseInt("0xFF", 0) -> 255`
+- `ParseInt("-0xFF", 0) -> -255`
+- `ParseInt("-0o123", 0) -> -83`
+
+The return type is `int64`.
+
+For more information, please refer to the documentation for the Go [strconv.ParseInt](https://pkg.go.dev/strconv#ParseInt) function.
+
+Examples:
+
+- `ParseInt("12345", 10)`
+- `ParseInt("0xAA", 0)`
+- `ParseInt("AA", 16)`
+- `ParseInt("-20", 8)`
 
 ### ParseJSON
 
@@ -1623,6 +1822,18 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### ProfileID
+
+`ProfileID(bytes)`
+
+The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice.
+
+`bytes` is a byte slice of exactly 16 bytes.
+
+Examples:
+
+- `ProfileID(0x00112233445566778899aabbccddeeff)`
+
 ### RemoveXML
 
 `RemoveXML(target, xpath)`
@@ -1774,14 +1985,14 @@ Examples:
 
 ### SliceToMap
 
-`SliceToMap(target, keyPath, Optional[valuePath])`
+`SliceToMap(target, Optional[keyPath], Optional[valuePath])`
 
 The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
 
 - `target`: A list of maps containing the entries to be converted.
-- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
-the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
-to a map entry.
+- `keyPath`: An optional string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+if `keyPath` is provided, it must resolve to a string value, otherwise the converter will not be able to convert the item to a map entry. If `keyPath` isn't provided, the string representation of the index when looping through objects in the slice will be the key for the object in the output map. 
+
 - `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
 `valuePath` is defined, the value of the map entry will be the same as the original slice item.
 
@@ -1811,6 +2022,22 @@ attributes:
       name: foo
       value: 2
     bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(resource.attributes["things"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    "0":
+      name: foo
+      value: 2
+    "1":
       name: bar
       value: 5
 ```
@@ -1975,7 +2202,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
@@ -2213,8 +2440,8 @@ The `UserAgent` Converter parses the string argument trying to match it against 
 
 `value` is a string or a path to a string.  If `value` is not a string an error is returned.
 
-The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
-as defined in semconv v1.25.0.
+The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version`, `user_agent.original`, `os.name`, and `os.version` as defined in semconv v1.34.0. `os.name` and `os.version` are omitted if empty.
+
 
 Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
@@ -2224,13 +2451,23 @@ Examples:
   ```yaml
   "user_agent.name": "curl"
   "user_agent.version": "7.81.0"
-  "user_agent.original": "curl/7.81.0"
+  "user_agent.original": "curl/7.81.0",
+  "os.name": "Other",
   ```
 - `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
   ```yaml
   "user_agent.name": "Firefox"
   "user_agent.version": "126.0"
-  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0"
+  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
+  "os.name": "Linux",
+  ```
+- `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59`
+  ```yaml
+  "user_agent.name": "Edge"
+  "user_agent.version": "91.0.864"
+  "user_agent.original": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59",
+  "os.name": "Windows",
+  "os.version": "10"
   ```
 
 ### URL
@@ -2276,6 +2513,42 @@ results in
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### UUIDv7
+
+`UUIDv7()`
+
+The `UUIDv7` function generates a version 7 UUID using the current Unix epoch timestamp.
+
+The returned type is `string`.
+
+### Values
+
+`Values(target)` converts a `pcommon.Map` into a slice containing its values.
+
+`target` is a `pcommon.Map`
+
+The function returns a `pcommon.Slice`. The order of elements in the output `pcommon.Slice` is not guaranteed.
+
+Examples:
+- `Values(resource.attributes)`
+- `Values({"key1": "value1", "key2": 5, "key3": [1,2], "key4": {"b1": "c"}})`
+
+### Weekday
+
+`Weekday(value)`
+
+The `Weekday` Converter returns the day of the week component from the specified time using the Go stdlib [`time.Weekday` function](https://pkg.go.dev/time#Time.Weekday).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+The returned range is 0-6 (Sun-Sat)
+
+Examples:
+
+- `Weekday(Now())`
 
 ### Year
 

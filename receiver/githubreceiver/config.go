@@ -77,15 +77,15 @@ func (cfg *Config) Validate() error {
 
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
-	if cfg.WebHook.ServerConfig.Endpoint == "" {
+	if cfg.WebHook.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 
-	if cfg.WebHook.ServerConfig.ReadTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.ReadTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	}
 
-	if cfg.WebHook.ServerConfig.WriteTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.WriteTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	}
 

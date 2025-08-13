@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var (
@@ -276,7 +277,8 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
-			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
+			rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
+			require.NoError(t, e)
 			tc.setup(rcvr)
 
 			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
@@ -313,7 +315,8 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), config, logSink)
+	rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), config, logSink)
+	require.NoError(t, e)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil
@@ -384,7 +387,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -394,7 +397,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -409,7 +412,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -429,7 +432,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -439,7 +442,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -461,7 +464,7 @@ func (mac *mockAccessLogsClient) GetClusters(ctx context.Context, groupID string
 	return args.Get(0).([]mongodbatlas.Cluster), args.Error(1)
 }
 
-func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
 	args := mac.Called(ctx, groupID, clusterName, opts)
 	return args.Get(0).([]*mongodbatlas.AccessLogs), args.Error(1)
 }

@@ -3,6 +3,25 @@
 
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
+const (
+	// StateDone indicates a dispatch state of Done
+	StateDone = "DONE"
+	// StateFailed indicates a dispatch state of Failed
+	StateFailed = "FAILED"
+	// StateFinalizing indicates a dispatch state of Finalizing
+	StateFinalizing = "FINALIZING"
+	// StateParsing indicates a dispatch state of Parsing
+	StateParsing = "PARSING"
+	// StatePaused indicates a dispatch state of Paused
+	StatePaused = "PAUSED"
+	// StateQueued indicates a dispatch state of Queued
+	StateQueued = "QUEUED"
+	// StateRunning indicates a dispatch state of Running
+	StateRunning = "RUNNING"
+	// ControlError indicates a dispatch state of Error
+	ControlError = "CONTROL_ERROR"
+)
+
 // metric name and its associated search as a key value pair
 var searchDict = map[string]string{
 	`SplunkLicenseIndexUsageSearch`:       `search=search earliest=-10m latest=now index=_internal source=*license_usage.log type="Usage"| fields idx, b| eval indexname = if(len(idx)=0 OR isnull(idx),"(UNKNOWN)",idx)| stats sum(b) as b by indexname| eval By=round(b, 9)| fields indexname, By`,
@@ -17,15 +36,18 @@ var searchDict = map[string]string{
 	`SplunkBucketsSearchableStatus`:       `search=search earliest=-10m latest=now index=_telemetry | stats count(index) | appendcols [| rest splunk_server_group=dmc_group_cluster_master splunk_server_group=* /services/cluster/master/peers | eval splunk_server = label | fields splunk_server, label, is_searchable, status, site, bucket_count, host_port_pair, last_heartbeat, replication_port, base_generation_id, title, bucket_count_by_index.* | eval is_searchable = if(is_searchable == 1 or is_searchable == "1", "Yes", "No")] | sort - last_heartbeat | search label="***" | search is_searchable="*" | search status="*" | search site="*" | eval host = splunk_server | stats values(is_searchable) as is_searchable, values(status) as status, avg(bucket_count) as bucket_count by host | fields host, is_searchable, status, bucket_count`,
 	`SplunkIndexesData`:                   `search=search earliest=-10m latest=now index=_telemetry | stats count(index) | appendcols [| rest splunk_server_group=dmc_group_indexer splunk_server_group="*" /services/data/indexes] | join title splunk_server type=outer [ rest splunk_server_group=dmc_group_indexer splunk_server_group="*" /services/data/indexes-extended ] | eval elapsedTime = now() - strptime(minTime,"%25Y-%25m-%25dT%25H%3A%25M%3A%25S%25z") | eval dataAge = ceiling(elapsedTime / 86400) | eval indexSizeGB = if(currentDBSizeMB >= 1 AND totalEventCount >=1, currentDBSizeMB/1024, null()) | eval maxSizeGB = maxTotalDataSizeMB / 1024 | eval sizeUsagePerc = indexSizeGB / maxSizeGB * 100 | stats dc(splunk_server) AS splunk_server_count count(indexSizeGB) as "non_empty_instances" sum(indexSizeGB) AS total_size_gb avg(indexSizeGB) as average_size_gb avg(sizeUsagePerc) as average_usage_perc median(dataAge) as median_data_age max(dataAge) as oldest_data_age latest(bucket_dirs.home.warm_bucket_count) as warm_bucket_count latest(bucket_dirs.home.hot_bucket_count) as hot_bucket_count by title, datatype | eval warm_bucket_count = if(isnotnull(warm_bucket_count), warm_bucket_count, 0)| eval hot_bucket_count = if(isnotnull(hot_bucket_count), hot_bucket_count, 0)| eval bucket_count = (warm_bucket_count %2B hot_bucket_count)| eval total_size_gb = if(isnotnull(total_size_gb), round(total_size_gb, 2), 0) | eval average_size_gb = if(isnotnull(average_size_gb), round(average_size_gb, 2), 0) | eval average_usage_perc = if(isnotnull(average_usage_perc), round(average_usage_perc, 2), 0) | eval median_data_age = if(isNum(median_data_age), median_data_age, 0) | eval oldest_data_age = if(isNum(oldest_data_age), oldest_data_age, 0) | fields title splunk_server_count non_empty_instances total_size_gb average_size_gb average_usage_perc median_data_age bucket_count warm_bucket_count hot_bucket_count`,
 	`SplunkIndexesBucketCounts`:           `search=search earliest=-10m latest=now index=_telemetry | stats count(index) | appendcols [| rest splunk_server_group=dmc_group_cluster_master splunk_server_group=* /services/cluster/master/indexes | fields title, is_searchable, replicated_copies_tracker*, searchable_copies_tracker*, num_buckets, index_size] | rename replicated_copies_tracker.*.* as rp**, searchable_copies_tracker.*.* as sb** | foreach rp0actual_copies_per_slot [ eval replicated_data_copies_ratio = ('rp0actual_copies_per_slot' / 'rp0expected_total_per_slot') ] | foreach sb0actual_copies_per_slot [ eval searchable_data_copies_ratio = ('sb0actual_copies_per_slot' / 'sb0expected_total_per_slot')] | eval is_searchable = if((is_searchable == 1) or (is_searchable == "1"), "Yes", "No") | eval index_size_gb = round(index_size / 1024 / 1024 / 1024, 2) | fields title, is_searchable, searchable_data_copies_ratio, replicated_data_copies_ratio, num_buckets, index_size_gb | search title="***" | search is_searchable="*" | stats latest(searchable_data_copies_ratio) as searchable_data_copies_ratio, latest(replicated_data_copies_ratio) as replicated_data_copies_ratio, latest(num_buckets) as num_buckets, latest(index_size_gb) as index_size_gb by title | fields title searchable_data_copies_ratio replicated_data_copies_ratio num_buckets index_size_gb`,
+	`SplunkSearch`:                        `search=| tstats count where index=_introspection by splunk_server | stats sum(count) AS event_count count AS indexer_count`,
 }
 
 var apiDict = map[string]string{
-	`SplunkIndexerThroughput`:   `/services/server/introspection/indexer?output_mode=json`,
-	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
-	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
-	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
-	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
-	`SplunkHealth`:              `/services/server/health/splunkd/details?output_mode=json`,
+	`SplunkIndexerThroughput`:           `/services/server/introspection/indexer?output_mode=json`,
+	`SplunkDataIndexesExtended`:         `/services/data/indexes-extended?output_mode=json&count=-1`,
+	`SplunkIntrospectionQueues`:         `/services/server/introspection/queues?output_mode=json&count=-1`,
+	`SplunkKVStoreStatus`:               `/services/kvstore/status?output_mode=json`,
+	`SplunkDispatchArtifacts`:           `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
+	`SplunkHealth`:                      `/services/server/health/splunkd/details?output_mode=json`,
+	`SplunkInfo`:                        `/services/server/info?output_mode=json`,
+	`SplunkIndexerClusterManagerStatus`: `/services/cluster/manager/status?output_mode=json`,
 }
 
 type searchResponse struct {
@@ -55,30 +77,30 @@ type idxTContent struct {
 }
 
 // '/services/data/indexes-extended'
-type IndexesExtended struct {
-	Entries []IdxEEntry `json:"entry"`
+type indexesExtended struct {
+	Entries []idxEEntry `json:"entry"`
 }
 
-type IdxEEntry struct {
+type idxEEntry struct {
 	Name    string      `json:"name"`
-	Content IdxEContent `json:"content"`
+	Content idxEContent `json:"content"`
 }
 
-type IdxEContent struct {
+type idxEContent struct {
 	TotalBucketCount string         `json:"total_bucket_count"`
 	TotalEventCount  int            `json:"totalEventCount"`
 	TotalSize        string         `json:"total_size"`
 	TotalRawSize     string         `json:"total_raw_size"`
-	BucketDirs       IdxEBucketDirs `json:"bucket_dirs"`
+	BucketDirs       idxEBucketDirs `json:"bucket_dirs"`
 }
 
-type IdxEBucketDirs struct {
-	Cold   IdxEBucketDirsDetails `json:"cold"`
-	Home   IdxEBucketDirsDetails `json:"home"`
-	Thawed IdxEBucketDirsDetails `json:"thawed"`
+type idxEBucketDirs struct {
+	Cold   idxEBucketDirsDetails `json:"cold"`
+	Home   idxEBucketDirsDetails `json:"home"`
+	Thawed idxEBucketDirsDetails `json:"thawed"`
 }
 
-type IdxEBucketDirsDetails struct {
+type idxEBucketDirsDetails struct {
 	Capacity        string `json:"capacity"`
 	EventCount      string `json:"event_count"`
 	EventMaxTime    string `json:"event_max_time"`
@@ -89,16 +111,16 @@ type IdxEBucketDirsDetails struct {
 }
 
 // '/services/server/introspection/queues'
-type IntrospectionQueues struct {
-	Entries []IntrQEntry `json:"entry"`
+type introspectionQueues struct {
+	Entries []intrQEntry `json:"entry"`
 }
 
-type IntrQEntry struct {
+type intrQEntry struct {
 	Name    string      `json:"name"`
-	Content IdxQContent `json:"content"`
+	Content idxQContent `json:"content"`
 }
 
-type IdxQContent struct {
+type idxQContent struct {
 	CurrentSize      int `json:"current_size"`
 	CurrentSizeBytes int `json:"current_size_bytes"`
 	LargestSize      int `json:"largest_size"`
@@ -108,29 +130,29 @@ type IdxQContent struct {
 // '/services/kvstore/status'
 const (
 	// unknown/failed values
-	KVStatusUnknown        = "unknown"
-	KVRestoreStatusUnknown = "Unknown status"
-	KVBackupStatusFailed   = "Failed"
+	kvStatusUnknown        = "unknown"
+	kvRestoreStatusUnknown = "Unknown status"
+	kvBackupStatusFailed   = "Failed"
 )
 
-type KVStoreStatus struct {
-	Entries []KVEntry `json:"entry"`
+type kvStoreStatus struct {
+	Entries []kvEntry `json:"entry"`
 }
 
-type KVEntry struct {
-	Content KVStatus `json:"content"`
+type kvEntry struct {
+	Content kvStatus `json:"content"`
 }
 
-type KVStatus struct {
-	Current   KVStoreCurrent `json:"current"`
-	KVService KVService      `json:"externalKVStore,omitempty"`
+type kvStatus struct {
+	Current   kvStoreCurrent `json:"current"`
+	KVService kvService      `json:"externalKVStore,omitempty"`
 }
 
-type KVService struct {
+type kvService struct {
 	Status string `json:"status"`
 }
 
-type KVStoreCurrent struct {
+type kvStoreCurrent struct {
 	Status              string `json:"status"`
 	BackupRestoreStatus string `json:"backupRestoreStatus"`
 	ReplicationStatus   string `json:"replicationStatus"`
@@ -138,15 +160,15 @@ type KVStoreCurrent struct {
 }
 
 // '/services/server/status/dispatch-artifacts'
-type DispatchArtifacts struct {
-	Entries []DispatchArtifactEntry `json:"entry"`
+type dispatchArtifacts struct {
+	Entries []dispatchArtifactEntry `json:"entry"`
 }
 
-type DispatchArtifactEntry struct {
-	Content DispatchArtifactContent `json:"content"`
+type dispatchArtifactEntry struct {
+	Content dispatchArtifactContent `json:"content"`
 }
 
-type DispatchArtifactContent struct {
+type dispatchArtifactContent struct {
 	AdhocCount         string `json:"adhoc_count"`
 	ScheduledCount     string `json:"scheduled_count"`
 	SavedSearchesCount string `json:"ss_count"`
@@ -156,9 +178,13 @@ type DispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+	AdhocSize          string `json:"adhoc_size_mb"`
+	ScheduledSize      string `json:"scheduled_size_mb"`
+	CompletedSize      string `json:"completed_size_mb"`
+	IncompleteSize     string `json:"incomplete_size_mb"`
 }
 
-// '/services/server/health/splunkd/details
+// '/services/server/health/splunkd/details'
 type healthArtifacts struct {
 	Entries []healthArtifactEntry `json:"entry"`
 }
@@ -170,4 +196,52 @@ type healthArtifactEntry struct {
 type healthDetails struct {
 	Health   string                   `json:"health"`
 	Features map[string]healthDetails `json:"features,omitempty"`
+}
+
+// '/services/server/info'
+type info struct {
+	Host    string      `json:"origin"`
+	Entries []infoEntry `json:"entry"`
+}
+
+type infoEntry struct {
+	Content infoContent `json:"content"`
+}
+
+type infoContent struct {
+	Build   string `json:"build"`
+	Version string `json:"version"`
+}
+
+type infoDict map[any]info
+
+// '/services/search/jobs/{search_id}'
+type searchMetaEntries struct {
+	Entries []searchMetaEntry `json:"entry"`
+}
+
+type searchMetaEntry struct {
+	Content searchMeta `json:"content"`
+}
+
+type searchMeta struct {
+	Duration      float64 `json:"runDuration"`
+	DispatchState string  `json:"dispatchState"`
+}
+
+// '/services/cluster/manager/status'
+type indexersClusterManagerStatus struct {
+	Entries []idxClusterManagerStatusEntry `json:"entry"`
+}
+type idxClusterManagerStatusEntry struct {
+	Name    string                         `json:"name"`
+	Content idxClusterManagerStatusContent `json:"content"`
+}
+
+type idxClusterManagerStatusContent struct {
+	RollingRestartFlag      bool   `json:"rolling_restart_flag,omitempty"`
+	RollingRestartOrUpgrade bool   `json:"rolling_restart_or_upgrade,omitempty"`
+	RollingRestartType      string `json:"rolling_restart_type,omitempty"`
+	SearchableRolling       bool   `json:"searchable_rolling,omitempty"`
+	ServiceReadyFlag        bool   `json:"service_ready_flag,omitempty"`
 }

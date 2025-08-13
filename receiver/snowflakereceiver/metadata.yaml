@@ -299,25 +299,32 @@ metrics:
     description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: true
   snowflake.storage.stage_bytes.total:
     description: Number of bytes of stage storage used by files in all internal stages (named, table, user).
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: true
   snowflake.storage.failsafe_bytes.total:
     description: Number of bytes of data in Fail-safe.
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: false 
 
 tests:
   config:
+    account: "snowflake-test"
+    username: "admin"
+    password: "admin"
   goleak:
     ignore:
       any:
         # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
         - "github.com/godbus/dbus.(*Conn).inWorker"
+      top:
+        # Can be removed once the following issue is resolved:
+        # https://github.com/snowflakedb/gosnowflake/issues/1369
+        - "github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"

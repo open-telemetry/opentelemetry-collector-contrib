@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -44,7 +45,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -71,7 +72,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 
@@ -186,7 +187,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 			name := fmt.Sprintf("(%s) - %s", kind, tt.name)
 			t.Run(name, func(t *testing.T) {
 				actual := GetMetadata(testCase.resource, testCase.metadataStore, logger)
-				require.Equal(t, len(testCase.want), len(actual))
+				require.Len(t, actual, len(testCase.want))
 
 				for key, item := range testCase.want {
 					got, exists := actual[key]
@@ -235,8 +236,10 @@ func testCaseForPodWorkload(to testCaseOptions) testCase {
 
 func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	podUIDLabel := "test-pod-0-uid"
+	podNameLabel := "test-pod-0"
 	kindLower := strings.ToLower(to.kind)
 	kindObjName := fmt.Sprintf("test-%s-0", kindLower)
+	namespaceLabel := "test-namespace"
 	kindObjUID := fmt.Sprintf("test-%s-0-uid", kindLower)
 	kindNameLabel := fmt.Sprintf("k8s.%s.name", kindLower)
 	kindUIDLabel := fmt.Sprintf("k8s.%s.uid", kindLower)
@@ -247,9 +250,12 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel:   kindObjName,
-				kindUIDLabel:    kindObjUID,
-				"k8s.pod.phase": "Unknown", // Default value when phase is not set.
+				kindNameLabel:                      kindObjName,
+				kindUIDLabel:                       kindObjUID,
+				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":                     podNameLabel,
+				"k8s.pod.phase":                    "Unknown", // Default value when phase is not set.
+				"k8s.namespace.name":               namespaceLabel,
 			},
 		},
 	}
@@ -344,7 +350,7 @@ func podWithOwnerReference(kind string) *corev1.Pod {
 				Name: fmt.Sprintf("test-%s-0", kindLower),
 				UID:  types.UID(fmt.Sprintf("test-%s-0-uid", kindLower)),
 			},
-		}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{}),
+		}, testutils.NewPodWithContainer("0", &corev1.PodSpec{NodeName: "test-node"}, &corev1.PodStatus{}),
 	).(*corev1.Pod)
 }
 
@@ -485,6 +491,8 @@ func TestTransform(t *testing.T) {
 func TestPodMetadata(t *testing.T) {
 	tests := []struct {
 		name             string
+		podName          string
+		namespace        string
 		statusPhase      corev1.PodPhase
 		statusReason     string
 		expectedMetadata map[string]string
@@ -494,14 +502,17 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodFailed,
 			statusReason: "Evicted",
 			expectedMetadata: map[string]string{
-				"k8s.pod.phase":         "Failed",
-				"k8s.pod.status_reason": "Evicted",
-				"k8s.workload.kind":     "Deployment",
-				"k8s.workload.name":     "test-deployment-0",
-				"k8s.replicaset.name":   "test-replicaset-0",
-				"k8s.replicaset.uid":    "test-replicaset-0-uid",
-				"k8s.deployment.name":   "test-deployment-0",
-				"k8s.deployment.uid":    "test-deployment-0-uid",
+				"k8s.pod.name":                     "test-pod-0",
+				"k8s.namespace.name":               "test-namespace",
+				"k8s.pod.phase":                    "Failed",
+				"k8s.pod.status_reason":            "Evicted",
+				"k8s.workload.kind":                "Deployment",
+				"k8s.workload.name":                "test-deployment-0",
+				"k8s.replicaset.name":              "test-replicaset-0",
+				"k8s.replicaset.uid":               "test-replicaset-0-uid",
+				"k8s.deployment.name":              "test-deployment-0",
+				"k8s.deployment.uid":               "test-deployment-0-uid",
+				string(conventions.K8SNodeNameKey): "test-node",
 			},
 		},
 		{
@@ -509,13 +520,16 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodRunning,
 			statusReason: "",
 			expectedMetadata: map[string]string{
-				"k8s.pod.phase":       "Running",
-				"k8s.workload.kind":   "Deployment",
-				"k8s.workload.name":   "test-deployment-0",
-				"k8s.replicaset.name": "test-replicaset-0",
-				"k8s.replicaset.uid":  "test-replicaset-0-uid",
-				"k8s.deployment.name": "test-deployment-0",
-				"k8s.deployment.uid":  "test-deployment-0-uid",
+				"k8s.pod.name":                     "test-pod-0",
+				"k8s.namespace.name":               "test-namespace",
+				"k8s.pod.phase":                    "Running",
+				"k8s.workload.kind":                "Deployment",
+				"k8s.workload.name":                "test-deployment-0",
+				"k8s.replicaset.name":              "test-replicaset-0",
+				"k8s.replicaset.uid":               "test-replicaset-0-uid",
+				"k8s.deployment.name":              "test-deployment-0",
+				"k8s.deployment.uid":               "test-deployment-0-uid",
+				string(conventions.K8SNodeNameKey): "test-node",
 			},
 		},
 	}
@@ -547,4 +561,30 @@ func TestPodMetadata(t *testing.T) {
 			assert.Equal(t, allExpectedMetadata, podMeta)
 		})
 	}
+}
+
+func TestPodContainerStateMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
+	)
+
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sContainerStatusState.Enabled = true
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_container_state.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
 }

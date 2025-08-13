@@ -12,7 +12,6 @@ CONFIG_OUT="cmd/$DIR/builder-config-replaced.yaml"
 cp "$CONFIG_IN" "$CONFIG_OUT"
 
 local_mods=$(find . -type f -name "go.mod" -exec dirname {} \; | sort)
-echo "replaces:" >> "$CONFIG_OUT"
 for mod_path in $local_mods; do
     mod=${mod_path#"."} # remove initial dot
     echo "  - github.com/open-telemetry/opentelemetry-collector-contrib$mod => ../..$mod" >> "$CONFIG_OUT"

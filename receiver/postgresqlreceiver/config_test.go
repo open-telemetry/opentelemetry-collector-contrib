@@ -129,9 +129,12 @@ func TestLoadConfig(t *testing.T) {
 		expected.Endpoint = "localhost:5432"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
-
+		expected.TopNQuery = 1234
+		expected.QueryPlanCacheTTL = time.Second * 123
 		require.Equal(t, expected, cfg)
 	})
+
+	cfg = factory.CreateDefaultConfig()
 
 	t.Run("postgresql/pool", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "pool").String())
@@ -140,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = confignet.TransportTypeTCP
+		expected.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
@@ -151,6 +154,8 @@ func TestLoadConfig(t *testing.T) {
 		require.Equal(t, expected, cfg)
 	})
 
+	cfg = factory.CreateDefaultConfig()
+
 	t.Run("postgresql/all", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "all").String())
 		require.NoError(t, err)
@@ -158,7 +163,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = confignet.TransportTypeTCP
+		expected.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}

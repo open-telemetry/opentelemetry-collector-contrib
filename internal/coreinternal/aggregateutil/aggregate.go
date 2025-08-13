@@ -296,17 +296,31 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 			}
 			dp.SetCount(dp.Count() + dps.At(i).Count())
 			dp.SetSum(dp.Sum() + dps.At(i).Sum())
+			dp.SetZeroCount(dp.ZeroCount() + dps.At(i).ZeroCount())
 			if dp.HasMin() && dp.Min() > dps.At(i).Min() {
 				dp.SetMin(dps.At(i).Min())
 			}
 			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
+			// Merge bucket counts.
+			// Note that groupExponentialHistogramDataPoints() has already ensured that we only try
+			// to merge exponential histograms with matching Scale and Positive/Negative Offsets,
+			// so the corresponding array items in BucketCounts have the same bucket boundaries.
+			// However, the number of buckets may differ depending on what values have been observed.
 			for b := 0; b < dps.At(i).Negative().BucketCounts().Len(); b++ {
-				negatives.SetAt(b, negatives.At(b)+dps.At(i).Negative().BucketCounts().At(b))
+				if b < negatives.Len() {
+					negatives.SetAt(b, negatives.At(b)+dps.At(i).Negative().BucketCounts().At(b))
+				} else {
+					negatives.Append(dps.At(i).Negative().BucketCounts().At(b))
+				}
 			}
 			for b := 0; b < dps.At(i).Positive().BucketCounts().Len(); b++ {
-				positives.SetAt(b, positives.At(b)+dps.At(i).Positive().BucketCounts().At(b))
+				if b < positives.Len() {
+					positives.SetAt(b, positives.At(b)+dps.At(i).Positive().BucketCounts().At(b))
+				} else {
+					positives.Append(dps.At(i).Positive().BucketCounts().At(b))
+				}
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 			if dps.At(i).StartTimestamp() < dp.StartTimestamp() {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -30,7 +32,7 @@ func TestComponentStatus(t *testing.T) {
 	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
-	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettingsWithType(extensiontest.NopType))
+	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
@@ -39,7 +41,7 @@ func TestComponentStatus(t *testing.T) {
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
@@ -109,7 +111,7 @@ func TestNotifyConfig(t *testing.T) {
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
-	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettingsWithType(extensiontest.NopType))
+	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
@@ -132,4 +134,24 @@ func TestNotifyConfig(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.JSONEq(t, string(confJSON), string(body))
+}
+
+func TestShutdown(t *testing.T) {
+	t.Run("error in http server start", func(t *testing.T) {
+		// Want to get error in http server start
+		endpoint := testutil.GetAvailableLocalAddress(t)
+		l, err := net.Listen("tcp", endpoint)
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, l.Close()) })
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.UseV2 = true
+		cfg.HTTPConfig.Endpoint = endpoint
+
+		ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+		// Get address already in use here
+		require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		require.NoError(t, ext.Shutdown(context.Background()))
+	})
 }

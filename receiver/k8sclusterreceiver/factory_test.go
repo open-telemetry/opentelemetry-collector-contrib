@@ -44,7 +44,7 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTraces(
-		context.Background(), receivertest.NewNopSettings(),
+		context.Background(), receivertest.NewNopSettings(metadata.Type),
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -85,7 +85,7 @@ func TestFactoryDistributions(t *testing.T) {
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
-	r, err := newReceiver(context.Background(), receivertest.NewNopSettings(), cfg)
+	r, err := newReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	rcvr, ok := r.(*kubernetesReceiver)
@@ -108,10 +108,10 @@ func newNopHostWithExporters() component.Host {
 	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+func (*nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return map[pipeline.Signal]map[component.ID]component.Component{
 		pipeline.SignalMetrics: {
-			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},
+			component.MustNewIDWithName("nop", "withoutmetadata"): mockExporter{},
 			component.MustNewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
@@ -122,7 +122,7 @@ func TestNewSharedReceiver(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 
 	mc := consumertest.NewNop()
-	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mc)
 	require.NoError(t, err)
 
 	// Verify that the metric consumer is correctly set.
@@ -130,7 +130,7 @@ func TestNewSharedReceiver(t *testing.T) {
 	assert.Equal(t, mc, kr.metricsConsumer)
 
 	lc := consumertest.NewNop()
-	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, lc)
 	require.NoError(t, err)
 
 	// Verify that the log consumer is correct set.

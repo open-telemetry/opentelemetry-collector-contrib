@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 )
 
@@ -46,9 +46,9 @@ func makeHeadersFunc(logger *zap.Logger, serverCfg *OpAMPServer, host component.
 		return nil, fmt.Errorf("could not find auth extension %q", extID)
 	}
 
-	authExt, ok := ext.(auth.Client)
+	authExt, ok := ext.(extensionauth.HTTPClient)
 	if !ok {
-		return nil, fmt.Errorf("auth extension %q is not an auth.Client", extID)
+		return nil, fmt.Errorf("auth extension %q is not an extensionauth.HTTPClient", extID)
 	}
 
 	hcrt := &headerCaptureRoundTripper{}
@@ -61,7 +61,7 @@ func makeHeadersFunc(logger *zap.Logger, serverCfg *OpAMPServer, host component.
 		// This is a workaround while websocket authentication is being worked on.
 		// Currently, we are waiting on the auth module to be stabilized.
 		// See for more info: https://github.com/open-telemetry/opentelemetry-collector/issues/10864
-		dummyReq, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+		dummyReq, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 		if err != nil {
 			logger.Error("Failed to create dummy request for authentication.", zap.Error(err))
 			return h

@@ -4,20 +4,6 @@ receivers:
     protocols:
       http:
         endpoint: ${env:OTLP_HTTP_SERVER}
-      grpc:
-        endpoint: ${env:OTLP_GRPC_SERVER}
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'otelcol'
-          scrape_interval: 1s
-          fallback_scrape_protocol: "PrometheusText1.0.0"
-          static_configs:
-            - targets: [ '${env:PROM_SERVER}' ]
-          metric_relabel_configs:
-            - source_labels: [ __name__ ]
-              regex: "(otelcol_receiver_accepted_log_records|otelcol_exporter_sent_log_records)"
-              action: keep
 
 exporters:
   datadog:
@@ -37,12 +23,18 @@ exporters:
 service:
   telemetry:
     metrics:
-      level: basic
-      address: ${env:PROM_SERVER}
+      level: "basic"
+      readers:
+        - periodic:
+            interval: 5000 # milliseconds
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: ${env:OTLP_HTTP_SERVER}
   pipelines:
     logs:
       receivers: [otlp]
       exporters: [datadog]
     metrics:
-      receivers: [prometheus]
+      receivers: [otlp]
       exporters: [datadog]

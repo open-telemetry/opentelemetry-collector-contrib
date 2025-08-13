@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"runtime"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
-	grpccredentials "google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
@@ -102,10 +102,11 @@ func init() {
 	)
 }
 
-var errGRPCNotSupported = fmt.Errorf("gRPC is not supported by sumologicextension")
-
-// SumologicExtension implements ClientAuthenticator
-var _ auth.Client = (*SumologicExtension)(nil)
+// SumologicExtension implements extensionauth.HTTPClient
+var (
+	_ extension.Extension      = (*SumologicExtension)(nil)
+	_ extensionauth.HTTPClient = (*SumologicExtension)(nil)
+)
 
 func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, buildVersion string) (*SumologicExtension, error) {
 	if conf.Credentials.InstallationToken == "" {
@@ -194,7 +195,8 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	if err = se.injectCredentials(ctx, colCreds); err != nil {
+	err = se.injectCredentials(ctx, colCreds)
+	if err != nil {
 		return err
 	}
 
@@ -427,7 +429,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
 		CollectorName: collectorName,
 		Description:   se.conf.CollectorDescription,
 		Category:      se.conf.CollectorCategory,
@@ -436,7 +438,8 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
-	}); err != nil {
+	})
+	if err != nil {
 		return credentials.CollectorCredentials{}, err
 	}
 
@@ -632,12 +635,12 @@ var (
 	errUnauthorizedMetadata  = errors.New("metadata update unauthorized")
 )
 
-type ErrorAPI struct {
+type errorAPI struct {
 	status int
 	body   string
 }
 
-func (e ErrorAPI) Error() string {
+func (e errorAPI) Error() string {
 	return fmt.Sprintf("API error (status code: %d): %s", e.status, e.body)
 }
 
@@ -646,7 +649,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 	if err != nil {
 		return fmt.Errorf("unable to parse heartbeat URL %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("unable to create HTTP request %w", err)
 	}
@@ -670,7 +673,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 		}
 
 		return fmt.Errorf("collector heartbeat request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -734,23 +737,22 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 
 	processes, err := process.Processes()
 	if err != nil {
-		return pl, err
+		return pl, fmt.Errorf("process discovery failed: %w", err)
 	}
 
 	for _, v := range processes {
 		e, err := v.Name()
 		if err != nil {
-			if runtime.GOOS == "windows" {
-				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
-				se.logger.Warn(
-					"Failed to get executable name, it is likely a zombie process, skipping it",
-					zap.Int32("pid", v.Pid),
-					zap.Error(err))
-				continue
-			}
-
-			return nil, fmt.Errorf("Error getting executable name: %w", err)
+			// If we can't get a process name, it may be a zombie process.
+			// We do not want to error out here, as it's not worth disrupting
+			// the startup process of the collector.
+			se.logger.Warn(
+				"process discovery: failed to get executable name (is it a zombie?)",
+				zap.Int32("pid", v.Pid),
+				zap.Error(err))
+			continue
 		}
+
 		e = strings.ToLower(e)
 
 		if a, i := sumoAppProcesses[e]; i {
@@ -766,7 +768,11 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 		if e == "java" {
 			cmdline, err := v.Cmdline()
 			if err != nil {
-				return nil, fmt.Errorf("error getting executable name for PID %d: %w", v.Pid, err)
+				se.logger.Warn(
+					"process discovery: failed to get process arguments",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
+				continue
 			}
 
 			switch {
@@ -835,7 +841,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
 		HostDetails: api.OpenMetadataHostDetails{
 			Name:        hostname,
 			OsName:      info.OS,
@@ -843,13 +849,14 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			Environment: se.conf.CollectorEnvironment,
 		},
 		CollectorDetails: api.OpenMetadataCollectorDetails{
-			RunningVersion: se.buildVersion,
+			RunningVersion: cleanupBuildVersion(se.buildVersion),
 		},
 		NetworkDetails: api.OpenMetadataNetworkDetails{
 			HostIPAddress: ip,
 		},
 		TagDetails: td,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -885,7 +892,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			zap.String("body", buff.String()))
 
 		return fmt.Errorf("collector metadata request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -1017,10 +1024,6 @@ func (se *SumologicExtension) RoundTripper(base http.RoundTripper) (http.RoundTr
 	}, nil
 }
 
-func (se *SumologicExtension) PerRPCCredentials() (grpccredentials.PerRPCCredentials, error) {
-	return nil, errGRPCNotSupported
-}
-
 func (se *SumologicExtension) addStickySessionCookie(req *http.Request) {
 	if !se.conf.StickySessionEnabled {
 		return
@@ -1068,7 +1071,7 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func addCollectorCredentials(req *http.Request, collectorCredentialID string, collectorCredentialKey string) {
+func addCollectorCredentials(req *http.Request, collectorCredentialID, collectorCredentialKey string) {
 	token := base64.StdEncoding.EncodeToString(
 		[]byte(collectorCredentialID + ":" + collectorCredentialKey),
 	)
@@ -1102,4 +1105,28 @@ func getHostname(logger *zap.Logger) (string, error) {
 	logger.Debug("failed to get fqdn", zap.Error(err))
 
 	return os.Hostname()
+}
+
+// cleanupBuildVersion adds a leading 'v' and removes the tailing build hash to make sure the
+// backend understand the build number. Note that only version strings with the following format will be
+// cleaned up. All other version formats will remain the same.
+// Cleaned up format: 0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113
+func cleanupBuildVersion(version string) string {
+	pattern := "^v?([0-9]+\\.[0-9]+\\.[0-9]+-sumo-[0-9]+)(-[0-9a-f]{40}){0,1}(-fips){0,1}$"
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindAllStringSubmatch(version, 1)
+	if len(matches) != 1 {
+		return version
+	}
+	subMatches := matches[0]
+	if len(subMatches) > 1 {
+		ver := subMatches[1]
+		if len(subMatches) == 4 {
+			ver += subMatches[3]
+		}
+		return "v" + ver
+	}
+
+	return version
 }

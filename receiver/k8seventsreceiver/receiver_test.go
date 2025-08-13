@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -28,7 +29,7 @@ func TestNewReceiver(t *testing.T) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -40,7 +41,7 @@ func TestNewReceiver(t *testing.T) {
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -55,7 +56,7 @@ func TestHandleEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		sink,
 	)
@@ -73,7 +74,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		sink,
 	)
@@ -108,7 +109,7 @@ func TestGetEventTimestamp(t *testing.T) {
 func TestAllowEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)

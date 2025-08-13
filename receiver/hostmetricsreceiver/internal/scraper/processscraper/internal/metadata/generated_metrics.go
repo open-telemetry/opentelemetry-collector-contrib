@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeContextSwitchType specifies the value context_switch_type attribute.
@@ -119,6 +119,72 @@ var MapAttributeState = map[string]AttributeState{
 	"system": AttributeStateSystem,
 	"user":   AttributeStateUser,
 	"wait":   AttributeStateWait,
+}
+
+var MetricsInfo = metricsInfo{
+	ProcessContextSwitches: metricInfo{
+		Name: "process.context_switches",
+	},
+	ProcessCPUTime: metricInfo{
+		Name: "process.cpu.time",
+	},
+	ProcessCPUUtilization: metricInfo{
+		Name: "process.cpu.utilization",
+	},
+	ProcessDiskIo: metricInfo{
+		Name: "process.disk.io",
+	},
+	ProcessDiskOperations: metricInfo{
+		Name: "process.disk.operations",
+	},
+	ProcessHandles: metricInfo{
+		Name: "process.handles",
+	},
+	ProcessMemoryUsage: metricInfo{
+		Name: "process.memory.usage",
+	},
+	ProcessMemoryUtilization: metricInfo{
+		Name: "process.memory.utilization",
+	},
+	ProcessMemoryVirtual: metricInfo{
+		Name: "process.memory.virtual",
+	},
+	ProcessOpenFileDescriptors: metricInfo{
+		Name: "process.open_file_descriptors",
+	},
+	ProcessPagingFaults: metricInfo{
+		Name: "process.paging.faults",
+	},
+	ProcessSignalsPending: metricInfo{
+		Name: "process.signals_pending",
+	},
+	ProcessThreads: metricInfo{
+		Name: "process.threads",
+	},
+	ProcessUptime: metricInfo{
+		Name: "process.uptime",
+	},
+}
+
+type metricsInfo struct {
+	ProcessContextSwitches     metricInfo
+	ProcessCPUTime             metricInfo
+	ProcessCPUUtilization      metricInfo
+	ProcessDiskIo              metricInfo
+	ProcessDiskOperations      metricInfo
+	ProcessHandles             metricInfo
+	ProcessMemoryUsage         metricInfo
+	ProcessMemoryUtilization   metricInfo
+	ProcessMemoryVirtual       metricInfo
+	ProcessOpenFileDescriptors metricInfo
+	ProcessPagingFaults        metricInfo
+	ProcessSignalsPending      metricInfo
+	ProcessThreads             metricInfo
+	ProcessUptime              metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricProcessContextSwitches struct {
@@ -393,7 +459,7 @@ type metricProcessHandles struct {
 // init fills process.handles metric with initial data.
 func (m *metricProcessHandles) init() {
 	m.data.SetName("process.handles")
-	m.data.SetDescription("Number of handles held by the process.")
+	m.data.SetDescription("Number of open handles held by the process.")
 	m.data.SetUnit("{count}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1022,7 +1088,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricProcessContextSwitches.emit(ils.Metrics())

@@ -25,7 +25,7 @@ type receiver struct {
 	id  component.ID
 
 	pipe     pipeline.Pipeline
-	emitter  *helper.LogEmitter
+	emitter  helper.LogEmitter
 	consumer consumer.Logs
 	obsrecv  *receiverhelper.ObsReport
 

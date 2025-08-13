@@ -89,12 +89,12 @@ func TestCreateProcessors(t *testing.T) {
 
 				tp, tErr := factory.CreateTraces(
 					context.Background(),
-					processortest.NewNopSettings(),
+					processortest.NewNopSettings(metadata.Type),
 					cfg, consumertest.NewNop(),
 				)
 				mp, mErr := factory.CreateMetrics(
 					context.Background(),
-					processortest.NewNopSettings(),
+					processortest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

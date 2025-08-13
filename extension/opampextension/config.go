@@ -4,7 +4,10 @@
 package opampextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 
 import (
+	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -49,6 +52,9 @@ type AgentDescription struct {
 	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
 	// extra information about the agent to the OpAMP server.
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	// IncludeResourceAttributes determines whether the agent should copy its resource attributes
+	// to the non identifying attributes. (default: false)
+	IncludeResourceAttributes bool `mapstructure:"include_resource_attributes"`
 }
 
 type Capabilities struct {
@@ -56,6 +62,8 @@ type Capabilities struct {
 	ReportsEffectiveConfig bool `mapstructure:"reports_effective_config"`
 	// ReportsHealth enables the OpAMP ReportsHealth Capability. (default: true)
 	ReportsHealth bool `mapstructure:"reports_health"`
+	// ReportsAvailableComponents enables the OpAMP ReportsAvailableComponents Capability (default: true)
+	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -69,14 +77,18 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
 	}
 
+	if caps.ReportsAvailableComponents {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
+	}
+
 	return agentCapabilities
 }
 
 type commonFields struct {
-	Endpoint   string                         `mapstructure:"endpoint"`
-	TLSSetting configtls.ClientConfig         `mapstructure:"tls,omitempty"`
-	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
-	Auth       component.ID                   `mapstructure:"auth,omitempty"`
+	Endpoint string                         `mapstructure:"endpoint"`
+	TLS      configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	Headers  map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Auth     component.ID                   `mapstructure:"auth,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -137,11 +149,25 @@ func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
 	return map[string]configopaque.String{}
 }
 
-func (s OpAMPServer) GetTLSSetting() configtls.ClientConfig {
+// GetTLSConfig returns a TLS config if the endpoint is secure (wss or https)
+func (s OpAMPServer) GetTLSConfig(ctx context.Context) (*tls.Config, error) {
+	parsedURL, err := url.Parse(s.GetEndpoint())
+	if err != nil {
+		return nil, fmt.Errorf("parse server endpoint: %w", err)
+	}
+
+	if parsedURL.Scheme != "wss" && parsedURL.Scheme != "https" {
+		return nil, nil
+	}
+
+	return s.getTLS().LoadTLSConfig(ctx)
+}
+
+func (s OpAMPServer) getTLS() configtls.ClientConfig {
 	if s.WS != nil {
-		return s.WS.TLSSetting
+		return s.WS.TLS
 	} else if s.HTTP != nil {
-		return s.HTTP.TLSSetting
+		return s.HTTP.TLS
 	}
 	return configtls.ClientConfig{}
 }

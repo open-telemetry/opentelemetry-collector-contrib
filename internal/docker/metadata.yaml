@@ -1,4 +1,5 @@
 status:
+  disable_codecov_badge: true
   codeowners:
     active: [jamesmoessis, MovieStoreGuy]
     emeritus: [rmfitzpatrick]

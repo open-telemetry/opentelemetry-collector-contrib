@@ -11,6 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 func FuzzHandleRawReq(f *testing.F) {
@@ -22,7 +24,7 @@ func FuzzHandleRawReq(f *testing.F) {
 		req.Header.Add("If-None-Match", `W/"wyzzy"`)
 		sink := new(consumertest.LogsSink)
 		defaultConfig := createDefaultConfig().(*Config)
-		rcv, err := newReceiver(receivertest.NewNopSettings(), *defaultConfig)
+		rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig)
 		rcv.logsConsumer = sink
 		if err != nil {
 			t.Fatal(err)

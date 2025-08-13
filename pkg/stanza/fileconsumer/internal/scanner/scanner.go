@@ -20,9 +20,9 @@ type Scanner struct {
 }
 
 // New creates a new positional scanner
-func New(r io.Reader, maxLogSize int, bufferSize int, startOffset int64, splitFunc bufio.SplitFunc) *Scanner {
+func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc) *Scanner {
 	s := &Scanner{Scanner: bufio.NewScanner(r), pos: startOffset}
-	s.Buffer(make([]byte, 0, bufferSize), maxLogSize)
+	s.Buffer(buf, maxLogSize)
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
 		s.pos += int64(advance)

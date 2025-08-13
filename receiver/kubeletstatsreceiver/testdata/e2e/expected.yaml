@@ -19,9 +19,9 @@ resourceMetrics:
                   asDouble: 10.314631
               aggregationTemporality: 2
               isMonotonic: true
-          - name: k8s.node.cpu.utilization
-            description: Node CPU utilization
-            unit: "1"
+          - name: k8s.node.cpu.usage
+            description: Total CPU usage (sum of all cores per second) averaged over the sample window
+            unit: "{cpu}"
             gauge:
               dataPoints:
                 - startTimeUnixNano: "1692645620000000000"

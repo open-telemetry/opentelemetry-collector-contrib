@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("server.state")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "server.state-val", val.Str())
+				assert.Equal(t, "server.state-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("zk.version")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "zk.version-val", val.Str())
+				assert.Equal(t, "zk.version-val", val.Str())
 			}
 		})
 	}

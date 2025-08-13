@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -24,7 +26,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateTraces(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
@@ -40,7 +42,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = ""
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	_, err := factory.CreateTraces(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
@@ -51,7 +53,7 @@ func TestCreateNoPort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:"
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	_, err := factory.CreateTraces(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
@@ -62,7 +64,7 @@ func TestCreateLargePort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:65536"
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	_, err := factory.CreateTraces(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }

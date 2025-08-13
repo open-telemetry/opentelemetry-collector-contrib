@@ -1,0 +1,20 @@
+type: nfs
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: [core, contrib, k8s]
+  unsupported_platforms: [darwin, windows]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+metrics:
+  system.nfs.net.count:
+    enabled: true
+    description: Reports the count of kernel NFS client network requests handled
+    unit: '{request}'
+    gauge:
+      value_type: int

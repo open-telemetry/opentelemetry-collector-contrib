@@ -75,7 +75,7 @@ func TestScrape(t *testing.T) {
 		// wait for measurement to start
 		<-startChan
 
-		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
+		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
 		if test.loadFunc != nil {
 			scraper.load = test.loadFunc
 		}
@@ -168,7 +168,7 @@ func assertMetricHasSingleDatapoint(t *testing.T, metric pmetric.Metric, expecte
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 }
 
-func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard pmetric.Metric, numCPU int) {
+func assertCompareAveragePerCPU(t *testing.T, average, standard pmetric.Metric, numCPU int) {
 	valAverage := average.Gauge().DataPoints().At(0).DoubleValue()
 	valStandard := standard.Gauge().DataPoints().At(0).DoubleValue()
 	if valAverage == 0 && valStandard == 0 {

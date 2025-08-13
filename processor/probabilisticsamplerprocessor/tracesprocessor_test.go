@@ -18,12 +18,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 // defaultHashSeed is used throughout to ensure that the HashSeed is real
@@ -74,7 +75,7 @@ func TestNewTraces(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, tt.nextConsumer)
+			got, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.cfg, tt.nextConsumer)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -150,7 +151,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := newAssertTraces(t, testSvcName)
 
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.cfg, sink)
 			require.NoError(t, err, "error when creating traceSamplerProcessor")
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
@@ -206,7 +207,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 			tt.cfg.HashSeed = defaultHashSeed
 
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.cfg, sink)
 			require.NoError(t, err, "error when creating traceSamplerProcessor")
 
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, tt.resourceSpanPerTrace) {
@@ -252,7 +253,7 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
 
-			set := processortest.NewNopSettings()
+			set := processortest.NewNopSettings(metadata.Type)
 			// Note: there is a debug-level log we are expecting when FailClosed
 			// causes a drop.
 			logger, observed := observer.New(zap.DebugLevel)
@@ -387,7 +388,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
-				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, sink)
+				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 				require.NoError(t, err)
 
 				err = tsp.ConsumeTraces(context.Background(), tt.td)
@@ -843,7 +844,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
-				set := processortest.NewNopSettings()
+				set := processortest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
@@ -889,10 +890,10 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				} else {
 					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
-					require.Equal(t, "", expectTS)
+					require.Empty(t, expectTS)
 				}
 
-				if len(tt.log) == 0 {
+				if tt.log == "" {
 					require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				} else {
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
@@ -994,7 +995,7 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 				cfg.Mode = mode
 				cfg.FailClosed = true
 
-				set := processortest.NewNopSettings()
+				set := processortest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
@@ -1070,7 +1071,7 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 			cfg.HashSeed = defaultHashSeed
 			cfg.SamplingPrecision = 4
 
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 			require.NoError(t, err)
 
 			// Repeat until we find 10 sampled cases; each sample will have
@@ -1103,7 +1104,8 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 				require.True(t, hasR)
 				require.True(t, threshold.ShouldSample(rnd))
 
-				if found++; find == found {
+				found++
+				if find == found {
 					break
 				}
 			}
@@ -1149,7 +1151,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
+				span.Attributes().PutInt(string(conventions.HTTPStatusCodeKey), 404)
 				span.Attributes().PutStr("http.status_text", "Not Found")
 			}
 		}
@@ -1169,7 +1171,7 @@ type assertTraces struct {
 
 var _ consumer.Traces = &assertTraces{}
 
-func (a *assertTraces) Capabilities() consumer.Capabilities {
+func (*assertTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
@@ -1349,7 +1351,7 @@ func TestHashingFunction(t *testing.T) {
 	// verifying it printed the expected results.
 	for _, tc := range expect50PctData {
 		sink := new(consumertest.TracesSink)
-		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), &Config{
+		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), &Config{
 			HashSeed:           tc.seed,
 			SamplingPercentage: 50,
 		}, sink)
@@ -1372,7 +1374,7 @@ func TestHashingFunction(t *testing.T) {
 
 // makeSingleSpanWithAttrib is used to construct test data with
 // a specific TraceID and a single attribute.
-func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts, key string, attribValue pcommon.Value) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.TraceState().FromRaw(ts)

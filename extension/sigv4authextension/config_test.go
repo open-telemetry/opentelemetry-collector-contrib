@@ -45,6 +45,28 @@ func TestLoadConfig(t *testing.T) {
 	}, cfg)
 }
 
+func TestLoadWebIdentityConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "web_identity").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.Equal(t, &Config{
+		Region:  "region",
+		Service: "service",
+		AssumeRole: AssumeRole{
+			ARN:                  "arn:aws:iam::12345678910:role/my_role",
+			WebIdentityTokenFile: "testdata/token_file",
+			STSRegion:            "region",
+		},
+		credsProvider: cfg.(*Config).credsProvider,
+	}, cfg)
+}
+
 func TestLoadConfigError(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

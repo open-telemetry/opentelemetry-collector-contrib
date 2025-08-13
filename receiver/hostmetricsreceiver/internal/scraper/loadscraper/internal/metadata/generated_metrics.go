@@ -9,8 +9,30 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
+
+var MetricsInfo = metricsInfo{
+	SystemCPULoadAverage15m: metricInfo{
+		Name: "system.cpu.load_average.15m",
+	},
+	SystemCPULoadAverage1m: metricInfo{
+		Name: "system.cpu.load_average.1m",
+	},
+	SystemCPULoadAverage5m: metricInfo{
+		Name: "system.cpu.load_average.5m",
+	},
+}
+
+type metricsInfo struct {
+	SystemCPULoadAverage15m metricInfo
+	SystemCPULoadAverage1m  metricInfo
+	SystemCPULoadAverage5m  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
 
 type metricSystemCPULoadAverage15m struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -261,7 +283,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemCPULoadAverage15m.emit(ils.Metrics())

@@ -8,16 +8,15 @@ import "go.opentelemetry.io/collector/featuregate"
 // ReceiveResourceSpansV2FeatureGate is a feature gate that enables a refactored implementation of span processing in Datadog exporter and connector
 var ReceiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"datadog.EnableReceiveResourceSpansV2",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, use a refactored implementation of the span receiver which improves performance by 10% and deprecates some not-to-spec functionality."),
 	featuregate.WithRegisterFromVersion("v0.118.0"),
-	featuregate.WithRegisterToVersion("v0.124.0"),
 )
 
 // OperationAndResourceNameV2FeatureGate is a feature gate that enables enhanced span operation name and resource names in Datadog exporter and connector
 var OperationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"datadog.EnableOperationAndResourceNameV2",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, datadogexporter and datadogconnector use improved logic to compute operation name and resource name."),
 	featuregate.WithRegisterFromVersion("v0.118.0"),
 )

@@ -4,7 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -51,16 +51,16 @@ type documentRouter interface {
 	routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error)
 }
 
-func newDocumentRouter(mode MappingMode, dynamicIndex bool, defaultIndex string, cfg *Config) documentRouter {
+// newDocumentRouter returns a router that routes document based on configured mode, static index config, and config.
+func newDocumentRouter(mode MappingMode, staticIndex string, cfg *Config) documentRouter {
 	var router documentRouter
-	if dynamicIndex {
+	if staticIndex == "" {
 		router = dynamicDocumentRouter{
-			index: elasticsearch.Index{Index: defaultIndex},
-			otel:  mode == MappingOTel,
+			mode: mode,
 		}
 	} else {
 		router = staticDocumentRouter{
-			index: elasticsearch.Index{Index: defaultIndex},
+			index: elasticsearch.Index{Index: staticIndex},
 		}
 	}
 	if cfg.LogstashFormat.Enabled {
@@ -94,24 +94,23 @@ func (r staticDocumentRouter) route(_ pcommon.Resource, _ pcommon.Instrumentatio
 }
 
 type dynamicDocumentRouter struct {
-	index elasticsearch.Index
-	otel  bool
+	mode MappingMode
 }
 
 func (r dynamicDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeLogs), nil
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeLogs)
 }
 
 func (r dynamicDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeMetrics), nil
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeMetrics)
 }
 
 func (r dynamicDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeTraces), nil
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeTraces)
 }
 
 func (r dynamicDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeLogs), nil
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeLogs)
 }
 
 type logstashDocumentRouter struct {
@@ -150,46 +149,55 @@ func routeRecord(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	recordAttr pcommon.Map,
-	index string,
-	otel bool,
+	mode MappingMode,
 	defaultDSType string,
-) elasticsearch.Index {
+) (elasticsearch.Index, error) {
 	resourceAttr := resource.Attributes()
 	scopeAttr := scope.Attributes()
 
 	// Order:
-	// 1. read data_stream.* from attributes
-	// 2. read elasticsearch.index.* from attributes
+	// 1. elasticsearch.index from attributes
+	// 2. read data_stream.* from attributes
 	// 3. receiver-based routing
 	// 4. use default hardcoded data_stream.*
+	if esIndex, esIndexExists := getFromAttributes(elasticsearch.IndexAttributeName, "", recordAttr, scopeAttr, resourceAttr); esIndexExists {
+		// Advanced users can route documents by setting IndexAttributeName in a processor earlier in the pipeline.
+		// If `data_stream.*` needs to be set in the document, users should use `data_stream.*` attributes.
+		return elasticsearch.Index{Index: esIndex}, nil
+	}
+
 	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
-	namespace, namespaceExists := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
-	dataStreamMode := datasetExists || namespaceExists
-	if !dataStreamMode {
-		prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
-		suffix, suffixExists := getFromAttributes(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
-		if prefixExists || suffixExists {
-			return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, index, suffix)}
+	namespace, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
+
+	dsType := defaultDSType
+	// if mapping mode is bodymap, allow overriding data_stream.type
+	if mode == MappingBodyMap {
+		dsType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
+		if dsType != "logs" && dsType != "metrics" {
+			return elasticsearch.Index{}, errors.New("data_stream.type cannot be other than logs or metrics")
 		}
 	}
 
-	// Receiver-based routing
-	// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
-	// for the scope name
-	// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
-	if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
-		receiverName := submatch[1]
-		dataset = receiverName
+	// Only use receiver-based routing if dataset is not specified.
+	if !datasetExists {
+		// Receiver-based routing
+		// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
+		// for the scope name
+		// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
+		if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
+			receiverName := submatch[1]
+			dataset = receiverName
+		}
 	}
 
 	// For dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
 	// This is in order to match the built-in logs-*.otel-* index template.
 	var datasetSuffix string
-	if otel {
+	if mode == MappingOTel {
 		datasetSuffix += ".otel"
 	}
 
 	dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
 	namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
-	return elasticsearch.NewDataStreamIndex(defaultDSType, dataset, namespace)
+	return elasticsearch.NewDataStreamIndex(dsType, dataset, namespace), nil
 }

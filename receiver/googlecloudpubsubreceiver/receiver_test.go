@@ -25,7 +25,7 @@ import (
 
 func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 	srv := pstest.NewServer()
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	return srv, &pubsubReceiver{
 		settings:  settings,
 		userAgent: "test-user-agent",
@@ -98,7 +98,7 @@ func TestReceiver(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
@@ -165,15 +165,6 @@ func TestReceiver(t *testing.T) {
 	srv.Publish("projects/my-project/topics/otlp", testdata.CreateLogExport(), map[string]string{
 		"ce-type":      "org.opentelemetry.otlp.logs.v1",
 		"content-type": "application/protobuf",
-	})
-	assert.Eventually(t, func() bool {
-		return len(logSink.AllLogs()) == 1
-	}, time.Second, 10*time.Millisecond)
-
-	// Test a plain log message
-	logSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateTextExport(), map[string]string{
-		"content-type": "text/plain",
 	})
 	assert.Eventually(t, func() bool {
 		return len(logSink.AllLogs()) == 1
@@ -274,6 +265,32 @@ func TestEncodingNotFound(t *testing.T) {
 	receiver.tracesConsumer = consumertest.NewNop()
 	receiver.config.Encoding = "foo"
 	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "extension \"foo\" not found")
+}
+
+func TestEncodingRemovedRawText(t *testing.T) {
+	ctx := context.Background()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "raw_text"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in raw_text encoding is removed since v0.132.0")
+}
+
+func TestEncodingRemovedCloudLogging(t *testing.T) {
+	ctx := context.Background()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "cloud_logging"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in cloud_logging encoding is removed since v0.132.0")
 }
 
 func TestEncodingExtension(t *testing.T) {

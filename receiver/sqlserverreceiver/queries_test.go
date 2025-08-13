@@ -55,6 +55,18 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerPropertiesQuery,
 			expectedQueryValFilename: "propertyQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test wait stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerWaitStatsQuery,
+			expectedQueryValFilename: "waitStatsQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test wait stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerWaitStatsQuery,
+			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
@@ -65,6 +77,65 @@ func TestQueryContents(t *testing.T) {
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
 			actual := tt.getQuery(tt.instanceName)
+			require.Equal(t, expected, actual)
+		})
+	}
+}
+
+func TestQueryTextAndPlanQueryContents(t *testing.T) {
+	queryTests := []struct {
+		name                     string
+		instanceName             string
+		maxQuerySampleCount      uint
+		lookbackTime             uint
+		getQuery                 func() string
+		expectedQueryValFilename string
+	}{
+		{
+			name:                     "Test query text and query plan",
+			instanceName:             "",
+			maxQuerySampleCount:      1000,
+			lookbackTime:             60,
+			getQuery:                 getSQLServerQueryTextAndPlanQuery,
+			expectedQueryValFilename: "databaseTopQueryWithoutInstanceName.txt",
+		},
+	}
+
+	for _, tt := range queryTests {
+		t.Run(tt.name, func(t *testing.T) {
+			expected, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
+			require.NoError(t, err)
+			actual := tt.getQuery()
+			require.NoError(t, err)
+			require.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(actual))
+		})
+	}
+}
+
+func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
+	queryTests := []struct {
+		name                     string
+		instanceName             string
+		getQuery                 func() string
+		expectedQueryValFilename string
+		maxRowsPerQuery          uint64
+	}{
+		{
+			name:                     "Test query sample query",
+			instanceName:             "",
+			maxRowsPerQuery:          1000,
+			getQuery:                 getSQLServerQuerySamplesQuery,
+			expectedQueryValFilename: "testQuerySampleQuery.txt",
+		},
+	}
+
+	for _, tt := range queryTests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedBytes, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
+			require.NoError(t, err)
+			// Replace all will fix newlines when testing on Windows
+			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}

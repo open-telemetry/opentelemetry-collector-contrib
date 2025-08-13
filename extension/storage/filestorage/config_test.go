@@ -87,7 +87,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	file, err := os.CreateTemp("", "")
+	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file.Close())

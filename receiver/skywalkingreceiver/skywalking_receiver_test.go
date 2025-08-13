@@ -23,6 +23,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
 
 var skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
@@ -74,7 +76,7 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = skywalkingReceiver
 	sr := newSkywalkingReceiver(config, set)
 	err := sr.registerTraceConsumer(sink)
@@ -90,7 +92,7 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)
@@ -129,7 +131,7 @@ func TestHttpReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)

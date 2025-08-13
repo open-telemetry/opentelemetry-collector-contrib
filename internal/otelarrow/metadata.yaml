@@ -1,6 +1,7 @@
 type: otelarrow
 
 status:
+  disable_codecov_badge: true
   class: pkg
   stability:
     beta: [traces, metrics, logs]

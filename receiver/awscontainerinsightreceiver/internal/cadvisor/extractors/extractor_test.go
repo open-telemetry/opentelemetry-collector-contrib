@@ -78,7 +78,7 @@ func TestGetMetricKey(t *testing.T) {
 	assert.Equal(t, "metricType:NodeDiskIO,device:/abc", getMetricKey(c))
 
 	c = &CAdvisorMetric{}
-	assert.Equal(t, "", getMetricKey(c))
+	assert.Empty(t, getMetricKey(c))
 }
 
 func TestMergeMetrics(t *testing.T) {

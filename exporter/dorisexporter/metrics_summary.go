@@ -31,14 +31,14 @@ type dQuantileValue struct {
 }
 
 type metricModelSummary struct {
-	data []*dMetricSummary
+	metricModelCommon[dMetricSummary]
 }
 
-func (m *metricModelSummary) metricType() pmetric.MetricType {
+func (*metricModelSummary) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeSummary
 }
 
-func (m *metricModelSummary) tableSuffix() string {
+func (*metricModelSummary) tableSuffix() string {
 	return "_summary"
 }
 
@@ -77,16 +77,4 @@ func (m *metricModelSummary) add(pm pmetric.Metric, dm *dMetric, e *metricsExpor
 	}
 
 	return nil
-}
-
-func (m *metricModelSummary) raw() any {
-	return m.data
-}
-
-func (m *metricModelSummary) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelSummary) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
 }

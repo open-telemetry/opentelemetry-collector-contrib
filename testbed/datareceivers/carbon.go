@@ -37,7 +37,7 @@ func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ co
 	cfg := factory.CreateDefaultConfig().(*carbonreceiver.Config)
 	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", cr.Port)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	var err error
 	cr.receiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 	if err != nil {
@@ -63,6 +63,6 @@ func (cr *CarbonDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (cr *CarbonDataReceiver) ProtocolName() string {
+func (*CarbonDataReceiver) ProtocolName() string {
 	return "carbon"
 }

@@ -6,4 +6,6 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [jpkrohling, mwear]
+    active: [mwear, evan-bradley]
+    emeritus: [jpkrohling]
+    seeking_new: true

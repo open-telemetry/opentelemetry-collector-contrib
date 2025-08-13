@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -32,7 +33,7 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	args, ok := oArgs.(*ReplacePatternArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
+		return nil, errors.New("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
 	}
 
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
@@ -56,14 +57,14 @@ func applyReplaceFormat[K any](ctx context.Context, tCtx K, replacementFormat ot
 			return "", errFmt
 		}
 		if !validFormatString(formatStringVal) {
-			return "", fmt.Errorf("replacementFormat must be format string containing a single %%s and no other format specifiers")
+			return "", errors.New("replacementFormat must be format string containing a single %s and no other format specifiers")
 		}
 		replacementVal = fmt.Sprintf(formatStringVal, replacementVal)
 	}
 	return replacementVal, nil
 }
 
-func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string, replacementFormat ottl.Optional[ottl.StringGetter[K]]) (string, error) {
+func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr, replacementVal string, replacementFormat ottl.Optional[ottl.StringGetter[K]]) (string, error) {
 	var updatedString string
 	updatedString = originalValStr
 	submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
@@ -86,7 +87,7 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 		}
 		replacementValStr, ok := replacementValRaw.(string)
 		if !ok {
-			return "", fmt.Errorf("the replacement value must be a string")
+			return "", errors.New("the replacement value must be a string")
 		}
 		replacementValStr, errNew = applyReplaceFormat(ctx, tCtx, replacementFormat, replacementValStr)
 		if errNew != nil {

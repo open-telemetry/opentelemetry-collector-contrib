@@ -211,7 +211,7 @@ func TestGroupingFileTracesExporter(t *testing.T) {
 						gotResourceSpans = append(gotResourceSpans, got.ResourceSpans().At(i))
 					}
 
-					assert.EqualValues(t, wantResourceSpans, gotResourceSpans)
+					assert.Equal(t, wantResourceSpans, gotResourceSpans)
 				}
 				fi.Close()
 			}
@@ -288,7 +288,7 @@ func TestGroupingFileLogsExporter(t *testing.T) {
 						gotResourceLogs = append(gotResourceLogs, got.ResourceLogs().At(i))
 					}
 
-					assert.EqualValues(t, wantResourceLogs, gotResourceLogs)
+					assert.Equal(t, wantResourceLogs, gotResourceLogs)
 				}
 				fi.Close()
 			}
@@ -366,7 +366,7 @@ func TestGroupingFileMetricsExporter(t *testing.T) {
 						gotResourceMetrics = append(gotResourceMetrics, got.ResourceMetrics().At(i))
 					}
 
-					assert.EqualValues(t, wantResourceMetrics, gotResourceMetrics)
+					assert.Equal(t, wantResourceMetrics, gotResourceMetrics)
 				}
 				fi.Close()
 			}

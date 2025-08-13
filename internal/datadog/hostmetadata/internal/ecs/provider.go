@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
-var ErrNotOnECSFargate = fmt.Errorf("not running on ECS Fargate")
+var ErrNotOnECSFargate = errors.New("not running on ECS Fargate")
 
 var _ source.Provider = (*Provider)(nil)
 
@@ -45,7 +45,7 @@ func (p *Provider) OnECSFargate(_ context.Context) (bool, error) {
 		return true, nil
 	}
 
-	return false, fmt.Errorf("TMDE endpoint is queryable, but launch type is unavailable")
+	return false, errors.New("TMDE endpoint is queryable, but launch type is unavailable")
 }
 
 // Source returns the task ARN of the ECS Fargate task if on ECS Fargate.

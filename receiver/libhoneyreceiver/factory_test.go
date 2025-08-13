@@ -18,7 +18,7 @@ import (
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 
 	assert.NoError(t, err, "receiver creation failed")
@@ -31,7 +31,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	lReceiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 
 	assert.NoError(t, err, "receiver creation failed")

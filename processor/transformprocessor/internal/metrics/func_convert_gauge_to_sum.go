@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -26,7 +27,7 @@ func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Argument
 	args, ok := oArgs.(*convertGaugeToSumArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("ConvertGaugeToSumFactory args must be of type *ConvertGaugeToSumArguments")
+		return nil, errors.New("ConvertGaugeToSumFactory args must be of type *ConvertGaugeToSumArguments")
 	}
 
 	return convertGaugeToSum(args.StringAggTemp, args.Monotonic)

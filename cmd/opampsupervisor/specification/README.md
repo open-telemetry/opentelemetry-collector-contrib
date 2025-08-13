@@ -88,27 +88,31 @@ capabilities:
 
   # The Supervisor will report EffectiveConfig to the Server.
   reports_effective_config: # true if unspecified
-  
+
   # The Supervisor can accept Collector executable package updates.
   # If enabled the Supervisor will also report package status to the
   # Server.
   accepts_packages: # false if unspecified
-  
+
   # The Collector will report own metrics to the destination specified by
   # the Server.
   reports_own_metrics: # true if unspecified
-  
+
   # The Collector will report own logs to the destination specified by
   # the Server.
   reports_own_logs: # true if unspecified
-  
+
+  # The Collector will report own traces to the destination specified by
+  # the Server.
+  reports_own_traces: # true if unspecified
+
   # The Collector will accept connections settings for exporters
   # from the Server.
   accepts_other_connection_settings: # false if unspecified
-  
+
   # The Supervisor will accept restart requests.
   accepts_restart_command: # true if unspecified
-  
+
   # The Collector will report Health.
   reports_health: # true if unspecified
 
@@ -126,7 +130,7 @@ agent:
   # The interval on which the Collector checks to see if it's been orphaned.
   orphan_detection_interval: 5s
 
-  # The maximum wait duration for retrieving bootstrapping information from the agent 
+  # The maximum wait duration for retrieving bootstrapping information from the agent
   bootstrap_timeout: 3s
 
   # Extra command line flags to pass to the Collector executable.
@@ -134,13 +138,18 @@ agent:
 
   # Extra environment variables to set when executing the Collector.
   env:
-  
+
   # Optional user name to drop the privileges to when running the
   # Collector process.
   run_as: myuser
-  # Path to optional local Collector config file to be merged with the
-  # config provided by the OpAMP server.
-  config_file: /etc/otelcol/config.yaml
+  # List of configuration files to be merged to built the Collector's effective
+  # configuratio. It includes a few "special" files. Read the "Config Files" section
+  # below for more details.
+  config_files:
+    - $OPAMP_EXTENSION_CONFIG
+    - $OWN_TELEMETRY_CONFIG
+    - $REMOTE_CONFIG
+
   # Optional directories that are allowed to be read/written by the
   # Collector.
   # If unspecified then NO access to the filesystem is allowed.
@@ -150,7 +159,7 @@ agent:
       deny: \[/var/log/secret_logs\]
     write:
       allow: \[/var/otelcol\]
-  
+
   # Optional key-value pairs to add to either the identifying attributes or
   # non-identifying attributes of the agent description sent to the OpAMP server.
   # Values here override the values in the agent description retrieved from the collector's
@@ -161,13 +170,124 @@ agent:
     non_identifying_attributes:
       custom.attribute: "custom-value"
 
-  # The port the Collector's health check extension will be configured to use
-  health_check_port:
-
-  # The port the Supervisor will start its OpAmp server on and the Collector's 
+  # The port the Supervisor will start its OpAmp server on and the Collector's
   # OpAmp extension will connect to
-  opamp_server_port: 
+  opamp_server_port:
 
+# Supervisor's internal telemetry settings.
+telemetry:
+  # Logs configuration.
+  logs:
+    # Minimum enabled logging level.
+    # Defaults to info.
+    level: debug
+    # URLs or file paths to write logging output to.
+    # Defaults to stderr.
+    output_paths:
+      - stderr
+      - supervisor.log
+    # Log processors to emit logs.
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4318
+  # Metrics configuration.
+  metrics:
+    # Verbosity of the metrics output.
+    level: detailed
+    # Metric readers to emit metrics.
+    readers:
+      - periodic:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4318
+  # Traces configuration.
+  traces:
+    # Verbosity of the spans emitted.
+    level: detailed
+    # Enabled context propagators.
+    propagators:
+      - tracecontext
+    # Span processors to emit spans.
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4318
+  # Resource attributes.
+  resource:
+    service.namespace: otel-demo
+
+```
+
+#### Notes on `agent::config_files`, `agent::args`, and `agent::env`
+
+Please be aware that when using the `agent::config_files` parameter,
+the configuration files specified are applied in the order they are specified.
+In other words, configuration files are merged from the top of the list to the bottom.
+Configuration added by files at the top of the list may be overwritten by the later ones.
+
+The indicated configuration files are merged in memory and the resulting configuration
+is written to `<storage::directory>/effective.yaml`.
+
+There are a few "special" configuration files that can be used to completely
+customize final configuration given to the Collector. Below are the available
+values and what they represent:
+
+- `$OPAMP_EXTENSION_CONFIG`: configuration for the OpAMP extension to connect to the Supervisor.
+- `$OWN_TELEMETRY_CONFIG`: configuration for the agent to report its own telemetry.
+- `$REMOTE_CONFIG`: remote configuration received by the Supervisor.
+
+**NOTE**: These configuration snippets, particularly `$OPAMP_EXTENSION_CONFIG`, are essential for the Supervisor and Collector to work together. Overriding values in these may result in the Supervisor failing to properly start the Collector and should be done with caution.
+
+These special files can be mixed with user-provided configuration files to create complex
+configuration merge orders, for instance, creating base-layer configuration at the
+lowest priority while keeping compliance configuration at the highest priority:
+
+```yaml
+agent:
+  config_files:
+    - base_config.yaml
+    - $OWN_TELEMETRY_CONFIG
+    - $OPAMP_EXTENSION_CONFIG
+    - $REMOTE_CONFIG
+    - compliance_config.yaml
+```
+
+If **one or more** of the special files are not specified, they are automatically
+added at predetermined positions in the list. The order is as follows:
+
+- `$OWN_TELEMETRY_CONFIG`
+- <USER_PROVIDED_CONFIG_FILES>
+- `$OPAMP_EXTENSION_CONFIG`
+- `$REMOTE_CONFIG`
+
+Arguments present in `agent::args` are passed to the executable binary **after** the configuration files.
+The environment variables specified in `agent::env` are set in the Collector process environment.
+
+Take the configuration below as an example:
+
+```yaml
+agent:
+  executable: ./otel-binary
+  config_files:
+    - './custom-config.yaml'
+    - './another-custom-config.yaml'
+  args:
+    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
+  env:
+    HOME: '/dev/home'
+    GO_HOME: '~/go'
+```
+
+This results in the following Collector process invocation:
+
+```shell
+./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
 ```
 
 ### Operation When OpAMP Server is Unavailable
@@ -255,8 +375,8 @@ configuration.
 To overcome this problem the Supervisor starts the Collector with an
 "noop" configuration that collects nothing but allows the opamp
 extension to be started. The "noop" configuration is a single pipeline
-with an nop receiver, a nop exporter, and the opamp extension. 
-The purpose of the "noop" configuration is to make sure the Collector starts 
+with an nop receiver, a nop exporter, and the opamp extension.
+The purpose of the "noop" configuration is to make sure the Collector starts
 and the opamp extension communicates with the Supervisor. The Collector is stopped
 after the AgentDescription is received from the Collector.
 
@@ -399,7 +519,7 @@ will populate exporter settings from OpAMP ConnectionSettings message
 the following way:
 
 | **ConnectionSettings**    | **Exporter setting** |
-|---------------------------|----------------------|
+| ------------------------- | -------------------- |
 | destination_endpoint      | endpoint             |
 | headers                   | headers              |
 | certificate.public_key    | tls.cert_file        |
@@ -462,7 +582,7 @@ extensions:
 The extension uses an OpAMP connection to the Supervisor when used with
 the Supervisor model.
 
-The extensions' configuration cannot be overridden by the remote
+The extension's configuration cannot be overridden by the remote
 configuration.
 
 The same extension can be used to connect directly to the OpAMP Server,

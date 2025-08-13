@@ -5,6 +5,7 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -46,8 +47,8 @@ func (m *mockDetector) GCEHostName() (string, error) {
 	return m.instanceName, nil
 }
 
-func (m *mockDetector) GKEClusterName() (string, error) {
-	return "", fmt.Errorf("not available")
+func (*mockDetector) GKEClusterName() (string, error) {
+	return "", errors.New("not available")
 }
 
 func TestProvider(t *testing.T) {

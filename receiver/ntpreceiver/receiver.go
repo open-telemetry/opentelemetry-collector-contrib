@@ -37,10 +37,10 @@ func (s *ntpScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 func newScraper(cfg *Config, settings receiver.Settings) *ntpScraper {
 	return &ntpScraper{
-		logger:   settings.TelemetrySettings.Logger,
+		logger:   settings.Logger,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		version:  cfg.Version,
-		timeout:  cfg.ControllerConfig.Timeout,
+		timeout:  cfg.Timeout,
 		endpoint: cfg.Endpoint,
 	}
 }

@@ -8,84 +8,110 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/service/xray/types"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRecordConnectionError(t *testing.T) {
-	type testParameters struct {
+	tests := []struct {
+		name  string
 		input error
-		want  func() *xray.TelemetryRecord
-	}
-	testCases := []testParameters{
+		want  func() types.TelemetryRecord
+	}{
 		{
-			input: awserr.NewRequestFailure(nil, http.StatusInternalServerError, ""),
-			want: func() *xray.TelemetryRecord {
+			name: "5xx error",
+			input: &awshttp.ResponseError{
+				ResponseError: &smithyhttp.ResponseError{
+					Response: &smithyhttp.Response{
+						Response: &http.Response{
+							StatusCode: http.StatusInternalServerError,
+						},
+					},
+				},
+			},
+			want: func() types.TelemetryRecord {
 				record := NewRecord()
-				record.BackendConnectionErrors.HTTPCode5XXCount = aws.Int64(1)
+				record.BackendConnectionErrors.HTTPCode5XXCount = aws.Int32(1)
 				return record
 			},
 		},
 		{
-			input: awserr.NewRequestFailure(nil, http.StatusBadRequest, ""),
-			want: func() *xray.TelemetryRecord {
+			name: "4xx error",
+			input: &awshttp.ResponseError{
+				ResponseError: &smithyhttp.ResponseError{
+					Response: &smithyhttp.Response{
+						Response: &http.Response{
+							StatusCode: http.StatusBadRequest,
+						},
+					},
+				},
+			},
+			want: func() types.TelemetryRecord {
 				record := NewRecord()
-				record.BackendConnectionErrors.HTTPCode4XXCount = aws.Int64(1)
+				record.BackendConnectionErrors.HTTPCode4XXCount = aws.Int32(1)
 				return record
 			},
 		},
 		{
-			input: awserr.NewRequestFailure(nil, http.StatusFound, ""),
-			want: func() *xray.TelemetryRecord {
+			name: "Other error (302)",
+			input: &awshttp.ResponseError{
+				ResponseError: &smithyhttp.ResponseError{
+					Response: &smithyhttp.Response{
+						Response: &http.Response{
+							StatusCode: http.StatusFound,
+						},
+					},
+				},
+			},
+			want: func() types.TelemetryRecord {
 				record := NewRecord()
-				record.BackendConnectionErrors.OtherCount = aws.Int64(1)
+				record.BackendConnectionErrors.OtherCount = aws.Int32(1)
 				return record
 			},
 		},
 		{
-			input: awserr.New(request.ErrCodeResponseTimeout, "", nil),
-			want: func() *xray.TelemetryRecord {
+			name:  "response timeout",
+			input: &awshttp.ResponseTimeoutError{},
+			want: func() types.TelemetryRecord {
 				record := NewRecord()
-				record.BackendConnectionErrors.TimeoutCount = aws.Int64(1)
+				record.BackendConnectionErrors.TimeoutCount = aws.Int32(1)
 				return record
 			},
 		},
 		{
-			input: awserr.New(request.ErrCodeRequestError, "", nil),
-			want: func() *xray.TelemetryRecord {
+			name:  "request error",
+			input: &smithyhttp.RequestSendError{},
+			want: func() types.TelemetryRecord {
 				record := NewRecord()
-				record.BackendConnectionErrors.UnknownHostCount = aws.Int64(1)
+				record.BackendConnectionErrors.UnknownHostCount = aws.Int32(1)
 				return record
 			},
 		},
 		{
-			input: awserr.New(request.ErrCodeSerialization, "", nil),
-			want: func() *xray.TelemetryRecord {
-				record := NewRecord()
-				record.BackendConnectionErrors.OtherCount = aws.Int64(1)
-				return record
-			},
-		},
-		{
+			name:  "other error (test)",
 			input: errors.New("test"),
-			want: func() *xray.TelemetryRecord {
+			want: func() types.TelemetryRecord {
 				record := NewRecord()
-				record.BackendConnectionErrors.OtherCount = aws.Int64(1)
+				record.BackendConnectionErrors.OtherCount = aws.Int32(1)
 				return record
 			},
 		},
 		{
+			name:  "no error",
 			input: nil,
 			want:  NewRecord,
 		},
 	}
+
 	recorder := NewRecorder()
-	for _, testCase := range testCases {
-		recorder.RecordConnectionError(testCase.input)
-		snapshot := recorder.Rotate()
-		assert.EqualValues(t, testCase.want().BackendConnectionErrors, snapshot.BackendConnectionErrors)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			recorder.RecordConnectionError(test.input)
+			snapshot := recorder.Rotate()
+			assert.Equal(t, test.want().BackendConnectionErrors, snapshot.BackendConnectionErrors)
+		})
 	}
 }

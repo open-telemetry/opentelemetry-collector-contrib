@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	TypeStr                   = "kubeadm"
-	defaultConfigMapName      = "kubeadm-config"
-	defaultConfigMapNamespace = "kube-system"
+	TypeStr                    = "kubeadm"
+	defaultConfigMapName       = "kubeadm-config"
+	defaultKubeSystemNamespace = "kube-system"
 )
 
 var _ internal.Detector = (*detector)(nil)
@@ -35,7 +35,7 @@ type detector struct {
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
-	kubeadmProvider, err := kubeadm.NewProvider(defaultConfigMapName, defaultConfigMapNamespace, cfg.APIConfig)
+	kubeadmProvider, err := kubeadm.NewProvider(defaultConfigMapName, defaultKubeSystemNamespace, cfg.APIConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating kubeadm provider: %w", err)
 	}
@@ -55,6 +55,14 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster name: %w", err)
 		}
 		d.rb.SetK8sClusterName(clusterName)
+	}
+
+	if d.ra.K8sClusterUID.Enabled {
+		clusterUID, err := d.provider.ClusterUID(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster uid: %w", err)
+		}
+		d.rb.SetK8sClusterUID(clusterUID)
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil

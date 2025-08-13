@@ -1,0 +1,80 @@
+resourceMetrics:  
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Extract memory_mb from log records
+            name: logs.memory_mb
+            gauge:
+              dataPoints: 
+                - asInt: 22          
+          - description: Extract cpu from log records
+            name: logs.cpu
+            gauge:
+              dataPoints: 
+                - asDouble: 0.55
+          - description: Extract memory_mb from log records with attribute bar and conditions
+            name: logs.bar.memory_mb
+            gauge:
+              dataPoints: 
+                - asDouble: 340.0
+                  attributes:
+                    - key: log.bar
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1000000"
+                - asDouble: 600.0
+                  attributes:
+                    - key: log.bar
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Extract memory_mb from log records with attribute foo
+            name: logs.foo.memory_mb
+            gauge:
+              dataPoints: 
+                - asInt: 600
+                  attributes:
+                    - key: log.foo
+                      value:
+                        stringValue: foo      
+                - asInt: 612
+                  attributes:
+                    - key: log.foo
+                      value:
+                        stringValue: notfoo
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

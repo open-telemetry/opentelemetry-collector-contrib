@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:  "localhost:12345",
 					Transport: confignet.TransportTypeUDP6,
 				},
+				SocketPermissions:   0o622,
 				AggregationInterval: 70 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{

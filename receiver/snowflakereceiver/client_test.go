@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestDefaultClientCreation(t *testing.T) {
@@ -45,7 +47,7 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopSettings().Logger,
+		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 
 	ctx := context.Background()
@@ -232,26 +234,26 @@ func TestMetricQueries(t *testing.T) {
 			desc:    "FetchSnowpipeMetrics",
 			query:   snowpipeMetricsQuery,
 			columns: []string{"pipe_name", "credits_used", "bytes_inserted", "files_inserted"},
-			params:  []driver.Value{"t", 1.0, 2.0, 3.0},
+			params:  []driver.Value{"t", 1.3, 2.4, 3},
 			expect: snowpipeMetric{
 				pipeName: sql.NullString{
 					String: "t",
 					Valid:  true,
 				},
-				creditsUsed:   1.0,
-				bytesInserted: 2.0,
-				filesInserted: 3.0,
+				creditsUsed:   1.3,
+				bytesInserted: 2.4,
+				filesInserted: 3,
 			},
 		},
 		{
 			desc:    "FetchStorageMetrics",
 			query:   storageMetricsQuery,
 			columns: []string{"storage_bytes", "stage_bytes", "failsafe_bytes"},
-			params:  []driver.Value{1.0, 2.0, 3.0},
+			params:  []driver.Value{1.4, 2.0, 3.67},
 			expect: storageMetric{
-				storageBytes:  1,
-				stageBytes:    2,
-				failsafeBytes: 3,
+				storageBytes:  1.4,
+				stageBytes:    2.0,
+				failsafeBytes: 3.67,
 			},
 		},
 	}
@@ -269,7 +271,7 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopSettings().Logger,
+				logger: receivertest.NewNopSettings(metadata.Type).Logger,
 			}
 			ctx := context.Background()
 
@@ -278,14 +280,41 @@ func TestMetricQueries(t *testing.T) {
 			clientObj := reflect.Indirect(clientVal)
 			returnVal := clientObj.MethodByName(test.desc).Call([]reflect.Value{reflect.ValueOf(ctx)})
 
-			// GetMetric functions return a slice of type <metricType> but since we only have one
-			// row we can safely just compare the first elem from the reflected slice
-			metric := returnVal[0].Type().Elem().Elem()
+			// Check for errors first
 			if err, ok := returnVal[1].Interface().(error); ok && err != nil {
 				t.Errorf("DB error %v", err)
+				return
 			}
 
-			assert.Equal(t, reflect.TypeOf(test.expect), metric)
+			actualSliceVal := returnVal[0]
+			if actualSliceVal.Kind() == reflect.Ptr {
+				actualSliceVal = actualSliceVal.Elem()
+			}
+
+			if actualSliceVal.Kind() != reflect.Slice {
+				t.Errorf("Expected slice, got %v", actualSliceVal.Kind())
+				return
+			}
+
+			// Verify we got at least one result
+			if actualSliceVal.Len() == 0 {
+				t.Error("Expected at least one result, got empty slice")
+				return
+			}
+
+			actualMetric := actualSliceVal.Index(0).Interface()
+
+			// Type Check
+			expectedType := reflect.TypeOf(test.expect)
+			actualType := reflect.TypeOf(actualMetric)
+			assert.Equal(t, expectedType, actualType, "Metric types should match")
+
+			// Value Check
+			assert.Equal(t, test.expect, actualMetric, "Metric values should match expected values")
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled mock expectations: %s", err)
+			}
 		})
 	}
 }

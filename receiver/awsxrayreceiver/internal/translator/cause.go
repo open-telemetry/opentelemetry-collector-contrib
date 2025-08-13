@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -59,8 +59,8 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 
 			// ID is a required field
 			attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
-			addString(excp.Message, conventions.AttributeExceptionMessage, attrs)
-			addString(excp.Type, conventions.AttributeExceptionType, attrs)
+			addString(excp.Message, string(conventions.ExceptionMessageKey), attrs)
+			addString(excp.Type, string(conventions.ExceptionTypeKey), attrs)
 			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, attrs)
 			addInt64(excp.Truncated, awsxray.AWSXrayExceptionTruncatedAttribute, attrs)
 			addInt64(excp.Skipped, awsxray.AWSXrayExceptionSkippedAttribute, attrs)
@@ -68,7 +68,7 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 
 			if len(excp.Stack) > 0 {
 				stackTrace := convertStackFramesToStackTraceStr(excp)
-				attrs.PutStr(conventions.AttributeExceptionStacktrace, stackTrace)
+				attrs.PutStr(string(conventions.ExceptionStacktraceKey), stackTrace)
 			}
 		}
 	}

@@ -7,7 +7,6 @@ import (
 	"log"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -170,7 +169,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	fakeClientSet := fake.NewSimpleClientset()
+	fakeClientSet := fake.NewClientset()
 	client := newPodClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NoError(t, client.store.Replace(podArray, ""))
 	client.refresh()
@@ -180,7 +179,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 		"default":     7,
 	}
 	resultMap := client.NamespaceToRunningPodNum()
-	log.Printf("NamespaceToRunningPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
+	log.Printf("NamespaceToRunningPodNum (len=%v): %v", len(resultMap), resultMap)
 	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)

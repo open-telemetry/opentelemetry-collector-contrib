@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fazuremonitor%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fazuremonitor) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fazuremonitor%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fazuremonitor) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_azuremonitor)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_azuremonitor&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pcwiese](https://www.github.com/pcwiese), [@hgaol](https://www.github.com/hgaol) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -42,6 +43,8 @@ The following settings can be optionally configured:
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
+- `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
+- `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
 
 Example:
 
@@ -107,6 +110,8 @@ The exact mapping can be found in [trace_to_envelope.go](trace_to_envelope.go).
 
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
 
+All links are mapped to property `_MS.links` with JSON array string.
+
 #### Span Events
 
 Span events are optionally saved to the Application Insights `traces` table.
@@ -116,6 +121,16 @@ Exception events are saved to the Application Insights `exception` table.
 
 This exporter saves log records to Application Insights `traces` table.
 [TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.
+
+#### Custom Events
+
+When `custom_events_enabled` = `true`, azure monitor exporter will export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`. 
+
+#### Exceptions
+
+This exporter saves exception records to Application Insights `exceptions` table when log records indicate an exception [specification](https://opentelemetry.io/docs/specs/otel/trace/exceptions/).
+
+When `exception_events_enabled` = `true`, azure monitor exporter will export log records to exceptions when either one of `exception.message` or `exception.type` attributes are set.
 
 ### Metrics
 

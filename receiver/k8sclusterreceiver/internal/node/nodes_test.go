@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +28,7 @@ import (
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
-	rm := CustomMetrics(receivertest.NewNopSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -74,7 +74,7 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	rac.OsDescription.Enabled = true
 
 	rb := metadata.NewResourceBuilder(rac)
-	rm := CustomMetrics(receivertest.NewNopSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
 		[]string{},
 		[]string{
 			"cpu",
@@ -170,7 +170,7 @@ func TestNodeMetrics(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)
 	m := mb.Emit()
 
@@ -359,7 +359,7 @@ func TestNodeMetadata(t *testing.T) {
 			ResourceID:    experimentalmetricmetadata.ResourceID("test-node-uid"),
 			Metadata: map[string]string{
 				"env":                                "production",
-				conventions.AttributeK8SNodeName:     "test-node",
+				string(conventions.K8SNodeNameKey):   "test-node",
 				"k8s.node.condition_ready":           "true",
 				"k8s.node.condition_memory_pressure": "false",
 				"k8s.node.condition_disk_pressure":   "false",

@@ -4,7 +4,9 @@
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -20,7 +22,7 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
@@ -43,6 +45,9 @@ type Config struct {
 	// The Coralogix logs ingress endpoint
 	Logs configgrpc.ClientConfig `mapstructure:"logs"`
 
+	// The Coralogix profiles ingress endpoint
+	Profiles configgrpc.ClientConfig `mapstructure:"profiles"`
+
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey configopaque.String `mapstructure:"private_key"`
 
@@ -55,6 +60,14 @@ type Config struct {
 	// Default Coralogix application and subsystem name values.
 	AppName   string `mapstructure:"application_name"`
 	SubSystem string `mapstructure:"subsystem_name"`
+
+	RateLimiter RateLimiterConfig `mapstructure:"rate_limiter"`
+}
+
+type RateLimiterConfig struct {
+	Enabled   bool          `mapstructure:"enabled"`
+	Threshold int           `mapstructure:"threshold"`
+	Duration  time.Duration `mapstructure:"duration"`
 }
 
 func isEmpty(endpoint string) bool {
@@ -69,22 +82,31 @@ func (c *Config) Validate() error {
 	if isEmpty(c.Domain) &&
 		isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
-		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
+		isEmpty(c.Logs.Endpoint) &&
+		isEmpty(c.Profiles.Endpoint) {
+		return errors.New("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` or `profiles.endpoint` not specified, please fix the configuration")
 	}
 	if c.PrivateKey == "" {
-		return fmt.Errorf("`private_key` not specified, please fix the configuration")
+		return errors.New("`private_key` not specified, please fix the configuration")
 	}
 	if c.AppName == "" {
-		return fmt.Errorf("`application_name` not specified, please fix the configuration")
+		return errors.New("`application_name` not specified, please fix the configuration")
 	}
 
-	// check if headers exists
-	if len(c.ClientConfig.Headers) == 0 {
-		c.ClientConfig.Headers = make(map[string]configopaque.String)
+	if len(c.Headers) == 0 {
+		c.Headers = make(map[string]configopaque.String)
 	}
-	c.ClientConfig.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.ClientConfig.Headers["appName"] = configopaque.String(c.AppName)
+	c.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.Headers["appName"] = configopaque.String(c.AppName)
+
+	if c.RateLimiter.Enabled {
+		if c.RateLimiter.Threshold <= 0 {
+			return errors.New("`rate_limiter.threshold` must be greater than 0")
+		}
+		if c.RateLimiter.Duration <= 0 {
+			return errors.New("`rate_limiter.duration` must be greater than 0")
+		}
+	}
 	return nil
 }
 

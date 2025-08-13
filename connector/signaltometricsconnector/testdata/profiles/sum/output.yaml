@@ -1,0 +1,65 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Count total number of profiles
+            name: total.profiles.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "3"
+                  timeUnixNano: "1000000"
+          - description: Count total number of profiles as per profile.foo attribute
+            name: profiles.foo.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: profile.foo
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Count total number of profiles with resource attribute foo
+            name: total.profiles.resource.foo.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "3"
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

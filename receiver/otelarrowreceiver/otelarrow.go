@@ -8,13 +8,13 @@ import (
 	"errors"
 	"sync"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -81,7 +81,8 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 		netReporter:  netReporter,
 		boundedQueue: bq,
 	}
-	if err = zstd.SetDecoderConfig(cfg.Arrow.Zstd); err != nil {
+	err = zstd.SetDecoderConfig(cfg.Arrow.Zstd)
+	if err != nil {
 		return nil, err
 	}
 
@@ -127,9 +128,9 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 		return err
 	}
 
-	var authServer auth.Server
-	if r.cfg.GRPC.Auth != nil {
-		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticator(ctx, host.GetExtensions())
+	var authServer extensionauth.Server
+	if r.cfg.GRPC.Auth.HasValue() {
+		authServer, err = r.cfg.GRPC.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return err
 		}
@@ -141,8 +142,8 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			// in which case the default is selected in the arrowRecord package.
 			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Arrow.MemoryLimitMiB<<20))
 		}
-		if r.settings.TelemetrySettings.MeterProvider != nil {
-			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider))
+		if r.settings.MeterProvider != nil {
+			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.MeterProvider))
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)

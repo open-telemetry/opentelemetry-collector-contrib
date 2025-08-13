@@ -21,7 +21,7 @@ import (
 func TestTranslationSupportedVersion(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zaptest.NewLogger(t),
 		"https://opentelemetry.io/schemas/1.9.0",
 		LoadTranslationVersion(t, TranslationVersion190),
@@ -107,7 +107,7 @@ func TestTranslationIteratorExact(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			tn, err := newTranslatorFromReader(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
+			tn, err := newTranslator(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
 			require.NoError(t, err, "Must have no error when creating translator")
 
 			_, inVersion, err := GetFamilyAndVersion(tc.income)
@@ -119,13 +119,13 @@ func TestTranslationIteratorExact(t *testing.T) {
 			for rev, more := it(); more; rev, more = it() {
 				iterationVersions = append(iterationVersions, *rev.Version())
 			}
-			assert.EqualValues(t, tc.versions, iterationVersions)
+			assert.Equal(t, tc.versions, iterationVersions)
 		})
 	}
 }
 
 func TestTranslationIterator(t *testing.T) {
-	tn, err := newTranslatorFromReader(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190))
+	tn, err := newTranslator(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190))
 	require.NoError(t, err, "Must have no error when creating translator")
 
 	ver := &Version{1, 0, 0}
@@ -135,7 +135,7 @@ func TestTranslationIterator(t *testing.T) {
 	for rev, more := it(); more; rev, more = it() {
 		ver = rev.Version()
 	}
-	assert.EqualValues(t, &Version{1, 9, 0}, ver, "Must match the expected version number")
+	assert.Equal(t, &Version{1, 9, 0}, ver, "Must match the expected version number")
 }
 
 func TestTranslationSpanChanges(t *testing.T) {
@@ -185,7 +185,7 @@ func TestTranslationSpanChanges(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			tn, err := newTranslatorFromReader(
+			tn, err := newTranslator(
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -208,7 +208,7 @@ func TestTranslationSpanChanges(t *testing.T) {
 			if diff := cmp.Diff(expect, spans, cmp.AllowUnexported(ptrace.Traces{})); diff != "" {
 				t.Errorf("Span mismatch (-want +got):\n%s", diff)
 			}
-			assert.EqualValues(t, expect, spans, "Must match the expected values")
+			assert.Equal(t, expect, spans, "Must match the expected values")
 		})
 	}
 }
@@ -260,7 +260,7 @@ func TestTranslationLogChanges(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			tn, err := newTranslatorFromReader(
+			tn, err := newTranslator(
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -280,7 +280,7 @@ func TestTranslationLogChanges(t *testing.T) {
 				}
 			}
 			expect := NewExampleLogs(t, tc.target)
-			assert.EqualValues(t, expect, logs, "Must match the expected values")
+			assert.Equal(t, expect, logs, "Must match the expected values")
 		})
 	}
 }
@@ -332,7 +332,7 @@ func TestTranslationMetricChanges(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			tn, err := newTranslatorFromReader(
+			tn, err := newTranslator(
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -352,7 +352,7 @@ func TestTranslationMetricChanges(t *testing.T) {
 				}
 			}
 			expect := NewExampleMetrics(t, tc.target)
-			assert.EqualValues(t, expect, metrics, "Must match the expected values")
+			assert.Equal(t, expect, metrics, "Must match the expected values")
 		})
 	}
 }
@@ -362,7 +362,7 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 
 	a, b := NewExampleLogs(t, Version{1, 0, 0}), NewExampleLogs(t, Version{1, 7, 0})
 
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -382,8 +382,8 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 		}
 	}
 	expect := NewExampleLogs(t, Version{1, 4, 0})
-	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
-	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+	assert.Equal(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.Equal(t, expect, b, "Must match the expected value when reverting versions")
 }
 
 func TestTranslationEquvialance_Metrics(t *testing.T) {
@@ -391,7 +391,7 @@ func TestTranslationEquvialance_Metrics(t *testing.T) {
 
 	a, b := NewExampleMetrics(t, Version{1, 0, 0}), NewExampleMetrics(t, Version{1, 7, 0})
 
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -420,7 +420,7 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 
 	a, b := NewExampleSpans(t, Version{1, 0, 0}), NewExampleSpans(t, Version{1, 7, 0})
 
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -440,8 +440,8 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 		}
 	}
 	expect := NewExampleSpans(t, Version{1, 4, 0})
-	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
-	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+	assert.Equal(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.Equal(t, expect, b, "Must match the expected value when reverting versions")
 }
 
 func BenchmarkCreatingTranslation(b *testing.B) {
@@ -451,7 +451,7 @@ func BenchmarkCreatingTranslation(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		tn, err := newTranslatorFromReader(
+		tn, err := newTranslator(
 			log,
 			"https://opentelemetry.io/schemas/1.9.0",
 			LoadTranslationVersion(b, TranslationVersion190),
@@ -462,7 +462,7 @@ func BenchmarkCreatingTranslation(b *testing.B) {
 }
 
 func BenchmarkUpgradingMetrics(b *testing.B) {
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
@@ -493,7 +493,7 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 }
 
 func BenchmarkUpgradingTraces(b *testing.B) {
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
@@ -524,7 +524,7 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 }
 
 func BenchmarkUpgradingLogs(b *testing.B) {
-	tn, err := newTranslatorFromReader(
+	tn, err := newTranslator(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),

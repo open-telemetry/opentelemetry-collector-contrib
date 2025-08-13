@@ -41,7 +41,7 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	}
 	var err error
 	f := signalfxreceiver.NewFactory()
-	sr.receiver, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), &config, mc)
+	sr.receiver, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), &config, mc)
 	if err != nil {
 		return err
 	}
@@ -65,6 +65,6 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (sr *SFxMetricsDataReceiver) ProtocolName() string {
+func (*SFxMetricsDataReceiver) ProtocolName() string {
 	return "signalfx"
 }

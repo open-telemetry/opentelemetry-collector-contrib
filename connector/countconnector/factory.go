@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
@@ -18,18 +19,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
-	return connector.NewFactory(
+	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetrics, metadata.TracesToMetricsStability),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
-		connector.WithLogsToMetrics(createLogsToMetrics, metadata.LogsToMetricsStability),
+		xconnector.WithTracesToMetrics(createTracesToMetrics, metadata.TracesToMetricsStability),
+		xconnector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		xconnector.WithLogsToMetrics(createLogsToMetrics, metadata.LogsToMetricsStability),
+		xconnector.WithProfilesToMetrics(createProfilesToMetrics, metadata.ProfilesToMetricsStability),
 	)
 }
 
@@ -151,6 +154,35 @@ func createLogsToMetrics(
 	return &count{
 		metricsConsumer: nextConsumer,
 		logsMetricDefs:  metricDefs,
+	}, nil
+}
+
+// createProfilesToMetrics creates a profiles to metrics connector based on provided config.
+func createProfilesToMetrics(
+	_ context.Context,
+	set connector.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (xconnector.Profiles, error) {
+	c := cfg.(*Config)
+
+	metricDefs := make(map[string]metricDef[ottlprofile.TransformContext], len(c.Profiles))
+	for name, info := range c.Profiles {
+		md := metricDef[ottlprofile.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
+		}
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := filterottl.NewBoolExprForProfile(info.Conditions, filterottl.StandardProfileFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			md.condition = condition
+		}
+		metricDefs[name] = md
+	}
+
+	return &count{
+		metricsConsumer:    nextConsumer,
+		profilesMetricDefs: metricDefs,
 	}, nil
 }
 

@@ -5,6 +5,7 @@ package tcp
 
 import (
 	"crypto/tls"
+	"fmt"
 	"math/rand/v2"
 	"net"
 	"os"
@@ -86,7 +87,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
-		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -117,7 +118,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -136,7 +137,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
-		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -183,7 +184,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -223,7 +224,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
-		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -254,7 +255,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -399,7 +400,7 @@ func TestFailToBind(t *testing.T) {
 		require.NoError(t, err)
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
-		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
@@ -428,7 +429,7 @@ func BenchmarkTCPInput(b *testing.B) {
 
 	fakeOutput := testutil.NewFakeOutput(b)
 	tcpInput := op.(*Input)
-	tcpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
+	tcpInput.OutputOperators = []operator.Operator{fakeOutput}
 
 	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
@@ -460,5 +461,5 @@ func BenchmarkTCPInput(b *testing.B) {
 		<-fakeOutput.Received
 	}
 
-	defer close(done)
+	close(done)
 }

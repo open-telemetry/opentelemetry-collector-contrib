@@ -7,6 +7,7 @@ package apachereceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -57,7 +58,7 @@ func TestIntegration(t *testing.T) {
 
 type waitStrategy struct{}
 
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForListeningPort(apachePort).
 		WithStartupTimeout(time.Minute).
 		WaitUntilReady(ctx, st); err != nil {
@@ -78,7 +79,7 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(5 * time.Second):
-			return fmt.Errorf("server startup problem")
+			return errors.New("server startup problem")
 		case <-time.After(100 * time.Millisecond):
 			resp, err := http.Get(fmt.Sprintf("http://%s:%s/server-status?auto", hostname, port.Port()))
 			if err != nil {

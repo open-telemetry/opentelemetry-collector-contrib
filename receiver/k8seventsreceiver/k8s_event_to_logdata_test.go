@@ -40,7 +40,7 @@ func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
 
 	attr, ok = attrs.Get("k8s.object.resource_version")
 	assert.True(t, ok)
-	assert.Equal(t, "", attr.AsString())
+	assert.Empty(t, attr.AsString())
 
 	// add ResourceVersion
 	k8sEvent.InvolvedObject.ResourceVersion = "7387066320"
@@ -60,5 +60,5 @@ func TestUnknownSeverity(t *testing.T) {
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
 	assert.Equal(t, plog.SeverityNumberUnspecified, logEntry.SeverityNumber())
-	assert.Equal(t, "", logEntry.SeverityText())
+	assert.Empty(t, logEntry.SeverityText())
 }

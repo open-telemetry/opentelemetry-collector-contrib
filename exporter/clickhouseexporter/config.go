@@ -4,25 +4,29 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/url"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
 // Config defines configuration for clickhouse exporter.
 type Config struct {
+	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
+	collectorVersion string
+
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -64,15 +68,15 @@ type Config struct {
 
 type MetricTablesConfig struct {
 	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
-	Gauge internal.MetricTypeConfig `mapstructure:"gauge"`
+	Gauge metrics.MetricTypeConfig `mapstructure:"gauge"`
 	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
-	Sum internal.MetricTypeConfig `mapstructure:"sum"`
+	Sum metrics.MetricTypeConfig `mapstructure:"sum"`
 	// Summary is the table name for summary metric type. default is `otel_metrics_summary`.
-	Summary internal.MetricTypeConfig `mapstructure:"summary"`
+	Summary metrics.MetricTypeConfig `mapstructure:"summary"`
 	// Histogram is the table name for histogram metric type. default is `otel_metrics_histogram`.
-	Histogram internal.MetricTypeConfig `mapstructure:"histogram"`
+	Histogram metrics.MetricTypeConfig `mapstructure:"histogram"`
 	// ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
-	ExponentialHistogram internal.MetricTypeConfig `mapstructure:"exponential_histogram"`
+	ExponentialHistogram metrics.MetricTypeConfig `mapstructure:"exponential_histogram"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -97,11 +101,36 @@ var (
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
+func createDefaultConfig() component.Config {
+	return &Config{
+		collectorVersion: "unknown",
+
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		ConnectionParams: map[string]string{},
+		Database:         defaultDatabase,
+		LogsTableName:    "otel_logs",
+		TracesTableName:  "otel_traces",
+		TTL:              0,
+		CreateSchema:     true,
+		AsyncInsert:      true,
+		MetricsTables: MetricTablesConfig{
+			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
+			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
+			Summary:              metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
+			Histogram:            metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
+			ExponentialHistogram: metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
+		},
+	}
+}
+
 // Validate the ClickHouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = errors.Join(err, errConfigNoEndpoint)
 	}
+
 	dsn, e := cfg.buildDSN()
 	if e != nil {
 		err = errors.Join(err, e)
@@ -147,10 +176,14 @@ func (cfg *Config) buildDSN() (string, error) {
 		queryParams.Set("compress", cfg.Compress)
 	}
 
-	// Use database from config if not specified in path, or if config is not default.
-	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
-		dsnURL.Path = cfg.Database
+	productInfo := queryParams.Get("client_info_product")
+	collectorProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersion)
+	if productInfo == "" {
+		productInfo = collectorProductInfo
+	} else {
+		productInfo = fmt.Sprintf("%s,%s", productInfo, collectorProductInfo)
 	}
+	queryParams.Set("client_info_product", productInfo)
 
 	// Override username and password if specified in config.
 	if cfg.Username != "" {
@@ -162,23 +195,6 @@ func (cfg *Config) buildDSN() (string, error) {
 	return dsnURL.String(), nil
 }
 
-func (cfg *Config) buildDB() (*sql.DB, error) {
-	dsn, err := cfg.buildDSN()
-	if err != nil {
-		return nil, err
-	}
-
-	// ClickHouse sql driver will read clickhouse settings from the DSN string.
-	// It also ensures defaults.
-	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
-	conn, err := sql.Open(driverName, dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
-}
-
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
 func (cfg *Config) shouldCreateSchema() bool {
 	return cfg.CreateSchema
@@ -187,33 +203,33 @@ func (cfg *Config) shouldCreateSchema() bool {
 func (cfg *Config) buildMetricTableNames() {
 	tableName := defaultMetricTableName
 
-	if len(cfg.MetricsTableName) != 0 && !cfg.areMetricTableNamesSet() {
+	if cfg.MetricsTableName != "" && !cfg.areMetricTableNamesSet() {
 		tableName = cfg.MetricsTableName
 	}
 
-	if len(cfg.MetricsTables.Gauge.Name) == 0 {
+	if cfg.MetricsTables.Gauge.Name == "" {
 		cfg.MetricsTables.Gauge.Name = tableName + defaultGaugeSuffix
 	}
-	if len(cfg.MetricsTables.Sum.Name) == 0 {
+	if cfg.MetricsTables.Sum.Name == "" {
 		cfg.MetricsTables.Sum.Name = tableName + defaultSumSuffix
 	}
-	if len(cfg.MetricsTables.Summary.Name) == 0 {
+	if cfg.MetricsTables.Summary.Name == "" {
 		cfg.MetricsTables.Summary.Name = tableName + defaultSummarySuffix
 	}
-	if len(cfg.MetricsTables.Histogram.Name) == 0 {
+	if cfg.MetricsTables.Histogram.Name == "" {
 		cfg.MetricsTables.Histogram.Name = tableName + defaultHistogramSuffix
 	}
-	if len(cfg.MetricsTables.ExponentialHistogram.Name) == 0 {
+	if cfg.MetricsTables.ExponentialHistogram.Name == "" {
 		cfg.MetricsTables.ExponentialHistogram.Name = tableName + defaultExpHistogramSuffix
 	}
 }
 
 func (cfg *Config) areMetricTableNamesSet() bool {
-	return len(cfg.MetricsTables.Gauge.Name) != 0 ||
-		len(cfg.MetricsTables.Sum.Name) != 0 ||
-		len(cfg.MetricsTables.Summary.Name) != 0 ||
-		len(cfg.MetricsTables.Histogram.Name) != 0 ||
-		len(cfg.MetricsTables.ExponentialHistogram.Name) != 0
+	return cfg.MetricsTables.Gauge.Name != "" ||
+		cfg.MetricsTables.Sum.Name != "" ||
+		cfg.MetricsTables.Summary.Name != "" ||
+		cfg.MetricsTables.Histogram.Name != "" ||
+		cfg.MetricsTables.ExponentialHistogram.Name != ""
 }
 
 // tableEngineString generates the ENGINE string.
@@ -227,6 +243,32 @@ func (cfg *Config) tableEngineString() string {
 	}
 
 	return fmt.Sprintf("%s(%s)", engine, params)
+}
+
+// database returns the preferred database for creating tables and inserting data.
+// The config option takes precedence over the DSN's settings.
+// Falls back to default if neither are set.
+// Assumes config has passed Validate.
+func (cfg *Config) database() string {
+	if cfg.Database != "" && cfg.Database != defaultDatabase {
+		return cfg.Database
+	}
+
+	dsn, err := cfg.buildDSN()
+	if err != nil {
+		return ""
+	}
+
+	dsnDB, err := internal.DatabaseFromDSN(dsn)
+	if err != nil {
+		return ""
+	}
+
+	if dsnDB != "" && dsnDB != defaultDatabase {
+		return dsnDB
+	}
+
+	return defaultDatabase
 }
 
 // clusterString generates the ON CLUSTER string. Returns empty string if not set.

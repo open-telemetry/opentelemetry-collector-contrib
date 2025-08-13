@@ -10,7 +10,7 @@ OpenTelemetry community members, issue authors, and anyone else who would like t
 
 #### Triagers
 
-Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move
+Contributors with [triager](/#Contributing) permissions can help move
 issues along by adding missing component labels, which help organize issues and trigger automations to notify code owners. They can
 also use their familiarity with the Collector and its components to investigate issues themselves. Alternatively, they may point issue
 authors to another resource or someone else who may know more.
@@ -26,7 +26,7 @@ is fit to be added to a component. Code owners will be notified by repository au
 
 Code owners may not have triager permissions on the repository,
 so they can help triage through investigation and by participating in discussions. They can also help organize issues by
-[adding labels via comments](#adding-labels-via-comments).
+[adding labels via comments](/CONTRIBUTING.md#adding-labels-via-comments).
 
 #### Community Members
 
@@ -43,6 +43,65 @@ between the involved parties to allow work to begin or for the issue to be close
 - Determining whether a feature request belongs in a component, should be accomplished through other means, or isn't appropriate for a component at this time.
 - Guiding any interested parties to another person or resource that may be more knowledgeable about an issue.
 - Suggesting an issue for discussion at a SIG meeting if a synchronous discussion would be more productive.
+
+It is recommended that a triager should follow these steps when a new issue is reported:
+
+1. Assess the validity of the issue. Here's a rough outline on how to assess:
+   - Does the issue include a clear description of the problem?
+      - Whether it’s a bug report, an enhancement proposal, or a request for a new component, the purpose of the issue should be easy to understand.
+   - The following outline is applicable to bugs or enhancements:
+      - Does the issue specify the relevant version or environment details?
+      - Does it provide the user’s configuration, the expected behavior, and any other relevant context?
+      - If it's reported as a bug, are the steps to reproduce clearly outlined?
+      - For enhancements, does the user clearly outline the expected behavior and provide relevant examples or use cases?
+   - For new component requests:
+      - Does the user explain the purpose and intended use of the component?
+      - Has the user provided example configurations, interfaces, or scenarios where the component would be applied?
+      - Will the user contribute the necessary code, or they are expecting someone from upstream to volunteer?
+      - Will the user be available to provide feedback, clarify requirements, or help with testing and maintenance?
+   - If the issues lacks sufficient information, ask the author clarifying questions:
+      - Collector configuration (missing or incomplete configurations are not uncommon)
+      - The expected vs. actual behavior
+      - Clear and complete steps to reproduce the issue
+      - Collector version
+      - Any other questions that might fit
+
+2. If the issue is deemed valid and requires attention, apply appropriate labels based on its nature:
+   - For bugs, add the `bug` label along with `waiting-for-codeowners`.
+   - For enhancements, use the `enhancement` label and also add `waiting-for-codeowners`.
+   - If the issue is about a new component, add the `sponsor-needed` label. We should encourage the user to join our SIG meeting and propose the new component to a broader audience. They can also reach out in the #otel-collector-dev channel on CNCF Slack.
+   - Check out [state diagram](#state-diagram) for detailed information about all labels.
+
+3. An issue may be considered invalid for the following reasons:
+   - The user is using an incorrect configuration.
+       - In such cases, a brief comment and a link to documentation should be sufficient to close the issue.
+   - The issue was filed in the wrong repository:
+       - For example, we might receive an issue for `otlpexporter` in contrib. It is best to reach out in the #otel-collector-dev channel on CNCF Slack and ask project maintainers to transfer the issue.
+
+4. An issue may be considered complete for following reasons:
+   - The enhancement/bugfix PR has been merged.
+   - The enhancement/bugfix has already been addressed in the newer version.
+   - The new component has been added to the repository.
+
+#### Triage process flowchart 
+
+```mermaid
+flowchart TD
+    Start{Check validity}
+
+    Start -->|Unclear| WaitingAuthor[Tag:<br><code>waiting-for-author</code><br>Ask for config, repro steps,<br>expected vs actual result]
+    Start -->|Invalid| Transfer[Close or<br>transfer issue:<br>wrong repo, bad config, etc.]
+    Start -->|Valid| Classify
+
+    Classify -->|Bug| EnrichBug[Tag:<br><code>bug</code>,<br><code>waiting-for-codeowners</code>,<br>Optional: <code>bug:perf/crash</code>,<br><code>workaround:yes/no</code>,<br><code>release:blocker</code>]
+
+    Classify -->|Enhancement| EnhancementLabel[Tag:<br><code>enhancement</code>,<br><code>waiting-for-codeowners</code>]
+
+    Classify -->|Documentation| DocLabel[Tag:<br><code>documentation</code>,<br><code>waiting-for-codeowners</code>]
+
+    Classify -->|New Component| NewComponent[Tag:<br><code>sponsor-needed</code>]
+    NewComponent --> Expectations[Set expectations:<br>Will user contribute code?<br>Will they provide feedback/support?<br><br>Suggest joining SIG,<br>propose via SIG,<br>or reach out on<br><code>#otel-collector-dev</code> Slack]
+```
 
 #### Issue assignment
 
@@ -71,3 +130,58 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided.        |
 | `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                             |
 | `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor.                                                                                          |
+
+### State diagram
+
+Here is a diagram outlining the potential issue states and how issues move through different stages:
+
+```mermaid
+flowchart TD
+    n0(["New issue has been opened"]) --> n1
+    n1(["Needs Triage"]) --> n2["Has good repro steps <br>and/or description?"]
+  subgraph graph2["**waiting-for-codeowners**"]
+        n3["Waiting for Codeowners<br>to further validate the issue"]
+  end
+  subgraph graph3["**waiting-for-author**"]
+        n4["Waiting for author to provide more details"]
+  end
+  subgraph graph4["**help-wanted**"]
+        n8["Waiting on community"]
+  end
+  subgraph graph5["**closed**"]
+        n10(["Close the issue and provide details as needed"])
+  end
+    n2 -- Yes --> n3
+    n2 -- No/Need more details --> n4
+    n2 -- Invalid configuration/alternative available --> n10
+    n3 -- Invalid Issue --> n10
+    n3 -- Valid Issue -->  n6["Codeowner has time<br>to fix it?"]
+    n6 -- Assign it to codeowner --> n7["Issue in being worked upon"]
+    n6 -- No --> n8
+    n7 -- Once PR is merged --> n10
+    n8 -- When someone volunteers to provide a fix --> n11["Assign it to the person"]
+    n12 -- Any activity on the issue --> n8
+    n8 -. Issue becomes stale due to lack of activity .-> n12["Issue is inactive"]
+    n11 --> n7
+    n12 -- Closed automatically after 120 days due to lack of activity --> n10
+    n4 -- Once enough details are available --> n2
+
+    n3@{ shape: rect}
+    n4@{ shape: rect}
+    n2@{ shape: diam}
+    n6@{ shape: diam}
+
+     n1:::Aqua
+     n3:::Ash
+     n4:::Ash
+     n8:::Ash
+     n2:::Ash
+     n2:::Peach
+     n6:::Peach
+     n7:::Ash
+     n10:::Rose
+    classDef Rose stroke-width:1px, stroke-dasharray:none, stroke:#FF5978, fill:#FFDFE5, color:#8E2236
+    classDef Aqua stroke-width:1px, stroke-dasharray:none, stroke:#46EDC8, fill:#DEFFF8, color:#378E7A
+    classDef Peach stroke-width:1px, stroke-dasharray:none, stroke:#FBB35A, fill:#FFEFDB, color:#8F632D
+    classDef Ash stroke-width:1px, stroke-dasharray:none, stroke:#999999, fill:#EEEEEE, color:#000000
+```

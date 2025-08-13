@@ -54,7 +54,7 @@ func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
 		ExpectContinueTimeout: 1 * time.Second,
 		// Not supported by intake
 		ForceAttemptHTTP2: false,
-		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLSSetting.InsecureSkipVerify},
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLS.InsecureSkipVerify},
 	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
@@ -62,17 +62,17 @@ func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
-	if hcs.MaxIdleConns != nil {
-		transport.MaxIdleConns = *hcs.MaxIdleConns
+	if hcs.MaxIdleConns > 0 {
+		transport.MaxIdleConns = hcs.MaxIdleConns
 	}
-	if hcs.MaxIdleConnsPerHost != nil {
-		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
+	if hcs.MaxIdleConnsPerHost > 0 {
+		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
 	}
-	if hcs.MaxConnsPerHost != nil {
-		transport.MaxConnsPerHost = *hcs.MaxConnsPerHost
+	if hcs.MaxConnsPerHost > 0 {
+		transport.MaxConnsPerHost = hcs.MaxConnsPerHost
 	}
-	if hcs.IdleConnTimeout != nil {
-		transport.IdleConnTimeout = *hcs.IdleConnTimeout
+	if hcs.IdleConnTimeout > 0 {
+		transport.IdleConnTimeout = hcs.IdleConnTimeout
 	}
 	transport.DisableKeepAlives = hcs.DisableKeepAlives
 	return &http.Client{

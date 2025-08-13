@@ -6,7 +6,8 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazuremonitor%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazuremonitor) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazuremonitor%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazuremonitor) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@nslaughter](https://www.github.com/nslaughter), [@celian-garcia](https://www.github.com/celian-garcia) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azuremonitor)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azuremonitor&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@nslaughter](https://www.github.com/nslaughter), [@celian-garcia](https://www.github.com/celian-garcia), [@ishleenk17](https://www.github.com/ishleenk17) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -18,19 +19,27 @@ This receiver scrapes Azure Monitor API for resources metrics.
 
 The following settings are required:
 
-- `subscription_id`
+- `subscription_ids`: list of subscriptions on which the resource's metrics are collected
+- or `discover_subscriptions`: (default = `false`) If set to true, will collect metrics from all subscriptions in the tenant.
 
 The following settings are optional:
 
-- `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
+- `auth.authenticator`: Specifies the component ID to use to authenticate requests to Azure API. Use [azureauth extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension).
+- `credentials` (Deprecated since [v0.129.0]: use `auth` instead)(default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
+- `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
 - `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
 - `maximum_number_of_records_per_resource` (default = 10): Maximum number of records to fetch per resource.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Valid values: `AzureCloud`, `AzureUSGovernment`, `AzureChinaCloud`.
+- `dimensions.enabled` (default = `true`): allows to opt out from automatically split by all the dimensions of the resource type.
+- `dimensions.overrides` (default = `{}`): if dimensions are enabled, it allows you to specify a set of dimensions for a particular metric. This is a two levels map with first key being the resource type and second key being the metric name. Programmatic value should be used for metric name https://learn.microsoft.com/en-us/azure/azure-monitor/reference/metrics-index
+- `append_tags_as_attributes` (default = `[]`): Controls which Azure resource tags are added as resource attributes to the metrics. Can be a list of specific tag names or `["*"]` to include all tags.
+- `use_batch_api` (default = `false`): Use the batch API to fetch metrics. This is useful when the number of subscriptions is high and the API calls are rate limited.
+- `maximum_resources_per_batch` (default = 50): If batch is enabled, the maximum number of unique resource IDs to fetch per API call, current limit is 50 (as of 06/16/2025) https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/migrate-to-batch-api?tabs=individual-response
 
 Authenticating using service principal requires following additional settings:
 
@@ -48,6 +57,47 @@ Authenticating using managed identities has the following optional settings:
 
 - `client_id`
 
+### Filtering metrics
+
+The `metrics` configuration setting is designed to limit scraping to specific metrics and their particular aggregations. It accepts a nested map where the key of the top-level is the Azure Metric Namespace, the key of the nested map is an Azure Metric Name, and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count). Additionally, the metric map value can be an empty array or an array with one element `*` (asterisk). In this case, the scraper will fetch all supported aggregations for a metric. The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
+
+Scraping limited metrics and aggregations:
+
+```yaml
+receivers:
+  azuremonitor:
+    resource_groups:
+      - ${resource_groups}
+    services:
+      - Microsoft.EventHub/namespaces
+      - Microsoft.AAD/DomainServices # scraper will fetch all metrics from this namespace since there are no limits under the "metrics" option
+    metrics:
+      "microsoft.eventhub/namespaces": # scraper will fetch only the metrics listed below:
+        IncomingMessages: [total]     # metric IncomingMessages with aggregation "Total"
+        NamespaceCpuUsage: [*]        # metric NamespaceCpuUsage with all known aggregations
+```
+
+### Use Batch API (experimental)
+
+There's two API to collect metrics in Azure Monitor:
+- the **Azure Resource Manager (ARM) API** (currently by default)
+- the **Azure Monitor Metrics Data Plane API** (with ``use_batch_api=true``)
+
+The Azure Monitor Metrics Data Plane API present some interesting benefits, especially regarding **rate limits**.
+
+> Some highlights from [announcement blog post - Jan 31, 2024](https://techcommunity.microsoft.com/blog/azureobservabilityblog/azure-monitor--announcing-general-availability-of-azure-monitor-metrics-data-pla/4041394)
+> - **Higher Querying Limits**: This API is designed to handle metric data queries for resources with higher query limits compared to existing Azure Resource Manager APIs. This is particularly advantageous for customers with large subscriptions containing numerous resources. While the REST API allows only 12,000 API calls per hour, the Azure Metrics Data Plane API elevates this limit to a staggering 360,000 API calls per hour. This increase in query throughput ensures a more efficient and streamlined experience for customers.
+> - **Efficiency**: The efficiency of this API shines when collecting metrics for multiple resources. Instead of making multiple API calls for each resource, the Azure Metrics Data Plane API offers a single batch API call that can accommodate up to 50 resource IDs. This results in higher throughput and more efficient querying, making it a time-saving solution.
+> - **Improved Performance**: The performance of client-side services can be greatly enhanced by reducing the number of calls required to extract the same amount of metric data for resources. The Azure Metrics Data Plane API optimizes the data retrieval process, ultimately leading to improved performance across the board.
+
+Good news is that it's **very easy for you to try out!**
+```yaml
+receivers:
+  azuremonitor:
+    use_batch_api: true
+    ... # no change for other configs
+```
+
 ### Example Configurations
 
 Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#service-principal-with-a-secret) for authentication:
@@ -55,7 +105,7 @@ Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/a
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
@@ -75,8 +125,8 @@ Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/develope
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
-    auth: "workload_identity"
+    subscription_ids: ["${subscription_id}"]
+    credentials: "workload_identity"
     tenant_id: "${env:AZURE_TENANT_ID}"
     client_id: "${env:AZURE_CLIENT_ID}"
     federated_token_file: "${env:AZURE_FEDERATED_TOKEN_FILE}"
@@ -87,8 +137,8 @@ Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/az
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
-    auth: "managed_identity"
+    subscription_ids: ["${subscription_id}"]
+    credentials: "managed_identity"
     client_id: "${env:AZURE_CLIENT_ID}"
 ```
 
@@ -97,11 +147,115 @@ Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
-    auth: "default_credentials"
+    subscription_ids: ["${subscription_id}"]
+    credentials: "default_credentials"
 ```
 
+[Using `azureauthextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension#azure-authenticator-extension) for authentication:
+
+```yaml
+receivers:
+  azuremonitor:
+    subscription_ids: ["${subscription_id}"]
+    auth:
+      authenticator: azureauth
+
+extensions:
+  azureauth:
+    managed_identity:
+      client_id: ${client_id}
+```
+
+Overriding dimensions for a particular metric:
+
+```yaml
+receivers:
+  azuremonitor:
+    dimensions:
+      enabled: true
+      overrides:
+        "Microsoft.Network/azureFirewalls":
+          # Real example of an Azure limitation here:
+          # Dimensions exposed are Reason, Status, Protocol,
+          # but when selecting Protocol in the filters, it returns nothing.
+          # Note here that the metric display name is ``Network rules hit count`` but it's programmatic value is ``NetworkRuleHit``
+          # Ref: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-network-azurefirewalls-metrics
+          "NetworkRuleHit": [Reason, Status]
+```
+
+Selectively including resource tags as attributes:
+
+```yaml
+receivers:
+  azuremonitor:
+    # Include all tags
+    append_tags_as_attributes: ["*"]
+    
+    # Or include only specific tags
+    append_tags_as_attributes: ["service", "environment"]
+```
 
 ## Metrics
 
 Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
+
+## Azure API calls summary
+At each collection interval, here are the different Azure API that can be called.
+It can be useful to know that, in order to configure the client permission in Azure or to choose the 
+right configuration based on your needs.
+
+### [Subscriptions - Get](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/get?view=rest-resources-2022-12-01&tabs=HTTP)
+```yaml
+conditions:
+- subscription_ids is set
+- discover_subscriptions is false or not set
+- resource_attributes.subscription.enabled is true
+cardinality: once per sub id
+```
+### [Subscriptions - List](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/list?view=rest-resources-2022-12-01&tabs=HTTP)
+```yaml
+conditions:
+- discover_subscriptions is true
+cardinality: once per *page of sub
+```
+
+### [Resources - List](https://learn.microsoft.com/en-us/rest/api/resources/resources/list?view=rest-resources-2022-12-01&tabs=HTTP)
+```yaml
+conditions:
+- always
+cardinality: once per sub id
+```
+
+### [Metrics Definitions - List](https://learn.microsoft.com/en-us/rest/api/monitor/metric-definitions/list?view=rest-monitor-2023-10-01&tabs=HTTP)
+```yaml
+conditions: always
+cardinality:
+  - if use_batch_api is false, once per res id and *page of metrics def
+  - if use_batch_api is true, once per res type and *page of metrics def
+```
+
+### [Metrics - List](https://learn.microsoft.com/en-us/rest/api/monitor/metrics/list?view=rest-monitor-2023-10-01&tabs=HTTP)
+```yaml
+conditions:
+- use_batch_api is false
+cardinality: once per res id, *page of metrics, and **composite key
+```
+
+### [Metrics Batch - Batch](https://learn.microsoft.com/en-us/rest/api/monitor/metrics-batch/batch?view=rest-monitor-2023-10-01&tabs=HTTP)
+```yaml
+conditions:
+- use_batch_api is true
+cardinality: once per res type and **composite key
+```
+
+> *page size has not been clearly identified, reading the documentation. Even Chat Bots lose themselves
+> with the "top"/"$top" filter that doesn't seem related, and give random results from 10 to 1000...
+> 
+> **the composite key is an identifier formed with info retrieved in metric definitions.
+Useful to group and reduce the number of metrics calls.
+It is composed by 
+> - dimensions,
+> - aggregations, 
+> - minimum timegrain.
+> 
+> It is used to get several metrics in one request.
