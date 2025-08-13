@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -50,9 +51,9 @@ func TestNewConnector(t *testing.T) {
 
 			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
+			cfg.Histogram.Explicit = configoptional.Some(ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,
-			}
+			})
 			cfg.Dimensions = tc.dimensions
 
 			// Test
