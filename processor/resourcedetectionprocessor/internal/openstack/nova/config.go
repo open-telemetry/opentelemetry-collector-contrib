@@ -11,7 +11,7 @@ import (
 type Config struct {
 	// Labels is a list of regex patterns to match Nova instance metadata keys
 	// (from the "meta" map) that should be added as resource attributes.
-	// Matched keys are emitted as "openstack.meta.<key>: <value>".
+	// Matched keys are emitted as "openstack.nova.meta.<key>: <value>".
 	Labels []string `mapstructure:"labels"`
 
 	// ResourceAttributes controls which standard resource attributes are enabled

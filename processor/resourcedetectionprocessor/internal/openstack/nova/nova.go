@@ -50,70 +50,12 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 
 	return &Detector{
 		logger:                set.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes), // ✅ init RB
-		metadataProvider:      novaprovider.NewProvider(),                          // ✅ correct field
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		metadataProvider:      novaprovider.NewProvider(),
 		labelRegexes:          rs,
 		failOnMissingMetadata: cfg.FailOnMissingMetadata,
 	}, nil
 }
-
-// Detect implements internal.Detector.
-// func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-// 	res := pcommon.NewResource()
-// 	attrs := res.Attributes()
-
-// 	// Identify cloud first (stable, even if some fields fail).
-// 	attrs.PutStr(string(conventions.CloudProviderKey), "openstack")
-// 	attrs.PutStr(string(conventions.CloudPlatformKey), "openstack_nova")
-
-// 	// Pull the document.
-// 	doc, err := d.provider.Get(ctx)
-// 	if err != nil {
-// 		if d.failOnMissingMD {
-// 			return res, conventions.SchemaURL, err
-// 		}
-// 		// best-effort: return what we have (cloud.*)
-// 		d.logger.Debug("nova metadata get failed (best-effort mode)", zap.Error(err))
-// 		return res, conventions.SchemaURL, nil
-// 	}
-
-// 	var aggErr error
-
-// 	// host.id (uuid)
-// 	if doc.UUID != "" {
-// 		attrs.PutStr(string(conventions.HostIDKey), doc.UUID)
-// 	} else {
-// 		aggErr = multierr.Append(aggErr, errMissing("uuid"))
-// 	}
-
-// 	// host.name (hostname)
-// 	if doc.Hostname != "" {
-// 		attrs.PutStr(string(conventions.HostNameKey), doc.Hostname)
-// 	} else {
-// 		// Some deployments only set Name; fall back if Hostname is empty.
-// 		if doc.Name != "" {
-// 			attrs.PutStr(string(conventions.HostNameKey), doc.Name)
-// 		} else {
-// 			aggErr = multierr.Append(aggErr, errMissing("hostname"))
-// 		}
-// 	}
-
-// 	// Optional: capture selected meta labels under openstack.meta.*
-// 	if len(d.labelRegexes) > 0 && doc.Meta != nil {
-// 		for k, v := range doc.Meta {
-// 			if regexArrayMatch(d.labelRegexes, k) {
-// 				attrs.PutStr(LabelPrefix+k, v)
-// 			}
-// 		}
-// 	}
-
-// 	// Surface missing-field errors only if requested.
-// 	if d.failOnMissingMD && aggErr != nil {
-// 		return res, conventions.SchemaURL, aggErr
-// 	}
-
-// 	return res, conventions.SchemaURL, nil
-// }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {

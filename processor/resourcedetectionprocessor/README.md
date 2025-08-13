@@ -320,7 +320,7 @@ processors:
 ### Amazon EKS
 
 This detector reads resource information from the [EC2 instance metadata service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve related resource attributes.
-If IMDS is not available, (example: EKS-AutoMode and POD not on the hostnetwork), it falls back to a combination of [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#-strong-kubernetes-api-v1-25-strong-) 
+If IMDS is not available, (example: EKS-AutoMode and POD not on the hostnetwork), it falls back to a combination of [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#-strong-kubernetes-api-v1-25-strong-)
 and [EC2 API](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) to retrieve related resource attributes.
 
 EC2 API requires the `EC2:DescribeInstances` permission to be granted to the IAM role. If IMDS is not accessible, ex: EKS-AutoMode, you can use [POD Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
@@ -654,6 +654,38 @@ If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name
 other sources to the collector, then these describe the monitored entity in the best way.
 Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
 or the collector's host instead, which might be inaccurate.
+
+### Openstack Nova
+
+
+Uses the [OpenStack Nova metadata API](https://docs.openstack.org/nova/latest/user/metadata.html) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [EC2 Detector Resource Attributes](./internal/openstack/nova/documentation.md).
+
+It can also optionally capture metadata keys from the `"meta"` section of `meta_data.json` as resource attributes, using regular expressions to match the keys you want.
+
+Nova custom configuration example:
+```yaml
+processors:
+  resourcedetection/nova:
+    detectors: ["nova"]
+    nova:
+      # A list of regex's to match label keys to add as resource attributes can be specified
+      labels:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
+```
+
+The Nova detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/nova:
+    detectors: ["nova"]
+    nova:
+      fail_on_missing_metadata: true
+```
 
 ## Configuration
 
