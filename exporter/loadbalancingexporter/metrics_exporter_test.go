@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -50,8 +51,8 @@ const (
 	signal1Attr3Value = true
 	signal1Attr4Key   = "sigattr4k"
 	signal1Attr4Value = 3.3
-	serviceName1      = "service-name-1"
-	serviceName2      = "service-name-2"
+	serviceName1      = "service-name-01"
+	serviceName2      = "service-name-02"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
@@ -186,7 +187,7 @@ func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 	return expectedOutput
 }
 
-func compareMetricsMaps(t *testing.T, expected map[string]pmetric.Metrics, actual map[string]pmetric.Metrics) {
+func compareMetricsMaps(t *testing.T, expected, actual map[string]pmetric.Metrics) {
 	expectedKeys := make([]string, 0, len(expected))
 	for key := range expected {
 		expectedKeys = append(expectedKeys, key)
@@ -337,7 +338,7 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			createSettings := ts
 			config := &Config{
 				Resolver: ResolverSettings{
-					Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 				},
 				RoutingKey: tc.routingKey,
 			}
@@ -443,7 +444,7 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			createSettings := ts
 			config := &Config{
 				Resolver: ResolverSettings{
-					Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}},
+					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
 				},
 				RoutingKey: tc.routingKey,
 			}
@@ -746,7 +747,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
 		},
 	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -832,7 +833,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	require.Positive(t, counter2.Load())
 }
 
-func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpCount int) pmetric.Metrics {
+func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	timeStamp := pcommon.Timestamp(rand.IntN(256))
@@ -884,7 +885,7 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 	return md
 }
 
-func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount int, rmCount int, smCount int, mCount int, dpCount int) {
+func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCount, smCount, mCount, dpCount int) {
 	ts, tb := getTelemetryAssets(b)
 
 	sink := new(consumertest.MetricsSink)
@@ -899,7 +900,7 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount int, rm
 
 	config := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: endpoints},
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
 		},
 		RoutingKey: routingKey,
 	}
@@ -972,7 +973,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 func endpoint2Config() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
 		},
 		RoutingKey: "service",
 	}
@@ -981,7 +982,7 @@ func endpoint2Config() *Config {
 func resourceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
 		},
 		RoutingKey: resourceRoutingStr,
 	}
@@ -990,7 +991,7 @@ func resourceBasedRoutingConfig() *Config {
 func metricNameBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
 		},
 		RoutingKey: metricNameRoutingStr,
 	}
@@ -1049,7 +1050,7 @@ func newNopMockMetricsExporter() exporter.Metrics {
 	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
-func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
+func (*mockMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

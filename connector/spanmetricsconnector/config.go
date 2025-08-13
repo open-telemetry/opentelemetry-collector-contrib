@@ -49,7 +49,7 @@ type Config struct {
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
-	// Deprecated:  Please use AggregationCardinalityLimit instead
+	// Deprecated [v0.130.0]:  Please use AggregationCardinalityLimit instead
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
@@ -106,7 +106,7 @@ type HistogramConfig struct {
 
 type ExemplarsConfig struct {
 	Enabled         bool `mapstructure:"enabled"`
-	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
+	MaxPerDataPoint int  `mapstructure:"max_per_data_point"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -165,6 +165,10 @@ func (c Config) Validate() error {
 
 	if c.AggregationCardinalityLimit < 0 {
 		return fmt.Errorf("invalid aggregation_cardinality_limit: %v, the limit should be positive", c.AggregationCardinalityLimit)
+	}
+
+	if c.Exemplars.Enabled && c.Exemplars.MaxPerDataPoint < 0 {
+		return fmt.Errorf("invalid max_per_data_point: %v, the value should be positive", c.Exemplars.MaxPerDataPoint)
 	}
 
 	return nil

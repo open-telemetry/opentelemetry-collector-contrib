@@ -15,13 +15,11 @@ import (
 
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -37,140 +35,11 @@ func TestNewScraper(t *testing.T) {
 	require.Empty(t, scraper.resources)
 }
 
-func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
-	return &azidentity.ClientSecretCredential{}, nil
-}
-
-func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
-	return &azidentity.WorkloadIdentityCredential{}, nil
-}
-
-func azManagedIdentityFuncMock(*azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error) {
-	return &azidentity.ManagedIdentityCredential{}, nil
-}
-
-func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error) {
-	return &azidentity.DefaultAzureCredential{}, nil
-}
-
 func createDefaultTestConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TenantID = "fake-tenant-id"
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	return cfg
-}
-
-func TestAzureScraperStart(t *testing.T) {
-	timeMock := getTimeMock()
-
-	tests := []struct {
-		name     string
-		testFunc func(*testing.T)
-	}{
-		// TODO: Add test cases.
-		{
-			name: "default",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-					settings:            componenttest.NewNopTelemetrySettings(),
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
-			},
-		},
-		{
-			name: "service_principal",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = servicePrincipal
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-					settings:            componenttest.NewNopTelemetrySettings(),
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
-			},
-		},
-		{
-			name: "workload_identity",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = workloadIdentity
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-					settings:            componenttest.NewNopTelemetrySettings(),
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
-			},
-		},
-		{
-			name: "managed_identity",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = managedIdentity
-				s := &azureScraper{
-					cfg:                   cfg,
-					time:                  timeMock,
-					azIDCredentialsFunc:   azIDCredentialsFuncMock,
-					azManagedIdentityFunc: azManagedIdentityFuncMock,
-					settings:              componenttest.NewNopTelemetrySettings(),
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ManagedIdentityCredential{}, s.cred)
-			},
-		},
-		{
-			name: "default_credentials",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = defaultCredentials
-				s := &azureScraper{
-					cfg:                      cfg,
-					time:                     timeMock,
-					azIDCredentialsFunc:      azIDCredentialsFuncMock,
-					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
-					settings:                 componenttest.NewNopTelemetrySettings(),
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.DefaultAzureCredential{}, s.cred)
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, tt.testFunc)
-	}
 }
 
 func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientListResponse) func(options *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
@@ -225,16 +94,28 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultTestConfig()
 	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	cfgTagsEnabled := createDefaultTestConfig()
-	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.AppendTagsAsAttributes = []string{"*"}
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
 	cfgTagsEnabled.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
+	cfgTagsSelective := createDefaultTestConfig()
+	cfgTagsSelective.AppendTagsAsAttributes = []string{"tagName1"}
+	cfgTagsSelective.MaximumNumberOfMetricsInACall = 2
+	cfgTagsSelective.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
 	cfgSubNameAttr := createDefaultTestConfig()
+	cfgSubNameAttr.AppendTagsAsAttributes = []string{}
 	cfgSubNameAttr.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	cfgSubNameAttr.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled = true
+
+	cfgTagsCaseInsensitive := createDefaultTestConfig()
+	cfgTagsCaseInsensitive.AppendTagsAsAttributes = []string{"TAGNAME1"}
+	cfgTagsCaseInsensitive.MaximumNumberOfMetricsInACall = 2
+	cfgTagsCaseInsensitive.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	tests := []struct {
 		name    string
@@ -261,9 +142,27 @@ func TestAzureScraperScrape(t *testing.T) {
 			},
 		},
 		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsSelective,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
 			name: "metrics_subname_golden",
 			fields: fields{
 				cfg: cfgSubNameAttr,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsCaseInsensitive,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -278,7 +177,7 @@ func TestAzureScraperScrape(t *testing.T) {
 			optionsResolver := newMockClientOptionsResolver(
 				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
-				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
+				getResourcesMockData(),
 				getMetricsDefinitionsMockData(),
 				getMetricsValuesMockData(),
 				nil,
@@ -591,7 +490,7 @@ func getNominalTestScraper() *azureScraper {
 	optionsResolver := newMockClientOptionsResolver(
 		getSubscriptionByIDMockData(),
 		getSubscriptionsMockData(),
-		getResourcesMockData(false),
+		getResourcesMockData(),
 		getMetricsDefinitionsMockData(),
 		getMetricsValuesMockData(),
 		nil,
@@ -701,7 +600,7 @@ func getTimeMock() timeNowIface {
 	return &timeMock{time: time.Now()}
 }
 
-func getResourcesMockData(tags bool) map[string][]armresources.ClientListResponse {
+func getResourcesMockData() map[string][]armresources.ClientListResponse {
 	id1, id2, id3, id4,
 		location1, name1, type1 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
@@ -715,10 +614,14 @@ func getResourcesMockData(tags bool) map[string][]armresources.ClientListRespons
 		Name:     &name1,
 		Type:     &type1,
 	}
-	if tags {
-		tagName1, tagValue1 := "tagName1", "tagValue1"
-		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
+
+	tagName1, tagValue1 := "tagName1", "tagValue1"
+	tagName2, tagValue2 := "tagName2", "tagValue2"
+	resourceID1.Tags = map[string]*string{
+		tagName1: &tagValue1,
+		tagName2: &tagValue2,
 	}
+
 	return map[string][]armresources.ClientListResponse{
 		"subscriptionId1": {
 			{
@@ -921,7 +824,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			strings.Join([]string{name1, name2}, ","): {
+			name1 + "," + name2: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{

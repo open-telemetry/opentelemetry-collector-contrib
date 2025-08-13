@@ -82,9 +82,9 @@ Aggregate of Aerospike Metrics memory_used_data_bytes, memory_used_index_bytes, 
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| component | Individual component of a namespace | Str: ``data``, ``index``, ``set_index``, ``secondary_index`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| component | Individual component of a namespace | Str: ``data``, ``index``, ``set_index``, ``secondary_index`` | false |
 
 ### aerospike.namespace.query.count
 
@@ -98,11 +98,11 @@ Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of query operation performed on a namespace | Str: ``aggregation``, ``basic``, ``short``, ``long_basic``, ``short_basic``, ``ops_background``, ``udf_background`` |
-| index | Type of index the operation was performed on | Str: ``primary``, ``secondary`` |
-| result | Result of a query operation performed on a namespace | Str: ``abort``, ``complete``, ``error``, ``timeout`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of query operation performed on a namespace | Str: ``aggregation``, ``basic``, ``short``, ``long_basic``, ``short_basic``, ``ops_background``, ``udf_background`` | false |
+| index | Type of index the operation was performed on | Str: ``primary``, ``secondary`` | false |
+| result | Result of a query operation performed on a namespace | Str: ``abort``, ``complete``, ``error``, ``timeout`` | false |
 
 ### aerospike.namespace.scan.count
 
@@ -116,10 +116,10 @@ Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_er
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of scan operation performed on a namespace | Str: ``aggregation``, ``basic``, ``ops_background``, ``udf_background`` |
-| result | Result of a scan operation performed on a namespace | Str: ``abort``, ``complete``, ``error`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of scan operation performed on a namespace | Str: ``aggregation``, ``basic``, ``ops_background``, ``udf_background`` | false |
+| result | Result of a scan operation performed on a namespace | Str: ``abort``, ``complete``, ``error`` | false |
 
 ### aerospike.namespace.transaction.count
 
@@ -133,10 +133,10 @@ Aggregate of Aerospike Metrics client_delete_error, client_delete_filtered_out, 
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of transaction performed on a namespace | Str: ``delete``, ``read``, ``udf``, ``write`` |
-| result | Result of a transaction performed on a namespace | Str: ``error``, ``filtered_out``, ``not_found``, ``success``, ``timeout`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of transaction performed on a namespace | Str: ``delete``, ``read``, ``udf``, ``write`` | false |
+| result | Result of a transaction performed on a namespace | Str: ``error``, ``filtered_out``, ``not_found``, ``success``, ``timeout`` | false |
 
 ### aerospike.node.connection.count
 
@@ -150,10 +150,10 @@ Aggregate of Aerospike Metrics client_connections_closed, client_connections_ope
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` |
-| operation | Operation performed with a connection (open or close) | Str: ``close``, ``open`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` | false |
+| operation | Operation performed with a connection (open or close) | Str: ``close``, ``open`` | false |
 
 ### aerospike.node.connection.open
 
@@ -167,9 +167,9 @@ Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` | false |
 
 ### aerospike.node.memory.free
 

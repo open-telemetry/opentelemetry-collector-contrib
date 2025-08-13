@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
@@ -103,6 +104,41 @@ func TestGetTracesMarshaler(t *testing.T) {
 	assert.Nil(t, m)
 }
 
+func TestGetProfilesMarshaler(t *testing.T) {
+	// Verify built-in marshalers.
+	_ = mustGetProfilesMarshaler(t, "otlp_proto", componenttest.NewNopHost())
+	_ = mustGetProfilesMarshaler(t, "otlp_json", componenttest.NewNopHost())
+
+	// Verify extensions take precedence over built-in marshalers.
+	m := mustGetProfilesMarshaler(t, "otlp_proto", extensionsHost{
+		component.MustNewID("otlp_proto"): pprofileMarshalerFuncExtension(func(pprofile.Profiles) ([]byte, error) {
+			return []byte("overridden"), nil
+		}),
+	})
+	messages, err := m.MarshalProfiles(pprofile.NewProfiles())
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "overridden", string(messages[0].Value))
+
+	// Verify named extensions are supported.
+	m = mustGetProfilesMarshaler(t, "otlp_proto/alice", extensionsHost{
+		component.MustNewIDWithName("otlp_proto", "alice"): pprofileMarshalerFuncExtension(func(pprofile.Profiles) ([]byte, error) {
+			return []byte("bob"), nil
+		}),
+	})
+	messages, err = m.MarshalProfiles(pprofile.NewProfiles())
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "bob", string(messages[0].Value))
+
+	// Specifying an extension for a different type should fail fast.
+	m, err = getProfilesMarshaler("otlp_proto", extensionsHost{
+		component.MustNewID("otlp_proto"): struct{ component.Component }{},
+	})
+	require.EqualError(t, err, `extension "otlp_proto" is not a profiles marshaler`)
+	assert.Nil(t, m)
+}
+
 func mustGetLogsMarshaler(tb testing.TB, encoding string, host component.Host) marshaler.LogsMarshaler {
 	tb.Helper()
 	m, err := getLogsMarshaler(encoding, host)
@@ -120,6 +156,13 @@ func mustGetMetricsMarshaler(tb testing.TB, encoding string, host component.Host
 func mustGetTracesMarshaler(tb testing.TB, encoding string, host component.Host) marshaler.TracesMarshaler {
 	tb.Helper()
 	m, err := getTracesMarshaler(encoding, host)
+	require.NoError(tb, err)
+	return m
+}
+
+func mustGetProfilesMarshaler(tb testing.TB, encoding string, host component.Host) marshaler.ProfilesMarshaler {
+	tb.Helper()
+	m, err := getProfilesMarshaler(encoding, host)
 	require.NoError(tb, err)
 	return m
 }

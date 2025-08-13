@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -17,21 +18,25 @@ import (
 // client while maintaining compatibility with the existing Sarama-based code.
 type SaramaSyncProducer struct {
 	producer     sarama.SyncProducer
+	spm          SaramaProducerMetrics
 	metadataKeys []string
 }
 
 // NewSaramaSyncProducer creates a new SaramaSyncProducer that wraps a kafkaclient.Producer.
-func NewSaramaSyncProducer(producer sarama.SyncProducer,
+func NewSaramaSyncProducer(
+	producer sarama.SyncProducer,
+	spm SaramaProducerMetrics,
 	metadataKeys []string,
 ) *SaramaSyncProducer {
 	return &SaramaSyncProducer{
 		producer:     producer,
+		spm:          spm,
 		metadataKeys: metadataKeys,
 	}
 }
 
 // ExportData sends multiple messages to the Kafka broker using the underlying producer.
-func (p *SaramaSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
+func (p *SaramaSyncProducer) ExportData(ctx context.Context, msgs Messages) (err error) {
 	messages := makeSaramaMessages(msgs)
 	setMessageHeaders(ctx, messages, p.metadataKeys,
 		func(key string, value []byte) sarama.RecordHeader {
@@ -40,10 +45,11 @@ func (p *SaramaSyncProducer) ExportData(ctx context.Context, msgs Messages) erro
 		func(m *sarama.ProducerMessage) []sarama.RecordHeader { return m.Headers },
 		func(m *sarama.ProducerMessage, h []sarama.RecordHeader) { m.Headers = h },
 	)
-	if err := p.producer.SendMessages(messages); err != nil {
-		return wrapKafkaProducerError(err)
+	defer p.spm.ReportProducerMetrics(ctx, messages, err, time.Now())
+	if err = p.producer.SendMessages(messages); err != nil {
+		err = wrapKafkaProducerError(err)
 	}
-	return nil
+	return err
 }
 
 // Close shuts down the producer and flushes any remaining messages.
@@ -72,10 +78,11 @@ func makeSaramaMessages(messages Messages) []*sarama.ProducerMessage {
 type kafkaErrors struct {
 	count int
 	err   string
+	topic string
 }
 
 func (ke kafkaErrors) Error() string {
-	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
+	return fmt.Sprintf("Failed to deliver %d messages to topic %s due to %s", ke.count, ke.topic, ke.err)
 }
 
 func wrapKafkaProducerError(err error) error {
@@ -94,5 +101,5 @@ func wrapKafkaProducerError(err error) error {
 		return consumererror.NewPermanent(confErr)
 	}
 
-	return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+	return kafkaErrors{len(prodErr), prodErr[0].Err.Error(), prodErr[0].Msg.Topic}
 }

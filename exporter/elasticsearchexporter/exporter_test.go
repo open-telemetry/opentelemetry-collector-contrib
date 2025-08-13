@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elastic/go-docappender/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -399,17 +401,20 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish otel mapping mode", func(t *testing.T) {
 		for _, tc := range []struct {
+			name         string
 			body         pcommon.Value
 			isEvent      bool
 			wantDocument []byte
 		}{
 			{
+				name: "basic",
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
+				name: "map body",
 				body: func() pcommon.Value {
 					vm := pcommon.NewValueMap()
 					m := vm.SetEmptyMap()
@@ -421,6 +426,7 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
+				name: "map body event",
 				body: func() pcommon.Value {
 					vm := pcommon.NewValueMap()
 					m := vm.SetEmptyMap()
@@ -433,6 +439,7 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
+				name: "heterogeneous slice body",
 				body: func() pcommon.Value {
 					vs := pcommon.NewValueSlice()
 					s := vs.Slice()
@@ -444,6 +451,7 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
+				name: "heterogeneous slice body event",
 				body: func() pcommon.Value {
 					vs := pcommon.NewValueSlice()
 					s := vs.Slice()
@@ -456,62 +464,232 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 		} {
-			rec := newBulkRecorder()
-			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-				rec.Record(docs)
-				return itemsAllOK(docs)
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
+				recordAttrs := map[string]any{
+					"data_stream.dataset": "attr.dataset",
+					"attr.foo":            "attr.foo.value",
+				}
+				if tc.isEvent {
+					recordAttrs["event.name"] = "foo"
+				}
+				logs := newLogsWithAttributes(
+					recordAttrs,
+					nil,
+					map[string]any{
+						"data_stream.dataset":   "resource.attribute.dataset",
+						"data_stream.namespace": "resource.attribute.namespace",
+						"resource.attr.foo":     "resource.attr.foo.value",
+					},
+				)
+				tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
+				mustSendLogs(t, exporter, logs)
+
+				expected := []itemRequest{
+					{
+						Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+						Document: tc.wantDocument,
+					},
+				}
+
+				assertRecordedItems(t, expected, rec, false)
 			})
+		}
+	})
 
-			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-				cfg.Mapping.Mode = "otel"
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
+
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
+
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				// only valid for log attributes https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes
+				// but testing for all attributes anyway
+				name: "map value",
+				recordAttrs: map[string]any{
+					"a.b": map[string]any{
+						"c": "a.b.c",
+						"c.d": map[string]any{
+							"e": "a.b.c.d.e",
+						},
+					},
+				},
+				scopeAttrs: map[string]any{
+					"a.b": map[string]any{
+						"c": "a.b.c",
+						"c.d": map[string]any{
+							"e": "a.b.c.d.e",
+						},
+					},
+				},
+				resourceAttrs: map[string]any{
+					"a.b": map[string]any{
+						"c": "a.b.c",
+						"c.d": map[string]any{
+							"e": "a.b.c.d.e",
+						},
+					},
+				},
+				wantRecordAttrs:   `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
+				wantScopeAttrs:    `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
+				wantResourceAttrs: `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
+
+				mustSendLogs(t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+
+				rec.WaitItems(1)
+
+				assert.Len(t, rec.Items(), 1)
+				doc := rec.Items()[0].Document
+				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
 			})
-			recordAttrs := map[string]any{
-				"data_stream.dataset": "attr.dataset",
-				"attr.foo":            "attr.foo.value",
-			}
-			if tc.isEvent {
-				recordAttrs["event.name"] = "foo"
-			}
-			logs := newLogsWithAttributes(
-				recordAttrs,
-				nil,
-				map[string]any{
-					"data_stream.dataset":   "resource.attribute.dataset",
-					"data_stream.namespace": "resource.attribute.namespace",
-					"resource.attr.foo":     "resource.attr.foo.value",
-				},
-			)
-			tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
-			mustSendLogs(t, exporter, logs)
+		}
+	})
 
-			expected := []itemRequest{
-				{
-					Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
-					Document: tc.wantDocument,
-				},
-			}
+	t.Run("retry http request batcher", func(t *testing.T) {
+		for _, maxRetries := range []int{0, 1, 11} {
+			t.Run(fmt.Sprintf("max retries %d", maxRetries), func(t *testing.T) {
+				t.Parallel()
+				expectedRetries := maxRetries
+				if maxRetries == 0 {
+					expectedRetries = defaultMaxRetries
+				}
 
-			assertRecordedItems(t, expected, rec, false)
+				var attempts atomic.Int64
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
+					// always return error, and assert that the number of attempts is expected, not more, not less.
+					attempts.Add(1)
+					return nil, &httpTestError{status: http.StatusServiceUnavailable, message: "oops"}
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Retry.Enabled = true
+					cfg.Retry.RetryOnStatus = []int{http.StatusServiceUnavailable}
+					cfg.Retry.MaxRetries = maxRetries
+					cfg.Retry.InitialInterval = 1 * time.Millisecond
+					cfg.Retry.MaxInterval = 5 * time.Millisecond
+
+					// use sync bulk indexer
+					cfg.Batcher.Enabled = false
+					cfg.Batcher.enabledSet = true
+				})
+
+				logs := plog.NewLogs()
+				resourceLogs := logs.ResourceLogs().AppendEmpty()
+				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+				scopeLogs.LogRecords().AppendEmpty()
+				logs.MarkReadOnly()
+				err := exporter.ConsumeLogs(context.Background(), logs) // as sync bulk indexer is used, retries are finished on return
+				var errFlushFailed docappender.ErrorFlushFailed
+				require.ErrorAs(t, err, &errFlushFailed)
+
+				assert.Equal(t, 0, rec.countItems())
+				assert.Equal(t, int64(expectedRetries+1), attempts.Load()) // initial request + retries
+			})
 		}
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
-		failures := 0
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			if failures == 0 {
-				failures++
-				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
-			}
+		for _, maxRetries := range []int{0, 1, 11} {
+			t.Run(fmt.Sprintf("max retries %d", maxRetries), func(t *testing.T) {
+				t.Parallel()
+				expectedRetries := maxRetries
+				if maxRetries == 0 {
+					expectedRetries = defaultMaxRetries
+				}
 
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+				var attempts atomic.Int64
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
+					// always return error, and assert that the number of attempts is expected, not more, not less.
+					attempts.Add(1)
+					return nil, &httpTestError{status: http.StatusServiceUnavailable, message: "oops"}
+				})
 
-		exporter := newTestLogsExporter(t, server.URL)
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Retry.Enabled = true
+					cfg.Retry.RetryOnStatus = []int{http.StatusServiceUnavailable}
+					cfg.Retry.MaxRetries = maxRetries
+					cfg.Retry.InitialInterval = 1 * time.Millisecond
+					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
-		rec.WaitItems(1)
+					// use async bulk indexer
+					cfg.Batcher.enabledSet = false
+				})
+				mustSendLogRecords(t, exporter, plog.NewLogRecord()) // as sync bulk indexer is used, retries are not guaranteed to finish
+
+				assert.Eventually(t, func() bool {
+					return int64(expectedRetries+1) == attempts.Load()
+				}, time.Second, 5*time.Millisecond)
+
+				// assert that it does not retry in async more than expected
+				time.Sleep(20 * time.Millisecond)
+				assert.Equal(t, int64(expectedRetries+1), attempts.Load())
+				assert.Equal(t, 0, rec.countItems())
+			})
+		}
 	})
 
 	t.Run("no retry", func(t *testing.T) {
@@ -610,7 +788,7 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("only retry failed items", func(t *testing.T) {
-		var attempts [3]int
+		var attempts [3]atomic.Int64
 		var wg sync.WaitGroup
 		wg.Add(1)
 
@@ -630,14 +808,14 @@ func TestExporterLogs(t *testing.T) {
 					panic(err)
 				}
 
+				newAttemptCount := attempts[idxInfo.Attributes.Idx].Add(1)
 				if idxInfo.Attributes.Idx == retryIdx {
-					if attempts[retryIdx] == 0 {
+					if newAttemptCount == 1 {
 						resp[i].Status = http.StatusTooManyRequests
 					} else {
 						defer wg.Done()
 					}
 				}
-				attempts[idxInfo.Attributes.Idx]++
 			}
 			return resp, nil
 		})
@@ -656,64 +834,7 @@ func TestExporterLogs(t *testing.T) {
 
 		wg.Wait() // <- this blocks forever if the event is not retried
 
-		assert.Equal(t, [3]int{1, 2, 1}, attempts)
-	})
-
-	t.Run("otel mode attribute array value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.scope.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.resource.attribute": []string{"foo", "bar"},
-		}))
-
-		rec.WaitItems(1)
-
-		assert.Len(t, rec.Items(), 1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
-	})
-
-	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}))
-
-		rec.WaitItems(1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.Equal(t, [3]int64{1, 2, 1}, [3]int64{attempts[0].Load(), attempts[1].Load(), attempts[2].Load()})
 	})
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
@@ -865,36 +986,6 @@ func TestExporterLogs(t *testing.T) {
 				})
 			}
 		}
-	})
-
-	t.Run("otel mode attribute complex value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		logs := plog.NewLogs()
-		resourceLog := logs.ResourceLogs().AppendEmpty()
-		resourceLog.Resource().Attributes().PutEmptyMap("some.resource.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
-		scopeLog := resourceLog.ScopeLogs().AppendEmpty()
-		scopeLog.Scope().Attributes().PutEmptyMap("some.scope.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
-		logRecord := scopeLog.LogRecords().AppendEmpty()
-		logRecord.Attributes().PutEmptyMap("some.record.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
-
-		mustSendLogs(t, exporter, logs)
-
-		rec.WaitItems(1)
-
-		assert.Len(t, rec.Items(), 1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"some.record.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"some.scope.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"some.resource.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
@@ -1222,51 +1313,92 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"f7fdad9f"}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"f7fdad9f"}`),
+				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":"7200000.0","_metric_names_hash":"6e599000"}`),
+				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":7200000,"_metric_names_hash":"f4a8ac5e1b330ad6"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"10800000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":"10800000.0","_metric_names_hash":"45a9e3cb"}`),
+				Document: []byte(`{"@timestamp":10800000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":10800000,"_metric_names_hash":"2f30c89222c9d308"}`),
 			},
 		}
 
 		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("otel mode attribute array value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
 
-		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.scope.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.resource.attribute": []string{"foo", "bar"},
-		}))
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		rec.WaitItems(1)
+				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
 
-		assert.Len(t, rec.Items(), 1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				mustSendMetrics(t, exporter, newMetricsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+				rec.WaitItems(1)
+
+				assert.Len(t, rec.Items(), 1)
+				doc := rec.Items()[0].Document
+				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+			})
+		}
 	})
 
 	t.Run("otel mode _doc_count hint", func(t *testing.T) {
@@ -1303,7 +1435,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"7dc58200"}`),
+				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"e446964dc8337bbb"}`),
 			},
 		}
 
@@ -1353,11 +1485,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"acbaed6b"}`),
+				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"29641c64"}`),
+				Document: []byte(`{"@timestamp":3600000,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
 			},
 		}
 
@@ -1396,40 +1528,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"204c382a"}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"9c732a69b35274fe"}`),
 			},
 		}
 
 		assertRecordedItems(t, expected, rec, false)
-	})
-
-	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}))
-
-		rec.WaitItems(1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
@@ -2085,68 +2188,79 @@ func TestExporterTraces(t *testing.T) {
 		}
 	})
 
-	t.Run("otel mode attribute array value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
 
-		traces := newTracesWithAttributes(map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.scope.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.resource.attribute": []string{"foo", "bar"},
-		})
-		spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
-		fillAttributeMap(spanEventAttrs, map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		})
-		mustSendTraces(t, exporter, traces)
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		rec.WaitItems(2)
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
 
-		assert.Len(t, rec.Items(), 2)
-		for _, item := range rec.Items() {
-			doc := item.Document
-			assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-			assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-			assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				traces := newTracesWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs)
+				spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
+				fillAttributeMap(spanEventAttrs, tc.recordAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(2)
+
+				assert.Len(t, rec.Items(), 2)
+				for _, item := range rec.Items() {
+					doc := item.Document
+					assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+					assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+					assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				}
+			})
 		}
-	})
-
-	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		mustSendTraces(t, exporter, newTracesWithAttributes(map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}))
-
-		rec.WaitItems(1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
@@ -2159,6 +2273,9 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	})
 	noneContext := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
+	})
+	multipleModesContext := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel", "ecs"}}),
 	})
 
 	defaultScope := pcommon.NewInstrumentationScope()
@@ -2228,15 +2345,9 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		t.Helper()
 		assert.JSONEq(t, `{"k":"v"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	}
-	checkECSResource := func(t *testing.T, doc []byte, signal string) {
+	checkECSResource := func(t *testing.T, doc []byte, _ string) {
 		t.Helper()
-		if signal == "traces" {
-			// ecs mode schema for spans is currently very different
-			// to logs and metrics
-			assert.Equal(t, "v", gjson.GetBytes(doc, "Resource.k").Str)
-		} else {
-			assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
-		}
+		assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
 	}
 
 	testcases := []struct {
@@ -2259,7 +2370,12 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		name:      "none",
 		ctx:       noneContext,
 		scopes:    []pcommon.InstrumentationScope{defaultScope},
-		expectErr: `invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		expectErr: `Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+	}, {
+		name:      "multiple modes",
+		ctx:       multipleModesContext,
+		scopes:    []pcommon.InstrumentationScope{defaultScope},
+		expectErr: `Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 	}, {
 		name:   "ecs_scope",
 		ctx:    context.Background(),
@@ -2274,7 +2390,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		name:      "bodymap_scope",
 		ctx:       otelContext, // scope overrides context
 		scopes:    []pcommon.InstrumentationScope{bodymapScope},
-		expectErr: `invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
+		expectErr: `Permanent error: invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
 	}}
 
 	t.Run("logs", func(t *testing.T) {
@@ -2329,11 +2445,16 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	})
 	t.Run("profiles", func(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
-		// the metadata is picked up and an invalid mode is rejected.
+		// the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
-			`invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+			`Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		)
+
+		err = exporter.ConsumeProfiles(multipleModesContext, pprofile.NewProfiles())
+		assert.EqualError(t, err,
+			`Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 		)
 	})
 	t.Run("traces", func(t *testing.T) {
@@ -2369,7 +2490,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = &configauth.Config{AuthenticatorID: testauthID}
+		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -2395,14 +2516,15 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
-		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
+			Enabled: false,
 			// sync bulk indexer is used without batching
-			BatcherConfig: batcherCfg,
-			enabledSet:    true,
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      8192,
+			enabledSet:   true,
 		}
-		cfg.Auth = &configauth.Config{AuthenticatorID: testauthID}
+		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(context.Background(), &mockHost{

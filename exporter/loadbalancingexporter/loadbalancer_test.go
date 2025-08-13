@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -38,7 +39,7 @@ func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{}}),
 		},
 	}
 
@@ -55,9 +56,9 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{
+			DNS: configoptional.Some(DNSResolver{
 				Hostname: "",
-			},
+			}),
 		},
 	}
 
@@ -74,9 +75,9 @@ func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			K8sSvc: &K8sSvcResolver{
+			K8sSvc: configoptional.Some(K8sSvcResolver{
 				Service: "",
-			},
+			}),
 		},
 	}
 
@@ -111,9 +112,9 @@ func TestWithDNSResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{
+			DNS: configoptional.Some(DNSResolver{
 				Hostname: "service-1",
-			},
+			}),
 		},
 	}
 
@@ -134,9 +135,9 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{
+			DNS: configoptional.Some(DNSResolver{
 				Hostname: "service-1",
-			},
+			}),
 		},
 	}
 
@@ -159,12 +160,12 @@ func TestMultipleResolvers(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{
+			Static: configoptional.Some(StaticResolver{
 				Hostnames: []string{"endpoint-1", "endpoint-2"},
-			},
-			DNS: &DNSResolver{
+			}),
+			DNS: configoptional.Some(DNSResolver{
 				Hostname: "service-1",
-			},
+			}),
 		},
 	}
 
@@ -374,7 +375,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
 		},
 	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -399,14 +400,14 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// test
 	// this trace ID will reach the endpoint-2 -- see the consistent hashing tests for more info
-	_, _, err = p.exporterAndEndpoint([]byte{128, 128, 0, 0})
+	_, _, err = p.exporterAndEndpoint([]byte{128, 128, 1, 0})
 
 	// verify
 	assert.Error(t, err)
 
 	// test
 	// this service name will reach the endpoint-2 -- see the consistent hashing tests for more info
-	_, _, err = p.exporterAndEndpoint([]byte("get-recommendations-1"))
+	_, _, err = p.exporterAndEndpoint([]byte("get-recommendations-2"))
 
 	// verify
 	assert.Error(t, err)
@@ -417,9 +418,9 @@ func TestNewLoadBalancerInvalidNamespaceAwsResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			AWSCloudMap: &AWSCloudMapResolver{
+			AWSCloudMap: configoptional.Some(AWSCloudMapResolver{
 				NamespaceName: "",
-			},
+			}),
 		},
 	}
 
@@ -436,10 +437,10 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			AWSCloudMap: &AWSCloudMapResolver{
+			AWSCloudMap: configoptional.Some(AWSCloudMapResolver{
 				NamespaceName: "cloudmap",
 				ServiceName:   "",
-			},
+			}),
 		},
 	}
 

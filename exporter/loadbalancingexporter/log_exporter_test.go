@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -400,7 +401,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
 		},
 	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -524,7 +525,7 @@ type mockLogsExporter struct {
 	consumeErr    error
 }
 
-func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
+func (*mockLogsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

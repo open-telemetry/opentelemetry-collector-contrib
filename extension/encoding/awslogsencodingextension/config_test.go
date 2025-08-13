@@ -85,6 +85,24 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "cloudtrail_log"),
+			expected: &Config{
+				Format: formatCloudTrailLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "elb_access_log"),
+			expected: &Config{
+				Format: formatELBAccessLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

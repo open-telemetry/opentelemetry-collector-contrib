@@ -22,10 +22,10 @@ The number of connections.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` |
-| state | State of the network connection. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` | false |
+| state | State of the network connection. | Any Str | false |
 
 ### system.network.dropped
 
@@ -37,10 +37,10 @@ The number of packets dropped.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device | Name of the network interface. | Any Str | false |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
 
 ### system.network.errors
 
@@ -52,10 +52,10 @@ The number of errors encountered.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device | Name of the network interface. | Any Str | false |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
 
 ### system.network.io
 
@@ -67,10 +67,10 @@ The number of bytes transmitted and received.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device | Name of the network interface. | Any Str | false |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
 
 ### system.network.packets
 
@@ -82,10 +82,10 @@ The number of packets transferred.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device | Name of the network interface. | Any Str | false |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
 
 ## Optional Metrics
 

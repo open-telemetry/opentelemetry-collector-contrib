@@ -20,7 +20,7 @@ type KubeletClient struct {
 	restClient kubelet.Client
 }
 
-func NewKubeletClient(kubeIP string, port string, logger *zap.Logger) (*KubeletClient, error) {
+func NewKubeletClient(kubeIP, port string, logger *zap.Logger) (*KubeletClient, error) {
 	kubeClient := &KubeletClient{
 		Port:   port,
 		KubeIP: kubeIP,

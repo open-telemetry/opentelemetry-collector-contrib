@@ -44,8 +44,8 @@ type cgroupScannerProvider interface {
 	getMemReserved() int64
 
 	// use for test
-	getCPUReservedInTask(taskID string, clusterName string) int64
-	getMEMReservedInTask(taskID string, clusterName string, containers []ECSContainer) int64
+	getCPUReservedInTask(taskID, clusterName string) int64
+	getMEMReservedInTask(taskID, clusterName string, containers []ECSContainer) int64
 }
 
 func newCGroupScanner(ctx context.Context, mountConfigPath string, logger *zap.Logger, ecsTaskInfoProvider ecsTaskInfoProvider, containerInstanceInfoProvider containerInstanceInfoProvider, refreshInterval time.Duration) cgroupScannerProvider {
@@ -115,7 +115,7 @@ func newCGroupScannerForContainer(ctx context.Context, logger *zap.Logger, ecsTa
 	return newCGroupScanner(ctx, ecsInstanceMountConfigPath, logger, ecsTaskInfoProvider, containerInstanceInfoProvider, refreshInterval)
 }
 
-func (c *cgroupScanner) getCPUReservedInTask(taskID string, clusterName string) int64 {
+func (c *cgroupScanner) getCPUReservedInTask(taskID, clusterName string) int64 {
 	cpuPath, err := getCGroupPathForTask(c.mountPoint, "cpu", taskID, clusterName)
 	if err != nil {
 		c.logger.Warn("Failed to get cpu cgroup path for task: ", zap.Error(err))
@@ -136,7 +136,7 @@ func (c *cgroupScanner) getCPUReservedInTask(taskID string, clusterName string) 
 	return int64(0)
 }
 
-func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, containers []ECSContainer) int64 {
+func (c *cgroupScanner) getMEMReservedInTask(taskID, clusterName string, containers []ECSContainer) int64 {
 	memPath, err := getCGroupPathForTask(c.mountPoint, "memory", taskID, clusterName)
 	if err != nil {
 		c.logger.Warn("Failed to get memory cgroup path for task: %v", zap.Error(err))
@@ -166,7 +166,7 @@ func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, 
 	return sum
 }
 
-func readString(dirpath string, file string) (string, error) {
+func readString(dirpath, file string) (string, error) {
 	cgroupFile := filepath.Join(dirpath, file)
 
 	// Read
@@ -179,7 +179,7 @@ func readString(dirpath string, file string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func readInt64(dirpath string, file string) (int64, error) {
+func readInt64(dirpath, file string) (int64, error) {
 	out, err := readString(dirpath, file)
 	if err != nil {
 		return 0, err

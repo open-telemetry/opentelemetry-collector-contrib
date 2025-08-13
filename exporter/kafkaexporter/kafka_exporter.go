@@ -5,8 +5,10 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"iter"
 
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -15,11 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -63,6 +67,8 @@ type messenger[T any] interface {
 
 type kafkaExporter[T any] struct {
 	cfg          Config
+	set          exporter.Settings
+	tb           *metadata.TelemetryBuilder
 	logger       *zap.Logger
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
@@ -76,19 +82,31 @@ func newKafkaExporter[T any](
 ) *kafkaExporter[T] {
 	return &kafkaExporter[T]{
 		cfg:          config,
+		set:          set,
 		logger:       set.Logger,
 		newMessenger: newMessenger,
 	}
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
+	tb, err := metadata.NewTelemetryBuilder(e.set.TelemetrySettings)
+	if err != nil {
+		return err
+	}
+	e.tb = tb
+
 	if e.messenger, err = e.newMessenger(host); err != nil {
 		return err
 	}
 
 	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(ctx, e.cfg.ClientConfig,
-			e.cfg.Producer, e.cfg.TimeoutSettings.Timeout, e.logger,
+		producer, ferr := kafka.NewFranzSyncProducer(
+			ctx,
+			e.cfg.ClientConfig,
+			e.cfg.Producer,
+			e.cfg.TimeoutSettings.Timeout,
+			e.logger,
+			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 		)
 		if ferr != nil {
 			return err
@@ -104,7 +122,9 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	if err != nil {
 		return err
 	}
-	e.producer = kafkaclient.NewSaramaSyncProducer(producer,
+	e.producer = kafkaclient.NewSaramaSyncProducer(
+		producer,
+		kafkaclient.NewSaramaProducerMetrics(tb),
 		e.cfg.IncludeMetadataKeys,
 	)
 	return nil
@@ -116,14 +136,24 @@ func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 	}
 	err = e.producer.Close()
 	e.producer = nil
+	if e.tb != nil {
+		e.tb.Shutdown()
+		e.tb = nil
+	}
 	return err
 }
 
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	var m kafkaclient.Messages
 	for key, data := range e.messenger.partitionData(data) {
+		topic := e.messenger.getTopic(ctx, data)
 		partitionMessages, err := e.messenger.marshalData(data)
 		if err != nil {
+			err = fmt.Errorf("issue exporting from topic %q: %w", topic, err)
+			e.logger.Error("kafka records marshal data failed",
+				zap.String("topic", topic),
+				zap.Error(err),
+			)
 			return consumererror.NewPermanent(err)
 		}
 		for i := range partitionMessages {
@@ -135,11 +165,30 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		}
 		m.Count += len(partitionMessages)
 		m.TopicMessages = append(m.TopicMessages, kafkaclient.TopicMessages{
-			Topic:    e.messenger.getTopic(ctx, data),
+			Topic:    topic,
 			Messages: partitionMessages,
 		})
 	}
-	return e.producer.ExportData(ctx, m)
+	err := e.producer.ExportData(ctx, m)
+	if err == nil {
+		if e.logger.Core().Enabled(zap.DebugLevel) {
+			for _, mi := range m.TopicMessages {
+				e.logger.Debug("kafka records exported",
+					zap.Int("records", len(mi.Messages)),
+					zap.String("topic", mi.Topic),
+				)
+			}
+		}
+	} else {
+		for _, mi := range m.TopicMessages {
+			e.logger.Error("kafka records export failed",
+				zap.Int("records", len(mi.Messages)),
+				zap.String("topic", mi.Topic),
+				zap.Error(err),
+			)
+		}
+	}
+	return err
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
@@ -276,6 +325,38 @@ func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]by
 				return
 			}
 		}
+	}
+}
+
+func newProfilesExporter(config Config, set exporter.Settings) *kafkaExporter[pprofile.Profiles] {
+	return newKafkaExporter(config, set, func(host component.Host) (messenger[pprofile.Profiles], error) {
+		marshaler, err := getProfilesMarshaler(config.Profiles.Encoding, host)
+		if err != nil {
+			return nil, err
+		}
+		return &kafkaProfilesMessenger{
+			config:    config,
+			marshaler: marshaler,
+		}, nil
+	})
+}
+
+type kafkaProfilesMessenger struct {
+	config    Config
+	marshaler marshaler.ProfilesMarshaler
+}
+
+func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles) ([]marshaler.Message, error) {
+	return e.marshaler.MarshalProfiles(ld)
+}
+
+func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profiles) string {
+	return getTopic(ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
+}
+
+func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
+	return func(yield func([]byte, pprofile.Profiles) bool) {
+		yield(nil, ld)
 	}
 }
 

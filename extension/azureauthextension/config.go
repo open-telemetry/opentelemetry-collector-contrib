@@ -31,6 +31,7 @@ type Config struct {
 	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
 	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
 	UseDefault       bool              `mapstructure:"use_default"`
+	Scopes           []string          `mapstructure:"scopes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -61,7 +62,7 @@ type ServicePrincipal struct {
 
 var _ component.Config = (*Config)(nil)
 
-func (cfg *ManagedIdentity) Validate() error {
+func (*ManagedIdentity) Validate() error {
 	return nil
 }
 

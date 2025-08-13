@@ -126,7 +126,7 @@ func verifyConsumeMetricsInputCumulative(tb testing.TB, input pmetric.Metrics) b
 	return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
-func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
+func verifyBadMetricsOkay(testing.TB, pmetric.Metrics) bool {
 	return true // Validating no exception
 }
 
@@ -416,7 +416,8 @@ func disabledExemplarsConfig() ExemplarsConfig {
 
 func enabledExemplarsConfig() ExemplarsConfig {
 	return ExemplarsConfig{
-		Enabled: true,
+		Enabled:         true,
+		MaxPerDataPoint: defaultMaxPerDatapoint,
 	}
 }
 
@@ -705,11 +706,11 @@ type errConsumer struct {
 	fakeErr error
 }
 
-func (e *errConsumer) Capabilities() consumer.Capabilities {
+func (*errConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
+func (e *errConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
 	e.wg.Done()
 	return e.fakeErr
 }
@@ -1108,21 +1109,17 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 						switch metric.Type() {
 						case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
-							{
-								dp := metric.Histogram().DataPoints()
-								for dpi := 0; dpi < dp.Len(); dpi++ {
-									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-										assert.NotContains(t, excludeDimensions, attributeKey)
-									}
+							dp := metric.Histogram().DataPoints()
+							for dpi := 0; dpi < dp.Len(); dpi++ {
+								for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+									assert.NotContains(t, excludeDimensions, attributeKey)
 								}
 							}
 						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
-							{
-								dp := metric.Sum().DataPoints()
-								for dpi := 0; dpi < dp.Len(); dpi++ {
-									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-										assert.NotContains(t, excludeDimensions, attributeKey)
-									}
+							dp := metric.Sum().DataPoints()
+							for dpi := 0; dpi < dp.Len(); dpi++ {
+								for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+									assert.NotContains(t, excludeDimensions, attributeKey)
 								}
 							}
 						}
@@ -1409,7 +1406,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		{
 			name:   "initialize histogram with no config provided",
 			config: Config{},
-			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil, 0),
+			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, 0, 0),
 		},
 		{
 			name: "Disable histogram",
@@ -1427,7 +1424,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Milliseconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, 0, 0),
 		},
 		{
 			name: "initialize explicit histogram with default bounds (seconds)",
@@ -1436,7 +1433,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Seconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, 0, 0),
 		},
 		{
 			name: "initialize explicit histogram with bounds (seconds)",
@@ -1451,7 +1448,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, 0, 0),
 		},
 		{
 			name: "initialize explicit histogram with bounds (ms)",
@@ -1466,7 +1463,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, 0, 0),
 		},
 		{
 			name: "initialize exponential histogram",
@@ -1478,7 +1475,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(10, nil, 0),
+			want: metrics.NewExponentialHistogramMetrics(10, 0, 0),
 		},
 		{
 			name: "initialize exponential histogram with default max buckets count",
@@ -1488,7 +1485,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Exponential: &ExponentialHistogramConfig{},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, nil, 0),
+			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, 0, 0),
 		},
 	}
 	for _, tt := range tests {
@@ -1680,11 +1677,11 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 func TestTimestampsForUninterruptedStream(t *testing.T) {
 	tests := []struct {
 		temporality      string
-		verifyTimestamps func(startTime1 pcommon.Timestamp, timestamp1 pcommon.Timestamp, startTime2 pcommon.Timestamp, timestamp2 pcommon.Timestamp)
+		verifyTimestamps func(startTime1, timestamp1, startTime2, timestamp2 pcommon.Timestamp)
 	}{
 		{
 			temporality: cumulative,
-			verifyTimestamps: func(startTime1 pcommon.Timestamp, timestamp1 pcommon.Timestamp, startTime2 pcommon.Timestamp, timestamp2 pcommon.Timestamp) {
+			verifyTimestamps: func(startTime1, timestamp1, startTime2, timestamp2 pcommon.Timestamp) {
 				// (T1, T2), (T1, T3) ...
 				assert.Greater(t, timestamp1, startTime1)
 				assert.Equal(t, startTime1, startTime2)
@@ -1693,7 +1690,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 		},
 		{
 			temporality: delta,
-			verifyTimestamps: func(startTime1 pcommon.Timestamp, timestamp1 pcommon.Timestamp, startTime2 pcommon.Timestamp, timestamp2 pcommon.Timestamp) {
+			verifyTimestamps: func(startTime1, timestamp1, startTime2, timestamp2 pcommon.Timestamp) {
 				// (T1, T2), (T2, T3) ...
 				assert.Greater(t, timestamp1, startTime1)
 				assert.Equal(t, timestamp1, startTime2)
@@ -1750,7 +1747,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 	}
 }
 
-func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pcommon.Timestamp, timestamp pcommon.Timestamp) {
+func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, timestamp pcommon.Timestamp) {
 	// Go through all data points and collect the start timestamp and timestamp. They should be the same value for each data point
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		rm := m.ResourceMetrics().At(i)
@@ -1768,28 +1765,24 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pc
 
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
-					{
-						dps := metric.Sum().DataPoints()
-						for dpi := 0; dpi < dps.Len(); dpi++ {
-							if int64(start) == 0 {
-								start = dps.At(dpi).StartTimestamp()
-								timestamp = dps.At(dpi).Timestamp()
-							}
-							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
-							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+					dps := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						if int64(start) == 0 {
+							start = dps.At(dpi).StartTimestamp()
+							timestamp = dps.At(dpi).Timestamp()
 						}
+						assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+						assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
 					}
 				case pmetric.MetricTypeHistogram:
-					{
-						dps := metric.Histogram().DataPoints()
-						for dpi := 0; dpi < dps.Len(); dpi++ {
-							if int64(start) == 0 {
-								start = dps.At(dpi).StartTimestamp()
-								timestamp = dps.At(dpi).Timestamp()
-							}
-							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
-							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+					dps := metric.Histogram().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						if int64(start) == 0 {
+							start = dps.At(dpi).StartTimestamp()
+							timestamp = dps.At(dpi).Timestamp()
 						}
+						assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+						assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
 					}
 				default:
 					t.Fail()

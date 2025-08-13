@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("dynatracedetector")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace"
 )
 
 const (

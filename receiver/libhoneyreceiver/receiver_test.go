@@ -10,14 +10,19 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
@@ -226,7 +231,7 @@ func TestLibhoneyReceiver_AuthEndpoint(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			req := httptest.NewRequest(http.MethodGet, "/1/auth", nil)
+			req := httptest.NewRequest(http.MethodGet, "/1/auth", http.NoBody)
 			req.Header.Set("x-honeycomb-team", tt.apiKey)
 			w := httptest.NewRecorder()
 
@@ -283,7 +288,7 @@ func TestReadContentType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, "/test", nil)
+			req := httptest.NewRequest(tt.method, "/test", http.NoBody)
 			req.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
 
@@ -296,4 +301,176 @@ func TestReadContentType(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		name             string
+		events           []libhoneyevent.LibhoneyEvent
+		contentType      string
+		headers          map[string]string
+		includeMetadata  bool
+		expectedMetadata map[string][]string
+		expectedStatus   int
+	}{
+		{
+			name: "with_metadata_enabled",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"message": "test event",
+					},
+					Samplerate: 1,
+				},
+			},
+			contentType: "application/json",
+			headers: map[string]string{
+				"x-honeycomb-team":    "test-team",
+				"x-honeycomb-dataset": "test-dataset",
+				"user-agent":          "test-agent",
+			},
+			includeMetadata: true,
+			expectedMetadata: map[string][]string{
+				"x-honeycomb-team":    {"test-team"},
+				"x-honeycomb-dataset": {"test-dataset"},
+				"user-agent":          {"test-agent"},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "with_metadata_disabled",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"message": "test event",
+					},
+					Samplerate: 1,
+				},
+			},
+			contentType: "application/json",
+			headers: map[string]string{
+				"x-honeycomb-team":    "test-team",
+				"x-honeycomb-dataset": "test-dataset",
+			},
+			includeMetadata:  false,
+			expectedMetadata: map[string][]string{},
+			expectedStatus:   http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a custom consumer that captures the context
+			var capturedContext context.Context
+
+			customConsumer := &testConsumer{
+				logsConsumer:   &consumertest.LogsSink{},
+				tracesConsumer: &consumertest.TracesSink{},
+				captureContext: func(ctx context.Context, _ plog.Logs, _ ptrace.Traces) {
+					capturedContext = ctx
+				},
+			}
+
+			// Create config with metadata setting
+			cfg := createDefaultConfig().(*Config)
+			cfg.HTTP.IncludeMetadata = tt.includeMetadata
+
+			set := receivertest.NewNopSettings(metadata.Type)
+			r, err := newLibhoneyReceiver(cfg, &set)
+			require.NoError(t, err)
+
+			r.registerLogConsumer(customConsumer)
+			r.registerTraceConsumer(customConsumer)
+
+			var body []byte
+			switch tt.contentType {
+			case "application/json":
+				body, err = json.Marshal(tt.events)
+			case "application/msgpack":
+				body, err = msgpack.Marshal(tt.events)
+			default:
+				body = []byte("invalid content")
+			}
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPost, "/1/events/test_dataset", bytes.NewReader(body))
+			req.Header.Set("Content-Type", tt.contentType)
+
+			// Add test headers
+			for key, value := range tt.headers {
+				req.Header.Set(key, value)
+			}
+
+			w := httptest.NewRecorder()
+
+			// Simulate what confighttp does when IncludeMetadata is enabled
+			if tt.includeMetadata {
+				// Create metadata from headers
+				metadata := make(map[string][]string)
+				for key, values := range req.Header {
+					metadata[strings.ToLower(key)] = values
+				}
+				// Add client info to request context
+				ctx := client.NewContext(req.Context(), client.Info{
+					Metadata: client.NewMetadata(metadata),
+				})
+				req = req.WithContext(ctx)
+			}
+
+			r.handleEvent(w, req)
+
+			resp := w.Result()
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			// Wait for the consumer to be called
+			require.Eventually(t, func() bool {
+				return capturedContext != nil
+			}, time.Second, 10*time.Millisecond)
+
+			// Check metadata in context
+			if tt.includeMetadata {
+				info := client.FromContext(capturedContext)
+				require.NotNil(t, info.Metadata)
+
+				for key, expectedValues := range tt.expectedMetadata {
+					actualValues := info.Metadata.Get(key)
+					assert.Equal(t, expectedValues, actualValues, "metadata key: %s", key)
+				}
+			} else {
+				info := client.FromContext(capturedContext)
+				// When metadata is disabled, the context should have empty metadata
+				// Check that no expected metadata keys are present
+				for key := range tt.expectedMetadata {
+					actualValues := info.Metadata.Get(key)
+					assert.Nil(t, actualValues, "metadata key should not be present: %s", key)
+				}
+			}
+		})
+	}
+}
+
+// testConsumer is a custom consumer that captures the context and data for testing
+type testConsumer struct {
+	logsConsumer   *consumertest.LogsSink
+	tracesConsumer *consumertest.TracesSink
+	captureContext func(context.Context, plog.Logs, ptrace.Traces)
+}
+
+func (tc *testConsumer) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
+	tc.captureContext(ctx, logs, ptrace.NewTraces())
+	return tc.logsConsumer.ConsumeLogs(ctx, logs)
+}
+
+func (tc *testConsumer) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+	tc.captureContext(ctx, plog.NewLogs(), traces)
+	return tc.tracesConsumer.ConsumeTraces(ctx, traces)
+}
+
+func (*testConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }

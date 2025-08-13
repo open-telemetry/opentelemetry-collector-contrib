@@ -23,7 +23,28 @@ concurrency:
 permissions: read-all
 
 jobs:
+  setup-environment:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-14, macos-15 ]
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
   darwin-build-unittest-binary:
+    needs: [setup-environment]
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
       fail-fast: false
@@ -33,32 +54,18 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-build-cache-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Build test binaries
         env:
           GOTESTARCH: amd64
         run: make gobuildtest GROUP=cgo
       - name: Zip test binaries
         run: zip -r testbinaries.zip  . --include \*builtunitetest.test
-      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ matrix.os == 'macos-14' }}
         with:
           name: testbinaries
@@ -75,14 +82,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: 1.23.10
-          cache: false
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
-      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: testbinaries
       - name: Unzip binaries to each module

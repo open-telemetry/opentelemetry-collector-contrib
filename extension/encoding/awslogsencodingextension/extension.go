@@ -17,10 +17,18 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
+	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
+	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/waf"
+)
+
+const (
+	gzipEncoding    = "gzip"
+	bytesEncoding   = "bytes"
+	parquetEncoding = "parquet"
 )
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -63,6 +71,19 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      formatWAFLog,
 		}, nil
+	case formatCloudTrailLog:
+		return &encodingExtension{
+			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
+			format:      formatCloudTrailLog,
+		}, nil
+	case formatELBAccessLog:
+		return &encodingExtension{
+			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
+				settings.BuildInfo,
+				settings.Logger,
+			),
+			format: formatELBAccessLog,
+		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid
@@ -80,41 +101,48 @@ func (*encodingExtension) Shutdown(_ context.Context) error {
 }
 
 func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {
-	var errGzipReader error
+	var err error
 	gzipReader, ok := e.gzipPool.Get().(*gzip.Reader)
 	if !ok {
-		gzipReader, errGzipReader = gzip.NewReader(bytes.NewReader(buf))
+		gzipReader, err = gzip.NewReader(bytes.NewReader(buf))
 	} else {
-		errGzipReader = gzipReader.Reset(bytes.NewReader(buf))
+		err = gzipReader.Reset(bytes.NewBuffer(buf))
 	}
-	if errGzipReader != nil {
+	if err != nil {
 		if gzipReader != nil {
 			e.gzipPool.Put(gzipReader)
 		}
-		return nil, fmt.Errorf("failed to decompress content: %w", errGzipReader)
+		return nil, fmt.Errorf("failed to decompress content: %w", err)
 	}
-	defer func() {
-		_ = gzipReader.Close()
-		e.gzipPool.Put(gzipReader)
-	}()
 	return gzipReader, nil
 }
 
-func (e *encodingExtension) getReaderFromFormat(buf []byte) (io.Reader, error) {
+func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter:
-		return e.getGzipReader(buf)
+	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLog:
+		reader, err := e.getGzipReader(buf)
+		return gzipEncoding, reader, err
 	case formatS3AccessLog:
-		return bytes.NewReader(buf), nil
+		return bytesEncoding, bytes.NewReader(buf), nil
+	case formatELBAccessLog:
+		// Check if the data is compressed
+		// NLB and ALB store compressed files.
+		// CLB stores plain text files.
+		if len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b {
+			reader, err := e.getGzipReader(buf)
+			return gzipEncoding, reader, err
+		}
+		return bytesEncoding, bytes.NewReader(buf), nil
 	case formatVPCFlowLog:
 		switch e.vpcFormat {
 		case fileFormatParquet:
-			return nil, fmt.Errorf("%q still needs to be implemented", e.vpcFormat)
+			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", e.vpcFormat)
 		case fileFormatPlainText:
-			return e.getGzipReader(buf)
+			reader, err := e.getGzipReader(buf)
+			return gzipEncoding, reader, err
 		default:
 			// should not be possible
-			return nil, fmt.Errorf(
+			return "", nil, fmt.Errorf(
 				"unsupported file fileFormat %q for VPC flow log, expected one of %q",
 				e.vpcFormat,
 				supportedVPCFlowLogFileFormat,
@@ -122,15 +150,22 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (io.Reader, error) {
 		}
 	default:
 		// should not be possible
-		return nil, fmt.Errorf("unimplemented: format %q has no reader", e.format)
+		return "", nil, fmt.Errorf("unimplemented: format %q has no reader", e.format)
 	}
 }
 
 func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	reader, err := e.getReaderFromFormat(buf)
+	encodingReader, reader, err := e.getReaderFromFormat(buf)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to get reader for %q logs: %w", e.format, err)
 	}
+	defer func() {
+		if encodingReader == gzipEncoding {
+			r := reader.(*gzip.Reader)
+			_ = r.Close()
+			e.gzipPool.Put(r)
+		}
+	}()
 
 	logs, err := e.unmarshaler.UnmarshalAWSLogs(reader)
 	if err != nil {

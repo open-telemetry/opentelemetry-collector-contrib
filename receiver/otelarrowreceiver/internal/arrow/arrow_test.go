@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowCollectorMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
-	otelAssert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowCollectorMock "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1/mock"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
+	arrowRecordMock "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record/mock"
+	otelAssert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -134,7 +134,7 @@ func newUnhealthyTestChannel(t *testing.T) *unhealthyTestChannel {
 	return &unhealthyTestChannel{t: t}
 }
 
-func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
+func (unhealthyTestChannel) onConsume(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -947,17 +947,6 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Wait()
 }
 
-func TestReceiverCancel(t *testing.T) {
-	tc := newHealthyTestChannel(t)
-	ctc := newCommonTestCase(t, tc)
-
-	ctc.cancel()
-	ctc.start(ctc.newRealConsumer, defaultBQ())
-
-	err := ctc.wait()
-	requireCanceledStatus(t, err)
-}
-
 func requireContainsAll(t *testing.T, md client.Metadata, exp map[string][]string) {
 	for key, vals := range exp {
 		require.Equal(t, vals, md.Get(key))
@@ -1223,7 +1212,7 @@ func TestReceiverAuthHeadersStream(t *testing.T) {
 	t.Run("per-data", func(t *testing.T) { testReceiverAuthHeaders(t, true, true) })
 }
 
-func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
+func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 

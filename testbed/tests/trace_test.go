@@ -93,33 +93,6 @@ func TestTrace10kSPS(t *testing.T) {
 			},
 		},
 		{
-			"SAPM",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), ""),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), ""),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
-			"SAPM-gzip",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "gzip"),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "gzip"),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 35,
-				ExpectedMaxRAM: 110,
-			},
-		},
-		{
-			"SAPM-zstd",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "zstd"),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "zstd"),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 300,
-			},
-		},
-		{
 			"Zipkin",
 			datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),

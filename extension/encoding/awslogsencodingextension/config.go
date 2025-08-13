@@ -17,6 +17,8 @@ const (
 	formatVPCFlowLog                       = "vpc_flow_log"
 	formatS3AccessLog                      = "s3_access_log"
 	formatWAFLog                           = "waf_log"
+	formatCloudTrailLog                    = "cloudtrail_log"
+	formatELBAccessLog                     = "elb_access_log"
 
 	fileFormatPlainText = "plain-text"
 	fileFormatParquet   = "parquet"
@@ -28,6 +30,8 @@ var (
 		formatVPCFlowLog,
 		formatS3AccessLog,
 		formatWAFLog,
+		formatCloudTrailLog,
+		formatELBAccessLog,
 	}
 	supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
 )
@@ -40,6 +44,9 @@ type Config struct {
 	// - vpc_flow_log
 	// - s3_access_log
 	// - waf_log
+	// - cloudtrail_log
+	// - elb_access_log
+	//
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpc_flow_log"`
@@ -69,6 +76,8 @@ func (cfg *Config) Validate() error {
 	case formatVPCFlowLog: // valid
 	case formatS3AccessLog: // valid
 	case formatWAFLog: // valid
+	case formatCloudTrailLog: // valid
+	case formatELBAccessLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}

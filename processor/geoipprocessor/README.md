@@ -21,19 +21,17 @@ The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or 
 
 The following [resource attributes](./internal/convention/attributes.go) will be added if the corresponding information is found:
 
-```
-  * geo.city_name
-  * geo.postal_code
-  * geo.country_name
-  * geo.country_iso_code
-  * geo.continent_name
-  * geo.continent_code
-  * geo.region_name
-  * geo.region_iso_code
-  * geo.timezone
-  * geo.location.lat
-  * geo.location.lon
-```
+  - geo.city_name
+  - [geo.postal_code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L71)
+  - geo.country_name
+  - [geo.country.iso_code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L53)
+  - geo.continent_name
+  - [geo.continent.code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L19)
+  - geo.region_name
+  - [geo.region.iso_code](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L78)
+  - geo.timezone
+  - [geo.location.lat](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L65)
+  - [geo.location.lon](https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/model/geo/registry.yaml#L59)
 
 ## Configuration
 
