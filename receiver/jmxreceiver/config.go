@@ -341,7 +341,6 @@ func (c *Config) Validate() error {
 
 	if c.TargetSystem != "" {
 		for _, system := range strings.Split(c.TargetSystem, ",") {
-			fmt.Println(system)
 			if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
 				return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
 			}
