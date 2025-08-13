@@ -30,16 +30,16 @@ import (
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &TelemetryConfig{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -47,7 +47,7 @@ func TestNewExporter(t *testing.T) {
 			Params:         map[string]string{},
 		},
 		FormatType: "json",
-		Encodings:  &Encodings{},
+		Encodings:  Encodings{},
 	}
 
 	me := newAzureBlobExporter(c, logger, pipeline.SignalMetrics)
@@ -138,7 +138,7 @@ func TestGenerateBlobName(t *testing.T) {
 	t.Parallel()
 
 	c := &Config{
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -167,7 +167,7 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 	t.Parallel()
 
 	c := &Config{
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:            "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:               "2006/01/02/logs_15_04_05.json",
 			TracesFormat:             "2006/01/02/traces_15_04_05", // no extension
@@ -231,27 +231,27 @@ func (_m *mockAzBlobClient) AppendBlock(ctx context.Context, containerName, blob
 func TestExporterAppendBlob(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &TelemetryConfig{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 		},
 		FormatType: formatTypeJSON,
-		AppendBlob: &AppendBlob{
+		AppendBlob: AppendBlob{
 			Enabled:   true,
 			Separator: "\n",
 		},
-		Encodings: &Encodings{},
+		Encodings: Encodings{},
 	}
 
 	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
@@ -282,27 +282,27 @@ func TestExporterAppendBlob(t *testing.T) {
 func TestExporterAppendBlobError(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &TelemetryConfig{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 		},
 		FormatType: formatTypeJSON,
-		AppendBlob: &AppendBlob{
+		AppendBlob: AppendBlob{
 			Enabled:   true,
 			Separator: "\n",
 		},
-		Encodings: &Encodings{},
+		Encodings: Encodings{},
 	}
 
 	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)

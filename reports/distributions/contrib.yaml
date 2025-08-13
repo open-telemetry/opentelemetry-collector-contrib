@@ -98,6 +98,7 @@ components:
         - pprof
         - redis_storage
         - sigv4auth
+        - skywalking_encoding
         - text_encoding
         - zipkin_encoding
     processor:
