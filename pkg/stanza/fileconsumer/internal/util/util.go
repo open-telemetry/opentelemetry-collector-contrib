@@ -33,7 +33,7 @@ func IsGzipFile(f *os.File) bool {
 	header := make([]byte, len(magicHeader))
 	if _, err := f.ReadAt(header, 0); err != nil {
 		if errors.Is(err, io.EOF) {
-			return false // empty or too short file – definitely not gzip
+			return false // empty or too short file
 		}
 		return false
 	}

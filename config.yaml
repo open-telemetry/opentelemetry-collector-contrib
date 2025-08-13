@@ -1,0 +1,27 @@
+receivers:
+  otlpjsonfile:
+    include_file_name: true
+    include:
+      - "./otlp-all.json"
+
+
+exporters:
+  debug:
+    verbosity: detailed
+  elasticsearch: 
+   endpoints: 
+    -  https://at-khushi-jain-agent-testing-910-snapshot.es.us-west2.gcp.elastic-cloud.com:443
+   password: 7KFXGWJU9O0iJX10Tn6LfRXP
+   user: elastic
+   tls:
+    ca_file: ./ca.crt
+   auth: 
+    authenticator: beatsauth  
+
+service:
+  extensions: [beatsauth]
+  pipelines:
+    logs:
+      receivers: [otlpjsonfile]
+      processors: []
+      exporters: [debug, elasticsearch]
