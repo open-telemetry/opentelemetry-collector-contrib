@@ -124,7 +124,7 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 	if collectorCfg == nil {
 		return nil
 	}
-	if err := collectorCfg.Unmarshal(c, confmap.WithIgnoreUnused()); err != nil {
+	if err := collectorCfg.Unmarshal(c); err != nil {
 		return err
 	}
 	for i, info := range c.Spans {

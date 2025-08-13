@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.2.0
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
 	github.com/knadh/koanf/v2 v2.2.2
-	github.com/open-telemetry/opamp-go v0.20.0
+	github.com/open-telemetry/opamp-go v0.21.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
@@ -49,7 +49,7 @@ require (
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
-	github.com/expr-lang/expr v1.17.5 // indirect
+	github.com/expr-lang/expr v1.17.6 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
