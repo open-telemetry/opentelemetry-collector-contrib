@@ -130,7 +130,7 @@ processors:
         - attributes["http.request.method"] != nil
 ```
 
-#### Dropping non-error spans with a duration less than 1 second
+#### Dropping non-error spans with a duration of less than 1 second
 ```yaml
 processors:
   filter:
