@@ -31,7 +31,6 @@ type ResourceAttributesConfig struct {
 	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
 	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
-	CloudRegion           ResourceAttributeConfig `mapstructure:"cloud.region"`
 	HostID                ResourceAttributeConfig `mapstructure:"host.id"`
 	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
 	HostType              ResourceAttributeConfig `mapstructure:"host.type"`
@@ -49,9 +48,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		CloudProvider: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CloudRegion: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		HostID: ResourceAttributeConfig{

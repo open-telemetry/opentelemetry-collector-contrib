@@ -12,7 +12,6 @@
 | cloud.availability_zone | The cloud availability zone | Any Str | true |
 | cloud.platform | The cloud platform | Any Str | true |
 | cloud.provider | The cloud provider | Any Str | true |
-| cloud.region | The cloud region | Any Str | true |
 | host.id | The host.id | Any Str | true |
 | host.name | The hostname | Any Str | true |
 | host.type | The host instance type (Nova flavor name or ID) | Any Str | true |

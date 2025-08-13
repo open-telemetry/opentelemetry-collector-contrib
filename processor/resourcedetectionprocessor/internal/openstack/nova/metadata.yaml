@@ -23,10 +23,6 @@ resource_attributes:
     description: The cloud platform
     type: string
     enabled: true
-  cloud.region:
-    description: The cloud region
-    type: string
-    enabled: true
   cloud.availability_zone:
     description: The cloud availability zone
     type: string

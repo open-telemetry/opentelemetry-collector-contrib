@@ -49,13 +49,6 @@ func (rb *ResourceBuilder) SetCloudProvider(val string) {
 	}
 }
 
-// SetCloudRegion sets provided value as "cloud.region" attribute.
-func (rb *ResourceBuilder) SetCloudRegion(val string) {
-	if rb.config.CloudRegion.Enabled {
-		rb.res.Attributes().PutStr("cloud.region", val)
-	}
-}
-
 // SetHostID sets provided value as "host.id" attribute.
 func (rb *ResourceBuilder) SetHostID(val string) {
 	if rb.config.HostID.Enabled {

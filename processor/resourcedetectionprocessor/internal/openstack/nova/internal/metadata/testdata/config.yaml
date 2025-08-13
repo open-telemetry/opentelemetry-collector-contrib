@@ -9,8 +9,6 @@ all_set:
       enabled: true
     cloud.provider:
       enabled: true
-    cloud.region:
-      enabled: true
     host.id:
       enabled: true
     host.name:
@@ -26,8 +24,6 @@ none_set:
     cloud.platform:
       enabled: false
     cloud.provider:
-      enabled: false
-    cloud.region:
       enabled: false
     host.id:
       enabled: false
