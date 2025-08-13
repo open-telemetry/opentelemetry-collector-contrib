@@ -352,7 +352,6 @@ func (v *priorityContextInferrerHints) visitValue(va *value) {
 }
 
 func (v *priorityContextInferrerHints) visitPath(value *path) {
-
 	if value.Context == "" && len(value.Fields) == 1 {
 		for _, lv := range v.loopVariables {
 			if lv == value.Fields[0].Name {
