@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/IBM/sarama v1.45.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0

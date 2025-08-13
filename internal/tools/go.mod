@@ -10,7 +10,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.132.0
 	go.opentelemetry.io/build-tools/checkapi v0.23.1
 	go.opentelemetry.io/build-tools/checkfile v0.26.0
 	go.opentelemetry.io/build-tools/chloggen v0.26.0
@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/cmd/builder v0.132.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.132.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.35.0
+	golang.org/x/tools v0.36.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.12.3
 	mvdan.cc/gofumpt v0.8.0
@@ -276,7 +276,7 @@ require (
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/telemetry v0.0.0-20250710130107-8d8967aff50b // indirect
+	golang.org/x/telemetry v0.0.0-20250807160809-1a19826ec488 // indirect
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
