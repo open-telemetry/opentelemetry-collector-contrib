@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -56,7 +57,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
 		ClientConfig:    confighttp.NewDefaultClientConfig(),
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 	}
@@ -150,7 +151,7 @@ func Test_Start(t *testing.T) {
 		MaxBatchSizeBytes: 3000000,
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 	}
@@ -740,7 +741,7 @@ func Test_PushMetrics(t *testing.T) {
 						ClientConfig:      clientConfig,
 						MaxBatchSizeBytes: 3000000,
 						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-						TargetInfo: &TargetInfo{
+						TargetInfo: TargetInfo{
 							Enabled: true,
 						},
 						BackOffConfig: retrySettings,
@@ -756,9 +757,9 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if useWAL {
-						cfg.WAL = &WALConfig{
+						cfg.WAL = configoptional.Some(WALConfig{
 							Directory: t.TempDir(),
-						}
+						})
 					}
 
 					assert.NotNil(t, cfg)
@@ -969,11 +970,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		Namespace:        "test_ns",
 		ClientConfig:     clientConfig,
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
-		WAL: &WALConfig{
+		WAL: configoptional.Some(WALConfig{
 			Directory:  tempDir,
 			BufferSize: 1,
-		},
-		TargetInfo: &TargetInfo{
+		}),
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 	}
@@ -1018,7 +1019,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 
 	// 3. Let's now read back all of the WAL records and ensure
 	// that all the prompb.WriteRequest values exist as we sent them.
-	wal, _, werr := cfg.WAL.createWAL()
+	wal, _, werr := cfg.WAL.Get().createWAL()
 	assert.NoError(t, werr)
 	assert.NotNil(t, wal)
 	t.Cleanup(func() {
@@ -1351,7 +1352,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		MaxBatchSizeBytes: 3000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
 		BackOffConfig:     retrySettings,
-		TargetInfo:        &TargetInfo{Enabled: true},
+		TargetInfo:        TargetInfo{Enabled: true},
 	}
 	exporter, err := newPRWExporter(cfg, set)
 	require.NoError(b, err)
