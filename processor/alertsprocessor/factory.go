@@ -2,10 +2,12 @@ package alertsprocessor
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -31,14 +33,28 @@ func createMetrics(ctx context.Context, set processor.Settings, cfg component.Co
 	if err != nil {
 		return nil, err
 	}
+
+	// Wrap to enforce evaluation.timeout since processorhelper no longer exposes WithTimeouts
+	process := func(ctx context.Context, md consumerMetricsArg) (consumerMetricsArg, error) {
+		to := c.Evaluation.Timeout
+		if to <= 0 {
+			return p.processMetrics(ctx, md)
+		}
+		tctx, cancel := context.WithTimeout(ctx, to)
+		defer cancel()
+		return p.processMetrics(tctx, md)
+	}
+
 	return processorhelper.NewMetrics(
-		ctx, set, cfg, next, p.processMetrics,
+		ctx, set, cfg, next, process,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		processorhelper.WithStart(p.Start),
 		processorhelper.WithShutdown(p.Shutdown),
-		processorhelper.WithTimeouts(processorhelper.Timeouts{Process: c.Evaluation.Timeout, Shutdown: 5 * time.Second}),
 	)
 }
+
+// small type alias to keep the closure readable
+type consumerMetricsArg = pmetric.Metrics
 
 func createLogs(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
 	c := cfg.(*Config)
@@ -49,14 +65,26 @@ func createLogs(ctx context.Context, set processor.Settings, cfg component.Confi
 	if err != nil {
 		return nil, err
 	}
+
+	process := func(ctx context.Context, ld consumerLogsArg) (consumerLogsArg, error) {
+		to := c.Evaluation.Timeout
+		if to <= 0 {
+			return p.processLogs(ctx, ld)
+		}
+		tctx, cancel := context.WithTimeout(ctx, to)
+		defer cancel()
+		return p.processLogs(tctx, ld)
+	}
+
 	return processorhelper.NewLogs(
-		ctx, set, cfg, next, p.processLogs,
+		ctx, set, cfg, next, process,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		processorhelper.WithStart(p.Start),
 		processorhelper.WithShutdown(p.Shutdown),
-		processorhelper.WithTimeouts(processorhelper.Timeouts{Process: c.Evaluation.Timeout, Shutdown: 5 * time.Second}),
 	)
 }
+
+type consumerLogsArg = plog.Logs
 
 func createTraces(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Traces) (processor.Traces, error) {
 	c := cfg.(*Config)
@@ -67,11 +95,23 @@ func createTraces(ctx context.Context, set processor.Settings, cfg component.Con
 	if err != nil {
 		return nil, err
 	}
+
+	process := func(ctx context.Context, td consumerTracesArg) (consumerTracesArg, error) {
+		to := c.Evaluation.Timeout
+		if to <= 0 {
+			return p.processTraces(ctx, td)
+		}
+		tctx, cancel := context.WithTimeout(ctx, to)
+		defer cancel()
+		return p.processTraces(tctx, td)
+	}
+
 	return processorhelper.NewTraces(
-		ctx, set, cfg, next, p.processTraces,
+		ctx, set, cfg, next, process,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		processorhelper.WithStart(p.Start),
 		processorhelper.WithShutdown(p.Shutdown),
-		processorhelper.WithTimeouts(processorhelper.Timeouts{Process: c.Evaluation.Timeout, Shutdown: 5 * time.Second}),
 	)
 }
+
+type consumerTracesArg = ptrace.Traces

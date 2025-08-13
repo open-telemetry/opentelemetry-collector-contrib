@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
 
 	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/cardinality"
 	"github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
@@ -110,8 +111,10 @@ func newProcessor(ctx context.Context, set processor.Settings, cfg *Config, m co
 func (p *processorImpl) Start(ctx context.Context, _ component.Host) error {
 	// Sliding window size warning (requested behavior)
 	if p.cfg.SlidingWindow.Duration > 15*time.Second {
-		p.set.Logger.Warn("Large sliding_window.duration increases CPU and memory usage; consider keeping it small",
-			"duration", p.cfg.SlidingWindow.Duration)
+		p.set.Logger.Warn(
+			"Large sliding_window.duration increases CPU and memory usage; consider keeping it small",
+			zap.Duration("duration", p.cfg.SlidingWindow.Duration),
+		)
 	}
 	p.tick = time.NewTicker(p.cfg.Evaluation.Interval)
 	p.wg.Add(1)
