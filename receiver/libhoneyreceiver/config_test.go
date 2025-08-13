@@ -9,7 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 )
+
+// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -20,8 +35,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	libhoneyCfg, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config type")
 
-	assert.Equal(t, "localhost:8080", libhoneyCfg.HTTP.Endpoint)
-	assert.Equal(t, []string{"/events", "/event", "/batch"}, libhoneyCfg.HTTP.TracesURLPaths)
+	GetOrInsertDefault(t, &libhoneyCfg.HTTP)
+	assert.Equal(t, "localhost:8080", libhoneyCfg.HTTP.Get().Endpoint)
+	assert.Equal(t, []string{"/events", "/event", "/batch"}, libhoneyCfg.HTTP.Get().TracesURLPaths)
 	assert.Empty(t, libhoneyCfg.AuthAPI)
 	assert.Equal(t, "service.name", libhoneyCfg.FieldMapConfig.Resources.ServiceName)
 	assert.Equal(t, "library.name", libhoneyCfg.FieldMapConfig.Scopes.LibraryName)
