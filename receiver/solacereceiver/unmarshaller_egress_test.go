@@ -3,6 +3,7 @@
 package solacereceiver
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -911,7 +912,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 
 func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, *componenttest.Telemetry) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) }) //nolint:usetesting
 	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", ""))

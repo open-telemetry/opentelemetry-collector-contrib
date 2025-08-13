@@ -105,14 +105,14 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) }) //nolint:usetesting
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 	ocr := newGRPCReceiver(t, addr, tt.NewTelemetrySettings(), sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) }) //nolint:usetesting
 
 	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -238,7 +238,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) }) //nolint:usetesting
 
 	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)

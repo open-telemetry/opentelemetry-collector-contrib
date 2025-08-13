@@ -4,6 +4,7 @@
 package solacereceiver
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -873,7 +874,7 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 
 func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshallerV1, *componenttest.Telemetry) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", ""))

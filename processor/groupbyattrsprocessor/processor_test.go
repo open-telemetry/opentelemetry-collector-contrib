@@ -4,6 +4,7 @@
 package groupbyattrsprocessor
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"sort"
@@ -274,7 +275,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
 			tel := componenttest.NewTelemetry()
-			t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
+			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 
 			gap, err := createGroupByAttrsProcessor(metadatatest.NewSettings(tel), tt.groupByKeys)
 			require.NoError(t, err)

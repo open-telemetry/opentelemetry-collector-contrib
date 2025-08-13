@@ -450,7 +450,7 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 	se1, err := newSumologicExtension(cfg1, logger1, component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, se1.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, se1.Shutdown(context.Background())) }) //nolint:usetesting
 	fileName1, err := credentials.HashKeyToFilename(createHashKey(cfg1))
 	require.NoError(t, err)
 	credsPath1 := path.Join(dir1, fileName1)
@@ -460,7 +460,7 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 	se2, err := newSumologicExtension(cfg2, logger2, component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, se2.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, se2.Shutdown(context.Background())) }) //nolint:usetesting
 	fileName2, err := credentials.HashKeyToFilename(createHashKey(cfg2))
 	require.NoError(t, err)
 	credsPath2 := path.Join(dir2, fileName2)

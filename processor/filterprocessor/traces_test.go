@@ -4,6 +4,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -286,7 +287,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	processor, err := newFilterSpansProcessor(metadatatest.NewSettings(tel), &Config{
 		Traces: TraceFilters{
 			SpanConditions: []string{

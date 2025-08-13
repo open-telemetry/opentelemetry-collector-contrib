@@ -754,7 +754,7 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 		return service
 	}
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	receiver := &solaceTracesReceiver{

@@ -774,7 +774,7 @@ func Test_PushMetrics(t *testing.T) {
 								},
 							))),
 					)
-					t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
+					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)
 					set.BuildInfo = component.BuildInfo{
 						Description: "OpenTelemetry Collector",
@@ -988,12 +988,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
-	ctx := t.Context()
-	require.NoError(t, prwe.Start(ctx, nopHost))
+	require.NoError(t, prwe.Start(t.Context(), nopHost))
 	t.Cleanup(func() {
 		// This should have been shut down during the test
 		// If it does not error then something went wrong.
-		assert.Error(t, prwe.Shutdown(ctx))
+		assert.Error(t, prwe.Shutdown(context.Background())) //nolint:usetesting
 		close(exiting)
 	})
 	require.NotNil(t, prwe.wal)
@@ -1010,11 +1009,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		"timeseries1": ts1,
 		"timeseries2": ts2,
 	}
-	errs := prwe.handleExport(ctx, tsMap, nil)
+	errs := prwe.handleExport(t.Context(), tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will be flushed to the WAL before exiting.
-	require.NoError(t, prwe.Shutdown(ctx))
+	require.NoError(t, prwe.Shutdown(t.Context()))
 
 	// 3. Let's now read back all of the WAL records and ensure
 	// that all the prompb.WriteRequest values exist as we sent them.
@@ -1064,9 +1063,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// Read from that same WAL, export to the RWExporter server.
 	prwe2, err := newPRWExporter(cfg, set)
 	assert.NoError(t, err)
-	require.NoError(t, prwe2.Start(ctx, nopHost))
+	require.NoError(t, prwe2.Start(t.Context(), nopHost))
 	t.Cleanup(func() {
-		assert.NoError(t, prwe2.Shutdown(ctx))
+		assert.NoError(t, prwe2.Shutdown(context.Background())) //nolint:usetesting
 	})
 	require.NotNil(t, prwe2.wal)
 

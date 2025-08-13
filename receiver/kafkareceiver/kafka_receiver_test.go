@@ -284,7 +284,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(t.Context()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 		for range 4 {
 			<-received
@@ -505,7 +505,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				t.Cleanup(func() {
-					assert.NoError(t, r.Shutdown(t.Context()))
+					assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 				})
 
 				if testcase.errorShouldRestart {
@@ -614,7 +614,7 @@ func TestNewLogsReceiver(t *testing.T) {
 		err = r.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(t.Context()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 
 		// There should be one failed message due to the invalid message payload.
@@ -668,7 +668,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 		err = r.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(t.Context()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 
 		// There should be one failed message due to the invalid message payload.
@@ -780,7 +780,7 @@ func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Tra
 	require.NoError(tb, err)
 	require.NoError(tb, r.Start(tb.Context(), componenttest.NewNopHost()))
 	tb.Cleanup(func() {
-		assert.NoError(tb, r.Shutdown(tb.Context()))
+		assert.NoError(tb, r.Shutdown(context.Background())) //nolint:usetesting
 	})
 }
 
@@ -789,7 +789,7 @@ func mustNewSettings(tb testing.TB) (receiver.Settings, *componenttest.Telemetry
 	set := receivertest.NewNopSettings(metadata.Type)
 	tel := componenttest.NewTelemetry()
 	tb.Cleanup(func() {
-		assert.NoError(tb, tel.Shutdown(tb.Context()))
+		assert.NoError(tb, tel.Shutdown(context.Background())) //nolint:usetesting
 	})
 	set.TelemetrySettings = tel.NewTelemetrySettings()
 	set.Logger = zap.New(zapCore)
@@ -845,9 +845,10 @@ func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
 // It is necessary to call this to exit the group goroutines in the kfake cluster.
 func deleteConsumerGroups(tb testing.TB, client *kgo.Client) {
 	adminClient := kadm.NewClient(client)
-	groups, err := adminClient.ListGroups(tb.Context())
+	ctx := context.Background() //nolint:usetesting // we may call this on test teardown
+	groups, err := adminClient.ListGroups(ctx)
 	assert.NoError(tb, err)
-	_, err = adminClient.DeleteGroups(tb.Context(), groups.Groups()...)
+	_, err = adminClient.DeleteGroups(ctx, groups.Groups()...)
 	assert.NoError(tb, err)
 }
 

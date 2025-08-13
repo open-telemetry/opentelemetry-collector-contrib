@@ -4,6 +4,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -770,7 +771,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	processor, err := newFilterLogsProcessor(metadatatest.NewSettings(tel), &Config{
 		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
 	})

@@ -236,7 +236,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 func TestWALWrite_Telemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(t.Context()))
+		require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
 	})
 	set := metadatatest.NewSettings(tel)
 
@@ -264,7 +264,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(t.Context()))
+		assert.NoError(t, prw.Shutdown(context.Background())) //nolint:usetesting
 	})
 	wal := prw.wal
 
@@ -305,7 +305,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	t.Skip("Skipping in CI: test is flaky;still useful for local testing")
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(t.Context()))
+		require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
 	})
 	set := metadatatest.NewSettings(tel)
 
@@ -336,7 +336,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(t.Context()))
+		assert.NoError(t, prw.Shutdown(context.Background())) //nolint:usetesting
 	})
 
 	// Verify initial WAL reads metric
@@ -384,7 +384,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 func TestWALLag_Telemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(t.Context()))
+		require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
 	})
 	set := metadatatest.NewSettings(tel)
 
@@ -415,7 +415,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 	err = prw.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(t.Context()))
+		assert.NoError(t, prw.Shutdown(context.Background())) //nolint:usetesting
 	})
 
 	// Create test data to write to WAL
