@@ -283,6 +283,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
+					attribute.String("error.type", "internal_server_error"),
 				),
 			},
 			wantESLatency: &metricdata.HistogramDataPoint[float64]{
@@ -342,6 +343,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
+					attribute.String("error.type", "version_conflict_engine_exception"),
 				),
 			},
 			wantESLatency: &metricdata.HistogramDataPoint[float64]{
@@ -380,6 +382,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
+					attribute.String("error.type", "version_conflict_engine_exception"),
 				),
 			},
 			wantESLatency: &metricdata.HistogramDataPoint[float64]{
@@ -643,12 +646,6 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			session.End()
 			assert.NoError(t, bi.Close(ctx))
 
-			// Assert internal telemetry metrics
-			expectedOutcome := "success"
-			if tt.wantMessage != "" {
-				expectedOutcome = "failed_client"
-			}
-
 			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
 				{
 					Value: 1,
@@ -667,13 +664,23 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
+
+			// For failure cases, verify error.type attribute is present
+			attrs := []attribute.KeyValue{
+				attribute.StringSlice("x-test", []string{"test"}),
+				attribute.String("outcome", "success"),
+			}
+			if tt.wantMessage != "" {
+				attrs = []attribute.KeyValue{
+					attribute.StringSlice("x-test", []string{"test"}),
+					attribute.String("outcome", "failed_client"),
+					attribute.String("error.type", "version_conflict_engine_exception"),
+				}
+			}
 			metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
 				{
-					Value: 1,
-					Attributes: attribute.NewSet(
-						attribute.String("outcome", expectedOutcome),
-						attribute.StringSlice("x-test", []string{"test"}),
-					),
+					Value:      1,
+					Attributes: attribute.NewSet(attrs...),
 				},
 			}, metricdatatest.IgnoreTimestamp())
 			metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
