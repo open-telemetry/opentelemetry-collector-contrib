@@ -19,6 +19,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -52,9 +53,9 @@ func TestNewLibhoneyReceiver(t *testing.T) {
 		{
 			name: "config_without_trailing_slashes",
 			config: &Config{
-				HTTP: &HTTPConfig{
+				HTTP: configoptional.Some(HTTPConfig{
 					TracesURLPaths: []string{"/1/events"},
-				},
+				}),
 			},
 			wantError: false,
 		},
@@ -148,6 +149,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig()
+			getOrInsertDefault(t, &cfg.(*Config).HTTP)
 			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
 			require.NoError(t, err)
@@ -378,7 +380,7 @@ func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
 
 			// Create config with metadata setting
 			cfg := createDefaultConfig().(*Config)
-			cfg.HTTP.IncludeMetadata = tt.includeMetadata
+			getOrInsertDefault(t, &cfg.HTTP).IncludeMetadata = tt.includeMetadata
 
 			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg, &set)
