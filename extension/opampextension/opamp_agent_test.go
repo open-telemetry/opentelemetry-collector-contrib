@@ -802,6 +802,10 @@ type mockOpAMPClient struct {
 	setHealthFunc func(health *protobufs.ComponentHealth) error
 }
 
+func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
+	return nil
+}
+
 func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
 	return nil
 }

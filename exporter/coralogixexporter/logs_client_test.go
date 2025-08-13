@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -376,6 +377,11 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 }
 
 func TestLogsExporter_PushLogs_Performance(t *testing.T) {
+	isIntegrationTest := os.Getenv("INTEGRATION_TEST")
+	if isIntegrationTest != "true" {
+		t.Skip("Skipping E2E test: INTEGRATION_TEST not set")
+	}
+
 	endpoint, stopFn, mockSrv := startMockOtlpLogsServer(t)
 	defer stopFn()
 
