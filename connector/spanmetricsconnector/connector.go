@@ -86,6 +86,7 @@ type connectorImp struct {
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
 	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	instanceID          string
 }
 
 type resourceMetrics struct {
@@ -112,7 +113,7 @@ func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	return dims
 }
 
-func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock, instanceID string) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 	if cfg.DimensionsCacheSize != 0 {
@@ -155,6 +156,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		callsDimensions:              newDimensions(cfg.CallsDimensions),
 		durationDimensions:           newDimensions(cfg.Histogram.Dimensions),
 		events:                       cfg.Events,
+		instanceID:                   instanceID,
 	}, nil
 }
 
@@ -529,7 +531,7 @@ func (p *connectorImp) buildAttributes(
 	instrumentationScope pcommon.InstrumentationScope,
 ) pcommon.Map {
 	attr := pcommon.NewMap()
-	attr.EnsureCapacity(4 + len(dimensions))
+	attr.EnsureCapacity(5 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
 	}
@@ -541,6 +543,11 @@ func (p *connectorImp) buildAttributes(
 	}
 	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	}
+	if includeServiceInstanceID.IsEnabled() {
+		if !contains(p.config.ExcludeDimensions, string(conventions.ServiceInstanceIDKey)) {
+			attr.PutStr(string(conventions.ServiceInstanceIDKey), p.instanceID)
+		}
 	}
 
 	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
