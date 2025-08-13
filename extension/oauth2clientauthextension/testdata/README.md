@@ -1,4 +1,3 @@
 # Test TLS Configuration
 
-The test Cert, Key and CA files in this directory have been copied over from [configtls](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls/testdata)
-tests. 
+We created custom CA and Certificates so we can include `127.0.0.1` as an accepted SAN for testing TLS configuration.
