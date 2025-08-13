@@ -326,13 +326,13 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		SqlserverComputerName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		SqlserverDatabaseName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		SqlserverInstanceName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }
