@@ -5,7 +5,6 @@ package akamaisecurityeventsreceiver // import "github.com/open-telemetry/opente
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -26,9 +25,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
-	cfg.CollectionInterval = 1 * time.Minute
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Timeout = 30 * time.Second
 
 	return &Config{
 		ControllerConfig: cfg,

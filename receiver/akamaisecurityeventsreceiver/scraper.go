@@ -130,7 +130,7 @@ func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, e
 		var evt map[string]any
 		decodeErr := decoder.Decode(&evt)
 		if decodeErr != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal akamai-security event: %w", decodeErr)
+			return r.lb.Emit(), fmt.Errorf("failed to unmarshal akamai-security event: %w", decodeErr)
 		}
 
 		if _, ok := evt["offset"]; ok {
@@ -141,7 +141,7 @@ func (r *akamaiSecurityEventsReceiver) scrape(ctx context.Context) (plog.Logs, e
 		log := plog.NewLogRecord()
 		err = log.Attributes().FromRaw(evt)
 		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to set attributes from event: %w", err)
+			return r.lb.Emit(), fmt.Errorf("failed to set attributes from event: %w", err)
 		}
 
 		var ts pcommon.Timestamp
