@@ -134,8 +134,17 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
+	// Optional: EC2‑compatible instance type (don’t fail if missing)
+	if instance_type, err := d.metadataProvider.InstanceType(ctx); err == nil && instance_type != "" {
+		d.rb.SetHostType(instance_type)
+	} else if err != nil {
+		d.logger.Debug("EC2-compatible instance type unavailable", zap.Error(err))
+	}
+
 	d.rb.SetCloudProvider("openstack")
 	d.rb.SetCloudPlatform("openstack_nova")
+	d.rb.SetCloudAccountID(meta.ProjectID)
+	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)
 	d.rb.SetHostID(meta.UUID)
 	d.rb.SetHostName(hostname)
 	res := d.rb.Emit()
