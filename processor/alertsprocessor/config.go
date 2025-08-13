@@ -11,19 +11,19 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-type SlidingWindowConfig struct {
+type slidingWindowConfig struct {
 	Duration         time.Duration `mapstructure:"duration"`
 	MaxSamples       int           `mapstructure:"max_samples"`
 	OverflowBehavior string        `mapstructure:"overflow_behavior"` // ring_buffer | drop_new
 }
 
-type EvaluationConfig struct {
+type evaluationConfig struct {
 	Interval      time.Duration `mapstructure:"interval"`
 	Timeout       time.Duration `mapstructure:"timeout"`
 	MaxConcurrent int           `mapstructure:"max_concurrent"`
 }
 
-type StatestoreConfig struct {
+type statestoreConfig struct {
 	RemoteRead struct {
 		URL string `mapstructure:"url"`
 	} `mapstructure:"remote_read"`
@@ -36,13 +36,13 @@ type StatestoreConfig struct {
 	ExternalURL    string            `mapstructure:"external_url"`
 }
 
-type DedupConfig struct {
+type dedupConfig struct {
 	FingerprintAlgorithm string   `mapstructure:"fingerprint_algorithm"` // sha256
 	FingerprintLabels    []string `mapstructure:"fingerprint_labels"`
 	ExcludeLabels        []string `mapstructure:"exclude_labels"`
 }
 
-type StormControlConfig struct {
+type stormControlConfig struct {
 	Global struct {
 		MaxActiveAlerts         int     `mapstructure:"max_active_alerts"`
 		MaxAlertsPerMinute      int     `mapstructure:"max_alerts_per_minute"`
@@ -50,18 +50,18 @@ type StormControlConfig struct {
 	} `mapstructure:"global"`
 }
 
-type CardinalityLabels struct {
+type cardinalityLabels struct {
 	MaxLabelsPerAlert   int `mapstructure:"max_labels_per_alert"`
 	MaxLabelValueLength int `mapstructure:"max_label_value_length"`
 	MaxTotalLabelSize   int `mapstructure:"max_total_label_size"`
 }
 
-type CardinalitySeries struct {
+type cardinalitySeries struct {
 	MaxActiveSeries  int `mapstructure:"max_active_series"`
 	MaxSeriesPerRule int `mapstructure:"max_series_per_rule"`
 }
 
-type CardinalityConfig struct {
+type cardinalityConfig struct {
 	Labels        CardinalityLabels `mapstructure:"labels"`
 	Allowlist     []string          `mapstructure:"allowlist"`
 	Blocklist     []string          `mapstructure:"blocklist"`
@@ -74,7 +74,7 @@ type CardinalityConfig struct {
 	} `mapstructure:"enforcement"`
 }
 
-type NotifierConfig struct {
+type notifierConfig struct {
 	URL             string                  `mapstructure:"url"`
 	HTTPClient      confighttp.ClientConfig `mapstructure:",squash"`
 	Timeout         time.Duration           `mapstructure:"timeout"`
@@ -84,33 +84,33 @@ type NotifierConfig struct {
 	DisableSending  bool                    `mapstructure:"disable_sending"`
 }
 
-type RuleFiles struct {
+type ruleFiles struct {
 	Include []string `mapstructure:"include"`
 }
 
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	SlidingWindow SlidingWindowConfig `mapstructure:"sliding_window"`
-	Evaluation    EvaluationConfig    `mapstructure:"evaluation"`
-	Statestore    StatestoreConfig    `mapstructure:"statestore"`
-	Dedup         DedupConfig         `mapstructure:"deduplication"`
-	StormControl  StormControlConfig  `mapstructure:"stormcontrol"`
-	Cardinality   CardinalityConfig   `mapstructure:"cardinality"`
-	Notifier      NotifierConfig      `mapstructure:"notifier"`
+	SlidingWindow slidingWindowConfig `mapstructure:"sliding_window"`
+	Evaluation    evaluationConfig    `mapstructure:"evaluation"`
+	Statestore    statestoreConfig    `mapstructure:"statestore"`
+	Dedup         dedupConfig         `mapstructure:"deduplication"`
+	StormControl  stormControlConfig  `mapstructure:"stormcontrol"`
+	Cardinality   cardinalityConfig   `mapstructure:"cardinality"`
+	Notifier      notifierConfig      `mapstructure:"notifier"`
 
-	RuleFiles RuleFiles         `mapstructure:"rule_files"`
+	RuleFiles ruleFiles         `mapstructure:"rule_files"`
 	Rules     []evaluation.Rule `mapstructure:"rules"` // inline rules
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.MustNewID(typeStr)),
-		SlidingWindow:     SlidingWindowConfig{Duration: 5 * time.Second, MaxSamples: 100_000, OverflowBehavior: "ring_buffer"},
-		Evaluation:        EvaluationConfig{Interval: 15 * time.Second, Timeout: 10 * time.Second, MaxConcurrent: 0},
-		Statestore:        StatestoreConfig{SyncInterval: 30 * time.Second},
-		Notifier:          NotifierConfig{Timeout: 5 * time.Second, InitialInterval: 500 * time.Millisecond, MaxInterval: 30 * time.Second, MaxBatchSize: 64},
-		RuleFiles:         RuleFiles{Include: nil},
+		SlidingWindow:     slidingWindowConfig{Duration: 5 * time.Second, MaxSamples: 100_000, OverflowBehavior: "ring_buffer"},
+		Evaluation:        evaluationConfig{Interval: 15 * time.Second, Timeout: 10 * time.Second, MaxConcurrent: 0},
+		Statestore:        statestoreConfig{SyncInterval: 30 * time.Second},
+		Notifier:          notifierConfig{Timeout: 5 * time.Second, InitialInterval: 500 * time.Millisecond, MaxInterval: 30 * time.Second, MaxBatchSize: 64},
+		RuleFiles:         ruleFiles{Include: nil},
 		Rules:             nil,
 	}
 }
