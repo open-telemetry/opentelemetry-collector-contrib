@@ -1,8 +1,0 @@
-change_type: enhancement
-component: httpcheckreceiver
-note: Remove unnecessary status codes
-issues: [38564]
-subtext: |
-  The httpcheckreceiver now removes the http.status_code attribute from httpcheck.status metrics
-  when the metric value is 0, as per the feature request to avoid redundant status codes.
-change_logs: [user]

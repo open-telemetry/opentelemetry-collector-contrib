@@ -512,3 +512,52 @@ func TestScraperMultipleTargets(t *testing.T) {
 		pmetrictest.IgnoreTimestamp(),
 	))
 }
+
+func TestTimingMetrics(t *testing.T) {
+	// Create a mock server
+	server := newMockServer(t, 200)
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Enable timing breakdown metrics
+	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
+
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	// Check that we have metrics
+	require.Positive(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	// Verify that timing metrics are present
+	foundMetrics := make(map[string]bool)
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		foundMetrics[metric.Name()] = true
+	}
+
+	// Check that base metrics are present
+	assert.True(t, foundMetrics["httpcheck.duration"])
+	assert.True(t, foundMetrics["httpcheck.status"])
+
+	// Check that timing breakdown metrics are present when enabled
+	assert.True(t, foundMetrics["httpcheck.dns.lookup.duration"])
+	assert.True(t, foundMetrics["httpcheck.client.connection.duration"])
+	assert.True(t, foundMetrics["httpcheck.client.request.duration"])
+	assert.True(t, foundMetrics["httpcheck.response.duration"])
+}
