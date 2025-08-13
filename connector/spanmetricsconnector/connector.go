@@ -162,17 +162,19 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Disable {
 		return nil
 	}
-	if cfg.Histogram.Exponential != nil {
+	if cfg.Histogram.Exponential.HasValue() {
 		maxSize := structure.DefaultMaxSize
-		if cfg.Histogram.Exponential.MaxSize != 0 {
-			maxSize = cfg.Histogram.Exponential.MaxSize
+		if expConfig := cfg.Histogram.Exponential.Get(); expConfig != nil && expConfig.MaxSize != 0 {
+			maxSize = expConfig.MaxSize
 		}
 		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 	}
 
 	var bounds []float64
-	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	if cfg.Histogram.Explicit.HasValue() {
+		if expConfig := cfg.Histogram.Explicit.Get(); expConfig != nil && expConfig.Buckets != nil {
+			bounds = durationsToUnits(expConfig.Buckets, unitDivider(cfg.Histogram.Unit))
+		}
 	} else {
 		switch cfg.Histogram.Unit {
 		case metrics.Milliseconds:
