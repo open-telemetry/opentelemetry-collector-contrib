@@ -222,7 +222,13 @@ attributes:
   condition:
     description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
     type: string
-
+  k8s.container.status.state:
+    description: The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details.
+    type: string
+    enum:
+      - terminated
+      - running
+      - waiting
 metrics:
   k8s.container.cpu_request:
     enabled: true
@@ -284,7 +290,16 @@ metrics:
     unit: ""
     gauge:
       value_type: int
-
+  k8s.container.status.state:
+    enabled: false
+    description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+    unit: "{container}"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.container.status.state
   k8s.pod.phase:
     enabled: true
     description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
