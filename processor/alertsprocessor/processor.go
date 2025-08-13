@@ -43,7 +43,7 @@ type processorImpl struct {
 	wg     sync.WaitGroup
 }
 
-func newProcessor(ctx context.Context, set processor.Settings, cfg *Config, m consumer.Metrics, l consumer.Logs, t consumer.Traces) (*processorImpl, error) {
+func newProcessor(_ context.Context, set processor.Settings, cfg *Config, m consumer.Metrics, l consumer.Logs, t consumer.Traces) (*processorImpl, error) {
 	// Map parent config -> subpackage configs (no parent import in children)
 	w := slidingwindow.New(slidingwindow.Config{
 		Duration:         cfg.SlidingWindow.Duration,
@@ -132,17 +132,17 @@ func (p *processorImpl) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (p *processorImpl) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (p *processorImpl) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	p.win.IngestMetrics(md)
 	return md, nil
 }
 
-func (p *processorImpl) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+func (p *processorImpl) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 	p.win.IngestLogs(ld)
 	return ld, nil
 }
 
-func (p *processorImpl) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (p *processorImpl) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	p.win.IngestTraces(td)
 	return td, nil
 }

@@ -1,23 +1,11 @@
-> **⚠️ Sliding window cost**
-> Increasing `sliding_window.duration` increases CPU and memory usage. Keep it as small as possible (start at **5s**).
 
-# alertsprocessor (OpenTelemetry Collector processor)
-Evaluates alert rules over a short sliding window for **metrics, logs, and traces**, emits synthetic metrics (`otel_alert_*`), and sends notifications to a webhook (e.g., Alertmanager-compatible).
+# OpenTelemetry Alert Processor Architecture
+## Stream-Based Alert Evaluation with TSDB State Synchronization
 
-## Example rules.yaml (logs & traces)
-```yaml
-- id: high_error_logs
-  name: HighErrorLogs
-  signal: logs
-  for: 0s
-  labels: { severity: error }
-  logs:
-    severity_at_least: ERROR
-    body_contains: "timeout"
-    group_by: ["service.name"]
-    count_threshold: 5
+### Executive Summary
 
-<<<<<<< HEAD:ARCHITECTURE.md
+This document presents the architecture for implementing a comprehensive alert evaluation processor as a native OpenTelemetry Collector component. The design enables real-time alert evaluation on streaming telemetry data (metrics, logs, and traces) while leveraging existing TSDB infrastructure for distributed state management, eliminating the need for separate alerting infrastructure.
+
 ---
 
 ## High-Level Architecture
@@ -77,59 +65,58 @@ Evaluates alert rules over a short sliding window for **metrics, logs, and trace
     status_not_ok: false
     group_by: ["service.name","span.name"]
     count_threshold: 3
->>>>>>> 6f461ba ([feature] alertsprocessor - first commit):README.md
 ```
 
 ---
 
-## How to use `alertsprocessor` in an OpenTelemetry Collector
+## Core Components
 
-> **Signals supported:** Logs and Traces (rule evaluation) + synthetic metrics output.  
-> **Heads up:** Increasing `sliding_window.duration` raises CPU and memory usage.
+### 1. Alert Evaluation Processor
 
-### 1) Add the processor to your Collector build
+The processor implements stream-based alert evaluation directly within the OpenTelemetry Collector pipeline, supporting multiple query languages and data formats:
 
-**Option A — Drop into a custom distro (simplest for testing):**
-- Place this repo under `processor/alertsprocessor/` in your Collector source tree (for example, a fork of `opentelemetry-collector-contrib`).
-- Run `make gotidy && make build` (or use the OTel Collector Builder (OCB) to include this component in a custom distribution).
+#### Supported Data Types
+- **OpenTelemetry Metrics**: Native OTLP metric format with full semantic convention support
+- **Prometheus Metrics**: Complete compatibility with Prometheus exposition format
+- **OpenTelemetry Logs**: LogQL-based alerting on structured and unstructured logs
+- **OpenTelemetry Traces**: Trace-based alerting using span metrics and exemplars
 
-**Option B — Use OCB (OpenTelemetry Collector Builder):**
-- Create a `builder-config.yaml` that includes this processor module.
-- Build your distro with `ocb --config builder-config.yaml`.
-- See OTel docs for custom collectors and OCB usage.
-
-### 2) Write alert rules (YAML)
-
-Create one or more rule files and point the processor at them via `rule_files.include` globs.
+#### Key Features
+- **Multi-format Support**: Evaluates alerts on metrics, logs, and traces using appropriate query languages (PromQL, MetricsQL, LogQL)
+- **Sliding Window Buffer**: Maintains 5-second rolling window for real-time evaluation
+- **Concurrent Evaluation**: Parallel rule processing with configurable concurrency limits
+- **Hot Reload**: Dynamic rule updates via configuration changes without restart
 
 ```yaml
-# rules/payments.yaml
-- id: high_error_logs
-  name: HighErrorLogs
-  signal: logs
-  for: 0s
-  labels: { severity: error }
-  logs:
-    severity_at_least: ERROR
-    body_contains: "timeout"
-    group_by: ["service.name"]
-    count_threshold: 5
-
-- id: slow_spans
-  name: SlowSpans
-  signal: traces
-  for: 5s
-  labels: { severity: warning }
-  traces:
-    latency_ms_gt: 500
-    status_not_ok: false
-    group_by: ["service.name","span.name"]
-    count_threshold: 3
+processor:
+  otel_alert_processor:
+    # Data type configuration
+    data_types:
+      metrics:
+        enabled: true
+        formats: ["otlp", "prometheus"]
+        query_language: "promql"
+      logs:
+        enabled: true
+        query_language: "logql"
+      traces:
+        enabled: true
+        alert_on: ["latency", "error_rate", "span_metrics"]
+    
+    # Evaluation settings
+    evaluation_interval: 15s
+    evaluation_timeout: 10s
+    max_concurrent_evals: 10
+    
+    # Buffer configuration
+    buffer:
+      window_size: 5s
+      max_samples: 100000
+      overflow_behavior: "ring_buffer"
 ```
 
-### 3) Recommended topology: **routingconnector** + per-group `alertsprocessor`
+### 2. TSDB-Based State Synchronization
 
-<<<<<<< HEAD:ARCHITECTURE.md
 The architecture uses the Time Series Database as the single source of truth for distributed state management, eliminating the need for additional coordination services.
 
 #### State Series Schema
@@ -344,7 +331,56 @@ cardinality_control:
     alert_on_limit: true
 ```
 
-### 6. High Availability Architecture
+### 6. Multi-Tenancy Support
+
+Complete tenant isolation and resource management:
+
+```yaml
+multi_tenancy:
+  # Tenant identification
+  tenant_extraction:
+    source: "header"  # header|label|resource_attribute
+    header_name: "X-Scope-OrgID"
+    label_name: "tenant_id"
+    attribute_name: "tenant.id"
+  
+  # Per-tenant configuration
+  tenant_limits:
+    default:
+      max_rules: 100
+      max_active_alerts: 1000
+      max_series_cardinality: 10000
+      min_evaluation_interval: 10s
+    
+    overrides:
+      tenant_premium:
+        max_rules: 1000
+        max_active_alerts: 10000
+        max_series_cardinality: 100000
+        min_evaluation_interval: 5s
+  
+  # Tenant isolation
+  isolation:
+    mode: "strict"  # strict|soft
+    separate_state_series: true
+    separate_notification_queues: true
+    
+    # Tenant-specific endpoints
+    routing:
+      tenant_a:
+        alertmanager: "https://am-tenant-a.internal"
+        remote_write: "https://tsdb-tenant-a.internal"
+      tenant_b:
+        alertmanager: "https://am-tenant-b.internal"
+        remote_write: "https://tsdb-tenant-b.internal"
+      
+      # Default routing with tenant injection
+      default:
+        alertmanager: "https://alertmanager.internal"
+        inject_tenant_header: true
+```
+
+### 7. High Availability Architecture
 
 Three HA deployment models supported:
 
@@ -598,144 +634,187 @@ tracing:
 ## Configuration Example
 
 ### Complete Processor Configuration
-=======
-Use the **Routing Connector** to route telemetry by resource attributes into **separate pipelines**, each with its own `alertsprocessor` instance and its own rule files. This keeps groups isolated and makes scaling clean.
->>>>>>> 6f461ba ([feature] alertsprocessor - first commit):README.md
 
 ```yaml
 receivers:
   otlp:
-    protocols: { http: {}, grpc: {} }
-
-connectors:
-  routing:
-    # Send unmatched data to the default pipelines
-    default_pipelines:
-      logs:   [logs/default]
-      traces: [traces/default]
-      metrics: [metrics/default]
-    table:
-      # Route by resource attribute (OTTL). Example: Kubernetes namespace
-      - statement: route() where resource.attributes["k8s.namespace.name"] == "payments"
-        pipelines:
-          logs:   [logs/payments]
-          traces: [traces/payments]
-          metrics: [metrics/payments]
-      - statement: route() where resource.attributes["service.name"] == "checkout"
-        pipelines:
-          logs:   [logs/checkout]
-          traces: [traces/checkout]
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'kubernetes-pods'
+          kubernetes_sd_configs:
+            - role: pod
 
 processors:
-  # Per-group alerts engine instances (distinct rule sets & labels)
-  alertsprocessor/payments:
-    sliding_window:
-      duration: 5s    # ⚠️ Larger window ⇒ higher CPU & RAM
-      max_samples: 100000
-      overflow_behavior: ring_buffer
+  otel_alert_processor:
+    # Data handling
+    data_types:
+      metrics:
+        enabled: true
+        formats: ["otlp", "prometheus"]
+      logs:
+        enabled: true
+        format: "otlp"
+      traces:
+        enabled: true
+        format: "otlp"
+    
+    # Rule configuration
+    rules:
+      config_file: /etc/alerts/*.yaml
+      reload_interval: 30s
+      validation: strict
+    
+    # Evaluation settings
     evaluation:
       interval: 15s
       timeout: 10s
-    statestore:
-      instance_id: payments-engine
-      external_labels:
-        group: payments
-        source: collector
-    rule_files:
-      include: ["./rules/payments.yaml"]
-    notifier:
-      url: http://alertmanager:9093/api/v2/alerts
-
-  alertsprocessor/checkout:
-    sliding_window:
-      duration: 5s
-      max_samples: 100000
-      overflow_behavior: ring_buffer
-    evaluation:
-      interval: 15s
-      timeout: 10s
-    statestore:
-      instance_id: checkout-engine
-      external_labels:
-        group: checkout
-        source: collector
-    rule_files:
-      include: ["./rules/checkout.yaml"]
-    notifier:
-      url: http://alertmanager:9093/api/v2/alerts
+      concurrency: 10
+      buffer_window: 5s
+    
+    # State synchronization
+    state_sync:
+      mode: "tsdb_distributed"
+      tsdb_endpoint: "${PROMETHEUS_ENDPOINT}"
+      sync_interval: 10s
+      
+    # Deduplication
+    deduplication:
+      enabled: true
+      window: 30s
+      fingerprint_labels: ["alertname", "severity", "cluster"]
+    
+    # Storm prevention
+    storm_prevention:
+      enabled: true
+      max_active_alerts: 1000
+      
+    # Multi-tenancy
+    multi_tenancy:
+      enabled: true
+      tenant_header: "X-Scope-OrgID"
+    
+    # High availability
+    ha:
+      mode: "active_active_tsdb"
+      replication_factor: 2
 
 exporters:
+  # Alert notifications
+  alertmanager:
+    endpoint: "${ALERTMANAGER_ENDPOINT}"
+    timeout: 10s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 60s
+  
+  # State persistence and metrics
   prometheusremotewrite:
-    endpoint: http://prometheus:9090/api/v1/write
-  debug: {}
+    endpoint: "${PROMETHEUS_REMOTE_WRITE_ENDPOINT}"
+    timeout: 30s
+    headers:
+      X-Scope-OrgID: "${TENANT_ID}"
 
 service:
   pipelines:
-    # Ingress pipelines export to the routing connector
-    logs/in:
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [otel_alert_processor]
+      exporters: [prometheusremotewrite]
+    
+    logs:
       receivers: [otlp]
-      exporters: [routing]
-    traces/in:
+      processors: [otel_alert_processor]
+      exporters: [prometheusremotewrite]
+    
+    traces:
       receivers: [otlp]
-      exporters: [routing]
-    metrics/in:
-      receivers: [otlp]
-      exporters: [routing]
-
-    # Grouped pipelines receive from routing, then run their own alertsprocessor
-    logs/payments:
-      receivers: [routing]
-      processors: [alertsprocessor/payments]
-      exporters: [debug, prometheusremotewrite]
-
-    traces/payments:
-      receivers: [routing]
-      processors: [alertsprocessor/payments]
-      exporters: [debug, prometheusremotewrite]
-
-    logs/checkout:
-      receivers: [routing]
-      processors: [alertsprocessor/checkout]
-      exporters: [debug, prometheusremotewrite]
-
-    traces/checkout:
-      receivers: [routing]
-      processors: [alertsprocessor/checkout]
-      exporters: [debug, prometheusremotewrite]
-
-    # Default pipelines for unmatched telemetry (optional)
-    logs/default:
-      receivers: [routing]
-      exporters: [debug]
-    traces/default:
-      receivers: [routing]
-      exporters: [debug]
-    metrics/default:
-      receivers: [routing]
-      exporters: [debug]
+      processors: [otel_alert_processor]
+      exporters: [prometheusremotewrite]
+    
+    # Separate pipeline for alert notifications
+    alerts:
+      receivers: []  # Internal only
+      processors: [otel_alert_processor]
+      exporters: [alertmanager]
 ```
 
-**Why this layout?**
-- The routing connector is configured in the `connectors:` block and is used as an **exporter** from ingress pipelines and as a **receiver** for the destination pipelines.  
-- Each destination pipeline runs a **separate `alertsprocessor` instance** with its own rules (`rule_files.include`), labels, and notifier.  
-- This keeps state, notifications, and alert metrics **segregated per group**, making it easy to scale horizontally by adding more routes and processor instances.
+### Sample Alert Rules
 
-### 4) Output series (Prometheus Remote Write)
+```yaml
+# Metric-based alerts (Prometheus compatible)
+groups:
+  - name: infrastructure
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: |
+          avg by (cluster, namespace, pod) (
+            rate(container_cpu_usage_seconds_total[5m])
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High CPU usage detected"
+          description: "Pod {{ $labels.pod }} CPU usage is above 80%"
 
-The processor emits synthetic metrics describing alert state and transitions, which you can send to any Prometheus remote write endpoint:
+# Log-based alerts (LogQL)
+  - name: application_logs
+    type: logs
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum by (service) (
+            rate({job="app-logs"} |= "ERROR" [5m])
+          ) > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate in logs"
 
-- `otel_alert_state{rule_id, signal, ...} = 0|1` (gauge)
-- `otel_alert_transitions_total{rule_id, from, to, signal, ...}` (counter)
-- `alertsprocessor_evaluation_duration_seconds` (self-telemetry)
+# Trace-based alerts
+  - name: trace_alerts
+    type: traces
+    rules:
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (
+              rate(http_request_duration_seconds_bucket[5m])
+            )
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency exceeds 1 second"
 
-### Operational notes
+# OpenTelemetry native metrics
+  - name: otel_metrics
+    type: otlp_metrics
+    rules:
+      - alert: HighSpanDropRate
+        expr: |
+          rate(otelcol_processor_dropped_spans[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Collector dropping spans"
+```
 
-- **Sliding window cost:** Increasing `sliding_window.duration` increases both CPU and memory usage. Start with **5s** and raise only if necessary.
-- **Log body type:** If a log record’s `Body` is not a string, the processor logs a **WARN** and stringifies it for `body_contains` matching.
-- **Rules scope:** Current rules target **logs** and **traces**. (Metric-rule evaluation can be added following the same interface.)
-- **Statestore:** Use `statestore.instance_id` and `statestore.external_labels` to distinguish multiple engines in the same Collector.
+---
 
-<<<<<<< HEAD:ARCHITECTURE.md
 ## Deployment Patterns
 
 ### Kubernetes Deployment
@@ -952,8 +1031,4 @@ otelCollector:
 
 The OpenTelemetry Alert Processor architecture represents a paradigm shift in observability alerting, moving from query-based evaluation to stream processing while maintaining full compatibility with existing Prometheus-based workflows. By leveraging TSDB for distributed state management and implementing comprehensive deduplication and storm prevention mechanisms, this design provides a production-ready, scalable, and efficient alerting solution that unifies metrics, logs, and traces alerting within a single pipeline.
 
-The architecture's support for multiple data formats and various high-availability modes ensures it can adapt to diverse operational requirements while maintaining simplicity and reliability. This positions the OpenTelemetry Alert Processor as a next-generation alerting solution for modern cloud-native environments.
-=======
-### References
-- Use the **Routing Connector** to keep groups segregated and scalable: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector
->>>>>>> 6f461ba ([feature] alertsprocessor - first commit):README.md
+The architecture's support for multiple data formats, multi-tenancy, and various high-availability modes ensures it can adapt to diverse operational requirements while maintaining simplicity and reliability. This positions the OpenTelemetry Alert Processor as a next-generation alerting solution for modern cloud-native environments.
