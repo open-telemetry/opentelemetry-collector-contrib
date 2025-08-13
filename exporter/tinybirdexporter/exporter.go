@@ -6,7 +6,6 @@ package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -33,25 +32,37 @@ const (
 )
 
 type tinybirdExporter struct {
-	config    *Config
-	client    *http.Client
-	logger    *zap.Logger
-	settings  component.TelemetrySettings
-	userAgent string
+	config             *Config
+	client             *http.Client
+	logger             *zap.Logger
+	settings           component.TelemetrySettings
+	userAgent          string
+	maxRequestBodySize int
 }
 
-func newExporter(cfg component.Config, set exporter.Settings) *tinybirdExporter {
+func newExporter(cfg component.Config, set exporter.Settings, opts ...option) *tinybirdExporter {
 	oCfg := cfg.(*Config)
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &tinybirdExporter{
-		config:    oCfg,
-		logger:    set.Logger,
-		userAgent: userAgent,
-		settings:  set.TelemetrySettings,
+	exp := &tinybirdExporter{
+		config:             oCfg,
+		logger:             set.Logger,
+		userAgent:          userAgent,
+		settings:           set.TelemetrySettings,
+		maxRequestBodySize: 10 * 1024 * 1024,
 	}
+
+	// Apply options
+	for _, opt := range opts {
+		if err := opt(exp); err != nil {
+			// Log the error but continue with default values
+			exp.logger.Error("Failed to apply option", zap.Error(err))
+		}
+	}
+
+	return exp
 }
 
 func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error {
@@ -61,71 +72,56 @@ func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error
 }
 
 func (e *tinybirdExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	buffer := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buffer)
+	encoder := internal.NewChunkedEncoder(e.maxRequestBodySize)
 	err := internal.ConvertTraces(td, encoder)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	if buffer.Len() > 0 {
-		return e.export(ctx, e.config.Traces.Datasource, buffer)
-	}
-	return nil
+	return e.exportBuffers(ctx, e.config.Traces.Datasource, encoder.Buffers())
 }
 
 func (e *tinybirdExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	sumBuffer := bytes.NewBuffer(nil)
-	sumEncoder := json.NewEncoder(sumBuffer)
-
-	gaugeBuffer := bytes.NewBuffer(nil)
-	gaugeEncoder := json.NewEncoder(gaugeBuffer)
-
-	histogramBuffer := bytes.NewBuffer(nil)
-	histogramEncoder := json.NewEncoder(histogramBuffer)
-
-	exponentialHistogramBuffer := bytes.NewBuffer(nil)
-	exponentialHistogramEncoder := json.NewEncoder(exponentialHistogramBuffer)
+	sumEncoder := internal.NewChunkedEncoder(e.maxRequestBodySize)
+	gaugeEncoder := internal.NewChunkedEncoder(e.maxRequestBodySize)
+	histogramEncoder := internal.NewChunkedEncoder(e.maxRequestBodySize)
+	exponentialHistogramEncoder := internal.NewChunkedEncoder(e.maxRequestBodySize)
 
 	err := internal.ConvertMetrics(md, sumEncoder, gaugeEncoder, histogramEncoder, exponentialHistogramEncoder)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	// TODO: perform the exports in parallel to improve the operation latency
-	if sumBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsSum.Datasource, sumBuffer))
-	}
-	if gaugeBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsGauge.Datasource, gaugeBuffer))
-	}
-	if histogramBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsHistogram.Datasource, histogramBuffer))
-	}
-	if exponentialHistogramBuffer.Len() > 0 {
-		err = errors.Join(err, e.export(ctx, e.config.Metrics.MetricsExponentialHistogram.Datasource, exponentialHistogramBuffer))
-	}
+	err = errors.Join(err, e.exportBuffers(ctx, e.config.Metrics.MetricsSum.Datasource, sumEncoder.Buffers()))
+	err = errors.Join(err, e.exportBuffers(ctx, e.config.Metrics.MetricsGauge.Datasource, gaugeEncoder.Buffers()))
+	err = errors.Join(err, e.exportBuffers(ctx, e.config.Metrics.MetricsHistogram.Datasource, histogramEncoder.Buffers()))
+	err = errors.Join(err, e.exportBuffers(ctx, e.config.Metrics.MetricsExponentialHistogram.Datasource, exponentialHistogramEncoder.Buffers()))
 	return err
 }
 
 func (e *tinybirdExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	buffer := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buffer)
+	encoder := internal.NewChunkedEncoder(e.maxRequestBodySize)
 	err := internal.ConvertLogs(ld, encoder)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	if buffer.Len() > 0 {
-		return e.export(ctx, e.config.Logs.Datasource, buffer)
-	}
-	return nil
+	return e.exportBuffers(ctx, e.config.Logs.Datasource, encoder.Buffers())
 }
 
-func (e *tinybirdExporter) export(ctx context.Context, dataSource string, buffer *bytes.Buffer) error {
+func (e *tinybirdExporter) exportBuffers(ctx context.Context, dataSource string, buffers []*bytes.Buffer) error {
+	var errs error
+	for _, buffer := range buffers {
+		err := e.export(ctx, dataSource, buffer)
+		errs = errors.Join(errs, err)
+	}
+	return errs
+}
+
+func (e *tinybirdExporter) export(ctx context.Context, dataSource string, body io.Reader) error {
 	// Create request and add query parameters
 	url := e.config.ClientConfig.Endpoint + "/v0/events"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, buffer)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
