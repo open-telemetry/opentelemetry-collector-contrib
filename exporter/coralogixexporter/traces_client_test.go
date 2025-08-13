@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -411,6 +412,11 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 }
 
 func TestTracesExporter_PushTraces_Performance(t *testing.T) {
+	isIntegrationTest := os.Getenv("INTEGRATION_TEST")
+	if isIntegrationTest != "true" {
+		t.Skip("Skipping E2E test: INTEGRATION_TEST not set")
+	}
+
 	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
 	defer stopFn()
 
