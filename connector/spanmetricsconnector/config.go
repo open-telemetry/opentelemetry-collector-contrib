@@ -196,7 +196,12 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey, string(conventions.ServiceInstanceIDKey)} {
+	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
+	if includeServiceInstanceID.IsEnabled() {
+		intervalLabels = append(intervalLabels, string(conventions.ServiceInstanceIDKey))
+	}
+
+	for _, key := range intervalLabels {
 		labelNames[key] = struct{}{}
 	}
 
