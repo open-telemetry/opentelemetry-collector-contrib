@@ -1,0 +1,34 @@
+type: processor
+status:
+  class: processor
+  stability:
+    development: [metrics, logs, traces]
+  distributions: [contrib]
+
+telemetry:
+  metrics:
+    alertsprocessor_evaluation_duration_seconds:
+      description: Duration of a single evaluation tick
+      unit: s
+      histogram:
+        buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5]
+      enabled: true
+    alertsprocessor_notifications_total:
+      description: Count of notifications attempted by result
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+      attributes:
+        - name: result
+          description: sent|failed|dropped
+        - name: endpoint
+          description: notifier url host
+      enabled: true
+    alertsprocessor_state_sync_errors_total:
+      description: Errors during state synchronization with statestore
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+      enabled: true
