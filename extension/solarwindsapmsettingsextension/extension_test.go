@@ -70,14 +70,14 @@ func createAnExtension(t *testing.T, c *Config) extension.Extension {
 	return ex
 }
 
-// MockRoundTripper implements http.RoundTripper for testing.
-type MockRoundTripper struct {
+// mockRoundTripper implements http.RoundTripper for testing.
+type mockRoundTripper struct {
 	Response *http.Response
 	Err      error
 }
 
 // RoundTrip implements the http.RoundTripper interface.
-func (m *MockRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (m *mockRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -174,7 +174,7 @@ func TestRefresh(t *testing.T) {
 				},
 				telemetrySettings: settings.TelemetrySettings,
 				client: &http.Client{
-					Transport: &MockRoundTripper{
+					Transport: &mockRoundTripper{
 						Response: tt.response,
 						Err:      tt.networkError,
 					},
