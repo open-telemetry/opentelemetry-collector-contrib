@@ -214,6 +214,7 @@ processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/intervalprocessor
+processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
 processor/metricsgenerationprocessor

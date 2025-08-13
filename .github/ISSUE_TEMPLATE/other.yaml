@@ -191,6 +191,7 @@ body:
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
+      - processor/isolationforest
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
