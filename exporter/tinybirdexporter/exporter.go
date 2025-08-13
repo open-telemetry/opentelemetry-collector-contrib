@@ -110,12 +110,22 @@ func (e *tinybirdExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *tinybirdExporter) exportBuffers(ctx context.Context, dataSource string, buffers []*bytes.Buffer) error {
-	var errs error
+	var performedSucessfulExport bool
 	for _, buffer := range buffers {
 		err := e.export(ctx, dataSource, buffer)
-		errs = errors.Join(errs, err)
+		if err != nil {
+			if performedSucessfulExport {
+				// At-most-once delivery. If we have already performed a successful export,
+				// we return a permanent error to indicate that the error is not retryable.
+				return consumererror.NewPermanent(err)
+			}
+			// As we have not performed any successful export, we are free to retry if needed.
+			return err
+		}
+		performedSucessfulExport = true
 	}
-	return errs
+
+	return nil
 }
 
 func (e *tinybirdExporter) export(ctx context.Context, dataSource string, body io.Reader) error {
