@@ -67,8 +67,11 @@ type mockNodeInfoProvider struct{}
 func (m *mockNodeInfoProvider) NodeToCapacityMap() map[string]v1.ResourceList {
 	return map[string]v1.ResourceList{
 		"testNode1": {
-			"pods":           *resource.NewQuantity(5, resource.DecimalSI),
-			"nvidia.com/gpu": *resource.NewQuantity(20, resource.DecimalExponent),
+			"pods":                        *resource.NewQuantity(5, resource.DecimalSI),
+			"nvidia.com/gpu":              *resource.NewQuantity(20, resource.DecimalExponent),
+			"aws.amazon.com/neuron":       *resource.NewQuantity(16, resource.DecimalSI),
+			"aws.amazon.com/neuroncore":   *resource.NewQuantity(32, resource.DecimalSI),
+			"aws.amazon.com/neurondevice": *resource.NewQuantity(16, resource.DecimalSI),
 		},
 		"testNode2": {
 			"pods": *resource.NewQuantity(10, resource.DecimalSI),
@@ -79,8 +82,11 @@ func (m *mockNodeInfoProvider) NodeToCapacityMap() map[string]v1.ResourceList {
 func (m *mockNodeInfoProvider) NodeToAllocatableMap() map[string]v1.ResourceList {
 	return map[string]v1.ResourceList{
 		"testNode1": {
-			"pods":           *resource.NewQuantity(15, resource.DecimalSI),
-			"nvidia.com/gpu": *resource.NewQuantity(20, resource.DecimalExponent),
+			"pods":                        *resource.NewQuantity(15, resource.DecimalSI),
+			"nvidia.com/gpu":              *resource.NewQuantity(20, resource.DecimalExponent),
+			"aws.amazon.com/neuron":       *resource.NewQuantity(16, resource.DecimalSI),
+			"aws.amazon.com/neuroncore":   *resource.NewQuantity(32, resource.DecimalSI),
+			"aws.amazon.com/neurondevice": *resource.NewQuantity(16, resource.DecimalSI),
 		},
 		"testNode2": {
 			"pods": *resource.NewQuantity(20, resource.DecimalSI),

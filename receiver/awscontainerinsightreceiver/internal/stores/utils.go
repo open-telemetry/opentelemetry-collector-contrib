@@ -20,9 +20,12 @@ import (
 const (
 	// kubeAllowedStringAlphaNums holds the characters allowed in replicaset names from as parent deployment
 	// https://github.com/kubernetes/apimachinery/blob/master/pkg/util/rand/rand.go#L83
-	kubeAllowedStringAlphaNums = "bcdfghjklmnpqrstvwxz2456789"
-	cronJobAllowedString       = "0123456789"
-	resourceSpecNvidiaGpuKey   = "nvidia.com/gpu"
+	kubeAllowedStringAlphaNums  = "bcdfghjklmnpqrstvwxz2456789"
+	cronJobAllowedString        = "0123456789"
+	resourceSpecNvidiaGpuKey    = "nvidia.com/gpu"
+	resourceSpecNeuronKey       = "aws.amazon.com/neuron"
+	resourceSpecNeuroncoreKey   = "aws.amazon.com/neuroncore"
+	resourceSpecNeuronDeviceKey = "aws.amazon.com/neurondevice"
 )
 
 func createPodKeyFromMetaData(pod *corev1.Pod) string {

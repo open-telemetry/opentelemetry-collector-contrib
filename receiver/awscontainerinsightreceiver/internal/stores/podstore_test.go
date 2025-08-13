@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
@@ -302,6 +303,118 @@ func TestPodStore_decorateGpu(t *testing.T) {
 	assert.Equal(t, uint64(1), metric.GetField("pod_gpu_limit").(uint64))
 	assert.Equal(t, uint64(1), metric.GetField("pod_gpu_usage_total").(uint64))
 	assert.Equal(t, float64(5), metric.GetField("pod_gpu_reserved_capacity").(float64))
+}
+
+func getPodStoreWithNeuronCapacity() *PodStore {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeInfo.setCPUCapacity(4000)
+	nodeInfo.setMemCapacity(400 * 1024 * 1024)
+	return &PodStore{
+		cache:            newMapWithExpiry(time.Minute),
+		nodeInfo:         nodeInfo,
+		prevMeasurements: sync.Map{},
+		logger:           zap.NewNop(),
+	}
+}
+
+func TestPodStore_decorateNeuron(t *testing.T) {
+	tests := []struct {
+		name          string
+		resourceKey   string
+		requestValue  string
+		limitValue    string
+		expectedReq   uint64
+		expectedLimit uint64
+		expectedUsage uint64
+	}{
+		{
+			name:          "neuron devices",
+			resourceKey:   "aws.amazon.com/neuron",
+			requestValue:  "1",
+			limitValue:    "2",
+			expectedReq:   2,
+			expectedLimit: 4,
+			expectedUsage: 4,
+		},
+		{
+			name:          "neuron cores direct",
+			resourceKey:   "aws.amazon.com/neuroncore",
+			requestValue:  "1",
+			limitValue:    "2",
+			expectedReq:   1,
+			expectedLimit: 2,
+			expectedUsage: 2,
+		},
+		{
+			name:          "neuron device resource",
+			resourceKey:   "aws.amazon.com/neurondevice",
+			requestValue:  "1",
+			limitValue:    "1",
+			expectedReq:   2,
+			expectedLimit: 2,
+			expectedUsage: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			podStore := getPodStoreWithNeuronCapacity()
+			defer require.NoError(t, podStore.Shutdown())
+
+			pod := getBaseTestPodInfo()
+			pod.Spec.Containers[0].Resources.Requests[corev1.ResourceName(tt.resourceKey)] = resource.MustParse(tt.requestValue)
+			pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(tt.resourceKey)] = resource.MustParse(tt.limitValue)
+
+			tags := map[string]string{ci.MetricType: ci.TypePod}
+			metric := generateMetric(map[string]any{}, tags)
+
+			podStore.includeEnhancedMetrics = true
+			podStore.enableAcceleratedComputeMetrics = true
+			podStore.decorateNeuron(metric, pod)
+
+			assert.Equal(t, tt.expectedReq, metric.GetField("pod_neuroncore_request").(uint64))
+			assert.Equal(t, tt.expectedLimit, metric.GetField("pod_neuroncore_limit").(uint64))
+			assert.Equal(t, tt.expectedUsage, metric.GetField("pod_neuroncore_usage_total").(uint64))
+		})
+	}
+}
+
+func TestPodStore_decorateNode_withMultipleNeuronPods(t *testing.T) {
+	t.Setenv(ci.HostName, "testNode1")
+	podStore := getPodStoreWithNeuronCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+
+	pod1 := getBaseTestPodInfo()
+	pod1.Name = "neuron-pod-1"
+	pod1.Spec.Containers[0].Resources.Requests["aws.amazon.com/neuron"] = resource.MustParse("1")
+	pod1.Spec.Containers[0].Resources.Limits["aws.amazon.com/neuron"] = resource.MustParse("2")
+
+	pod2 := getBaseTestPodInfo()
+	pod2.Name = "neuron-pod-2"
+	pod2.Spec.Containers[0].Resources.Requests["aws.amazon.com/neuron"] = resource.MustParse("2")
+	pod2.Spec.Containers[0].Resources.Limits["aws.amazon.com/neuron"] = resource.MustParse("4")
+
+	podList := []corev1.Pod{*pod1, *pod2}
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(1000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(2048),
+	}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(6), metric.GetField("node_neuroncore_request").(uint64))
+	assert.Equal(t, uint64(32), metric.GetField("node_neuroncore_limit").(uint64))
+	assert.Equal(t, uint64(12), metric.GetField("node_neuroncore_usage_total").(uint64))
+	assert.Equal(t, float64(18.75), metric.GetField("node_neuroncore_reserved_capacity").(float64))
+	assert.Equal(t, float64(81.25), metric.GetField("node_neuroncore_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(26), metric.GetField("node_neuroncore_available_capacity").(uint64))
 }
 
 func TestPodStore_previousCleanupLocking(_ *testing.T) {
@@ -987,6 +1100,13 @@ func TestPodStore_decorateNode(t *testing.T) {
 	assert.Equal(t, uint64(1), metric.GetField("node_gpu_usage_total").(uint64))
 	assert.Equal(t, float64(5), metric.GetField("node_gpu_reserved_capacity").(float64))
 
+	assert.Equal(t, uint64(0), metric.GetField("node_neuroncore_request").(uint64))
+	assert.Equal(t, uint64(32), metric.GetField("node_neuroncore_limit").(uint64))
+	assert.Equal(t, uint64(0), metric.GetField("node_neuroncore_usage_total").(uint64))
+	assert.Equal(t, float64(0), metric.GetField("node_neuroncore_reserved_capacity").(float64))
+	assert.Equal(t, float64(100), metric.GetField("node_neuroncore_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(32), metric.GetField("node_neuroncore_available_capacity").(uint64))
+
 	assert.Equal(t, uint64(1), metric.GetField("node_status_condition_ready").(uint64))
 	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_disk_pressure").(uint64))
 	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_memory_pressure").(uint64))
@@ -1049,6 +1169,102 @@ func TestPodStore_decorateNode_multiplePodStates(t *testing.T) {
 
 	assert.Equal(t, uint64(100*1024*1024), metric.GetField("node_memory_request").(uint64))
 	assert.Equal(t, float64(25), metric.GetField("node_memory_reserved_capacity").(float64))
+}
+
+func TestPodStore_decorateNode_withNeuron(t *testing.T) {
+	t.Setenv(ci.HostName, "testNode1")
+	pod := getBaseTestPodInfo()
+	pod.Spec.Containers[0].Resources.Requests["aws.amazon.com/neuron"] = resource.MustParse("1")
+	pod.Spec.Containers[0].Resources.Limits["aws.amazon.com/neuron"] = resource.MustParse("2")
+
+	podList := []corev1.Pod{*pod}
+	podStore := getPodStoreWithNeuronCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
+		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
+		ci.MetricName(ci.TypeNode, ci.MemLimit):      uint64(400 * 1024 * 1024),
+	}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(2), metric.GetField("node_neuroncore_request").(uint64))
+	assert.Equal(t, uint64(32), metric.GetField("node_neuroncore_limit").(uint64))
+	assert.Equal(t, uint64(4), metric.GetField("node_neuroncore_usage_total").(uint64))
+	assert.Equal(t, float64(6.25), metric.GetField("node_neuroncore_reserved_capacity").(float64))
+	assert.Equal(t, float64(93.75), metric.GetField("node_neuroncore_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(30), metric.GetField("node_neuroncore_available_capacity").(uint64))
+}
+
+func TestPodStore_decorateNode_withNeuroncore(t *testing.T) {
+	t.Setenv(ci.HostName, "testNode1")
+	pod := getBaseTestPodInfo()
+	pod.Spec.Containers[0].Resources.Requests["aws.amazon.com/neuroncore"] = resource.MustParse("1")
+	pod.Spec.Containers[0].Resources.Limits["aws.amazon.com/neuroncore"] = resource.MustParse("2")
+
+	podList := []corev1.Pod{*pod}
+	podStore := getPodStoreWithNeuronCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
+		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
+		ci.MetricName(ci.TypeNode, ci.MemLimit):      uint64(400 * 1024 * 1024),
+	}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(1), metric.GetField("node_neuroncore_request").(uint64))
+	assert.Equal(t, uint64(32), metric.GetField("node_neuroncore_limit").(uint64))
+	assert.Equal(t, uint64(2), metric.GetField("node_neuroncore_usage_total").(uint64))
+	assert.Equal(t, float64(3.125), metric.GetField("node_neuroncore_reserved_capacity").(float64))
+	assert.Equal(t, float64(96.875), metric.GetField("node_neuroncore_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(31), metric.GetField("node_neuroncore_available_capacity").(uint64))
+}
+
+func TestPodStore_decorateNeuron_oddCoreAllocation(t *testing.T) {
+	podStore := getPodStoreWithNeuronCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+
+	pod := getBaseTestPodInfo()
+	pod.Spec.Containers[0].Resources.Limits["aws.amazon.com/neuroncore"] = resource.MustParse("5")
+
+	podList := []corev1.Pod{*pod}
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypePod}
+	fields := map[string]any{}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+	podStore.decorateNeuron(metric, pod)
+
+	assert.Equal(t, uint64(0), metric.GetField("pod_neuroncore_request").(uint64))
+	assert.Equal(t, uint64(5), metric.GetField("pod_neuroncore_limit").(uint64))
+	assert.Equal(t, uint64(5), metric.GetField("pod_neuroncore_usage_total").(uint64))
+	assert.Equal(t, float64(15.625), metric.GetField("pod_neuroncore_reserved_capacity").(float64))
+}
+
+func TestNodeInfo_getNeuronCoresPerDevice(t *testing.T) {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	coresPerDevice, hasRatio := nodeInfo.getNeuronCoresPerDevice()
+
+	assert.True(t, hasRatio)
+	assert.Equal(t, 2, coresPerDevice)
 }
 
 func TestPodStore_Decorate(t *testing.T) {

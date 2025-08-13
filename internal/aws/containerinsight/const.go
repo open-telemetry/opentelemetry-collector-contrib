@@ -146,6 +146,13 @@ const (
 	GpuRequest          = "gpu_request"
 	GpuReservedCapacity = "gpu_reserved_capacity"
 
+	NeuroncoreLimit              = "neuroncore_limit"
+	NeuroncoreUsageTotal         = "neuroncore_usage_total"
+	NeuroncoreRequest            = "neuroncore_request"
+	NeuroncoreReservedCapacity   = "neuroncore_reserved_capacity"
+	NeuroncoreUnreservedCapacity = "neuroncore_unreserved_capacity"
+	NeuroncoreAvailableCapacity  = "neuroncore_available_capacity"
+
 	HyperPodUnschedulablePendingReplacement = "unschedulable_pending_replacement"
 	HyperPodUnschedulablePendingReboot      = "unschedulable_pending_reboot"
 	HyperPodSchedulable                     = "schedulable"
@@ -366,6 +373,13 @@ func init() {
 		GpuUsageTotal:       UnitCount,
 		GpuRequest:          UnitCount,
 		GpuReservedCapacity: UnitPercent,
+
+		NeuroncoreLimit:              UnitCount,
+		NeuroncoreUsageTotal:         UnitCount,
+		NeuroncoreRequest:            UnitCount,
+		NeuroncoreReservedCapacity:   UnitPercent,
+		NeuroncoreUnreservedCapacity: UnitPercent,
+		NeuroncoreAvailableCapacity:  UnitCount,
 
 		HyperPodUnschedulablePendingReplacement: UnitCount,
 		HyperPodUnschedulablePendingReboot:      UnitCount,

@@ -15,12 +15,14 @@ import (
 )
 
 type nodeStats struct {
-	podCnt        int
-	containerCnt  int
-	cpuReq        uint64
-	memReq        uint64
-	gpuReq        uint64
-	gpuUsageTotal uint64
+	podCnt               int
+	containerCnt         int
+	cpuReq               uint64
+	memReq               uint64
+	gpuReq               uint64
+	gpuUsageTotal        uint64
+	neuroncoreReq        uint64
+	neuroncoreUsageTotal uint64
 }
 
 type nodeInfo struct {
@@ -116,6 +118,58 @@ func (n *nodeInfo) getNodeStatusCapacityGPUs() (uint64, bool) {
 	}
 	gpus := capacityResources.Name(resourceSpecNvidiaGpuKey, resource.DecimalExponent).Value()
 	return forceConvertToInt64(gpus, n.logger), true
+}
+
+func (n *nodeInfo) getNeuronResourceCapacity(resourceKey v1.ResourceName) (uint64, bool) {
+	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
+	if !ok {
+		return 0, false
+	}
+	value := capacityResources.Name(resourceKey, resource.DecimalExponent).Value()
+	return forceConvertToInt64(value, n.logger), true
+}
+
+func (n *nodeInfo) getNodeStatusCapacityNeuron() (uint64, bool) {
+	return n.getNeuronResourceCapacity(resourceSpecNeuronKey)
+}
+
+func (n *nodeInfo) getNodeStatusCapacityNeuroncore() (uint64, bool) {
+	return n.getNeuronResourceCapacity(resourceSpecNeuroncoreKey)
+}
+
+func (n *nodeInfo) getNodeStatusCapacityNeurondevice() (uint64, bool) {
+	return n.getNeuronResourceCapacity(resourceSpecNeuronDeviceKey)
+}
+
+func (n *nodeInfo) getNeuronCoresPerDevice() (int, bool) {
+	devices, hasDevices := n.getNodeStatusCapacityNeuron()
+	cores, hasCores := n.getNodeStatusCapacityNeuroncore()
+
+	if hasDevices && hasCores && devices > 0 && cores > 0 {
+		return int(cores / devices), true
+	}
+
+	return 0, false
+}
+
+func (n *nodeInfo) getNodeStatusCapacityNeuronCores() (uint64, bool) {
+	if cores, ok := n.getNodeStatusCapacityNeuroncore(); ok {
+		return cores, true
+	}
+
+	coresPerDevice, hasRatio := n.getNeuronCoresPerDevice()
+	if !hasRatio {
+		return 0, false
+	}
+
+	if devices, ok := n.getNodeStatusCapacityNeuron(); ok {
+		return devices * uint64(coresPerDevice), true
+	}
+	if devices, ok := n.getNodeStatusCapacityNeurondevice(); ok {
+		return devices * uint64(coresPerDevice), true
+	}
+
+	return 0, false
 }
 
 func (n *nodeInfo) getNodeStatusCondition(conditionType v1.NodeConditionType) (uint64, bool) {
