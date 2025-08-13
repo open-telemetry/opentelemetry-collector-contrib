@@ -7,7 +7,6 @@ import (
 
 	evaluation "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -89,8 +88,7 @@ type ruleFiles struct {
 }
 
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
-
+	// NOTE: do not embed config.ProcessorSettings in modern Collector
 	SlidingWindow slidingWindowConfig `mapstructure:"sliding_window"`
 	Evaluation    evaluationConfig    `mapstructure:"evaluation"`
 	Statestore    statestoreConfig    `mapstructure:"statestore"`
@@ -100,7 +98,7 @@ type Config struct {
 	Notifier      notifierConfig      `mapstructure:"notifier"`
 
 	RuleFiles ruleFiles         `mapstructure:"rule_files"`
-	Rules     []evaluation.Rule `mapstructure:"rules"` // inline rules
+	Rules     []evaluation.Rule `mapstructure:"rules"`
 }
 
 func (c *Config) ID() interface{} {
@@ -109,13 +107,12 @@ func (c *Config) ID() interface{} {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.MustNewID(typeStr)),
-		SlidingWindow:     slidingWindowConfig{Duration: 5 * time.Second, MaxSamples: 100_000, OverflowBehavior: "ring_buffer"},
-		Evaluation:        evaluationConfig{Interval: 15 * time.Second, Timeout: 10 * time.Second, MaxConcurrent: 0},
-		Statestore:        statestoreConfig{SyncInterval: 30 * time.Second},
-		Notifier:          notifierConfig{Timeout: 5 * time.Second, InitialInterval: 500 * time.Millisecond, MaxInterval: 30 * time.Second, MaxBatchSize: 64},
-		RuleFiles:         ruleFiles{Include: nil},
-		Rules:             nil,
+		SlidingWindow: slidingWindowConfig{Duration: 5 * time.Second, MaxSamples: 100_000, OverflowBehavior: "ring_buffer"},
+		Evaluation:    evaluationConfig{Interval: 15 * time.Second, Timeout: 10 * time.Second, MaxConcurrent: 0},
+		Statestore:    statestoreConfig{SyncInterval: 30 * time.Second},
+		Notifier:      notifierConfig{Timeout: 5 * time.Second, InitialInterval: 500 * time.Millisecond, MaxInterval: 30 * time.Second, MaxBatchSize: 64},
+		RuleFiles:     ruleFiles{},
+		Rules:         nil,
 	}
 }
 

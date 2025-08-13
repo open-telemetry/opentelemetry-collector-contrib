@@ -24,9 +24,13 @@ func NewFactory() processor.Factory {
 
 func createMetrics(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Metrics) (processor.Metrics, error) {
 	c := cfg.(*Config)
-	if err := c.Validate(); err != nil { return nil, err }
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
 	p, err := newProcessor(ctx, set, c, next, nil, nil)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return processorhelper.NewMetrics(
 		ctx, set, cfg, next, p.processMetrics,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
@@ -38,9 +42,13 @@ func createMetrics(ctx context.Context, set processor.Settings, cfg component.Co
 
 func createLogs(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
 	c := cfg.(*Config)
-	if err := c.Validate(); err != nil { return nil, err }
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
 	p, err := newProcessor(ctx, set, c, nil, next, nil)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return processorhelper.NewLogs(
 		ctx, set, cfg, next, p.processLogs,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
@@ -52,9 +60,13 @@ func createLogs(ctx context.Context, set processor.Settings, cfg component.Confi
 
 func createTraces(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Traces) (processor.Traces, error) {
 	c := cfg.(*Config)
-	if err := c.Validate(); err != nil { return nil, err }
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
 	p, err := newProcessor(ctx, set, c, nil, nil, next)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return processorhelper.NewTraces(
 		ctx, set, cfg, next, p.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
