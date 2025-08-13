@@ -18,6 +18,7 @@ import (
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
@@ -84,7 +85,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting authentication errors",
 			cfg: &Config{ // no password
-				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "set"}},
+				Auth:       Authentication{PlainText: configoptional.Some(SaslPlainTextConfig{Username: "set"})},
 				TLS:        configtls.ClientConfig{Insecure: false, InsecureSkipVerify: false},
 				Broker:     []string{broker},
 				Queue:      queue,
@@ -96,7 +97,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting tls errors",
 			cfg: &Config{ // invalid to only provide a key file
-				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
+				Auth:       Authentication{PlainText: configoptional.Some(SaslPlainTextConfig{Username: "user", Password: "password"})},
 				TLS:        configtls.ClientConfig{Config: configtls.Config{KeyFile: "someKeyFile"}, Insecure: false},
 				Broker:     []string{broker},
 				Queue:      queue,
@@ -108,7 +109,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting success with TLS expecting an amqps connection",
 			cfg: &Config{ // invalid to only provide a key file
-				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
+				Auth:       Authentication{PlainText: configoptional.Some(SaslPlainTextConfig{Username: "user", Password: "password"})},
 				TLS:        configtls.ClientConfig{Insecure: false},
 				Broker:     []string{broker},
 				Queue:      queue,
@@ -132,7 +133,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting success without TLS expecting an amqp connection",
 			cfg: &Config{ // invalid to only provide a key file
-				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
+				Auth:       Authentication{PlainText: configoptional.Some(SaslPlainTextConfig{Username: "user", Password: "password"})},
 				TLS:        configtls.ClientConfig{Insecure: true},
 				Broker:     []string{broker},
 				Queue:      queue,
@@ -519,10 +520,10 @@ func TestConfigAMQPAuthenticationPlaintext(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	const username = "uname"
 	const password = "pwd"
-	cfg.Auth.PlainText = &SaslPlainTextConfig{
+	cfg.Auth.PlainText = configoptional.Some(SaslPlainTextConfig{
 		Username: username,
 		Password: password,
-	}
+	})
 	defer func() {
 		connSASLPlain = amqp.SASLTypePlain
 	}()
@@ -540,9 +541,9 @@ func TestConfigAMQPAuthenticationPlaintext(t *testing.T) {
 
 func TestConfigAMQPAuthenticationPlaintextMissingUsername(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.PlainText = &SaslPlainTextConfig{
+	cfg.Auth.PlainText = configoptional.Some(SaslPlainTextConfig{
 		Password: "Password",
-	}
+	})
 	result, err := toAMQPAuthentication(cfg)
 	assert.Nil(t, result)
 	assert.Equal(t, errMissingPlainTextParams, err)
@@ -550,9 +551,9 @@ func TestConfigAMQPAuthenticationPlaintextMissingUsername(t *testing.T) {
 
 func TestConfigAMQPAuthenticationPlaintextMissingPassword(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.PlainText = &SaslPlainTextConfig{
+	cfg.Auth.PlainText = configoptional.Some(SaslPlainTextConfig{
 		Username: "Username",
-	}
+	})
 	result, err := toAMQPAuthentication(cfg)
 	assert.Nil(t, result)
 	assert.Equal(t, errMissingPlainTextParams, err)
@@ -562,10 +563,10 @@ func TestConfigAMQPAuthenticationXAuth2(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	const username = "uname"
 	const bearer = "pwd"
-	cfg.Auth.XAuth2 = &SaslXAuth2Config{
+	cfg.Auth.XAuth2 = configoptional.Some(SaslXAuth2Config{
 		Username: username,
 		Bearer:   bearer,
-	}
+	})
 	defer func() {
 		connSASLXOAUTH2 = amqp.SASLTypeXOAUTH2
 	}()
@@ -584,9 +585,9 @@ func TestConfigAMQPAuthenticationXAuth2(t *testing.T) {
 
 func TestConfigAMQPAuthenticationXAuth2MissingUsername(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.XAuth2 = &SaslXAuth2Config{
+	cfg.Auth.XAuth2 = configoptional.Some(SaslXAuth2Config{
 		Bearer: "abc",
-	}
+	})
 	result, err := toAMQPAuthentication(cfg)
 	assert.Nil(t, result)
 	assert.Equal(t, errMissingXauth2Params, err)
@@ -594,9 +595,9 @@ func TestConfigAMQPAuthenticationXAuth2MissingUsername(t *testing.T) {
 
 func TestConfigAMQPAuthenticationXAuth2MissingBearer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.XAuth2 = &SaslXAuth2Config{
+	cfg.Auth.XAuth2 = configoptional.Some(SaslXAuth2Config{
 		Username: "user",
-	}
+	})
 	result, err := toAMQPAuthentication(cfg)
 	assert.Nil(t, result)
 	assert.Equal(t, errMissingXauth2Params, err)
@@ -604,7 +605,7 @@ func TestConfigAMQPAuthenticationXAuth2MissingBearer(t *testing.T) {
 
 func TestConfigAMQPAuthenticationExternal(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.External = &SaslExternalConfig{}
+	cfg.Auth.External = configoptional.Some(SaslExternalConfig{})
 	defer func() {
 		connSASLExternal = amqp.SASLTypeExternal
 	}()

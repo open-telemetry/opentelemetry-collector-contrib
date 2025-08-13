@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -504,7 +505,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			if runtime.GOOS == "windows" {
 				delay = 500 * time.Millisecond
 			}
-			receiver.config.Flow.DelayedRetry.Delay = delay
+			receiver.config.Flow.DelayedRetry.Get().Delay = delay
 			var err error
 			// we want to return an error at first, then set the next consumer to a noop consumer
 			receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
@@ -602,7 +603,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 	receiver, messagingService, unmarshaller, _ := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
-	receiver.config.Flow.DelayedRetry.Delay = 10 * time.Second
+	receiver.config.Flow.DelayedRetry.Get().Delay = 10 * time.Second
 	var err error
 	// we want to return an error at first, then set the next consumer to a noop consumer
 	receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
@@ -655,7 +656,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 		retryInterval = 500 * time.Millisecond
 	}
 	var retryCount int64 = 5
-	receiver.config.Flow.DelayedRetry.Delay = retryInterval
+	receiver.config.Flow.DelayedRetry.Get().Delay = retryInterval
 	var err error
 	var currentRetries int64
 	// we want to return an error at first, then set the next consumer to a noop consumer
@@ -761,9 +762,9 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 		settings: receivertest.NewNopSettings(metadata.Type),
 		config: &Config{
 			Flow: FlowControl{
-				DelayedRetry: &FlowControlDelayedRetry{
+				DelayedRetry: configoptional.Some(FlowControlDelayedRetry{
 					Delay: 10 * time.Millisecond,
-				},
+				}),
 			},
 		},
 		nextConsumer:      consumertest.NewNop(),
