@@ -356,14 +356,14 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 
 					if errMarshal := buf.protobuf.Marshal(request); errMarshal != nil {
 						mu.Lock()
-						errs = multierr.Append(errs, errMarshal)
+						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
 						mu.Unlock()
 						return
 					}
 
 					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
-						errs = multierr.Append(errs, errExecute)
+						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()
 					}
 				}
