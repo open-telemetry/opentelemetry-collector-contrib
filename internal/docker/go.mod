@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
+	github.com/containerd/errdefs v1.0.0
 	github.com/docker/docker v28.1.1+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.10.0
