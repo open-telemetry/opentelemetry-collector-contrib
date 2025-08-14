@@ -4,7 +4,6 @@
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"testing"
@@ -467,7 +466,7 @@ func TestDetect(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			defer testutil.SetFeatureGateForTest(t, removeGCPFaasID, !tc.addFaasID)()
-			res, schema, err := tc.detector.Detect(context.TODO())
+			res, schema, err := tc.detector.Detect(t.Context())
 			if tc.expectErr {
 				assert.Error(t, err)
 			} else {

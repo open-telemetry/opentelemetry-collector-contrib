@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0

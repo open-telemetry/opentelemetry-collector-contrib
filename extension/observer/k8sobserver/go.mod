@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/google/uuid v1.6.0

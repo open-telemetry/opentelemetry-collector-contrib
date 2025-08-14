@@ -4,7 +4,6 @@
 package kafkaexporter
 
 import (
-	"context"
 	"net"
 	"testing"
 
@@ -94,21 +93,21 @@ func TestCreateMetricExporter(t *testing.T) {
 
 			f := NewFactory()
 			exporter, err := f.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(2)))
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeMetrics(t.Context(), testdata.GenerateMetrics(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -169,21 +168,21 @@ func TestCreateLogExporter(t *testing.T) {
 
 			f := NewFactory()
 			exporter, err := f.CreateLogs(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeLogs(context.Background(), testdata.GenerateLogs(2)))
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeLogs(t.Context(), testdata.GenerateLogs(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -242,21 +241,21 @@ func TestCreateTraceExporter(t *testing.T) {
 
 			f := NewFactory()
 			exporter, err := f.CreateTraces(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeTraces(context.Background(), testdata.GenerateTraces(2)))
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeTraces(t.Context(), testdata.GenerateTraces(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -317,21 +316,21 @@ func TestCreateProfileExporter(t *testing.T) {
 
 			f := NewFactory().(xexporter.Factory)
 			exporter, err := f.CreateProfiles(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(2)))
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeProfiles(t.Context(), testdata.GenerateProfiles(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }

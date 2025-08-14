@@ -4,7 +4,6 @@
 package oracledbreceiver
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -35,7 +34,7 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 			return nil, errors.New("oops")
 		},
 	}
-	err := scrpr.start(context.Background(), componenttest.NewNopHost())
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -166,12 +165,12 @@ func TestScraper_Scrape(t *testing.T) {
 				id:                   component.ID{},
 				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
-			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				assert.NoError(t, scrpr.shutdown(context.Background()))
+				assert.NoError(t, scrpr.shutdown(t.Context()))
 			}()
 			require.NoError(t, err)
-			m, err := scrpr.scrape(context.Background())
+			m, err := scrpr.scrape(t.Context())
 			if test.errWanted != "" {
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 				require.EqualError(t, err, test.errWanted)
@@ -285,14 +284,14 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				assert.NoError(t, scrpr.shutdown(context.Background()))
+				assert.NoError(t, scrpr.shutdown(t.Context()))
 			}()
 			require.NoError(t, err)
 			expectedQueryPlanFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
 
-			logs, err := scrpr.scrapeLogs(context.Background())
+			logs, err := scrpr.scrapeLogs(t.Context())
 
 			if test.errWanted != "" {
 				require.EqualError(t, err, test.errWanted)
@@ -368,12 +367,12 @@ func TestSamplesQuery(t *testing.T) {
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				assert.NoError(t, scrpr.shutdown(context.Background()))
+				assert.NoError(t, scrpr.shutdown(t.Context()))
 			}()
 			require.NoError(t, err)
-			logs, err := scrpr.scrapeLogs(context.Background())
+			logs, err := scrpr.scrapeLogs(t.Context())
 			expectedSamplesFile := filepath.Join("testdata", "expectedSamplesFile.yaml")
 
 			if test.errWanted != "" {
