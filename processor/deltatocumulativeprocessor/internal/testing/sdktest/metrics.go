@@ -49,7 +49,8 @@ func Unmarshal(data Format, into *Spec) error {
 	}
 	md := *into
 
-	for key, node := range doc {
+	for key := range doc {
+		node := doc[key]
 		args := strings.Fields(key)
 		if len(args) < 2 {
 			return fmt.Errorf("key must of form '<type> <name>', but got %q", key)

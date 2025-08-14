@@ -160,7 +160,8 @@ type clusterInfo struct {
 }
 
 func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc projectContext) {
-	for _, cluster := range clusters {
+	for i := range clusters {
+		cluster := &clusters[i]
 		c := clusterInfo{
 			ClusterName:         cluster.Name,
 			RegionName:          cluster.ProviderSettings.RegionName,
@@ -210,7 +211,8 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 	}
 
 	var filtered []mongodbatlas.Cluster
-	for _, cluster := range clusters {
+	for i := range clusters {
+		cluster := clusters[i]
 		if _, ok := clusterNameSet[cluster.Name]; (!ok && !allowed) || (ok && allowed) {
 			filtered = append(filtered, cluster)
 		}

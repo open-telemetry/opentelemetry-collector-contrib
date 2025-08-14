@@ -2056,7 +2056,7 @@ func TestNewMetricTranslator_InvalidOperator(t *testing.T) {
 }
 
 func TestCalcNewMetricInputPairs_SameDims(t *testing.T) {
-	rule := Rule{
+	rule := &Rule{
 		Operand1Metric: "m1",
 		Operand2Metric: "m2",
 		Operator:       "/",
@@ -2095,7 +2095,7 @@ func TestCalcNewMetricInputPairs_SameDims(t *testing.T) {
 }
 
 func TestNewMetricInputPairs_MultiPairs(t *testing.T) {
-	rule := Rule{
+	rule := &Rule{
 		Operand1Metric: "m1",
 		Operand2Metric: "m2",
 		Operator:       "/",
@@ -2161,7 +2161,7 @@ func TestNewMetricInputPairs_MultiPairs(t *testing.T) {
 }
 
 func TestCalcNewMetricInputPairs_DiffDims(t *testing.T) {
-	rule := Rule{
+	rule := &Rule{
 		Operand1Metric: "m1",
 		Operand2Metric: "m2",
 		Operator:       "/",
