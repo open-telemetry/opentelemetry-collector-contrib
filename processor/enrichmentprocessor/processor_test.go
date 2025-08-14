@@ -6,287 +6,32 @@ package enrichmentprocessor
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/processor/processortest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/enrichmentprocessor/internal/metadata"
+	"go.uber.org/zap"
 )
-
-func TestCreateDefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	assert.NotNil(t, cfg)
-	assert.True(t, cfg.Cache.Enabled)
-	assert.Equal(t, 5*time.Minute, cfg.Cache.TTL)
-	assert.Equal(t, 1000, cfg.Cache.MaxSize)
-	assert.Empty(t, cfg.DataSources)
-	assert.Empty(t, cfg.EnrichmentRules)
-}
-
-func TestConfigValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
-	}{
-		{
-			name: "empty config",
-			config: &Config{
-				DataSources:     []DataSourceConfig{},
-				EnrichmentRules: []EnrichmentRule{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing data source name",
-			config: &Config{
-				DataSources: []DataSourceConfig{
-					{
-						Name: "",
-						Type: "http",
-					},
-				},
-				EnrichmentRules: []EnrichmentRule{
-					{
-						Name:        "test",
-						DataSource:  "test",
-						LookupKey:   "key",
-						LookupField: "field",
-						Mappings: []FieldMapping{
-							{
-								SourceField:     "source",
-								TargetAttribute: "target",
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "valid config",
-			config: &Config{
-				DataSources: []DataSourceConfig{
-					{
-						Name: "test_source",
-						Type: "http",
-						HTTP: &HTTPDataSourceConfig{
-							URL:             "http://example.com",
-							Timeout:         30 * time.Second,
-							RefreshInterval: 5 * time.Minute,
-						},
-					},
-				},
-				EnrichmentRules: []EnrichmentRule{
-					{
-						Name:        "test_rule",
-						DataSource:  "test_source",
-						LookupKey:   "service.name",
-						LookupField: "name",
-						Mappings: []FieldMapping{
-							{
-								SourceField:     "owner",
-								TargetAttribute: "team.name",
-							},
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestCacheOperations(t *testing.T) {
-	config := CacheConfig{
-		Enabled: true,
-		TTL:     100 * time.Millisecond,
-		MaxSize: 2,
-	}
-
-	cache := NewCache(config)
-
-	// Test set and get
-	data := map[string]interface{}{
-		"key1": "value1",
-		"key2": "value2",
-	}
-	cache.Set("test", data)
-
-	retrieved, found := cache.Get("test")
-	assert.True(t, found)
-	assert.Equal(t, data, retrieved)
-
-	// Test cache miss
-	_, found = cache.Get("nonexistent")
-	assert.False(t, found)
-
-	// Test TTL expiration
-	time.Sleep(150 * time.Millisecond)
-	_, found = cache.Get("test")
-	assert.False(t, found)
-
-	// Test max size eviction
-	cache.Set("key1", data)
-	cache.Set("key2", data)
-	cache.Set("key3", data) // Should evict oldest
-
-	assert.Equal(t, 2, cache.Size())
-}
-
-func TestConditionEvaluation(t *testing.T) {
-	processor := &enrichmentProcessor{}
-
-	attributes := pcommon.NewMap()
-	attributes.PutStr("service.type", "database")
-	attributes.PutStr("environment", "production")
-
-	tests := []struct {
-		name      string
-		condition Condition
-		expected  bool
-	}{
-		{
-			name: "equals match",
-			condition: Condition{
-				Attribute: "service.type",
-				Operator:  "equals",
-				Value:     "database",
-			},
-			expected: true,
-		},
-		{
-			name: "equals no match",
-			condition: Condition{
-				Attribute: "service.type",
-				Operator:  "equals",
-				Value:     "web",
-			},
-			expected: false,
-		},
-		{
-			name: "contains match",
-			condition: Condition{
-				Attribute: "environment",
-				Operator:  "contains",
-				Value:     "prod",
-			},
-			expected: true,
-		},
-		{
-			name: "not_equals match",
-			condition: Condition{
-				Attribute: "service.type",
-				Operator:  "not_equals",
-				Value:     "web",
-			},
-			expected: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := processor.evaluateCondition(tt.condition, attributes)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestTransformations(t *testing.T) {
-	processor := &enrichmentProcessor{}
-
-	tests := []struct {
-		name      string
-		transform string
-		value     interface{}
-		expected  interface{}
-	}{
-		{
-			name:      "upper case",
-			transform: "upper",
-			value:     "hello",
-			expected:  "HELLO",
-		},
-		{
-			name:      "lower case",
-			transform: "lower",
-			value:     "HELLO",
-			expected:  "hello",
-		},
-		{
-			name:      "trim spaces",
-			transform: "trim",
-			value:     "  hello  ",
-			expected:  "hello",
-		},
-		{
-			name:      "no transform",
-			transform: "",
-			value:     "hello",
-			expected:  "hello",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := processor.applyTransform(tt.transform, tt.value)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestProcessorCreation(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	set := processortest.NewNopSettings(metadata.Type)
-
-	// Test traces processor creation
-	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
-	require.Error(t, err) // Should fail due to empty config
-	assert.Nil(t, tp)
-
-	// Test metrics processor creation
-	mp, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
-	require.Error(t, err) // Should fail due to empty config
-	assert.Nil(t, mp)
-
-	// Test logs processor creation
-	lp, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
-	require.Error(t, err) // Should fail due to empty config
-	assert.Nil(t, lp)
-}
-
-func TestFactoryType(t *testing.T) {
-	factory := NewFactory()
-	assert.Equal(t, metadata.Type, factory.Type())
-}
 
 // MockDataSource for testing
 type MockDataSource struct {
-	data map[string]map[string]interface{}
+	data        [][]string
+	headerIndex map[string]int
+	lookup      *Lookup
 }
 
-func (m *MockDataSource) Lookup(ctx context.Context, key string) (map[string]interface{}, error) {
-	if data, exists := m.data[key]; exists {
-		return data, nil
+func NewMockDataSource(data [][]string, headerIndex map[string]int, indexFields []string) *MockDataSource {
+	lookup := NewLookup()
+	lookup.SetAll(data, headerIndex, indexFields)
+
+	return &MockDataSource{
+		data:        data,
+		headerIndex: headerIndex,
+		lookup:      lookup,
 	}
-	return nil, assert.AnError
+}
+
+func (m *MockDataSource) Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error) {
+	return m.lookup.Lookup(ctx, lookupField, key)
 }
 
 func (m *MockDataSource) Start(ctx context.Context) error {
@@ -297,27 +42,32 @@ func (m *MockDataSource) Stop() error {
 	return nil
 }
 
-func TestEnrichmentProcessor(t *testing.T) {
-	// Create a mock data source
-	mockData := map[string]map[string]interface{}{
-		"test-service": {
-			"owner":       "platform-team",
-			"environment": "production",
-			"version":     "1.2.3",
-		},
+func TestEnrichmentProcessor_Core(t *testing.T) {
+	// Create mock data in the new format
+	data := [][]string{
+		{"test-service", "platform-team", "production", "1.2.3"},
+		{"payment-service", "payments-team", "staging", "2.1.0"},
 	}
+	headerIndex := map[string]int{
+		"name":        0,
+		"owner":       1,
+		"environment": 2,
+		"version":     3,
+	}
+	indexFields := []string{"name", "environment"}
 
-	mockDataSource := &MockDataSource{data: mockData}
+	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
 
 	// Create processor with mock data source
 	processor := &enrichmentProcessor{
 		config: &Config{
 			EnrichmentRules: []EnrichmentRule{
 				{
-					Name:        "test_rule",
-					DataSource:  "mock",
-					LookupKey:   "service.name",
-					LookupField: "name",
+					Name:               "test_rule",
+					DataSource:         "mock",
+					LookupAttributeKey: "service.name",
+					LookupField:        "name",
+					Context:            ENRICHCONTEXTINDIVIDUAL,
 					Mappings: []FieldMapping{
 						{
 							SourceField:     "owner",
@@ -334,22 +84,284 @@ func TestEnrichmentProcessor(t *testing.T) {
 		dataSources: map[string]DataSource{
 			"mock": mockDataSource,
 		},
-		cache: NewCache(CacheConfig{Enabled: false}),
+		logger: zap.NewNop(),
 	}
 
-	// Test enriching attributes
+	ctx := context.Background()
+
+	t.Run("successful_enrichment", func(t *testing.T) {
+		attributes := pcommon.NewMap()
+		attributes.PutStr("service.name", "test-service")
+
+		err := processor.applyEnrichmentRule(ctx, processor.config.EnrichmentRules[0], attributes)
+		assert.NoError(t, err)
+
+		// Check that attributes were added
+		teamName, exists := attributes.Get("team.name")
+		assert.True(t, exists)
+		assert.Equal(t, "platform-team", teamName.AsString())
+
+		environment, exists := attributes.Get("deployment.environment")
+		assert.True(t, exists)
+		assert.Equal(t, "production", environment.AsString())
+	})
+
+	t.Run("enrichment_not_found", func(t *testing.T) {
+		attributes := pcommon.NewMap()
+		attributes.PutStr("service.name", "non-existent-service")
+
+		err := processor.applyEnrichmentRule(ctx, processor.config.EnrichmentRules[0], attributes)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "enrichment data not found for field 'name' with value 'non-existent-service'")
+	})
+
+	t.Run("lookup_by_different_field", func(t *testing.T) {
+		// Create a rule that uses environment as lookup field
+		environmentRule := EnrichmentRule{
+			Name:               "env_rule",
+			DataSource:         "mock",
+			LookupAttributeKey: "deployment.environment",
+			LookupField:        "environment",
+			Context:            ENRICHCONTEXTRESOURCE,
+			Mappings: []FieldMapping{
+				{
+					SourceField:     "name",
+					TargetAttribute: "service.name",
+				},
+				{
+					SourceField:     "owner",
+					TargetAttribute: "team.name",
+				},
+			},
+		}
+
+		attributes := pcommon.NewMap()
+		attributes.PutStr("deployment.environment", "staging")
+
+		err := processor.applyEnrichmentRule(ctx, environmentRule, attributes)
+		assert.NoError(t, err)
+
+		// Check that attributes were added based on environment lookup
+		serviceName, exists := attributes.Get("service.name")
+		assert.True(t, exists)
+		assert.Equal(t, "payment-service", serviceName.AsString())
+
+		teamName, exists := attributes.Get("team.name")
+		assert.True(t, exists)
+		assert.Equal(t, "payments-team", teamName.AsString())
+	})
+}
+
+func TestApplyMappings(t *testing.T) {
+	processor := &enrichmentProcessor{
+		logger: zap.NewNop(),
+	}
+
+	enrichmentRow := []string{"test-service", "platform-team", "production", "1.2.3"}
+	headerIndex := map[string]int{
+		"name":        0,
+		"owner":       1,
+		"environment": 2,
+		"version":     3,
+	}
+
+	testCases := []struct {
+		name            string
+		mappings        []FieldMapping
+		expectedAttrs   map[string]string
+		unexpectedAttrs []string
+	}{
+		{
+			name: "valid_mappings",
+			mappings: []FieldMapping{
+				{SourceField: "owner", TargetAttribute: "team.name"},
+				{SourceField: "environment", TargetAttribute: "deployment.environment"},
+			},
+			expectedAttrs: map[string]string{
+				"team.name":              "platform-team",
+				"deployment.environment": "production",
+			},
+		},
+		{
+			name: "invalid_source_field",
+			mappings: []FieldMapping{
+				{SourceField: "owner", TargetAttribute: "team.name"},
+				{SourceField: "nonexistent", TargetAttribute: "should.not.exist"},
+			},
+			expectedAttrs: map[string]string{
+				"team.name": "platform-team",
+			},
+			unexpectedAttrs: []string{"should.not.exist"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			attributes := pcommon.NewMap()
+			processor.applyMappings(tc.mappings, enrichmentRow, headerIndex, attributes)
+
+			// Check expected attributes
+			for attrName, expectedValue := range tc.expectedAttrs {
+				value, exists := attributes.Get(attrName)
+				assert.True(t, exists, "Expected attribute %s should exist", attrName)
+				assert.Equal(t, expectedValue, value.AsString())
+			}
+
+			// Check unexpected attributes
+			for _, attrName := range tc.unexpectedAttrs {
+				_, exists := attributes.Get(attrName)
+				assert.False(t, exists, "Unexpected attribute %s should not exist", attrName)
+			}
+		})
+	}
+}
+
+func TestEnrichmentContextFiltering(t *testing.T) {
+	data := [][]string{
+		{"test-service", "platform-team", "production", "1.2.3"},
+	}
+	headerIndex := map[string]int{
+		"name":        0,
+		"owner":       1,
+		"environment": 2,
+		"version":     3,
+	}
+	indexFields := []string{"name"}
+
+	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
+
+	processor := &enrichmentProcessor{
+		config: &Config{
+			EnrichmentRules: []EnrichmentRule{
+				{
+					Name:               "resource_rule",
+					DataSource:         "mock",
+					LookupAttributeKey: "service.name",
+					LookupField:        "name",
+					Context:            ENRICHCONTEXTRESOURCE,
+					Mappings: []FieldMapping{
+						{SourceField: "owner", TargetAttribute: "team.name"},
+					},
+				},
+				{
+					Name:               "individual_rule",
+					DataSource:         "mock",
+					LookupAttributeKey: "service.name",
+					LookupField:        "name",
+					Context:            ENRICHCONTEXTINDIVIDUAL,
+					Mappings: []FieldMapping{
+						{SourceField: "version", TargetAttribute: "service.version"},
+					},
+				},
+			},
+		},
+		dataSources: map[string]DataSource{
+			"mock": mockDataSource,
+		},
+		logger: zap.NewNop(),
+	}
+
+	ctx := context.Background()
+
+	t.Run("resource_context_filtering", func(t *testing.T) {
+		attributes := pcommon.NewMap()
+		attributes.PutStr("service.name", "test-service")
+
+		err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTRESOURCE)
+		assert.NoError(t, err)
+
+		// Should have team.name from resource_rule
+		teamName, exists := attributes.Get("team.name")
+		assert.True(t, exists)
+		assert.Equal(t, "platform-team", teamName.AsString())
+
+		// Should not have service.version from individual_rule
+		_, exists = attributes.Get("service.version")
+		assert.False(t, exists)
+	})
+
+	t.Run("individual_context_filtering", func(t *testing.T) {
+		attributes := pcommon.NewMap()
+		attributes.PutStr("service.name", "test-service")
+
+		err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTINDIVIDUAL)
+		assert.NoError(t, err)
+
+		// Should have service.version from individual_rule
+		version, exists := attributes.Get("service.version")
+		assert.True(t, exists)
+		assert.Equal(t, "1.2.3", version.AsString())
+
+		// Should not have team.name from resource_rule
+		_, exists = attributes.Get("team.name")
+		assert.False(t, exists)
+	})
+}
+
+func TestEnrichmentWithConditions(t *testing.T) {
+	// Create mock data
+	data := [][]string{
+		{"test-service", "platform-team", "production", "1.2.3"},
+		{"payment-service", "payments-team", "staging", "2.1.0"},
+	}
+	headerIndex := map[string]int{
+		"name":        0,
+		"owner":       1,
+		"environment": 2,
+		"version":     3,
+	}
+	indexFields := []string{"name"}
+
+	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
+
+	// Create processor with conditional rule (conditions are ignored)
+	processor := &enrichmentProcessor{
+		config: &Config{
+			EnrichmentRules: []EnrichmentRule{
+				{
+					Name:               "conditional_rule",
+					DataSource:         "mock",
+					LookupAttributeKey: "service.name",
+					LookupField:        "name",
+					Context:            ENRICHCONTEXTINDIVIDUAL,
+					Mappings: []FieldMapping{
+						{
+							SourceField:     "owner",
+							TargetAttribute: "team.name",
+						},
+					},
+				},
+			},
+		},
+		dataSources: map[string]DataSource{
+			"mock": mockDataSource,
+		},
+		logger: zap.NewNop(),
+	}
+
+	ctx := context.Background()
+
+	// Test case 1: previously matching condition — now enrichment always applies
 	attributes := pcommon.NewMap()
 	attributes.PutStr("service.name", "test-service")
+	attributes.PutStr("environment", "production")
 
-	err := processor.enrichAttributes(context.Background(), attributes)
+	err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTINDIVIDUAL)
 	assert.NoError(t, err)
 
-	// Check that attributes were added
 	teamName, exists := attributes.Get("team.name")
 	assert.True(t, exists)
 	assert.Equal(t, "platform-team", teamName.AsString())
 
-	environment, exists := attributes.Get("deployment.environment")
+	// Test case 2: previously non-matching condition — enrichment still applies
+	attributes2 := pcommon.NewMap()
+	attributes2.PutStr("service.name", "test-service")
+	attributes2.PutStr("environment", "staging")
+
+	err = processor.enrichAttributes(ctx, attributes2, ENRICHCONTEXTINDIVIDUAL)
+	assert.NoError(t, err)
+
+	teamName2, exists := attributes2.Get("team.name")
 	assert.True(t, exists)
-	assert.Equal(t, "production", environment.AsString())
+	assert.Equal(t, "platform-team", teamName2.AsString())
 }

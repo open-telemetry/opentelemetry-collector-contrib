@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -21,7 +20,7 @@ import (
 // DataSource represents an external data source for enrichment
 type DataSource interface {
 	// Lookup performs a lookup for the given key and returns enrichment data
-	Lookup(ctx context.Context, key string) (map[string]interface{}, error)
+	Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error)
 
 	// Start starts the data source (e.g., periodic refresh)
 	Start(ctx context.Context) error
@@ -32,23 +31,24 @@ type DataSource interface {
 
 // HTTPDataSource implements DataSource for HTTP endpoints
 type HTTPDataSource struct {
-	config HTTPDataSourceConfig
-	client *http.Client
-	data   map[string]map[string]interface{}
-	mutex  sync.RWMutex
-	logger *zap.Logger
-	cancel context.CancelFunc
+	config     HTTPDataSourceConfig
+	client     *http.Client
+	lookup     *Lookup
+	logger     *zap.Logger
+	cancel     context.CancelFunc
+	indexField []string
 }
 
 // NewHTTPDataSource creates a new HTTP data source
-func NewHTTPDataSource(config HTTPDataSourceConfig, logger *zap.Logger) *HTTPDataSource {
+func NewHTTPDataSource(config HTTPDataSourceConfig, logger *zap.Logger, indexField []string) *HTTPDataSource {
 	return &HTTPDataSource{
 		config: config,
 		client: &http.Client{
 			Timeout: config.Timeout,
 		},
-		data:   make(map[string]map[string]interface{}),
-		logger: logger,
+		lookup:     NewLookup(),
+		logger:     logger,
+		indexField: indexField,
 	}
 }
 
@@ -91,16 +91,8 @@ func (h *HTTPDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (h *HTTPDataSource) Lookup(ctx context.Context, key string) (map[string]interface{}, error) {
-	h.mutex.RLock()
-	defer h.mutex.RUnlock()
-
-	data, exists := h.data[key]
-	if !exists {
-		return nil, fmt.Errorf("key not found: %s", key)
-	}
-
-	return data, nil
+func (h *HTTPDataSource) Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error) {
+	return h.lookup.Lookup(ctx, lookupField, key)
 }
 
 // refresh fetches data from the HTTP endpoint
@@ -130,86 +122,144 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var jsonData interface{}
-	if err := json.Unmarshal(body, &jsonData); err != nil {
+	// Parse JSON data directly
+	processedData, index, err := parseJSON(body)
+	if err != nil {
 		return fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
-	// Process data based on JSONPath if specified
-	processedData, err := h.processJSONData(jsonData)
-	if err != nil {
-		return fmt.Errorf("failed to process JSON data: %w", err)
-	}
+	h.lookup.SetAll(processedData, index, h.indexField)
 
-	h.mutex.Lock()
-	h.data = processedData
-	h.mutex.Unlock()
-
-	h.logger.Info("Refreshed HTTP data source", zap.String("url", h.config.URL), zap.Int("records", len(processedData)))
+	h.logger.Info("Refreshed HTTP data source", zap.String("url", h.config.URL))
 
 	return nil
 }
 
-// processJSONData processes the JSON data and creates a lookup map
-func (h *HTTPDataSource) processJSONData(data interface{}) (map[string]map[string]interface{}, error) {
-	result := make(map[string]map[string]interface{})
+// parseJSON parses JSON data and creates a lookup map
+// Expected JSON input format: An array of objects where each object represents a row
+// Example:
+// [
+//
+//	{
+//	  "service_name": "user-service",
+//	  "owner_team": "platform-team",
+//	  "environment": "production",
+//	  "region": "us-east-1"
+//	},
+//	{
+//	  "service_name": "payment-service",
+//	  "owner_team": "payments-team",
+//	  "environment": "production",
+//	  "region": "us-west-2"
+//	}
+//
+// ]
+// This will be converted to a 2D string array with headers mapping to column indices
+func parseJSON(data []byte) ([][]string, map[string]int, error) {
+	var jsonData interface{}
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, nil, err
+	}
 
-	// For simplicity, assume data is an array of objects
-	if dataArray, ok := data.([]interface{}); ok {
-		for _, item := range dataArray {
-			if itemMap, ok := item.(map[string]interface{}); ok {
-				// Try common key fields first
-				var key string
-				for _, keyField := range []string{"name", "id", "key", "service_name", "hostname"} {
-					if value, exists := itemMap[keyField]; exists {
-						if keyStr, ok := value.(string); ok {
-							key = keyStr
-							break
-						}
-					}
-				}
-				// If no common key field found, use the first string value
-				if key == "" {
-					for _, value := range itemMap {
-						if keyStr, ok := value.(string); ok {
-							key = keyStr
-							break
-						}
-					}
-				}
-				if key != "" {
-					result[key] = itemMap
-				}
-			}
+	// Only accept array of objects format
+	dataArray, ok := jsonData.([]interface{})
+	if !ok {
+		return nil, nil, fmt.Errorf("JSON must be an array of objects")
+	}
+
+	if len(dataArray) == 0 {
+		return nil, nil, fmt.Errorf("JSON array cannot be empty")
+	}
+
+	// First pass: collect all unique keys to build the header mapping
+	allKeys := make(map[string]bool)
+	for _, item := range dataArray {
+		itemMap, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, nil, fmt.Errorf("all items in JSON array must be objects")
 		}
-	} else if dataMap, ok := data.(map[string]interface{}); ok {
-		// If it's a single object, use each key as lookup key
-		for key, value := range dataMap {
-			if valueMap, ok := value.(map[string]interface{}); ok {
-				result[key] = valueMap
-			}
+
+		// Add all keys from this object
+		for key := range itemMap {
+			allKeys[key] = true
 		}
 	}
 
-	return result, nil
+	// Convert set to index map
+	index := make(map[string]int)
+	i := 0
+	for key := range allKeys {
+		index[key] = i
+		i++
+	}
+
+	// Second pass: process each row with all columns
+	var rows [][]string
+	for _, item := range dataArray {
+		itemMap, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, nil, fmt.Errorf("all items in JSON array must be objects")
+		}
+
+		row := make([]string, len(index))
+		for colName, colIndex := range index {
+			if value, exists := itemMap[colName]; exists {
+				row[colIndex] = fmt.Sprintf("%v", value)
+			} else {
+				row[colIndex] = "" // Empty string for missing values
+			}
+		}
+		rows = append(rows, row)
+	}
+
+	return rows, index, nil
+}
+
+// parseCSV parses CSV data and creates a lookup map
+// require header row
+// row should be same number
+func parseCSV(data []byte) ([][]string, map[string]int, error) {
+	csvReader := csv.NewReader(strings.NewReader(string(data)))
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(records) < 2 {
+		return nil, nil, fmt.Errorf("CSV file must have at least 2 rows (header + data)")
+	}
+
+	headers := records[0]
+	index := make(map[string]int)
+
+	// Build index map from headers
+	for i, header := range headers {
+		index[header] = i
+	}
+
+	// Data rows (excluding header)
+	dataRows := records[1:]
+
+	return dataRows, index, nil
 }
 
 // FileDataSource implements DataSource for file-based sources
 type FileDataSource struct {
-	config  FileDataSourceConfig
-	data    map[string]map[string]interface{}
-	mutex   sync.RWMutex
-	logger  *zap.Logger
-	cancel  context.CancelFunc
-	lastMod time.Time
+	config     FileDataSourceConfig
+	lookup     *Lookup
+	logger     *zap.Logger
+	cancel     context.CancelFunc
+	lastMod    time.Time
+	indexField []string
 }
 
 // NewFileDataSource creates a new file data source
-func NewFileDataSource(config FileDataSourceConfig, logger *zap.Logger) *FileDataSource {
+func NewFileDataSource(config FileDataSourceConfig, logger *zap.Logger, indexField []string) *FileDataSource {
 	return &FileDataSource{
-		config: config,
-		data:   make(map[string]map[string]interface{}),
-		logger: logger,
+		config:     config,
+		lookup:     NewLookup(),
+		logger:     logger,
+		indexField: indexField,
 	}
 }
 
@@ -252,16 +302,8 @@ func (f *FileDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (f *FileDataSource) Lookup(ctx context.Context, key string) (map[string]interface{}, error) {
-	f.mutex.RLock()
-	defer f.mutex.RUnlock()
-
-	data, exists := f.data[key]
-	if !exists {
-		return nil, fmt.Errorf("key not found: %s", key)
-	}
-
-	return data, nil
+func (f *FileDataSource) Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error) {
+	return f.lookup.Lookup(ctx, lookupField, key)
 }
 
 // refresh loads data from the file
@@ -282,13 +324,19 @@ func (f *FileDataSource) refresh(ctx context.Context) error {
 	}
 	defer file.Close()
 
-	var data map[string]map[string]interface{}
+	var data [][]string
+	var index map[string]int
+
+	fileData, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
 
 	switch strings.ToLower(f.config.Format) {
 	case "json":
-		data, err = f.parseJSON(file)
+		data, index, err = parseJSON(fileData)
 	case "csv":
-		data, err = f.parseCSV(file)
+		data, index, err = parseCSV(fileData)
 	default:
 		return fmt.Errorf("unsupported file format: %s", f.config.Format)
 	}
@@ -297,102 +345,10 @@ func (f *FileDataSource) refresh(ctx context.Context) error {
 		return fmt.Errorf("failed to parse file: %w", err)
 	}
 
-	f.mutex.Lock()
-	f.data = data
+	f.lookup.SetAll(data, index, f.indexField)
 	f.lastMod = fileInfo.ModTime()
-	f.mutex.Unlock()
 
-	f.logger.Info("Refreshed file data source", zap.String("path", f.config.Path), zap.Int("records", len(data)))
+	f.logger.Info("Refreshed file data source", zap.String("path", f.config.Path))
 
 	return nil
-}
-
-// parseJSON parses JSON file
-func (f *FileDataSource) parseJSON(reader io.Reader) (map[string]map[string]interface{}, error) {
-	var jsonData interface{}
-	decoder := json.NewDecoder(reader)
-	if err := decoder.Decode(&jsonData); err != nil {
-		return nil, err
-	}
-
-	result := make(map[string]map[string]interface{})
-
-	if dataArray, ok := jsonData.([]interface{}); ok {
-		for _, item := range dataArray {
-			if itemMap, ok := item.(map[string]interface{}); ok {
-				// Try common key fields first (same as HTTP data source)
-				var key string
-				for _, keyField := range []string{"name", "id", "key", "service_name", "hostname"} {
-					if value, exists := itemMap[keyField]; exists {
-						if keyStr, ok := value.(string); ok {
-							key = keyStr
-							break
-						}
-					}
-				}
-				// If no common key field found, use the first string value
-				if key == "" {
-					for _, value := range itemMap {
-						if keyStr, ok := value.(string); ok {
-							key = keyStr
-							break
-						}
-					}
-				}
-				if key != "" {
-					result[key] = itemMap
-				}
-			}
-		}
-	} else if dataMap, ok := jsonData.(map[string]interface{}); ok {
-		for key, value := range dataMap {
-			if valueMap, ok := value.(map[string]interface{}); ok {
-				result[key] = valueMap
-			}
-		}
-	}
-
-	return result, nil
-}
-
-// parseCSV parses CSV file
-func (f *FileDataSource) parseCSV(reader io.Reader) (map[string]map[string]interface{}, error) {
-	csvReader := csv.NewReader(reader)
-	csvReader.FieldsPerRecord = -1 // Allow variable number of fields
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(records) < 2 {
-		return nil, fmt.Errorf("CSV file must have at least 2 rows (header + data)")
-	}
-
-	headers := records[0]
-	result := make(map[string]map[string]interface{})
-
-	for i := 1; i < len(records); i++ {
-		record := records[i]
-		if len(record) != len(headers) {
-			continue // Skip malformed rows
-		}
-
-		rowData := make(map[string]interface{})
-		var key string
-
-		for j, value := range record {
-			if j < len(headers) {
-				rowData[headers[j]] = value
-				if j == 0 { // Use first column as key
-					key = value
-				}
-			}
-		}
-
-		if key != "" {
-			result[key] = rowData
-		}
-	}
-
-	return result, nil
 }

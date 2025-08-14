@@ -5,7 +5,6 @@ package enrichmentprocessor // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,12 +29,7 @@ func NewFactory() processor.Factory {
 // createDefaultConfig creates the default configuration for the processor
 func createDefaultConfig() component.Config {
 	return &Config{
-		DataSources: []DataSourceConfig{},
-		Cache: CacheConfig{
-			Enabled: true,
-			TTL:     5 * time.Minute,
-			MaxSize: 1000,
-		},
+		DataSources:     []DataSourceConfig{},
 		EnrichmentRules: []EnrichmentRule{},
 	}
 }

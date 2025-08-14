@@ -35,12 +35,8 @@ processors:
       # Enrich database metrics with owner and environment information
       - name: "enrich_database_metrics"
         data_source: "service_inventory"
-        lookup_key: "service.name"
+        lookup_attributekey: "service.name"
         lookup_field: "service_name"
-        conditions:
-          - attribute: "service.type"
-            operator: "equals"
-            value: "database"
         mappings:
           - source_field: "owner_team"
             target_attribute: "team.name"
@@ -57,12 +53,8 @@ processors:
       # Enrich message queue metrics
       - name: "enrich_mq_metrics"
         data_source: "service_inventory"
-        lookup_key: "mq.queue_name"
+        lookup_attributekey: "mq.queue_name"
         lookup_field: "queue_name"
-        conditions:
-          - attribute: "service.type"
-            operator: "equals"
-            value: "messagequeue"
         mappings:
           - source_field: "max_depth"
             target_attribute: "mq.max_depth"
@@ -79,7 +71,7 @@ processors:
       # Enrich host metrics with system information
       - name: "enrich_host_metrics"
         data_source: "host_metadata"
-        lookup_key: "host.name"
+        lookup_attributekey: "host.name"
         lookup_field: "hostname"
         mappings:
           - source_field: "system_id"
@@ -99,15 +91,8 @@ processors:
       # Enrich application metrics with version and ownership
       - name: "enrich_app_metrics"
         data_source: "service_inventory"
-        lookup_key: "service.name"
+        lookup_attributekey: "service.name"
         lookup_field: "service_name"
-        conditions:
-          - attribute: "service.type"
-            operator: "not_equals"
-            value: "database"
-          - attribute: "service.type"
-            operator: "not_equals"
-            value: "messagequeue"
         mappings:
           - source_field: "version"
             target_attribute: "service.version"

@@ -6,9 +6,4 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [sokoide]
-
-tests:
-  config:
-    validate:
-      error: []
+    active: [sokoide, kyo-ke, sandy2008]

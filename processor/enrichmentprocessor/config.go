@@ -9,13 +9,17 @@ import (
 	"time"
 )
 
+const (
+	// ENRICHCONTEXTRESOURCE indicates that the enrichment rule applies to resource attributes
+	ENRICHCONTEXTRESOURCE = "resource"
+	// ENRICHCONTEXTINDIVIDUAL indicates that the enrichment rule applies to log/metric/span attributes
+	ENRICHCONTEXTINDIVIDUAL = "individual"
+)
+
 // Config defines the configuration for the enrichment processor.
 type Config struct {
 	// DataSources defines the external data sources for enrichment
 	DataSources []DataSourceConfig `mapstructure:"data_sources"`
-
-	// Cache configuration
-	Cache CacheConfig `mapstructure:"cache"`
 
 	// EnrichmentRules defines how to enrich telemetry data
 	EnrichmentRules []EnrichmentRule `mapstructure:"enrichment_rules"`
@@ -26,7 +30,7 @@ type DataSourceConfig struct {
 	// Name is a unique identifier for this data source
 	Name string `mapstructure:"name"`
 
-	// Type specifies the data source type (http, file, prometheus)
+	// Type specifies the data source type (http, file)
 	Type string `mapstructure:"type"`
 
 	// HTTP configuration (used when Type is "http")
@@ -34,9 +38,6 @@ type DataSourceConfig struct {
 
 	// File configuration (used when Type is "file")
 	File *FileDataSourceConfig `mapstructure:"file,omitempty"`
-
-	// Prometheus configuration (used when Type is "prometheus")
-	Prometheus *PrometheusDataSourceConfig `mapstructure:"prometheus,omitempty"`
 }
 
 // HTTPDataSourceConfig defines configuration for HTTP-based data sources
@@ -52,9 +53,6 @@ type HTTPDataSourceConfig struct {
 
 	// RefreshInterval specifies how often to refresh the data
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
-
-	// JSONPath to extract relevant data from the response
-	JSONPath string `mapstructure:"json_path"`
 }
 
 // FileDataSourceConfig defines configuration for file-based data sources
@@ -69,33 +67,6 @@ type FileDataSourceConfig struct {
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 }
 
-// PrometheusDataSourceConfig defines configuration for Prometheus-based data sources
-type PrometheusDataSourceConfig struct {
-	// URL is the Prometheus endpoint URL
-	URL string `mapstructure:"url"`
-
-	// Query is the PromQL query to execute
-	Query string `mapstructure:"query"`
-
-	// Headers to include in the request
-	Headers map[string]string `mapstructure:"headers"`
-
-	// RefreshInterval specifies how often to refresh the data
-	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
-}
-
-// CacheConfig defines cache configuration
-type CacheConfig struct {
-	// Enabled determines if caching is enabled
-	Enabled bool `mapstructure:"enabled"`
-
-	// TTL defines how long to cache entries
-	TTL time.Duration `mapstructure:"ttl"`
-
-	// MaxSize defines the maximum number of entries to cache
-	MaxSize int `mapstructure:"max_size"`
-}
-
 // EnrichmentRule defines how to enrich telemetry data
 type EnrichmentRule struct {
 	// Name is a unique identifier for this rule
@@ -104,8 +75,8 @@ type EnrichmentRule struct {
 	// DataSource specifies which data source to use
 	DataSource string `mapstructure:"data_source"`
 
-	// LookupKey specifies which attribute/field to use for lookup
-	LookupKey string `mapstructure:"lookup_key"`
+	// LookupAttributeKey specifies which attribute/field to use for lookup
+	LookupAttributeKey string `mapstructure:"lookup_attributekey"`
 
 	// LookupField specifies which field in the data source to match against
 	LookupField string `mapstructure:"lookup_field"`
@@ -113,8 +84,10 @@ type EnrichmentRule struct {
 	// Mappings define how to map data source fields to telemetry attributes
 	Mappings []FieldMapping `mapstructure:"mappings"`
 
-	// Conditions define when this rule should be applied
-	Conditions []Condition `mapstructure:"conditions"`
+	// Context specifies which telemetry context to enrich
+	// Valid values: "resource", "span", "metric", "log"
+	// Default: applies to all contexts if not specified
+	Context string `mapstructure:"context"`
 }
 
 // FieldMapping defines how to map a field from data source to telemetry attribute
@@ -124,24 +97,14 @@ type FieldMapping struct {
 
 	// TargetAttribute is the attribute name in telemetry data
 	TargetAttribute string `mapstructure:"target_attribute"`
-
-	// Transform optionally specifies a transformation function
-	Transform string `mapstructure:"transform"`
-}
-
-// Condition defines when an enrichment rule should be applied
-type Condition struct {
-	// Attribute to check
-	Attribute string `mapstructure:"attribute"`
-
-	// Operator for comparison (equals, contains, regex, etc.)
-	Operator string `mapstructure:"operator"`
-
-	// Value to compare against
-	Value string `mapstructure:"value"`
 }
 
 func (config *Config) Validate() error {
+	// Allow empty configuration for default config
+	if len(config.DataSources) == 0 && len(config.EnrichmentRules) == 0 {
+		return nil
+	}
+
 	if len(config.DataSources) == 0 {
 		return errors.New("at least one data source must be configured")
 	}
@@ -166,7 +129,7 @@ func (config *Config) Validate() error {
 			return fmt.Errorf("data source type cannot be empty for data source: %s", ds.Name)
 		}
 
-		if ds.Type != "http" && ds.Type != "file" && ds.Type != "prometheus" {
+		if ds.Type != "http" && ds.Type != "file" {
 			return fmt.Errorf("unsupported data source type: %s", ds.Type)
 		}
 
@@ -185,13 +148,6 @@ func (config *Config) Validate() error {
 			}
 			if ds.File.Path == "" {
 				return fmt.Errorf("Path is required for file data source: %s", ds.Name)
-			}
-		case "prometheus":
-			if ds.Prometheus == nil {
-				return fmt.Errorf("Prometheus configuration is required for prometheus data source: %s", ds.Name)
-			}
-			if ds.Prometheus.URL == "" {
-				return fmt.Errorf("URL is required for Prometheus data source: %s", ds.Name)
 			}
 		}
 	}
@@ -216,7 +172,7 @@ func (config *Config) Validate() error {
 			return fmt.Errorf("data source %s not found for rule: %s", rule.DataSource, rule.Name)
 		}
 
-		if rule.LookupKey == "" {
+		if rule.LookupAttributeKey == "" {
 			return fmt.Errorf("lookup key must be specified for rule: %s", rule.Name)
 		}
 
@@ -227,7 +183,12 @@ func (config *Config) Validate() error {
 		if len(rule.Mappings) == 0 {
 			return fmt.Errorf("at least one mapping must be specified for rule: %s", rule.Name)
 		}
-
+		// Validate context if specified
+		if rule.Context != "" {
+			if rule.Context != ENRICHCONTEXTRESOURCE && rule.Context != ENRICHCONTEXTINDIVIDUAL {
+				return fmt.Errorf("invalid context value %s for rule %s. Valid values: resource, individual", rule.Context, rule.Name)
+			}
+		}
 		// Validate mappings
 		for _, mapping := range rule.Mappings {
 			if mapping.SourceField == "" {

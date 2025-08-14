@@ -6,9 +6,6 @@ package enrichmentprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,7 +22,6 @@ type enrichmentProcessor struct {
 	config       *Config
 	logger       *zap.Logger
 	dataSources  map[string]DataSource
-	cache        *Cache
 	nextConsumer interface{}
 }
 
@@ -39,7 +35,12 @@ func newEnrichmentProcessor(ctx context.Context, set processor.Settings, config 
 		config:      config,
 		logger:      set.Logger,
 		dataSources: make(map[string]DataSource),
-		cache:       NewCache(config.Cache),
+	}
+
+	// If config is empty (default config case), create a no-op processor
+	if len(config.DataSources) == 0 && len(config.EnrichmentRules) == 0 {
+		set.Logger.Debug("Creating enrichment processor with empty configuration - no enrichment will be performed")
+		return processor, nil
 	}
 
 	// Initialize data sources
@@ -57,51 +58,44 @@ func newEnrichmentProcessor(ctx context.Context, set processor.Settings, config 
 		}
 	}
 
-	// Start cache cleanup routine
-	go processor.cacheCleanupRoutine(ctx)
-
 	return processor, nil
 }
 
 // createDataSource creates a data source based on configuration
 func (ep *enrichmentProcessor) createDataSource(config DataSourceConfig) (DataSource, error) {
+	// Extract index fields from enrichment rules that use this data source
+	var indexFields []string
+	for _, rule := range ep.config.EnrichmentRules {
+		if rule.DataSource == config.Name && rule.LookupField != "" {
+			// Check if this field is already in the list to avoid duplicates
+			found := false
+			for _, existing := range indexFields {
+				if existing == rule.LookupField {
+					found = true
+					break
+				}
+			}
+			if !found {
+				indexFields = append(indexFields, rule.LookupField)
+			}
+		}
+	}
+
 	switch config.Type {
 	case "http":
 		if config.HTTP == nil {
 			return nil, fmt.Errorf("HTTP configuration is required for http data source")
 		}
-		return NewHTTPDataSource(*config.HTTP, ep.logger), nil
+		return NewHTTPDataSource(*config.HTTP, ep.logger, indexFields), nil
 
 	case "file":
 		if config.File == nil {
 			return nil, fmt.Errorf("File configuration is required for file data source")
 		}
-		return NewFileDataSource(*config.File, ep.logger), nil
-
-	case "prometheus":
-		if config.Prometheus == nil {
-			return nil, fmt.Errorf("Prometheus configuration is required for prometheus data source")
-		}
-		// TODO: Implement Prometheus data source
-		return nil, fmt.Errorf("prometheus data source not yet implemented")
+		return NewFileDataSource(*config.File, ep.logger, indexFields), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported data source type: %s", config.Type)
-	}
-}
-
-// cacheCleanupRoutine periodically cleans up expired cache entries
-func (ep *enrichmentProcessor) cacheCleanupRoutine(ctx context.Context) {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			ep.cache.Cleanup()
-		}
 	}
 }
 
@@ -114,18 +108,27 @@ func (ep *enrichmentProcessor) Start(ctx context.Context, host component.Host) e
 func (ep *enrichmentProcessor) Shutdown(ctx context.Context) error {
 	for _, dataSource := range ep.dataSources {
 		if err := dataSource.Stop(); err != nil {
-			ep.logger.Error("Failed to stop data source", zap.Error(err))
+			ep.logger.Error("Failed to stop enrichment data source", zap.Error(err))
 		}
 	}
 	return nil
 }
 
 // enrichAttributes enriches attributes based on enrichment rules
-func (ep *enrichmentProcessor) enrichAttributes(ctx context.Context, attributes pcommon.Map) error {
+func (ep *enrichmentProcessor) enrichAttributes(ctx context.Context, attributes pcommon.Map, enrichContext string) error {
+	// Early return if no enrichment rules configured
+	if len(ep.config.EnrichmentRules) == 0 {
+		return nil
+	}
+
 	for _, rule := range ep.config.EnrichmentRules {
+		if rule.Context != enrichContext {
+			continue
+		}
 		if err := ep.applyEnrichmentRule(ctx, rule, attributes); err != nil {
-			ep.logger.Debug("Failed to apply enrichment rule",
-				zap.String("rule", rule.Name),
+			ep.logger.Debug("Failed to apply enrichment rule, continuing with next rule",
+				zap.String("rule_name", rule.Name),
+				zap.String("lookup_field", rule.LookupField),
 				zap.Error(err))
 			// Continue with other rules even if one fails
 		}
@@ -135,26 +138,15 @@ func (ep *enrichmentProcessor) enrichAttributes(ctx context.Context, attributes 
 
 // applyEnrichmentRule applies a single enrichment rule
 func (ep *enrichmentProcessor) applyEnrichmentRule(ctx context.Context, rule EnrichmentRule, attributes pcommon.Map) error {
-	// Check conditions first
-	if !ep.evaluateConditions(rule.Conditions, attributes) {
-		return nil // Conditions not met, skip this rule
-	}
-
 	// Get lookup key value
-	lookupValue, exists := attributes.Get(rule.LookupKey)
+	lookupValue, exists := attributes.Get(rule.LookupAttributeKey)
 	if !exists {
-		return fmt.Errorf("lookup key %s not found in attributes", rule.LookupKey)
+		return fmt.Errorf("lookup key %s not found in attributes", rule.LookupAttributeKey)
 	}
 
 	lookupKey := lookupValue.AsString()
 	if lookupKey == "" {
-		return fmt.Errorf("lookup key %s has empty value", rule.LookupKey)
-	}
-
-	// Check cache first
-	if enrichmentData, found := ep.cache.Get(lookupKey); found {
-		ep.applyMappings(rule.Mappings, enrichmentData, attributes)
-		return nil
+		return fmt.Errorf("lookup key %s has empty value", rule.LookupAttributeKey)
 	}
 
 	// Get data source
@@ -164,93 +156,43 @@ func (ep *enrichmentProcessor) applyEnrichmentRule(ctx context.Context, rule Enr
 	}
 
 	// Perform lookup
-	enrichmentData, err := dataSource.Lookup(ctx, lookupKey)
+	enrichmentRow, index, err := dataSource.Lookup(ctx, rule.LookupField, lookupKey)
 	if err != nil {
 		return fmt.Errorf("lookup failed: %w", err)
 	}
 
-	// Cache the result
-	ep.cache.Set(lookupKey, enrichmentData)
-
 	// Apply mappings
-	ep.applyMappings(rule.Mappings, enrichmentData, attributes)
+	ep.applyMappings(rule.Mappings, enrichmentRow, index, attributes)
 
 	return nil
 }
 
-// evaluateConditions checks if all conditions are met
-func (ep *enrichmentProcessor) evaluateConditions(conditions []Condition, attributes pcommon.Map) bool {
-	for _, condition := range conditions {
-		if !ep.evaluateCondition(condition, attributes) {
-			return false
-		}
-	}
-	return true
-}
-
-// evaluateCondition evaluates a single condition
-func (ep *enrichmentProcessor) evaluateCondition(condition Condition, attributes pcommon.Map) bool {
-	attributeValue, exists := attributes.Get(condition.Attribute)
-	if !exists {
-		return false
-	}
-
-	attrStr := attributeValue.AsString()
-
-	switch condition.Operator {
-	case "equals":
-		return attrStr == condition.Value
-	case "contains":
-		return strings.Contains(attrStr, condition.Value)
-	case "regex":
-		if matched, err := regexp.MatchString(condition.Value, attrStr); err == nil {
-			return matched
-		}
-		return false
-	case "not_equals":
-		return attrStr != condition.Value
-	default:
-		ep.logger.Warn("Unknown condition operator", zap.String("operator", condition.Operator))
-		return false
-	}
-}
-
 // applyMappings applies field mappings to attributes
-func (ep *enrichmentProcessor) applyMappings(mappings []FieldMapping, enrichmentData map[string]interface{}, attributes pcommon.Map) {
+func (ep *enrichmentProcessor) applyMappings(mappings []FieldMapping, enrichmentRow []string, index map[string]int, attributes pcommon.Map) {
 	for _, mapping := range mappings {
-		if value, exists := enrichmentData[mapping.SourceField]; exists {
-			// Apply transformation if specified
-			transformedValue := ep.applyTransform(mapping.Transform, value)
-
-			// Set the attribute
-			if strValue, ok := transformedValue.(string); ok {
-				attributes.PutStr(mapping.TargetAttribute, strValue)
-			} else {
-				// Convert to string for non-string values
-				attributes.PutStr(mapping.TargetAttribute, fmt.Sprintf("%v", transformedValue))
-			}
+		// Find the column index for the source field
+		columnIndex, exists := index[mapping.SourceField]
+		if !exists {
+			ep.logger.Warn("Enrichment source field not found in data",
+				zap.String("source_field", mapping.SourceField),
+				zap.String("target_attribute", mapping.TargetAttribute))
+			continue
 		}
-	}
-}
 
-// applyTransform applies a transformation function to a value
-func (ep *enrichmentProcessor) applyTransform(transform string, value interface{}) interface{} {
-	if transform == "" {
-		return value
-	}
+		// Check if the column index is valid for this row
+		if columnIndex >= len(enrichmentRow) {
+			ep.logger.Warn("Enrichment column index out of range",
+				zap.String("source_field", mapping.SourceField),
+				zap.Int("column_index", columnIndex),
+				zap.Int("row_length", len(enrichmentRow)))
+			continue
+		}
 
-	strValue := fmt.Sprintf("%v", value)
-
-	switch transform {
-	case "upper":
-		return strings.ToUpper(strValue)
-	case "lower":
-		return strings.ToLower(strValue)
-	case "trim":
-		return strings.TrimSpace(strValue)
-	default:
-		ep.logger.Warn("Unknown transform function", zap.String("transform", transform))
-		return value
+		value := enrichmentRow[columnIndex]
+		if value != "" { // Only apply if value is not empty
+			// Set the attribute directly
+			attributes.PutStr(mapping.TargetAttribute, value)
+		}
 	}
 }
 
@@ -275,16 +217,16 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, config *Con
 func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
-		if err := tp.enrichAttributes(ctx, rs.Resource().Attributes()); err != nil {
-			tp.logger.Error("Failed to enrich resource attributes", zap.Error(err))
+		if err := tp.enrichAttributes(ctx, rs.Resource().Attributes(), ENRICHCONTEXTRESOURCE); err != nil {
+			tp.logger.Error("Failed to enrich trace resource attributes", zap.Error(err))
 		}
 
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
 			for k := 0; k < ss.Spans().Len(); k++ {
 				span := ss.Spans().At(k)
-				if err := tp.enrichAttributes(ctx, span.Attributes()); err != nil {
-					tp.logger.Error("Failed to enrich span attributes", zap.Error(err))
+				if err := tp.enrichAttributes(ctx, span.Attributes(), ENRICHCONTEXTINDIVIDUAL); err != nil {
+					tp.logger.Error("Failed to enrich trace span attributes", zap.Error(err))
 				}
 			}
 		}
@@ -295,6 +237,14 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 func (tp *tracesProcessor) Capabilities() consumer.Capabilities {
 	return processorCapabilities
+}
+
+func (tp *tracesProcessor) Start(ctx context.Context, host component.Host) error {
+	return tp.enrichmentProcessor.Start(ctx, host)
+}
+
+func (tp *tracesProcessor) Shutdown(ctx context.Context) error {
+	return tp.enrichmentProcessor.Shutdown(ctx)
 }
 
 // Metrics processor implementation
@@ -318,8 +268,8 @@ func newMetricsProcessor(ctx context.Context, set processor.Settings, config *Co
 func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
-		if err := mp.enrichAttributes(ctx, rm.Resource().Attributes()); err != nil {
-			mp.logger.Error("Failed to enrich resource attributes", zap.Error(err))
+		if err := mp.enrichAttributes(ctx, rm.Resource().Attributes(), ENRICHCONTEXTRESOURCE); err != nil {
+			mp.logger.Error("Failed to enrich metric resource attributes", zap.Error(err))
 		}
 
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
@@ -340,31 +290,31 @@ func (mp *metricsProcessor) enrichMetricDataPoints(ctx context.Context, metric p
 		dps := metric.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			if err := mp.enrichAttributes(ctx, dp.Attributes()); err != nil {
-				mp.logger.Error("Failed to enrich gauge data point attributes", zap.Error(err))
+			if err := mp.enrichAttributes(ctx, dp.Attributes(), ENRICHCONTEXTINDIVIDUAL); err != nil {
+				mp.logger.Error("Failed to enrich metric gauge data point attributes", zap.Error(err))
 			}
 		}
 	case pmetric.MetricTypeSum:
 		dps := metric.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			if err := mp.enrichAttributes(ctx, dp.Attributes()); err != nil {
-				mp.logger.Error("Failed to enrich sum data point attributes", zap.Error(err))
+			if err := mp.enrichAttributes(ctx, dp.Attributes(), ENRICHCONTEXTINDIVIDUAL); err != nil {
+				mp.logger.Error("Failed to enrich metric sum data point attributes", zap.Error(err))
 			}
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := metric.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			if err := mp.enrichAttributes(ctx, dp.Attributes()); err != nil {
-				mp.logger.Error("Failed to enrich histogram data point attributes", zap.Error(err))
+			if err := mp.enrichAttributes(ctx, dp.Attributes(), ENRICHCONTEXTINDIVIDUAL); err != nil {
+				mp.logger.Error("Failed to enrich metric histogram data point attributes", zap.Error(err))
 			}
 		}
 	case pmetric.MetricTypeSummary:
 		dps := metric.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			if err := mp.enrichAttributes(ctx, dp.Attributes()); err != nil {
+			if err := mp.enrichAttributes(ctx, dp.Attributes(), ENRICHCONTEXTINDIVIDUAL); err != nil {
 				mp.logger.Error("Failed to enrich summary data point attributes", zap.Error(err))
 			}
 		}
@@ -373,6 +323,14 @@ func (mp *metricsProcessor) enrichMetricDataPoints(ctx context.Context, metric p
 
 func (mp *metricsProcessor) Capabilities() consumer.Capabilities {
 	return processorCapabilities
+}
+
+func (mp *metricsProcessor) Start(ctx context.Context, host component.Host) error {
+	return mp.enrichmentProcessor.Start(ctx, host)
+}
+
+func (mp *metricsProcessor) Shutdown(ctx context.Context) error {
+	return mp.enrichmentProcessor.Shutdown(ctx)
 }
 
 // Logs processor implementation
@@ -396,7 +354,7 @@ func newLogsProcessor(ctx context.Context, set processor.Settings, config *Confi
 func (lp *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rl := ld.ResourceLogs().At(i)
-		if err := lp.enrichAttributes(ctx, rl.Resource().Attributes()); err != nil {
+		if err := lp.enrichAttributes(ctx, rl.Resource().Attributes(), ENRICHCONTEXTRESOURCE); err != nil {
 			lp.logger.Error("Failed to enrich resource attributes", zap.Error(err))
 		}
 
@@ -404,7 +362,7 @@ func (lp *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			sl := rl.ScopeLogs().At(j)
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				logRecord := sl.LogRecords().At(k)
-				if err := lp.enrichAttributes(ctx, logRecord.Attributes()); err != nil {
+				if err := lp.enrichAttributes(ctx, logRecord.Attributes(), ENRICHCONTEXTINDIVIDUAL); err != nil {
 					lp.logger.Error("Failed to enrich log record attributes", zap.Error(err))
 				}
 			}
@@ -416,4 +374,12 @@ func (lp *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 func (lp *logsProcessor) Capabilities() consumer.Capabilities {
 	return processorCapabilities
+}
+
+func (lp *logsProcessor) Start(ctx context.Context, host component.Host) error {
+	return lp.enrichmentProcessor.Start(ctx, host)
+}
+
+func (lp *logsProcessor) Shutdown(ctx context.Context) error {
+	return lp.enrichmentProcessor.Shutdown(ctx)
 }
