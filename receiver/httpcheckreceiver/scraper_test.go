@@ -4,6 +4,7 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
