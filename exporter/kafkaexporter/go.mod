@@ -16,8 +16,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.132.0
 	github.com/stretchr/testify v1.10.0
-	github.com/twmb/franz-go v1.18.1
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
+	github.com/twmb/franz-go v1.19.5
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
 	go.opentelemetry.io/collector/client v1.38.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
