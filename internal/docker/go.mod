@@ -1,18 +1,20 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/docker/docker v28.1.1+incompatible
+	github.com/containerd/errdefs v1.0.0
+	github.com/docker/docker v28.3.3+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.37.1-0.20250808075651-ed09fb912b2f
+	go.opentelemetry.io/collector/confmap v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
 
 require (
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
@@ -38,7 +40,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.37.1-0.20250808075651-ed09fb912b2f // indirect
+	go.opentelemetry.io/collector/featuregate v1.38.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect

@@ -20,10 +20,10 @@ import (
 
 func newTestExtension(t *testing.T, cfg Config) *ext {
 	extension := newExtension(&cfg)
-	err := extension.Start(context.Background(), componenttest.NewNopHost())
+	err := extension.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = extension.Shutdown(context.Background())
+		err = extension.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
 	return extension

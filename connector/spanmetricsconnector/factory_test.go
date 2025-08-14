@@ -4,12 +4,12 @@
 package spanmetricsconnector
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -50,13 +50,13 @@ func TestNewConnector(t *testing.T) {
 
 			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
+			cfg.Histogram.Explicit = configoptional.Some(ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,
-			}
+			})
 			cfg.Dimensions = tc.dimensions
 
 			// Test
-			traceConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+			traceConnector, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 			smc := traceConnector.(*connectorImp)
 
 			// Verify
