@@ -8,8 +8,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcontext"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetadata"
 )
 
 func NewParser[K any](
@@ -61,8 +61,8 @@ func PathExpressionParser[K any](
 			}
 		}
 
-		if path.Name() == ctxmetadata.Name {
-			return ctxmetadata.PathExpressionParser[K]()(path)
+		if path.Name() == ctxcontext.Name {
+			return ctxcontext.PathExpressionParser[K]()(path)
 		}
 
 		// Allow cache access only on this context
