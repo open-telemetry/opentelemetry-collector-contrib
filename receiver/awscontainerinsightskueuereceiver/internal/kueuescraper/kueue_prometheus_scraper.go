@@ -148,6 +148,17 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 
 func GetKueueRelabelConfigs(clusterName string) []*relabel.Config {
 	relabelConfigs := []*relabel.Config{
+		// Add these two new configs at the start
+		{ // Keep only Kueue endpoints
+			Action:       relabel.Keep,
+			SourceLabels: model.LabelNames{"__meta_kubernetes_service_name"},
+			Regex:        relabel.MustNewRegexp(".*kueue.*"),
+		},
+		{ // Keep only if target's node matches the collector's node
+			Action:       relabel.Keep,
+			SourceLabels: model.LabelNames{"__meta_kubernetes_endpoint_node_name"},
+			Regex:        relabel.MustNewRegexp("${K8S_NODE_NAME}"),
+		},
 		{ // filter by metric name: keep only the Kueue metrics specified via regex in `kueueMetricAllowList`
 			Action:       relabel.Keep,
 			Regex:        relabel.MustNewRegexp(kueueMetricsAllowRegex),
