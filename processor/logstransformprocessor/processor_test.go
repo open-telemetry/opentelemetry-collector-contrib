@@ -143,16 +143,16 @@ func TestLogsTransformProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
-			ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
+			ltp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
-			err = ltp.Start(context.Background(), nil)
+			err = ltp.Start(t.Context(), nil)
 			require.NoError(t, err)
 
 			sourceLogData := generateLogData(tt.sourceMessages)
 			wantLogData := generateLogData(tt.parsedMessages)
-			err = ltp.ConsumeLogs(context.Background(), sourceLogData)
+			err = ltp.ConsumeLogs(t.Context(), sourceLogData)
 			require.NoError(t, err)
 			time.Sleep(200 * time.Millisecond)
 			logs := tln.AllLogs()
@@ -261,11 +261,11 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 
 	tln := new(consumertest.LogsSink)
 	factory := NewFactory()
-	ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), config, tln)
+	ltp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), config, tln)
 	require.NoError(t, err)
 	assert.True(t, ltp.Capabilities().MutatesData)
 
-	err = ltp.Start(context.Background(), nil)
+	err = ltp.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	testLog := plog.NewLogs()
@@ -281,9 +281,9 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 	// a closed channel, since that'll cause a panic.
 	// In order to test, we send a lot of logs to be consumed, then shutdown immediately.
 
-	err = ltp.ConsumeLogs(context.Background(), testLog)
+	err = ltp.ConsumeLogs(t.Context(), testLog)
 	require.NoError(t, err)
 
-	err = ltp.Shutdown(context.Background())
+	err = ltp.Shutdown(t.Context())
 	require.NoError(t, err)
 }

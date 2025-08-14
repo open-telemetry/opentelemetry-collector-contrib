@@ -129,7 +129,7 @@ func TestDetect(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			resource, schemaURL, err := tc.detector.Detect(context.Background())
+			resource, schemaURL, err := tc.detector.Detect(t.Context())
 			if err != nil && errors.Is(err, tc.expectedErr) {
 				return
 			} else if err != nil && !errors.Is(err, tc.expectedErr) {

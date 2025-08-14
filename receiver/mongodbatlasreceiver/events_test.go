@@ -56,13 +56,13 @@ func TestStartAndShutdown(t *testing.T) {
 			sink := &consumertest.LogsSink{}
 			r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), tc.getConfig(), sink)
 			require.NoError(t, e)
-			err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+			err := r.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 			if tc.expectedStartErr != nil {
 				require.ErrorContains(t, err, tc.expectedStartErr.Error())
 			} else {
 				require.NoError(t, err)
 			}
-			err = r.Shutdown(context.Background())
+			err = r.Shutdown(t.Context())
 			if tc.expectedShutdownErr != nil {
 				require.ErrorContains(t, err, tc.expectedShutdownErr.Error())
 				return
@@ -91,7 +91,7 @@ func TestContextDone(t *testing.T) {
 	mClient.setupMock(t)
 	r.client = mClient
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	err := r.Start(ctx, componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 	cancel()
@@ -100,7 +100,7 @@ func TestContextDone(t *testing.T) {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 500*time.Millisecond)
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -127,14 +127,14 @@ func TestPoll(t *testing.T) {
 	mClient.setupMock(t)
 	r.client = mClient
 
-	err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+	err := r.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 1*time.Second)
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	expectedProjectLogs, err := golden.ReadLogs(filepath.Join("testdata", "events", "golden", "project-events.yaml"))
@@ -175,11 +175,11 @@ func TestProjectGetFailure(t *testing.T) {
 	mClient.setupMock(t)
 	r.client = mClient
 
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient()))
 	require.Never(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 500*time.Millisecond)
-	require.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Shutdown(t.Context()))
 }
 
 type mockEventsClient struct {

@@ -4,7 +4,6 @@
 package tailsamplingprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -26,11 +25,11 @@ func BenchmarkSampling(b *testing.B) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(b.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
-	require.NoError(b, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, tsp.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(b, tsp.Shutdown(context.Background()))
+		require.NoError(b, tsp.Shutdown(b.Context()))
 	}()
 	metrics := &policyMetrics{}
 	sampleBatches := make([]*sampling.TraceData, 0, len(batches))

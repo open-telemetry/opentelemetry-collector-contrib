@@ -40,7 +40,7 @@ var receiverID = component.MustNewID("opencensus")
 func TestReceiver_endToEnd(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
@@ -72,7 +72,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
@@ -190,7 +190,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
@@ -266,7 +266,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// This test used to be flaky on Windows. Skip if errors pop up again
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
