@@ -194,7 +194,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 
-	prwe.wal, err = newWAL(cfg.WAL, set, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL.Get(), set, prwe.export)
 	if err != nil {
 		return nil, err
 	}
