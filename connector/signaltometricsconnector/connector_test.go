@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -270,10 +271,10 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 					Key: "http.response.status_code",
 				},
 			},
-			Histogram: &config.Histogram{
+			Histogram: configoptional.Some(config.Histogram{
 				Buckets: []float64{2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000},
 				Value:   "1.4",
-			},
+			}),
 		},
 		{
 			Name:        "test.exphistogram",
@@ -293,10 +294,10 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 					Key: "http.response.status_code",
 				},
 			},
-			ExponentialHistogram: &config.ExponentialHistogram{
+			ExponentialHistogram: configoptional.Some(config.ExponentialHistogram{
 				Value:   "2.4",
 				MaxSize: 160,
-			},
+			}),
 		},
 		{
 			Name:        "test.sum",
@@ -316,9 +317,9 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 					Key: "http.response.status_code",
 				},
 			},
-			Sum: &config.Sum{
+			Sum: configoptional.Some(config.Sum{
 				Value: "5.4",
-			},
+			}),
 		},
 	}
 }

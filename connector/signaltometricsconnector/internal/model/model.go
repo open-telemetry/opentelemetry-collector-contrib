@@ -167,31 +167,31 @@ func (md *MetricDef[K]) FromMetricInfo(
 		)
 		md.Conditions = &condSeq
 	}
-	if mi.Histogram != nil {
+	if mi.Histogram.HasValue() {
 		md.Key.Type = pmetric.MetricTypeHistogram
 		md.ExplicitHistogram = new(ExplicitHistogram[K])
-		if err := md.ExplicitHistogram.fromConfig(mi.Histogram, parser); err != nil {
+		if err := md.ExplicitHistogram.fromConfig(mi.Histogram.Get(), parser); err != nil {
 			return fmt.Errorf("failed to parse histogram config: %w", err)
 		}
 	}
-	if mi.ExponentialHistogram != nil {
+	if mi.ExponentialHistogram.HasValue() {
 		md.Key.Type = pmetric.MetricTypeExponentialHistogram
 		md.ExponentialHistogram = new(ExponentialHistogram[K])
-		if err := md.ExponentialHistogram.fromConfig(mi.ExponentialHistogram, parser); err != nil {
+		if err := md.ExponentialHistogram.fromConfig(mi.ExponentialHistogram.Get(), parser); err != nil {
 			return fmt.Errorf("failed to parse histogram config: %w", err)
 		}
 	}
-	if mi.Sum != nil {
+	if mi.Sum.HasValue() {
 		md.Key.Type = pmetric.MetricTypeSum
 		md.Sum = new(Sum[K])
-		if err := md.Sum.fromConfig(mi.Sum, parser); err != nil {
+		if err := md.Sum.fromConfig(mi.Sum.Get(), parser); err != nil {
 			return fmt.Errorf("failed to parse sum config: %w", err)
 		}
 	}
-	if mi.Gauge != nil {
+	if mi.Gauge.HasValue() {
 		md.Key.Type = pmetric.MetricTypeGauge
 		md.Gauge = new(Gauge[K])
-		if err := md.Gauge.fromConfig(mi.Gauge, parser); err != nil {
+		if err := md.Gauge.fromConfig(mi.Gauge.Get(), parser); err != nil {
 			return fmt.Errorf("failed to parse gauge config: %w", err)
 		}
 	}
