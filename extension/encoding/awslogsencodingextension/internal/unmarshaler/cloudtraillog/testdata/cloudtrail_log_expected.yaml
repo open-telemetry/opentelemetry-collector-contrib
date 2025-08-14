@@ -112,6 +112,9 @@ resourceLogs:
                                     values:
                                       - kvlistValue:
                                           values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
                                             - key: currentState
                                               value:
                                                 kvlistValue:
@@ -126,15 +129,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
                                                     - key: code
                                                       value:
                                                         doubleValue: 80
-                                            - key: instanceId
-                                              value:
-                                                stringValue: i-EXAMPLEaff4840c22
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
@@ -154,12 +154,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 80
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -238,6 +238,9 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
+                              - key: userName
+                                value:
+                                  stringValue: Richard
                               - key: path
                                 value:
                                   stringValue: /
@@ -250,9 +253,6 @@ resourceLogs:
                               - key: createDate
                                 value:
                                   stringValue: Jul 19, 2023 9:25:09 PM
-                              - key: userName
-                                value:
-                                  stringValue: Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -314,6 +314,12 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: messageStructure
+                        value:
+                          stringValue: json
+                      - key: messageAttributes
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
                       - key: topicArn
                         value:
                           stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
@@ -321,12 +327,6 @@ resourceLogs:
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
                       - key: subject
-                        value:
-                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
-                      - key: messageStructure
-                        value:
-                          stringValue: json
-                      - key: messageAttributes
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
               - key: aws.response.elements
@@ -342,13 +342,13 @@ resourceLogs:
                     values:
                       - kvlistValue:
                           values:
-                            - key: accountId
+                            - key: account.id
                               value:
                                 stringValue: "123456789012"
                             - key: type
                               value:
                                 stringValue: AWS::SNS::Topic
-                            - key: ARN
+                            - key: arn
                               value:
                                 stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
             body: {}
@@ -373,12 +373,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: state
-                        value:
-                          stringValue: Start
-                      - key: eventSource
-                        value:
-                          stringValue: ssm.amazonaws.com
                       - key: eventName
                         value:
                           stringValue: UpdateInstanceInformation
@@ -407,6 +401,12 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
+                      - key: state
+                        value:
+                          stringValue: Start
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:

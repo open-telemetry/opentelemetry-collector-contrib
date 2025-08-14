@@ -266,13 +266,13 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record Clou
 		for _, resource := range record.Resources {
 			resourceMap := resourcesArray.AppendEmpty().SetEmptyMap()
 			if resource.AccountID != "" {
-				resourceMap.PutStr("accountId", resource.AccountID)
+				resourceMap.PutStr("account.id", resource.AccountID)
 			}
 			if resource.Type != "" {
 				resourceMap.PutStr("type", resource.Type)
 			}
 			if resource.ARN != "" {
-				resourceMap.PutStr("ARN", resource.ARN)
+				resourceMap.PutStr("arn", resource.ARN)
 			}
 		}
 	}
