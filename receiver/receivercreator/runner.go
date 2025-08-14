@@ -144,22 +144,39 @@ func (*receiverRunner) loadRuntimeReceiverConfig(
 	return receiverCfg, targetEndpoint, nil
 }
 
-// mergeTemplateAndDiscoveredConfigs will unify the templated and discovered configs,
+// mergeTemplatedAndDiscoveredConfigs will unify the templated and discovered configs,
 // setting the `endpoint` field from the discovered one if 1. not specified by the user
 // and 2. determined to be supported (by trial and error of unmarshalling a temp intermediary).
+// For receivers implementing the Discoverable interface, use their custom validation instead.
 func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
+	// Start with templated endpoint, override with discovered if available
 	targetEndpoint := cast.ToString(templated[endpointConfigKey])
+
+	// Check if we have an auto-discovered endpoint to process
 	if _, endpointSet := discovered[tmpSetEndpointConfigKey]; endpointSet {
 		delete(discovered, tmpSetEndpointConfigKey)
 		targetEndpoint = cast.ToString(discovered[endpointConfigKey])
 
-		// confirm the endpoint we've added is supported, removing if not
-		endpointConfig := confmap.NewFromStringMap(map[string]any{
-			endpointConfigKey: targetEndpoint,
-		})
-		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err != nil {
-			// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
+		// Handle discoverable receivers differently from traditional ones
+		defaultCfg := factory.CreateDefaultConfig()
+		if discoverable, ok := defaultCfg.(Discoverable); ok {
+			// For discoverable receivers: validate but don't inject endpoint
+			if targetEndpoint != "" {
+				if err := discoverable.ValidateDiscovery(templated, targetEndpoint); err != nil {
+					return nil, targetEndpoint, fmt.Errorf("discoverable validation failed: %w", err)
+				}
+			}
+			// Remove endpoint from discovered config - discoverable receivers handle this internally
 			delete(discovered, endpointConfigKey)
+		} else {
+			// For non-discoverable receivers: test endpoint compatibility
+			endpointConfig := confmap.NewFromStringMap(map[string]any{
+				endpointConfigKey: targetEndpoint,
+			})
+			if err := endpointConfig.Unmarshal(defaultCfg); err != nil {
+				// Endpoint not supported by this receiver type, remove it
+				delete(discovered, endpointConfigKey)
+			}
 		}
 	}
 	discoveredConfig := confmap.NewFromStringMap(discovered)

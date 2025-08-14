@@ -134,9 +134,16 @@ func expandAny(input any, env observer.EndpointEnv) (any, error) {
 			expandedSlice = append(expandedSlice, expanded)
 		}
 		return expandedSlice, nil
-	case map[string]any:
+	case map[string]any, userConfigMap:
+		// Convert to map[string]any for consistent handling
+		var vMap map[string]any
+		if m, ok := v.(map[string]any); ok {
+			vMap = m
+		} else if m, ok := v.(userConfigMap); ok {
+			vMap = map[string]any(m)
+		}
 		expandedMap := map[string]any{}
-		for key, val := range v {
+		for key, val := range vMap {
 			expandedVal, err := expandAny(val, env)
 			if err != nil {
 				return nil, fmt.Errorf("failed evaluating config expression for {%q: %v}: %w", key, val, err)
