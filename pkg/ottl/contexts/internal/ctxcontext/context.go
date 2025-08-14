@@ -7,11 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
+	"go.opentelemetry.io/collector/client"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
-	"go.opentelemetry.io/collector/client"
-	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -89,11 +91,11 @@ func accessAddrContext[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
+		Getter: func(ctx context.Context, _ K) (any, error) {
 			cl := client.FromContext(ctx)
 			return cl.Addr.String(), nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.client.addr")
 		},
 	}, nil
@@ -101,14 +103,14 @@ func accessAddrContext[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 
 func accessGrpcMetadataContext[K any]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
+		Getter: func(ctx context.Context, _ K) (any, error) {
 			md, ok := metadata.FromIncomingContext(ctx)
 			if !ok {
 				return nil, nil
 			}
 			return md, nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.grpc.metadata")
 		},
 	}
@@ -131,7 +133,7 @@ func accessGrpcMetadataContextKey[K any](keys []ottl.Key[K]) ottl.StandardGetSet
 			attrVal := md.Get(*key)
 			return attrVal, nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.grpc.metadata")
 		},
 	}
@@ -170,7 +172,7 @@ func getAuthAttributeValue(attr any) (string, error) {
 
 func accessAuthAttributes[K any]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
+		Getter: func(ctx context.Context, _ K) (any, error) {
 			cl := client.FromContext(ctx)
 			attrMap := make(map[string]string)
 			names := cl.Auth.GetAttributeNames()
@@ -184,7 +186,7 @@ func accessAuthAttributes[K any]() ottl.StandardGetSetter[K] {
 			}
 			return attrMap, nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.client.auth.attributes")
 		},
 	}
@@ -208,7 +210,7 @@ func accessAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K
 			}
 			return attrStr, nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.client.auth.attributes")
 		},
 	}
@@ -216,11 +218,11 @@ func accessAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K
 
 func accessClientMetadata[K any]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
+		Getter: func(ctx context.Context, _ K) (any, error) {
 			cl := client.FromContext(ctx)
 			return cl.Metadata, nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.client.metadata")
 		},
 	}
@@ -245,7 +247,7 @@ func accessClientMetadataKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K
 
 			return ss[0], nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.client.metadata")
 		},
 	}

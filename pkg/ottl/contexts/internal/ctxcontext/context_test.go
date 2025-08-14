@@ -395,7 +395,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		require.NoError(t, err)
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 	})
 
 	t.Run("attributes key without keys error", func(t *testing.T) {
@@ -515,14 +515,14 @@ func TestContextGrpcMetadata(t *testing.T) {
 
 type testContext struct{}
 
-func (tCtx testContext) GetTestValue() string {
+func (testContext) GetTestValue() string {
 	return "test"
 }
 
 type testAddr struct{ s string }
 
-func (a testAddr) Network() string { return "tcp" }
-func (a testAddr) String() string  { return a.s }
+func (testAddr) Network() string  { return "tcp" }
+func (a testAddr) String() string { return a.s }
 
 var _ net.Addr = (*testAddr)(nil)
 
