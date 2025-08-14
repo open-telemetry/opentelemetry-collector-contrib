@@ -244,7 +244,7 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	go func() {
 		defer prweWAL.wg.Done()
 		defer cancel()
-		prweWAL.recordLagLoop(runCtx, logger)
+		prweWAL.recordLagLoop(runCtx)
 	}()
 
 	go func() {
@@ -277,7 +277,7 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	return nil
 }
 
-func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
+func (prweWAL *prweWAL) recordLagLoop(ctx context.Context) {
 	ticker := time.NewTicker(prweWAL.walConfig.lagRecordInterval())
 	defer ticker.Stop()
 
@@ -290,7 +290,6 @@ func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
 		case <-ticker.C:
 			// In normal state, wIndex and rIndex will differ by one. To avoid having -1 as a final value, we set it to 0 as minimum.
 			lag := max(0, int64(prweWAL.wWALIndex.Load()-prweWAL.rWALIndex.Load()))
-			logger.Info("recording lag log", zap.Int64("wIndex", int64(prweWAL.wWALIndex.Load())), zap.Int64("rIndex", int64(prweWAL.wWALIndex.Load())), zap.Int64("lag", lag))
 			prweWAL.telemetry.recordWALLag(ctx, lag)
 		}
 	}
