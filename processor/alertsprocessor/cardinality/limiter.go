@@ -7,22 +7,22 @@ import (
 )
 
 // Local configuration copies to avoid importing the parent package.
-type labelsCfg struct {
+type LabelsCfg struct {
 	MaxLabelsPerAlert   int
 	MaxLabelValueLength int
 	MaxTotalLabelSize   int
 }
-type seriesCfg struct {
+type SeriesCfg struct {
 	MaxActiveSeries  int
 	MaxSeriesPerRule int
 }
 type Config struct {
-	Labels        labelsCfg
+	Labels        LabelsCfg
 	Allowlist     []string
 	Blocklist     []string
 	HashIfExceeds int
 	HashAlgorithm string
-	Series        seriesCfg
+	Series        SeriesCfg
 	Enforcement   struct {
 		Mode           string
 		OverflowAction string

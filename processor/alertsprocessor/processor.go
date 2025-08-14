@@ -38,9 +38,11 @@ type processorImpl struct {
 	notif *notify.Notifier
 	out   *output.SeriesBuilder
 
-	tick   *time.Ticker
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	ticker  *time.Ticker
+	curTick time.Duration
+	stopCh  chan struct{}
+	wg      sync.WaitGroup
+	active  int // current number of firing alert instances (kept locally via transitions)
 }
 
 func newProcessor(_ context.Context, set processor.Settings, cfg *Config, m consumer.Metrics, l consumer.Logs, t consumer.Traces) (*processorImpl, error) {
@@ -94,9 +96,11 @@ func newProcessor(_ context.Context, set processor.Settings, cfg *Config, m cons
 	ob := output.NewSeriesBuilder(cfg.Statestore.ExternalLabels)
 
 	return &processorImpl{
-		cfg:   cfg,
-		set:   set,
-		nextM: m, nextL: l, nextT: t,
+		cfg:    cfg,
+		set:    set,
+		nextM:  m,
+		nextL:  l,
+		nextT:  t,
 		win:    w,
 		eval:   e,
 		store:  st,
@@ -117,16 +121,22 @@ func (p *processorImpl) Start(ctx context.Context, _ component.Host) error {
 		)
 	}
 
-	p.tick = time.NewTicker(p.cfg.Evaluation.Interval)
+	// Initialize ticker from evaluation interval (fallback to 1s if misconfigured).
+	p.curTick = p.cfg.Evaluation.Interval
+	if p.curTick <= 0 {
+		p.curTick = 1 * time.Second
+	}
+	p.ticker = time.NewTicker(p.curTick)
+
 	p.wg.Add(1)
 	go p.loop(ctx)
 	return nil
 }
 
-func (p *processorImpl) Shutdown(ctx context.Context) error {
+func (p *processorImpl) Shutdown(context.Context) error {
 	close(p.stopCh)
-	if p.tick != nil {
-		p.tick.Stop()
+	if p.ticker != nil {
+		p.ticker.Stop()
 	}
 	p.wg.Wait()
 	return nil
@@ -153,8 +163,10 @@ func (p *processorImpl) loop(ctx context.Context) {
 		select {
 		case <-p.stopCh:
 			return
-		case <-p.tick.C:
+		case <-p.ticker.C:
 			p.evaluate(ctx, time.Now())
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -162,10 +174,12 @@ func (p *processorImpl) loop(ctx context.Context) {
 func (p *processorImpl) evaluate(ctx context.Context, ts time.Time) {
 	start := time.Now()
 
+	// Snapshot the window.
 	mets := p.win.SnapshotMetrics()
 	logs := p.win.SnapshotLogs()
 	trcs := p.win.SnapshotTraces()
 
+	// Evaluate rules for all signals.
 	var results []evaluation.Result
 	results = append(results, p.eval.RunMetrics(mets, ts)...)
 	results = append(results, p.eval.RunLogs(logs, ts)...)
@@ -176,8 +190,21 @@ func (p *processorImpl) evaluate(ctx context.Context, ts time.Time) {
 		results[i] = p.card.FilterResult(results[i])
 	}
 
-	// State transitions
+	// Apply to state; derive transitions.
 	transitions := p.store.Apply(results, ts)
+
+	// Maintain local 'active' count via transitions, so we don't depend on store internals.
+	// We assume Transition.To is one of: "pending", "firing", "resolved".
+	for _, tr := range transitions {
+		switch tr.To {
+		case "firing":
+			p.active++
+		case "resolved":
+			if p.active > 0 {
+				p.active--
+			}
+		}
+	}
 
 	// Emit synthetic metrics
 	md := p.out.Build(results, transitions, ts)
@@ -186,13 +213,28 @@ func (p *processorImpl) evaluate(ctx context.Context, ts time.Time) {
 	}
 
 	// Notify
-	p.notif.Notify(ctx, transitions)
+	if p.notif != nil {
+		p.notif.Notify(ctx, transitions)
+	}
 
 	// Self-telemetry
 	p.emitEvalDuration(ctx, time.Since(start), ts)
 
-	// Optional governor hook
-	p.gov.Adapt(&p.tick, results, ts)
+	// Governor: adapt the next tick based on current activity and transitions-per-minute.
+	if p.gov != nil && p.ticker != nil {
+		apm := 0.0
+		if p.curTick > 0 {
+			apm = float64(len(transitions)) * 60.0 / p.curTick.Seconds()
+		}
+		next := p.gov.Update(p.active, apm)
+		if next <= 0 {
+			next = p.curTick // guard against zero/negative from misconfig
+		}
+		if next != p.curTick {
+			p.curTick = next
+			p.ticker.Reset(p.curTick)
+		}
+	}
 }
 
 func (p *processorImpl) emitEvalDuration(ctx context.Context, d time.Duration, ts time.Time) {

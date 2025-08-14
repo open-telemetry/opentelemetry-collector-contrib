@@ -8,7 +8,7 @@ import (
 
 func TestLimiter_FilterResult_Basic(t *testing.T) {
 	lim := New(Config{
-		Labels: labelsCfg{
+		Labels: LabelsCfg{
 			MaxLabelsPerAlert:   0, // not enforced in limiter yet
 			MaxLabelValueLength: 3, // will truncate
 			MaxTotalLabelSize:   0,
