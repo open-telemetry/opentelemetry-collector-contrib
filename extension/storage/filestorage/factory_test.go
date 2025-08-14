@@ -51,7 +51,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := t.Context()
 			e, err := f.Create(
-				t.Context(),
+				ctx,
 				extensiontest.NewNopSettings(f.Type()),
 				test.config,
 			)
@@ -64,7 +64,6 @@ func TestFactory(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, e)
-				ctx := t.Context()
 				require.NoError(t, e.Start(ctx, componenttest.NewNopHost()))
 				require.NoError(t, e.Shutdown(ctx))
 			}
