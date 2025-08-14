@@ -46,7 +46,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	}
 
 	err = s.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			event := payload.StackTraceEvent
 
 			if event.StackTraceID != "" {
@@ -77,8 +78,10 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	}
 
 	err = s.knownFrames.WithLock(func(framesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
-			for _, stackFrame := range payload.StackFrames {
+		for i := range data {
+			payload := &data[i]
+			for j := range payload.StackFrames {
+				stackFrame := &payload.StackFrames[j]
 				if !framesSet.CheckAndAdd(stackFrame.DocID) {
 					err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex)
 					if err != nil {
@@ -95,7 +98,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	}
 
 	err = s.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			for _, executable := range payload.Executables {
 				if !executablesSet.CheckAndAdd(executable.DocID) {
 					err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex)
@@ -113,7 +117,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	}
 
 	err = s.knownUnsymbolizedFrames.WithLock(func(unsymbolizedFramesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			for _, frame := range payload.UnsymbolizedLeafFrames {
 				if !unsymbolizedFramesSet.CheckAndAdd(frame.DocID) {
 					err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex)
@@ -131,7 +136,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	}
 
 	return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			for _, executable := range payload.UnsymbolizedExecutables {
 				if !unsymbolizedExecutablesSet.CheckAndAdd(executable.DocID) {
 					err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex)
