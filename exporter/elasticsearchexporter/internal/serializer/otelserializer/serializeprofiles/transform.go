@@ -81,7 +81,7 @@ func checkProfileType(dic pprofile.ProfilesDictionary, profile pprofile.Profile)
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
 // ScopeProfiles, and ProfileContainer.
 func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
-	unsymbolizedLeafFramesSet := make(map[libpf.FrameID]struct{}, profile.Sample().Len())
+	unsymbolizedLeafFramesSet := make(map[frameID]struct{}, profile.Sample().Len())
 	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
 	stackPayload := make([]StackPayload, 0, profile.Sample().Len())
 
@@ -129,7 +129,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 				// Skip interpreted frames and already symbolized native frames (kernel, Golang is planned).
 				continue
 			}
-			frameID, err := libpf.NewFrameIDFromString(frames[j].DocID)
+			frameID, err := newFrameIDFromString(frames[j].DocID)
 			if err != nil {
 				return nil, fmt.Errorf("stackPayloads: %w", err)
 			}
@@ -184,7 +184,7 @@ func unsymbolizedExecutables(executables map[libpf.FileID]struct{}) []Unsymboliz
 	return unsymbolized
 }
 
-func unsymbolizedLeafFrames(frameIDs map[libpf.FrameID]struct{}) []UnsymbolizedLeafFrame {
+func unsymbolizedLeafFrames(frameIDs map[frameID]struct{}) []UnsymbolizedLeafFrame {
 	now := time.Now()
 	unsymbolized := make([]UnsymbolizedLeafFrame, 0, len(frameIDs))
 	for frameID := range frameIDs {
@@ -270,7 +270,7 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	}
 }
 
-func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *libpf.FrameID, error) {
+func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *frameID, error) {
 	frames := make([]StackFrame, 0, sample.LocationsLength())
 
 	locations := getLocations(dic, profile, sample)
@@ -280,7 +280,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 	}
 	frameTypes := make([]libpf.FrameType, 0, totalFrames)
 
-	var leafFrameID *libpf.FrameID
+	var leafFrameID *frameID
 
 	for locationIdx, location := range locations {
 		if location.MappingIndex() >= int32(dic.MappingTable().Len()) {
@@ -325,7 +325,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 	return frames, frameTypes, leafFrameID, nil
 }
 
-func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *libpf.FrameID {
+func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *frameID {
 	// The MappingIndex is known to be valid.
 	mapping := dic.MappingTable().At(int(location.MappingIndex()))
 	fileID, err := getBuildID(dic, mapping)
@@ -350,7 +350,7 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *li
 		addressOrLineno = uint64(location.Line().At(location.Line().Len() - 1).Line())
 	}
 
-	frameID := libpf.NewFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
+	frameID := newFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
 	return &frameID
 }
 
@@ -440,7 +440,7 @@ func stackTraceID(frames []StackFrame) (string, error) {
 	var buf [24]byte
 	h := fnv.New128a()
 	for i := len(frames) - 1; i >= 0; i-- { // reverse ordered frames, done in stackFrames()
-		frameID, err := libpf.NewFrameIDFromString(frames[i].DocID)
+		frameID, err := newFrameIDFromString(frames[i].DocID)
 		if err != nil {
 			return "", fmt.Errorf("failed to create frameID from string: %w", err)
 		}
