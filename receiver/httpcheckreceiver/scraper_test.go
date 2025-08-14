@@ -4,7 +4,6 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
@@ -656,9 +655,9 @@ func TestRequestBodySupport(t *testing.T) {
 			}
 
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			_, err := scraper.scrape(context.Background())
+			_, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
 			// Verify the request was made correctly
@@ -700,9 +699,9 @@ func TestRequestBodyWithCustomHeaders(t *testing.T) {
 	}
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	_, err := scraper.scrape(context.Background())
+	_, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Verify custom Content-Type overrides auto-detection
@@ -797,9 +796,9 @@ func TestAutoContentTypeConfiguration(t *testing.T) {
 			}
 
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			_, err := scraper.scrape(context.Background())
+			_, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
 			// Verify the Content-Type header behavior
