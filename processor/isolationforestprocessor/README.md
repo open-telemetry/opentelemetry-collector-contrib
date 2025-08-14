@@ -1,6 +1,6 @@
 # Isolation Forest Processor
 
-> **Status:** In Development – interfaces and behaviour may still evolve.
+> **Status:** Alpha
 
 The **Isolation Forest processor** adds inline, unsupervised anomaly detection to any OpenTelemetry Collector pipeline (traces, metrics, or logs). It embeds a lightweight implementation of the Isolation Forest algorithm that automatically learns normal behaviour from recent telemetry and tags, scores, or optionally drops anomalies *in‑flight* – no external ML service required.
 
