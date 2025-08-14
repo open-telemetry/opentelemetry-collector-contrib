@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
 type testConfig struct {
@@ -1227,4 +1229,245 @@ func runBenchmark(
 	}
 
 	_, _ = processor.processTraces(context.Background(), inBatch)
+}
+
+func TestURLSanitizationEnabled(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:     true,
+				Attributes:  []string{"http.url", "url", "request_url"},
+				MaxSegments: 10,
+				CacheSize:   100,
+				ReplaceWith: "*",
+			},
+			Summary: "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url":    pcommon.NewValueStr("/users/2"),
+			"url":         pcommon.NewValueStr("/products/1/org/3"),
+			"request_url": pcommon.NewValueStr("/v1/products/22"),
+			"other_field": pcommon.NewValueStr("/not/sanitized/123"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		httpURL, _ := attr.Get("http.url")
+		assert.Equal(t, "/users/*", httpURL.Str())
+
+		url, _ := attr.Get("url")
+		assert.Equal(t, "/products/*/org/*", url.Str())
+
+		requestURL, _ := attr.Get("request_url")
+		assert.Equal(t, "/v1/products/*", requestURL.Str())
+
+		otherField, _ := attr.Get("other_field")
+		assert.Equal(t, "/not/sanitized/123", otherField.Str())
+	}
+}
+
+func TestURLSanitizationDisabled(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled: false,
+			},
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url": pcommon.NewValueStr("/v1/products/123"),
+			"url":      pcommon.NewValueStr("/users/456/profile"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		httpURL, _ := attr.Get("http.url")
+		assert.Equal(t, "/v1/products/123", httpURL.Str())
+
+		url, _ := attr.Get("url")
+		assert.Equal(t, "/users/456/profile", url.Str())
+	}
+}
+
+func TestURLSanitizationWithBlockedValues(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys:  true,
+			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:     true,
+				Attributes:  []string{"http.url"},
+				MaxSegments: 10,
+				CacheSize:   100,
+				ReplaceWith: "*",
+			},
+			Summary: "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url":    pcommon.NewValueStr("/v1/products/2"),
+			"credit_card": pcommon.NewValueStr("4111111111111111"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	httpURL, _ := attr.Get("http.url")
+	assert.Equal(t, "/v1/products/*", httpURL.Str())
+
+	creditCard, _ := attr.Get("credit_card")
+	assert.Equal(t, "****", creditCard.Str())
+
+	maskedCount, _ := attr.Get(redactionMaskedCount)
+	assert.Equal(t, int64(2), maskedCount.Int())
+}
+
+func TestURLSanitizationInLogBody(t *testing.T) {
+	bodyWithURL := pcommon.NewValueStr("/users/2")
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:     true,
+				MaxSegments: 10,
+				CacheSize:   100,
+				ReplaceWith: "*",
+			},
+		},
+		logBody: &bodyWithURL,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+	assert.Equal(t, "/users/*", outLogBody.Str())
+}
+
+func TestURLSanitizationComplexLogBody(t *testing.T) {
+	complexBody := pcommon.NewValueMap()
+	complexBody.Map().PutStr("message", "/users/2")
+	complexBody.Map().PutStr("url", "/products/1/org/3")
+
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:     true,
+				MaxSegments: 10,
+				CacheSize:   100,
+				ReplaceWith: "*",
+			},
+		},
+		logBody: &complexBody,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+	message, _ := outLogBody.Map().Get("message")
+	assert.Equal(t, "/users/*", message.Str())
+
+	url, _ := outLogBody.Map().Get("url")
+	assert.Equal(t, "/products/*/org/*", url.Str())
+}
+
+func TestURLSanitizationWithCustomReplacement(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:     true,
+				Attributes:  []string{"http.url"},
+				MaxSegments: 10,
+				CacheSize:   100,
+				ReplaceWith: "?",
+			},
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url": pcommon.NewValueStr("/v1/products/2"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	httpURL, _ := attr.Get("http.url")
+	assert.Equal(t, "/v1/products/?", httpURL.Str())
+}
+
+func TestURLSanitizationAttributeFiltering(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:     true,
+				Attributes:  []string{"http.url"},
+				MaxSegments: 10,
+				CacheSize:   100,
+				ReplaceWith: "*",
+			},
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url":  pcommon.NewValueStr("/users/2"),
+			"other_url": pcommon.NewValueStr("/users/3"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	// Configured attribute should be sanitized
+	httpURL, _ := attr.Get("http.url")
+	assert.Equal(t, "/users/*", httpURL.Str())
+
+	otherURL, _ := attr.Get("other_url")
+	assert.Equal(t, "/users/3", otherURL.Str())
+}
+
+func TestURLSanitizationSpanName(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:          true,
+				SanitizeSpanName: true,
+				MaxSegments:      10,
+				CacheSize:        100,
+				ReplaceWith:      "*",
+			},
+		},
+	}
+
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
+	span.SetName("/users/123/profile")
+
+	processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outTraces, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, "/users/*/profile", outSpan.Name())
 }
