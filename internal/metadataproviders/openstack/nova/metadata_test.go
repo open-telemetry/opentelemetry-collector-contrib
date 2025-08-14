@@ -5,7 +5,6 @@ package nova
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -96,7 +95,7 @@ func TestGetNovaMetadataDocument(t *testing.T) {
 				},
 			}
 
-			doc, err := p.Get(context.Background())
+			doc, err := p.Get(t.Context())
 			if tt.expectErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil")
@@ -135,7 +134,7 @@ func TestNovaProviderAccessors(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// InstanceID
 	id, err := p.InstanceID(ctx)
@@ -205,7 +204,7 @@ func TestNovaInstanceType(t *testing.T) {
 				},
 			}
 
-			got, err := p.InstanceType(context.Background())
+			got, err := p.InstanceType(t.Context())
 			if tt.expectErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil")
