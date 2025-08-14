@@ -4,7 +4,6 @@
 package kubeletstatsreceiver
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -64,7 +63,7 @@ func TestScraper(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	md, err := r.ScrapeMetrics(context.Background())
+	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
@@ -99,7 +98,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	md, err := r.ScrapeMetrics(context.Background())
+	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, dataLen+numPods*4+numNodes*4, md.DataPointCount())
@@ -160,21 +159,21 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(context.Background(), nil)
+	err = r.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
 	<-watcherStarted
 	// Inject an event node into the fake client.
 	node := getNodeWithCPUCapacity("worker-42", 8)
-	_, err = client.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+	_, err = client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	if err != nil {
 		require.NoError(t, err)
 	}
 
 	var md pmetric.Metrics
 	require.Eventually(t, func() bool {
-		md, err = r.ScrapeMetrics(context.Background())
+		md, err = r.ScrapeMetrics(t.Context())
 		require.NoError(t, err)
 		return numContainers+numPods == md.DataPointCount()
 	}, 10*time.Second, 100*time.Millisecond,
@@ -194,7 +193,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreMetricsOrder()))
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -239,21 +238,21 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(context.Background(), nil)
+	err = r.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
 	<-watcherStarted
 	// Inject an event node into the fake client.
 	node := getNodeWithMemoryCapacity("worker-42", "32564740Ki")
-	_, err = client.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+	_, err = client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	if err != nil {
 		require.NoError(t, err)
 	}
 
 	var md pmetric.Metrics
 	require.Eventually(t, func() bool {
-		md, err = r.ScrapeMetrics(context.Background())
+		md, err = r.ScrapeMetrics(t.Context())
 		require.NoError(t, err)
 		return numContainers+numPods == md.DataPointCount()
 	}, 10*time.Second, 100*time.Millisecond,
@@ -272,7 +271,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreMetricsOrder()))
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -322,7 +321,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			md, err := r.ScrapeMetrics(context.Background())
+			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
 			filename := "test_scraper_with_metadata_" + tt.name + "_expected.yaml"
@@ -514,7 +513,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	md, err := r.ScrapeMetrics(context.Background())
+	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_percent_expected.yaml")
@@ -593,7 +592,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			md, err := r.ScrapeMetrics(context.Background())
+			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
 			filename := "test_scraper_with_metric_groups_" + test.name + "_expected.yaml"
@@ -758,7 +757,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			md, err := r.ScrapeMetrics(context.Background())
+			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
 			filename := "test_scraper_with_pvc_labels_" + test.name + "_expected.yaml"
@@ -843,7 +842,7 @@ func TestClientErrors(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			_, err = r.ScrapeMetrics(context.Background())
+			_, err = r.ScrapeMetrics(t.Context())
 			if test.numLogs == 0 {
 				require.NoError(t, err)
 			} else {

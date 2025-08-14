@@ -69,7 +69,7 @@ func TestSetGoPsutilEnvVars(t *testing.T) {
 		common.HostProcEnvKey: "testdata/proc",
 	}
 	assert.Equal(t, expectedEnvMap, envMap)
-	ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+	ctx := context.WithValue(t.Context(), common.EnvKey, envMap)
 	assert.Equal(t, "testdata/proc", GetEnvWithContext(ctx, string(common.HostProcEnvKey), "default"))
 	assert.Equal(t, "testdata/sys", GetEnvWithContext(ctx, string(common.HostSysEnvKey), "default"))
 	assert.Equal(t, "testdata/etc", GetEnvWithContext(ctx, string(common.HostEtcEnvKey), "default"))
@@ -83,7 +83,7 @@ func TestSetGoPsutilEnvVars(t *testing.T) {
 func TestGetEnvWithContext(t *testing.T) {
 	envMap := SetGoPsutilEnvVars("testdata")
 
-	ctxEnv := context.WithValue(context.Background(), common.EnvKey, envMap)
+	ctxEnv := context.WithValue(t.Context(), common.EnvKey, envMap)
 	assert.Equal(t, "testdata/proc", GetEnvWithContext(ctxEnv, string(common.HostProcEnvKey), "default"))
 	assert.Equal(t, "testdata/sys", GetEnvWithContext(ctxEnv, string(common.HostSysEnvKey), "default"))
 	assert.Equal(t, "testdata/etc", GetEnvWithContext(ctxEnv, string(common.HostEtcEnvKey), "default"))
@@ -91,9 +91,9 @@ func TestGetEnvWithContext(t *testing.T) {
 	assert.Equal(t, "testdata/run", GetEnvWithContext(ctxEnv, string(common.HostRunEnvKey), "default"))
 	assert.Equal(t, "testdata/dev", GetEnvWithContext(ctxEnv, string(common.HostDevEnvKey), "default"))
 
-	assert.Equal(t, "/default", GetEnvWithContext(context.Background(), string(common.HostProcEnvKey), "/default"))
-	assert.Equal(t, "/default/foo", GetEnvWithContext(context.Background(), string(common.HostProcEnvKey), "/default", "foo"))
-	assert.Equal(t, "/default/foo/bar", GetEnvWithContext(context.Background(), string(common.HostProcEnvKey), "/default", "foo", "bar"))
+	assert.Equal(t, "/default", GetEnvWithContext(t.Context(), string(common.HostProcEnvKey), "/default"))
+	assert.Equal(t, "/default/foo", GetEnvWithContext(t.Context(), string(common.HostProcEnvKey), "/default", "foo"))
+	assert.Equal(t, "/default/foo/bar", GetEnvWithContext(t.Context(), string(common.HostProcEnvKey), "/default", "foo", "bar"))
 
 	t.Cleanup(func() { SetGlobalRootPath("") })
 }
