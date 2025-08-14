@@ -43,7 +43,7 @@ func TestGetNovaMetadataDocument(t *testing.T) {
 	}{
 		{
 			name: "successfully retrieves Nova metadata document",
-			doer: func(req *http.Request) (*http.Response, error) {
+			doer: func(_ *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewBufferString(dummyBody)),
@@ -60,14 +60,14 @@ func TestGetNovaMetadataDocument(t *testing.T) {
 		},
 		{
 			name: "http error",
-			doer: func(req *http.Request) (*http.Response, error) {
+			doer: func(_ *http.Request) (*http.Response, error) {
 				return nil, errors.New("connection failed")
 			},
 			expectErr: true,
 		},
 		{
 			name: "non-200 status",
-			doer: func(req *http.Request) (*http.Response, error) {
+			doer: func(_ *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
 					Body:       io.NopCloser(bytes.NewBufferString("fail")),
@@ -77,7 +77,7 @@ func TestGetNovaMetadataDocument(t *testing.T) {
 		},
 		{
 			name: "invalid json",
-			doer: func(req *http.Request) (*http.Response, error) {
+			doer: func(_ *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewBufferString("{not-json")),
@@ -126,7 +126,7 @@ func TestNovaProviderAccessors(t *testing.T) {
 	p := &metadataClient{
 		client: &http.Client{
 			Timeout: 1 * time.Second,
-			Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			Transport: roundTripperFunc(func(_ *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(bytes.NewBufferString(dummyBody)),
@@ -179,14 +179,14 @@ func TestNovaInstanceType(t *testing.T) {
 		},
 		{
 			name: "returns error on HTTP failure",
-			doer: func(req *http.Request) (*http.Response, error) {
+			doer: func(_ *http.Request) (*http.Response, error) {
 				return nil, errors.New("connection failed")
 			},
 			expectErr: true,
 		},
 		{
 			name: "returns error on non-200 status",
-			doer: func(req *http.Request) (*http.Response, error) {
+			doer: func(_ *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
 					Body:       io.NopCloser(bytes.NewBufferString("not found")),

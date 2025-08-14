@@ -31,7 +31,3 @@ resource_attributes:
     description: The host instance type (Nova flavor name or ID)
     type: string
     enabled: true
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

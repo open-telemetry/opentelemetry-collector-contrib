@@ -60,7 +60,9 @@ func (m *mockNovaMetadata) InstanceType(_ context.Context) (string, error) {
 	if m.retErrInstanceType != nil {
 		return "", m.retErrInstanceType
 	}
-	// Always return the dummy type so tests are stable.
+	if m.retInstanceType != "" {
+		return m.retInstanceType, nil
+	}
 	return "dummy.host.type", nil
 }
 
@@ -130,8 +132,9 @@ func TestDetector_Detect(t *testing.T) {
 						"other": "nope",
 					},
 				},
-				retHostname: "example-nova-host",
-				isAvailable: true,
+				retHostname:     "example-nova-host",
+				retInstanceType: "dummy.host.type",
+				isAvailable:     true,
 			},
 			labelRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
 			want: func() pcommon.Resource {

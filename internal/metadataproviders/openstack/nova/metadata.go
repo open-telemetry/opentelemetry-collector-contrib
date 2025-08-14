@@ -6,6 +6,7 @@ package nova // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -50,7 +51,7 @@ func NewProvider() Provider {
 }
 
 func (c *metadataClient) getMetadata(ctx context.Context) (Document, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, openstackMetaURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, openstackMetaURL, http.NoBody)
 	if err != nil {
 		return Document{}, err
 	}
@@ -75,7 +76,7 @@ func (c *metadataClient) getMetadata(ctx context.Context) (Document, error) {
 }
 
 func (c *metadataClient) getEc2Metadata(ctx context.Context, fullURL string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, http.NoBody)
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +102,7 @@ func (c *metadataClient) InstanceID(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if doc.UUID == "" {
-		return "", fmt.Errorf("instance ID (uuid) not found in metadata")
+		return "", errors.New("instance ID (uuid) not found in metadata")
 	}
 	return doc.UUID, nil
 }
@@ -112,7 +113,7 @@ func (c *metadataClient) Hostname(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if doc.Hostname == "" {
-		return "", fmt.Errorf("hostname not found in metadata")
+		return "", errors.New("hostname not found in metadata")
 	}
 	return doc.Hostname, nil
 }

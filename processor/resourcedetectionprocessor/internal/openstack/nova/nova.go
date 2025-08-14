@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
-
-	// "go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	novaprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openstack/nova"
@@ -77,8 +75,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	// Optional: EC2‑compatible instance type (don’t fail if missing)
-	if instance_type, err := d.metadataProvider.InstanceType(ctx); err == nil && instance_type != "" {
-		d.rb.SetHostType(instance_type)
+	if instanceType, err := d.metadataProvider.InstanceType(ctx); err == nil && instanceType != "" {
+		d.rb.SetHostType(instanceType)
 	} else if err != nil {
 		d.logger.Debug("EC2-compatible instance type unavailable", zap.Error(err))
 	}
@@ -127,11 +125,3 @@ func regexArrayMatch(arr []*regexp.Regexp, s string) bool {
 	}
 	return false
 }
-
-func errMissing(field string) error {
-	return &missingFieldError{field: field}
-}
-
-type missingFieldError struct{ field string }
-
-func (e *missingFieldError) Error() string { return "nova metadata missing field: " + e.field }
