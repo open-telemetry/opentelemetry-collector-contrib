@@ -33,6 +33,9 @@ DCGM_FI_DEV_GPU_TEMP{gpu="0",UUID="uuid",device="nvidia0",modelName="NVIDIA A10G
 # HELP DCGM_FI_DEV_GPU_UTIL GPU utilization (in %).
 # TYPE DCGM_FI_DEV_GPU_UTIL gauge
 DCGM_FI_DEV_GPU_UTIL{gpu="0",UUID="uuid",device="nvidia0",modelName="NVIDIA A10G",Hostname="hostname",DCGM_FI_DRIVER_VERSION="470.182.03",container="main",namespace="kube-system",pod="fullname-hash"} 100
+# HELP DCGM_FI_PROF_PIPE_TENSOR_ACTIVE Tensor Core utilization (in %).
+# TYPE DCGM_FI_PROF_PIPE_TENSOR_ACTIVE gauge
+DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{gpu="0",UUID="uuid",device="nvidia0",modelName="NVIDIA A10G",Hostname="hostname",DCGM_FI_DRIVER_VERSION="470.182.03",container="main",namespace="kube-system",pod="fullname-hash"} 85.5
 `
 
 const (
@@ -118,6 +121,20 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 		},
 		"DCGM_FI_DEV_GPU_UTIL": {
 			value: 100,
+			labels: map[string]string{
+				ci.NodeNameKey:      "hostname",
+				ci.K8sNamespace:     "kube-system",
+				ci.ClusterNameKey:   dummyClusterName,
+				ci.InstanceID:       dummyInstanceID,
+				ci.InstanceType:     dummyInstanceType,
+				ci.FullPodNameKey:   "fullname-hash",
+				ci.K8sPodNameKey:    "fullname-hash",
+				ci.ContainerNamekey: "main",
+				ci.GpuDevice:        "nvidia0",
+			},
+		},
+		"DCGM_FI_PROF_PIPE_TENSOR_ACTIVE": {
+			value: 85.5,
 			labels: map[string]string{
 				ci.NodeNameKey:      "hostname",
 				ci.K8sNamespace:     "kube-system",

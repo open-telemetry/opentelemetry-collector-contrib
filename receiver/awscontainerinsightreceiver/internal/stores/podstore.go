@@ -420,7 +420,11 @@ func (p *PodStore) decorateNode(metric CIMetric) {
 				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuRequest), nodeStats.gpuReq)
 				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuLimit), nodeStatusCapacityGPUs)
 				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuUsageTotal), nodeStats.gpuUsageTotal)
-				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuReservedCapacity), float64(nodeStats.gpuReq)/float64(nodeStatusCapacityGPUs)*100)
+
+				reservedCapacity := float64(nodeStats.gpuReq) / float64(nodeStatusCapacityGPUs) * 100
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuReservedCapacity), reservedCapacity)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuUnreservedCapacity), 100.0-reservedCapacity)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuAvailableCapacity), nodeStatusCapacityGPUs-nodeStats.gpuReq)
 			}
 
 			if nodeStatusCapacityNeuroncore, ok := p.nodeInfo.getNodeStatusCapacityNeuronCores(); ok && nodeStatusCapacityNeuroncore != 0 {
@@ -450,7 +454,8 @@ func (p *PodStore) decorateGPU(metric CIMetric, pod *corev1.Pod) {
 			}
 			metric.AddField(ci.MetricName(ci.TypePod, ci.GpuUsageTotal), podGpuUsageTotal)
 			if nodeStatusCapacityGPUs, ok := p.nodeInfo.getNodeStatusCapacityGPUs(); ok && nodeStatusCapacityGPUs != 0 {
-				metric.AddField(ci.MetricName(ci.TypePod, ci.GpuReservedCapacity), float64(podGpuLimit)/float64(nodeStatusCapacityGPUs)*100)
+				reservedCapacity := float64(podGpuLimit) / float64(nodeStatusCapacityGPUs) * 100
+				metric.AddField(ci.MetricName(ci.TypePod, ci.GpuReservedCapacity), reservedCapacity)
 			}
 		}
 	}

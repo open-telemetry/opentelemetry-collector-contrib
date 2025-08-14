@@ -141,10 +141,12 @@ const (
 	EfaRxDropped          = "rx_dropped"
 	EfaTxBytes            = "tx_bytes"
 
-	GpuLimit            = "gpu_limit"
-	GpuUsageTotal       = "gpu_usage_total"
-	GpuRequest          = "gpu_request"
-	GpuReservedCapacity = "gpu_reserved_capacity"
+	GpuLimit              = "gpu_limit"
+	GpuUsageTotal         = "gpu_usage_total"
+	GpuRequest            = "gpu_request"
+	GpuReservedCapacity   = "gpu_reserved_capacity"
+	GpuUnreservedCapacity = "gpu_unreserved_capacity"
+	GpuAvailableCapacity  = "gpu_available_capacity"
 
 	NeuroncoreLimit              = "neuroncore_limit"
 	NeuroncoreUsageTotal         = "neuroncore_usage_total"
@@ -369,10 +371,12 @@ func init() {
 		EfaRxDropped:          UnitCountPerSec,
 		EfaTxBytes:            UnitBytesPerSec,
 
-		GpuLimit:            UnitCount,
-		GpuUsageTotal:       UnitCount,
-		GpuRequest:          UnitCount,
-		GpuReservedCapacity: UnitPercent,
+		GpuLimit:              UnitCount,
+		GpuUsageTotal:         UnitCount,
+		GpuRequest:            UnitCount,
+		GpuReservedCapacity:   UnitPercent,
+		GpuUnreservedCapacity: UnitPercent,
+		GpuAvailableCapacity:  UnitCount,
 
 		NeuroncoreLimit:              UnitCount,
 		NeuroncoreUsageTotal:         UnitCount,

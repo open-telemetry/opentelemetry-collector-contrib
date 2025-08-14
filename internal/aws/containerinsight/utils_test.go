@@ -441,6 +441,8 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 		"node_gpu_limit":                      int32(7),
 		"node_gpu_usage_total":                int32(7),
 		"node_gpu_reserved_capacity":          3.0093851356081194,
+		"node_gpu_unreserved_capacity":        2.9303736689169724,
+		"node_gpu_available_capacity":         uint64(35),
 	}
 	expectedUnits = map[string]string{
 		"node_cpu_limit":                      "",
@@ -481,6 +483,8 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 		"node_gpu_limit":                      UnitCount,
 		"node_gpu_usage_total":                UnitCount,
 		"node_gpu_reserved_capacity":          UnitPercent,
+		"node_gpu_unreserved_capacity":        UnitPercent,
+		"node_gpu_available_capacity":         UnitCount,
 	}
 	tags = map[string]string{
 		"AutoScalingGroupName": "eks-a6bb9db9-267c-401c-db55-df8ef645b06f",
