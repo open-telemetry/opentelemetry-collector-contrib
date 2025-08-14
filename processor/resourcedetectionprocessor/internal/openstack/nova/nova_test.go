@@ -199,7 +199,7 @@ func TestDetector_Detect(t *testing.T) {
 				failOnMissingMetadata: tt.failOnMissingMetadata,
 			}
 
-			got, _, err := d.Detect(context.Background())
+			got, _, err := d.Detect(t.Context())
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
