@@ -10,10 +10,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptrace"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -103,6 +105,80 @@ func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans
 	timeLeft = int64(timeLeftSeconds)
 
 	return issuer, commonName, sans, timeLeft
+}
+
+// validateResponse performs response validation based on configured rules
+func validateResponse(body []byte, validations []validationConfig) (passed, failed map[string]int) {
+	passed = make(map[string]int)
+	failed = make(map[string]int)
+
+	for _, validation := range validations {
+		// String matching validations
+		if validation.Contains != "" {
+			if strings.Contains(string(body), validation.Contains) {
+				passed["contains"]++
+			} else {
+				failed["contains"]++
+			}
+		}
+
+		if validation.NotContains != "" {
+			if !strings.Contains(string(body), validation.NotContains) {
+				passed["not_contains"]++
+			} else {
+				failed["not_contains"]++
+			}
+		}
+
+		// JSON path validations
+		if validation.JSONPath != "" {
+			result := gjson.GetBytes(body, validation.JSONPath)
+			if !result.Exists() {
+				failed["json_path"]++
+				continue
+			}
+
+			if validation.Equals != "" {
+				if result.String() == validation.Equals {
+					passed["json_path"]++
+				} else {
+					failed["json_path"]++
+				}
+			} else {
+				// If no equals condition, just check existence
+				passed["json_path"]++
+			}
+		}
+
+		// Size validations
+		bodySize := int64(len(body))
+		if validation.MaxSize != nil {
+			if bodySize <= *validation.MaxSize {
+				passed["size"]++
+			} else {
+				failed["size"]++
+			}
+		}
+
+		if validation.MinSize != nil {
+			if bodySize >= *validation.MinSize {
+				passed["size"]++
+			} else {
+				failed["size"]++
+			}
+		}
+
+		// Regex validations
+		if validation.Regex != "" {
+			if matched, err := regexp.Match(validation.Regex, body); err == nil && matched {
+				passed["regex"]++
+			} else {
+				failed["regex"]++
+			}
+		}
+	}
+
+	return passed, failed
 }
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
@@ -236,15 +312,21 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			resp, err := targetClient.Do(req)
 			timing.readEnd = time.Now()
 
-			// Always close response body if it exists, even on error
+			// Read response body for validation and metrics
+			var responseBody []byte
 			if resp != nil && resp.Body != nil {
 				defer func() {
-					// Drain the body to allow connection reuse
-					_, _ = io.Copy(io.Discard, resp.Body)
 					if closeErr := resp.Body.Close(); closeErr != nil {
 						h.settings.Logger.Error("failed to close response body", zap.Error(closeErr))
 					}
 				}()
+
+				// Read the response body
+				if body, readErr := io.ReadAll(resp.Body); readErr == nil {
+					responseBody = body
+				} else {
+					h.settings.Logger.Error("failed to read response body", zap.Error(readErr))
+				}
 			}
 
 			mux.Lock()
@@ -273,6 +355,24 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				time.Since(start).Milliseconds(),
 				endpoint,
 			)
+			// Record response size metric
+			if len(responseBody) > 0 {
+				h.mb.RecordHttpcheckResponseSizeDataPoint(now, int64(len(responseBody)), endpoint)
+			}
+
+			// Perform response validation if configured
+			if len(h.cfg.Targets[targetIndex].Validations) > 0 && len(responseBody) > 0 {
+				passed, failed := validateResponse(responseBody, h.cfg.Targets[targetIndex].Validations)
+
+				// Record validation metrics
+				for validationType, count := range passed {
+					h.mb.RecordHttpcheckValidationPassedDataPoint(now, int64(count), endpoint, validationType)
+				}
+
+				for validationType, count := range failed {
+					h.mb.RecordHttpcheckValidationFailedDataPoint(now, int64(count), endpoint, validationType)
+				}
+			}
 
 			// Record detailed timing metrics if enabled
 			// Always record timing metrics regardless of value for enabled metrics
