@@ -4,7 +4,6 @@
 package ctxcontext
 
 import (
-	"context"
 	"net"
 	"testing"
 
@@ -27,7 +26,7 @@ func TestContextClientMetadata(t *testing.T) {
 		"multi-values": {"value1", "value2"},
 	})
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(t.Context(), client.Info{
 		Metadata: clientMD,
 	})
 
@@ -216,7 +215,7 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("no client in context", func(t *testing.T) {
 		// Test with context that has no client info
-		emptyCtx := context.Background()
+		emptyCtx := t.Context()
 
 		path := &pathtest.Path[testContext]{
 			N: "context",
@@ -301,7 +300,7 @@ func TestContextClientAddr(t *testing.T) {
 	require.NoError(t, err)
 
 	addr := testAddr{"127.0.0.1:4317"}
-	ctx := client.NewContext(context.Background(), client.Info{Addr: addr})
+	ctx := client.NewContext(t.Context(), client.Info{Addr: addr})
 
 	val, err := getter.Get(ctx, testContext{})
 	require.NoError(t, err)
@@ -321,7 +320,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 			"roles":   []string{"admin", "user"},
 		},
 	}
-	ctx := client.NewContext(context.Background(), client.Info{Auth: auth})
+	ctx := client.NewContext(t.Context(), client.Info{Auth: auth})
 
 	t.Run("all attributes map", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
@@ -409,7 +408,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 func TestContextGrpcMetadata(t *testing.T) {
 	parser := PathExpressionParser[testContext]()
 
-	base := context.Background()
+	base := t.Context()
 	// include client context too, to ensure coexistence
 	base = client.NewContext(base, client.Info{})
 
@@ -507,7 +506,7 @@ func TestContextGrpcMetadata(t *testing.T) {
 		}
 		getter, err := parser(path)
 		require.NoError(t, err)
-		val, err := getter.Get(context.Background(), testContext{})
+		val, err := getter.Get(t.Context(), testContext{})
 		require.NoError(t, err)
 		assert.Nil(t, val)
 	})
