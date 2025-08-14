@@ -4,7 +4,6 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
@@ -852,9 +851,9 @@ func TestResponseValidation(t *testing.T) {
 	}
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Check that we have metrics
@@ -911,9 +910,9 @@ func TestResponseValidationFailures(t *testing.T) {
 	}
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Check that we have metrics
