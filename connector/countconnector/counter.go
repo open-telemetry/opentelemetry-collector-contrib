@@ -104,6 +104,15 @@ func (c *counter[K]) updateTimestamp(timestamp pcommon.Timestamp) {
 	}
 }
 
+// getTimestamps either gets the valid start and end timestamps or returns the current time
+func (c *counter[K]) getTimestamps() (pcommon.Timestamp, pcommon.Timestamp) {
+	if c.startTime != 0 {
+		return c.startTime, c.endTime
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	return now, now
+}
+
 func (c *counter[K]) increment(metricName string, attrs pcommon.Map) error {
 	if _, ok := c.counts[metricName]; !ok {
 		c.counts[metricName] = make(map[[16]byte]*attrCounter)
@@ -135,17 +144,10 @@ func (c *counter[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		for _, dpCount := range c.counts[name] {
-			var startTime, endTime pcommon.Timestamp
 			dp := sum.DataPoints().AppendEmpty()
 			dpCount.attrs.CopyTo(dp.Attributes())
 			dp.SetIntValue(int64(dpCount.count))
-			if c.startTime != 0 {
-				startTime = c.startTime
-				endTime = c.endTime
-			} else {
-				startTime = pcommon.NewTimestampFromTime(time.Now())
-				endTime = startTime
-			}
+			startTime, endTime := c.getTimestamps()
 			dp.SetStartTimestamp(startTime)
 			dp.SetTimestamp(endTime)
 		}
