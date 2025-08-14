@@ -295,12 +295,15 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	}()
 
 	tsp := sp.(*tailSamplingSpanProcessor)
+
+	tsp.policiesMux.Lock()
 	tpe := &TestPolicyEvaluator{
 		Started:       evalStarted,
 		CouldContinue: continueEvaluation,
 		pe:            tsp.policies[0].evaluator,
 	}
 	tsp.policies[0].evaluator = tpe
+	tsp.policiesMux.Unlock()
 
 	for _, batch := range batches {
 		wg.Add(1)
@@ -497,11 +500,15 @@ func TestSetSamplingPolicy(t *testing.T) {
 
 	tsp := p.(*tailSamplingSpanProcessor)
 
+	tsp.policiesMux.RLock()
 	assert.Len(t, tsp.policies, 1)
+	tsp.policiesMux.RUnlock()
 
 	tsp.policyTicker.OnTick()
 
+	tsp.policiesMux.RLock()
 	assert.Len(t, tsp.policies, 1)
+	tsp.policiesMux.RUnlock()
 
 	cfgs := []PolicyCfg{
 		{
@@ -519,11 +526,15 @@ func TestSetSamplingPolicy(t *testing.T) {
 	}
 	tsp.SetSamplingPolicy(cfgs)
 
+	tsp.policiesMux.RLock()
 	assert.Len(t, tsp.policies, 1)
+	tsp.policiesMux.RUnlock()
 
 	tsp.policyTicker.OnTick()
 
+	tsp.policiesMux.RLock()
 	assert.Len(t, tsp.policies, 2)
+	tsp.policiesMux.RUnlock()
 
 	// Duplicate policy name.
 	cfgs = []PolicyCfg{
@@ -548,12 +559,16 @@ func TestSetSamplingPolicy(t *testing.T) {
 	}
 	tsp.SetSamplingPolicy(cfgs)
 
+	tsp.policiesMux.RLock()
 	assert.Len(t, tsp.policies, 2)
+	tsp.policiesMux.RUnlock()
 
 	tsp.policyTicker.OnTick()
 
 	// Should revert sampling policy.
+	tsp.policiesMux.RLock()
 	assert.Len(t, tsp.policies, 2)
+	tsp.policiesMux.RUnlock()
 }
 
 func TestSubSecondDecisionTime(t *testing.T) {
@@ -698,8 +713,10 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	require.NoError(t, err)
 
 	tsp := p.(*tailSamplingSpanProcessor)
+	tsp.policiesMux.RLock()
 	require.GreaterOrEqual(t, len(tsp.policies), 2)
 	assert.Equal(t, "drop-policy", tsp.policies[0].name)
+	tsp.policiesMux.RUnlock()
 }
 
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
