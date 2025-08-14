@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxr
 
 go 1.24.2
 
-toolchain go1.24.6
-
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/nginx/nginx-prometheus-exporter v1.4.2
