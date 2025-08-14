@@ -4,7 +4,6 @@
 package coralogixexporter
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -174,10 +173,10 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	wrapper := &signalConfigWrapper{config: &cfg.Logs}
-	err = exp.startSignalExporter(context.Background(), componenttest.NewNopHost(), wrapper)
+	err = exp.startSignalExporter(t.Context(), componenttest.NewNopHost(), wrapper)
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, exp.shutdown(context.Background()))
+		require.NoError(t, exp.shutdown(t.Context()))
 	}()
 
 	authHeader, ok := wrapper.config.Headers["Authorization"]
@@ -255,10 +254,10 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 			require.NoError(t, err)
 
 			wrapper := &signalConfigWrapper{config: &tt.config}
-			err = exp.startSignalExporter(context.Background(), componenttest.NewNopHost(), wrapper)
+			err = exp.startSignalExporter(t.Context(), componenttest.NewNopHost(), wrapper)
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, exp.shutdown(context.Background()))
+				require.NoError(t, exp.shutdown(t.Context()))
 			}()
 
 			headers := wrapper.config.Headers

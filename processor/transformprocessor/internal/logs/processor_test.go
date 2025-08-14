@@ -63,7 +63,7 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -104,7 +104,7 @@ func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -145,7 +145,7 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -186,7 +186,7 @@ func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -440,7 +440,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -694,7 +694,7 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -811,7 +811,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -901,7 +901,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -934,7 +934,7 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON(1))`}}}, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.Error(t, err)
 		})
 	}
@@ -1015,7 +1015,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 			td := constructLogs()
 			processor, err := NewProcessor(tt.statements, tt.errorMode, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1143,7 +1143,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
@@ -1193,7 +1193,7 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessLogs(context.Background(), td)
+			_, err = processor.ProcessLogs(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructLogs()
