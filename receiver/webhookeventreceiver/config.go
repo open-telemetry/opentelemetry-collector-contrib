@@ -76,6 +76,10 @@ func (cfg *Config) Validate() error {
 		errs = multierr.Append(errs, errRequiredHeader)
 	}
 
+	if cfg.SplitLogsAtNewLine && cfg.SplitLogsAtJSONBoundary {
+		errs = multierr.Append(errs, errors.New("split_logs_at_new_line and split_logs_at_json_boundary cannot be enabled at the same time"))
+	}
+
 	if cfg.HeaderAttributeRegex != "" {
 		_, err := regexp.Compile(cfg.HeaderAttributeRegex)
 		if err != nil {
