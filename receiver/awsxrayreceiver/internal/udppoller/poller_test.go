@@ -4,7 +4,6 @@
 package udppoller
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -97,7 +96,7 @@ func TestCloseStopsPoller(t *testing.T) {
 
 	// start pollers
 	segChan := p.SegmentsChan()
-	p.Start(context.Background())
+	p.Start(t.Context())
 
 	err = p.Close()
 	assert.NoError(t, err, "should be able to close the poller")
@@ -119,7 +118,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	receiverID := component.MustNewID("TestSuccessfullyPollPacket")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	addr, p, _ := createAndOptionallyStartPoller(t, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -154,7 +153,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 	receiverID := component.MustNewID("TestIncompletePacketNoSeparator")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -180,7 +179,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 	receiverID := component.MustNewID("TestIncompletePacketNoBody")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -204,7 +203,7 @@ func TestNonJsonHeader(t *testing.T) {
 	receiverID := component.MustNewID("TestNonJsonHeader")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -233,7 +232,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	receiverID := component.MustNewID("TestJsonInvalidHeader")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -268,7 +267,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	receiverID := component.MustNewID("TestSocketReadIrrecoverableNetError")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, false, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -284,7 +283,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 		},
 	}
 
-	p.Start(context.Background())
+	p.Start(t.Context())
 	defer func() { assert.NoError(t, p.Close()) }()
 
 	assert.Eventuallyf(t, func() bool {
@@ -304,7 +303,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 	receiverID := component.MustNewID("TestSocketReadTimeOutNetError")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, false, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -321,7 +320,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 		},
 	}
 
-	p.Start(context.Background())
+	p.Start(t.Context())
 	defer func() { assert.NoError(t, p.Close()) }()
 
 	assert.Eventuallyf(t, func() bool {
@@ -341,7 +340,7 @@ func TestSocketGenericReadError(t *testing.T) {
 	receiverID := component.MustNewID("TestSocketGenericReadError")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, false, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -356,7 +355,7 @@ func TestSocketGenericReadError(t *testing.T) {
 		},
 	}
 
-	p.Start(context.Background())
+	p.Start(t.Context())
 	defer func() { assert.NoError(t, p.Close()) }()
 
 	assert.Eventuallyf(t, func() bool {
@@ -437,7 +436,7 @@ func createAndOptionallyStartPoller(
 	assert.NoError(t, err, "receiver should be created")
 
 	if start {
-		poller.Start(context.Background())
+		poller.Start(t.Context())
 	}
 	return addr, poller, recorded
 }

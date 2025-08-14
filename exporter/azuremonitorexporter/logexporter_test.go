@@ -8,7 +8,6 @@ Contains tests for logexporter.go and log_to_envelope.go
 */
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -118,7 +117,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 
 	logs := getTestLogs()
 
-	assert.NoError(t, exporter.consumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.consumeLogs(t.Context(), logs))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 4)
 }

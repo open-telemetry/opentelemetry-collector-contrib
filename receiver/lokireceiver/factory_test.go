@@ -4,7 +4,6 @@
 package lokireceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func TestCreateReceiver(t *testing.T) {
 		},
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
-	receiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogs(t.Context(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, receiver, "receiver creation failed")
 }

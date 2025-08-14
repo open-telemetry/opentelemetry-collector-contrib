@@ -4,7 +4,6 @@
 package filterprocessor
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -335,7 +334,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			fmp, err := factory.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
@@ -345,10 +344,10 @@ func TestFilterMetricProcessor(t *testing.T) {
 
 			caps := fmp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
+			ctx := t.Context()
 			assert.NoError(t, fmp.Start(ctx, nil))
 
-			cErr := fmp.ConsumeMetrics(context.Background(), test.inMetrics)
+			cErr := fmp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
@@ -384,7 +383,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 	assert.NotNil(t, fmp)
 	assert.NoError(t, err)
 
-	_, err = fmp.processMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+	_, err = fmp.processMetrics(t.Context(), testResourceMetrics([]metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
 			resourceAttributes: map[string]any{
@@ -400,7 +399,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.NoError(t, tel.Shutdown(t.Context()))
 }
 
 func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
@@ -454,7 +453,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 	pcfg.Metrics = MetricFilters{
 		Exclude: mp,
 	}
-	ctx := context.Background()
+	ctx := b.Context()
 	proc, _ := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(metadata.Type),
@@ -532,7 +531,7 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 			MetricNames: []string{"foo"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	proc, _ := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(metadata.Type),
@@ -768,7 +767,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
-			got, err := processor.processMetrics(context.Background(), constructMetrics())
+			got, err := processor.processMetrics(t.Context(), constructMetrics())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -1075,13 +1074,13 @@ func Test_ResourceSkipExpr_With_Bridge(t *testing.T) {
 
 			boolExpr, err := newSkipResExpr(includeMatchProperties, excludeMatchProperties)
 			require.NoError(t, err)
-			expectedResult, err := boolExpr.Eval(context.Background(), tCtx)
+			expectedResult, err := boolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			ottlBoolExpr, err := filterottl.NewResourceSkipExprBridge(tt.condition)
 
 			assert.NoError(t, err)
-			ottlResult, err := ottlBoolExpr.Eval(context.Background(), tCtx)
+			ottlResult, err := ottlBoolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectedResult, ottlResult)

@@ -33,7 +33,7 @@ func TestWithStructuredLogHeader(t *testing.T) {
 	})
 
 	handler := middleware.DecorateHandler(mockHandler, stack)
-	if _, _, err := handler.Handle(context.Background(), nil); err != nil {
+	if _, _, err := handler.Handle(t.Context(), nil); err != nil {
 		t.Error(err)
 	}
 }

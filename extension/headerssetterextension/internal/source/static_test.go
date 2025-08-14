@@ -4,7 +4,6 @@
 package source
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 
 func TestStaticSource(t *testing.T) {
 	ts := &StaticSource{Value: "acme"}
-	tenant, err := ts.Get(context.Background())
+	tenant, err := ts.Get(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, "acme", tenant)
 }

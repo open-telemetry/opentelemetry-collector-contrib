@@ -27,7 +27,7 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 		})
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
+	r, err := newMetricsReceiver(t.Context(), *c, receivertest.NewNopSettings(metadata.Type), nil)
 	assert.Nil(t, r)
 	expectedError := errors.New("no scraper found for key: cpu")
 	if assert.Error(t, err) {
@@ -38,7 +38,7 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 func TestNewReceiver_refresh_frequency(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.RefreshFrequency = 1
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(receivertest.NopType), nil)
+	r, err := newMetricsReceiver(t.Context(), *c, receivertest.NewNopSettings(receivertest.NopType), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -53,7 +53,7 @@ func TestNewReceiver(t *testing.T) {
 			})
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	r, err := newMetricsReceiver(t.Context(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -65,7 +65,7 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 		return nil, errors.New("fail")
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	r, err := newMetricsReceiver(t.Context(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }

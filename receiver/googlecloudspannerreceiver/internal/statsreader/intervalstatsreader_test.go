@@ -4,7 +4,6 @@
 package statsreader
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -18,7 +17,7 @@ import (
 
 func TestIntervalStatsReader_Name(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	metricsMetadata := &metadata.MetricsMetadata{
@@ -38,7 +37,7 @@ func TestIntervalStatsReader_Name(t *testing.T) {
 
 func TestNewIntervalStatsReader(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	metricsMetadata := &metadata.MetricsMetadata{
@@ -74,7 +73,7 @@ func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
 		HideTopnLockstatsRowrangestartkey: true,
 		TruncateText:                      true,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	metricsMetadata := &metadata.MetricsMetadata{

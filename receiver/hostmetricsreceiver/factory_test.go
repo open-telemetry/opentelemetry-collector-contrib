@@ -4,7 +4,6 @@
 package hostmetricsreceiver
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -31,15 +30,15 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 
-	mReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
 
-	tLogs, err := factory.CreateLogs(context.Background(), creationSet, cfg, consumertest.NewNop())
+	tLogs, err := factory.CreateLogs(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tLogs)
 }
@@ -50,6 +49,6 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{Scrapers: map[component.Type]component.Config{component.MustNewType(errorKey): &mockConfig{}}}
 
-	_, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
+	_, err := factory.CreateMetrics(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Sprintf("host metrics scraper factory not found for key: %q", errorKey))
 }

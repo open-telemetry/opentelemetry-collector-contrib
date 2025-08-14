@@ -187,7 +187,7 @@ func Test_DurationError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Duration[any](tt.duration)
 			require.NoError(t, err)
-			_, err = exprFunc(context.Background(), nil)
+			_, err = exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

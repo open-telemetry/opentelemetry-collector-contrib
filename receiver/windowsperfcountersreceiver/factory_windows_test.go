@@ -6,7 +6,6 @@
 package windowsperfcountersreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,7 @@ func TestCreateMetrics(t *testing.T) {
 		},
 	}
 
-	mReceiver, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)

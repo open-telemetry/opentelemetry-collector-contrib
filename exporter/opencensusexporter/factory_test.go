@@ -4,7 +4,6 @@
 package opencensusexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -155,9 +154,9 @@ func TestCreateTraces(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			set := exportertest.NewNopSettings(metadata.Type)
-			tExporter, tErr := createTracesExporter(context.Background(), set, tt.config)
+			tExporter, tErr := createTracesExporter(t.Context(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
-			mExporter, mErr := createMetricsExporter(context.Background(), set, tt.config)
+			mExporter, mErr := createMetricsExporter(t.Context(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, mExporter, mErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 		})
 	}
@@ -171,11 +170,11 @@ func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Component, 
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 
-	sErr := exporter.Start(context.Background(), componenttest.NewNopHost())
+	sErr := exporter.Start(t.Context(), componenttest.NewNopHost())
 	if mustFailOnStart {
 		require.Error(t, sErr)
 		return
 	}
 	require.NoError(t, sErr)
-	require.NoError(t, exporter.Shutdown(context.Background()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }

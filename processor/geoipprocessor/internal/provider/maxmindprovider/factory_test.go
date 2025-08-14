@@ -4,7 +4,6 @@
 package maxmind
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestCreateProvider(t *testing.T) {
 		DatabasePath: "",
 	}
 
-	provider, err := factory.CreateGeoIPProvider(context.Background(), processortest.NewNopSettings(metadata.Type), cfg)
+	provider, err := factory.CreateGeoIPProvider(t.Context(), processortest.NewNopSettings(metadata.Type), cfg)
 
 	assert.ErrorContains(t, err, "could not open geoip database")
 	assert.Nil(t, provider)

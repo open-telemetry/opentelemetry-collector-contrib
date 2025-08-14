@@ -4,7 +4,6 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -173,12 +172,12 @@ func TestScraper(t *testing.T) {
 	}
 
 	scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	scraper.splunkClient = client
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -203,12 +202,12 @@ func TestScrapeError(t *testing.T) {
 	}
 
 	scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	scraper.splunkClient = client
 
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.Error(t, err, "scrape failed")
 	require.True(t, scrapererror.IsPartialScrapeError(err), "scrape error is PartialScrapeError")
 }

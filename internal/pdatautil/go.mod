@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/lightstep/go-expohisto v1.0.0

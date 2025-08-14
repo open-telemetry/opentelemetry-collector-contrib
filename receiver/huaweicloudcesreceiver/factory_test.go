@@ -4,7 +4,6 @@
 package huaweicloudcesreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -39,7 +38,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	rConfig.InitialDelay = time.Second
 
 	nextConsumer := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), config, nextConsumer)
+	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, nextConsumer)
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }

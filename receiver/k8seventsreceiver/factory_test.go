@@ -4,7 +4,6 @@
 package k8seventsreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,11 +39,11 @@ func TestCreateReceiver(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err := createLogsReceiver(
-		context.Background(), receivertest.NewNopSettings(metadata.Type),
+		t.Context(), receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)
 
 	// Override for test.
@@ -52,12 +51,12 @@ func TestCreateReceiver(t *testing.T) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err = createLogsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	require.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Shutdown(t.Context()))
 }

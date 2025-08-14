@@ -4,7 +4,6 @@
 package statsreader
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -122,7 +121,7 @@ func createIntervalStatsReaderWithMaxRowsLimit(client *spanner.Client, backfillE
 func TestStatsReaders_Read(t *testing.T) {
 	t.Skip("Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6318")
 	timestamp := shiftToStartOfMinute(time.Now().UTC())
-	ctx := context.Background()
+	ctx := t.Context()
 	server, err := spannertest.NewServer(":0")
 	require.NoError(t, err)
 	defer server.Close()

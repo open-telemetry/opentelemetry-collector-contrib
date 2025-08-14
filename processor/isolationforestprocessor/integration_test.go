@@ -5,7 +5,6 @@
 package isolationforestprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -91,7 +90,7 @@ func baseConfigEnrich(t *testing.T) *Config {
 }
 
 func TestTraces_Enrich_AddsAttributes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := baseConfigEnrich(t)
 
@@ -123,7 +122,7 @@ func TestTraces_Enrich_AddsAttributes(t *testing.T) {
 }
 
 func TestLogs_Enrich_AddsAttributes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := baseConfigEnrich(t)
 
@@ -155,7 +154,7 @@ func TestLogs_Enrich_AddsAttributes(t *testing.T) {
 }
 
 func TestMetrics_Enrich_AddsAttributes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := baseConfigEnrich(t)
 

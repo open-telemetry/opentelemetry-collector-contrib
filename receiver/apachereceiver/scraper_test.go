@@ -4,7 +4,6 @@
 package apachereceiver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -38,10 +37,10 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
 
-	err = scraper.start(context.Background(), componenttest.NewNopHost())
+	err = scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -70,7 +69,7 @@ func TestScraperFailedStart(t *testing.T) {
 	},
 		"localhost",
 		"8080")
-	err := sc.start(context.Background(), componenttest.NewNopHost())
+	err := sc.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -162,7 +161,7 @@ func TestScraperError(t *testing.T) {
 		sc := newApacheScraper(receivertest.NewNopSettings(metadata.Type), &Config{}, "", "")
 		sc.httpClient = nil
 
-		_, err := sc.scrape(context.Background())
+		_, err := sc.scrape(t.Context())
 		require.Error(t, err)
 		require.Equal(t, errors.New("failed to connect to Apache HTTPd"), err)
 	})

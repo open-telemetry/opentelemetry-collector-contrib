@@ -4,7 +4,6 @@
 package probabilisticsamplerprocessor
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -48,7 +47,7 @@ func TestNewLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -223,7 +222,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), sink, tt.cfg)
+			processor, err := newLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -248,7 +247,7 @@ func TestLogsSampling(t *testing.T) {
 					record.Attributes().PutDouble("priority", 100)
 				}
 			}
-			err = processor.ConsumeLogs(context.Background(), logs)
+			err = processor.ConsumeLogs(t.Context(), logs)
 			require.NoError(t, err)
 			sunk := sink.AllLogs()
 			numReceived := 0
@@ -448,7 +447,7 @@ func TestLogsSamplingState(t *testing.T) {
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
-			tsp, err := newLogsProcessor(context.Background(), set, sink, cfg)
+			tsp, err := newLogsProcessor(t.Context(), set, sink, cfg)
 			require.NoError(t, err)
 
 			logs := plog.NewLogs()
@@ -459,7 +458,7 @@ func TestLogsSamplingState(t *testing.T) {
 			record.SetTraceID(tt.tid)
 			require.NoError(t, record.Attributes().FromRaw(tt.attrs))
 
-			err = tsp.ConsumeLogs(context.Background(), logs)
+			err = tsp.ConsumeLogs(t.Context(), logs)
 			require.NoError(t, err)
 
 			if tt.log == "" {
@@ -525,7 +524,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 			{100, traceIDAttributeSource, false, true},
 		} {
 			t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed, "_", mode), func(t *testing.T) {
-				ctx := context.Background()
+				ctx := t.Context()
 				logs := plog.NewLogs()
 				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				record.SetTraceID(pcommon.TraceID{}) // invalid TraceID

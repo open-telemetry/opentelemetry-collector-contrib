@@ -38,9 +38,9 @@ func TestInitialDNSResolution(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 
 	// verify
@@ -71,9 +71,9 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 
 	// verify
@@ -107,11 +107,11 @@ func TestCantResolve(t *testing.T) {
 	}
 
 	// test
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 
 	// verify
 	assert.NoError(t, err)
-	assert.NoError(t, res.shutdown(context.Background()))
+	assert.NoError(t, res.shutdown(t.Context()))
 }
 
 func TestOnChange(t *testing.T) {
@@ -134,14 +134,14 @@ func TestOnChange(t *testing.T) {
 	res.onChange(func(_ []string) {
 		counter.Add(1)
 	})
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 	require.Equal(t, int64(1), counter.Load())
 
 	// now, we run it with the same IPs being resolved, which shouldn't trigger a onChange call
-	_, err = res.resolve(context.Background())
+	_, err = res.resolve(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, int64(1), counter.Load())
 
@@ -150,7 +150,7 @@ func TestOnChange(t *testing.T) {
 		{IP: net.IPv4(127, 0, 0, 2)},
 		{IP: net.IPv4(127, 0, 0, 3)},
 	}
-	_, err = res.resolve(context.Background())
+	_, err = res.resolve(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), counter.Load())
 }
@@ -228,9 +228,9 @@ func TestPeriodicallyResolve(t *testing.T) {
 
 	// test
 	wg.Add(3)
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 
 	// wait for three resolutions: from the start, and two periodic resolutions
@@ -272,9 +272,9 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 	// test
 	wg.Add(2)
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 
 	// wait for two resolutions: from the start, and one periodic
@@ -293,13 +293,13 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 
 	res.resolver = &mockDNSResolver{}
 	res.onChange(func(_ []string) {})
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 
 	// sanity check
 	require.Len(t, res.onChangeCallbacks, 1)
 
 	// test
-	err = res.shutdown(context.Background())
+	err = res.shutdown(t.Context())
 
 	// verify
 	assert.NoError(t, err)

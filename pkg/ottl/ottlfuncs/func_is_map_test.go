@@ -52,7 +52,7 @@ func Test_IsMap(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -66,7 +66,7 @@ func Test_IsMap_Error(t *testing.T) {
 			return nil, ottl.TypeError("")
 		},
 	})
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)

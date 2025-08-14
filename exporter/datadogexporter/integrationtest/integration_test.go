@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -90,7 +89,7 @@ func TestIntegration(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -219,7 +218,7 @@ func waitForReadiness(app *otelcol.Collector) {
 }
 
 func sendTraces(t *testing.T, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up OTel-Go SDK and exporter
 	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
@@ -288,7 +287,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -388,7 +387,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 }
 
 func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up OTel-Go SDK and exporter
 	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
@@ -481,7 +480,7 @@ func TestIntegrationLogs(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -537,7 +536,7 @@ func TestIntegrationLogs(t *testing.T) {
 }
 
 func sendLogs(t *testing.T, numLogs int, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logExporter, err := otlploghttp.New(ctx, otlploghttp.WithInsecure(), otlploghttp.WithEndpoint(endpoint))
 	assert.NoError(t, err)
 	lr := make([]log.Record, numLogs)
@@ -638,7 +637,7 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -788,7 +787,7 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -843,7 +842,7 @@ func TestIntegrationLogsHostMetadata(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {

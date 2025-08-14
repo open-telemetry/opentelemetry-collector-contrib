@@ -4,7 +4,6 @@
 package logicmonitorexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func TestCreateLogs(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			set := exportertest.NewNopSettings(metadata.Type)
-			oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+			oexp, err := factory.CreateLogs(t.Context(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogs() error = %v, shouldError %v", err, tt.shouldError)
 				return
@@ -92,7 +91,7 @@ func TestCreateTraces(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			set := exportertest.NewNopSettings(metadata.Type)
-			oexp, err := factory.CreateTraces(context.Background(), set, cfg)
+			oexp, err := factory.CreateTraces(t.Context(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateTraces() error = %v, shouldError %v", err, tt.shouldError)
 				return

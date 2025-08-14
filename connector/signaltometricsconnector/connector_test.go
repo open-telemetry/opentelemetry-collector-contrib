@@ -42,7 +42,7 @@ func TestConnectorWithTraces(t *testing.T) {
 		"gauge",
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -75,7 +75,7 @@ func TestConnectorWithMetrics(t *testing.T) {
 		"gauge",
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -109,7 +109,7 @@ func TestConnectorWithLogs(t *testing.T) {
 		"gauge",
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -141,7 +141,7 @@ func TestConnectorWithProfiles(t *testing.T) {
 		"exponential_histograms",
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -180,7 +180,7 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 	cfg := &config.Config{Spans: testMetricInfo(b)}
 	require.NoError(b, cfg.Unmarshal(confmap.New())) // set required fields to default
 	require.NoError(b, cfg.Validate())
-	connector, err := factory.CreateTracesToMetrics(context.Background(), settings, cfg, next)
+	connector, err := factory.CreateTracesToMetrics(b.Context(), settings, cfg, next)
 	require.NoError(b, err)
 	inputTraces, err := golden.ReadTraces("testdata/traces/traces.yaml")
 	require.NoError(b, err)
@@ -188,7 +188,7 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := connector.ConsumeTraces(context.Background(), inputTraces); err != nil {
+		if err := connector.ConsumeTraces(b.Context(), inputTraces); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -206,7 +206,7 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 	cfg := &config.Config{Datapoints: testMetricInfo(b)}
 	require.NoError(b, cfg.Unmarshal(confmap.New())) // set required fields to default
 	require.NoError(b, cfg.Validate())
-	connector, err := factory.CreateMetricsToMetrics(context.Background(), settings, cfg, next)
+	connector, err := factory.CreateMetricsToMetrics(b.Context(), settings, cfg, next)
 	require.NoError(b, err)
 	inputMetrics, err := golden.ReadMetrics("testdata/metrics/metrics.yaml")
 	require.NoError(b, err)
@@ -214,7 +214,7 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := connector.ConsumeMetrics(context.Background(), inputMetrics); err != nil {
+		if err := connector.ConsumeMetrics(b.Context(), inputMetrics); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -232,7 +232,7 @@ func BenchmarkConnectorWithLogs(b *testing.B) {
 	cfg := &config.Config{Logs: testMetricInfo(b)}
 	require.NoError(b, cfg.Unmarshal(confmap.New())) // set required fields to default
 	require.NoError(b, cfg.Validate())
-	connector, err := factory.CreateLogsToMetrics(context.Background(), settings, cfg, next)
+	connector, err := factory.CreateLogsToMetrics(b.Context(), settings, cfg, next)
 	require.NoError(b, err)
 	inputLogs, err := golden.ReadLogs("testdata/logs/logs.yaml")
 	require.NoError(b, err)
@@ -240,7 +240,7 @@ func BenchmarkConnectorWithLogs(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := connector.ConsumeLogs(context.Background(), inputLogs); err != nil {
+		if err := connector.ConsumeLogs(b.Context(), inputLogs); err != nil {
 			b.Fatal(err)
 		}
 	}

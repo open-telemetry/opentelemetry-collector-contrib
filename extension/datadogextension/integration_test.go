@@ -53,7 +53,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	resolver, err := confmap.NewResolver(resolverSettings)
 	require.NoError(t, err, "should be able to create resolver")
 
-	confMap, err := resolver.Resolve(context.Background())
+	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err, "should be able to load config file")
 
 	// Create a realistic ModuleInfoJSON that matches the components in sample-config.yaml
@@ -162,7 +162,7 @@ func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
 	resolver, err := confmap.NewResolver(resolverSettings)
 	require.NoError(t, err, "should be able to create resolver")
 
-	confMap, err := resolver.Resolve(context.Background())
+	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err, "should be able to load config file")
 
 	// Test DataToFlattenedJSONString with the loaded configuration
@@ -548,7 +548,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 	resolver, err := confmap.NewResolver(resolverSettings)
 	require.NoError(t, err)
 
-	confMap, err := resolver.Resolve(context.Background())
+	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	// Create module info and populate active components for realistic test data
@@ -633,7 +633,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 	// Start the HTTP server
 	server.Start()
 	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		defer cancel()
 		server.Stop(ctx)
 	}()
@@ -773,7 +773,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 			server.Start()
 			time.Sleep(50 * time.Millisecond) // Brief pause to allow server startup
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 			defer cancel()
 			server.Stop(ctx)
 		})

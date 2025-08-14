@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,7 +75,7 @@ func TestStatusCodeSampling(t *testing.T) {
 			statusCodeFilter, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), c.StatusCodesToFilterOn)
 			assert.NoError(t, err)
 
-			decision, err := statusCodeFilter.Evaluate(context.Background(), traceID, trace)
+			decision, err := statusCodeFilter.Evaluate(t.Context(), traceID, trace)
 			assert.NoError(t, err)
 			assert.Equal(t, c.Decision, decision)
 		})

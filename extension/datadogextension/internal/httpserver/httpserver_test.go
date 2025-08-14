@@ -78,7 +78,7 @@ func TestServerStart(t *testing.T) {
 			}
 
 			// Stop the server
-			s.Stop(context.Background())
+			s.Stop(t.Context())
 		})
 	}
 }
@@ -417,7 +417,7 @@ func TestServerStop(t *testing.T) {
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithTimeout(context.Background(), 100*time.Millisecond)
+				return context.WithTimeout(t.Context(), 100*time.Millisecond)
 			},
 			expectedLogs:  []string{},
 			expectTimeout: false,
@@ -445,7 +445,7 @@ func TestServerStop(t *testing.T) {
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithTimeout(context.Background(), 1*time.Second)
+				return context.WithTimeout(t.Context(), 1*time.Second)
 			},
 			expectedLogs:  []string{},
 			expectTimeout: false,
@@ -481,7 +481,7 @@ func TestServerStop(t *testing.T) {
 				return srv, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithCancel(context.Background())
+				return context.WithCancel(t.Context())
 			},
 			expectedLogs:     []string{"Context cancelled while waiting for server shutdown"},
 			expectTimeout:    true,
@@ -572,7 +572,7 @@ func TestServerStopChannelBehavior(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Let server start
 
 	t.Run("Channel closed on successful shutdown", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Use a channel to detect when Stop completes
 		done := make(chan struct{})
@@ -637,7 +637,7 @@ func TestServerStopConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func(_ int) {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+			ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 			defer cancel()
 			srv.Stop(ctx)
 		}(i)
@@ -779,7 +779,7 @@ func TestNewServerErrorPaths(t *testing.T) {
 
 		// Stop should not panic even if server was never started
 		assert.NotPanics(t, func() {
-			s.Stop(context.Background())
+			s.Stop(t.Context())
 		})
 	})
 
@@ -795,7 +795,7 @@ func TestNewServerErrorPaths(t *testing.T) {
 
 		// Stop should not panic with nil server
 		assert.NotPanics(t, func() {
-			s.Stop(context.Background())
+			s.Stop(t.Context())
 		})
 	})
 }

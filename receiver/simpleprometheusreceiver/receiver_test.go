@@ -4,7 +4,6 @@
 package simpleprometheusreceiver
 
 import (
-	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -47,7 +46,7 @@ func TestReceiver(t *testing.T) {
 			cfg.UseServiceAccount = tt.useServiceAccount
 
 			r, err := f.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				receivertest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop(),
@@ -57,12 +56,12 @@ func TestReceiver(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, r)
 
-				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-				require.NoError(t, r.Shutdown(context.Background()))
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(t.Context()))
 				return
 			}
 
-			require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			require.Error(t, r.Start(t.Context(), componenttest.NewNopHost()))
 		})
 	}
 }

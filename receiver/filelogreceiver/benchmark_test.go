@@ -4,7 +4,6 @@
 package filelogreceiver
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"testing"
@@ -59,13 +58,13 @@ func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 
 	b.ResetTimer()
 	for range b.N {
-		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 		require.NoError(b, err)
-		require.NoError(b, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
 
 		require.Eventually(b, expectNLogs(sink, numLines), 2*time.Second, 2*time.Microsecond)
 		sink.Reset()
 
-		require.NoError(b, rcvr.Shutdown(context.Background()))
+		require.NoError(b, rcvr.Shutdown(b.Context()))
 	}
 }

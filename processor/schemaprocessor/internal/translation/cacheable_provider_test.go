@@ -54,7 +54,7 @@ func TestCacheableProvider(t *testing.T) {
 			var p string
 			var err error
 			for i := 0; i < tt.retry; i++ {
-				p, err = provider.Retrieve(context.Background(), "key")
+				p, err = provider.Retrieve(t.Context(), "key")
 				if err == nil {
 					break
 				}

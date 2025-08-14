@@ -4,7 +4,6 @@
 package reader
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -37,11 +36,11 @@ func TestPersistFlusher(t *testing.T) {
 	require.NoError(t, err)
 
 	// ReadToEnd will return when we hit eof, but we shouldn't emit the unfinished log yet
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte("log with newline"))
 
 	// Even trying again shouldn't produce the log yet because the flush period still hasn't expired.
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectNoCallsUntil(t, 2*flushPeriod)
 
 	// A copy of the reader should remember that we last emitted about 200ms ago.
@@ -51,7 +50,7 @@ func TestPersistFlusher(t *testing.T) {
 	// This time, the flusher will kick in and we should emit the unfinished log.
 	// If the copy did not remember when we last emitted a log, then the flushPeriod
 	// will not be expired at this point so we won't see the unfinished log.
-	copyReader.ReadToEnd(context.Background())
+	copyReader.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte("log without newline"))
 }
 
@@ -122,7 +121,7 @@ func TestTokenization(t *testing.T) {
 			r, err := f.NewReader(temp, fp)
 			require.NoError(t, err)
 
-			r.ReadToEnd(context.Background())
+			r.ReadToEnd(t.Context())
 
 			for _, expected := range tc.expected {
 				require.Equal(t, expected, sink.NextToken(t))
@@ -152,7 +151,7 @@ func TestTokenizationTooLong(t *testing.T) {
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 
 	for _, expected := range expected {
 		require.Equal(t, expected, sink.NextToken(t))
@@ -183,7 +182,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 
 	for _, expected := range expected {
 		require.Equal(t, expected, sink.NextToken(t))
@@ -218,7 +217,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	_, err = temp.Write(fileContent)
 	require.NoError(t, err)
 
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 
 	require.Equal(t, fingerprint.New([]byte("#header-line\naaa\n")), r.Fingerprint)
 }

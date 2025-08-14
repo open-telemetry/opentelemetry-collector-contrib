@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +52,7 @@ func TestGetKey(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := client.NewContext(context.Background(), client.Info{
+			ctx := client.NewContext(t.Context(), client.Info{
 				Metadata: client.NewMetadata(tc.metadata),
 			})
 			assert.Equal(t, tc.expected, metadataKeysPartitioner{keys: tc.metadataKeys}.GetKey(ctx, nil))
@@ -63,7 +62,7 @@ func TestGetKey(t *testing.T) {
 
 func BenchmarkGetKey(b *testing.B) {
 	p := metadataKeysPartitioner{keys: []string{"key1", "key2"}}
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(b.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
 			"key1": {"val1"},
 			"key2": {"val2.1", "val2.2", "val2.3"},

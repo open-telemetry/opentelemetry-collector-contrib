@@ -4,7 +4,6 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -51,7 +50,7 @@ func TestNewLogsExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
+	err = got.ConsumeLogs(t.Context(), createSimpleLogData(3))
 	assert.NoError(t, err)
 	time.Sleep(time.Second * 4)
 }

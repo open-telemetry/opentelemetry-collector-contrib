@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -88,7 +87,7 @@ func TestErrorModes(t *testing.T) {
 			)
 			require.NoError(t, err)
 			require.NotNil(t, r)
-			err = r.Start(context.Background(), componenttest.NewNopHost())
+			err = r.Start(t.Context(), componenttest.NewNopHost())
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.expectedError != "" {
@@ -130,8 +129,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestPullObject(t *testing.T) {
@@ -171,11 +170,11 @@ func TestPullObject(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 	time.Sleep(time.Second)
 	assert.Len(t, consumer.Logs(), 1)
 	assert.Equal(t, 2, consumer.Count())
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestWatchObject(t *testing.T) {
@@ -207,7 +206,7 @@ func TestWatchObject(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
@@ -308,7 +307,7 @@ func TestIncludeInitialState(t *testing.T) {
 				consumer,
 			)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			require.NoError(t, err)
 			require.NotNil(t, r)
 			require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
@@ -384,9 +383,9 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	_ = r.Shutdown(context.Background())
+	_ = r.Shutdown(t.Context())
 }
 
 func TestExcludeDeletedTrue(t *testing.T) {
@@ -421,7 +420,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
@@ -479,7 +478,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		}, "1"),
 	)
 
-	err = kr.Start(context.Background(), fakeHost)
+	err = kr.Start(t.Context(), fakeHost)
 	require.NoError(t, err)
 
 	// elected leader

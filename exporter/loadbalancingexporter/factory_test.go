@@ -4,7 +4,6 @@
 package loadbalancingexporter
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -35,7 +34,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTraces(t.Context(), creationParams, cfg)
 
 	// verify
 	assert.NoError(t, err)
@@ -53,7 +52,7 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateLogs(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateLogs(t.Context(), creationParams, cfg)
 
 	// verify
 	assert.NoError(t, err)

@@ -90,7 +90,7 @@ func TestHostID(t *testing.T) {
 
 				return ret, tt.resError
 			}
-			id, err := p.HostID(context.Background())
+			id, err := p.HostID(t.Context())
 
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)

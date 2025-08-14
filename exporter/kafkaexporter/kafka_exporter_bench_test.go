@@ -52,9 +52,9 @@ func runBenchmarkLogs(b *testing.B) {
 	config.ProtocolVersion = "2.3.0"
 
 	exp := newLogsExporter(*config, exportertest.NewNopSettings(metadata.Type))
-	b.Cleanup(func() { exp.Close(context.Background()) })
+	b.Cleanup(func() { exp.Close(b.Context()) })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(b.Context(), 30*time.Second)
 	defer cancel()
 
 	err := exp.Start(ctx, componenttest.NewNopHost())
@@ -80,9 +80,9 @@ func runBenchmarkMetrics(b *testing.B) {
 	config.ProtocolVersion = "2.3.0"
 
 	exp := newMetricsExporter(*config, exportertest.NewNopSettings(metadata.Type))
-	b.Cleanup(func() { exp.Close(context.Background()) })
+	b.Cleanup(func() { exp.Close(b.Context()) })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(b.Context(), 30*time.Second)
 	defer cancel()
 
 	err := exp.Start(ctx, componenttest.NewNopHost())
@@ -108,9 +108,9 @@ func runBenchmarkTraces(b *testing.B) {
 	config.ProtocolVersion = "2.3.0"
 
 	exp := newTracesExporter(*config, exportertest.NewNopSettings(metadata.Type))
-	b.Cleanup(func() { exp.Close(context.Background()) })
+	b.Cleanup(func() { exp.Close(b.Context()) })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(b.Context(), 30*time.Second)
 	defer cancel()
 
 	err := exp.Start(ctx, componenttest.NewNopHost())
@@ -136,9 +136,9 @@ func runBenchmarkProfiles(b *testing.B) {
 	config.ProtocolVersion = "2.3.0"
 
 	exp := newProfilesExporter(*config, exportertest.NewNopSettings(metadata.Type))
-	b.Cleanup(func() { exp.Close(context.Background()) })
+	b.Cleanup(func() { exp.Close(b.Context()) })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(b.Context(), 30*time.Second)
 	defer cancel()
 
 	err := exp.Start(ctx, componenttest.NewNopHost())

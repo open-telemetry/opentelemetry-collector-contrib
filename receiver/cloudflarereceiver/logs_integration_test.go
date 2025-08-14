@@ -7,7 +7,6 @@ package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -51,7 +50,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			require.NoError(t, err)
 
 			recv, err := fact.CreateLogs(
-				context.Background(),
+				t.Context(),
 				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Logs: LogsConfig{
@@ -74,11 +73,11 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			err = recv.Start(context.Background(), componenttest.NewNopHost())
+			err = recv.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				require.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(t.Context()))
 			}()
 
 			payload, err := os.ReadFile(filepath.Join("testdata", "sample-payloads", fmt.Sprintf("%s.txt", payloadName)))

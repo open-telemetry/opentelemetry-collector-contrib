@@ -41,17 +41,17 @@ func TestNewExporter(t *testing.T) {
 	mexp, err := newExporter(&c, logger, metricsType, component.NewDefaultBuildInfo().Version)
 	assert.NoError(t, err)
 	assert.NotNil(t, mexp)
-	assert.NoError(t, mexp.Close(context.Background()))
+	assert.NoError(t, mexp.Close(t.Context()))
 
 	lexp, err := newExporter(&c, logger, logsType, component.NewDefaultBuildInfo().Version)
 	assert.NoError(t, err)
 	assert.NotNil(t, lexp)
-	assert.NoError(t, lexp.Close(context.Background()))
+	assert.NoError(t, lexp.Close(t.Context()))
 
 	texp, err := newExporter(&c, logger, tracesType, component.NewDefaultBuildInfo().Version)
 	assert.NoError(t, err)
 	assert.NotNil(t, texp)
-	assert.NoError(t, texp.Close(context.Background()))
+	assert.NoError(t, texp.Close(t.Context()))
 
 	fexp, err := newExporter(&c, logger, 5, component.NewDefaultBuildInfo().Version)
 	assert.Error(t, err)
@@ -86,9 +86,9 @@ func TestMetricsDataPusherStreaming(t *testing.T) {
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(10))
+	err := adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(10))
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestMetricsDataPusherQueued(t *testing.T) {
@@ -103,9 +103,9 @@ func TestMetricsDataPusherQueued(t *testing.T) {
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(10))
+	err := adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(10))
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestLogsDataPusher(t *testing.T) {
@@ -120,9 +120,9 @@ func TestLogsDataPusher(t *testing.T) {
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.logsDataPusher(context.Background(), createLogsData())
+	err := adxDataProducer.logsDataPusher(t.Context(), createLogsData())
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestTracesDataPusher(t *testing.T) {
@@ -137,9 +137,9 @@ func TestTracesDataPusher(t *testing.T) {
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.tracesDataPusher(context.Background(), createTracesData())
+	err := adxDataProducer.tracesDataPusher(t.Context(), createTracesData())
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestClose(t *testing.T) {
@@ -153,7 +153,7 @@ func TestClose(t *testing.T) {
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	err := adxDataProducer.Close(context.Background())
+	err := adxDataProducer.Close(t.Context())
 	assert.NoError(t, err)
 }
 
@@ -169,7 +169,7 @@ func TestIngestedDataRecordCount(t *testing.T) {
 		logger:        logger,
 	}
 	recordstoingest := rand.IntN(20)
-	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
+	err := adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Len(t, ingestedrecordsactual, recordstoingest, "Number of metrics created should match number of records ingested")
 	assert.NoError(t, err)

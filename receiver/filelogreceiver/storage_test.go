@@ -4,7 +4,6 @@
 package filelogreceiver
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -25,7 +24,7 @@ func TestStorage(t *testing.T) {
 
 	const baseLog = "This is a simple log line with the number %3d"
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	logsDir := t.TempDir()
 	storageDir := t.TempDir()

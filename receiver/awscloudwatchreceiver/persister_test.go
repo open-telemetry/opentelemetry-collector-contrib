@@ -115,7 +115,7 @@ func TestGetCheckpoint(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	timestamp := time.Now().Format(time.RFC3339)
 
 	err := persister.SetCheckpoint(ctx, logGroupName, timestamp)
@@ -130,7 +130,7 @@ func TestSetCheckpoint_NilClient(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(nil, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	timestamp := time.Now().Format(time.RFC3339)
 
 	err := persister.SetCheckpoint(ctx, logGroupName, timestamp)
@@ -143,7 +143,7 @@ func TestSetCheckpoint_EmptyValue(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := persister.SetCheckpoint(ctx, logGroupName, "") // Set an empty value
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "timestamp is empty")
@@ -158,7 +158,7 @@ func TestSetCheckpoint_EmptyLogGroupName(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	timestamp := time.Now().Format(time.RFC3339)
 
 	err := persister.SetCheckpoint(ctx, "", timestamp)
@@ -172,7 +172,7 @@ func TestSetCheckpoint_StorageError(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	timestamp := time.Now().Format(time.RFC3339)
 
 	err := persister.SetCheckpoint(ctx, logGroupName, timestamp)
@@ -184,7 +184,7 @@ func TestGetCheckpoint_NilClient(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(nil, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := persister.GetCheckpoint(ctx, logGroupName)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "storage client is nil")
@@ -196,7 +196,7 @@ func TestGetCheckpoint_StorageError(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	result, err := persister.GetCheckpoint(ctx, logGroupName)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "forced storage error")
@@ -208,7 +208,7 @@ func TestGetCheckpoint_NotFound(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	result, err := persister.GetCheckpoint(ctx, "non-existent-group")
 	assert.NoError(t, err)
 	assert.Equal(t, newCheckpointTimeFromStartOfStream(), result)
@@ -219,7 +219,7 @@ func TestDeleteCheckpoint(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	timestamp := time.Now().Format(time.RFC3339)
 
 	err := persister.SetCheckpoint(ctx, logGroupName, timestamp)
@@ -238,7 +238,7 @@ func TestDeleteCheckpoint_NilClient(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(nil, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := persister.DeleteCheckpoint(ctx, logGroupName)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "storage client is nil")
@@ -250,7 +250,7 @@ func TestDeleteCheckpoint_StorageError(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := persister.DeleteCheckpoint(ctx, logGroupName)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "forced storage error")
@@ -261,7 +261,7 @@ func TestShutdown(t *testing.T) {
 	logger := zap.NewNop()
 	persister := newCloudwatchCheckpointPersister(mockClient, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := persister.Shutdown(ctx)
 	assert.NoError(t, err)
 }

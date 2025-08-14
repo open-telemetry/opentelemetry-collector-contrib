@@ -4,7 +4,6 @@
 package profiles
 
 import (
-	"context"
 	"fmt"
 	"iter"
 	"net/http"
@@ -340,7 +339,7 @@ func Test_e2e_editors(t *testing.T) {
 
 			for _, statement := range statements {
 				validator, tCtx := newDictionaryValidator(constructProfileTransformContextEditors())
-				_, _, _ = statement.Execute(context.Background(), tCtx)
+				_, _, _ = statement.Execute(t.Context(), tCtx)
 				require.NoError(t, validator.validate())
 
 				exValidator, exTCtx := newDictionaryValidator(constructProfileTransformContextEditors())
@@ -1217,7 +1216,7 @@ func Test_e2e_converters(t *testing.T) {
 
 			for _, statement := range statements {
 				tCtx := constructProfileTransformContext()
-				_, _, err = statement.Execute(context.Background(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
 				if tt.errMsg == "" {
 					assert.NoError(t, err)
 				} else if err != nil {
@@ -1321,7 +1320,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 			for _, statement := range statements {
 				tCtx := constructProfileTransformContext()
-				_, _, _ = statement.Execute(context.Background(), tCtx)
+				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructProfileTransformContext()
 				tt.want(exTCtx)
@@ -1389,7 +1388,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				assert.NoError(t, err)
 
 				for _, s := range statements {
-					_, _, _ = s.Execute(context.Background(), tCtx)
+					_, _, _ = s.Execute(t.Context(), tCtx)
 				}
 			}
 
@@ -1503,7 +1502,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructProfileTransformContextValueExpressions()
-			val, err := valueExpr.Eval(context.Background(), tCtx)
+			val, err := valueExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			assert.Equal(t, tt.want(), val)

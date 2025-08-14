@@ -4,7 +4,6 @@
 package awsproxy
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +60,7 @@ func TestFactory_Create(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cs := extensiontest.NewNopSettings(extensiontest.NopType)
 	ext, err := createExtension(ctx, cs, cfg)
 	assert.NoError(t, err)

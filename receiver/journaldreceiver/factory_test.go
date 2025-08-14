@@ -4,7 +4,6 @@
 package journaldreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestCreateAndShutdown(t *testing.T) {
 	cfg := defaultConfig.(*JournaldConfig) // This cast should work on all platforms.
 	cfg.InputConfig.Dmesg = true           // Setting this property just to confirm availability on all platforms.
 
-	ctx := context.Background()
+	ctx := t.Context()
 	settings := receivertest.NewNopSettings(metadata.Type)
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogs(ctx, settings, cfg, sink)

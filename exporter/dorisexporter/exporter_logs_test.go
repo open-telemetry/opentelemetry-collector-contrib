@@ -4,7 +4,6 @@
 package dorisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -34,7 +33,7 @@ func TestPushLogData(t *testing.T) {
 	logger := zap.NewNop()
 	exporter := newLogsExporter(logger, config, componenttest.NewNopTelemetrySettings())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

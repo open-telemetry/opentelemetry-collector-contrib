@@ -4,7 +4,6 @@
 package gitlabreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -236,9 +235,9 @@ func TestHandleWebhook(t *testing.T) {
 func TestHealthCheck(t *testing.T) {
 	r := setupGitlabTracesReceiver(t)
 
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown revceiver")
+		require.NoError(t, r.Shutdown(t.Context()), "failed to shutdown revceiver")
 	}()
 
 	w := httptest.NewRecorder()
@@ -397,7 +396,7 @@ func TestFailBadReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			ctx := context.Background()
+			ctx := t.Context()
 			receiver.failBadReq(ctx, w, tt.expectedCode, tt.err, tt.spanCount)
 
 			resp := w.Result()

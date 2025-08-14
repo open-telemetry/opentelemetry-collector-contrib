@@ -4,7 +4,6 @@
 package k8sclusterreceiver
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -34,7 +33,7 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod
 			},
 		}
 
-		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(context.Background(), p, v1.CreateOptions{})
+		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(t.Context(), p, v1.CreateOptions{})
 		require.NoError(t, err, "error creating node")
 		out = append(out, createdPod)
 		time.Sleep(2 * time.Millisecond)
@@ -44,7 +43,7 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod
 
 func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 	for i := 0; i < numPods; i++ {
-		err := client.CoreV1().Pods("test").Delete(context.Background(), strconv.Itoa(i), v1.DeleteOptions{})
+		err := client.CoreV1().Pods("test").Delete(t.Context(), strconv.Itoa(i), v1.DeleteOptions{})
 		require.NoError(t, err, "error creating node")
 	}
 
@@ -59,7 +58,7 @@ func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
 				Name: strconv.Itoa(i),
 			},
 		}
-		_, err := client.CoreV1().Nodes().Create(context.Background(), n, v1.CreateOptions{})
+		_, err := client.CoreV1().Nodes().Create(t.Context(), n, v1.CreateOptions{})
 		require.NoError(t, err, "error creating node")
 
 		time.Sleep(2 * time.Millisecond)
@@ -98,7 +97,7 @@ func createClusterQuota(t *testing.T, client *fakeQuota.Clientset, numQuotas int
 			},
 		}
 
-		_, err := client.QuotaV1().ClusterResourceQuotas().Create(context.Background(), q, v1.CreateOptions{})
+		_, err := client.QuotaV1().ClusterResourceQuotas().Create(t.Context(), q, v1.CreateOptions{})
 		require.NoError(t, err, "error creating node")
 		time.Sleep(2 * time.Millisecond)
 	}

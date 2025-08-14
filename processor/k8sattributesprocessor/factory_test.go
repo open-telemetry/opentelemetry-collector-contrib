@@ -4,7 +4,6 @@
 package k8sattributesprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,38 +31,38 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	params := processortest.NewNopSettings(metadata.Type)
 
-	tp, err := factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err := factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogs(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err = factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err = factory.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err = factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err = factory.CreateLogs(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	pp, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	pp, err = factory.(xprocessor.Factory).CreateProfiles(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 

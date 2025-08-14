@@ -248,7 +248,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfg,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -257,7 +257,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfgTagsEnabled,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -266,7 +266,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfgTagsSelective,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -275,7 +275,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfgTagsCaseInsensitive,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 	}

@@ -61,14 +61,14 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
 
-	err = cli.LoadContainerList(context.Background())
+	err = cli.LoadContainerList(t.Context())
 	assert.ErrorContains(t, err, expectedError)
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
 
-	cnt, ofInterest := cli.inspectedContainerIsOfInterest(context.Background(), "SomeContainerId")
+	cnt, ofInterest := cli.inspectedContainerIsOfInterest(t.Context(), "SomeContainerId")
 	assert.False(t, ofInterest)
 	assert.Nil(t, cnt)
 	assert.Len(t, logs.All(), 1)
@@ -108,7 +108,7 @@ func TestFetchingTimeouts(t *testing.T) {
 	assert.NoError(t, err)
 
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
-		context.Background(),
+		t.Context(),
 		Container{
 			ContainerJSON: &ctypes.InspectResponse{
 				ContainerJSONBase: &ctypes.ContainerJSONBase{
@@ -195,7 +195,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	go cli.ContainerEventLoop(ctx)
 	defer cancel()
 

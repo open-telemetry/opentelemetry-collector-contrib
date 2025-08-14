@@ -4,7 +4,6 @@
 package datadogexporter
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"net/http"
@@ -382,7 +381,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			}
 			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
-			ctx := context.Background()
+			ctx := t.Context()
 			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
@@ -429,15 +428,15 @@ func TestLogsExporterHostMetadata(t *testing.T) {
 	f := NewFactory()
 
 	// Test 1: Verify logs exporter can be created with host metadata enabled
-	exp, err := f.CreateLogs(context.Background(), params, cfg)
+	exp, err := f.CreateLogs(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 
 	// Test 2: Verify exporter can start successfully (this initializes metadata infrastructure)
-	err = exp.Start(context.Background(), nil)
+	err = exp.Start(t.Context(), nil)
 	require.NoError(t, err)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	// Test 3: Verify that logs can be consumed without errors
@@ -454,7 +453,7 @@ func TestLogsExporterHostMetadata(t *testing.T) {
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	// This should not error and should trigger metadata infrastructure
-	err = exp.ConsumeLogs(context.Background(), testLogs)
+	err = exp.ConsumeLogs(t.Context(), testLogs)
 	require.NoError(t, err)
 
 	t.Log("Successfully verified that host metadata infrastructure is set up when Datadog exporter is only configured in logs pipeline")
@@ -492,14 +491,14 @@ func TestLogsExporterHostMetadataOnlyMode(t *testing.T) {
 	f := NewFactory()
 
 	// Create and start logs exporter in only_metadata mode
-	exp, err := f.CreateLogs(context.Background(), params, cfg)
+	exp, err := f.CreateLogs(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	err = exp.Start(context.Background(), nil)
+	err = exp.Start(t.Context(), nil)
 	require.NoError(t, err)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	// Send logs to trigger metadata
@@ -511,7 +510,7 @@ func TestLogsExporterHostMetadataOnlyMode(t *testing.T) {
 	logRecord.Body().SetStr("test log for metadata")
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
-	err = exp.ConsumeLogs(context.Background(), testLogs)
+	err = exp.ConsumeLogs(t.Context(), testLogs)
 	require.NoError(t, err)
 
 	// In only_metadata mode, metadata should be sent more quickly

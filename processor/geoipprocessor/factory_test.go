@@ -32,27 +32,27 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	params := processortest.NewNopSettings(metadata.Type)
 
-	tp, err := factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err := factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogs(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	tp, err = factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err = factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err = factory.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err = factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err = factory.CreateLogs(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 }
@@ -63,13 +63,13 @@ func TestCreateProcessor_ProcessorKeyConfigError(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{Providers: map[string]provider.Config{errorKey: &providerConfigMock{}}}
 
-	_, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	_, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Sprintf("geoIP provider factory not found for key: %q", errorKey))
 
-	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	_, err = factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Sprintf("geoIP provider factory not found for key: %q", errorKey))
 
-	_, err = factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	_, err = factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Sprintf("geoIP provider factory not found for key: %q", errorKey))
 }
 
@@ -84,6 +84,6 @@ func TestCreateProcessor_FailedProvider(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}
 
-	_, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	_, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Errorf("failed to create provider for key %q: %w", providerKey, errors.New("error creating provider")).Error())
 }

@@ -4,7 +4,6 @@
 package receivercreator
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -310,30 +309,30 @@ func TestEnhancingConsumerConsumeFunctions(t *testing.T) {
 			}
 
 			if tt.expectedLogs != nil {
-				require.NoError(t, ec.ConsumeLogs(context.Background(), tt.args.ld))
+				require.NoError(t, ec.ConsumeLogs(t.Context(), tt.args.ld))
 				logs := tt.consumers.nextLogs.AllLogs()
 				require.Len(t, logs, 1)
 				require.NoError(t, plogtest.CompareLogs(*tt.expectedLogs, logs[0]))
 			} else {
-				require.EqualError(t, ec.ConsumeLogs(context.Background(), plog.NewLogs()), "no log consumer available")
+				require.EqualError(t, ec.ConsumeLogs(t.Context(), plog.NewLogs()), "no log consumer available")
 			}
 
 			if tt.expectedMetrics != nil {
-				require.NoError(t, ec.ConsumeMetrics(context.Background(), tt.args.md))
+				require.NoError(t, ec.ConsumeMetrics(t.Context(), tt.args.md))
 				metrics := tt.consumers.nextMetrics.AllMetrics()
 				require.Len(t, metrics, 1)
 				require.NoError(t, pmetrictest.CompareMetrics(*tt.expectedMetrics, metrics[0]))
 			} else {
-				require.EqualError(t, ec.ConsumeMetrics(context.Background(), pmetric.NewMetrics()), "no metric consumer available")
+				require.EqualError(t, ec.ConsumeMetrics(t.Context(), pmetric.NewMetrics()), "no metric consumer available")
 			}
 
 			if tt.expectedTraces != nil {
-				require.NoError(t, ec.ConsumeTraces(context.Background(), tt.args.td))
+				require.NoError(t, ec.ConsumeTraces(t.Context(), tt.args.td))
 				traces := tt.consumers.nextTraces.AllTraces()
 				require.Len(t, traces, 1)
 				require.NoError(t, ptracetest.CompareTraces(*tt.expectedTraces, traces[0]))
 			} else {
-				require.EqualError(t, ec.ConsumeTraces(context.Background(), ptrace.NewTraces()), "no trace consumer available")
+				require.EqualError(t, ec.ConsumeTraces(t.Context(), ptrace.NewTraces()), "no trace consumer available")
 			}
 		})
 	}

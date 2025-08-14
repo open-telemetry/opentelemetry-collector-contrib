@@ -73,7 +73,7 @@ func TestGetK8sInstanceMetadata(t *testing.T) {
 			}
 			err := setupNodeProviderID(clientset, tt.providerID, tt.testNodeName)
 			assert.NoError(t, err)
-			k8sInstanceMetadata, err := provider.GetK8sInstanceMetadata(context.Background())
+			k8sInstanceMetadata, err := provider.GetK8sInstanceMetadata(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
@@ -258,7 +258,7 @@ func TestGetInstanceMetadata(t *testing.T) {
 			}
 			err := setupNodeProviderID(clientset, tt.mockProviderID, tt.mockNodeName)
 			assert.NoError(t, err)
-			ec2InstanceMetadata, err := eksProvider.GetInstanceMetadata(context.Background())
+			ec2InstanceMetadata, err := eksProvider.GetInstanceMetadata(t.Context())
 			if tt.errMsg != "" && err != nil {
 				assert.ErrorContains(t, err, tt.errMsg)
 			} else {

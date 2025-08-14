@@ -4,7 +4,6 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -338,7 +337,7 @@ func TestNewTracesUnmarshaler(t *testing.T) {
 		{
 			encoding: "zipkin_thrift",
 			input: func() []byte {
-				encoded, err := zipkinthriftconverter.SerializeThrift(context.Background(), jaegerzipkinSpans)
+				encoded, err := zipkinthriftconverter.SerializeThrift(t.Context(), jaegerzipkinSpans)
 				require.NoError(t, err)
 				return encoded
 			}(),

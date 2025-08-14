@@ -5,7 +5,6 @@ package signalfxexporter
 
 import (
 	"compress/gzip"
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -192,7 +191,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ToClient(t.Context(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -215,7 +214,7 @@ func TestConsumeMetrics(t *testing.T) {
 				http.StatusText(tt.wantStatusCode),
 			)
 
-			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.md)
+			numDroppedTimeSeries, err := dpClient.pushMetricsData(t.Context(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
@@ -555,14 +554,14 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
-			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				require.NoError(t, sfxExp.Shutdown(context.Background()))
+				require.NoError(t, sfxExp.Shutdown(t.Context()))
 			}()
 
-			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)
+			err = sfxExp.ConsumeMetrics(t.Context(), tt.metrics)
 
 			assert.NoError(t, err)
 			require.Eventually(t, func() bool {
@@ -679,9 +678,9 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			cfg.QueueSettings.Enabled = false
-			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
-			ctx := context.Background()
+			ctx := t.Context()
 			if tt.inContext {
 				ctx = client.NewContext(
 					ctx,
@@ -692,7 +691,7 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			}
 			require.NoError(t, sfxExp.Start(ctx, componenttest.NewNopHost()))
 			defer func() {
-				require.NoError(t, sfxExp.Shutdown(context.Background()))
+				require.NoError(t, sfxExp.Shutdown(t.Context()))
 			}()
 
 			err = sfxExp.ConsumeMetrics(ctx, tt.metrics)
@@ -779,14 +778,14 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings.Enabled = false
-			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
+			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
-			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				require.NoError(t, sfxExp.Shutdown(context.Background()))
+				require.NoError(t, sfxExp.Shutdown(t.Context()))
 			}()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if tt.inContext {
 				ctx = client.NewContext(
 					ctx,
@@ -826,12 +825,12 @@ func TestNewEventExporter(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
-	err = got.startLogs(context.Background(), componenttest.NewNopHost())
+	err = got.startLogs(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
-	err = got.pushLogs(context.Background(), ld)
+	err = got.pushLogs(t.Context(), ld)
 	assert.Error(t, err)
 }
 
@@ -939,7 +938,7 @@ func TestConsumeEventData(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ToClient(t.Context(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -951,7 +950,7 @@ func TestConsumeEventData(t *testing.T) {
 				logger: zap.NewNop(),
 			}
 
-			numDroppedLogRecords, err := eventClient.pushLogsData(context.Background(), tt.resourceLogs)
+			numDroppedLogRecords, err := eventClient.pushLogsData(t.Context(), tt.resourceLogs)
 			assert.Equal(t, tt.numDroppedLogRecords, numDroppedLogRecords)
 
 			if tt.wantErr {
@@ -1033,14 +1032,14 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
+			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
-			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				require.NoError(t, sfxExp.Shutdown(context.Background()))
+				require.NoError(t, sfxExp.Shutdown(t.Context()))
 			}()
 
-			assert.NoError(t, sfxExp.ConsumeLogs(context.Background(), newLogData(tt.includedInLogData)))
+			assert.NoError(t, sfxExp.ConsumeLogs(t.Context(), newLogData(tt.includedInLogData)))
 
 			require.Eventually(t, func() bool {
 				receivedTokens.Lock()
@@ -1425,7 +1424,7 @@ func TestConsumeMetadata(t *testing.T) {
 				dimClient: dimClient,
 			}
 			defer func() {
-				_ = se.shutdown(context.Background())
+				_ = se.shutdown(t.Context())
 			}()
 			sme := signalfMetadataExporter{
 				exporter: se,
@@ -1487,7 +1486,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
+		numDroppedTimeSeries, err := dpClient.pushMetricsData(b.Context(), metrics)
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
 	}
@@ -1500,7 +1499,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), rCfg)
+	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
@@ -1573,8 +1572,8 @@ func TestTLSExporterInit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			assert.NoError(t, err)
-			err = sfx.start(context.Background(), componenttest.NewNopHost())
-			defer func() { require.NoError(t, sfx.shutdown(context.Background())) }()
+			err = sfx.start(t.Context(), componenttest.NewNopHost())
+			defer func() { require.NoError(t, sfx.shutdown(t.Context())) }()
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -1644,11 +1643,11 @@ func TestTLSIngestConnection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			assert.NoError(t, err)
-			err = sfx.start(context.Background(), componenttest.NewNopHost())
+			err = sfx.start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
-			defer func() { assert.NoError(t, sfx.shutdown(context.Background())) }()
+			defer func() { assert.NoError(t, sfx.shutdown(t.Context())) }()
 
-			_, err = sfx.pushMetricsData(context.Background(), metricsPayload)
+			_, err = sfx.pushMetricsData(t.Context(), metricsPayload)
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -1767,7 +1766,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 			logger := zap.New(observedZapCore)
-			apiTLSCfg, err := tt.config.APITLSs.LoadTLSConfig(context.Background())
+			apiTLSCfg, err := tt.config.APITLSs.LoadTLSConfig(t.Context())
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
@@ -1852,7 +1851,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
+		numDroppedTimeSeries, err := dpClient.pushMetricsData(b.Context(), metrics)
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
 	}
@@ -2057,7 +2056,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ToClient(t.Context(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
@@ -2076,7 +2075,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				sendOTLPHistograms: true,
 			}
 
-			numDroppedTimeSeries, err := sfxClient.pushMetricsData(context.Background(), tt.md)
+			numDroppedTimeSeries, err := sfxClient.pushMetricsData(t.Context(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",

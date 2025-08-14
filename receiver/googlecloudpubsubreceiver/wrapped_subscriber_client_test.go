@@ -4,7 +4,6 @@
 package googlecloudpubsubreceiver
 
 import (
-	"context"
 	"testing"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
@@ -76,7 +75,7 @@ func TestNewSubscriberClient(t *testing.T) {
 	// The subscriber client checks for credentials during init
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/gcp-fake-creds.json")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 
 	t.Run("defaults", func(t *testing.T) {

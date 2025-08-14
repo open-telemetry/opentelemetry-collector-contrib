@@ -4,7 +4,6 @@
 package sqlqueryreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,14 +19,14 @@ func TestNewFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Driver = "postgres"
 	_, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	_, err = factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
@@ -60,14 +59,14 @@ func TestNewFactoryDataSourceFields(t *testing.T) {
 	}
 
 	_, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	_, err = factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),

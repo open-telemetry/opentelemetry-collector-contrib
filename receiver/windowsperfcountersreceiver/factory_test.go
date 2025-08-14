@@ -4,7 +4,6 @@
 package windowsperfcountersreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,7 +60,7 @@ func TestCreateTraces(t *testing.T) {
 			Gauge:       GaugeMetric{},
 		},
 	}
-	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
@@ -76,7 +75,7 @@ func TestCreateTracesNoMetrics(t *testing.T) {
 			Counters: []CounterConfig{{Name: "counter"}},
 		},
 	}
-	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
@@ -100,7 +99,7 @@ func TestCreateLogs(t *testing.T) {
 		},
 	}
 
-	tReceiver, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateLogs(t.Context(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)

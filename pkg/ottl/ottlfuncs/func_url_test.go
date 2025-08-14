@@ -161,7 +161,7 @@ func TestURLParser(t *testing.T) {
 			}
 
 			exprFunc := url(source) //revive:disable-line:var-naming
-			res, err := exprFunc(context.Background(), nil)
+			res, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 
 			resMap, ok := res.(map[string]any)

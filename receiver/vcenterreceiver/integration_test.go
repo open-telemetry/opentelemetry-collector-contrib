@@ -84,7 +84,7 @@ func TestIntegration(t *testing.T) {
 				sessionManager: s,
 				vimDriver:      c,
 			}
-			require.NoError(t, client.EnsureConnection(context.Background()))
+			require.NoError(t, client.EnsureConnection(t.Context()))
 			client.vimDriver = c
 			client.finder = find.NewFinder(c)
 			// Performance/vSAN metrics rely on time based publishing so this is inherently flaky for an

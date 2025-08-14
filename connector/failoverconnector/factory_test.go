@@ -4,7 +4,6 @@
 package failoverconnector
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -33,10 +32,10 @@ func TestNewFactory(t *testing.T) {
 		traces2: consumertest.NewNop(),
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	assert.NoError(t, err)

@@ -6,7 +6,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -28,15 +27,15 @@ func testTracesJSONExporter(t *testing.T, endpoint string) {
 func newTestTracesJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesJSONExporter {
 	exporter := newTracesJSONExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
-	require.NoError(t, exporter.start(context.Background(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.Background()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
 func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
 	pushConcurrentlyNoError(t, func() error {
-		return exporter.pushTraceData(context.Background(), simpleTraces(5000))
+		return exporter.pushTraceData(t.Context(), simpleTraces(5000))
 	})
 
 	type trace struct {
@@ -101,7 +100,7 @@ func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
 		},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_traces_json")
+	row := exporter.db.QueryRow(t.Context(), "SELECT * FROM otel_int_test.otel_traces_json")
 	require.NoError(t, row.Err())
 
 	var actualTrace trace

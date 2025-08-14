@@ -4,7 +4,6 @@
 package attributesprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ type logTestCase struct {
 func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp processor.Logs) {
 	t.Run(tt.name, func(t *testing.T) {
 		ld := generateLogData(tt.name, tt.inputAttributes)
-		assert.NoError(t, tp.ConsumeLogs(context.Background(), ld))
+		assert.NoError(t, tp.ConsumeLogs(t.Context(), ld))
 		assert.NoError(t, plogtest.CompareLogs(generateLogData(tt.name, tt.expectedAttributes), ld))
 	})
 }
@@ -82,12 +81,12 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogs(
-		context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, tp.ConsumeLogs(context.Background(), tt.input))
+			assert.NoError(t, tp.ConsumeLogs(t.Context(), tt.input))
 			assert.Equal(t, tt.output, tt.input)
 		})
 	}
@@ -145,7 +144,7 @@ func TestAttributes_FilterLogs(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -208,7 +207,7 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -271,7 +270,7 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -330,7 +329,7 @@ func TestLogAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: attraction.HASH},
 	}
 
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -406,7 +405,7 @@ func TestLogAttributes_Convert(t *testing.T) {
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
 	}
 
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -451,7 +450,7 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 		Config:    *createConfig(filterset.Regexp),
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(b.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(b, err)
 	require.NotNil(b, tp)
 
@@ -460,7 +459,7 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				assert.NoError(b, tp.ConsumeLogs(context.Background(), td))
+				assert.NoError(b, tp.ConsumeLogs(b.Context(), td))
 			}
 		})
 

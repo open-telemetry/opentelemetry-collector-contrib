@@ -5,7 +5,6 @@
 package isolationforestprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -131,7 +130,7 @@ func Test_processTraces_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	tdIn := makeTrace()
-	tdOut, err := p.processTraces(context.Background(), tdIn)
+	tdOut, err := p.processTraces(t.Context(), tdIn)
 	require.NoError(t, err)
 
 	rs := tdOut.ResourceSpans().At(0)
@@ -152,7 +151,7 @@ func Test_processLogs_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	ldIn := makeLogs()
-	ldOut, err := p.processLogs(context.Background(), ldIn)
+	ldOut, err := p.processLogs(t.Context(), ldIn)
 	require.NoError(t, err)
 
 	rl := ldOut.ResourceLogs().At(0)
@@ -173,7 +172,7 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	mdIn := makeMetrics()
-	mdOut, err := p.processMetrics(context.Background(), mdIn)
+	mdOut, err := p.processMetrics(t.Context(), mdIn)
 	require.NoError(t, err)
 
 	rm := mdOut.ResourceMetrics().At(0)

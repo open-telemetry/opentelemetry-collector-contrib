@@ -5,7 +5,6 @@ package prometheusreceiver
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -91,9 +90,9 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	require.NoError(t, err, "Failed to create Prometheus receiver")
 	receiver.skipOffsetting = true
 
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
 	t.Cleanup(func() {
-		require.NoError(t, receiver.Shutdown(context.Background()))
+		require.NoError(t, receiver.Shutdown(t.Context()))
 	})
 
 	metricsCount := 0

@@ -4,7 +4,6 @@
 package filterprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -88,12 +87,12 @@ func TestCreateProcessors(t *testing.T) {
 				require.NoError(t, sub.Unmarshal(cfg))
 
 				tp, tErr := factory.CreateTraces(
-					context.Background(),
+					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					cfg, consumertest.NewNop(),
 				)
 				mp, mErr := factory.CreateMetrics(
-					context.Background(),
+					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),

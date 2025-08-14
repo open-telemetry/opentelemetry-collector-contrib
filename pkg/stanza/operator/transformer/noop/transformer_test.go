@@ -4,7 +4,6 @@
 package noop
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func TestProcess(t *testing.T) {
 	val.TraceFlags = []byte{0x01}
 
 	expected := val.Copy()
-	err = op.ProcessBatch(context.Background(), []*entry.Entry{val})
+	err = op.ProcessBatch(t.Context(), []*entry.Entry{val})
 	require.NoError(t, err)
 
 	fake.ExpectEntry(t, expected)

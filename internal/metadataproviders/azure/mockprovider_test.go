@@ -4,7 +4,6 @@
 package azure
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 func TestMockProvider_Metadata(t *testing.T) {
 	p := MockProvider{}
 	p.On("Metadata").Return(&ComputeMetadata{Name: "foo"}, nil)
-	metadata, err := p.Metadata(context.Background())
+	metadata, err := p.Metadata(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, metadata)
 	assert.Equal(t, "foo", metadata.Name)

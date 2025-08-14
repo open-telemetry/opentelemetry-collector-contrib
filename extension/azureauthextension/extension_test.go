@@ -29,7 +29,7 @@ func TestGetToken(t *testing.T) {
 	auth := authenticator{
 		credential: &m,
 	}
-	_, err := auth.GetToken(context.Background(), policy.TokenRequestOptions{})
+	_, err := auth.GetToken(t.Context(), policy.TokenRequestOptions{})
 	require.NoError(t, err)
 }
 
@@ -132,7 +132,7 @@ func TestAuthenticate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := auth.Authenticate(context.Background(), test.headers)
+			_, err := auth.Authenticate(t.Context(), test.headers)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {

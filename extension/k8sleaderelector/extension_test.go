@@ -31,7 +31,7 @@ func TestExtension(t *testing.T) {
 		RetryPeriod:    2 * time.Second,
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 	fakeClient := fake.NewClientset()
 	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fakeClient, nil
@@ -82,7 +82,7 @@ func TestExtension_WithDelay(t *testing.T) {
 		RetryPeriod:    2 * time.Second,
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 	fakeClient := fake.NewClientset()
 	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fakeClient, nil

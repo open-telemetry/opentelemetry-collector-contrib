@@ -47,7 +47,7 @@ func TestDetect(t *testing.T) {
 	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(context.Background())
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
@@ -74,7 +74,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(context.Background())
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)

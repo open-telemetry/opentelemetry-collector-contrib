@@ -4,7 +4,6 @@
 package logdedupprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -141,7 +140,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	// Add logRecord
 	aggregator.Add(resource, scope, logRecord)
 
-	exportedLogs := aggregator.Export(context.Background())
+	exportedLogs := aggregator.Export(t.Context())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
 	require.Equal(t, 1, exportedLogs.ResourceLogs().Len())
 

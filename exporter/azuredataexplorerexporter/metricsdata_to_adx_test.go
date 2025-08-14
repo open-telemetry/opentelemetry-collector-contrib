@@ -4,7 +4,6 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -153,7 +152,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := tt.metricsDataFn(tt.metricDataType, ts)
-			actualMetrics := rawMetricsToAdxMetrics(context.Background(), metrics, zap.NewNop())
+			actualMetrics := rawMetricsToAdxMetrics(t.Context(), metrics, zap.NewNop())
 			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)

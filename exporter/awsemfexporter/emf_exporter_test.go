@@ -56,7 +56,7 @@ func (p *mockPusher) ForceFlush(_ context.Context) error {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -96,7 +96,7 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			factory := NewFactory()
 			expCfg := factory.CreateDefaultConfig().(*Config)
@@ -135,7 +135,7 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			factory := NewFactory()
 			expCfg := factory.CreateDefaultConfig().(*Config)
@@ -153,7 +153,7 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -173,7 +173,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 }
 
 func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -200,7 +200,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 }
 
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -231,7 +231,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 }
 
 func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -262,7 +262,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 }
 
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -293,7 +293,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 }
 
 func TestPushMetricsDataWithErr(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -333,7 +333,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	settings := exportertest.NewNopSettings(metadata.Type)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := newEmfExporter(ctx, expCfg, settings)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
@@ -371,7 +371,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
 	params.Logger = zap.New(obs)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := newEmfExporter(ctx, expCfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -405,7 +405,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := newEmfExporter(ctx, nil, exportertest.NewNopSettings(metadata.Type))
 	assert.Error(t, err)
 	assert.Nil(t, exp)
@@ -435,7 +435,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	settings := exportertest.NewNopSettings(metadata.Type)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := newEmfExporter(ctx, expCfg, settings)
 	assert.Error(t, err)
 	assert.Nil(t, exp)

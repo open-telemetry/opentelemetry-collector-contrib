@@ -4,7 +4,6 @@
 package tencentcloudlogserviceexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -51,7 +50,7 @@ func TestNewLogsExporter(t *testing.T) {
 
 	// This will put log data to send buffer and return success.
 	// Tip: Unit tests require valid access credential.
-	_ = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
+	_ = got.ConsumeLogs(t.Context(), createSimpleLogData(3))
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {

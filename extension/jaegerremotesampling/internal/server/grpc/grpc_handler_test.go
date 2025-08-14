@@ -42,7 +42,7 @@ func TestNewGRPCHandler(t *testing.T) {
 	}
 	h := NewGRPCHandler(mockSamplingStore{})
 	for _, test := range tests {
-		resp, err := h.GetSamplingStrategy(context.Background(), test.req)
+		resp, err := h.GetSamplingStrategy(t.Context(), test.req)
 		if test.err != "" {
 			require.EqualError(t, err, test.err)
 			require.Nil(t, resp)

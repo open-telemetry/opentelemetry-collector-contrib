@@ -91,7 +91,7 @@ func TestTransformerDropOnError(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -141,7 +141,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -191,7 +191,7 @@ func TestTransformerSendOnError(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -241,7 +241,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -288,7 +288,7 @@ func TestTransformerProcessWithValid(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	transform := func(_ *entry.Entry) error {
 		return nil
@@ -322,7 +322,7 @@ func TestTransformerSplitsBatches(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	testEntry2 := entry.New()
 	testEntry3 := entry.New()
@@ -364,7 +364,7 @@ func TestTransformerDoesNotSplitBatches(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	testEntry2 := entry.New()
 	testEntry3 := entry.New()
@@ -441,7 +441,7 @@ func TestTransformerIf(t *testing.T) {
 
 			e := entry.New()
 			e.Body = tc.inputBody
-			err = transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
+			err = transformer.ProcessWith(t.Context(), e, func(e *entry.Entry) error {
 				e.Body = "parsed"
 				return nil
 			})

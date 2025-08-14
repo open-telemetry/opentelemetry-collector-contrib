@@ -23,7 +23,7 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 		{
 			name: "value from existing GRPC attribute",
 			ctxFunc: func() context.Context {
-				return metadata.NewIncomingContext(context.Background(),
+				return metadata.NewIncomingContext(t.Context(),
 					metadata.Pairs("X-Tenant", "acme"),
 				)
 			},
@@ -32,14 +32,14 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 		},
 		{
 			name:          "no values from empty context",
-			ctxFunc:       context.Background,
+			ctxFunc:       t.Context,
 			fromAttr:      "X-Tenant",
 			expectedValue: "",
 		},
 		{
 			name: "no values from existing GRPC attribute",
 			ctxFunc: func() context.Context {
-				return metadata.NewIncomingContext(context.Background(),
+				return metadata.NewIncomingContext(t.Context(),
 					metadata.Pairs("X-Tenant", ""),
 				)
 			},
@@ -49,7 +49,7 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 		{
 			name: "multiple values from existing GRPC attribute returns the first one",
 			ctxFunc: func() context.Context {
-				return metadata.NewIncomingContext(context.Background(),
+				return metadata.NewIncomingContext(t.Context(),
 					metadata.Pairs("X-Tenant", "globex", "X-Tenant", "acme"),
 				)
 			},
@@ -59,7 +59,7 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 		{
 			name: "value from existing HTTP attribute",
 			ctxFunc: func() context.Context {
-				return client.NewContext(context.Background(),
+				return client.NewContext(t.Context(),
 					client.Info{Metadata: client.NewMetadata(map[string][]string{
 						"X-Tenant": {"acme"},
 					})})
@@ -70,7 +70,7 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 		{
 			name: "value from existing HTTP attribute: case-insensitive",
 			ctxFunc: func() context.Context {
-				return client.NewContext(context.Background(),
+				return client.NewContext(t.Context(),
 					client.Info{Metadata: client.NewMetadata(map[string][]string{
 						"X-Tenant": {"acme"},
 					})})
@@ -80,14 +80,14 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 		},
 		{
 			name:          "no values from empty context",
-			ctxFunc:       context.Background,
+			ctxFunc:       t.Context,
 			fromAttr:      "X-Tenant",
 			expectedValue: "",
 		},
 		{
 			name: "no values from existing HTTP attribute",
 			ctxFunc: func() context.Context {
-				return client.NewContext(context.Background(),
+				return client.NewContext(t.Context(),
 					client.Info{Metadata: client.NewMetadata(map[string][]string{
 						"X-Tenant": {""},
 					})})

@@ -32,7 +32,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
 		inputMap := pcommon.NewMap()
 		assert.NoError(t, inputMap.FromRaw(tt.inputAttributes))
-		ap.Process(context.TODO(), nil, inputMap)
+		ap.Process(t.Context(), nil, inputMap)
 		require.Equal(t, tt.expectedAttributes, inputMap.AsRaw())
 	})
 }
@@ -946,7 +946,7 @@ func (a mockInfoAuth) GetAttributeNames() []string {
 }
 
 func TestFromContext(t *testing.T) {
-	mdCtx := client.NewContext(context.TODO(), client.Info{
+	mdCtx := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
 			"source_single_val":   {"single_val"},
 			"source_multiple_val": {"first_val", "second_val"},
@@ -967,7 +967,7 @@ func TestFromContext(t *testing.T) {
 	}{
 		{
 			name:               "no_metadata",
-			ctx:                context.TODO(),
+			ctx:                t.Context(),
 			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source", Action: INSERT},
 		},

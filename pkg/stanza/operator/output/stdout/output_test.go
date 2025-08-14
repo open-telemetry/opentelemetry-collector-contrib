@@ -5,7 +5,6 @@ package stdout
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -41,7 +40,7 @@ func TestOperator(t *testing.T) {
 		Timestamp:         ts,
 		Body:              "test body",
 	}
-	err = op.Process(context.Background(), e)
+	err = op.Process(t.Context(), e)
 	require.NoError(t, err)
 
 	marshalledOTS, err := json.Marshal(ots)

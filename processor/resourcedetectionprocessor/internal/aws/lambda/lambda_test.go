@@ -4,7 +4,6 @@
 package lambda
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,7 @@ import (
 
 // Tests Lambda resource detector running in Lambda environment
 func TestLambda(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const functionName = "TestFunctionName"
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
@@ -36,7 +35,7 @@ func TestLambda(t *testing.T) {
 
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)

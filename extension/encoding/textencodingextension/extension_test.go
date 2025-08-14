@@ -4,7 +4,6 @@
 package textencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestExtension_Start(t *testing.T) {
 			name: "text",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
 			},
 		},
 		{
@@ -32,7 +31,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Encoding = "gbk"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 		{
@@ -41,7 +40,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Encoding = "blabla"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 			expectedErr: "unsupported encoding 'blabla'",
 		},
@@ -54,7 +53,7 @@ func TestExtension_Start(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			err = ext.Start(t.Context(), componenttest.NewNopHost())
 			if test.expectedErr != "" && err != nil {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {

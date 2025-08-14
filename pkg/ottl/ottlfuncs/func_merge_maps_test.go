@@ -138,7 +138,7 @@ func Test_MergeMaps(t *testing.T) {
 			exprFunc, err := mergeMaps[pcommon.Map](target, tt.source, tt.strategy)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), scenarioMap)
+			result, err := exprFunc(t.Context(), scenarioMap)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
 			assert.True(t, setterWasCalled)

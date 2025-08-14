@@ -4,7 +4,6 @@
 package opencensusreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -32,11 +31,11 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := receivertest.NewNopSettings(metadata.Type)
-	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
+	tReceiver, err := createTracesReceiver(t.Context(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := createMetricsReceiver(context.Background(), set, cfg, nil)
+	mReceiver, err := createMetricsReceiver(t.Context(), set, cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
@@ -83,17 +82,17 @@ func TestCreateTraces(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	set := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
 			require.NoError(t, err)
-			err = tr.Start(context.Background(), componenttest.NewNopHost())
+			err = tr.Start(t.Context(), componenttest.NewNopHost())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTraces() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			require.NoError(t, tr.Shutdown(context.Background()))
+			require.NoError(t, tr.Shutdown(t.Context()))
 		})
 	}
 }
@@ -151,11 +150,11 @@ func TestCreateMetrics(t *testing.T) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())
+			tc, err := createMetricsReceiver(t.Context(), set, tt.cfg, consumertest.NewNop())
 			require.NoError(t, err)
-			err = tc.Start(context.Background(), componenttest.NewNopHost())
+			err = tc.Start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				require.NoError(t, tc.Shutdown(context.Background()))
+				require.NoError(t, tc.Shutdown(t.Context()))
 			}()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetrics() error = %v, wantErr %v", err, tt.wantErr)

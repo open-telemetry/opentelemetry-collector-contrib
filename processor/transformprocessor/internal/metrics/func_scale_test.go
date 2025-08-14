@@ -170,7 +170,7 @@ func TestScale(t *testing.T) {
 			)
 
 			expressionFunc, _ := Scale(tt.args)
-			_, err := expressionFunc(context.Background(), target)
+			_, err := expressionFunc(t.Context(), target)
 
 			if tt.wantErr {
 				assert.Error(t, err)

@@ -186,7 +186,7 @@ func TestAddLogEventWithValidation(t *testing.T) {
 	logEvent := NewEvent(timestampMs, largeEventContent)
 	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(defaultMaxEventPayloadBytes-perEventHeaderBytes-len(truncatedSuffix))] + truncatedSuffix
 
-	require.NoError(t, p.AddLogEntry(context.Background(), logEvent), "Error adding log entry")
+	require.NoError(t, p.AddLogEntry(t.Context(), logEvent), "Error adding log entry")
 	assert.Equal(t, expectedTruncatedContent, *logEvent.InputLogEvent.Message)
 
 	logEvent = NewEvent(timestampMs, "")
@@ -204,7 +204,7 @@ func TestStreamManager(t *testing.T) {
 	})
 
 	// Verify that the stream is created in the first time
-	assert.NoError(t, manager.InitStream(context.Background(), StreamKey{
+	assert.NoError(t, manager.InitStream(t.Context(), StreamKey{
 		LogGroupName:  "foo",
 		LogStreamName: "bar",
 	}))
@@ -212,7 +212,7 @@ func TestStreamManager(t *testing.T) {
 	assert.Equal(t, int32(1), mockCwAPI.createLogStreamCount.Load())
 
 	// Verify that the stream is not created in the second time
-	assert.NoError(t, manager.InitStream(context.Background(), StreamKey{
+	assert.NoError(t, manager.InitStream(t.Context(), StreamKey{
 		LogGroupName:  "foo",
 		LogStreamName: "bar",
 	}))
@@ -220,7 +220,7 @@ func TestStreamManager(t *testing.T) {
 	assert.Equal(t, int32(1), mockCwAPI.createLogStreamCount.Load())
 
 	// Verify that a different stream is created
-	assert.NoError(t, manager.InitStream(context.Background(), StreamKey{
+	assert.NoError(t, manager.InitStream(t.Context(), StreamKey{
 		LogGroupName:  "foo",
 		LogStreamName: "bar2",
 	}))
@@ -259,10 +259,10 @@ func TestMultiStreamPusher(t *testing.T) {
 	event.LogStreamName = "bar"
 	event.GeneratedTime = time.Now()
 
-	assert.NoError(t, pusher.AddLogEntry(context.Background(), event))
-	assert.NoError(t, pusher.AddLogEntry(context.Background(), event))
+	assert.NoError(t, pusher.AddLogEntry(t.Context(), event))
+	assert.NoError(t, pusher.AddLogEntry(t.Context(), event))
 	assert.Equal(t, int32(0), mockCwAPI.putLogEventsCount.Load())
-	assert.NoError(t, pusher.ForceFlush(context.Background()))
+	assert.NoError(t, pusher.ForceFlush(t.Context()))
 
 	assert.Equal(t, int32(1), mockCwAPI.createLogStreamCount.Load())
 	assert.Equal(t, int32(2), mockCwAPI.putLogEventsCount.Load())
@@ -272,8 +272,8 @@ func TestMultiStreamPusher(t *testing.T) {
 	event2.LogStreamName = "bar2"
 	event2.GeneratedTime = time.Now()
 
-	assert.NoError(t, pusher.AddLogEntry(context.Background(), event2))
-	assert.NoError(t, pusher.ForceFlush(context.Background()))
+	assert.NoError(t, pusher.AddLogEntry(t.Context(), event2))
+	assert.NoError(t, pusher.ForceFlush(t.Context()))
 
 	assert.Equal(t, int32(2), mockCwAPI.createLogStreamCount.Load())
 	assert.Equal(t, int32(4), mockCwAPI.putLogEventsCount.Load())

@@ -4,7 +4,6 @@
 package azure
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,7 +28,7 @@ func TestQueryEndpointFailed(t *testing.T) {
 		client:   &http.Client{},
 	}
 
-	_, err := provider.Metadata(context.Background())
+	_, err := provider.Metadata(t.Context())
 	assert.Error(t, err)
 }
 
@@ -45,7 +44,7 @@ func TestQueryEndpointMalformed(t *testing.T) {
 		client:   &http.Client{},
 	}
 
-	_, err := provider.Metadata(context.Background())
+	_, err := provider.Metadata(t.Context())
 	assert.Error(t, err)
 }
 
@@ -78,7 +77,7 @@ func TestQueryEndpointCorrect(t *testing.T) {
 		client:   &http.Client{},
 	}
 
-	recvMetadata, err := provider.Metadata(context.Background())
+	recvMetadata, err := provider.Metadata(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, *sentMetadata, *recvMetadata)

@@ -89,14 +89,14 @@ func TestProfilesExporter_Start(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.profilesExporter)
 	assert.Contains(t, exp.config.Profiles.Headers, "Authorization")
 
 	// Test shutdown
-	err = exp.shutdown(context.Background())
+	err = exp.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -114,7 +114,7 @@ func TestProfilesExporter_EnhanceContext(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	enhancedCtx := exp.enhanceContext(ctx)
 	assert.NotEqual(t, ctx, enhancedCtx)
 }
@@ -132,10 +132,10 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize the exporter by calling start
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -147,7 +147,7 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 	resource := rp.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
-	err = exp.pushProfiles(context.Background(), profiles)
+	err = exp.pushProfiles(t.Context(), profiles)
 	assert.Error(t, err)
 }
 
@@ -184,10 +184,10 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 			exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 			require.NoError(t, err)
 
-			err = exp.start(context.Background(), componenttest.NewNopHost())
+			err = exp.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				err = exp.shutdown(context.Background())
+				err = exp.shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 
@@ -201,7 +201,7 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 			resource := rp.Resource()
 			resource.Attributes().PutStr("service.name", "test-service")
 
-			err = exp.pushProfiles(context.Background(), profiles)
+			err = exp.pushProfiles(t.Context(), profiles)
 			assert.Error(t, err)
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
@@ -288,11 +288,11 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to create profiles exporter: %v", err)
 	}
-	if err := exp.start(context.Background(), componenttest.NewNopHost()); err != nil {
+	if err := exp.start(b.Context(), componenttest.NewNopHost()); err != nil {
 		b.Fatalf("failed to start profiles exporter: %v", err)
 	}
 	defer func() {
-		_ = exp.shutdown(context.Background())
+		_ = exp.shutdown(b.Context())
 	}()
 
 	testCases := []int{
@@ -317,7 +317,7 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 					profile.SetProfileID(id)
 					profile.SetDuration(1000000000) // 1 second in nanoseconds
 				}
-				_ = exp.pushProfiles(context.Background(), profiles)
+				_ = exp.pushProfiles(b.Context(), profiles)
 			}
 		})
 	}
@@ -342,10 +342,10 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -376,7 +376,7 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 
-	err = exp.pushProfiles(context.Background(), profiles)
+	err = exp.pushProfiles(t.Context(), profiles)
 	require.NoError(t, err)
 
 	entries := observed.All()
@@ -420,10 +420,10 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -444,7 +444,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -474,7 +474,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		duration := time.Since(start)
 
 		assert.Error(t, err)
@@ -496,7 +496,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			binary.LittleEndian.PutUint64(testID[:8], uint64(0))
 			testProfile.SetProfileID(testID)
 
-			errPush := exp.pushProfiles(context.Background(), testProfiles)
+			errPush := exp.pushProfiles(t.Context(), testProfiles)
 			return errPush == nil
 		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
 
@@ -519,7 +519,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -550,10 +550,10 @@ func TestProfilesExporter_RateLimitErrorCountReset(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -573,13 +573,13 @@ func TestProfilesExporter_RateLimitErrorCountReset(t *testing.T) {
 	profile.SetProfileID(id)
 	profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 
-	err = exp.pushProfiles(context.Background(), profiles)
+	err = exp.pushProfiles(t.Context(), profiles)
 	assert.Error(t, err)
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 	assert.Equal(t, 0, srv.recvCount)
 
 	require.Eventually(t, func() bool {
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		return err == nil &&
 			exp.rateError.errorCount.Load() == 0 &&
 			srv.recvCount > 0
@@ -608,10 +608,10 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -631,7 +631,7 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Initial successful push", func(t *testing.T) {
 		profiles := createTestProfiles()
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 1, srv.recvCount)
@@ -647,7 +647,7 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Successful push after errors", func(t *testing.T) {
 		profiles := createTestProfiles()
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 2, srv.recvCount)
@@ -655,7 +655,7 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Verify error count stays at 0", func(t *testing.T) {
 		profiles := createTestProfiles()
-		err = exp.pushProfiles(context.Background(), profiles)
+		err = exp.pushProfiles(t.Context(), profiles)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 3, srv.recvCount)

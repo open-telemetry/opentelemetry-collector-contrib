@@ -74,7 +74,7 @@ func TestNewS3SQSReader(t *testing.T) {
 			},
 		}
 
-		reader, err := newS3SQSReader(context.Background(), logger, cfg)
+		reader, err := newS3SQSReader(t.Context(), logger, cfg)
 		assert.Error(t, err)
 		assert.Nil(t, reader)
 	})
@@ -91,7 +91,7 @@ func TestNewS3SQSReader(t *testing.T) {
 			},
 		}
 
-		r, err := newS3SQSReader(context.Background(), logger, cfg)
+		r, err := newS3SQSReader(t.Context(), logger, cfg)
 		assert.NotNil(t, r)
 		assert.NoError(t, err)
 	})
@@ -193,7 +193,7 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
 	var callbackCalled bool
@@ -314,7 +314,7 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
 	var callbackCalled bool
@@ -377,7 +377,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			errors.New("context canceled"),
 		)
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel() // Cancel context immediately to trigger error case
 
 		err := reader.readAll(ctx, "test-telemetry", nil)
@@ -468,7 +468,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			nil,
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
 		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
 			t.Fatal("Callback should not be called when S3 retrieval fails")
@@ -613,7 +613,7 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
 	processedKeys := make(map[string][]byte)

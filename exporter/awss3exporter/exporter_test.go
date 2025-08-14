@@ -55,7 +55,7 @@ func getLogExporter(t *testing.T) *s3Exporter {
 func TestLog(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporter(t)
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
 }
 
 func getLogExporterWithResourceAttrs(t *testing.T) *s3Exporter {
@@ -74,7 +74,7 @@ func getLogExporterWithResourceAttrs(t *testing.T) *s3Exporter {
 func TestLogWithResourceAttrs(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporterWithResourceAttrs(t)
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
 }
 
 func getLogExporterWithBucketAndPrefixAttrs(t *testing.T) *s3Exporter {
@@ -94,5 +94,5 @@ func getLogExporterWithBucketAndPrefixAttrs(t *testing.T) *s3Exporter {
 func TestLogWithBucketAndPrefixAttrs(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporterWithBucketAndPrefixAttrs(t)
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
 }

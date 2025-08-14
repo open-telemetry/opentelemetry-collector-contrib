@@ -4,7 +4,6 @@
 package ctxspan_test
 
 import (
-	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -621,11 +620,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			span := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), newTestContext(span))
+			got, err := accessor.Get(t.Context(), newTestContext(span))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newTestContext(span), tt.newVal)
+			err = accessor.Set(t.Context(), newTestContext(span), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedSpan := createTelemetry()

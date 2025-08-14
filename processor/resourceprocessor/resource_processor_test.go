@@ -4,7 +4,6 @@
 package resourceprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,13 +92,13 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, ttn)
+			rtp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceTraceData := generateTraceData(tt.sourceAttributes)
 			wantTraceData := generateTraceData(tt.wantAttributes)
-			err = rtp.ConsumeTraces(context.Background(), sourceTraceData)
+			err = rtp.ConsumeTraces(t.Context(), sourceTraceData)
 			require.NoError(t, err)
 			traces := ttn.AllTraces()
 			require.Len(t, traces, 1)
@@ -107,13 +106,13 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tmn)
+			rmp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceMetricData := generateMetricData(tt.sourceAttributes)
 			wantMetricData := generateMetricData(tt.wantAttributes)
-			err = rmp.ConsumeMetrics(context.Background(), sourceMetricData)
+			err = rmp.ConsumeMetrics(t.Context(), sourceMetricData)
 			require.NoError(t, err)
 			metrics := tmn.AllMetrics()
 			require.Len(t, metrics, 1)
@@ -121,13 +120,13 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
+			rlp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceLogData := generateLogData(tt.sourceAttributes)
 			wantLogData := generateLogData(tt.wantAttributes)
-			err = rlp.ConsumeLogs(context.Background(), sourceLogData)
+			err = rlp.ConsumeLogs(t.Context(), sourceLogData)
 			require.NoError(t, err)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
@@ -135,13 +134,13 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test profiles consumer
 			tpn := new(consumertest.ProfilesSink)
-			rpp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tpn)
+			rpp, err := factory.(xprocessor.Factory).CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tpn)
 			require.NoError(t, err)
 			assert.True(t, rpp.Capabilities().MutatesData)
 
 			sourceProfileData := generateProfileData(tt.sourceAttributes)
 			wantProfileData := generateProfileData(tt.wantAttributes)
-			err = rpp.ConsumeProfiles(context.Background(), sourceProfileData)
+			err = rpp.ConsumeProfiles(t.Context(), sourceProfileData)
 			require.NoError(t, err)
 			profiles := tpn.AllProfiles()
 			require.Len(t, profiles, 1)
