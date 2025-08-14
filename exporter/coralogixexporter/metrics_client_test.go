@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -377,7 +378,7 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	partialSuccess.SetRejectedDataPoints(1)
 	mockSrv.partialSuccess = &partialSuccess
 
-	core, observed := observer.New(zapcore.ErrorLevel)
+	core, observed := observer.New(zapcore.DebugLevel)
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 
@@ -387,29 +388,36 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	entries := observed.All()
 	found := false
 	for _, entry := range entries {
-		if entry.Message == "Partial success response from Coralogix" &&
-			entry.Level == zapcore.ErrorLevel &&
-			entry.ContextMap()["message"] == "some metrics were rejected" &&
-			entry.ContextMap()["rejected_data_points"] == int64(1) {
-			fields := entry.ContextMap()
-			var names []string
-			if arr, ok := fields["metric_names"].([]string); ok {
-				names = arr
-			} else if arr, ok := fields["metric_names"].([]any); ok {
-				for _, v := range arr {
-					if s, ok := v.(string); ok {
-						names = append(names, s)
-					}
+		if entry.Message != "Partial success response from Coralogix" ||
+			entry.Level != zapcore.ErrorLevel ||
+			entry.ContextMap()["message"] != "some metrics were rejected" ||
+			entry.ContextMap()["rejected_data_points"] != int64(1) {
+			continue
+		}
+		fields := entry.ContextMap()
+		var names []string
+		switch arr := fields["metric_names"].(type) {
+		case []string:
+			names = arr
+		case []any:
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					names = append(names, s)
 				}
 			}
-			assert.Contains(t, names, "test-metric")
-			found = true
 		}
+		assert.Contains(t, names, "test-metric")
+		found = true
 	}
 	assert.True(t, found, "Expected partial success log with correct fields and metric names")
 }
 
 func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
+	isIntegrationTest := os.Getenv("INTEGRATION_TEST")
+	if isIntegrationTest != "true" {
+		t.Skip("Skipping E2E test: INTEGRATION_TEST not set")
+	}
+
 	endpoint, stopFn, mockSrv := startMockOtlpMetricsServer(t)
 	defer stopFn()
 

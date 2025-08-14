@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -75,9 +74,7 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	require.Equal(t, routeConsumer, route.consumer)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -413,9 +410,9 @@ func TestTracesConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, common.Functions[ottlresource.TransformContext](), "IsString")
+	require.Contains(t, common.SpanFunctions(), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, common.Functions[ottlresource.TransformContext](), "IsMap")
+	require.Contains(t, common.SpanFunctions(), "IsMap")
 
 	isSpanE := `name == "spanE"`
 	isSpanF := `name == "spanF"`

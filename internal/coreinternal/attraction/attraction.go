@@ -294,8 +294,10 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 		case DELETE:
 			attrs.Remove(action.Key)
 
-			for _, k := range getMatchingKeys(action.Regex, attrs) {
-				attrs.Remove(k)
+			if action.Regex != nil {
+				attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
+					return action.Regex.MatchString(k)
+				})
 			}
 		case INSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
@@ -328,10 +330,16 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 				av.CopyTo(attrs.PutEmpty(action.Key))
 			}
 		case HASH:
-			hashAttribute(action.Key, attrs)
+			if value, exists := attrs.Get(action.Key); exists {
+				sha2Hasher(value)
+			}
 
-			for _, k := range getMatchingKeys(action.Regex, attrs) {
-				hashAttribute(k, attrs)
+			if action.Regex != nil {
+				for key, val := range attrs.All() {
+					if action.Regex.MatchString(key) {
+						sha2Hasher(val)
+					}
+				}
 			}
 		case EXTRACT:
 			extractAttributes(action, attrs)
@@ -399,12 +407,6 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(key string, attrs pcommon.Map) {
-	if value, exists := attrs.Get(key); exists {
-		sha2Hasher(value)
-	}
-}
-
 func convertAttribute(logger *zap.Logger, action attributeAction, attrs pcommon.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		convertValue(logger, action.Key, action.ConvertedType, value)
@@ -431,19 +433,4 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	for i := 1; i < len(matches); i++ {
 		attrs.PutStr(action.AttrNames[i], matches[i])
 	}
-}
-
-func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
-	var keys []string
-
-	if regexp == nil {
-		return keys
-	}
-
-	for k := range attrs.All() {
-		if regexp.MatchString(k) {
-			keys = append(keys, k)
-		}
-	}
-	return keys
 }

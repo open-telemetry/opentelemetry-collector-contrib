@@ -21,6 +21,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -99,7 +100,7 @@ func TestEventsScraper(t *testing.T) {
 	}{
 		{
 			name:        "QuerySample",
-			clientQuery: "WAITFOR DELAY '00:00:20' SELECT * FROM dbo.test_table",
+			clientQuery: "WAITFOR DELAY '00:01:00' SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
 				cfg.Events.DbServerQuerySample.Enabled = true
 				return cfg
@@ -151,9 +152,13 @@ func TestEventsScraper(t *testing.T) {
 					// collection interval it will not be considered as a top query.
 					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
-				actualLog, err := scraper.ScrapeLogs(context.Background())
-				assert.NotNil(t, actualLog)
-				assert.NoError(t, err)
+				var actualLog plog.Logs
+				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+					actualLog, err = scraper.ScrapeLogs(context.Background())
+					assert.NotNil(tt, actualLog)
+					assert.NoError(tt, err)
+					assert.Positive(tt, actualLog.LogRecordCount())
+				}, 10*time.Second, 100*time.Millisecond)
 				found := false
 				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 				for i := 0; i < logRecords.Len(); i++ {
@@ -195,7 +200,7 @@ func TestEventsScraper(t *testing.T) {
 					default:
 						queriesCount.Add(1)
 						// Simulate a long-running query
-						_, queryErr := db.Query(tc.clientQuery)
+						_, queryErr := db.Exec(tc.clientQuery)
 						if !finished.Load() {
 							// only check this condition if the test is not finished
 							assert.NoError(t, queryErr)
@@ -203,6 +208,8 @@ func TestEventsScraper(t *testing.T) {
 					}
 				}
 			}(queryContext)
+
+			time.Sleep(10 * time.Second)
 
 			portNumber, err := strconv.Atoi(p.Port())
 			assert.NoError(t, err)

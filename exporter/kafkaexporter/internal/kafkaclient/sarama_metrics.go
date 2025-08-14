@@ -44,9 +44,17 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(
 	if err != nil {
 		outcome = "failure"
 	}
+	// KafkaExporterLatency is deprecated in favor of KafkaExporterWriteLatency.
 	spm.tb.KafkaExporterLatency.Record(
 		ctx,
 		time.Since(t).Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("outcome", outcome),
+		),
+	)
+	spm.tb.KafkaExporterWriteLatency.Record(
+		ctx,
+		time.Since(t).Seconds(),
 		metric.WithAttributes(
 			attribute.String("outcome", outcome),
 		),
@@ -78,7 +86,13 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(
 				bytes,
 				metric.WithAttributes(attrs...),
 			)
+			// KafkaExporterMessages is deprecated in favor of KafkaExporterRecords.
 			spm.tb.KafkaExporterMessages.Add(
+				ctx,
+				1,
+				metric.WithAttributes(attrs...),
+			)
+			spm.tb.KafkaExporterRecords.Add(
 				ctx,
 				1,
 				metric.WithAttributes(attrs...),
@@ -98,7 +112,13 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(
 			s.bytes,
 			metric.WithAttributes(attrs...),
 		)
+		// KafkaExporterMessages is deprecated in favor of KafkaExporterRecords.
 		spm.tb.KafkaExporterMessages.Add(
+			ctx,
+			s.records,
+			metric.WithAttributes(attrs...),
+		)
+		spm.tb.KafkaExporterRecords.Add(
 			ctx,
 			s.records,
 			metric.WithAttributes(attrs...),

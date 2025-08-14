@@ -75,9 +75,8 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	require.Equal(t, routeConsumer, route.consumer)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -438,9 +437,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isBodyString := `IsString(body) == true`
-	require.Contains(t, common.Functions[ottllog.TransformContext](), "IsString")
+	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsString")
 	isBodyMap := `IsMap(body) == true`
-	require.Contains(t, common.Functions[ottllog.TransformContext](), "IsMap")
+	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsMap")
 
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`

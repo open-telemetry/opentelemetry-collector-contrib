@@ -10,9 +10,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
-
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -26,12 +26,16 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalBytesRead.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalBytesWritten.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWalLag.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReadLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReads.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReadsFailures.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWriteLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWrites.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWritesFailures.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWrittenExemplars.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWrittenHistograms.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWrittenSamples.Add(context.Background(), 1)
 	AssertEqualExporterPrometheusremotewriteConsumers(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -50,6 +54,9 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualExporterPrometheusremotewriteWalBytesWritten(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWalLag(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalReadLatency(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
@@ -66,6 +73,15 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWrittenExemplars(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWrittenHistograms(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWrittenSamples(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

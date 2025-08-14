@@ -61,6 +61,6 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
       insecure: true`, jr.Port)
 }
 
-func (jr *jaegerDataReceiver) ProtocolName() string {
+func (*jaegerDataReceiver) ProtocolName() string {
 	return "otlp/jaeger"
 }

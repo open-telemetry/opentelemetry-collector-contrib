@@ -73,7 +73,7 @@ func (r *streamLoadResponse) duplication() bool {
 	return r.Status == "Label Already Exists"
 }
 
-func streamLoadURL(address string, db string, table string) string {
+func streamLoadURL(address, db, table string) string {
 	return address + "/api/" + db + "/" + table + "/_stream_load"
 }
 

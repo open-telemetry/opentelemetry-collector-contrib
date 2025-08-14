@@ -899,6 +899,16 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(Values({"key1": true, "key2": "value", "key3": 1})))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetBool(true)
+				s.AppendEmpty().SetStr("value")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseSimplifiedXML("<Log><id>1</id><Message>This is a log message!</Message></Log>"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				attr := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
@@ -1115,6 +1125,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], "pass") where IsString(UUIDv7())`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "\\")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "\\")
@@ -1159,6 +1175,7 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutStr("user_agent.original", "curl/7.81.0")
 				m.PutStr("user_agent.name", "curl")
 				m.PutStr("user_agent.version", "7.81.0")
+				m.PutStr("os.name", "Other")
 			},
 		},
 		{
@@ -1170,6 +1187,19 @@ func Test_e2e_converters(t *testing.T) {
 				thing1.PutInt("value", 2)
 
 				thing2 := m.PutEmptyMap("bar")
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				thing1 := m.PutEmptyMap("0")
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := m.PutEmptyMap("1")
 				thing2.PutStr("name", "bar")
 				thing2.PutInt("value", 5)
 			},

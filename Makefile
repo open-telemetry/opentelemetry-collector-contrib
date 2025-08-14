@@ -367,10 +367,6 @@ docker-golden:
 	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
 	rm cmd/golden/golden_*
 
-.PHONY: generate
-generate: install-tools
-	PATH="$(ROOT_DIR).tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
-	$(MAKE) gofmt
 
 .PHONY: gengithub
 gengithub: $(GITHUBGEN)
@@ -522,7 +518,7 @@ update-otel:$(MULTIMOD)
 	# Tidy again after generating code
 	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
-	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
+	git add . && git commit -s -m "[chore] mod and toolchain tidy" --allow-empty ; \
 
 .PHONY: otel-from-tree
 otel-from-tree:

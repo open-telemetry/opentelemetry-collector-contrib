@@ -132,7 +132,7 @@ func (otts *OpenTelemetryTraceState) RValue() string {
 // RValueRandomness returns the randomness object corresponding with
 // RValue() and a boolean indicating whether the R-value is set.
 func (otts *OpenTelemetryTraceState) RValueRandomness() (Randomness, bool) {
-	return otts.rnd, len(otts.rvalue) != 0
+	return otts.rnd, otts.rvalue != ""
 }
 
 // TValue returns the T-value (key: "th") as a string or empty if
@@ -145,7 +145,7 @@ func (otts *OpenTelemetryTraceState) TValue() string {
 // TValue() and a boolean (equal to len(TValue()) != 0 indicating
 // whether the T-value is valid.
 func (otts *OpenTelemetryTraceState) TValueThreshold() (Threshold, bool) {
-	return otts.threshold, len(otts.tvalue) != 0
+	return otts.threshold, otts.tvalue != ""
 }
 
 // UpdateTValueWithSampling modifies the TValue of this object, which
@@ -165,7 +165,7 @@ func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold T
 	// UpdateTValueWithSamplingFixedTValue() could extend this
 	// API to address this allocation, although it is probably
 	// not significant.
-	if len(otts.TValue()) != 0 && ThresholdGreater(otts.threshold, sampledThreshold) {
+	if otts.TValue() != "" && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
 	// Note NeverSampleThreshold is the (exclusive) upper boundary
@@ -180,7 +180,7 @@ func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold T
 // TValue string is empty, this returns 0, otherwise returns
 // Threshold.AdjustedCount().
 func (otts *OpenTelemetryTraceState) AdjustedCount() float64 {
-	if len(otts.tvalue) == 0 {
+	if otts.tvalue == "" {
 		// Note: this case covers the zero state, where
 		// len(tvalue) == 0 and threshold == AlwaysSampleThreshold.
 		// We return 0 to indicate that no information is available.
@@ -211,7 +211,7 @@ func (otts *OpenTelemetryTraceState) ClearRValue() {
 // HasAnyValue returns true if there are any fields in this
 // tracestate, including any extra values.
 func (otts *OpenTelemetryTraceState) HasAnyValue() bool {
-	return len(otts.RValue()) != 0 || len(otts.TValue()) != 0 || len(otts.ExtraValues()) != 0
+	return otts.RValue() != "" || otts.TValue() != "" || len(otts.ExtraValues()) != 0
 }
 
 // Serialize encodes this TraceState object.
@@ -224,13 +224,13 @@ func (otts *OpenTelemetryTraceState) Serialize(w io.StringWriter) error {
 		}
 		cnt++
 	}
-	if len(otts.RValue()) != 0 {
+	if otts.RValue() != "" {
 		sep()
 		ser.write(rValueFieldName)
 		ser.write(":")
 		ser.write(otts.RValue())
 	}
-	if len(otts.TValue()) != 0 {
+	if otts.TValue() != "" {
 		sep()
 		ser.write(tValueFieldName)
 		ser.write(":")

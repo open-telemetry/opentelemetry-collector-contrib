@@ -2058,7 +2058,7 @@ func (ea *errorAdjuster) AdjustMetrics(pmetric.Metrics) error {
 
 type nopAdjuster struct{}
 
-func (n *nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
+func (*nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
 	return nil
 }
 
@@ -2118,9 +2118,7 @@ type testScrapedPage struct {
 func createDataPoint(mname string, value float64, es []exemplar.Exemplar, tagPairs ...string) *testDataPoint {
 	var lbls []string
 	lbls = append(lbls, tagPairs...)
-	lbls = append(lbls, model.MetricNameLabel, mname)
-	lbls = append(lbls, model.JobLabel, "job")
-	lbls = append(lbls, model.InstanceLabel, "instance")
+	lbls = append(lbls, model.MetricNameLabel, mname, model.JobLabel, "job", model.InstanceLabel, "instance")
 
 	return &testDataPoint{
 		lb:        labels.FromStrings(lbls...),

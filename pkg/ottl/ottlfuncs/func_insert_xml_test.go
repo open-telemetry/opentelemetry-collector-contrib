@@ -122,13 +122,13 @@ func Test_InsertXML(t *testing.T) {
 				ottl.FunctionContext{},
 				&InsertXMLArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.document, nil
 						},
 					},
 					XPath: tt.xPath,
 					SubDocument: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.subdoc, nil
 						},
 					},
@@ -178,7 +178,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &InsertXMLArguments[any]{
 			Target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "<a/>", nil
 				},
 			},

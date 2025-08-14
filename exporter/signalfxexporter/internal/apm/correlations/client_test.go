@@ -50,7 +50,7 @@ loop:
 	return cors
 }
 
-func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Value, forcedRespPayload *atomic.Value) http.HandlerFunc {
+func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode, forcedRespPayload *atomic.Value) http.HandlerFunc {
 	forcedRespCode.Store(200)
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

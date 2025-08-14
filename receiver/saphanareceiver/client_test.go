@@ -36,7 +36,7 @@ func (m *testResultWrapper) Scan(dest ...any) error {
 	return nil
 }
 
-func (m *testResultWrapper) Close() error {
+func (*testResultWrapper) Close() error {
 	return nil
 }
 

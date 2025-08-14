@@ -50,6 +50,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlOpenedResources:         MetricConfig{Enabled: true},
 					MysqlOperations:              MetricConfig{Enabled: true},
 					MysqlPageOperations:          MetricConfig{Enabled: true},
+					MysqlPageSize:                MetricConfig{Enabled: true},
 					MysqlPreparedStatements:      MetricConfig{Enabled: true},
 					MysqlQueryClientCount:        MetricConfig{Enabled: true},
 					MysqlQueryCount:              MetricConfig{Enabled: true},
@@ -107,6 +108,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlOpenedResources:         MetricConfig{Enabled: false},
 					MysqlOperations:              MetricConfig{Enabled: false},
 					MysqlPageOperations:          MetricConfig{Enabled: false},
+					MysqlPageSize:                MetricConfig{Enabled: false},
 					MysqlPreparedStatements:      MetricConfig{Enabled: false},
 					MysqlQueryClientCount:        MetricConfig{Enabled: false},
 					MysqlQueryCount:              MetricConfig{Enabled: false},
@@ -153,6 +155,16 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

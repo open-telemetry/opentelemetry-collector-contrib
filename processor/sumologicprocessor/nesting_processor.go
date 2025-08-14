@@ -279,7 +279,7 @@ func (proc *nestingProcessor) squashAttribute(value pcommon.Value) string {
 	return ""
 }
 
-func (proc *nestingProcessor) squashKey(key string, keySuffix string) string {
+func (proc *nestingProcessor) squashKey(key, keySuffix string) string {
 	if keySuffix == "" {
 		return key
 	}

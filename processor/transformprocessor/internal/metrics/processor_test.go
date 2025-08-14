@@ -44,7 +44,7 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(resource.attributes["test"], "pass") where resource.attributes["host.name"] == "wrong"`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -126,7 +126,7 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -167,7 +167,7 @@ func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(scope.attributes["test"], "pass") where scope.version == 2`,
-			want: func(_ pmetric.Metrics) {
+			want: func(pmetric.Metrics) {
 			},
 		},
 		{
@@ -249,6 +249,35 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 
 				// we have two histogram datapoints, but only one of them has the Sum set
 				// so we should only have one Sum datapoint
+			},
+		},
+		{
+			statements: []string{`convert_summary_quantile_val_to_gauge("custom_quantile") where metric.name == "operationD"`},
+			want: func(td pmetric.Metrics) {
+				summaryMetric := pmetric.NewMetric()
+				fillMetricFour(summaryMetric)
+				summaryDp := summaryMetric.Summary().DataPoints().At(0)
+
+				gaugeMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				gaugeMetric.SetDescription(summaryMetric.Description())
+				gaugeMetric.SetName(summaryMetric.Name() + ".quantiles")
+				gaugeMetric.SetUnit(summaryMetric.Unit())
+
+				gauge := gaugeMetric.SetEmptyGauge()
+				gaugeDp := gauge.DataPoints().AppendEmpty()
+				gaugeDp1 := gauge.DataPoints().AppendEmpty()
+
+				summaryDp.Attributes().CopyTo(gaugeDp.Attributes())
+				gaugeDp.Attributes().PutDouble("custom_quantile", 0.99)
+				gaugeDp.SetDoubleValue(123)
+				gaugeDp.SetStartTimestamp(StartTimestamp)
+				gaugeDp.SetTimestamp(TestTimeStamp)
+
+				summaryDp.Attributes().CopyTo(gaugeDp1.Attributes())
+				gaugeDp1.Attributes().PutDouble("custom_quantile", 0.95)
+				gaugeDp1.SetDoubleValue(321)
+				gaugeDp1.SetStartTimestamp(StartTimestamp)
+				gaugeDp1.SetTimestamp(TestTimeStamp)
 			},
 		},
 		{
@@ -900,7 +929,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{`set(attributes["test"], Substring(attributes["total.string"], 3, 3))`},
@@ -920,7 +949,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{
@@ -963,8 +992,8 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		{
 			statements: []string{`limit(attributes, 0, []) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -1343,7 +1372,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(datapoint.attributes["test"], Split(datapoint.attributes["not_exist"], "|"))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["total.string"], 3, 3))`},
@@ -1363,7 +1392,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["not_exist"], 3, 3))`},
-			want:       func(_ pmetric.Metrics) {},
+			want:       func(pmetric.Metrics) {},
 		},
 		{
 			statements: []string{
@@ -1406,8 +1435,8 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 		{
 			statements: []string{`limit(datapoint.attributes, 0, []) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -2015,8 +2044,8 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 
 type TestFuncArguments[K any] struct{}
 
-func createTestFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(_ context.Context, _ K) (any, error) {
+func createTestFunc[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(context.Context, K) (any, error) {
 		return nil, nil
 	}, nil
 }

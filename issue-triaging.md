@@ -44,6 +44,65 @@ between the involved parties to allow work to begin or for the issue to be close
 - Guiding any interested parties to another person or resource that may be more knowledgeable about an issue.
 - Suggesting an issue for discussion at a SIG meeting if a synchronous discussion would be more productive.
 
+It is recommended that a triager should follow these steps when a new issue is reported:
+
+1. Assess the validity of the issue. Here's a rough outline on how to assess:
+   - Does the issue include a clear description of the problem?
+      - Whether it’s a bug report, an enhancement proposal, or a request for a new component, the purpose of the issue should be easy to understand.
+   - The following outline is applicable to bugs or enhancements:
+      - Does the issue specify the relevant version or environment details?
+      - Does it provide the user’s configuration, the expected behavior, and any other relevant context?
+      - If it's reported as a bug, are the steps to reproduce clearly outlined?
+      - For enhancements, does the user clearly outline the expected behavior and provide relevant examples or use cases?
+   - For new component requests:
+      - Does the user explain the purpose and intended use of the component?
+      - Has the user provided example configurations, interfaces, or scenarios where the component would be applied?
+      - Will the user contribute the necessary code, or they are expecting someone from upstream to volunteer?
+      - Will the user be available to provide feedback, clarify requirements, or help with testing and maintenance?
+   - If the issues lacks sufficient information, ask the author clarifying questions:
+      - Collector configuration (missing or incomplete configurations are not uncommon)
+      - The expected vs. actual behavior
+      - Clear and complete steps to reproduce the issue
+      - Collector version
+      - Any other questions that might fit
+
+2. If the issue is deemed valid and requires attention, apply appropriate labels based on its nature:
+   - For bugs, add the `bug` label along with `waiting-for-codeowners`.
+   - For enhancements, use the `enhancement` label and also add `waiting-for-codeowners`.
+   - If the issue is about a new component, add the `sponsor-needed` label. We should encourage the user to join our SIG meeting and propose the new component to a broader audience. They can also reach out in the #otel-collector-dev channel on CNCF Slack.
+   - Check out [state diagram](#state-diagram) for detailed information about all labels.
+
+3. An issue may be considered invalid for the following reasons:
+   - The user is using an incorrect configuration.
+       - In such cases, a brief comment and a link to documentation should be sufficient to close the issue.
+   - The issue was filed in the wrong repository:
+       - For example, we might receive an issue for `otlpexporter` in contrib. It is best to reach out in the #otel-collector-dev channel on CNCF Slack and ask project maintainers to transfer the issue.
+
+4. An issue may be considered complete for following reasons:
+   - The enhancement/bugfix PR has been merged.
+   - The enhancement/bugfix has already been addressed in the newer version.
+   - The new component has been added to the repository.
+
+#### Triage process flowchart 
+
+```mermaid
+flowchart TD
+    Start{Check validity}
+
+    Start -->|Unclear| WaitingAuthor[Tag:<br><code>waiting-for-author</code><br>Ask for config, repro steps,<br>expected vs actual result]
+    Start -->|Invalid| Transfer[Close or<br>transfer issue:<br>wrong repo, bad config, etc.]
+    Start -->|Valid| Classify
+
+    Classify -->|Bug| EnrichBug[Tag:<br><code>bug</code>,<br><code>waiting-for-codeowners</code>,<br>Optional: <code>bug:perf/crash</code>,<br><code>workaround:yes/no</code>,<br><code>release:blocker</code>]
+
+    Classify -->|Enhancement| EnhancementLabel[Tag:<br><code>enhancement</code>,<br><code>waiting-for-codeowners</code>]
+
+    Classify -->|Documentation| DocLabel[Tag:<br><code>documentation</code>,<br><code>waiting-for-codeowners</code>]
+
+    Classify -->|New Component| NewComponent[Tag:<br><code>sponsor-needed</code>]
+    NewComponent --> Expectations[Set expectations:<br>Will user contribute code?<br>Will they provide feedback/support?<br><br>Suggest joining SIG,<br>propose via SIG,<br>or reach out on<br><code>#otel-collector-dev</code> Slack]
+```
+
 #### Issue assignment
 
 Issues are assigned for someone to work on by a triager when someone volunteers to work on an issue. Assignment is intended to prevent duplicate work by making it visible who is

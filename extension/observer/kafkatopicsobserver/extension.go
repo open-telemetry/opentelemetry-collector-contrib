@@ -63,11 +63,11 @@ func newObserver(
 	return o, nil
 }
 
-func (k *kafkaTopicsObserver) Start(_ context.Context, _ component.Host) error {
+func (*kafkaTopicsObserver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (k *kafkaTopicsObserver) Shutdown(_ context.Context) error {
+func (k *kafkaTopicsObserver) Shutdown(context.Context) error {
 	k.StopListAndWatch()
 	k.cancelKafkaAdmin()
 	err := k.adminClient.Close()

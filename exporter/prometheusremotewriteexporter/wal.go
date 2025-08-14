@@ -33,6 +33,7 @@ type prwWalTelemetry interface {
 	recordWALReadsFailures(ctx context.Context)
 	recordWALBytesWritten(ctx context.Context, bytes int)
 	recordWALBytesRead(ctx context.Context, bytes int)
+	recordWALLag(ctx context.Context, lag int64)
 }
 
 type prwWalTelemetryOTel struct {
@@ -72,6 +73,10 @@ func (p *prwWalTelemetryOTel) recordWALBytesRead(ctx context.Context, bytes int)
 	p.telemetryBuilder.ExporterPrometheusremotewriteWalBytesRead.Add(ctx, int64(bytes), metric.WithAttributes(p.otelAttrs...))
 }
 
+func (p *prwWalTelemetryOTel) recordWALLag(ctx context.Context, lag int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalLag.Record(ctx, lag, metric.WithAttributes(p.otelAttrs...))
+}
+
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
@@ -102,14 +107,16 @@ type prweWAL struct {
 }
 
 const (
-	defaultWALBufferSize        = 300
-	defaultWALTruncateFrequency = 1 * time.Minute
+	defaultWALBufferSize         = 300
+	defaultWALTruncateFrequency  = 1 * time.Minute
+	defaultWALLagRecordFrequency = 15 * time.Second
 )
 
 type WALConfig struct {
-	Directory         string        `mapstructure:"directory"`
-	BufferSize        int           `mapstructure:"buffer_size"`
-	TruncateFrequency time.Duration `mapstructure:"truncate_frequency"`
+	Directory          string        `mapstructure:"directory"`
+	BufferSize         int           `mapstructure:"buffer_size"`
+	TruncateFrequency  time.Duration `mapstructure:"truncate_frequency"`
+	LagRecordFrequency time.Duration `mapstructure:"lag_record_frequency"`
 }
 
 func (wc *WALConfig) bufferSize() int {
@@ -124,6 +131,13 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 		return wc.TruncateFrequency
 	}
 	return defaultWALTruncateFrequency
+}
+
+func (wc *WALConfig) lagRecordInterval() time.Duration {
+	if wc.LagRecordFrequency > 0 {
+		return wc.LagRecordFrequency
+	}
+	return defaultWALLagRecordFrequency
 }
 
 func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
@@ -225,7 +239,14 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 
 	// Start the process of exporting but wait until the exporting has started.
 	waitUntilStartedCh := make(chan bool)
-	prweWAL.wg.Add(1)
+	prweWAL.wg.Add(2)
+
+	go func() {
+		defer prweWAL.wg.Done()
+		defer cancel()
+		prweWAL.recordLagLoop(runCtx, logger)
+	}()
+
 	go func() {
 		defer prweWAL.wg.Done()
 		defer cancel()
@@ -254,6 +275,25 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	}()
 	<-waitUntilStartedCh
 	return nil
+}
+
+func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
+	ticker := time.NewTicker(prweWAL.walConfig.lagRecordInterval())
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-prweWAL.stopChan:
+			return
+		case <-ticker.C:
+			// In normal state, wIndex and rIndex will differ by one. To avoid having -1 as a final value, we set it to 0 as minimum.
+			lag := max(0, int64(prweWAL.wWALIndex.Load()-prweWAL.rWALIndex.Load()))
+			logger.Info("recording lag log", zap.Int64("wIndex", int64(prweWAL.wWALIndex.Load())), zap.Int64("rIndex", int64(prweWAL.wWALIndex.Load())), zap.Int64("lag", lag))
+			prweWAL.telemetry.recordWALLag(ctx, lag)
+		}
+	}
 }
 
 // continuallyPopWALThenExport reads a prompb.WriteRequest proto encoded blob from the WAL, and moves
@@ -317,7 +357,8 @@ func (prweWAL *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalS
 		timer.Stop()
 		timer = freshTimer()
 
-		if err = prweWAL.exportThenFrontTruncateWAL(ctx, reqL); err != nil {
+		err = prweWAL.exportThenFrontTruncateWAL(ctx, reqL)
+		if err != nil {
 			return err
 		}
 		// Reset but reuse the write requests slice.
@@ -415,7 +456,6 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		if index <= 0 {
 			index = 1
 		}
-
 		prweWAL.mu.Lock()
 		if prweWAL.wal == nil {
 			return nil, errors.New("attempt to read from closed WAL")
@@ -428,7 +468,8 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		prweWAL.telemetry.recordWALBytesRead(ctx, len(protoBlob))
 		if err == nil { // The read succeeded.
 			req := new(prompb.WriteRequest)
-			if err = proto.Unmarshal(protoBlob, req); err != nil {
+			err = proto.Unmarshal(protoBlob, req)
+			if err != nil {
 				return nil, err
 			}
 

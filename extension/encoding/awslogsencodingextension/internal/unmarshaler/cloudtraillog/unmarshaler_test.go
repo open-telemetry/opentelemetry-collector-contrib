@@ -112,7 +112,7 @@ func (r *errorReader) Read(_ []byte) (int, error) {
 	return 0, r.err
 }
 
-func readLogFile(t *testing.T, dir string, file string) io.Reader {
+func readLogFile(t *testing.T, dir, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
 	return bytes.NewReader(data)

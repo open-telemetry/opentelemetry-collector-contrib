@@ -5,22 +5,26 @@ package metrics
 
 import (
 	"errors"
+	"time"
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
 type Config struct {
 	common.Config
-	NumMetrics             int
-	MetricName             string
-	MetricType             MetricType
-	AggregationTemporality AggregationTemporality
-	SpanID                 string
-	TraceID                string
+	NumMetrics              int
+	MetricName              string
+	MetricType              MetricType
+	AggregationTemporality  AggregationTemporality
+	SpanID                  string
+	TraceID                 string
+	EnforceUniqueTimeseries bool
+	UniqueTimelimit         time.Duration
 }
 
 // NewConfig creates a new Config with default values.
@@ -43,6 +47,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
+	fs.BoolVar(&c.EnforceUniqueTimeseries, "unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
+	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation, timeseries generated within this time will be unique")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -51,7 +57,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/metrics"
-	c.NumMetrics = 1
+	c.Rate = 1
+	c.TotalDuration = types.MustDurationWithInf("inf")
 
 	c.MetricName = "gen"
 	// Use Gauge as default metric type.
@@ -59,13 +66,16 @@ func (c *Config) SetDefaults() {
 	// Use cumulative temporality as default.
 	c.AggregationTemporality = AggregationTemporality(metricdata.CumulativeTemporality)
 
+	c.EnforceUniqueTimeseries = false
+	c.UniqueTimelimit = time.Second
+
 	c.TraceID = ""
 	c.SpanID = ""
 }
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumMetrics <= 0 {
+	if !c.TotalDuration.IsInf() && c.TotalDuration.Duration() <= 0 && c.NumMetrics <= 0 {
 		return errors.New("either `metrics` or `duration` must be greater than 0")
 	}
 

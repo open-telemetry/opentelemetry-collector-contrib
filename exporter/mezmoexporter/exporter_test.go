@@ -132,7 +132,7 @@ func createHTTPServer(params *testServerParams) testServer {
 		statusCode, responseBody := params.assertionsCallback(r, logBody)
 
 		w.WriteHeader(statusCode)
-		if len(responseBody) > 0 {
+		if responseBody != "" {
 			_, err = w.Write([]byte(responseBody))
 			assert.NoError(params.t, err)
 		}

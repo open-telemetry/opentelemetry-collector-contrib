@@ -461,5 +461,5 @@ func BenchmarkTCPInput(b *testing.B) {
 		<-fakeOutput.Received
 	}
 
-	defer close(done)
+	close(done)
 }

@@ -70,7 +70,7 @@ func newCloudWatchLogClient(svc cloudWatchClient, logRetention int32, tags map[s
 	return logClient
 }
 
-func newCollectorUserAgent(buildInfo component.BuildInfo, logGroupName string, componentName string, opts ...ClientOption) string {
+func newCollectorUserAgent(buildInfo component.BuildInfo, logGroupName, componentName string, opts ...ClientOption) string {
 	// Loop through each option
 	option := &cwLogClientConfig{
 		userAgentExtras: []string{},
@@ -256,7 +256,7 @@ func (a *addToUserAgentHeader) HandleSerialize(ctx context.Context, in middlewar
 
 	val := a.val
 	curUA := req.Header.Get("User-Agent")
-	if len(curUA) > 0 {
+	if curUA != "" {
 		val = curUA + " " + val
 	}
 	req.Header.Set("User-Agent", val)

@@ -147,6 +147,10 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
 
+	// The default exporter setting enables the memory queue; we
+	// disable to avoid flaky tests.
+	exporterCfg.QueueSettings.WaitForResult = true
+
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
 	}
@@ -614,10 +618,10 @@ func TestIntegrationSelfTracing(t *testing.T) {
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
 		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
+			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
-			},
+			}),
 		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }

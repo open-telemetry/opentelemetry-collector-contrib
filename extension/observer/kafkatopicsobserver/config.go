@@ -20,7 +20,7 @@ type Config struct {
 }
 
 func (config *Config) Validate() (errs error) {
-	if len(config.TopicRegex) == 0 {
+	if config.TopicRegex == "" {
 		errs = multierr.Append(errs, errors.New("topic_regex must be specified"))
 	}
 	if config.TopicsSyncInterval <= 0 {

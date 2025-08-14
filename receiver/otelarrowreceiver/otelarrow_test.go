@@ -357,11 +357,13 @@ func TestOTelArrowShutdown(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
-				ServerParameters: &configgrpc.KeepaliveServerParameters{},
+				ServerParameters: configoptional.None[configgrpc.KeepaliveServerParameters](),
 			})
 			if !cooperative {
-				cfg.GRPC.Keepalive.Get().ServerParameters.MaxConnectionAge = time.Second
-				cfg.GRPC.Keepalive.Get().ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
+				cfg.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
+					MaxConnectionAge:      time.Second,
+					MaxConnectionAgeGrace: 5 * time.Second,
+				})
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
@@ -506,7 +508,7 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.consumeError = err
 }
 
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+func (*errOrSinkConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -856,9 +858,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
-		ServerParameters: &configgrpc.KeepaliveServerParameters{},
-	})
+	cfg.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)

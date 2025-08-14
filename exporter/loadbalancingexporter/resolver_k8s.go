@@ -79,7 +79,7 @@ func newK8sResolver(clt kubernetes.Interface,
 	returnNames bool,
 	tb *metadata.TelemetryBuilder,
 ) (*k8sResolver, error) {
-	if len(service) == 0 {
+	if service == "" {
 		return nil, errNoSvc
 	}
 

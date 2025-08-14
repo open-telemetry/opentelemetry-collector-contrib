@@ -391,7 +391,7 @@ func PdhGetFormattedCounterValueDouble(hCounter PDH_HCOUNTER, lpdwType *uint32, 
 //			time.Sleep(2000 * time.Millisecond)
 //		}
 //	}
-func PdhGetFormattedCounterArrayDouble(hCounter PDH_HCOUNTER, lpdwBufferSize *uint32, lpdwBufferCount *uint32, itemBuffer *byte) uint32 {
+func PdhGetFormattedCounterArrayDouble(hCounter PDH_HCOUNTER, lpdwBufferSize, lpdwBufferCount *uint32, itemBuffer *byte) uint32 {
 	ret, _, _ := pdh_GetFormattedCounterArrayW.Call(
 		uintptr(hCounter),
 		uintptr(PDH_FMT_DOUBLE|PDH_FMT_NOCAP100),
@@ -409,7 +409,7 @@ func PdhGetFormattedCounterArrayDouble(hCounter PDH_HCOUNTER, lpdwBufferSize *ui
 // call PdhGetCounterInfo and access dwQueryUserData of the PDH_COUNTER_INFO structure. phQuery is
 // the handle to the query, and must be used in subsequent calls. This function returns a PDH_
 // constant error code, or ERROR_SUCCESS if the call succeeded.
-func PdhOpenQuery(szDataSource uintptr, dwUserData uintptr, phQuery *PDH_HQUERY) uint32 {
+func PdhOpenQuery(szDataSource, dwUserData uintptr, phQuery *PDH_HQUERY) uint32 {
 	ret, _, _ := pdh_OpenQuery.Call(
 		szDataSource,
 		dwUserData,
@@ -534,7 +534,7 @@ func PdhGetRawCounterValue(hCounter PDH_HCOUNTER, lpdwType *uint32, pValue *PDH_
 //
 // itemBuffer [out]
 // Pointer to a buffer that receives an array of PDH_RAW_COUNTER_ITEM structures. Each structure contains the raw counter value for an instance.
-func PdhGetRawCounterArrayW(hCounter PDH_HCOUNTER, lpdwBufferSize *uint32, lpdwBufferCount *uint32, itemBuffer *byte) uint32 {
+func PdhGetRawCounterArrayW(hCounter PDH_HCOUNTER, lpdwBufferSize, lpdwBufferCount *uint32, itemBuffer *byte) uint32 {
 	ret, _, _ := pdh_GetRawCounterArrayW.Call(
 		uintptr(hCounter),
 		uintptr(unsafe.Pointer(lpdwBufferSize)),

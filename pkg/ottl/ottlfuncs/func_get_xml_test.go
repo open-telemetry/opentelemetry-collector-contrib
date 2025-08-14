@@ -99,7 +99,7 @@ func Test_GetXML(t *testing.T) {
 				ottl.FunctionContext{},
 				&GetXMLArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.document, nil
 						},
 					},

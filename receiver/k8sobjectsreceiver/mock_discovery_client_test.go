@@ -13,7 +13,7 @@ type mockDiscovery struct {
 	fakeDiscovery.FakeDiscovery
 }
 
-func (c *mockDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
+func (*mockDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
 	return []*metav1.APIResourceList{
 		{
 			GroupVersion: "v1",

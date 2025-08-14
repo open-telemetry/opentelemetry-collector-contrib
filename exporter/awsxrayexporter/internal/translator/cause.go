@@ -188,7 +188,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	return isError, isFault, isThrottle, filtered, cause
 }
 
-func parseException(exceptionType string, message string, stacktrace string, isRemote bool, language string) []awsxray.Exception {
+func parseException(exceptionType, message, stacktrace string, isRemote bool, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
 	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{
@@ -555,7 +555,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 	var path string
 	var lineNumber int
 
-	plnre := regexp.MustCompile(`([^:\s]+)\:(\d+)`)
+	plnre := regexp.MustCompile(`([^:\s]+):(\d+)`)
 	re := regexp.MustCompile(`^goroutine.*\brunning\b.*:$`)
 
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
@@ -573,7 +573,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	exception.Stack = nil
 	for {
-		match := re.Match([]byte(line))
+		match := re.MatchString(line)
 		if match {
 			line, _ = r.ReadLine()
 		}

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -88,5 +87,5 @@ func appendHeaders(h http.Header, l plog.LogRecord, r *regexp.Regexp) {
 
 // prepend the header key with the "header." namespace
 func headerAttributeKey(header string) string {
-	return strings.Join([]string{headerNamespace, header}, ".")
+	return headerNamespace + "." + header
 }

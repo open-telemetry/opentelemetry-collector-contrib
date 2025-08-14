@@ -195,7 +195,8 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	if err = se.injectCredentials(ctx, colCreds); err != nil {
+	err = se.injectCredentials(ctx, colCreds)
+	if err != nil {
 		return err
 	}
 
@@ -428,7 +429,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
 		CollectorName: collectorName,
 		Description:   se.conf.CollectorDescription,
 		Category:      se.conf.CollectorCategory,
@@ -437,7 +438,8 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
-	}); err != nil {
+	})
+	if err != nil {
 		return credentials.CollectorCredentials{}, err
 	}
 
@@ -647,7 +649,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 	if err != nil {
 		return fmt.Errorf("unable to parse heartbeat URL %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("unable to create HTTP request %w", err)
 	}
@@ -839,7 +841,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
 		HostDetails: api.OpenMetadataHostDetails{
 			Name:        hostname,
 			OsName:      info.OS,
@@ -853,7 +855,8 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			HostIPAddress: ip,
 		},
 		TagDetails: td,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -1068,7 +1071,7 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func addCollectorCredentials(req *http.Request, collectorCredentialID string, collectorCredentialKey string) {
+func addCollectorCredentials(req *http.Request, collectorCredentialID, collectorCredentialKey string) {
 	token := base64.StdEncoding.EncodeToString(
 		[]byte(collectorCredentialID + ":" + collectorCredentialKey),
 	)

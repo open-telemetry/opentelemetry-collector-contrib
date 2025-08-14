@@ -38,7 +38,7 @@ func metadataToHeaders[H any](ctx context.Context, keys []string,
 // Usage example (Sarama):
 //
 //	setMessageHeaders(ctx, allMessages, keys, makeHeader, getHeaders, setHeaders)
-func setMessageHeaders[M any, H any](ctx context.Context,
+func setMessageHeaders[M, H any](ctx context.Context,
 	messages []M,
 	metadataKeys []string,
 	makeHeader func(key string, value []byte) H,
@@ -54,7 +54,7 @@ func setMessageHeaders[M any, H any](ctx context.Context,
 }
 
 // setHeaders sets or appends headers on each message in messages using the provided get/set functions.
-func setHeaders[M any, H any](messages []M, headers []H,
+func setHeaders[M, H any](messages []M, headers []H,
 	getHeaders func(M) []H,
 	setHeaders func(M, []H),
 ) {

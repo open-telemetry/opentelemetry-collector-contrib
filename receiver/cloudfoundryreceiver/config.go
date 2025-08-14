@@ -83,7 +83,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func validateURLOption(name string, value string) error {
+func validateURLOption(name, value string) error {
 	if value == "" {
 		return fmt.Errorf("%s not specified", name)
 	}

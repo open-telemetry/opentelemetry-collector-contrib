@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -228,6 +229,81 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	require.NoError(t, alertRcvr.Shutdown(context.Background()))
 }
 
+func TestAutodiscoverPattern(t *testing.T) {
+	mc := &mockClient{}
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			if input.LogGroupNamePattern != nil && strings.Contains(testLogGroupName, *input.LogGroupNamePattern) {
+				return true
+			}
+
+			return false
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{
+					LogGroupName: &testLogGroupName,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			fmt.Printf("The log group name pattern %s", *input.LogGroupNamePattern)
+			if input.LogGroupNamePattern == nil || !strings.Contains(testLogGroupName, *input.LogGroupNamePattern) {
+				return true
+			}
+
+			return false
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{},
+			NextToken: nil,
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:   1,
+			Pattern: testLogGroupName[2:5],
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	alertRcvr.client = mc
+
+	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, 1)
+
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:   1,
+			Pattern: testLogGroupName[5:] + "-no-matches",
+		},
+	}
+
+	grs, err = alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Empty(t, grs)
+}
+
 func TestAutodiscoverLimit(t *testing.T) {
 	mc := &mockClient{}
 
@@ -272,6 +348,68 @@ func TestAutodiscoverLimit(t *testing.T) {
 	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
 	require.NoError(t, err)
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
+}
+
+func TestShutdownCheckpointer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	mockStorage := newMockStorageClient()
+	logsRcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
+
+	err := logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	require.Nil(t, mockStorage.cache)
+}
+
+func TestShutdownCheckpointerWithError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	// Create a mock storage client that returns an error on Close
+	mockStorage := newMockStorageClient()
+	mockStorage.forceError = true
+
+	cloudwatchCheckpointPersister := newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
+	logsRcvr.cloudwatchCheckpointPersister = cloudwatchCheckpointPersister
+
+	err := logsRcvr.Shutdown(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forced storage error")
+}
+
+func TestShutdownWithoutCheckpointer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+
+	// Don't set a checkpointer (should be nil by default)
+	require.Nil(t, logsRcvr.cloudwatchCheckpointPersister)
+
+	// Call Shutdown and verify it doesn't error when checkpointer is nil
+	err := logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
 }
 
 func TestDeletedLogGroupContinuesPolling(t *testing.T) {
@@ -471,7 +609,6 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 	for _, gr := range logsRcvr.groupRequests {
 		groupNames = append(groupNames, gr.groupName())
 	}
-	// validate deleted group is not in the groupRequests
 	require.ElementsMatch(t, []string{"/aws/working-group", "/aws/third-group"}, groupNames)
 	logs := sink.AllLogs()
 	require.GreaterOrEqual(t, len(logs), 3)

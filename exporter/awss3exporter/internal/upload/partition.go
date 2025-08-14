@@ -5,9 +5,11 @@ package upload // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"math/rand/v2"
+	"path"
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/itchyny/timefmt-go"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -39,13 +41,11 @@ type PartitionKeyBuilder struct {
 	// UniqueKeyFunc allows for overwriting the default behavior of
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
-	//
-	// TODO: Expose the ability to config additional UniqueKeyField via config
 	UniqueKeyFunc func() string
 }
 
 func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {
-	return pki.bucketKeyPrefix(ts, overridePrefix) + "/" + pki.fileName()
+	return path.Join(pki.bucketKeyPrefix(ts, overridePrefix), pki.fileName())
 }
 
 func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix string) string {
@@ -76,10 +76,27 @@ func (pki *PartitionKeyBuilder) fileName() string {
 }
 
 func (pki *PartitionKeyBuilder) uniqueKey() string {
+	// If a custom function is provided, use it to generate the unique key.
+	// If it fails, fall back to the default random integer generation
+	// so that uploads are not blocked.
 	if pki.UniqueKeyFunc != nil {
-		return pki.UniqueKeyFunc()
+		if k := pki.UniqueKeyFunc(); k != "" {
+			return k
+		}
 	}
 
+	return pki.randInt()
+}
+
+func GenerateUUIDv7() string {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return ""
+	}
+	return id.String()
+}
+
+func (*PartitionKeyBuilder) randInt() string {
 	// This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
 	const (

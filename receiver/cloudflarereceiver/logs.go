@@ -253,16 +253,66 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 			logRecord.SetObservedTimestamp(now)
 
 			if v, ok := log[l.cfg.TimestampField]; ok {
-				if stringV, ok := v.(string); ok {
-					ts, err := time.Parse(time.RFC3339, stringV)
-					if err != nil {
-						l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Error(err), zap.String("value", stringV))
-					} else {
-						logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				switch l.cfg.TimestampFormat {
+				case "unix":
+					var sec int64
+					switch val := v.(type) {
+					case int:
+						sec = int64(val)
+					case int64:
+						sec = val
+					case float64:
+						sec = int64(val)
+					case string:
+						i, err := strconv.ParseInt(val, 10, 64)
+						if err != nil {
+							l.logger.Warn("unable to parse "+l.cfg.TimestampField+" as unix seconds", zap.Error(err), zap.String("value", val))
+							continue
+						}
+						sec = i
+					default:
+						l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.String("unsupported type", fmt.Sprintf("%T", v)))
+						continue
 					}
-				} else {
-					l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Any("value", v))
+					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(sec, 0)))
+				case "unixnano":
+					var nano int64
+					switch val := v.(type) {
+					case int:
+						nano = int64(val)
+					case int64:
+						nano = val
+					case float64:
+						nano = int64(val)
+					case string:
+						i, err := strconv.ParseInt(val, 10, 64)
+						if err != nil {
+							l.logger.Warn("unable to parse "+l.cfg.TimestampField+" as unixnano", zap.Error(err), zap.String("value", val))
+							continue
+						}
+						nano = i
+					default:
+						l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.String("unsupported type", fmt.Sprintf("%T", v)))
+						continue
+					}
+					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, nano)))
+				case "rfc3339":
+					strVal, ok := v.(string)
+					if !ok {
+						l.logger.Warn("unable to parse "+l.cfg.TimestampField+" as rfc3339, not a string", zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
+						continue
+					}
+					ts, err := time.Parse(time.RFC3339, strVal)
+					if err != nil {
+						l.logger.Warn("unable to parse "+l.cfg.TimestampField+" as rfc3339", zap.Error(err), zap.String("value", strVal))
+						continue
+					}
+					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				default:
+					l.logger.Warn("unknown timestamp_format configuration", zap.String("timestamp_format", l.cfg.TimestampFormat))
 				}
+			} else {
+				l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Any("value", v))
 			}
 
 			if v, ok := log["EdgeResponseStatus"]; ok {
@@ -370,7 +420,7 @@ func severityFromStatusCode(statusCode int64) plog.SeverityNumber {
 
 // flattenMap recursively flattens a map[string]any into a single level map
 // with keys joined by the specified separator
-func flattenMap(input map[string]any, prefix string, separator string, result map[string]any) {
+func flattenMap(input map[string]any, prefix, separator string, result map[string]any) {
 	for k, v := range input {
 		// Replace hyphens with underscores in the key. Content-Type becomes Content_Type
 		k = strings.ReplaceAll(k, "-", "_")

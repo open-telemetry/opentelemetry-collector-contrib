@@ -157,7 +157,7 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 
 // getRedisVersion retrieves version string from 'redis_version' Redis info key-value pairs
 // e.g. "redis_version:5.0.7"
-func (rs *redisScraper) getRedisVersion(inf info) string {
+func (*redisScraper) getRedisVersion(inf info) string {
 	if str, ok := inf["redis_version"]; ok {
 		return str
 	}

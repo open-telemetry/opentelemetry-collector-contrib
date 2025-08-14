@@ -180,7 +180,7 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	}
 }
 
-func getContainerRuntimeInfo(rawInfo string) (runtime string, version string) {
+func getContainerRuntimeInfo(rawInfo string) (runtime, version string) {
 	// Kubelet reports container runtime version in the following format:
 	// <runtime-name>://<version>
 	parts := strings.Split(rawInfo, "://")
