@@ -6,6 +6,7 @@ package datadogexporter
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -167,7 +168,8 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert := assert.New(t)
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exporter, err := f.CreateTraces(t.Context(), params, &cfg)
+	ctx := context.Background() //nolint:usetesting
+	exporter, err := f.CreateTraces(ctx, params, &cfg)
 	assert.NoError(err)
 
 	// Payload specifies a sub-set of a Zorkian metrics series payload.
