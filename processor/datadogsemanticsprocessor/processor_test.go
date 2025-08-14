@@ -53,7 +53,7 @@ func newMultiTest(
 
 	tp, err := newTestTracesProcessor(cfg, m.nextTrace)
 	require.NoError(t, err)
-	err = tp.Start(context.Background(), &nopHost{
+	err = tp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			errFunc(event.Err())
 		},
@@ -96,7 +96,7 @@ func TestNewProcessor(t *testing.T) {
 func TestNilBatch(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 	m.testConsume(
-		context.Background(),
+		t.Context(),
 		ptrace.NewTraces(),
 		func(err error) {
 			assert.NoError(t, err)
@@ -603,7 +603,7 @@ func TestBasicTranslation(t *testing.T) {
 		)
 
 		traces := testutil.NewOTLPTracesRequest(tt.in)
-		m.testConsume(context.Background(),
+		m.testConsume(t.Context(),
 			traces.Traces(),
 			nil,
 		)

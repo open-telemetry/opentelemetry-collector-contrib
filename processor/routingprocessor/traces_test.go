@@ -4,7 +4,6 @@
 package routingprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +40,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(otlpExpFactory.Type()), otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTraces(t.Context(), exportertest.NewNopSettings(otlpExpFactory.Type()), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
@@ -51,7 +50,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	})
 
 	// test
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	// verify
 	assert.Contains(t, exp.router.getExporters("acme"), otlpExp)
@@ -78,7 +77,7 @@ func TestTraces_InvalidExporter(t *testing.T) {
 	})
 
 	// test
-	err = exp.Start(context.Background(), host)
+	err = exp.Start(t.Context(), host)
 
 	// verify
 	assert.Error(t, err)
@@ -125,7 +124,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span2")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, exp.Start(ctx, host))
 	require.NoError(t, exp.ConsumeTraces(ctx, tr))
 
@@ -164,7 +163,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
@@ -172,7 +171,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("grpc metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
+			metadata.NewIncomingContext(t.Context(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
 			})),
 			tr,
@@ -187,7 +186,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("grpc metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
+			metadata.NewIncomingContext(t.Context(), metadata.New(map[string]string{
 				"X-Tenant": "some-custom-value1",
 			})),
 			tr,
@@ -202,7 +201,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("client.Info metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
-			client.NewContext(context.Background(),
+			client.NewContext(t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"X-Tenant": {"acme"},
 				})}),
@@ -218,7 +217,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("client.Info metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
-			client.NewContext(context.Background(),
+			client.NewContext(t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"X-Tenant": {"some-custom-value1"},
 				})}),
@@ -257,14 +256,14 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
-		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+		assert.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 		assert.Empty(t, defaultExp.AllTraces(),
 			"trace should not be routed to default exporter",
 		)
@@ -278,7 +277,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		rs := tr.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
-		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+		assert.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 1,
 			"trace should be routed to default exporter",
 		)
@@ -313,14 +312,14 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	tr := ptrace.NewTraces()
 	rm := tr.ResourceSpans().AppendEmpty()
 	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rm.Resource().Attributes().PutStr("attr", "acme")
 
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+	assert.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 	traces := tExp.AllTraces()
 	require.Len(t, traces, 1,
 		"trace should be routed to non default exporter",
@@ -362,7 +361,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	t.Run("span by matched no expressions", func(t *testing.T) {
 		defaultExp.Reset()
@@ -375,7 +374,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultExp.AllTraces(), 1)
 		assert.Empty(t, firstExp.AllTraces())
@@ -393,7 +392,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultExp.AllTraces())
 		assert.Len(t, firstExp.AllTraces(), 1)
@@ -416,7 +415,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span1")
 
-		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultExp.AllTraces())
 		assert.Len(t, firstExp.AllTraces(), 1)
@@ -443,7 +442,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span1")
 
-		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultExp.AllTraces(), 1)
 		assert.Len(t, firstExp.AllTraces(), 1)
@@ -488,11 +487,11 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span")
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	// test
 	// before #26464, this would panic
-	require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+	require.NoError(t, exp.ConsumeTraces(t.Context(), tr))
 
 	// verify
 	assert.Len(t, defaultExp.AllTraces(), 1)

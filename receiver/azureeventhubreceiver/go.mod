@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
@@ -49,7 +49,7 @@ require (
 	github.com/devigned/tab v0.1.1 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
-	github.com/expr-lang/expr v1.17.5 // indirect
+	github.com/expr-lang/expr v1.17.6 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

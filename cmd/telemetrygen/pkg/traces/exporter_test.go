@@ -4,7 +4,6 @@
 package traces
 
 import (
-	"context"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -77,7 +76,7 @@ func TestHTTPExporterOptions_TLS(t *testing.T) {
 			require.NoError(t, err)
 			client := otlptracehttp.NewClient(opts...)
 
-			err = client.UploadTraces(context.Background(), []*tracepb.ResourceSpans{})
+			err = client.UploadTraces(t.Context(), []*tracepb.ResourceSpans{})
 			if tc.expectTransportError {
 				require.Error(t, err)
 				assert.False(t, called)
@@ -126,7 +125,7 @@ func TestHTTPExporterOptions_HTTP(t *testing.T) {
 			require.NoError(t, err)
 			client := otlptracehttp.NewClient(opts...)
 
-			err = client.UploadTraces(context.Background(), []*tracepb.ResourceSpans{})
+			err = client.UploadTraces(t.Context(), []*tracepb.ResourceSpans{})
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedHTTPPath, httpPath)
 			for k, expected := range tc.expectedHeader {

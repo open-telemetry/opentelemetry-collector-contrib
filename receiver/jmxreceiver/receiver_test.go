@@ -4,7 +4,6 @@
 package jmxreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -32,8 +31,8 @@ func TestReceiver(t *testing.T) {
 	require.Same(t, params.Logger, receiver.logger)
 	require.Same(t, config, receiver.config)
 
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, receiver.Shutdown(context.Background()))
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Shutdown(t.Context()))
 }
 
 func TestBuildJMXConfig(t *testing.T) {

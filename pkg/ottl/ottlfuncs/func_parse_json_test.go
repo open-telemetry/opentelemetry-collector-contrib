@@ -163,7 +163,7 @@ func Test_ParseJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := parseJSON(tt.target)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			if tt.wantMap != nil {
@@ -195,7 +195,7 @@ func Test_ParseJSON_Error(t *testing.T) {
 		},
 	}
 	exprFunc := parseJSON[any](target)
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
@@ -246,7 +246,7 @@ const benchData = `{
 }`
 
 func BenchmarkParseJSON(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -4,7 +4,6 @@
 package apachesparkreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -55,7 +54,7 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetrics(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),

@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -1763,7 +1762,7 @@ scrape_configs:
 	}, new(consumertest.MetricsSink))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	t.Cleanup(func() {
