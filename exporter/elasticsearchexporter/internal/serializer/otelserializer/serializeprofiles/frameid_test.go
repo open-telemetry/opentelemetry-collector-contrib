@@ -17,7 +17,7 @@ const (
 )
 
 func TestFrameID(t *testing.T) {
-	var fileID = libpf.NewFileID(fileIDLo, fileIDHi)
+	fileID := libpf.NewFileID(fileIDLo, fileIDHi)
 
 	tests := []struct {
 		name     string
@@ -40,18 +40,18 @@ func TestFrameID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			frameID, err := newFrameIDFromString(test.input)
+			fID, err := newFrameIDFromString(test.input)
 			assert.Equal(t, test.err, err)
-			assert.Equal(t, test.expected, frameID)
+			assert.Equal(t, test.expected, fID)
 
 			// check if the roundtrip back to the input works
-			assert.Equal(t, test.input, frameID.String())
+			assert.Equal(t, test.input, fID.String())
 
-			assert.Equal(t, test.bytes, frameID.Bytes())
+			assert.Equal(t, test.bytes, fID.Bytes())
 
-			frameID, err = newFrameIDFromBytes(frameID.Bytes())
+			fID, err = newFrameIDFromBytes(fID.Bytes())
 			assert.Equal(t, test.err, err)
-			assert.Equal(t, test.expected, frameID)
+			assert.Equal(t, test.expected, fID)
 		})
 	}
 }

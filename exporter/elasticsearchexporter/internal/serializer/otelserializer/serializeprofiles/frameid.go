@@ -31,11 +31,11 @@ func newFrameID(fileID libpf.FileID, addressOrLineno libpf.AddressOrLineno) fram
 
 // newFrameIDFromString creates a new FrameID from its base64 string representation.
 func newFrameIDFromString(frameEncoded string) (frameID, error) {
-	var frameID frameID
+	var fID frameID
 
 	bytes, err := base64.RawURLEncoding.DecodeString(frameEncoded)
 	if err != nil {
-		return frameID, fmt.Errorf("failed to decode frameID %v: %v", frameEncoded, err)
+		return fID, fmt.Errorf("failed to decode frameID %v: %w", frameEncoded, err)
 	}
 
 	return newFrameIDFromBytes(bytes)
@@ -43,31 +43,31 @@ func newFrameIDFromString(frameEncoded string) (frameID, error) {
 
 // newFrameIDFromBytes creates a new FrameID from a byte array of length 24.
 func newFrameIDFromBytes(bytes []byte) (frameID, error) {
-	var frameID frameID
+	var fID frameID
 	var err error
 
 	if len(bytes) != 24 {
-		return frameID, fmt.Errorf("unexpected frameID size (expected 24 bytes): %d",
+		return fID, fmt.Errorf("unexpected frameID size (expected 24 bytes): %d",
 			len(bytes))
 	}
 
-	if frameID.fileID, err = libpf.FileIDFromBytes(bytes[0:16]); err != nil {
-		return frameID, fmt.Errorf("failed to create fileID from bytes: %v", err)
+	if fID.fileID, err = libpf.FileIDFromBytes(bytes[0:16]); err != nil {
+		return fID, fmt.Errorf("failed to create fileID from bytes: %w", err)
 	}
 
-	frameID.addressOrLineno = libpf.AddressOrLineno(binary.BigEndian.Uint64(bytes[16:24]))
+	fID.addressOrLineno = libpf.AddressOrLineno(binary.BigEndian.Uint64(bytes[16:24]))
 
-	return frameID, nil
+	return fID, nil
 }
 
 // Bytes returns the frameid as byte sequence.
 func (f frameID) Bytes() []byte {
 	// Using frameID := make([byte, 24]) here makes the function ~5% slower.
-	var frameID [24]byte
+	var fID [24]byte
 
-	copy(frameID[:], f.fileID.Bytes())
-	binary.BigEndian.PutUint64(frameID[16:], uint64(f.addressOrLineno))
-	return frameID[:]
+	copy(fID[:], f.fileID.Bytes())
+	binary.BigEndian.PutUint64(fID[16:], uint64(f.addressOrLineno))
+	return fID[:]
 }
 
 // String returns the base64 encoded representation.

@@ -129,11 +129,11 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 				// Skip interpreted frames and already symbolized native frames (kernel, Golang is planned).
 				continue
 			}
-			frameID, err := newFrameIDFromString(frames[j].DocID)
+			fID, err := newFrameIDFromString(frames[j].DocID)
 			if err != nil {
 				return nil, fmt.Errorf("stackPayloads: %w", err)
 			}
-			unsymbolizedExecutablesSet[frameID.FileID()] = struct{}{}
+			unsymbolizedExecutablesSet[fID.FileID()] = struct{}{}
 		}
 
 		// Add one event per timestamp and its count value.
@@ -350,8 +350,8 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *fr
 		addressOrLineno = uint64(location.Line().At(location.Line().Len() - 1).Line())
 	}
 
-	frameID := newFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
-	return &frameID
+	fID := newFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
+	return &fID
 }
 
 type attributable interface {
@@ -440,14 +440,14 @@ func stackTraceID(frames []StackFrame) (string, error) {
 	var buf [24]byte
 	h := fnv.New128a()
 	for i := len(frames) - 1; i >= 0; i-- { // reverse ordered frames, done in stackFrames()
-		frameID, err := newFrameIDFromString(frames[i].DocID)
+		fID, err := newFrameIDFromString(frames[i].DocID)
 		if err != nil {
 			return "", fmt.Errorf("failed to create frameID from string: %w", err)
 		}
-		_, _ = h.Write(frameID.FileID().Bytes())
+		_, _ = h.Write(fID.FileID().Bytes())
 		// Using FormatUint() or putting AppendUint() into a function leads
 		// to escaping to heap (allocation).
-		_, _ = h.Write(strconv.AppendUint(buf[:0], uint64(frameID.AddressOrLine()), 10))
+		_, _ = h.Write(strconv.AppendUint(buf[:0], uint64(fID.AddressOrLine()), 10))
 	}
 	// make instead of nil avoids a heap allocation
 	traceHash, err := libpf.TraceHashFromBytes(h.Sum(make([]byte, 0, 16)))
