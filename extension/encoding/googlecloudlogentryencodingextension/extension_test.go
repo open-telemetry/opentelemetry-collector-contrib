@@ -5,7 +5,6 @@ package googlecloudlogentryencodingextension
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"testing"
 
