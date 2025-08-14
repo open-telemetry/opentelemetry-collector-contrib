@@ -59,7 +59,7 @@ All supported time format for logs, metrics and traces. Default is `nil` (unset)
 Default: `nil`
 
 > [!NOTE]
-> You can opt-in to use [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) client by enabling the feature gate
+> You can opt-in to use the [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) sdk by enabling the feature gate
 > `receiver.azureeventhubreceiver.UseAzeventhubs` when you run the OpenTelemetry Collector. See the following page
 > for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 >
