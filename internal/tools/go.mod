@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/Khan/genqlient v0.8.1
@@ -10,14 +10,14 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.131.0
-	go.opentelemetry.io/build-tools/checkapi v0.23.1
-	go.opentelemetry.io/build-tools/checkfile v0.26.0
-	go.opentelemetry.io/build-tools/chloggen v0.26.0
-	go.opentelemetry.io/build-tools/crosslink v0.26.0
-	go.opentelemetry.io/build-tools/githubgen v0.26.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.26.0
-	go.opentelemetry.io/build-tools/multimod v0.26.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.132.0
+	go.opentelemetry.io/build-tools/checkapi v0.26.2
+	go.opentelemetry.io/build-tools/checkfile v0.26.2
+	go.opentelemetry.io/build-tools/chloggen v0.26.2
+	go.opentelemetry.io/build-tools/crosslink v0.26.2
+	go.opentelemetry.io/build-tools/githubgen v0.26.2
+	go.opentelemetry.io/build-tools/issuegenerator v0.26.2
+	go.opentelemetry.io/build-tools/multimod v0.26.2
 	go.opentelemetry.io/collector/cmd/builder v0.132.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.132.0
 	go.uber.org/goleak v1.3.0
@@ -250,7 +250,7 @@ require (
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/build-tools v0.26.0 // indirect
+	go.opentelemetry.io/build-tools v0.26.2 // indirect
 	go.opentelemetry.io/collector/component v1.38.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.38.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.38.0 // indirect

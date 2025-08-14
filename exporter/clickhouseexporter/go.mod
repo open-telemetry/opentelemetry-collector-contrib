@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.1
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	go.opentelemetry.io/collector/component v1.38.0
@@ -38,7 +38,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v28.3.3+incompatible // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect

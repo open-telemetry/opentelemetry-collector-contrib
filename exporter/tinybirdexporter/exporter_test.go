@@ -4,7 +4,6 @@
 package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter"
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -178,9 +177,9 @@ func TestExportTraces(t *testing.T) {
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
 			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
-			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
-			err := exp.pushTraces(context.Background(), tt.args.traces)
+			err := exp.pushTraces(t.Context(), tt.args.traces)
 			if tt.want.err != nil {
 				assert.Error(t, err)
 			} else {
@@ -473,9 +472,9 @@ func TestExportMetrics(t *testing.T) {
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
 			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
-			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
-			err := exp.pushMetrics(context.Background(), tt.args.metrics)
+			err := exp.pushMetrics(t.Context(), tt.args.metrics)
 			if tt.want.err != nil {
 				assert.Error(t, err)
 			} else {
@@ -590,9 +589,9 @@ func TestExportLogs(t *testing.T) {
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
 			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
-			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
-			err := exp.pushLogs(context.Background(), tt.args.logs)
+			err := exp.pushLogs(t.Context(), tt.args.logs)
 			if tt.want.err != nil {
 				assert.Error(t, err)
 			} else {
@@ -664,14 +663,14 @@ func TestExportErrorHandling(t *testing.T) {
 			}
 
 			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
-			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 			logs := plog.NewLogs()
 			rl := logs.ResourceLogs().AppendEmpty()
 			sl := rl.ScopeLogs().AppendEmpty()
 			lr := sl.LogRecords().AppendEmpty()
 			lr.Body().SetStr("test-log")
-			err := exp.pushLogs(context.Background(), logs)
+			err := exp.pushLogs(t.Context(), logs)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

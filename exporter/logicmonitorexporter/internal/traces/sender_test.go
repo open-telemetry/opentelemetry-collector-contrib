@@ -35,7 +35,7 @@ func TestSendTraces(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
 		assert.NoError(t, err)
@@ -56,7 +56,7 @@ func TestSendTraces(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
 		assert.NoError(t, err)
@@ -78,7 +78,7 @@ func TestSendTraces(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
 		assert.NoError(t, err)

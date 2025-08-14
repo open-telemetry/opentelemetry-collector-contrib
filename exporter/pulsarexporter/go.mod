@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/apache/pulsar-client-go v0.16.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.131.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
@@ -69,7 +69,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.132.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

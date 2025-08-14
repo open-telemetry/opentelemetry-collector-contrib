@@ -6,7 +6,6 @@
 package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver"
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -113,7 +112,7 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 	cfg.Filter = "average"
 
 	recv, err := NewFactory().CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
@@ -124,14 +123,14 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 	require.True(t, ok)
 	rcvr.client = mc
 
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.DataPointCount() > 0
 	}, 5*time.Second, 10*time.Millisecond)
 
-	err = recv.Shutdown(context.Background())
+	err = recv.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	metrics := sink.AllMetrics()[0]

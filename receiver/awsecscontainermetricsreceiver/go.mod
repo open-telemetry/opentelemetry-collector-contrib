@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0

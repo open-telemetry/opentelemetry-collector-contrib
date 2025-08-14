@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 
-go 1.23.0
+go 1.24
 
 require (
-	github.com/expr-lang/expr v1.17.5
+	github.com/expr-lang/expr v1.17.6
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0

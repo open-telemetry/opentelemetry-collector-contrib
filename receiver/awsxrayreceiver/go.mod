@@ -1,17 +1,17 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/xray v1.32.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
@@ -66,8 +66,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.38.0 // indirect

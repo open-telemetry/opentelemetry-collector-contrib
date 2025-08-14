@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componentstatus v0.132.0

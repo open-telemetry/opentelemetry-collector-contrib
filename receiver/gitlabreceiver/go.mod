@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -125,7 +125,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	gitlab.com/gitlab-org/api/client-go v0.137.0
+	gitlab.com/gitlab-org/api/client-go v0.138.0
 	go.opentelemetry.io/collector/client v1.38.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.132.0
 	go.opentelemetry.io/collector/config/configauth v0.132.0 // indirect

@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
@@ -29,9 +29,11 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v28.1.1+incompatible // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect

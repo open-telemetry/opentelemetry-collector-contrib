@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
 
-go 1.23.0
+go 1.24
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
 	go.opentelemetry.io/collector/config/configoptional v0.132.0

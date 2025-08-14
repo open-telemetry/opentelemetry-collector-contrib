@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.38.0
 	go.opentelemetry.io/collector/component v1.38.0

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
 
-go 1.23.0
+go 1.24
 
 require (
 	cloud.google.com/go/compute/metadata v0.7.0
@@ -12,10 +12,10 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/consul/api v1.32.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.132.0
 	github.com/shirou/gopsutil/v4 v4.25.7
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
@@ -57,9 +57,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.35.0 // indirect
 	github.com/aws/smithy-go v1.22.5 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.1.1+incompatible // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
