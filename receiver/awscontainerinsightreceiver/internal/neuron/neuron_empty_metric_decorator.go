@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	statusType         = "status_type"
-	errorType          = "error_type"
-	memoryLocation     = "memory_location"
-	percentile         = "percentile"
-	RuntimeTagOverride = "DEFAULT"
+	statusType                 = "status_type"
+	errorType                  = "error_type"
+	memoryLocation             = "memory_location"
+	percentile                 = "percentile"
+	RuntimeTagOverride         = "DEFAULT"
+	DefaultNeuronCorePerDevice = 2
 )
 
 var attributeConfig = map[string][]string{
@@ -66,6 +67,13 @@ func (ed *EmptyMetricDecorator) ConsumeMetrics(ctx context.Context, md pmetric.M
 			neuronHardwareInfo, neuronHardwareInfoFound := findNeuronHardwareInfo(metrics)
 			if neuronHardwareInfoFound {
 				ed.addEmptyMetrics(neuronHardwareInfo, metrics)
+				neuronCoresPerDevice, foundCoresPerDevice := getNeuronCoresPerDevice(neuronHardwareInfo)
+				if foundCoresPerDevice {
+					ed.addNeuronCorePerDeviceAttribute(metrics, neuronCoresPerDevice)
+				} else {
+					// Always add the Default if the above is not found, should never happen
+					ed.addNeuronCorePerDeviceAttribute(metrics, DefaultNeuronCorePerDevice)
+				}
 			}
 		}
 	}
@@ -129,7 +137,6 @@ func populateCoreMetrics(metrics pmetric.MetricSlice, metricName string, hardwar
 		datapoint.Attributes().PutStr(neuronCoreOriginalAttributeKey, strconv.Itoa(coreIndex))
 		datapoint.Attributes().PutStr(neuronDeviceAttributeKey, strconv.Itoa(coreIndex/neuronCoresPerDevice))
 		datapoint.Attributes().PutStr("runtime_tag", RuntimeTagOverride)
-		datapoint.Attributes().PutStr("runtime_tag", RuntimeTagOverride)
 	}
 
 	metricToAdd.CopyTo(metrics.AppendEmpty())
@@ -159,7 +166,38 @@ func createNewMetricFromHardwareInfo(hardwareInfo pmetric.Metric, metricName str
 	metricBody := metricToAdd.Gauge().DataPoints().At(0)
 	metricBody.SetDoubleValue(0)
 	metricBody.Attributes().PutStr("runtime_tag", RuntimeTagOverride)
-	metricBody.Attributes().PutStr("runtime_tag", RuntimeTagOverride)
 
 	return metricToAdd
+}
+
+// method to add neuroncore_per_device_count attribute to all metrics
+func (ed *EmptyMetricDecorator) addNeuronCorePerDeviceAttribute(metrics pmetric.MetricSlice, neuronCoresPerDevice int) {
+	attributeValue := strconv.Itoa(neuronCoresPerDevice)
+	for i := 0; i < metrics.Len(); i++ {
+		m := metrics.At(i)
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			ed.addAttributeToNumberDataPoints(m.Gauge().DataPoints(), attributeValue)
+		case pmetric.MetricTypeSum:
+			ed.addAttributeToNumberDataPoints(m.Sum().DataPoints(), attributeValue)
+		case pmetric.MetricTypeHistogram:
+			dataPoints := m.Histogram().DataPoints()
+			for j := 0; j < dataPoints.Len(); j++ {
+				dataPoints.At(j).Attributes().PutStr(neuronCorePerDeviceKey, attributeValue)
+			}
+		case pmetric.MetricTypeSummary:
+			dataPoints := m.Summary().DataPoints()
+			for j := 0; j < dataPoints.Len(); j++ {
+				dataPoints.At(j).Attributes().PutStr(neuronCorePerDeviceKey, attributeValue)
+			}
+		default:
+			ed.Logger.Warn("Metric type not supported", zap.String("metricType", m.Type().String()))
+		}
+	}
+}
+
+func (ed *EmptyMetricDecorator) addAttributeToNumberDataPoints(dataPoints pmetric.NumberDataPointSlice, attributeValue string) {
+	for j := 0; j < dataPoints.Len(); j++ {
+		dataPoints.At(j).Attributes().PutStr(neuronCorePerDeviceKey, attributeValue)
+	}
 }
