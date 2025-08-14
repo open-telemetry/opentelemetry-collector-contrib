@@ -2568,7 +2568,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2587,7 +2587,7 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2606,7 +2606,7 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2616,7 +2616,7 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporte
 	err := exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }

@@ -189,7 +189,7 @@ func getBatchBenchExtensions(b *testing.B, batchType string) map[string]storage.
 			b.Fatal(err)
 		}
 		b.Cleanup(func() {
-			err = se.Shutdown(context.Background()) //noline:usetesting
+			err = se.Shutdown(context.Background()) //nolint:usetesting
 			if err != nil {
 				b.Fatal(err)
 			}
