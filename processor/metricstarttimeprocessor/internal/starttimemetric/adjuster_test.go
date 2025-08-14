@@ -4,7 +4,6 @@
 package starttimemetric
 
 import (
-	"context"
 	"regexp"
 	"testing"
 	"time"
@@ -128,7 +127,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 			pmetrics := tt.inputs
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "0")
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "job")
-			_, err := stma.AdjustMetrics(context.Background(), tt.inputs)
+			_, err := stma.AdjustMetrics(t.Context(), tt.inputs)
 			assert.NoError(t, err)
 			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
 				rm := tt.inputs.ResourceMetrics().At(i)
@@ -226,7 +225,7 @@ func TestStartTimeMetricFallback(t *testing.T) {
 			pmetrics := tt.inputs
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "0")
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "job")
-			_, err := stma.AdjustMetrics(context.Background(), tt.inputs)
+			_, err := stma.AdjustMetrics(t.Context(), tt.inputs)
 			assert.NoError(t, err, tt.inputs)
 			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
 				rm := tt.inputs.ResourceMetrics().At(i)

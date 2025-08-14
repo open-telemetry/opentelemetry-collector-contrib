@@ -4,7 +4,6 @@
 package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -30,7 +29,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		fpm.OnBrokerConnect(kgo.BrokerMetadata{NodeID: 1}, time.Minute, nil, nil)
 		fpm.OnBrokerConnect(kgo.BrokerMetadata{NodeID: 1}, time.Minute, nil, errors.New(""))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
@@ -64,7 +63,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		fpm := NewFranzProducerMetrics(tb)
 		fpm.OnBrokerDisconnect(kgo.BrokerMetadata{NodeID: 1}, nil)
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
@@ -89,7 +88,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		fpm.OnBrokerWrite(kgo.BrokerMetadata{NodeID: 1}, 0, 0, time.Second/2, time.Second/2, nil)
 		fpm.OnBrokerWrite(kgo.BrokerMetadata{NodeID: 1}, 0, 0, 100*time.Second, 0, errors.New(""))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
@@ -169,7 +168,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 			CompressionType:   1,
 		})
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 4)
@@ -251,7 +250,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		fpm.OnProduceRecordUnbuffered(&kgo.Record{}, nil)
 		fpm.OnProduceRecordUnbuffered(&kgo.Record{Topic: "foobar", Partition: 1}, errors.New(""))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
@@ -294,7 +293,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		fpm := NewFranzProducerMetrics(tb)
 		fpm.OnBrokerThrottle(kgo.BrokerMetadata{NodeID: 1}, time.Second, false)
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 2)

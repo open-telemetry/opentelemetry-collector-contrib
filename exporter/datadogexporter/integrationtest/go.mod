@@ -1,17 +1,17 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.157
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.67.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.132.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tinylib/msgp v1.3.0
 	go.opentelemetry.io/collector/component v1.38.0
@@ -229,17 +229,17 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.132.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect

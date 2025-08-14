@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver
 
-go 1.23.0
+go 1.24
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/splunk/stef/go/grpc v0.0.7
 	github.com/splunk/stef/go/otel v0.0.7
 	github.com/splunk/stef/go/pdata v0.0.7

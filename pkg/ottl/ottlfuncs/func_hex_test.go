@@ -68,7 +68,7 @@ func TestHex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expressionFunc, _ := Hex(tt.args.target)
-			got, err := expressionFunc(context.Background(), tt.args)
+			got, err := expressionFunc(t.Context(), tt.args)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantFunc(), got)
 		})

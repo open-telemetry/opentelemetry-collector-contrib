@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/IBM/sarama v1.45.2
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.132.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327

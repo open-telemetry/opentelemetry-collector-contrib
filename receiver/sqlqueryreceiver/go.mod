@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
 
-go 1.23.0
+go 1.24
 
 require (
-	github.com/docker/go-connections v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.131.0
+	github.com/docker/go-connections v0.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.132.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	go.opentelemetry.io/collector/component v1.38.0
@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/SAP/go-hdb v1.13.12
+	github.com/SAP/go-hdb v1.13.13
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.2
@@ -83,12 +83,12 @@ require (
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.2.2+incompatible // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
-	github.com/expr-lang/expr v1.17.5 // indirect
+	github.com/expr-lang/expr v1.17.6 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.7 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -138,8 +138,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.131.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect

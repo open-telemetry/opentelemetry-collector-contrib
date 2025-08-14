@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/xray v1.32.0
 	github.com/aws/smithy-go v1.22.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0

@@ -6,7 +6,6 @@
 package pagingscraper
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -107,7 +106,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -163,10 +162,10 @@ func TestScrape_Errors(t *testing.T) {
 				return perfCounterMock, nil
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -211,12 +210,12 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 	config := Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+	scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start the paging scraper")
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err, "Failed to scrape metrics")
 	require.NotNil(t, metrics, "Metrics cannot be nil")
 
@@ -254,13 +253,13 @@ func TestStart_Error(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
 
 			if tc.newPerfCounterFactory != nil {
 				scraper.perfCounterFactory = tc.newPerfCounterFactory
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)

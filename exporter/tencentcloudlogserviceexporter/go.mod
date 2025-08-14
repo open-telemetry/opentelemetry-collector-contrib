@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
 
-go 1.23.0
+go 1.24
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.1.6
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.1.10
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
 	go.opentelemetry.io/collector/config/configopaque v1.38.0

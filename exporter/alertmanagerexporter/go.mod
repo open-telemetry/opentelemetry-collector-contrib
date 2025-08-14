@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/prometheus/common v0.65.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0

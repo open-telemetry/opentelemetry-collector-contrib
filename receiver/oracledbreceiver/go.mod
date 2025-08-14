@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.68.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.132.0
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.0
@@ -53,7 +53,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

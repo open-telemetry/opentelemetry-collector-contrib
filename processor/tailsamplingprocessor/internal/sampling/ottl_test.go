@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,7 +90,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			assert.Equal(t, err != nil, c.WantErr)
 
 			if err == nil {
-				decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpansAttributes(c.Spans))
+				decision, err := filter.Evaluate(t.Context(), traceID, newTraceWithSpansAttributes(c.Spans))
 				assert.Equal(t, err != nil, c.WantErr)
 				assert.Equal(t, decision, c.Decision)
 			}
