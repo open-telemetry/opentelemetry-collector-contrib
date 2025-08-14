@@ -98,37 +98,29 @@ func (cfg *Config) Validate() error {
 
 	if cfg.GRPC.HasValue() {
 		grpcConfig := cfg.GRPC.Get()
-		if grpcConfig != nil {
-			if err := checkPortFromEndpoint(grpcConfig.NetAddr.Endpoint); err != nil {
-				return fmt.Errorf("invalid port number for the gRPC endpoint: %w", err)
-			}
+		if err := checkPortFromEndpoint(grpcConfig.NetAddr.Endpoint); err != nil {
+			return fmt.Errorf("invalid port number for the gRPC endpoint: %w", err)
 		}
 	}
 
 	if cfg.ThriftHTTP.HasValue() {
 		httpConfig := cfg.ThriftHTTP.Get()
-		if httpConfig != nil {
-			if err := checkPortFromEndpoint(httpConfig.Endpoint); err != nil {
-				return fmt.Errorf("invalid port number for the Thrift HTTP endpoint: %w", err)
-			}
+		if err := checkPortFromEndpoint(httpConfig.Endpoint); err != nil {
+			return fmt.Errorf("invalid port number for the Thrift HTTP endpoint: %w", err)
 		}
 	}
 
 	if cfg.ThriftBinaryUDP.HasValue() {
 		binaryUDPConfig := cfg.ThriftBinaryUDP.Get()
-		if binaryUDPConfig != nil {
-			if err := checkPortFromEndpoint(binaryUDPConfig.Endpoint); err != nil {
-				return fmt.Errorf("invalid port number for the Thrift UDP Binary endpoint: %w", err)
-			}
+		if err := checkPortFromEndpoint(binaryUDPConfig.Endpoint); err != nil {
+			return fmt.Errorf("invalid port number for the Thrift UDP Binary endpoint: %w", err)
 		}
 	}
 
 	if cfg.ThriftCompactUDP.HasValue() {
 		compactUDPConfig := cfg.ThriftCompactUDP.Get()
-		if compactUDPConfig != nil {
-			if err := checkPortFromEndpoint(compactUDPConfig.Endpoint); err != nil {
-				return fmt.Errorf("invalid port number for the Thrift UDP Compact endpoint: %w", err)
-			}
+		if err := checkPortFromEndpoint(compactUDPConfig.Endpoint); err != nil {
+			return fmt.Errorf("invalid port number for the Thrift UDP Compact endpoint: %w", err)
 		}
 	}
 
