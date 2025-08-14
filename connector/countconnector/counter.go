@@ -20,14 +20,14 @@ func newCounter[K any](metricDefs map[string]metricDef[K]) *counter[K] {
 	return &counter[K]{
 		metricDefs: metricDefs,
 		counts:     make(map[string]map[[16]byte]*attrCounter, len(metricDefs)),
-		timestamp:  time.Now(),
 	}
 }
 
 type counter[K any] struct {
 	metricDefs map[string]metricDef[K]
 	counts     map[string]map[[16]byte]*attrCounter
-	timestamp  time.Time
+	startTime  pcommon.Timestamp
+	endTime    pcommon.Timestamp
 }
 
 type attrCounter struct {
@@ -87,6 +87,23 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 	return multiError
 }
 
+// updateTimestamp updates the start and end timestamps based on the provided timestamp
+func (c *counter[K]) updateTimestamp(timestamp pcommon.Timestamp) {
+	if timestamp != 0 {
+		if c.startTime == 0 {
+			c.endTime = timestamp
+			c.startTime = timestamp
+		} else {
+			if timestamp < c.startTime {
+				c.startTime = timestamp
+			}
+			if timestamp > c.endTime {
+				c.endTime = timestamp
+			}
+		}
+	}
+}
+
 func (c *counter[K]) increment(metricName string, attrs pcommon.Map) error {
 	if _, ok := c.counts[metricName]; !ok {
 		c.counts[metricName] = make(map[[16]byte]*attrCounter)
@@ -118,11 +135,19 @@ func (c *counter[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		for _, dpCount := range c.counts[name] {
+			var startTime, endTime pcommon.Timestamp
 			dp := sum.DataPoints().AppendEmpty()
 			dpCount.attrs.CopyTo(dp.Attributes())
 			dp.SetIntValue(int64(dpCount.count))
-			// TODO determine appropriate start time
-			dp.SetTimestamp(pcommon.NewTimestampFromTime(c.timestamp))
+			if c.startTime != 0 {
+				startTime = c.startTime
+				endTime = c.endTime
+			} else {
+				startTime = pcommon.NewTimestampFromTime(time.Now())
+				endTime = startTime
+			}
+			dp.SetStartTimestamp(startTime)
+			dp.SetTimestamp(endTime)
 		}
 	}
 }

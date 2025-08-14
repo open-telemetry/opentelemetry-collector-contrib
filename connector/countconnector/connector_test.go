@@ -273,7 +273,6 @@ func TestTracesToMetrics(t *testing.T) {
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
-				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreMetricDataPointsOrder()))
@@ -515,6 +514,7 @@ func TestMetricsToMetrics(t *testing.T) {
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricsOrder(),
@@ -688,6 +688,7 @@ func TestLogsToMetrics(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreMetricDataPointsOrder()))
@@ -859,6 +860,7 @@ func TestProfilesToMetrics(t *testing.T) {
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "profiles", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricsOrder(),
