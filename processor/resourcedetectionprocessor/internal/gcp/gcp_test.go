@@ -4,15 +4,16 @@
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
 import (
+	"context"
 	"errors"
 	"regexp"
 	"testing"
 
+	computepb "cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -24,20 +25,21 @@ type mockInstancesClient struct {
 	err    error
 }
 
-func (m *mockInstancesClient) Get(ctx context.Context, req *computepb.GetInstanceRequest) (*computepb.Instance, error) {
+func (m *mockInstancesClient) Get(_ context.Context, _ *computepb.GetInstanceRequest) (*computepb.Instance, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	return &computepb.Instance{Labels: m.labels}, nil
 }
-func (m *mockInstancesClient) Close() error { return nil }
+
+func (*mockInstancesClient) Close() error { return nil }
 
 type mockInstancesBuilder struct {
 	client instancesAPI
 	err    error
 }
 
-func (b *mockInstancesBuilder) buildClient(ctx context.Context) (instancesAPI, error) {
+func (b *mockInstancesBuilder) buildClient(_ context.Context) (instancesAPI, error) {
 	return b.client, b.err
 }
 
@@ -580,7 +582,7 @@ func TestGCELabels(t *testing.T) {
 				},
 			}
 
-			res, _, err := d.Detect(context.Background())
+			res, _, err := d.Detect(t.Context())
 			assert.NoError(t, err)
 
 			attrs := res.Attributes()

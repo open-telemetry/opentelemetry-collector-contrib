@@ -9,6 +9,7 @@ import (
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	computepb "cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"go.opentelemetry.io/collector/featuregate"
@@ -17,7 +18,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
