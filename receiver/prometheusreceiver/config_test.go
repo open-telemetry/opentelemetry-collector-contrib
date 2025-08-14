@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -194,7 +193,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
-	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	_, err = createMetricsReceiver(t.Context(), creationSet, cfg, nil)
 	require.NoError(t, err)
 	// We should have received a warning
 	assert.Equal(t, 1, observedLogs.Len())

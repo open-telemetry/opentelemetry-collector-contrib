@@ -4,7 +4,6 @@
 package syslog_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -41,7 +40,7 @@ func TestParser(t *testing.T) {
 			newEntry := tc.Input
 			ots := newEntry.ObservedTimestamp
 
-			err = op.Process(context.Background(), newEntry)
+			err = op.Process(t.Context(), newEntry)
 			require.NoError(t, err)
 
 			select {
@@ -71,7 +70,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 
 	newEntry := entry.New()
 	newEntry.Body = body
-	err = op.Process(context.Background(), newEntry)
+	err = op.Process(t.Context(), newEntry)
 	require.ErrorContains(t, err, "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
 
 	select {
@@ -100,7 +99,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 
 	newEntry := entry.New()
 	newEntry.Body = body
-	err = op.Process(context.Background(), newEntry)
+	err = op.Process(t.Context(), newEntry)
 	require.ErrorContains(t, err, "message too long to parse. was size 215, max length 214")
 
 	select {
