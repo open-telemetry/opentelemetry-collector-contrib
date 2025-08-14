@@ -4,7 +4,6 @@
 package attributesprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -237,6 +236,6 @@ func TestSpanConfigUsedWithmetrics(t *testing.T) {
 
 	sink := consumertest.MetricsSink{}
 
-	_, err = NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, &sink)
+	_, err = NewFactory().CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, &sink)
 	require.Error(t, err)
 }

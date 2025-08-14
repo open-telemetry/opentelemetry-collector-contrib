@@ -4,7 +4,6 @@
 package k8seventsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -36,8 +35,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
@@ -48,8 +47,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r1)
-	require.NoError(t, r1.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r1.Shutdown(context.Background()))
+	require.NoError(t, r1.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r1.Shutdown(t.Context()))
 }
 
 func TestHandleEvent(t *testing.T) {
@@ -63,7 +62,7 @@ func TestHandleEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
-	recv.ctx = context.Background()
+	recv.ctx = t.Context()
 	k8sEvent := getEvent()
 	recv.handleEvent(k8sEvent)
 
@@ -81,7 +80,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
-	recv.ctx = context.Background()
+	recv.ctx = t.Context()
 	k8sEvent := getEvent()
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	recv.handleEvent(k8sEvent)

@@ -4,7 +4,6 @@
 package groupbyattrsprocessor
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,7 +25,7 @@ func FuzzProcessTraces(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _ = gap.processTraces(context.Background(), traces)
+		_, _ = gap.processTraces(t.Context(), traces)
 	})
 }
 
@@ -41,7 +40,7 @@ func FuzzProcessLogs(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _ = gap.processLogs(context.Background(), logs)
+		_, _ = gap.processLogs(t.Context(), logs)
 	})
 }
 
@@ -56,6 +55,6 @@ func FuzzProcessMetrics(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _ = gap.processMetrics(context.Background(), metrics)
+		_, _ = gap.processMetrics(t.Context(), metrics)
 	})
 }

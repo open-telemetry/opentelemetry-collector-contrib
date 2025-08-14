@@ -4,7 +4,6 @@
 package gcp
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -83,7 +82,7 @@ func TestProvider(t *testing.T) {
 				instanceName: testInstance.instanceName,
 			}}
 
-			src, err := provider.Source(context.Background())
+			src, err := provider.Source(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, source.HostnameKind, src.Kind)
 			assert.Equal(t, testInstance.hostname, src.Identifier)

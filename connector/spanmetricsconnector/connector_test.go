@@ -630,11 +630,11 @@ func TestStart(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	createParams := connectortest.NewNopSettings(factory.Type())
-	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
+	conn, err := factory.CreateTracesToMetrics(t.Context(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	smc := conn.(*connectorImp)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = smc.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := smc.Shutdown(ctx); require.NoError(t, sdErr) }()
 	assert.NoError(t, err)
@@ -642,7 +642,7 @@ func TestStart(t *testing.T) {
 
 func TestConcurrentShutdown(t *testing.T) {
 	// Prepare
-	ctx := context.Background()
+	ctx := t.Context()
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 
 	// Test
@@ -734,7 +734,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	}
 	p.logger = logger
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -893,7 +893,7 @@ func TestConsumeTraces(t *testing.T) {
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
 
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			err = p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
@@ -920,7 +920,7 @@ func TestCallsMetricsInitialise(t *testing.T) {
 	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -955,7 +955,7 @@ func TestResourceMetricsCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// 0 resources in the beginning
 	assert.Zero(t, p.resourceMetrics.Len())
@@ -992,7 +992,7 @@ func TestResourceMetricsExpiration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// 0 resources in the beginning
 	assert.Zero(t, p.resourceMetrics.Len())
@@ -1017,7 +1017,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// 0 resources in the beginning
 	assert.Zero(t, p.resourceMetrics.Len())
@@ -1057,7 +1057,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	traces := buildSampleTrace()
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
 	for n := 0; n < b.N; n++ {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}
@@ -1092,7 +1092,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 			require.NoError(t, err)
 			traces := buildSampleTrace()
 
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -1217,7 +1217,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -1304,7 +1304,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -1521,7 +1521,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 			cfg.Events = tt.eventsConfig
 			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 			require.NoError(t, err)
-			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+			err = c.ConsumeTraces(t.Context(), buildSampleTrace())
 			require.NoError(t, err)
 			metrics := c.buildMetrics()
 			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -1596,7 +1596,7 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 				}, traces.ResourceSpans().AppendEmpty())
 
 			// Test
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 			// Verify exactly 1 exemplar is added to all data points when flushing
 			err = p.ConsumeTraces(ctx, traces)
@@ -1708,7 +1708,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
 			// Test
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 			// Send first batch of spans
 			err = p.ConsumeTraces(ctx, buildSampleTrace())
@@ -1802,7 +1802,7 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// Send a span from service A which should fill the cache
 	serviceATrace1 := ptrace.NewTraces()
@@ -1875,7 +1875,7 @@ func TestSeparateDimensions(t *testing.T) {
 	cfg.Histogram.Dimensions = []Dimension{{Name: doubleAttrName, Default: stringp("0.0")}}
 	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	require.NoError(t, err)
-	err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+	err = c.ConsumeTraces(t.Context(), buildSampleTrace())
 	require.NoError(t, err)
 	metrics := c.buildMetrics()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -2070,8 +2070,8 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 
 	// Send two batches of spans to the connector to ensure it consumes more spans data,
 	// avoiding potential edge-case traps.
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
 
 	// Ignore the first buildMetrics call, which emits zero datapoint values.
 	_ = connector.buildMetrics()
@@ -2197,8 +2197,8 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 
 	// Send two batches of spans to the connector to ensure it consumes more spans data,
 	// avoiding potential edge-case traps.
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
 
 	// Ignore the first buildMetrics call, which emits zero datapoint values.
 	_ = connector.buildMetrics()

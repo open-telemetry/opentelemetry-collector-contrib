@@ -24,7 +24,7 @@ func TestNewFactory(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	conn, err := factory.CreateLogsToLogs(context.Background(),
+	conn, err := factory.CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, lc)
 
 	assert.NoError(t, err)

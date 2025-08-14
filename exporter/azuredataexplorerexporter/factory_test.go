@@ -4,7 +4,6 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -36,7 +35,7 @@ func TestCreateMetrics(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
 
@@ -48,9 +47,9 @@ func TestCreateMetrics(t *testing.T) {
 	dp.Attributes().PutStr("k0", "v0")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(42.42)
-	err = exporter.ConsumeMetrics(context.Background(), testMetrics)
+	err = exporter.ConsumeMetrics(t.Context(), testMetrics)
 	assert.Error(t, err)
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 // Given a new factory and no-op exporter , the NewMetric exporter should work.
@@ -67,7 +66,7 @@ func TestCreateMetricsWhenIngestEmpty(t *testing.T) {
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty. This
-	assert.Panics(t, func() { _, _ = factory.CreateMetrics(context.Background(), params, cfg) })
+	assert.Panics(t, func() { _, _ = factory.CreateMetrics(t.Context(), params, cfg) })
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -91,7 +90,7 @@ func TestCreateLogs(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
+	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
 	// Load the #3 which has empty. This
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
@@ -103,9 +102,9 @@ func TestCreateLogs(t *testing.T) {
 	testLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
 	testLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID([16]byte{1, 2, 3, 4})
 	// This will fail with auth failure
-	err = exporter.ConsumeLogs(context.Background(), testLogs)
+	err = exporter.ConsumeLogs(t.Context(), testLogs)
 	assert.Error(t, err)
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 // Given a new factory and no-op exporter , the NewLogs exporter should work.
@@ -123,7 +122,7 @@ func TestCreateLogsWhenIngestEmpty(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty
 	// exporter, err := factory.CreateLogs(context.Background(), params, cfg)
-	assert.Panics(t, func() { _, _ = factory.CreateLogs(context.Background(), params, cfg) })
+	assert.Panics(t, func() { _, _ = factory.CreateLogs(t.Context(), params, cfg) })
 }
 
 // Given a new factory and no-op exporter , the LogExporter exporter should work.
@@ -139,7 +138,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
 
@@ -148,9 +147,9 @@ func TestCreateTraces(t *testing.T) {
 	rs := testTraces.ResourceSpans().AppendEmpty()
 	ss := rs.ScopeSpans().AppendEmpty()
 	ss.Spans().AppendEmpty()
-	err = exporter.ConsumeTraces(context.Background(), testTraces)
+	err = exporter.ConsumeTraces(t.Context(), testTraces)
 	assert.Error(t, err)
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 // Given a new factory and no-op exporter , the NewLogs exporter should work.
@@ -167,5 +166,5 @@ func TestCreateTracesWhenIngestEmpty(t *testing.T) {
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty
-	assert.Panics(t, func() { _, _ = factory.CreateTraces(context.Background(), params, cfg) })
+	assert.Panics(t, func() { _, _ = factory.CreateTraces(t.Context(), params, cfg) })
 }

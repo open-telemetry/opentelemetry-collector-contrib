@@ -4,7 +4,6 @@
 package nginxreceiver
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -34,10 +33,10 @@ func TestScraper(t *testing.T) {
 
 	scraper := newNginxScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -66,9 +65,9 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/badpath",
 			},
 		})
-		err := sc.start(context.Background(), componenttest.NewNopHost())
+		err := sc.start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
-		_, err = sc.scrape(context.Background())
+		_, err = sc.scrape(t.Context())
 		require.Equal(t, errors.New("expected 200 response, got 404"), err)
 	})
 
@@ -78,9 +77,9 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/status",
 			},
 		})
-		err := sc.start(context.Background(), componenttest.NewNopHost())
+		err := sc.start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
-		_, err = sc.scrape(context.Background())
+		_, err = sc.scrape(t.Context())
 		require.ErrorContains(t, err, "Bad status page")
 	})
 	nginxMock.Close()
@@ -97,7 +96,7 @@ func TestScraperFailedStart(t *testing.T) {
 			},
 		},
 	})
-	err := sc.start(context.Background(), componenttest.NewNopHost())
+	err := sc.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 

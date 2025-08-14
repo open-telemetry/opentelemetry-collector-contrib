@@ -4,7 +4,6 @@
 package aesprovider
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -99,7 +98,7 @@ func TestAESCredentialProvider(t *testing.T) {
 			}
 
 			p := NewFactory().Create(confmap.ProviderSettings{})
-			retrieved, err := p.Retrieve(context.Background(), tt.configValue, nil)
+			retrieved, err := p.Retrieve(t.Context(), tt.configValue, nil)
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				require.Equal(t, tt.expectedError, err.Error())

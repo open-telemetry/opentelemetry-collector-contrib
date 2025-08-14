@@ -4,7 +4,6 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -35,7 +34,7 @@ func TestBadAlertsReceiver(t *testing.T) {
 	}
 	params := receivertest.NewNopSettings(metadata.Type)
 
-	_, err := createCombinedLogReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	_, err := createCombinedLogReceiver(t.Context(), params, cfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.ErrorContains(t, err, "unable to create a MongoDB Atlas Alerts Receiver")
 }
@@ -53,9 +52,9 @@ func TestBadStorageExtension(t *testing.T) {
 	})
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	lr, err := createCombinedLogReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	lr, err := createCombinedLogReceiver(t.Context(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	err = lr.Start(context.Background(), componenttest.NewNopHost())
+	err = lr.Start(t.Context(), componenttest.NewNopHost())
 	require.ErrorContains(t, err, "failed to get storage client")
 }

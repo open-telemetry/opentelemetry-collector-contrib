@@ -4,7 +4,6 @@
 package redactionprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestCreateTestProcessor(t *testing.T) {
 	cfg := &Config{}
 
-	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)
@@ -35,7 +34,7 @@ func TestCreateTestProcessor(t *testing.T) {
 func TestCreateTestLogsProcessor(t *testing.T) {
 	cfg := &Config{}
 
-	tp, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)
@@ -44,7 +43,7 @@ func TestCreateTestLogsProcessor(t *testing.T) {
 func TestCreateTestMetricsProcessor(t *testing.T) {
 	cfg := &Config{}
 
-	tp, err := createMetricsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := createMetricsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)

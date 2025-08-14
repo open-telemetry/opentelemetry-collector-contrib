@@ -288,7 +288,7 @@ func Test_Len(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -310,7 +310,7 @@ func Test_Len_Error(t *testing.T) {
 			return 24, nil
 		},
 	})
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)

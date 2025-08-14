@@ -4,7 +4,6 @@
 package syslogexporter
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -182,7 +181,7 @@ func createTCPTestConfig() *Config {
 func sendTestMessage(t *testing.T, exp *syslogexporter) error {
 	buffer := exampleLog(t)
 	logs := logRecordsToLogs(buffer)
-	return exp.pushLogsData(context.Background(), logs)
+	return exp.pushLogsData(t.Context(), logs)
 }
 
 func TestTCPSyslogExportSuccess(t *testing.T) {

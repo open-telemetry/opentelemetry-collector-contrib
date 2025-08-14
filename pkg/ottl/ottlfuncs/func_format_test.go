@@ -73,6 +73,6 @@ func TestFormat_error(t *testing.T) {
 	})
 
 	exprFunc := format[any]("test-%d", []ottl.Getter[any]{target})
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

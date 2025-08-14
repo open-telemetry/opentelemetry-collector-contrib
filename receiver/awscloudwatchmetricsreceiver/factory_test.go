@@ -4,7 +4,6 @@
 package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "eu-west-2"
 	_, err := NewFactory().CreateMetrics(
-		context.Background(), receivertest.NewNopSettings(metadata.Type),
+		t.Context(), receivertest.NewNopSettings(metadata.Type),
 		cfg, nil)
 	require.NoError(t, err)
 }

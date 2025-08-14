@@ -85,7 +85,7 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, credsProvider)
 
-			creds, err := (*credsProvider).Retrieve(context.Background())
+			creds, err := (*credsProvider).Retrieve(t.Context())
 			require.NoError(t, err)
 			require.NotNil(t, creds)
 		})
@@ -124,7 +124,7 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 			require.NotNil(t, credsProvider)
 
 			// Should always error out as we are not providing a real token.
-			_, err = (*credsProvider).Retrieve(context.Background())
+			_, err = (*credsProvider).Retrieve(t.Context())
 			assert.Error(t, err)
 		})
 	}

@@ -219,7 +219,7 @@ func Test_Start(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
-			err = prwe.Start(context.Background(), componenttest.NewNopHost())
+			err = prwe.Start(t.Context(), componenttest.NewNopHost())
 			if tt.returnErrorOnStartUp {
 				assert.Error(t, err)
 				return
@@ -236,14 +236,14 @@ func Test_Shutdown(t *testing.T) {
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
-	err := prwe.Shutdown(context.Background())
+	err := prwe.Shutdown(t.Context())
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), pmetric.NewMetrics())
+			errChan <- prwe.PushMetrics(t.Context(), pmetric.NewMetrics())
 		}()
 	}
 	wg.Wait()
@@ -774,7 +774,7 @@ func Test_PushMetrics(t *testing.T) {
 								},
 							))),
 					)
-					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)
 					set.BuildInfo = component.BuildInfo{
 						Description: "OpenTelemetry Collector",
@@ -784,7 +784,7 @@ func Test_PushMetrics(t *testing.T) {
 					prwe, nErr := newPRWExporter(cfg, set)
 
 					require.NoError(t, nErr)
-					ctx, cancel := context.WithCancel(context.Background())
+					ctx, cancel := context.WithCancel(t.Context())
 					defer cancel()
 					require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
 					defer func() {
@@ -988,12 +988,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
-	ctx := context.Background()
-	require.NoError(t, prwe.Start(ctx, nopHost))
+	require.NoError(t, prwe.Start(t.Context(), nopHost))
 	t.Cleanup(func() {
 		// This should have been shut down during the test
 		// If it does not error then something went wrong.
-		assert.Error(t, prwe.Shutdown(ctx))
+		assert.Error(t, prwe.Shutdown(context.Background())) //nolint:usetesting
 		close(exiting)
 	})
 	require.NotNil(t, prwe.wal)
@@ -1010,11 +1009,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		"timeseries1": ts1,
 		"timeseries2": ts2,
 	}
-	errs := prwe.handleExport(ctx, tsMap, nil)
+	errs := prwe.handleExport(t.Context(), tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will be flushed to the WAL before exiting.
-	require.NoError(t, prwe.Shutdown(ctx))
+	require.NoError(t, prwe.Shutdown(t.Context()))
 
 	// 3. Let's now read back all of the WAL records and ensure
 	// that all the prompb.WriteRequest values exist as we sent them.
@@ -1064,9 +1063,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// Read from that same WAL, export to the RWExporter server.
 	prwe2, err := newPRWExporter(cfg, set)
 	assert.NoError(t, err)
-	require.NoError(t, prwe2.Start(ctx, nopHost))
+	require.NoError(t, prwe2.Start(t.Context(), nopHost))
 	t.Cleanup(func() {
-		assert.NoError(t, prwe2.Shutdown(ctx))
+		assert.NoError(t, prwe2.Shutdown(context.Background())) //nolint:usetesting
 	})
 	require.NotNil(t, prwe2.wal)
 
@@ -1117,7 +1116,7 @@ func TestRetries(t *testing.T) {
 			false,
 			assert.NoError,
 			assert.NoError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test 429 should retry",
@@ -1127,7 +1126,7 @@ func TestRetries(t *testing.T) {
 			true,
 			assert.NoError,
 			assert.NoError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test 429 should not retry",
@@ -1137,7 +1136,7 @@ func TestRetries(t *testing.T) {
 			false,
 			assert.Error,
 			assertPermanentConsumerError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test 4xx should not retry",
@@ -1147,7 +1146,7 @@ func TestRetries(t *testing.T) {
 			false,
 			assert.Error,
 			assertPermanentConsumerError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test timeout context should not execute",
@@ -1293,7 +1292,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 		reqs = append(reqs, req)
 	}
 
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for _, req := range reqs {
@@ -1372,7 +1371,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		metrics = append(metrics, m)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(b.Context())
 	defer cancel()
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 	defer func() {

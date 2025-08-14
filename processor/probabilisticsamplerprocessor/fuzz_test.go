@@ -4,7 +4,6 @@
 package probabilisticsamplerprocessor
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -25,11 +24,11 @@ func FuzzConsumeTraces(f *testing.F) {
 		sink := new(consumertest.TracesSink)
 		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
-		tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
+		tsp, err := newTracesProcessor(t.Context(), set, cfg, sink)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_ = tsp.ConsumeTraces(context.Background(), traces)
+		_ = tsp.ConsumeTraces(t.Context(), traces)
 	})
 }
 
@@ -42,10 +41,10 @@ func FuzzConsumeLogs(f *testing.F) {
 		}
 		nextConsumer := consumertest.NewNop()
 		cfg := &Config{}
-		lp, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+		lp, err := newLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_ = lp.ConsumeLogs(context.Background(), logs)
+		_ = lp.ConsumeLogs(t.Context(), logs)
 	})
 }

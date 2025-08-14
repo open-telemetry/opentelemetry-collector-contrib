@@ -6,7 +6,6 @@ package webhookeventreceiver
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"io"
 	"log"
 	"net/http"
@@ -268,7 +267,7 @@ func TestReqToLog(t *testing.T) {
 			require.NoError(t, err)
 			eventReceiver := receiver.(*eventReceiver)
 			defer func() {
-				err := eventReceiver.Shutdown(context.Background())
+				err := eventReceiver.Shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 

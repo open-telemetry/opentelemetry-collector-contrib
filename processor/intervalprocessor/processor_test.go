@@ -37,7 +37,7 @@ func TestAggregation(t *testing.T) {
 		{name: "summaries_are_passed_through", passThrough: true},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	var config *Config
@@ -50,7 +50,7 @@ func TestAggregation(t *testing.T) {
 
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				config,
 				next,

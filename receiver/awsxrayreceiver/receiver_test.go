@@ -91,14 +91,14 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	receiverID := component.MustNewID("TestSegmentsPassedToConsumer")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, nil, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
@@ -121,14 +121,14 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	receiverID := component.MustNewID("TestTranslatorErrorsOut")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, nil, true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	err := writePacket(t, addr, segmentHeader+"invalidSegment")
@@ -147,14 +147,14 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	receiverID := component.MustNewID("TestSegmentsConsumerErrorsOut")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, consumertest.NewErr(errors.New("can't consume traces")), true, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
@@ -176,7 +176,7 @@ func TestPollerCloseError(t *testing.T) {
 	receiverID := component.MustNewID("TestPollerCloseError")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
@@ -185,7 +185,7 @@ func TestPollerCloseError(t *testing.T) {
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
-	err := rcvr.Shutdown(context.Background())
+	err := rcvr.Shutdown(t.Context())
 	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
 }
 
@@ -193,7 +193,7 @@ func TestProxyCloseError(t *testing.T) {
 	receiverID := component.MustNewID("TestPollerCloseError")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
@@ -202,7 +202,7 @@ func TestProxyCloseError(t *testing.T) {
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
-	err := rcvr.Shutdown(context.Background())
+	err := rcvr.Shutdown(t.Context())
 	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
 
@@ -210,7 +210,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	receiverID := component.MustNewID("TestBothPollerAndProxyCloseError")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		assert.NoError(t, tt.Shutdown(context.Background()))
+		assert.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
@@ -220,7 +220,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = mProxy
-	err := rcvr.Shutdown(context.Background())
+	err := rcvr.Shutdown(t.Context())
 	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
 	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
@@ -294,7 +294,7 @@ func createAndOptionallyStartReceiver(
 	assert.NoError(t, err, "receiver should be created")
 
 	if start {
-		err = rcvr.Start(context.Background(), componenttest.NewNopHost())
+		err = rcvr.Start(t.Context(), componenttest.NewNopHost())
 		assert.NoError(t, err, "receiver should be started")
 	}
 	return addr, rcvr, recorded

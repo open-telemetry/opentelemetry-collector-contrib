@@ -4,7 +4,6 @@
 package filtermetric
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -83,7 +82,7 @@ func TestMatcherMatches(t *testing.T) {
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
 
-			matches, err := matcher.Eval(context.Background(), ottlmetric.NewTransformContext(test.metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			matches, err := matcher.Eval(t.Context(), ottlmetric.NewTransformContext(test.metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.NoError(t, err)
 			assert.Equal(t, test.shouldMatch, matches)
 		})
@@ -192,7 +191,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 			boolExpr, err := NewSkipExpr(tt.include, tt.exclude)
 			require.NoError(t, err)
-			expectedResult, err := boolExpr.Eval(context.Background(), tCtx)
+			expectedResult, err := boolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			ottlBoolExpr, err := filterottl.NewMetricSkipExprBridge(tt.include, tt.exclude)
@@ -201,7 +200,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 				assert.Equal(t, tt.err, err)
 			} else {
 				assert.NoError(t, err)
-				ottlResult, err := ottlBoolExpr.Eval(context.Background(), tCtx)
+				ottlResult, err := ottlBoolExpr.Eval(t.Context(), tCtx)
 				assert.NoError(t, err)
 
 				assert.Equal(t, expectedResult, ottlResult)

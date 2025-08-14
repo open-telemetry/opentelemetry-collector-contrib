@@ -4,7 +4,6 @@
 package simpleprometheusreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,7 +19,7 @@ func TestFactory(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	r, err := f.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),

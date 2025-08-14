@@ -90,7 +90,7 @@ func Test_ConvertAttributesToElementsXML(t *testing.T) {
 			exprFunc, err := createConvertAttributesToElementsXMLFunction[any](ottl.FunctionContext{}, args)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -121,6 +121,6 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 		})
 	assert.NoError(t, err)
 	assert.NotNil(t, exprFunc)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

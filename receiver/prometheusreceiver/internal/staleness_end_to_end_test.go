@@ -46,7 +46,7 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 		t.Skip("This test can take a long time")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
 	n := &atomic.Uint64{}
@@ -171,7 +171,7 @@ service:
 	require.NoError(t, err)
 
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 
