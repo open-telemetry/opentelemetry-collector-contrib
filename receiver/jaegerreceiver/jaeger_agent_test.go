@@ -4,7 +4,6 @@
 package jaegerreceiver
 
 import (
-	"context"
 	"net"
 	"testing"
 	"time"
@@ -52,9 +51,9 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
+	assert.Error(t, jr.Start(t.Context(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	require.NoError(t, jr.Shutdown(context.Background()))
+	require.NoError(t, jr.Shutdown(t.Context()))
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
@@ -82,7 +81,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NoError(t, jr.startAgent(), "Start failed")
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
 	l, err := net.Listen("udp", addr)
 	assert.Error(t, err, "should not have been able to listen to the port")
@@ -103,9 +102,9 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
+	assert.Error(t, jr.Start(t.Context(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	require.NoError(t, jr.Shutdown(context.Background()))
+	require.NoError(t, jr.Shutdown(t.Context()))
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocols) {
@@ -114,10 +113,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
 	for i := 0; i < 3; i++ {
-		err = jr.Start(context.Background(), componenttest.NewNopHost())
+		err = jr.Start(t.Context(), componenttest.NewNopHost())
 		if err == nil {
 			break
 		}
@@ -134,7 +133,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	td := generateTraceData()
 	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
-		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
+		require.NoError(t, jexp.EmitBatch(t.Context(), modelToThrift(batch)))
 	}
 
 	require.Eventually(t, func() bool {

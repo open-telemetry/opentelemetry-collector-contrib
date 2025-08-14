@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/gorilla/mux v1.8.1
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/klauspost/compress v1.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0

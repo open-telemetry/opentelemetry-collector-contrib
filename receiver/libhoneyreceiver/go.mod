@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/gogo/protobuf v1.3.2
@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.0
 	go.opentelemetry.io/collector/config/confighttp v0.132.0
+	go.opentelemetry.io/collector/config/configoptional v0.132.0
 	go.opentelemetry.io/collector/confmap v1.38.0
 	go.opentelemetry.io/collector/consumer v1.38.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
@@ -33,7 +34,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.132.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.38.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.132.0 // indirect

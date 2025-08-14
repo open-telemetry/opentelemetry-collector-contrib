@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider
 
-go 1.23.0
+go 1.24
 
 require (
 	cloud.google.com/go/secretmanager v1.15.0

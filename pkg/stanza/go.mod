@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.9.1

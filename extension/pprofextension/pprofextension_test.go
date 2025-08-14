@@ -4,7 +4,6 @@
 package pprofextension
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"os"
@@ -31,8 +30,8 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
-	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(context.Background())) })
+	require.NoError(t, pprofExt.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(t.Context())) })
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
@@ -63,7 +62,7 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
-	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, pprofExt.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
@@ -77,11 +76,11 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
-	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(context.Background())) })
+	require.NoError(t, pprofExt.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(t.Context())) })
 
 	// The instance is already active it will fail.
-	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, pprofExt.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
@@ -95,9 +94,9 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
-	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, pprofExt.Shutdown(context.Background()))
-	require.NoError(t, pprofExt.Shutdown(context.Background()))
+	require.NoError(t, pprofExt.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, pprofExt.Shutdown(t.Context()))
+	require.NoError(t, pprofExt.Shutdown(t.Context()))
 }
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
@@ -110,7 +109,7 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
-	require.NoError(t, pprofExt.Shutdown(context.Background()))
+	require.NoError(t, pprofExt.Shutdown(t.Context()))
 }
 
 func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
@@ -131,6 +130,6 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
-	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, pprofExt.Shutdown(context.Background()))
+	require.NoError(t, pprofExt.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, pprofExt.Shutdown(t.Context()))
 }
