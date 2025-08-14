@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
@@ -8,19 +8,19 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.18.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.85.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.39.0
-	github.com/open-telemetry/opamp-go v0.20.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.131.0
+	github.com/open-telemetry/opamp-go v0.21.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.132.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.37.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/component/componenttest v0.131.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/confmap v1.37.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/confmap/xconfmap v0.131.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/consumer v1.37.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/consumer/consumertest v0.131.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/pdata v1.37.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/receiver v1.37.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.131.1-0.20250801020258-8b73477b9810
-	go.opentelemetry.io/collector/receiver/receivertest v0.131.1-0.20250801020258-8b73477b9810
+	go.opentelemetry.io/collector/component v1.38.0
+	go.opentelemetry.io/collector/component/componenttest v0.132.0
+	go.opentelemetry.io/collector/confmap v1.38.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.132.0
+	go.opentelemetry.io/collector/consumer v1.38.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
+	go.opentelemetry.io/collector/pdata v1.38.0
+	go.opentelemetry.io/collector/receiver v1.38.0
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.132.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.132.0
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -62,13 +62,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.131.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.131.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/featuregate v1.37.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.131.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.131.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/pipeline v0.131.1-0.20250801020258-8b73477b9810 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.131.1-0.20250801020258-8b73477b9810 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.132.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.132.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.38.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.132.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.132.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.38.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.132.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
@@ -81,7 +81,7 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
 	google.golang.org/grpc v1.74.2 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
+	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

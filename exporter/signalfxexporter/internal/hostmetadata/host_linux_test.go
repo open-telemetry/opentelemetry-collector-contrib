@@ -70,7 +70,7 @@ func TestFillOSSpecificData(t *testing.T) {
 			t.Cleanup(func() { gopsutilenv.SetGlobalRootPath("") })
 			envMap := gopsutilenv.SetGoPsutilEnvVars(tt.args.etc)
 			in := &hostOS{}
-			err := fillPlatformSpecificOSData(context.WithValue(context.Background(), common.EnvKey, envMap), in)
+			err := fillPlatformSpecificOSData(context.WithValue(t.Context(), common.EnvKey, envMap), in)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -174,7 +174,7 @@ func Test_GetLinuxVersion_EnvVar(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("HOST_ETC", tt.etc)
-			got, err := getLinuxVersion(context.Background())
+			got, err := getLinuxVersion(t.Context())
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -229,7 +229,7 @@ func Test_GetLinuxVersion_EnvMap(t *testing.T) {
 			err := gopsutilenv.ValidateRootPath(tt.etc)
 			require.NoError(t, err)
 			envMap := gopsutilenv.SetGoPsutilEnvVars(tt.etc)
-			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+			ctx := context.WithValue(t.Context(), common.EnvKey, envMap)
 			got, err := getLinuxVersion(ctx)
 			if tt.wantErr {
 				assert.Error(t, err)

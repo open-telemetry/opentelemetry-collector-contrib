@@ -4,7 +4,6 @@
 package oauth2clientauthextension
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -54,7 +53,7 @@ func TestCreate(t *testing.T) {
 			cfg.ClientSecret = testcase.settings.ClientSecret
 			cfg.TokenURL = testcase.settings.TokenURL
 			cfg.Scopes = testcase.settings.Scopes
-			ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
+			ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, ext)
