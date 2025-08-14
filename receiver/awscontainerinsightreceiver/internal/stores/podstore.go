@@ -32,6 +32,7 @@ const (
 	neuronKey          = "aws.amazon.com/neuron"
 	neuroncoreKey      = "aws.amazon.com/neuroncore"
 	neuronDeviceKey    = "aws.amazon.com/neurondevice"
+	efaKey             = "vpc.amazonaws.com/efa"
 	splitRegexStr      = "\\.|-"
 	kubeProxy          = "kube-proxy"
 )
@@ -251,6 +252,7 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 		p.decorateMem(metric, &entry.pod)
 		p.decorateGPU(metric, &entry.pod)
 		p.decorateNeuron(metric, &entry.pod)
+		p.decorateEfa(metric, &entry.pod)
 		p.addStatus(metric, &entry.pod)
 		addContainerCount(metric, &entry.pod)
 		addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
@@ -304,6 +306,8 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 	var gpuUsageTotal uint64
 	var neuroncoreRequest uint64
 	var neuroncoreUsageTotal uint64
+	var efaRequest uint64
+	var efaUsageTotal uint64
 
 	for i := range podList {
 		pod := podList[i]
@@ -329,6 +333,13 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 				gpuRequest += tmpGpuReq
 				if pod.Status.Phase == corev1.PodRunning {
 					gpuUsageTotal += tmpGpuLimit
+				}
+			}
+			if tmpEfaLimit, ok := getResourceSettingForPod(&pod, 0, efaKey, getLimitForContainer); ok {
+				tmpEfaReq, _ := getResourceSettingForPod(&pod, 0, efaKey, getRequestForContainer)
+				efaRequest += tmpEfaReq
+				if pod.Status.Phase == corev1.PodRunning {
+					efaUsageTotal += tmpEfaLimit
 				}
 			}
 		}
@@ -357,6 +368,8 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 		gpuUsageTotal:        gpuUsageTotal,
 		neuroncoreReq:        neuroncoreRequest,
 		neuroncoreUsageTotal: neuroncoreUsageTotal,
+		efaReq:               efaRequest,
+		efaUsageTotal:        efaUsageTotal,
 	})
 }
 
@@ -437,6 +450,17 @@ func (p *PodStore) decorateNode(metric CIMetric) {
 				metric.AddField(ci.MetricName(ci.TypeNode, ci.NeuroncoreUnreservedCapacity), 100.0-reservedCapacity)
 				metric.AddField(ci.MetricName(ci.TypeNode, ci.NeuroncoreAvailableCapacity), nodeStatusCapacityNeuroncore-nodeStats.neuroncoreReq)
 			}
+
+			if nodeStatusCapacityEfas, ok := p.nodeInfo.getNodeStatusCapacityEfas(); ok && nodeStatusCapacityEfas != 0 {
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.EfaRequest), nodeStats.efaReq)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.EfaLimit), nodeStatusCapacityEfas)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.EfaUsageTotal), nodeStats.efaUsageTotal)
+
+				reservedCapacity := float64(nodeStats.efaReq) / float64(nodeStatusCapacityEfas) * 100
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.EfaReservedCapacity), reservedCapacity)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.EfaUnreservedCapacity), 100.0-reservedCapacity)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.EfaAvailableCapacity), nodeStatusCapacityEfas-nodeStats.efaReq)
+			}
 		}
 	}
 }
@@ -506,6 +530,26 @@ func (p *PodStore) decorateNeuron(metric CIMetric, pod *corev1.Pod) {
 			if nodeCapacityCores, ok := p.nodeInfo.getNodeStatusCapacityNeuronCores(); ok && nodeCapacityCores != 0 {
 				reservedCapacity := float64(coresLimit) / float64(nodeCapacityCores) * 100
 				metric.AddField(ci.MetricName(ci.TypePod, ci.NeuroncoreReservedCapacity), reservedCapacity)
+			}
+		}
+	}
+}
+
+func (p *PodStore) decorateEfa(metric CIMetric, pod *corev1.Pod) {
+	if p.includeEnhancedMetrics && p.enableAcceleratedComputeMetrics && metric.GetTag(ci.MetricType) == ci.TypePod &&
+		pod.Status.Phase != corev1.PodSucceeded && pod.Status.Phase != corev1.PodFailed {
+		if podEfaLimit, ok := getResourceSettingForPod(pod, 0, efaKey, getLimitForContainer); ok {
+			podEfaRequest, _ := getResourceSettingForPod(pod, 0, efaKey, getRequestForContainer)
+			metric.AddField(ci.MetricName(ci.TypePod, ci.EfaRequest), podEfaRequest)
+			metric.AddField(ci.MetricName(ci.TypePod, ci.EfaLimit), podEfaLimit)
+			var podEfaUsageTotal uint64
+			if pod.Status.Phase == corev1.PodRunning { // Set the efa limit as the usage_total for running pods only
+				podEfaUsageTotal = podEfaLimit
+			}
+			metric.AddField(ci.MetricName(ci.TypePod, ci.EfaUsageTotal), podEfaUsageTotal)
+			if nodeStatusCapacityEfas, ok := p.nodeInfo.getNodeStatusCapacityEfas(); ok && nodeStatusCapacityEfas != 0 {
+				reservedCapacity := float64(podEfaLimit) / float64(nodeStatusCapacityEfas) * 100
+				metric.AddField(ci.MetricName(ci.TypePod, ci.EfaReservedCapacity), reservedCapacity)
 			}
 		}
 	}

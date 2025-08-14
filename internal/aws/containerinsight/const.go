@@ -155,6 +155,13 @@ const (
 	NeuroncoreUnreservedCapacity = "neuroncore_unreserved_capacity"
 	NeuroncoreAvailableCapacity  = "neuroncore_available_capacity"
 
+	EfaLimit              = "efa_limit"
+	EfaUsageTotal         = "efa_usage_total"
+	EfaRequest            = "efa_request"
+	EfaReservedCapacity   = "efa_reserved_capacity"
+	EfaUnreservedCapacity = "efa_unreserved_capacity"
+	EfaAvailableCapacity  = "efa_available_capacity"
+
 	HyperPodUnschedulablePendingReplacement = "unschedulable_pending_replacement"
 	HyperPodUnschedulablePendingReboot      = "unschedulable_pending_reboot"
 	HyperPodSchedulable                     = "schedulable"
@@ -363,13 +370,19 @@ func init() {
 		ContainerCount:        UnitCount,
 		ContainerRestartCount: UnitCount,
 		RunningTaskCount:      UnitCount,
-
 		EfaRdmaReadBytes:      UnitBytesPerSec,
 		EfaRdmaWriteBytes:     UnitBytesPerSec,
 		EfaRdmaWriteRecvBytes: UnitBytesPerSec,
 		EfaRxBytes:            UnitBytesPerSec,
 		EfaRxDropped:          UnitCountPerSec,
 		EfaTxBytes:            UnitBytesPerSec,
+
+		EfaLimit:              UnitCount,
+		EfaUsageTotal:         UnitCount,
+		EfaRequest:            UnitCount,
+		EfaReservedCapacity:   UnitPercent,
+		EfaUnreservedCapacity: UnitPercent,
+		EfaAvailableCapacity:  UnitCount,
 
 		GpuLimit:              UnitCount,
 		GpuUsageTotal:         UnitCount,

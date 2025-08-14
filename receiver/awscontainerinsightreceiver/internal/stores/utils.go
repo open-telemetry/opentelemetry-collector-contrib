@@ -26,6 +26,7 @@ const (
 	resourceSpecNeuronKey       = "aws.amazon.com/neuron"
 	resourceSpecNeuroncoreKey   = "aws.amazon.com/neuroncore"
 	resourceSpecNeuronDeviceKey = "aws.amazon.com/neurondevice"
+	resourceSpecEfaKey          = "vpc.amazonaws.com/efa"
 )
 
 func createPodKeyFromMetaData(pod *corev1.Pod) string {

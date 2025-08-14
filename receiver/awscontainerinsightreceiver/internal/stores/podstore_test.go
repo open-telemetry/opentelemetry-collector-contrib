@@ -1109,6 +1109,13 @@ func TestPodStore_decorateNode(t *testing.T) {
 	assert.Equal(t, float64(100), metric.GetField("node_neuroncore_unreserved_capacity").(float64))
 	assert.Equal(t, uint64(32), metric.GetField("node_neuroncore_available_capacity").(uint64))
 
+	assert.Equal(t, uint64(0), metric.GetField("node_efa_request").(uint64))
+	assert.Equal(t, uint64(4), metric.GetField("node_efa_limit").(uint64))
+	assert.Equal(t, uint64(0), metric.GetField("node_efa_usage_total").(uint64))
+	assert.Equal(t, float64(0), metric.GetField("node_efa_reserved_capacity").(float64))
+	assert.Equal(t, float64(100), metric.GetField("node_efa_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(4), metric.GetField("node_efa_available_capacity").(uint64))
+
 	assert.Equal(t, uint64(1), metric.GetField("node_status_condition_ready").(uint64))
 	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_disk_pressure").(uint64))
 	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_memory_pressure").(uint64))
@@ -1345,4 +1352,113 @@ func generateRawCIMetric() CIMetric {
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.K8sPodNameKey: "cpu-limit"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	return generateMetric(fields, tags)
+}
+
+func getPodStoreWithEfaCapacity() *PodStore {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeInfo.setCPUCapacity(4000)
+	nodeInfo.setMemCapacity(400 * 1024 * 1024)
+	return &PodStore{
+		cache:            newMapWithExpiry(time.Minute),
+		nodeInfo:         nodeInfo,
+		prevMeasurements: sync.Map{},
+		logger:           zap.NewNop(),
+	}
+}
+
+func TestPodStore_decorateEfa(t *testing.T) {
+	podStore := getPodStoreWithEfaCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+
+	pod := getBaseTestPodInfo()
+	pod.Spec.Containers[0].Resources.Requests["vpc.amazonaws.com/efa"] = resource.MustParse("1")
+	pod.Spec.Containers[0].Resources.Limits["vpc.amazonaws.com/efa"] = resource.MustParse("2")
+
+	podList := []corev1.Pod{*pod}
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypePod}
+	fields := map[string]any{}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+	podStore.decorateEfa(metric, pod)
+
+	assert.Equal(t, uint64(1), metric.GetField("pod_efa_request").(uint64))
+	assert.Equal(t, uint64(2), metric.GetField("pod_efa_limit").(uint64))
+	assert.Equal(t, uint64(2), metric.GetField("pod_efa_usage_total").(uint64))
+	assert.Equal(t, float64(50.0), metric.GetField("pod_efa_reserved_capacity").(float64))
+}
+
+func TestPodStore_decorateNode_withMultipleEfaPods(t *testing.T) {
+	t.Setenv(ci.HostName, "testNode1")
+	podStore := getPodStoreWithEfaCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+
+	pod1 := getBaseTestPodInfo()
+	pod1.Name = "efa-pod-1"
+	pod1.Spec.Containers[0].Resources.Requests["vpc.amazonaws.com/efa"] = resource.MustParse("1")
+	pod1.Spec.Containers[0].Resources.Limits["vpc.amazonaws.com/efa"] = resource.MustParse("2")
+
+	pod2 := getBaseTestPodInfo()
+	pod2.Name = "efa-pod-2"
+	pod2.Spec.Containers[0].Resources.Requests["vpc.amazonaws.com/efa"] = resource.MustParse("2")
+	pod2.Spec.Containers[0].Resources.Limits["vpc.amazonaws.com/efa"] = resource.MustParse("1")
+	pod2.Spec.Containers[0].Resources.Requests["vpc.amazonaws.com/efa"] = resource.MustParse("2")
+	pod2.Spec.Containers[0].Resources.Limits["vpc.amazonaws.com/efa"] = resource.MustParse("1")
+
+	podList := []corev1.Pod{*pod1, *pod2}
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(1000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(2048),
+	}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(3), metric.GetField("node_efa_request").(uint64))
+	assert.Equal(t, uint64(4), metric.GetField("node_efa_limit").(uint64))
+	assert.Equal(t, uint64(3), metric.GetField("node_efa_usage_total").(uint64))
+	assert.Equal(t, float64(75.0), metric.GetField("node_efa_reserved_capacity").(float64))
+	assert.Equal(t, float64(25.0), metric.GetField("node_efa_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(1), metric.GetField("node_efa_available_capacity").(uint64))
+}
+
+func TestPodStore_decorateNode_withEfa(t *testing.T) {
+	t.Setenv(ci.HostName, "testNode1")
+	pod := getBaseTestPodInfo()
+	pod.Spec.Containers[0].Resources.Requests["vpc.amazonaws.com/efa"] = resource.MustParse("1")
+	pod.Spec.Containers[0].Resources.Limits["vpc.amazonaws.com/efa"] = resource.MustParse("2")
+
+	podList := []corev1.Pod{*pod}
+	podStore := getPodStoreWithEfaCapacity()
+	defer require.NoError(t, podStore.Shutdown())
+	podStore.refreshInternal(time.Now(), podList)
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
+		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
+		ci.MetricName(ci.TypeNode, ci.MemLimit):      uint64(400 * 1024 * 1024),
+	}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(1), metric.GetField("node_efa_request").(uint64))
+	assert.Equal(t, uint64(4), metric.GetField("node_efa_limit").(uint64))
+	assert.Equal(t, uint64(2), metric.GetField("node_efa_usage_total").(uint64))
+	assert.Equal(t, float64(25.0), metric.GetField("node_efa_reserved_capacity").(float64))
+	assert.Equal(t, float64(75.0), metric.GetField("node_efa_unreserved_capacity").(float64))
+	assert.Equal(t, uint64(3), metric.GetField("node_efa_available_capacity").(uint64))
 }

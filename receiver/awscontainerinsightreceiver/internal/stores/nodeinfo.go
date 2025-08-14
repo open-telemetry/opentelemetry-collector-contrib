@@ -23,6 +23,8 @@ type nodeStats struct {
 	gpuUsageTotal        uint64
 	neuroncoreReq        uint64
 	neuroncoreUsageTotal uint64
+	efaReq               uint64
+	efaUsageTotal        uint64
 }
 
 type nodeInfo struct {
@@ -118,6 +120,15 @@ func (n *nodeInfo) getNodeStatusCapacityGPUs() (uint64, bool) {
 	}
 	gpus := capacityResources.Name(resourceSpecNvidiaGpuKey, resource.DecimalExponent).Value()
 	return forceConvertToInt64(gpus, n.logger), true
+}
+
+func (n *nodeInfo) getNodeStatusCapacityEfas() (uint64, bool) {
+	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
+	if !ok {
+		return 0, false
+	}
+	efas := capacityResources.Name(resourceSpecEfaKey, resource.DecimalExponent).Value()
+	return forceConvertToInt64(efas, n.logger), true
 }
 
 func (n *nodeInfo) getNeuronResourceCapacity(resourceKey v1.ResourceName) (uint64, bool) {
