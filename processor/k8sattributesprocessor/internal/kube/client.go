@@ -646,7 +646,8 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 			var cutoff int
 			now := time.Now()
 			c.deleteMut.Lock()
-			for i, d := range c.deleteQueue {
+			for i := range c.deleteQueue {
+				d := c.deleteQueue[i]
 				if d.ts.Add(gracePeriod).After(now) {
 					break
 				}
@@ -657,7 +658,8 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 			c.deleteMut.Unlock()
 
 			c.m.Lock()
-			for _, d := range toDelete {
+			for i := range toDelete {
+				d := toDelete[i]
 				if p, ok := c.Pods[d.id]; ok {
 					// Sanity check: make sure we are deleting the same pod
 					// and the underlying state (ip<>pod mapping) has not changed.
@@ -986,12 +988,14 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			return transformedContainerStatus
 		}
 
-		for _, containerStatus := range pod.Status.ContainerStatuses {
+		for i := range pod.Status.ContainerStatuses {
+			containerStatus := pod.Status.ContainerStatuses[i]
 			transformedPod.Status.ContainerStatuses = append(
 				transformedPod.Status.ContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
 		}
-		for _, containerStatus := range pod.Status.InitContainerStatuses {
+		for i := range pod.Status.InitContainerStatuses {
+			containerStatus := pod.Status.InitContainerStatuses[i]
 			transformedPod.Status.InitContainerStatuses = append(
 				transformedPod.Status.InitContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
@@ -1006,12 +1010,14 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			return transformedContainer
 		}
 
-		for _, container := range pod.Spec.Containers {
+		for i := range pod.Spec.Containers {
+			container := pod.Spec.Containers[i]
 			transformedPod.Spec.Containers = append(
 				transformedPod.Spec.Containers, removeUnnecessaryContainerData(container),
 			)
 		}
-		for _, container := range pod.Spec.InitContainers {
+		for i := range pod.Spec.InitContainers {
+			container := pod.Spec.InitContainers[i]
 			transformedPod.Spec.InitContainers = append(
 				transformedPod.Spec.InitContainers, removeUnnecessaryContainerData(container),
 			)
@@ -1075,7 +1081,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	}
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
 		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
-		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
+		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+		for i := range specs {
+			spec := &specs[i]
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
 			if err == nil {
@@ -1095,7 +1103,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			containers.ByName[spec.Name] = container
 		}
 	}
-	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+	apiStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+	for i := range apiStatuses {
+		apiStatus := &apiStatuses[i]
 		containerName := apiStatus.Name
 		container, ok := containers.ByName[containerName]
 		if !ok {
@@ -1422,7 +1432,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	for _, id := range c.getIdentifiersFromAssoc(newPod) {
+	identifiers := c.getIdentifiersFromAssoc(newPod)
+	for i := range identifiers {
+		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attributes (like IP address)
@@ -1438,7 +1450,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	podToRemove := c.podFromAPI(pod)
-	for _, id := range c.getIdentifiersFromAssoc(podToRemove) {
+	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	for i := range identifiers {
+		id := identifiers[i]
 		p, ok := c.GetPod(id)
 
 		if ok && p.Name == pod.Name {
