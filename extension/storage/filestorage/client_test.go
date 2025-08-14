@@ -474,12 +474,12 @@ func BenchmarkClientGet(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
 
-	ctx := b.Context()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for b.Loop() {
 		_, err = client.Get(ctx, testKey)
 		require.NoError(b, err)
@@ -494,10 +494,8 @@ func BenchmarkClientGet100(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
-
-	ctx := b.Context()
 
 	testEntries := make([]*storage.Operation, 100)
 	for i := range 100 {
@@ -517,13 +515,13 @@ func BenchmarkClientSet(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
 
-	ctx := b.Context()
 	testKey := "testKey"
 	testValue := []byte("testValue")
 
+	b.ResetTimer()
 	for b.Loop() {
 		require.NoError(b, client.Set(ctx, testKey, testValue))
 	}
@@ -537,15 +535,15 @@ func BenchmarkClientSet100(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
-	ctx := b.Context()
 
 	testEntries := make([]*storage.Operation, 100)
 	for i := range 100 {
 		testEntries[i] = storage.SetOperation(fmt.Sprintf("testKey-%d", i), []byte("testValue"))
 	}
 
+	b.ResetTimer()
 	for b.Loop() {
 		require.NoError(b, client.Batch(ctx, testEntries...))
 	}
@@ -559,12 +557,12 @@ func BenchmarkClientDelete(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
 
-	ctx := b.Context()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for b.Loop() {
 		require.NoError(b, client.Delete(ctx, testKey))
 	}
@@ -585,12 +583,10 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
 
-	ctx := b.Context()
-
-	for n := 0; n < entryCount; n++ {
+	for n := range entryCount {
 		testKey = fmt.Sprintf("testKey-%d", n)
 		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
@@ -603,6 +599,7 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 	testKey = "testKey"
 	testValue := []byte("testValue")
 
+	b.ResetTimer()
 	for b.Loop() {
 		require.NoError(b, client.Set(ctx, testKey, testValue))
 	}
@@ -623,10 +620,8 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
-
-	ctx := b.Context()
 
 	for n := range entryCount {
 		testKey = fmt.Sprintf("testKey-%d", n)
@@ -637,6 +632,8 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	require.NoError(b, err)
 
 	var tempClient *fileStorageClient
+
+	b.ResetTimer()
 
 	for b.Loop() {
 		tempClient, err = newClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{}, false)
@@ -661,10 +658,8 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
-
-	ctx := b.Context()
 
 	for n := range entryCount {
 		testKey = fmt.Sprintf("testKey-%d", n)
@@ -678,6 +673,9 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 	}
 
 	require.NoError(b, client.Close(ctx))
+
+	b.ResetTimer()
+	b.StopTimer()
 
 	for n := 0; b.Loop(); n++ {
 		testDbFile := filepath.Join(tempDir, fmt.Sprintf("my_db%d", n))
@@ -704,10 +702,8 @@ func BenchmarkClientCompactDb(b *testing.B) {
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
+		require.NoError(b, client.Close(ctx))
 	})
-
-	ctx := b.Context()
 
 	for n := range entryCount {
 		testKey = fmt.Sprintf("testKey-%d", n)
@@ -721,6 +717,9 @@ func BenchmarkClientCompactDb(b *testing.B) {
 	}
 
 	require.NoError(b, client.Close(ctx))
+
+	b.ResetTimer()
+	b.StopTimer()
 
 	for n := 0; b.Loop(); n++ {
 		testDbFile := filepath.Join(tempDir, fmt.Sprintf("my_db%d", n))
