@@ -65,11 +65,7 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
-
-					if event.Timestamp() != 0 {
-						spanEventsCounter.updateTimestamp(event.Timestamp())
-					}
-
+					spanEventsCounter.updateTimestamp(event.Timestamp())
 					eCtx := ottlspanevent.NewTransformContext(event, span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
 					multiError = errors.Join(multiError, spanEventsCounter.update(ctx, event.Attributes(), eCtx))
 				}
