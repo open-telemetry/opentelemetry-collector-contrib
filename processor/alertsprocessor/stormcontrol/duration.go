@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-// Duration is a wrapper that unmarshals from either a string (e.g. "5s")
-// or a number (interpreted as nanoseconds). It marshals back to the
-// canonical string form used by time.Duration.
-type Duration time.Duration
+// Duration is stored as nanoseconds internally.
+// It accepts YAML/JSON as string ("250ms") or integer (ns).
+type Duration int64 // nanoseconds
 
 func (d Duration) Duration() time.Duration { return time.Duration(d) }
+func (d Duration) Nanoseconds() int64      { return int64(d) }
 func (d Duration) String() string          { return time.Duration(d).String() }
 
 // MarshalText implements encoding.TextMarshaler.
@@ -22,12 +22,12 @@ func (d Duration) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (d *Duration) UnmarshalText(b []byte) error {
-	// Try string duration first (e.g., "5s").
+	// Try Go duration string first.
 	if dur, err := time.ParseDuration(string(b)); err == nil {
 		*d = Duration(dur)
 		return nil
 	}
-	// Fallback: numeric (ns) in text form.
+	// Fallback: numeric nanoseconds in text.
 	if n, err := strconv.ParseInt(string(b), 10, 64); err == nil {
 		*d = Duration(time.Duration(n))
 		return nil
@@ -35,9 +35,9 @@ func (d *Duration) UnmarshalText(b []byte) error {
 	return fmt.Errorf("invalid duration %q", string(b))
 }
 
-// UnmarshalJSON accepts either "5s" or 5000000000 (ns).
+// UnmarshalJSON accepts either "250ms" or 250000000 (ns).
 func (d *Duration) UnmarshalJSON(b []byte) error {
-	// If it's quoted, delegate to UnmarshalText.
+	// Quoted? -> string path.
 	if len(b) > 0 && b[0] == '"' && b[len(b)-1] == '"' {
 		var s string
 		if err := json.Unmarshal(b, &s); err != nil {
@@ -45,7 +45,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 		}
 		return d.UnmarshalText([]byte(s))
 	}
-	// Else expect a number in nanoseconds.
+	// Else numeric nanoseconds.
 	var ns int64
 	if err := json.Unmarshal(b, &ns); err != nil {
 		return fmt.Errorf("duration must be a string or integer nanoseconds: %w", err)
@@ -54,12 +54,8 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// UnmarshalYAML supports gopkg.in/yaml.v3 when present.
-// The collector's config loader will generally go through confmap/mapstructure,
-// but this keeps it robust for direct YAML unmarshals too.
-type yamlNode interface {
-	Decode(v any) error
-}
+// UnmarshalYAML supports yaml.Node.Decode without importing yaml here.
+type yamlNode interface{ Decode(v any) error }
 
 func (d *Duration) UnmarshalYAML(node yamlNode) error {
 	// Try as string.
@@ -73,7 +69,6 @@ func (d *Duration) UnmarshalYAML(node yamlNode) error {
 		*d = Duration(time.Duration(ns))
 		return nil
 	}
-	// Fallback: delegate to text; this will return a good error message.
 	var raw any
 	_ = node.Decode(&raw)
 	return fmt.Errorf("invalid duration YAML value: %T (%v)", raw, raw)
