@@ -41,6 +41,7 @@ Each target has the following properties:
 - `endpoint` (optional): A single URL to be monitored.
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
+- `body` (optional): Request body content for POST, PUT, PATCH, and other methods.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
@@ -76,6 +77,8 @@ receivers:
         enabled: true
       httpcheck.client.request.duration:
         enabled: true
+      httpcheck.request.duration:
+        enabled: true
       httpcheck.response.duration:
         enabled: true
 ```
@@ -86,6 +89,39 @@ These metrics provide detailed timing information for different phases of the HT
 - `tls.handshake.duration`: Time spent performing TLS handshake (HTTPS only)
 - `client.request.duration`: Time spent sending the HTTP request
 - `response.duration`: Time spent receiving the HTTP response
+
+### Request Body Support
+
+The receiver supports sending request bodies for POST, PUT, PATCH, and other HTTP methods:
+
+```yaml
+receivers:
+  httpcheck:
+    targets:
+      # POST with JSON body
+      - endpoint: "https://api.example.com/users"
+        method: "POST"
+        body: '{"name": "John Doe", "email": "john@example.com"}'
+        
+      # PUT with form data
+      - endpoint: "https://api.example.com/profile"
+        method: "PUT"
+        body: "name=John&email=john@example.com"
+        
+      # PATCH with custom Content-Type
+      - endpoint: "https://api.example.com/settings"
+        method: "PATCH"
+        body: '{"theme": "dark"}'
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer token123"
+```
+
+**Content-Type Auto-Detection:**
+- JSON bodies (starting with `{` or `[`): `application/json`
+- Form data (containing `=`): `application/x-www-form-urlencoded`
+- Other content: `text/plain`
+- Custom headers override auto-detection
 
 ### Example Configuration
 
@@ -122,7 +158,10 @@ receivers:
         headers:
           Authorization: "Bearer <your_bearer_token>"
       - method: "GET"
-        endpoint: "https://example.com"
+        endpoint: "https://api.example.com/health"
+      - method: "POST"
+        endpoint: "https://api.example.com/users"
+        body: '{"name": "Test User", "email": "test@example.com"}'
 processors:
   batch:
     send_batch_max_size: 1000

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 	"sync"
 	"time"
 
@@ -193,12 +194,17 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				},
 			}
 
-			// Create request with trace context
+			// Create request with trace context and body
+			var requestBody io.Reader = http.NoBody
+			if h.cfg.Targets[targetIndex].Body != "" {
+				requestBody = strings.NewReader(h.cfg.Targets[targetIndex].Body)
+			}
+
 			req, err := http.NewRequestWithContext(
 				httptrace.WithClientTrace(ctx, trace),
 				h.cfg.Targets[targetIndex].Method,
 				h.cfg.Targets[targetIndex].Endpoint,
-				http.NoBody,
+				requestBody,
 			)
 			if err != nil {
 				h.settings.Logger.Error("failed to create request", zap.Error(err))
@@ -208,6 +214,19 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Add headers to the request
 			for key, value := range h.cfg.Targets[targetIndex].Headers {
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
+			}
+
+			// Set Content-Type header automatically if body is present, no Content-Type is set, and auto_content_type is enabled
+			if h.cfg.Targets[targetIndex].Body != "" && req.Header.Get("Content-Type") == "" && h.cfg.Targets[targetIndex].AutoContentType {
+				body := strings.TrimSpace(h.cfg.Targets[targetIndex].Body)
+				switch {
+				case strings.HasPrefix(body, "{") || strings.HasPrefix(body, "["):
+					req.Header.Set("Content-Type", "application/json")
+				case strings.Contains(h.cfg.Targets[targetIndex].Body, "="):
+					req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				default:
+					req.Header.Set("Content-Type", "text/plain")
+				}
 			}
 
 			// Send the request and measure response time
