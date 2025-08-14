@@ -7,7 +7,7 @@ change_type: enhancement
 component: awslogsencodingextension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add aws.access_key.id to CloudTrail logs.
+note: "Adds `aws.access_key.id` to CloudTrail logs and aligns `aws.resources` attribute fields with naming conventions."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [41815]
