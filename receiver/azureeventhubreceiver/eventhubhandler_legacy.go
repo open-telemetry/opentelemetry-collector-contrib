@@ -33,7 +33,7 @@ func (h *hubWrapperLegacyImpl) GetRuntimeInformation(ctx context.Context) (*hubR
 			Path:           info.Path,
 		}, nil
 	}
-	return nil, implError
+	return nil, errNoConfig
 }
 
 func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error) {
@@ -55,12 +55,12 @@ func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, 
 
 		return l, err
 	}
-	return nil, implError
+	return nil, errNoConfig
 }
 
 func (h *hubWrapperLegacyImpl) Close(ctx context.Context) error {
 	if h.hub != nil {
 		return h.hub.Close(ctx)
 	}
-	return implError
+	return errNoConfig
 }

@@ -16,10 +16,11 @@ import (
 )
 
 type mockPartitionClient struct {
-	closed bool
+	eventData []*azeventhubs.ReceivedEventData
+	closed    bool
 }
 
-func (p *mockPartitionClient) ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
+func (p *mockPartitionClient) ReceiveEvents(_ context.Context, maxBatchSize int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
 	events := make([]*azeventhubs.ReceivedEventData, 0, maxBatchSize)
 
 	for i := range maxBatchSize {
@@ -31,10 +32,11 @@ func (p *mockPartitionClient) ReceiveEvents(ctx context.Context, maxBatchSize in
 		events = append(events, event)
 	}
 
+	p.eventData = events
 	return events, nil
 }
 
-func (p *mockPartitionClient) Close(ctx context.Context) error {
+func (p *mockPartitionClient) Close(_ context.Context) error {
 	p.closed = true
 	return nil
 }
@@ -42,21 +44,21 @@ func (p *mockPartitionClient) Close(ctx context.Context) error {
 type mockAzeventHub struct {
 	eventHubProperties  azeventhubs.EventHubProperties
 	partitionProperties azeventhubs.PartitionProperties
-	partitionId         string
+	partitionID         string
 	offset              string
 	closed              bool
 }
 
-func (a *mockAzeventHub) GetEventHubProperties(ctx context.Context, options *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
+func (a *mockAzeventHub) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
 	return a.eventHubProperties, nil
 }
 
-func (a *mockAzeventHub) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
+func (a *mockAzeventHub) GetPartitionProperties(_ context.Context, _ string, _ *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
 	return a.partitionProperties, nil
 }
 
 func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (azPartitionClient, error) {
-	a.partitionId = partitionID
+	a.partitionID = partitionID
 	if options != nil && options.StartPosition.Offset != nil {
 		a.offset = *options.StartPosition.Offset
 	}
@@ -64,7 +66,7 @@ func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azevent
 	return &mockPartitionClient{}, nil
 }
 
-func (a *mockAzeventHub) Close(ctx context.Context) error {
+func (a *mockAzeventHub) Close(_ context.Context) error {
 	a.closed = true
 	return nil
 }
@@ -87,13 +89,13 @@ func TestHubWrapperAzeventhubImpl_GetEventHubProperties(t *testing.T) {
 		storage: nil,
 	}
 
-	results, err := mockHubWrapper.GetRuntimeInformation(context.Background())
+	results, err := mockHubWrapper.GetRuntimeInformation(t.Context())
 	require.NoError(t, err)
 
-	assert.Equal(t, results.CreatedAt, createdOn)
-	assert.Equal(t, results.Path, name)
-	assert.Equal(t, results.PartitionCount, len(partitionIDs))
-	assert.Equal(t, results.PartitionIDs, partitionIDs)
+	assert.Equal(t, createdOn, results.CreatedAt)
+	assert.Equal(t, name, results.Path)
+	assert.Equal(t, len(partitionIDs), results.PartitionCount)
+	assert.Equal(t, partitionIDs, results.PartitionIDs)
 }
 
 func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
@@ -148,7 +150,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 			defer cancel()
 
 			h := &hubWrapperAzeventhubImpl{
@@ -159,7 +161,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 			listener, err := h.Receive(
 				ctx,
 				"p1",
-				func(ctx context.Context, event *azureEvent) error {
+				func(_ context.Context, _ *azureEvent) error {
 					return nil
 				},
 				test.applyOffset,
@@ -170,7 +172,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, test.hub.offset, test.expectedOffset)
+			require.Equal(t, test.expectedOffset, test.hub.offset)
 			require.NoError(t, err)
 			<-listener.Done()
 		})
@@ -187,9 +189,9 @@ func TestHubWrapperAzeventhubImpl_Close(t *testing.T) {
 		storage: nil,
 	}
 
-	err := mockHubWrapper.Close(context.Background())
+	err := mockHubWrapper.Close(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, hub.closed, true)
+	assert.True(t, hub.closed)
 }
 
 func TestHubWrapperAzeventhubImpl_Namespace(t *testing.T) {
@@ -203,7 +205,7 @@ func TestHubWrapperAzeventhubImpl_Namespace(t *testing.T) {
 
 	namespace, err := mockHubWrapper.namespace()
 	require.NoError(t, err)
-	assert.Equal(t, namespace, "test.servicebus.windows.net")
+	assert.Equal(t, "test.servicebus.windows.net", namespace)
 
 	mockHubWrapper = &hubWrapperAzeventhubImpl{
 		hub: &mockAzeventHub{},
@@ -219,7 +221,7 @@ func TestHubWrapperAzeventhubImpl_Namespace(t *testing.T) {
 
 func TestPartitionListener_SetErr(t *testing.T) {
 	p := partitionListener{}
-	assert.Equal(t, p.err, nil)
+	require.NoError(t, p.err)
 	p.setErr(errors.New("test"))
-	assert.Equal(t, p.err.Error(), "test")
+	assert.Equal(t, "test", p.err.Error())
 }

@@ -17,22 +17,22 @@ type mockLegacyHub struct {
 	eventHubProperties eventhub.HubRuntimeInformation
 	closed             bool
 	receiveCalls       int
-	receivePartitionId string
+	receivePartitionID string
 	receiveOptions     []eventhub.ReceiveOption
 }
 
-func (h *mockLegacyHub) GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error) {
+func (h *mockLegacyHub) GetRuntimeInformation(_ context.Context) (*eventhub.HubRuntimeInformation, error) {
 	return &h.eventHubProperties, nil
 }
 
-func (h *mockLegacyHub) Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (*eventhub.ListenerHandle, error) {
-	h.receiveCalls += 1
+func (h *mockLegacyHub) Receive(_ context.Context, partitionID string, _ eventhub.Handler, opts ...eventhub.ReceiveOption) (*eventhub.ListenerHandle, error) {
+	h.receiveCalls++
 	h.receiveOptions = opts
-	h.receivePartitionId = partitionID
+	h.receivePartitionID = partitionID
 	return nil, nil
 }
 
-func (h *mockLegacyHub) Close(ctx context.Context) error {
+func (h *mockLegacyHub) Close(_ context.Context) error {
 	h.closed = true
 	return nil
 }
@@ -54,12 +54,12 @@ func TestHubWrapperLegacyImpl_GetEventHubProperties(t *testing.T) {
 		config: &Config{},
 	}
 
-	results, err := mockHubWrapper.GetRuntimeInformation(context.Background())
+	results, err := mockHubWrapper.GetRuntimeInformation(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, results.CreatedAt, createdOn)
 	assert.Equal(t, results.Path, path)
-	assert.Equal(t, results.PartitionCount, len(partitionIDs))
+	assert.Len(t, len(partitionIDs), results.PartitionCount)
 	assert.Equal(t, results.PartitionIDs, partitionIDs)
 }
 
@@ -68,11 +68,11 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 		name          string
 		offset        string
 		applyOffset   bool
-		partitionId   string
+		partitionID   string
 		consumerGroup string
 
 		shouldCallReceive   bool
-		expectedPartitionId string
+		expectedPartitionID string
 		expectedOptionCount int
 	}{
 		{
@@ -82,8 +82,8 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 		},
 		{
 			name:                "partition id",
-			partitionId:         "partition1",
-			expectedPartitionId: "partition1",
+			partitionID:         "partition1",
+			expectedPartitionID: "partition1",
 			shouldCallReceive:   true,
 		},
 		{
@@ -110,8 +110,8 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 		{
 			name:                "offset with partition id",
 			offset:              "1",
-			partitionId:         "partition1",
-			expectedPartitionId: "partition1",
+			partitionID:         "partition1",
+			expectedPartitionID: "partition1",
 			applyOffset:         true,
 			shouldCallReceive:   true,
 			expectedOptionCount: 1,
@@ -145,18 +145,19 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 				},
 			}
 
-			mockHubWrapper.Receive(context.Background(), test.partitionId, func(ctx context.Context, event *azureEvent) error {
+			_, err := mockHubWrapper.Receive(t.Context(), test.partitionID, func(_ context.Context, _ *azureEvent) error {
 				return nil
 			}, test.applyOffset)
+			require.NoError(t, err)
 
 			if test.shouldCallReceive {
-				assert.Equal(t, hub.receiveCalls, 1)
+				assert.Equal(t, 1, hub.receiveCalls)
 			} else {
-				assert.Equal(t, hub.receiveCalls, 0)
+				assert.Equal(t, 0, hub.receiveCalls)
 			}
 
-			assert.Equal(t, len(hub.receiveOptions), test.expectedOptionCount)
-			assert.Equal(t, hub.receivePartitionId, test.expectedPartitionId)
+			assert.Len(t, hub.receiveOptions, test.expectedOptionCount)
+			assert.Equal(t, test.expectedPartitionID, hub.receivePartitionID)
 		})
 	}
 }
@@ -170,7 +171,7 @@ func TestHubWrapperLegacyImpl_Close(t *testing.T) {
 		config: &Config{},
 	}
 
-	err := mockHubWrapper.Close(context.Background())
+	err := mockHubWrapper.Close(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, hub.closed, true)
+	assert.True(t, hub.closed)
 }

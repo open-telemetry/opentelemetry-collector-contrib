@@ -78,26 +78,26 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestMissingConnection(t *testing.T) {
-	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false)
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "missing connection")
 
-	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true)
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
 	err = xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "missing connection")
 }
 
 func TestInvalidConnectionString(t *testing.T) {
-	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false)
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "foo"
 	err := xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 
-	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true)
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
 	err = xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 }
@@ -130,9 +130,7 @@ func TestOffsetWithoutPartition(t *testing.T) {
 	cfg.Offset = "foo"
 	assert.ErrorContains(t, cfg.Validate(), "cannot use 'offset' without 'partition'")
 
-	prev := azEventHubFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
-	defer featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, prev)
 	assert.ErrorContains(t, cfg.Validate(), "cannot use 'offset' without 'partition'")
 }
 

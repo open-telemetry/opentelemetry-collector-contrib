@@ -40,7 +40,7 @@ func (a *azureEvent) Data() []byte {
 		return a.EventHubEvent.Data
 	}
 	if a.AzEventData != nil {
-		return a.AzEventData.EventData.Body
+		return a.AzEventData.Body
 	}
 	return nil
 }

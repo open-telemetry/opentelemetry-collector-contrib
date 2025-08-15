@@ -39,7 +39,7 @@ type hubRuntimeInfo struct {
 	PartitionIDs   []string
 }
 
-var implError = errors.New("Configuration error, hub not accessible")
+var errNoConfig = errors.New("Configuration error, hub not accessible")
 
 type eventhubHandler struct {
 	hub           hubWrapper
@@ -82,7 +82,8 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 					storageClient: h.storageClient,
 					defaultValue: checkpointSeqNumber{
 						SeqNumber: -1,
-					}}
+					},
+				}
 			}
 
 			h.hub = &hubWrapperAzeventhubImpl{

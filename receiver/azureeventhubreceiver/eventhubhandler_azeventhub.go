@@ -68,7 +68,7 @@ func (h *hubWrapperAzeventhubImpl) GetRuntimeInformation(ctx context.Context) (*
 			Path:           info.Name,
 		}, nil
 	}
-	return nil, implError
+	return nil, errNoConfig
 }
 
 func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error) {
@@ -86,9 +86,8 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 			startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
 		}
 		if h.storage != nil {
-			checkpoint, err := h.storage.Read(namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID)
-
-			if err == nil {
+			checkpoint, readErr := h.storage.Read(namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID)
+			if readErr == nil {
 				startPos = azeventhubs.StartPosition{
 					SequenceNumber: &checkpoint.SeqNumber,
 				}
@@ -146,11 +145,15 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 					lastEvent := events[len(events)-1]
 
 					if h.storage != nil {
-						h.storage.Write(
+						err := h.storage.Write(
 							namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID, checkpointSeqNumber{
 								SeqNumber: lastEvent.SequenceNumber,
 							},
 						)
+						if err != nil {
+							w.setErr(err)
+							return
+						}
 					}
 				}
 			}
@@ -158,14 +161,14 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 
 		return w, nil
 	}
-	return nil, implError
+	return nil, errNoConfig
 }
 
 func (h *hubWrapperAzeventhubImpl) Close(ctx context.Context) error {
 	if h.hub != nil {
 		return h.hub.Close(ctx)
 	}
-	return implError
+	return errNoConfig
 }
 
 func (h *hubWrapperAzeventhubImpl) namespace() (string, error) {
