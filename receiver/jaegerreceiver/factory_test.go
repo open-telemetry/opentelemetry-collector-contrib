@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -40,12 +41,12 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
 		},
-	}
+	})
 	set := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
@@ -81,24 +82,24 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
 		},
-	}
+	})
 	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "0.0.0.0:14250", r.(*jReceiver).config.GRPC.NetAddr.Endpoint, "grpc port should be default")
+	assert.Equal(t, "0.0.0.0:14250", r.(*jReceiver).config.GRPC.Get().NetAddr.Endpoint, "grpc port should be default")
 }
 
 func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -109,7 +110,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 				KeyFile:  "./testdata/server.key",
 			},
 		}),
-	}
+	})
 	set := receivertest.NewNopSettings(metadata.Type)
 
 	_, err := factory.CreateTraces(t.Context(), set, cfg, nil)
@@ -120,7 +121,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftHTTP = &confighttp.ServerConfig{
+	cfg.(*Config).ThriftHTTP = configoptional.Some(confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:14268",
 		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
@@ -128,7 +129,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 				KeyFile:  "./testdata/server.key",
 			},
 		}),
-	}
+	})
 
 	set := receivertest.NewNopSettings(metadata.Type)
 
@@ -139,38 +140,44 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+	cm := confmap.NewFromStringMap(map[string]any{
+		"protocols": map[string]any{
+			"thrift_http": nil,
+		},
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
 
 	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.ThriftHTTP.Endpoint, "http port should be default")
+	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.ThriftHTTP.Get().Endpoint, "http port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftBinaryUDP = &ProtocolUDP{
+	cfg.(*Config).ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6832",
-	}
+	})
 	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "0.0.0.0:6832", r.(*jReceiver).config.ThriftBinaryUDP.Endpoint, "thrift port should be default")
+	assert.Equal(t, "0.0.0.0:6832", r.(*jReceiver).config.ThriftBinaryUDP.Get().Endpoint, "thrift port should be default")
 }
 
 func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftCompactUDP = &ProtocolUDP{
+	cfg.(*Config).ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6831",
-	}
+	})
 	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "0.0.0.0:6831", r.(*jReceiver).config.ThriftCompactUDP.Endpoint, "thrift port should be default")
+	assert.Equal(t, "0.0.0.0:6831", r.(*jReceiver).config.ThriftCompactUDP.Get().Endpoint, "thrift port should be default")
 }
