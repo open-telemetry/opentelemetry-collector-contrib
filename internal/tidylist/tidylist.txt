@@ -7,12 +7,12 @@ internal/coreinternal
 pkg/ottl
 connector/routingconnector
 internal/pdatautil
+internal/sharedcomponent
 connector/spanmetricsconnector
 internal/common
 pkg/resourcetotelemetry
 exporter/carbonexporter
 pkg/translator/opencensus
-internal/sharedcomponent
 receiver/opencensusreceiver
 exporter/opencensusexporter
 pkg/translator/prometheus

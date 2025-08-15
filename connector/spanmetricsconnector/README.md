@@ -17,6 +17,7 @@
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
 | traces | metrics | [alpha] |
+| traces | traces | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
@@ -123,6 +124,7 @@ The following settings can be optionally configured:
 - `exemplars`:  Use to configure how to attach exemplars to metrics.
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
   - `max_per_data_point` (default: `5`): The maximum number of exemplars to attach to a single metric data point.
+  - `mark_spans` (default: `false`): enabling will add a boolean attribute `exemplar` to all spans added as Exemplars. This can be used in a `boolean_attribute` policy in a `tail_sampling` processor to ensure spans used as exemplars are selected. Spans will only be mutated in this way if there is a trace consumer after the component.
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
@@ -163,6 +165,8 @@ connectors:
         default: /ping
     exemplars:
       enabled: true
+      max_per_data_point: 6
+      mark_spans: true
     exclude_dimensions: ['status.code']
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
     metrics_flush_interval: 15s
@@ -185,6 +189,9 @@ service:
       receivers: [nop]
       exporters: [spanmetrics]
     metrics:
+      receivers: [spanmetrics]
+      exporters: [nop]
+    traces/destination:
       receivers: [spanmetrics]
       exporters: [nop]
 ```
