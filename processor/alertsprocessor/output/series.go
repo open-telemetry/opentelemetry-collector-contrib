@@ -1,4 +1,4 @@
-package output
+package output // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/output"
 
 import (
 	"time"

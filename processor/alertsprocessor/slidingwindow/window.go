@@ -1,4 +1,4 @@
-package slidingwindow
+package slidingwindow // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/slidingwindow"
 
 import (
 	"sync"

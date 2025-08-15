@@ -1,4 +1,4 @@
-package evaluation
+package evaluation // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/evaluation"
 
 import (
 	"math"

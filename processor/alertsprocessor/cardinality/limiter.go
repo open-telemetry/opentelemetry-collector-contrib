@@ -1,4 +1,4 @@
-package cardinality
+package cardinality // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/cardinality"
 
 import (
 	"unicode/utf8"

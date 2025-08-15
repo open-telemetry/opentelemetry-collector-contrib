@@ -1,4 +1,4 @@
-package alertsprocessor
+package alertsprocessor // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor"
 
 import (
 	"errors"

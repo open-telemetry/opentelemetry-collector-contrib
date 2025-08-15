@@ -1,4 +1,4 @@
-package notify
+package notify // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/notify"
 
 // AMAlert is a minimal Alertmanager-compatible payload item.
 type AMAlert struct {

@@ -1,4 +1,4 @@
-package stormcontrol
+package stormcontrol // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/stormcontrol"
 
 import (
 	"math"

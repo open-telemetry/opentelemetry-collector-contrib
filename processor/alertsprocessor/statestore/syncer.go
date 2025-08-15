@@ -1,4 +1,4 @@
-package statestore
+package statestore // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/statestore"
 
 import (
 	"context"
