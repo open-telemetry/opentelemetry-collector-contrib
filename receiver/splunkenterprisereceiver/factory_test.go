@@ -4,7 +4,6 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -64,7 +63,7 @@ func TestCreateMetrics(t *testing.T) {
 				cfg.SHEndpoint.Endpoint = "https://123.12.12.12:80"
 
 				_, err := createMetricsReceiver(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),

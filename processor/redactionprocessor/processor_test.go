@@ -672,7 +672,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
 	attrs := pcommon.NewMap()
@@ -686,7 +686,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		redactionMaskedKeys:    "mystery",
 		redactionMaskedCount:   1,
 	}))
-	processor.processAttrs(context.TODO(), attrs)
+	processor.processAttrs(t.Context(), attrs)
 
 	assert.Equal(t, 7, attrs.Len())
 	val, found := attrs.Get(redactionRedactedKeys)
@@ -823,10 +823,10 @@ func TestSpanEventRedacted(t *testing.T) {
 		BlockedValues: []string{"xyzxyz"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
-	outTraces, err := processor.processTraces(context.TODO(), inBatch)
+	outTraces, err := processor.processTraces(t.Context(), inBatch)
 	require.NoError(t, err)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes()
@@ -984,7 +984,7 @@ func runTest(
 	assert.Equal(t, inBatch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Len(), length)
 
 	// test
-	ctx := context.Background()
+	ctx := t.Context()
 	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processTraces(ctx, inBatch)
@@ -1048,7 +1048,7 @@ func runLogsTest(
 	assert.Equal(t, inBatch.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), length)
 
 	// test
-	ctx := context.Background()
+	ctx := t.Context()
 	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processLogs(ctx, inBatch)
@@ -1122,7 +1122,7 @@ func runMetricsTest(
 	assert.Equal(t, length, rl.Resource().Attributes().Len())
 
 	// test
-	ctx := context.Background()
+	ctx := t.Context()
 	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processMetrics(ctx, inBatch)
@@ -1156,7 +1156,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("would be nice"),
 	}
-	ctx := context.Background()
+	ctx := b.Context()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
@@ -1187,7 +1187,7 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 		"safe_attribute": pcommon.NewValueStr("suspicious 4111111111111112"),
 		"also_safe":      pcommon.NewValueStr("suspicious 4111111111111113"),
 	}
-	ctx := context.Background()
+	ctx := b.Context()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {

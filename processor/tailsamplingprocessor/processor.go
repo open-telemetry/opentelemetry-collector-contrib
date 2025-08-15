@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tracelimiter"
 )
 
 // policy combines a sampling policy evaluator with the destinations to be
@@ -60,12 +61,17 @@ type tailSamplingSpanProcessor struct {
 	decisionBatcher    idbatcher.Batcher
 	sampledIDCache     cache.Cache[bool]
 	nonSampledIDCache  cache.Cache[bool]
-	deleteChan         chan pcommon.TraceID
+	traceLimiter       traceLimiter
 	numTracesOnMap     *atomic.Uint64
 	recordPolicy       bool
 	setPolicyMux       sync.Mutex
 	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
+}
+
+type traceLimiter interface {
+	AcceptTrace(context.Context, pcommon.TraceID, time.Time)
+	OnDeleteTrace()
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -128,10 +134,17 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		nonSampledIDCache:  nonSampledDecisions,
 		logger:             telemetrySettings.Logger,
 		numTracesOnMap:     &atomic.Uint64{},
-		deleteChan:         make(chan pcommon.TraceID, cfg.NumTraces),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
+
+	var tl traceLimiter
+	if cfg.BlockOnOverflow {
+		tl = tracelimiter.NewBlockingTracesLimiter(cfg.NumTraces)
+	} else {
+		tl = tracelimiter.NewDropOldTracesLimiter(cfg.NumTraces, tsp.dropTrace)
+	}
+	tsp.traceLimiter = tl
 
 	for _, opt := range cfg.Options {
 		opt(tsp)
@@ -557,16 +570,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				newTraceIDs++
 				tsp.decisionBatcher.AddToCurrentBatch(id)
 				tsp.numTracesOnMap.Add(1)
-				postDeletion := false
-				for !postDeletion {
-					select {
-					case tsp.deleteChan <- id:
-						postDeletion = true
-					default:
-						traceKeyToDrop := <-tsp.deleteChan
-						tsp.dropTrace(traceKeyToDrop, currTime)
-					}
-				}
+				tsp.traceLimiter.AcceptTrace(tsp.ctx, id, currTime)
 			}
 		}
 
@@ -630,6 +634,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		tsp.idToTrace.Delete(traceID)
 		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
 		tsp.numTracesOnMap.Add(^uint64(0))
+		tsp.traceLimiter.OnDeleteTrace()
 	}
 	if trace == nil {
 		tsp.logger.Debug("Attempt to delete trace ID not on table", zap.Stringer("id", traceID))

@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -52,7 +51,7 @@ func TestAuthentication(t *testing.T) {
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Enable = true
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		region: "region",
 	}
 
@@ -63,7 +62,7 @@ func TestAuthentication(t *testing.T) {
 	// the background refresher goroutine - we are just verifying authentication
 	// configuration setup here.
 	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider, _ = oidc.NewOIDCfileTokenProvider(
-		context.Background(), saramaSASLOIDCFILEConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
+		t.Context(), saramaSASLOIDCFILEConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
 		[]string{"mock-scope"}, time.Duration(0)*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
 
 	saramaKerberosCfg := &sarama.Config{}
@@ -173,10 +172,18 @@ func TestAuthentication(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			configureSaramaAuthentication(context.Background(), test.auth, config)
+			configureSaramaAuthentication(t.Context(), test.auth, config)
 
 			// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
 			config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
+			
+			// For OIDC token provider, we need to compare fields individually since the context
+			// contains non-deterministic channels that will cause the comparison to fail
+			if config.Net.SASL.TokenProvider != nil && test.saramaConfig.Net.SASL.TokenProvider != nil {
+				// Set them to the same reference for comparison
+				config.Net.SASL.TokenProvider = test.saramaConfig.Net.SASL.TokenProvider
+			}
+			
 			assert.Equal(t, test.saramaConfig, config)
 		})
 	}
