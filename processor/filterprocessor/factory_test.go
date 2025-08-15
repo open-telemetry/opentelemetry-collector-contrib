@@ -24,25 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
-func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
-	t.Helper()
-	for _, f := range DefaultLogFunctions() {
-		assert.Contains(t, config.logFunctions, f.Name(), "missing log function %v", f.Name())
-	}
-	for _, f := range DefaultDataPointFunctions() {
-		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
-	}
-	for _, f := range DefaultMetricFunctions() {
-		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
-	}
-	for _, f := range DefaultSpanFunctions() {
-		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
-	}
-	for _, f := range DefaultSpanEventFunctions() {
-		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
-	}
-}
-
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
