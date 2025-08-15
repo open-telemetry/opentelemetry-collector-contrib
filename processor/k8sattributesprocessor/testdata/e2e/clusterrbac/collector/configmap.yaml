@@ -26,6 +26,9 @@ data:
           - from: statefulset
             key: workload
             tag_name: simple-statefulset-workload-annotation
+          - from: daemonset
+            key: workload
+            tag_name: simple-daemonset-workload-annotation
           labels:
           - from: pod
             key: app
