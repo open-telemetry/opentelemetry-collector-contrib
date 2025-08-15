@@ -4,6 +4,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -248,7 +249,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			oCfg.ErrorMode = ottl.IgnoreError
 			oCfg.Traces = tt.conditions
 
-			_, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			_, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -327,7 +328,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 			oCfg.ErrorMode = ottl.IgnoreError
 			oCfg.Logs = tt.conditions
 
-			_, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			_, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -456,7 +457,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 			oCfg.ErrorMode = ottl.IgnoreError
 			oCfg.Metrics = tt.conditions
 
-			_, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			_, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
