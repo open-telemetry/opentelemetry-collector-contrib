@@ -7,12 +7,3 @@ status:
   distributions: [contrib]
   codeowners:
     active: [atoulme]
-
-attributes:
-  anomaly.isolation_score:
-    description: Anomaly score between 0 and 1
-    type: double
-    
-  anomaly.is_anomaly:
-    description: Boolean classification
-    type: bool
