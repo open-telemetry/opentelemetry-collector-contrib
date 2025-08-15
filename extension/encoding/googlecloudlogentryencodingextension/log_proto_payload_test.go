@@ -4,6 +4,7 @@
 package googlecloudlogentryencodingextension
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -46,6 +47,9 @@ func TestProtoPayload(t *testing.T) {
 
 	input, err := os.ReadFile("testdata/proto_payload/proto_payload.json")
 	require.NoError(t, err)
+	compacted := bytes.NewBuffer([]byte{})
+	err = gojson.Compact(compacted, input)
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.scenario, func(t *testing.T) {
@@ -56,7 +60,7 @@ func TestProtoPayload(t *testing.T) {
 			wantRes, err := golden.ReadLogs(tt.wantFile)
 			require.NoError(t, err)
 
-			gotRes, err := extension.UnmarshalLogs(input)
+			gotRes, err := extension.UnmarshalLogs(compacted.Bytes())
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(wantRes, gotRes))
@@ -166,7 +170,10 @@ func TestProtoFieldTypes(t *testing.T) {
 
 			extension := newTestExtension(t, config)
 
-			gotRes, err := extension.UnmarshalLogs(tt.input)
+			compactInput := bytes.NewBuffer([]byte{})
+			err := gojson.Compact(compactInput, tt.input)
+			require.NoError(t, err)
+			gotRes, err := extension.UnmarshalLogs(compactInput.Bytes())
 			require.NoError(t, err)
 
 			require.Equal(t, 1, gotRes.LogRecordCount())
@@ -222,7 +229,11 @@ func TestProtoErrors(t *testing.T) {
 
 			extension := newTestExtension(t, config)
 
-			_, err := extension.translateLogEntry(tt.input)
+			compacted := bytes.NewBuffer([]byte{})
+			err := gojson.Compact(compacted, tt.input)
+			require.NoError(t, err)
+
+			_, err = extension.UnmarshalLogs(compacted.Bytes())
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.expectsErr)
 		})
