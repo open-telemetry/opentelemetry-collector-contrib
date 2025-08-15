@@ -101,7 +101,7 @@ func (r *macosUnifiedLogReceiver) Start(ctx context.Context, host component.Host
 }
 
 // Shutdown implements receiver.Logs
-func (r *macosUnifiedLogReceiver) Shutdown(ctx context.Context) error {
+func (r *macosUnifiedLogReceiver) Shutdown(_ context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
@@ -142,7 +142,7 @@ func (r *macosUnifiedLogReceiver) loadEncodingExtension(host component.Host) (en
 }
 
 // createFileConsumer creates and configures the file consumer for traceV3 files
-func (r *macosUnifiedLogReceiver) createFileConsumer(ctx context.Context) (*fileconsumer.Manager, error) {
+func (r *macosUnifiedLogReceiver) createFileConsumer(_ context.Context) (*fileconsumer.Manager, error) {
 	r.set.Logger.Info("Creating file consumer", zap.Any("config", r.config))
 
 	// Get the file consumer configuration
@@ -163,7 +163,7 @@ func (r *macosUnifiedLogReceiver) createFileConsumer(ctx context.Context) (*file
 }
 
 // consumeTraceV3Tokens processes tokens (file chunks) from the file consumer
-func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64, offsets []int64) error {
+func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 
 	// Debug: Log all available attributes
@@ -263,7 +263,7 @@ func (r *macosUnifiedLogReceiver) consumeTraceV3Tokens(ctx context.Context, toke
 	return nil
 }
 
-func (r *macosUnifiedLogReceiver) setLogRecordAttributes(logRecord *plog.LogRecord, totalSize int, lenTokens int) {
+func (*macosUnifiedLogReceiver) setLogRecordAttributes(logRecord *plog.LogRecord, totalSize, lenTokens int) {
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
 	logRecord.SetSeverityText("INFO")

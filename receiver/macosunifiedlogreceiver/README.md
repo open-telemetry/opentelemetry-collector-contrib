@@ -27,7 +27,7 @@ extensions:
 
 receivers:
   macos_unified_log:
-    encoding: "macos_unified_logging_encoding"
+    encoding_extension: "macos_unified_logging_encoding"
     include:
       - "/var/db/diagnostics/Persist/*.tracev3"
       - "/var/db/diagnostics/Special/*.tracev3"
@@ -49,8 +49,8 @@ service:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `encoding` | *required* | The encoding extension ID to use for decoding traceV3 files |
-| `include` | *required* | List of file patterns to watch for traceV3 files |
+| `encoding_extension` | *required* | The encoding extension ID to use for decoding traceV3 files |
+| `tracev3_paths` | `["/var/db/diagnostics"]` | Alternate paths to TraceV3 files. Can be file paths or glob patterns |
 | `exclude` | `[]` | List of file patterns to exclude |
 | `start_at` | `end` | Whether to read from `beginning` or `end` of existing files |
 | `poll_interval` | `200ms` | How often to poll for new files |
@@ -79,7 +79,7 @@ This receiver inherits all configuration options from the Stanza file consumer. 
 ```yaml
 receivers:
   macos_unified_log:
-    encoding: "macos_unified_logging_encoding"
+    encoding_extension: "macos_unified_logging_encoding"
     include:
       - "/var/db/diagnostics/Persist/*.tracev3"
     start_at: end
@@ -91,8 +91,8 @@ receivers:
 ```yaml
 receivers:
   macos_unified_log:
-    encoding: "macos_unified_logging_encoding"
-    include:
+    encoding_extension: "macos_unified_logging_encoding"
+    tracev3_paths: 
       - "/path/to/archived/logs/*.tracev3"
     start_at: beginning
 ```
@@ -109,11 +109,22 @@ extensions:
 
 receivers:
   macos_unified_log:
-    encoding: "macos_unified_logging_encoding"
+    encoding_extension: "macos_unified_logging_encoding"
     include:
       - "/var/db/diagnostics/Persist/*.tracev3"
     exclude:
       - "/var/db/diagnostics/Persist/0000000000000001.tracev3"  # System logs
+```
+
+### Custom Log Archive Location
+
+```yaml
+receivers:
+  macos_unified_log:
+    encoding_extension: "macos_unified_logging_encoding"
+    tracev3_paths:
+      - "/Users/admin/exported_logs/*.tracev3"
+    start_at: beginning
 ```
 
 ## Output Format
@@ -153,7 +164,7 @@ Log records include:
 ```yaml
 receivers:
   macos_unified_log:
-    encoding: "macos_unified_logging_encoding"
+    encoding_extension: "macos_unified_logging_encoding"
     include:
       - "/var/db/diagnostics/Persist/*.tracev3"
     

@@ -185,7 +185,7 @@ func TestValidateConfig(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid config",
+			name: "valid config with include patterns",
 			config: &Config{
 				BaseConfig: adapter.BaseConfig{
 					Operators:      []operator.Config{},
@@ -197,6 +197,23 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				Encoding: "macosunifiedlogencoding",
+			},
+			expectError: false,
+		},
+		{
+			name: "valid config with tracev3_path",
+			config: &Config{
+				BaseConfig: adapter.BaseConfig{
+					Operators:      []operator.Config{},
+					RetryOnFailure: consumerretry.NewDefaultConfig(),
+				},
+				Config: fileconsumer.Config{
+					Criteria: matcher.Criteria{
+						Include: []string{}, // Empty, should use TraceV3Path
+					},
+				},
+				Encoding:     "macosunifiedlogencoding",
+				TraceV3Paths: []string{"/custom/path/*.tracev3"},
 			},
 			expectError: false,
 		},
@@ -215,7 +232,7 @@ func TestValidateConfig(t *testing.T) {
 				Encoding: "",
 			},
 			expectError: true,
-			errorMsg:    "encoding must be macosunifiedlogencoding for macOS Unified Logging receiver",
+			errorMsg:    "encoding_extension must be macosunifiedlogencoding for macOS Unified Logging receiver",
 		},
 		{
 			name: "wrong encoding",
@@ -226,13 +243,13 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Config: fileconsumer.Config{
 					Criteria: matcher.Criteria{
-						Include: []string{"/var/db/diagnostics/Persist/*.tracev3"},
+						Include: []string{}, // Empty include
 					},
 				},
 				Encoding: "some_other_encoding",
 			},
 			expectError: true,
-			errorMsg:    "encoding must be macosunifiedlogencoding for macOS Unified Logging receiver",
+			errorMsg:    "encoding_extension must be macosunifiedlogencoding for macOS Unified Logging receiver",
 		},
 	}
 
@@ -261,7 +278,7 @@ func TestFailedLoadConfig(t *testing.T) {
 		{
 			name:     "bad encoding",
 			configID: "bad-encoding",
-			errorMsg: "encoding must be macosunifiedlogencoding for macOS Unified Logging receiver",
+			errorMsg: "encoding_extension must be macosunifiedlogencoding for macOS Unified Logging receiver",
 		},
 	}
 
@@ -282,25 +299,27 @@ func TestFailedLoadConfig(t *testing.T) {
 }
 
 func TestGetFileConsumerConfig(t *testing.T) {
-	config := &Config{
-		Config: fileconsumer.Config{
-			Criteria: matcher.Criteria{
-				Include: []string{"/test/*.tracev3"},
+	t.Run("default include patterns", func(t *testing.T) {
+		config := &Config{
+			Config: fileconsumer.Config{
+				Criteria: matcher.Criteria{
+					Include: []string{"/test/*.tracev3"},
+				},
+				Encoding: "utf-8", // This should be overridden
 			},
-			Encoding: "utf-8", // This should be overridden
-		},
-		Encoding: "macosunifiedlogencoding",
-	}
+			Encoding: "macosunifiedlogencoding",
+		}
 
-	fcConfig := config.getFileConsumerConfig()
+		fcConfig := config.getFileConsumerConfig()
 
-	// Verify that encoding is set to "nop"
-	assert.Equal(t, "nop", fcConfig.Encoding)
+		// Verify that encoding is set to "nop"
+		assert.Equal(t, "nop", fcConfig.Encoding)
 
-	// Verify that file attributes are enabled
-	assert.True(t, fcConfig.IncludeFilePath)
-	assert.True(t, fcConfig.IncludeFileName)
+		// Verify that file attributes are enabled
+		assert.True(t, fcConfig.IncludeFilePath)
+		assert.True(t, fcConfig.IncludeFileName)
 
-	// Verify that other settings are preserved
-	assert.Equal(t, []string{"/test/*.tracev3"}, fcConfig.Include)
+		// Verify that original include patterns are preserved
+		assert.Equal(t, []string{"/test/*.tracev3"}, fcConfig.Include)
+	})
 }
