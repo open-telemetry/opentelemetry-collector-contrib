@@ -28,9 +28,9 @@ var (
 	buildID3, buildID3Encoded, _ = formatFileIDFormat(0x1122334455667788,
 		0x99aabbccddeeffee)
 
-	frameIDBase64  = libpf.NewFrameID(buildID, address).String()
-	frameID2Base64 = libpf.NewFrameID(buildID2, address2).String()
-	frameID3Base64 = libpf.NewFrameID(buildID3, address3).String()
+	frameIDBase64  = newFrameID(buildID, address).String()
+	frameID2Base64 = newFrameID(buildID2, address2).String()
+	frameID3Base64 = newFrameID(buildID3, address3).String()
 )
 
 const (
@@ -54,9 +54,9 @@ func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBa
 }
 
 func TestTransform(t *testing.T) {
-	wantedTraceID := mkStackTraceID(t, []libpf.FrameID{
-		libpf.NewFrameID(buildID, address),
-		libpf.NewFrameID(buildID2, address2),
+	wantedTraceID := mkStackTraceID(t, []frameID{
+		newFrameID(buildID, address),
+		newFrameID(buildID2, address2),
 	})
 	for _, tt := range []struct {
 		name                  string
@@ -286,9 +286,9 @@ func TestTransform(t *testing.T) {
 }
 
 func TestStackPayloads(t *testing.T) {
-	wantedTraceID := mkStackTraceID(t, []libpf.FrameID{
-		libpf.NewFrameID(buildID, address),
-		libpf.NewFrameID(buildID2, address2),
+	wantedTraceID := mkStackTraceID(t, []frameID{
+		newFrameID(buildID, address),
+		newFrameID(buildID2, address2),
 	})
 	for name, tt := range map[string]struct {
 		buildDictionary       func() pprofile.ProfilesDictionary
@@ -931,7 +931,7 @@ func frameTypesToString(frameTypes []libpf.FrameType) string {
 	return buf.String()
 }
 
-func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
+func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 	dic := pprofile.NewProfilesDictionary()
 	p := pprofile.NewProfile()
 	indices := make([]int32, len(frameIDs))
