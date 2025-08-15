@@ -734,7 +734,7 @@ func Test_newGetter(t *testing.T) {
 				tCtx = tt.ctx
 			}
 
-			val, err := reader.Get(context.Background(), tCtx)
+			val, err := reader.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			switch v := val.(type) {
@@ -909,7 +909,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
-			_, err = reader.Get(context.Background(), nil)
+			_, err = reader.Get(t.Context(), nil)
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -967,7 +967,7 @@ func Test_StandardStringGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1072,7 +1072,7 @@ func Test_FunctionGetter(t *testing.T) {
 			fn, err := editorArgs.Function.Get(&FuncArgs{Input: editorArgs.Replacement})
 			if tt.valid {
 				var result any
-				result, err = fn.Eval(context.Background(), nil)
+				result, err = fn.Eval(t.Context(), nil)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, result.(string))
 			} else {
@@ -1089,7 +1089,7 @@ func Test_StandardStringGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1213,7 +1213,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1236,7 +1236,7 @@ func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1294,7 +1294,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1313,7 +1313,7 @@ func Test_StandardFloatGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1467,7 +1467,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1490,7 +1490,7 @@ func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1548,7 +1548,7 @@ func Test_StandardIntGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1567,7 +1567,7 @@ func Test_StandardIntGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1721,7 +1721,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1744,7 +1744,7 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1920,7 +1920,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1943,7 +1943,7 @@ func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2001,7 +2001,7 @@ func Test_StandardBoolGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2020,7 +2020,7 @@ func Test_StandardBoolGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2153,7 +2153,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -2176,7 +2176,7 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2354,7 +2354,7 @@ func Test_StandardPSliceGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2372,7 +2372,7 @@ func Test_StandardPSliceGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	var typeError TypeError
 	assert.ErrorAs(t, err, &typeError)
@@ -2440,7 +2440,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2459,7 +2459,7 @@ func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2546,7 +2546,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2564,7 +2564,7 @@ func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2632,7 +2632,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				var want time.Time
@@ -2653,7 +2653,7 @@ func Test_StandardTimeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)

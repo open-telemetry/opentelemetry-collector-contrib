@@ -59,7 +59,7 @@ func TestClusterName(t *testing.T) {
 				configMapName:       tt.CMname,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterName(context.Background())
+			clusterName, err := kubeadmP.ClusterName(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
@@ -100,7 +100,7 @@ func TestClusterUID(t *testing.T) {
 				kubeadmClient:       client,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterUID(context.Background())
+			clusterName, err := kubeadmP.ClusterUID(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {

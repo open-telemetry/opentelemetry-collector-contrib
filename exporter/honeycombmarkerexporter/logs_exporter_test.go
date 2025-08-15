@@ -4,7 +4,6 @@
 package honeycombmarkerexporter
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -149,14 +148,14 @@ func TestExportMarkers(t *testing.T) {
 			config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), &config)
+			exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), &config)
 			require.NoError(t, err)
 
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
 			logs := constructLogs(tt.attributeMap)
-			err = exp.ConsumeLogs(context.Background(), logs)
+			err = exp.ConsumeLogs(t.Context(), logs)
 			assert.NoError(t, err)
 		})
 	}
@@ -237,14 +236,14 @@ func TestExportMarkers_Error(t *testing.T) {
 			config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), &config)
+			exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), &config)
 			require.NoError(t, err)
 
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
 			logs := constructLogs(map[string]string{})
-			err = exp.ConsumeLogs(context.Background(), logs)
+			err = exp.ConsumeLogs(t.Context(), logs)
 			assert.ErrorContains(t, err, tt.errorMessage)
 		})
 	}
@@ -288,14 +287,14 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 			config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), &config)
+			exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), &config)
 			require.NoError(t, err)
 
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
 			logs := constructLogs(map[string]string{})
-			err = exp.ConsumeLogs(context.Background(), logs)
+			err = exp.ConsumeLogs(t.Context(), logs)
 			assert.NoError(t, err)
 		})
 	}

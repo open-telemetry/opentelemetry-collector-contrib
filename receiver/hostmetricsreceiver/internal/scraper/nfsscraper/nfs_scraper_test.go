@@ -4,7 +4,6 @@
 package nfsscraper
 
 import (
-	"context"
 	"testing"
 
 	//	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ func TestScrape(t *testing.T) {
 		t.Skip()
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := newNfsScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
