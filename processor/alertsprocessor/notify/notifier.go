@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package notify // import "github.com/platformbuilds/opentelemetry-collector-contrib/processor/alertsprocessor/notify"
 
 import (
