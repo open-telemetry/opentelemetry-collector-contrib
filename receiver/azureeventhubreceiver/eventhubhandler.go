@@ -30,7 +30,7 @@ type listenerHandleWrapper interface {
 	Err() error
 }
 
-type hubHandler func(ctx context.Context, event *AzureEvent) error
+type hubHandler func(ctx context.Context, event *azureEvent) error
 
 type hubRuntimeInfo struct {
 	Path           string
@@ -153,7 +153,7 @@ func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID str
 	return nil
 }
 
-func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *AzureEvent) error {
+func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *azureEvent) error {
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
 		h.settings.Logger.Error("error decoding message", zap.Error(err))

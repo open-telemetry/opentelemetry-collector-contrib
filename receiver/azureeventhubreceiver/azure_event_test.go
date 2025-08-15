@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azureeventhubreceiver_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
 	"testing"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,18 +20,18 @@ func TestAzureEvent_EnqueueTime(t *testing.T) {
 				EnqueuedTime: &now,
 			},
 		}
-		a := &azureeventhubreceiver.AzureEvent{EventHubEvent: ev}
+		a := azureEvent{EventHubEvent: ev}
 		assert.Equal(t, &now, a.EnqueueTime())
 	})
 	t.Run("AzEventData non-nil", func(t *testing.T) {
 		ev := &azeventhubs.ReceivedEventData{
 			EnqueuedTime: &now,
 		}
-		a := &azureeventhubreceiver.AzureEvent{AzEventData: ev}
+		a := azureEvent{AzEventData: ev}
 		assert.Equal(t, &now, a.EnqueueTime())
 	})
 	t.Run("Both nil", func(t *testing.T) {
-		a := &azureeventhubreceiver.AzureEvent{}
+		a := azureEvent{}
 		assert.Nil(t, a.EnqueueTime())
 	})
 }
@@ -46,7 +45,7 @@ func TestAzureEvent_Properties(t *testing.T) {
 		ev := &eventhub.Event{
 			Properties: props,
 		}
-		a := &azureeventhubreceiver.AzureEvent{EventHubEvent: ev}
+		a := azureEvent{EventHubEvent: ev}
 		assert.Equal(t, props, a.Properties())
 	})
 	t.Run("AzEventData non-nil", func(t *testing.T) {
@@ -55,11 +54,11 @@ func TestAzureEvent_Properties(t *testing.T) {
 				Properties: props,
 			},
 		}
-		a := &azureeventhubreceiver.AzureEvent{AzEventData: ev}
+		a := azureEvent{AzEventData: ev}
 		assert.Equal(t, props, a.Properties())
 	})
 	t.Run("Both nil", func(t *testing.T) {
-		a := &azureeventhubreceiver.AzureEvent{}
+		a := azureEvent{}
 		assert.Nil(t, a.Properties())
 	})
 }
@@ -70,7 +69,7 @@ func TestAzureEvent_Data(t *testing.T) {
 		ev := &eventhub.Event{
 			Data: data,
 		}
-		a := &azureeventhubreceiver.AzureEvent{EventHubEvent: ev}
+		a := azureEvent{EventHubEvent: ev}
 		assert.Equal(t, data, a.Data())
 	})
 	t.Run("AzEventData non-nil", func(t *testing.T) {
@@ -79,11 +78,11 @@ func TestAzureEvent_Data(t *testing.T) {
 				Body: data,
 			},
 		}
-		a := &azureeventhubreceiver.AzureEvent{AzEventData: ev}
+		a := azureEvent{AzEventData: ev}
 		assert.Equal(t, data, a.Data())
 	})
 	t.Run("Both nil", func(t *testing.T) {
-		a := &azureeventhubreceiver.AzureEvent{}
+		a := azureEvent{}
 		assert.Nil(t, a.Data())
 	})
 }

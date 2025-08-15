@@ -61,7 +61,7 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // an OpenTelemetry pmetric.Metrics object. The data in the Azure
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
-func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *AzureEvent) (pmetric.Metrics, error) {
+func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords

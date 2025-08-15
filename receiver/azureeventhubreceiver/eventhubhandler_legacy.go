@@ -48,7 +48,7 @@ func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, 
 
 	if h.hub != nil {
 		l, err := h.hub.Receive(ctx, partitionID, func(ctx context.Context, event *eventhub.Event) error {
-			return handler(ctx, &AzureEvent{
+			return handler(ctx, &azureEvent{
 				EventHubEvent: event,
 			})
 		}, receiverOptions...)

@@ -145,7 +145,7 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 				},
 			}
 
-			mockHubWrapper.Receive(context.Background(), test.partitionId, func(ctx context.Context, event *AzureEvent) error {
+			mockHubWrapper.Receive(context.Background(), test.partitionId, func(ctx context.Context, event *azureEvent) error {
 				return nil
 			}, test.applyOffset)
 

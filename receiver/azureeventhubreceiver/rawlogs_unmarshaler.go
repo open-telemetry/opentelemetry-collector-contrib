@@ -21,7 +21,7 @@ func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
 	}
 }
 
-func (rawLogsUnmarshaler) UnmarshalLogs(event *AzureEvent) (plog.Logs, error) {
+func (rawLogsUnmarshaler) UnmarshalLogs(event *azureEvent) (plog.Logs, error) {
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()

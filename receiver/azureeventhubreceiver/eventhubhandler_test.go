@@ -74,7 +74,7 @@ func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Tra
 
 func (*mockDataConsumer) setNextMetricsConsumer(consumer.Metrics) {}
 
-func (m *mockDataConsumer) consume(ctx context.Context, event *AzureEvent) error {
+func (m *mockDataConsumer) consume(ctx context.Context, event *azureEvent) error {
 	logsContext := m.obsrecv.StartLogsOp(ctx)
 
 	logs, err := m.logsUnmarshaler.UnmarshalLogs(event)
@@ -130,7 +130,7 @@ func TestEventhubHandler_newAzeventhubsMessageHandler(t *testing.T) {
 	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
 
 	now := time.Now()
-	err = ehHandler.newMessageHandler(t.Context(), &AzureEvent{
+	err = ehHandler.newMessageHandler(t.Context(), &azureEvent{
 		AzEventData: &azeventhubs.ReceivedEventData{
 			EventData: azeventhubs.EventData{
 				MessageID:  to.Ptr("11234"),
@@ -181,7 +181,7 @@ func TestEventhubHandler_newLegacyMessageHandler(t *testing.T) {
 	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
 
 	now := time.Now()
-	err = ehHandler.newMessageHandler(t.Context(), &AzureEvent{
+	err = ehHandler.newMessageHandler(t.Context(), &azureEvent{
 		EventHubEvent: &eventhub.Event{
 			Data:         []byte("hello"),
 			PartitionKey: nil,

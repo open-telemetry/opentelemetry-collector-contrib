@@ -159,7 +159,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 			listener, err := h.Receive(
 				ctx,
 				"p1",
-				func(ctx context.Context, event *AzureEvent) error {
+				func(ctx context.Context, event *azureEvent) error {
 					return nil
 				},
 				test.applyOffset,

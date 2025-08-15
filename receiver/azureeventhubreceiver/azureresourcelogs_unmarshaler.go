@@ -45,6 +45,6 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func (r azureResourceLogsEventUnmarshaler) UnmarshalLogs(event *AzureEvent) (plog.Logs, error) {
+func (r azureResourceLogsEventUnmarshaler) UnmarshalLogs(event *azureEvent) (plog.Logs, error) {
 	return r.unmarshaler.UnmarshalLogs(event.Data())
 }

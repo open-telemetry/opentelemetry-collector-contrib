@@ -22,22 +22,22 @@ import (
 )
 
 type dataConsumer interface {
-	consume(ctx context.Context, event *AzureEvent) error
+	consume(ctx context.Context, event *azureEvent) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 	setNextMetricsConsumer(nextLogsConsumer consumer.Metrics)
 	setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 }
 
 type eventLogsUnmarshaler interface {
-	UnmarshalLogs(event *AzureEvent) (plog.Logs, error)
+	UnmarshalLogs(event *azureEvent) (plog.Logs, error)
 }
 
 type eventMetricsUnmarshaler interface {
-	UnmarshalMetrics(event *AzureEvent) (pmetric.Metrics, error)
+	UnmarshalMetrics(event *azureEvent) (pmetric.Metrics, error)
 }
 
 type eventTracesUnmarshaler interface {
-	UnmarshalTraces(event *AzureEvent) (ptrace.Traces, error)
+	UnmarshalTraces(event *azureEvent) (ptrace.Traces, error)
 }
 
 type eventhubReceiver struct {
@@ -73,7 +73,7 @@ func (receiver *eventhubReceiver) setNextTracesConsumer(nextTracesConsumer consu
 	receiver.nextTracesConsumer = nextTracesConsumer
 }
 
-func (receiver *eventhubReceiver) consume(ctx context.Context, event *AzureEvent) error {
+func (receiver *eventhubReceiver) consume(ctx context.Context, event *azureEvent) error {
 	switch receiver.signal {
 	case pipeline.SignalLogs:
 		return receiver.consumeLogs(ctx, event)
@@ -86,7 +86,7 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *AzureEvent
 	}
 }
 
-func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *AzureEvent) error {
+func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azureEvent) error {
 	if receiver.nextLogsConsumer == nil {
 		return nil
 	}
@@ -109,7 +109,7 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *AzureE
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *AzureEvent) error {
+func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azureEvent) error {
 	if receiver.nextMetricsConsumer == nil {
 		return nil
 	}
@@ -133,7 +133,7 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *Azu
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *AzureEvent) error {
+func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *azureEvent) error {
 	if receiver.nextTracesConsumer == nil {
 		return nil
 	}

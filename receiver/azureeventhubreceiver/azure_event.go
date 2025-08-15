@@ -10,12 +10,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 )
 
-type AzureEvent struct {
+type azureEvent struct {
 	EventHubEvent *eventhub.Event
 	AzEventData   *azeventhubs.ReceivedEventData
 }
 
-func (a *AzureEvent) EnqueueTime() *time.Time {
+func (a *azureEvent) EnqueueTime() *time.Time {
 	if a.EventHubEvent != nil {
 		return a.EventHubEvent.SystemProperties.EnqueuedTime
 	}
@@ -25,7 +25,7 @@ func (a *AzureEvent) EnqueueTime() *time.Time {
 	return nil
 }
 
-func (a *AzureEvent) Properties() map[string]any {
+func (a *azureEvent) Properties() map[string]any {
 	if a.EventHubEvent != nil {
 		return a.EventHubEvent.Properties
 	}
@@ -35,7 +35,7 @@ func (a *AzureEvent) Properties() map[string]any {
 	return nil
 }
 
-func (a *AzureEvent) Data() []byte {
+func (a *azureEvent) Data() []byte {
 	if a.EventHubEvent != nil {
 		return a.EventHubEvent.Data
 	}

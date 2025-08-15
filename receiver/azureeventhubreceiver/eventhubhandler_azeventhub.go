@@ -134,7 +134,7 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 				}
 
 				for _, ev := range events {
-					if err := handler(ctx, &AzureEvent{
+					if err := handler(ctx, &azureEvent{
 						AzEventData: ev,
 					}); err != nil {
 						w.setErr(err)
