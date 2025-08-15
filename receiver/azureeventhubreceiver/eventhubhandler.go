@@ -6,8 +6,11 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"time"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-event-hubs-go/v3/persist"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
@@ -17,32 +20,26 @@ import (
 )
 
 type hubWrapper interface {
-	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
-	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
+	GetRuntimeInformation(ctx context.Context) (*hubRuntimeInfo, error)
+	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error)
 	Close(ctx context.Context) error
 }
 
-type hubWrapperImpl struct {
-	hub *eventhub.Hub
-}
-
-func (h *hubWrapperImpl) GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error) {
-	return h.hub.GetRuntimeInformation(ctx)
-}
-
-func (h *hubWrapperImpl) Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
-	l, err := h.hub.Receive(ctx, partitionID, handler, opts...)
-	return l, err
-}
-
-func (h *hubWrapperImpl) Close(ctx context.Context) error {
-	return h.hub.Close(ctx)
-}
-
-type listerHandleWrapper interface {
+type listenerHandleWrapper interface {
 	Done() <-chan struct{}
 	Err() error
 }
+
+type hubHandler func(ctx context.Context, event *AzureEvent) error
+
+type hubRuntimeInfo struct {
+	Path           string
+	CreatedAt      time.Time
+	PartitionCount int
+	PartitionIDs   []string
+}
+
+var implError = errors.New("Configuration error, hub not accessible")
 
 type eventhubHandler struct {
 	hub           hubWrapper
@@ -66,12 +63,52 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	}
 
 	if h.hub == nil { // set manually for testing.
-		hub, newHubErr := eventhub.NewHubFromConnectionString(h.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: h.storageClient}))
-		if newHubErr != nil {
-			h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
-			return newHubErr
+		if azEventHubFeatureGate.IsEnabled() {
+			hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
+				h.config.Connection,
+				"",
+				h.config.ConsumerGroup,
+				&azeventhubs.ConsumerClientOptions{},
+			)
+
+			if newHubErr != nil {
+				h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
+				return newHubErr
+			}
+
+			var storage *storageCheckpointPersister[checkpointSeqNumber]
+			if h.storageClient != nil {
+				storage = &storageCheckpointPersister[checkpointSeqNumber]{
+					storageClient: h.storageClient,
+					defaultValue: checkpointSeqNumber{
+						SeqNumber: -1,
+					}}
+			}
+
+			h.hub = &hubWrapperAzeventhubImpl{
+				hub:     azEventHubWrapper{hub},
+				config:  h.config,
+				storage: storage,
+			}
+		} else {
+			hub, newHubErr := eventhub.NewHubFromConnectionString(
+				h.config.Connection,
+				eventhub.HubWithOffsetPersistence(
+					&storageCheckpointPersister[persist.Checkpoint]{
+						storageClient: h.storageClient,
+						defaultValue:  persist.NewCheckpointFromStartOfStream(),
+					},
+				),
+			)
+			if newHubErr != nil {
+				h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
+				return newHubErr
+			}
+			h.hub = &hubWrapperLegacyImpl{
+				hub:    hub,
+				config: h.config,
+			}
 		}
-		h.hub = &hubWrapperImpl{hub: hub}
 	}
 
 	if h.config.Partition != "" {
@@ -101,16 +138,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-	receiverOptions := []eventhub.ReceiveOption{}
-	if applyOffset && h.config.Offset != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
-	}
-
-	if h.config.ConsumerGroup != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
-	}
-
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, receiverOptions...)
+	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset)
 	if err != nil {
 		return err
 	}
@@ -125,7 +153,7 @@ func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID str
 	return nil
 }
 
-func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
+func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *AzureEvent) error {
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
 		h.settings.Logger.Error("error decoding message", zap.Error(err))

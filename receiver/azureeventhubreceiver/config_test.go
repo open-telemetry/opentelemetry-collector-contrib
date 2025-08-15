@@ -11,12 +11,45 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
+func TestLoadConfigLegacy(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
+
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[metadata.Type] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Len(t, cfg.Receivers, 2)
+
+	r0 := cfg.Receivers[component.NewID(metadata.Type)]
+	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)
+	assert.Empty(t, r0.(*Config).Offset)
+	assert.Empty(t, r0.(*Config).Partition)
+	assert.Equal(t, defaultLogFormat, logFormat(r0.(*Config).Format))
+	assert.False(t, r0.(*Config).ApplySemanticConventions)
+
+	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "all")]
+	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r1.(*Config).Connection)
+	assert.Equal(t, "1234-5566", r1.(*Config).Offset)
+	assert.Equal(t, "foo", r1.(*Config).Partition)
+	assert.Equal(t, rawLogFormat, logFormat(r1.(*Config).Format))
+	assert.True(t, r1.(*Config).ApplySemanticConventions)
+}
+
 func TestLoadConfig(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
+
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
@@ -45,17 +78,27 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestMissingConnection(t *testing.T) {
+	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "missing connection")
+
+	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true)
+	err = xconfmap.Validate(cfg)
+	assert.EqualError(t, err, "missing connection")
 }
 
 func TestInvalidConnectionString(t *testing.T) {
+	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "foo"
 	err := xconfmap.Validate(cfg)
+	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
+
+	featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true)
+	err = xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 }
 
@@ -67,17 +110,41 @@ func TestIsValidFormat(t *testing.T) {
 }
 
 func TestInvalidFormat(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 	cfg.(*Config).Format = "invalid"
 	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, "invalid format; must be one of")
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
+	err = xconfmap.Validate(cfg)
+	assert.ErrorContains(t, err, "invalid format; must be one of")
 }
 
 func TestOffsetWithoutPartition(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 	cfg.Offset = "foo"
 	assert.ErrorContains(t, cfg.Validate(), "cannot use 'offset' without 'partition'")
+
+	prev := azEventHubFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
+	defer featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, prev)
+	assert.ErrorContains(t, cfg.Validate(), "cannot use 'offset' without 'partition'")
+}
+
+func TestFeatureGateExclusiveConfig(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+	cfg.PollRate = 10
+	cfg.MaxPollEvents = 100
+	assert.ErrorContains(t, cfg.Validate(), azEventHubFeatureGateName)
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, true))
+	require.NoError(t, cfg.Validate())
 }

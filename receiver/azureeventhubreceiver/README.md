@@ -58,6 +58,23 @@ All supported time format for logs, metrics and traces. Default is `nil` (unset)
 
 Default: `nil`
 
+> [!NOTE]
+> You can opt-in to use [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) client by enabling the feature gate
+> `receiver.azureeventhubreceiver.UseAzeventhubs` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+>
+> The following configuration options can only be used with this feature flag enabled
+
+### max_poll_events (optional)
+Specifies the maximum number of events to retrieve in a single poll from the Event Hub.
+
+Default: `100`
+
+### poll_rate (optional)
+Specifies the maximum number of seconds to wait for additional events before returning fewer than `max_poll_events`.
+
+Default: `5`
+
 ### Example Configuration
 
 ```yaml
