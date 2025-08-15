@@ -101,7 +101,7 @@ func TestBasicConnectAndClose(t *testing.T) {
 	factory := &testConnectionFactory{dbWrapper}
 	client := newSapHanaClient(createDefaultConfig().(*Config), factory)
 
-	require.NoError(t, client.Connect(context.TODO()))
+	require.NoError(t, client.Connect(t.Context()))
 	require.NoError(t, client.Close())
 }
 
@@ -113,7 +113,7 @@ func TestFailedPing(t *testing.T) {
 	factory := &testConnectionFactory{dbWrapper}
 	client := newSapHanaClient(createDefaultConfig().(*Config), factory)
 
-	require.Error(t, client.Connect(context.TODO()))
+	require.Error(t, client.Connect(t.Context()))
 	require.NoError(t, client.Close())
 }
 
@@ -128,7 +128,7 @@ func TestSimpleQueryOutput(t *testing.T) {
 	}, nil)
 
 	client := newSapHanaClient(createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
-	require.NoError(t, client.Connect(context.TODO()))
+	require.NoError(t, client.Connect(t.Context()))
 
 	query := &monitoringQuery{
 		query:               "SELECT 1=1",
@@ -155,7 +155,7 @@ func TestSimpleQueryOutput(t *testing.T) {
 		},
 	}
 
-	results, err := client.collectDataFromQuery(context.TODO(), query)
+	results, err := client.collectDataFromQuery(t.Context(), query)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]string{
 		{
@@ -186,7 +186,7 @@ func TestNullOutput(t *testing.T) {
 	}, nil)
 
 	client := newSapHanaClient(createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
-	require.NoError(t, client.Connect(context.TODO()))
+	require.NoError(t, client.Connect(t.Context()))
 
 	query := &monitoringQuery{
 		query:               "SELECT 1=1",
@@ -213,7 +213,7 @@ func TestNullOutput(t *testing.T) {
 		},
 	}
 
-	results, err := client.collectDataFromQuery(context.TODO(), query)
+	results, err := client.collectDataFromQuery(t.Context(), query)
 	// Error expected for second row, but data is also returned
 	require.ErrorContains(t, err, "database row NULL value for required metric label id")
 	require.Equal(t, []map[string]string{
