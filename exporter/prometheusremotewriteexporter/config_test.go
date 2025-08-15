@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
 				ClientConfig:                clientConfig,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-				TargetInfo: &TargetInfo{
+				TargetInfo: TargetInfo{
 					Enabled: true,
 				},
 				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,

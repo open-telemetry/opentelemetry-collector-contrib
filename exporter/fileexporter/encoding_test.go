@@ -4,7 +4,6 @@
 package fileexporter
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,37 +43,37 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(ef.Type()), efCfg)
+	ext, err := ef.Create(t.Context(), extensiontest.NewNopSettings(ef.Type()), efCfg)
 	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	me, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	te, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	le, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	pe, err := f.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	pe, err := f.(xexporter.Factory).CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},
 	}
-	require.NoError(t, me.Start(context.Background(), host))
-	require.NoError(t, te.Start(context.Background(), host))
-	require.NoError(t, le.Start(context.Background(), host))
-	require.NoError(t, pe.Start(context.Background(), host))
+	require.NoError(t, me.Start(t.Context(), host))
+	require.NoError(t, te.Start(t.Context(), host))
+	require.NoError(t, le.Start(t.Context(), host))
+	require.NoError(t, pe.Start(t.Context(), host))
 	t.Cleanup(func() {
 	})
 
-	require.NoError(t, me.ConsumeMetrics(context.Background(), generateMetrics()))
-	require.NoError(t, te.ConsumeTraces(context.Background(), generateTraces()))
-	require.NoError(t, le.ConsumeLogs(context.Background(), generateLogs()))
-	require.NoError(t, pe.ConsumeProfiles(context.Background(), generateProfiles()))
+	require.NoError(t, me.ConsumeMetrics(t.Context(), generateMetrics()))
+	require.NoError(t, te.ConsumeTraces(t.Context(), generateTraces()))
+	require.NoError(t, le.ConsumeLogs(t.Context(), generateLogs()))
+	require.NoError(t, pe.ConsumeProfiles(t.Context(), generateProfiles()))
 
-	require.NoError(t, me.Shutdown(context.Background()))
-	require.NoError(t, te.Shutdown(context.Background()))
-	require.NoError(t, le.Shutdown(context.Background()))
-	require.NoError(t, pe.Shutdown(context.Background()))
+	require.NoError(t, me.Shutdown(t.Context()))
+	require.NoError(t, te.Shutdown(t.Context()))
+	require.NoError(t, le.Shutdown(t.Context()))
+	require.NoError(t, pe.Shutdown(t.Context()))
 
 	b, err := os.ReadFile(cfg.Path)
 	require.NoError(t, err)

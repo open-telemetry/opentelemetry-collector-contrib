@@ -151,7 +151,7 @@ func TestGetEBSVolumeID(t *testing.T) {
 					return "", errors.New("error")
 				},
 			}
-			e.refresh(context.Background())
+			e.refresh(t.Context())
 
 			assert.Equal(t, test.expected, e.getEBSVolumeID(test.devPath))
 		})
