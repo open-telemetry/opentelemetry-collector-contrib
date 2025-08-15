@@ -76,7 +76,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := newMdatagenNopHost()
+			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
