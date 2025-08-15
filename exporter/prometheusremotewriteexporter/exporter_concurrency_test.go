@@ -108,7 +108,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ClientConfig:      clientConfig,
 		MaxBatchSizeBytes: 3000000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 		BackOffConfig:       retrySettings,

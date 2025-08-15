@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -33,19 +34,19 @@ var jaegerAgent = component.NewIDWithName(metadata.Type, "agent_test")
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	testJaegerAgent(t, addr, Protocols{
-		ThriftCompactUDP: &ProtocolUDP{
+		ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	})
 }
 
 func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := Protocols{
-		ThriftCompactUDP: &ProtocolUDP{
+		ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -59,10 +60,10 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	testJaegerAgent(t, addr, Protocols{
-		ThriftBinaryUDP: &ProtocolUDP{
+		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	})
 }
 
@@ -71,10 +72,10 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	config := Protocols{
-		ThriftBinaryUDP: &ProtocolUDP{
+		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -93,10 +94,10 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 
 func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := Protocols{
-		ThriftBinaryUDP: &ProtocolUDP{
+		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -126,7 +127,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	require.NoError(t, err, "Start failed")
 
 	// 2. Then send spans to the Jaeger receiver.
-	jexp, err := newClientUDP(agentEndpoint, jr.config.ThriftBinaryUDP != nil)
+	jexp, err := newClientUDP(agentEndpoint, jr.config.ThriftBinaryUDP.HasValue())
 	require.NoError(t, err, "Failed to create the Jaeger OpenTelemetry exporter for the live application")
 
 	// 3. Now finally send some spans

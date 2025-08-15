@@ -23,7 +23,7 @@ permissions: read-all
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: equinix-bare-metal
+    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
     if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
@@ -52,7 +52,7 @@ jobs:
         run: ./.github/workflows/scripts/setup_e2e_tests.sh
 
   loadtest:
-    runs-on: equinix-bare-metal
+    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
     needs: [setup-environment]
     strategy:
       fail-fast: false

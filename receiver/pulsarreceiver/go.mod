@@ -6,22 +6,22 @@ require (
 	github.com/apache/pulsar-client-go v0.16.0
 	github.com/apache/thrift v0.22.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.132.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.38.0
-	go.opentelemetry.io/collector/component/componenttest v0.132.0
-	go.opentelemetry.io/collector/config/configopaque v1.38.0
-	go.opentelemetry.io/collector/config/configoptional v0.132.0
-	go.opentelemetry.io/collector/confmap v1.38.0
-	go.opentelemetry.io/collector/consumer v1.38.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
-	go.opentelemetry.io/collector/pdata v1.38.0
-	go.opentelemetry.io/collector/receiver v1.38.0
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.132.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.132.0
+	go.opentelemetry.io/collector/component v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/config/configopaque v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/config/configoptional v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/confmap v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/consumer v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/pdata v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/receiver v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/receiver/receivertest v0.132.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -81,13 +81,13 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.132.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.132.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.38.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.132.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.132.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.38.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.132.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/pipeline v1.38.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect

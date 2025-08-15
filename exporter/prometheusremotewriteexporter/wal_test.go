@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -176,10 +177,9 @@ func TestWAL_persist(t *testing.T) {
 
 func TestExportWithWALEnabled(t *testing.T) {
 	cfg := &Config{
-		WAL: &WALConfig{
+		WAL: configoptional.Some(WALConfig{
 			Directory: t.TempDir(),
-		},
-		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		}),
 		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 	}
 	buildInfo := component.BuildInfo{
@@ -241,10 +241,9 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	set := metadatatest.NewSettings(tel)
 
 	cfg := &Config{
-		WAL: &WALConfig{
+		WAL: configoptional.Some(WALConfig{
 			Directory: t.TempDir(),
-		},
-		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		}),
 		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
 	}
 
@@ -312,11 +311,10 @@ func TestWALRead_Telemetry(t *testing.T) {
 	// Create a temporary directory for the WAL
 	tempDir := t.TempDir()
 	cfg := &Config{
-		WAL: &WALConfig{
+		WAL: configoptional.Some(WALConfig{
 			BufferSize: 1,
 			Directory:  tempDir,
-		},
-		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		}),
 		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
 	}
 
@@ -389,12 +387,11 @@ func TestWALLag_Telemetry(t *testing.T) {
 	set := metadatatest.NewSettings(tel)
 
 	cfg := &Config{
-		WAL: &WALConfig{
+		WAL: configoptional.Some(WALConfig{
 			Directory:          t.TempDir(),
 			BufferSize:         1,
 			LagRecordFrequency: 10 * time.Millisecond, // Very short interval for testing
-		},
-		TargetInfo:          &TargetInfo{},
+		}),
 		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
 	}
 
@@ -431,7 +428,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for lag recording to happen (longer than lagRecordFrequency)
-	time.Sleep(5 * cfg.WAL.LagRecordFrequency)
+	time.Sleep(5 * cfg.WAL.Get().LagRecordFrequency)
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_lag")
 	require.NoError(t, err)
