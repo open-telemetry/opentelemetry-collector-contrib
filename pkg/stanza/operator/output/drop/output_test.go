@@ -4,7 +4,6 @@
 package drop
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,6 +35,6 @@ func TestProcess(t *testing.T) {
 	require.NoError(t, err)
 
 	entry := entry.New()
-	result := op.Process(context.Background(), entry)
+	result := op.Process(t.Context(), entry)
 	require.NoError(t, result)
 }
