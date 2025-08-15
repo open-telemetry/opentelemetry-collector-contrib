@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
@@ -11,7 +11,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.6.0
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.132.0
 	github.com/stretchr/testify v1.10.0

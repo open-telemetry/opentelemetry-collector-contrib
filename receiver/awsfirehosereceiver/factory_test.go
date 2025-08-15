@@ -4,7 +4,6 @@
 package awsfirehosereceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,7 @@ func TestValidConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	r, err := createMetricsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
@@ -33,7 +32,7 @@ func TestCreateMetrics(t *testing.T) {
 
 func TestCreateLogsReceiver(t *testing.T) {
 	r, err := createLogsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),

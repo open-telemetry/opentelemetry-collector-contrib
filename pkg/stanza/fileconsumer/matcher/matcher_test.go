@@ -255,7 +255,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestMatcher(t *testing.T) {
-	t.Parallel()
 	cases := []struct {
 		name           string
 		files          []string
@@ -825,12 +824,7 @@ func TestMatcher(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cwd, err := os.Getwd()
-			require.NoError(t, err)
-			require.NoError(t, os.Chdir(t.TempDir()))
-			defer func() {
-				require.NoError(t, os.Chdir(cwd))
-			}()
+			t.Chdir(t.TempDir())
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
 				file, fErr := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)

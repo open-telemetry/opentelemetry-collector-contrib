@@ -107,6 +107,7 @@ For more information about the approver role, see the [community repository](htt
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Roger Coll](https://github.com/rogercoll), Elastic
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 

@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/IBM/sarama v1.45.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.132.0
@@ -17,9 +17,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.132.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
-	github.com/twmb/franz-go v1.18.1
-	github.com/twmb/franz-go/pkg/kadm v1.16.0
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
+	github.com/twmb/franz-go v1.19.5
+	github.com/twmb/franz-go/pkg/kadm v1.16.1
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
 	go.opentelemetry.io/collector/client v1.38.0
 	go.opentelemetry.io/collector/component v1.38.0
 	go.opentelemetry.io/collector/component/componentstatus v0.132.0
