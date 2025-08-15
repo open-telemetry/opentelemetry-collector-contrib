@@ -4,7 +4,6 @@
 package tracelimiter
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -17,21 +16,21 @@ func TestBlockingTracesLimiter(t *testing.T) {
 
 	// Accept first trace, should not block
 	go func() {
-		limiter.AcceptTrace(context.Background(), [16]byte{}, time.Now())
+		limiter.AcceptTrace(t.Context(), [16]byte{}, time.Now())
 		done <- struct{}{}
 	}()
 	<-done
 
 	// Accept second trace, should not block
 	go func() {
-		limiter.AcceptTrace(context.Background(), [16]byte{}, time.Now())
+		limiter.AcceptTrace(t.Context(), [16]byte{}, time.Now())
 		done <- struct{}{}
 	}()
 	<-done
 
 	// Accept third trace, should block until OnDeleteTrace is called
 	go func() {
-		limiter.AcceptTrace(context.Background(), [16]byte{}, time.Now())
+		limiter.AcceptTrace(t.Context(), [16]byte{}, time.Now())
 		blocked <- struct{}{}
 	}()
 
