@@ -1,0 +1,8 @@
+default:
+  type: sanitize
+sanitize_with_field:
+  type: sanitize
+  field: body
+sanitize_with_invalid_field:
+  type: sanitize
+  field: invalid_field
