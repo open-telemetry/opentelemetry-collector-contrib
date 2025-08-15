@@ -19,6 +19,8 @@ type Config struct {
 	// This should reference an encoding extension ID (e.g., "macos_unified_logging_encoding").
 	Encoding string `mapstructure:"encoding_extension"`
 
+	// TraceV3Paths specifies an alternate path to TraceV3 files. This can be a single file path or a glob pattern (e.g., "/path/to/logs/*.tracev3").
+	TraceV3Paths []string `mapstructure:"tracev3_paths"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -26,6 +28,12 @@ type Config struct {
 // getFileConsumerConfig returns a file consumer config with proper encoding settings
 func (cfg *Config) getFileConsumerConfig() fileconsumer.Config {
 	fcConfig := cfg.Config
+
+	// If TraceV3Paths is specified, use it to override the include patterns
+	if len(cfg.TraceV3Paths) > 0 {
+		fcConfig.Include = cfg.TraceV3Paths
+	}
+
 	// Set encoding to "nop" since we'll handle decoding via the extension
 	fcConfig.Encoding = "nop"
 
@@ -38,8 +46,8 @@ func (cfg *Config) getFileConsumerConfig() fileconsumer.Config {
 
 // Validate checks the receiver configuration is valid
 func (cfg Config) Validate() error {
-	if cfg.Encoding == "" {
-		return errors.New("encoding_extension must be specified for macOS Unified Logging receiver")
+	if cfg.Encoding != "macosunifiedlogencoding" {
+		return errors.New("encoding_extension must be macosunifiedlogencoding for macOS Unified Logging receiver")
 	}
 
 	return nil

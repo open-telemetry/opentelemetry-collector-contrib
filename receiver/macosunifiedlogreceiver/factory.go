@@ -28,12 +28,16 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates a config with default values
 func createDefaultConfig() component.Config {
+	fcConfig := *fileconsumer.NewConfig()
+	// Set default include patterns for macOS Unified Logging
+	fcConfig.Include = []string{"/var/db/diagnostics/"}
+
 	return &Config{
 		BaseConfig: adapter.BaseConfig{
 			Operators:      []operator.Config{},
 			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
-		Config: *fileconsumer.NewConfig(),
+		Config: fcConfig,
 	}
 }
 
