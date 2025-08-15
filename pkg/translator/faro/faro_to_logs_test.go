@@ -260,7 +260,6 @@ func TestDrainExceptionValueGrouping(t *testing.T) {
 	hash2 := xxh3.HashString(drained2)
 	hash3 := xxh3.HashString(drained3)
 
-
 	// All should have the same hash after draining
 	assert.Equal(t, hash1, hash2, "Similar property access errors should have same hash")
 	assert.Equal(t, hash1, hash3, "Similar property access errors should have same hash")
@@ -268,7 +267,7 @@ func TestDrainExceptionValueGrouping(t *testing.T) {
 	// Test that different exception types produce different hashes
 	differentException := "ReferenceError: variable is not defined"
 	hashDifferent := xxh3.HashString(drainExceptionValue(differentException))
-	
+
 	assert.NotEqual(t, hash1, hashDifferent, "Different exception types should have different hashes")
 }
 

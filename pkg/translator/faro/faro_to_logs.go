@@ -30,12 +30,12 @@ var (
 	// Compile regex patterns once for performance
 	propertyAccessRegex = regexp.MustCompile(`Cannot read (property|properties) '([^']+)'`)
 	methodCallRegex     = regexp.MustCompile(`Cannot read (property|properties) '([^']+)' of`)
-	urlRegex           = regexp.MustCompile(`https?://[^\s<>"{}|\\^` + "`" + `\[\]]+`)
+	urlRegex            = regexp.MustCompile(`https?://[^\s<>"{}|\\^` + "`" + `\[\]]+`)
 	memoryAddressRegex  = regexp.MustCompile(`0x[0-9a-fA-F]+`)
-	uuidRegex          = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
-	numericIDRegex     = regexp.MustCompile(`\b(id|ID|Id)\s*[:\s=]\s*\d+\b`)
-	timestampRegex     = regexp.MustCompile(`\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}`)
-	filePathRegex      = regexp.MustCompile(`(?:[A-Za-z]:)?[/\\][\w\-._/\\]+\.(js|ts|jsx|tsx|css|html)\b`)
+	uuidRegex           = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	numericIDRegex      = regexp.MustCompile(`\b(id|ID|Id)\s*[:\s=]\s*\d+\b`)
+	timestampRegex      = regexp.MustCompile(`\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}`)
+	filePathRegex       = regexp.MustCompile(`(?:[A-Za-z]:)?[/\\][\w\-._/\\]+\.(js|ts|jsx|tsx|css|html)\b`)
 )
 
 // drainExceptionValue normalizes exception values by replacing instance-specific
@@ -44,25 +44,25 @@ func drainExceptionValue(value string) string {
 	// Replace property access patterns
 	drained := propertyAccessRegex.ReplaceAllString(value, "Cannot read $1 '<PROPERTY>'")
 	drained = methodCallRegex.ReplaceAllString(drained, "Cannot read $1 '<PROPERTY>' of")
-	
+
 	// Replace URLs first (takes precedence over file paths)
 	drained = urlRegex.ReplaceAllString(drained, "<URL>")
-	
+
 	// Replace memory addresses
 	drained = memoryAddressRegex.ReplaceAllString(drained, "<ADDRESS>")
-	
+
 	// Replace UUIDs
 	drained = uuidRegex.ReplaceAllString(drained, "<UUID>")
-	
+
 	// Replace numeric IDs
 	drained = numericIDRegex.ReplaceAllString(drained, "${1} <ID>")
-	
+
 	// Replace timestamps
 	drained = timestampRegex.ReplaceAllString(drained, "<TIMESTAMP>")
-	
+
 	// Replace file paths (after URLs to avoid conflicts)
 	drained = filePathRegex.ReplaceAllString(drained, "<PATH>")
-	
+
 	return drained
 }
 
