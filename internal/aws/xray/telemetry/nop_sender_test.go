@@ -4,7 +4,6 @@
 package telemetry
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ func TestNopRecorder(t *testing.T) {
 	assert.Same(t, nopSenderInstance, NewNopSender())
 	recorder := NewNopSender()
 	assert.NotPanics(t, func() {
-		recorder.Start(context.Background())
+		recorder.Start(t.Context())
 		recorder.RecordConnectionError(nil)
 		recorder.RecordSegmentsSent(1)
 		recorder.RecordSegmentsSpillover(1)
