@@ -92,11 +92,11 @@ System CPU consumed by the Redis server in seconds since server start
 
 ### redis.db.avg_ttl
 
-Average keyspace keys TTL
+Average keyspace keys TTL in seconds
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| s | Gauge | Double |
 
 #### Attributes
 
@@ -166,11 +166,11 @@ Number of failed lookup of keys in the main dictionary
 
 ### redis.latest_fork
 
-Duration of the latest fork operation in microseconds
+Duration of the latest fork operation in seconds
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| us | Gauge | Int |
+| s | Gauge | Double |
 
 ### redis.memory.fragmentation_ratio
 
@@ -307,13 +307,13 @@ Command execution latency
 | cmd | Redis command name | Any Str | false |
 | percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | false |
 
-### redis.cmd.usec
+### redis.cmd.sec
 
 Total time for all executions of this command
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| us | Sum | Int | Cumulative | true |
+| s | Sum | Double | Cumulative | true |
 
 #### Attributes
 
