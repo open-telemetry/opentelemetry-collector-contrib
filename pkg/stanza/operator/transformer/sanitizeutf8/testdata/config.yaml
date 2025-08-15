@@ -1,0 +1,8 @@
+default:
+  type: sanitize_utf8
+sanitize_utf8_with_field:
+  type: sanitize_utf8
+  field: body
+sanitize_utf8_with_invalid_field:
+  type: sanitize_utf8
+  field: invalid_field
