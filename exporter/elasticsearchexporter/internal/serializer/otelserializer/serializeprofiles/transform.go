@@ -450,7 +450,7 @@ func stackTraceID(frames []StackFrame) (string, error) {
 		_, _ = h.Write(strconv.AppendUint(buf[:0], uint64(fID.AddressOrLine()), 10))
 	}
 	// make instead of nil avoids a heap allocation
-	traceHash, err := libpf.TraceHashFromBytes(h.Sum(make([]byte, 0, 16)))
+	traceHash, err := traceHashFromBytes(h.Sum(make([]byte, 0, 16)))
 	if err != nil {
 		return "", err
 	}
