@@ -102,7 +102,17 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration) (Client, error)
+type ClientProvider func(
+	component.TelemetrySettings,
+	k8sconfig.APIConfig,
+	ExtractionRules,
+	Filters,
+	[]Association,
+	Excludes,
+	APIClientsetProvider,
+	InformersFactoryList,
+	bool, time.Duration,
+) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
