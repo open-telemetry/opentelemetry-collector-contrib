@@ -4,9 +4,13 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -139,8 +143,101 @@ func (exp *traceExporter) consumeTraces(
 	if noAPMStatsFeatureGate.IsEnabled() {
 		header[headerComputedStats] = []string{"true"}
 	}
-	for i := 0; i < rspans.Len(); i++ {
+	for i := range rspans.Len() {
 		rspan := rspans.At(i)
+		sspans := rspan.ScopeSpans()
+
+		for j := range sspans.Len() {
+			sspan := sspans.At(j)
+			spans := sspan.Spans()
+
+			for k := range spans.Len() {
+				span := spans.At(k)
+
+				_, isRum := span.Attributes().Get("session.id")
+				if isRum {
+
+					client := &http.Client{
+						Timeout: 10 * time.Second,
+					}
+
+					rattr := rspan.Resource().Attributes()
+					sattr := span.Attributes()
+
+					// build the Datadog intake URL
+					ddforward, _ := rattr.Get("request_ddforward")
+					outUrlString := "https://browser-intake-datadoghq.com" +
+						ddforward.AsString()
+
+					// construct request body according to RUM spec
+					rumPayload := constructRumPayloadFromOTLP(sattr)
+
+					byts, err := json.Marshal(rumPayload)
+					if err != nil {
+						return fmt.Errorf("failed to marshal RUM payload: %v", err)
+					}
+					req, err := http.NewRequest("POST", outUrlString, bytes.NewBuffer(byts))
+					// forward the request to the Datadog intake URL using the POST method
+					//					req, err := http.NewRequest("POST", outUrlString, bytes.NewBuffer(rawRumData.Bytes().AsRaw()))
+					if err != nil {
+						exp.params.Logger.Info("failed to create request: %v", zap.Error(err))
+					}
+
+					// add X-Forwarded-For header containing the request client IP address
+					ip, ok := sattr.Get("client.address")
+					if ok {
+						req.Header.Add("X-Forwarded-For", ip.AsString())
+					}
+					req.Header.Set("Content-Type", "application/json")
+
+					// we're currently not setting the request headers in the resource on the receiver side
+					/*
+						headersMap, _ := rattr.Get("request_headers")
+						headersMap.Map().Range(func(key string, v pcommon.Value) bool {
+							exp.params.Logger.Debug("setting header:")
+							exp.params.Logger.Debug(key)
+							for i := range v.Slice().Len() {
+								exp.params.Logger.Debug(v.Slice().At(i).AsString())
+								req.Header.Set(key, v.Slice().At(i).AsString())
+							}
+							return true
+						})
+					*/
+					fmt.Println("&&&&&&&&&& HEADERS EXPORTED: ", req.Header)
+
+					// send the request to the Datadog intake URL
+					resp, err := client.Do(req)
+					if err != nil {
+						return fmt.Errorf("failed to send request: %v", err)
+					}
+					defer func(Body io.ReadCloser) {
+						err := Body.Close()
+						if err != nil {
+						}
+					}(resp.Body)
+
+					// read the response body
+					body, err := io.ReadAll(resp.Body)
+					if err != nil {
+						return fmt.Errorf("failed to read response: %v", err)
+					}
+
+					// check the status code of the response
+					if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+						return fmt.Errorf("received non-OK response: status: %s, body: %s", resp.Status, body)
+					}
+					fmt.Println("Response:", string(body))
+					continue
+				}
+			}
+			// remove the RUM spans from the resource so that they are not exported directly to the backend
+			// this is a temporary fix to avoid duplicates, but eventually we should make the necessary changes to
+			// ReceiveResourceSpans in agent to handle the exclusion of RUM events from the resource spans
+			sspan.Spans().RemoveIf(func(span ptrace.Span) bool {
+				_, isRum := span.Attributes().Get("session.id")
+				return isRum
+			})
+		}
 		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
 		switch src.Kind {
 		case source.HostnameKind:
@@ -256,4 +353,46 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	}
 	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
+}
+
+func buildRumPayload(k string, v pcommon.Value, rumPayload map[string]any) {
+	parts := strings.Split(k, ".")
+
+	current := rumPayload
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			if v.Type() == pcommon.ValueTypeSlice {
+				current[part] = v.Slice().AsRaw()
+			} else if v.Type() == pcommon.ValueTypeMap {
+				current[part] = v.Map().AsRaw()
+			} else {
+				current[part] = v.AsRaw()
+			}
+		} else {
+			if _, ok := current[part]; !ok {
+				current[part] = make(map[string]any)
+			}
+
+			// in case the current part is not a map, we should override it with a map to avoid type assertion errors
+			next, ok := current[part].(map[string]any)
+			if !ok {
+				next = make(map[string]any)
+				current[part] = next
+			}
+			current = next
+		}
+	}
+}
+
+func constructRumPayloadFromOTLP(attr pcommon.Map) map[string]any {
+	rumPayload := make(map[string]any)
+	attr.Range(func(k string, v pcommon.Value) bool {
+		if rumAttributeName, exists := OTLPToRUMAttributeMap[k]; exists {
+			buildRumPayload(rumAttributeName, v, rumPayload)
+		} else {
+			buildRumPayload(strings.TrimPrefix(k, "datadog."), v, rumPayload)
+		}
+		return true
+	})
+	return rumPayload
 }
