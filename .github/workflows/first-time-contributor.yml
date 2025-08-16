@@ -1,5 +1,7 @@
 name: 'First time contributor'
-on: pull_request
+on:
+    pull_request:
+      types: [opened]
 
 jobs:
   welcome_first_contributor:
