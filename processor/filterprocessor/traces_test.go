@@ -269,7 +269,8 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
+			cfg := &Config{Traces: tt.conditions, ErrorMode: tt.errorMode, spanFunctions: defaultSpanFunctionsMap()}
+			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(t.Context(), constructTraces())
