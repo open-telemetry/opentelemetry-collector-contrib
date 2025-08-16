@@ -1,0 +1,9 @@
+type: metricsaslogs
+
+status:
+  class: connector
+  stability:
+    alpha: [metrics_to_logs]
+  distributions: [contrib]
+  codeowners:
+    active: [sokoide, kyo-ke]

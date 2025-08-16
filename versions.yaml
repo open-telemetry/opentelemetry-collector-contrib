@@ -19,6 +19,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/metricsaslogsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
