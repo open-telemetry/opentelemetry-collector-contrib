@@ -1191,6 +1191,7 @@ func TestRetries(t *testing.T) {
 				retrySettings: configretry.BackOffConfig{
 					Enabled: true,
 				},
+				settings:  testTel.NewTelemetrySettings(),
 				telemetry: telemetry,
 			}
 			buf := bufferPool.Get().(*buffer)
