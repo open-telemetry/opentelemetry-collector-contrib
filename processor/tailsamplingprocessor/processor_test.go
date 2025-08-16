@@ -9,6 +9,7 @@ import (
 	"errors"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -652,13 +653,15 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 	defer func() {
 		require.NoError(t, tsp.Shutdown(t.Context()))
 	}()
-	metrics := &policyMetrics{}
+	metrics := newPolicyMetrics(len(policy))
 
 	for i, id := range traceIDs {
 		sb := &sampling.TraceData{
 			ArrivalTime:     time.Now(),
 			ReceivedBatches: batches[i],
+			SpanCount:       &atomic.Int64{},
 		}
+		sb.SpanCount.Store(int64(batches[i].SpanCount()))
 
 		_ = tsp.makeDecision(id, sb, metrics)
 	}
