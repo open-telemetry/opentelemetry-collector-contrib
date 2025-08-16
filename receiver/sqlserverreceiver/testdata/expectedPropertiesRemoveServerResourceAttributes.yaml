@@ -4,6 +4,9 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: ad8fb2b53dce
