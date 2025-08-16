@@ -96,6 +96,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
+go.opentelemetry.io/collector/client v1.38.1-0.20250814180350-eb9588bb3b55 h1:wC9j2MdJS95uGNCi+t/7RTd+2UKxeKwcfQXYssBDYMQ=
+go.opentelemetry.io/collector/client v1.38.1-0.20250814180350-eb9588bb3b55/go.mod h1:hN/r9og5jbBg3urLeAVXH0fGjnrbfwjlv/DatXi8JbA=
 go.opentelemetry.io/collector/component v1.38.1-0.20250814180350-eb9588bb3b55 h1:Kyzro2kYBW2girQl9iShYwKPDwuegeiiK8TOwrCTFhk=
 go.opentelemetry.io/collector/component v1.38.1-0.20250814180350-eb9588bb3b55/go.mod h1:vqMhquIOWK1DPEkx9649DJUd28As7q+2TR5OpkZcBEs=
 go.opentelemetry.io/collector/component/componentstatus v0.132.1-0.20250814180350-eb9588bb3b55 h1:a712l6+PIClxwqTMPDoAiS4FkYkUxtVt5WQs9WlBKH0=
