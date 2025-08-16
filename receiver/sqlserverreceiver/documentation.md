@@ -638,6 +638,6 @@ top query
 | host.name | The host name of SQL Server | Any Str | true |
 | server.address | Name of the database host. | Any Str | false |
 | server.port | Server port number. | Any Int | false |
-| sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false |
+| sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | true |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true |
-| sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false |
+| sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | true |
