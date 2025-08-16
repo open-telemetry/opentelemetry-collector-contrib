@@ -360,6 +360,13 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 		if j < len(names) && l.Name == names[j] {
 			return
 		}
+
+		// When removeScopeInfo feature gate is enabled, filter out otel_scope_ prefixed labels
+		// as they are now extracted as scope attributes instead of datapoint attributes
+		if RemoveScopeInfoGate.IsEnabled() && strings.HasPrefix(l.Name, "otel_scope_") {
+			return
+		}
+
 		if l.Value == "" {
 			// empty label values should be omitted
 			return
