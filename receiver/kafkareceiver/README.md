@@ -103,7 +103,9 @@ The following settings can be optionally configured:
   - `interval`: (default = 1s) How frequently to commit updated offsets. Ineffective unless auto-commit is enabled
 - `message_marking`:
   - `after`: (default = false) If true, the messages are marked after the pipeline execution
-  - `on_error`: (default = false) If false, only the successfully processed messages are marked
+  - `on_error`: (default = false) If false, only the successfully processed messages are marked. This applies to non-permanent errors.
+    **Note: this can block the entire partition in case a message processing returns a non-permanent error**
+  - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
     **Note: this can block the entire partition in case a message processing returns a permanent error**
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
