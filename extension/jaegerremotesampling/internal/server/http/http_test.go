@@ -38,8 +38,8 @@ func TestStartAndStopHTTP(t *testing.T) {
 	require.NotNil(t, s)
 
 	// test
-	assert.NoError(t, s.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, s.Shutdown(context.Background()))
+	assert.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, s.Shutdown(t.Context()))
 }
 
 func TestEndpointsAreWired(t *testing.T) {

@@ -159,7 +159,7 @@ tidylist: $(CROSSLINK)
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.23.0 && $(GOCMD) get toolchain@none) || exit $?; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.24.0 && $(GOCMD) get toolchain@none) || exit $?; \
 	done
 
 .PHONY: remove-toolchain
@@ -518,7 +518,7 @@ update-otel:$(MULTIMOD)
 	# Tidy again after generating code
 	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
-	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
+	git add . && git commit -s -m "[chore] mod and toolchain tidy" --allow-empty ; \
 
 .PHONY: otel-from-tree
 otel-from-tree:

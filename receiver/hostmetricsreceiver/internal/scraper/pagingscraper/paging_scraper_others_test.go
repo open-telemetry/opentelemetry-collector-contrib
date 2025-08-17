@@ -53,7 +53,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{})
+			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			if test.virtualMemoryFunc != nil {
 				scraper.getPageFileStats = test.virtualMemoryFunc
 			}
@@ -61,10 +61,10 @@ func TestScrape_Errors(t *testing.T) {
 				scraper.swapMemory = test.swapMemoryFunc
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
-			_, err = scraper.scrape(context.Background())
+			_, err = scraper.scrape(t.Context())
 			assert.EqualError(t, err, test.expectedError)
 
 			isPartial := scrapererror.IsPartialScrapeError(err)

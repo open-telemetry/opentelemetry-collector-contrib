@@ -4,7 +4,6 @@
 package faro // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -59,7 +58,7 @@ func TestTranslateToLogs(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			actualLogs, err := TranslateToLogs(context.TODO(), tt.faroPayload)
+			actualLogs, err := TranslateToLogs(t.Context(), tt.faroPayload)
 			if !tt.wantErr(t, err) {
 				return
 			}
@@ -73,19 +72,19 @@ func TestTranslateToLogs(t *testing.T) {
 func TestTranslateFromFaroToOTLPAndBack(t *testing.T) {
 	faroPayload := PayloadFromFile(t, "general/payload.json")
 	// Translate from faro payload to otlp logs
-	actualLogs, err := TranslateToLogs(context.TODO(), faroPayload)
+	actualLogs, err := TranslateToLogs(t.Context(), faroPayload)
 	require.NoError(t, err)
 
 	// Translate from faro payload to otlp traces
-	actualTraces, err := TranslateToTraces(context.TODO(), faroPayload)
+	actualTraces, err := TranslateToTraces(t.Context(), faroPayload)
 	require.NoError(t, err)
 
 	// Translate from otlp logs to faro payload
-	faroLogsPayloads, err := TranslateFromLogs(context.TODO(), actualLogs)
+	faroLogsPayloads, err := TranslateFromLogs(t.Context(), actualLogs)
 	require.NoError(t, err)
 
 	// Translate from otlp traces to faro payload
-	faroTracesPayloads, err := TranslateFromTraces(context.TODO(), actualTraces)
+	faroTracesPayloads, err := TranslateFromTraces(t.Context(), actualTraces)
 	require.NoError(t, err)
 
 	// Combine the traces and logs faro payloads into a single faro payload
@@ -104,11 +103,11 @@ func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
 	require.NoError(t, err)
 
 	// Translate from otlp logs to faro payload
-	actualFaroLogsPayloads, err := TranslateFromLogs(context.TODO(), logs)
+	actualFaroLogsPayloads, err := TranslateFromLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Translate from otlp traces to faro payload
-	actualFaroTracesPayloads, err := TranslateFromTraces(context.TODO(), traces)
+	actualFaroTracesPayloads, err := TranslateFromTraces(t.Context(), traces)
 	require.NoError(t, err)
 
 	// Combine the traces and logs faro payloads into a single faro payload
@@ -116,14 +115,14 @@ func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
 	actualFaroPayload.Traces = actualFaroTracesPayloads[0].Traces
 
 	// Translate from faro payload to otlp logs
-	expectedLogs, err := TranslateToLogs(context.TODO(), actualFaroPayload)
+	expectedLogs, err := TranslateToLogs(t.Context(), actualFaroPayload)
 	require.NoError(t, err)
 
 	// Compare the original otlp logs with the translated otlp logs
 	require.Equal(t, expectedLogs, logs)
 
 	// Translate from faro payload to otlp traces
-	expectedTraces, err := TranslateToTraces(context.TODO(), actualFaroPayload)
+	expectedTraces, err := TranslateToTraces(t.Context(), actualFaroPayload)
 	require.NoError(t, err)
 
 	// Compare the original otlp traces with the translated otlp traces
