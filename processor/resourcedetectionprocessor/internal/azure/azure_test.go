@@ -37,6 +37,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
 		VMScaleSetName:    "myScaleset",
+		AvailabilityZone:  "availabilityZone",
 		TagsList: []azure.ComputeTagsListMetadata{
 			{
 				Name:  "tag1key",
@@ -62,17 +63,18 @@ func TestDetectAzureAvailable(t *testing.T) {
 	mp.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.CloudProviderKey):  conventions.CloudProviderAzure.Value.AsString(),
-		string(conventions.CloudPlatformKey):  conventions.CloudPlatformAzureVM.Value.AsString(),
-		string(conventions.HostNameKey):       "name",
-		string(conventions.CloudRegionKey):    "location",
-		string(conventions.HostIDKey):         "vmID",
-		string(conventions.CloudAccountIDKey): "subscriptionID",
-		"azure.vm.name":                       "name",
-		"azure.vm.size":                       "vmSize",
-		"azure.resourcegroup.name":            "resourceGroup",
-		"azure.vm.scaleset.name":              "myScaleset",
-		"azure.tag.tag1key":                   "value1",
+		string(conventions.CloudProviderKey):         conventions.CloudProviderAzure.Value.AsString(),
+		string(conventions.CloudPlatformKey):         conventions.CloudPlatformAzureVM.Value.AsString(),
+		string(conventions.HostNameKey):              "name",
+		string(conventions.CloudRegionKey):           "location",
+		string(conventions.HostIDKey):                "vmID",
+		string(conventions.CloudAccountIDKey):        "subscriptionID",
+		string(conventions.CloudAvailabilityZoneKey): "availabilityZone",
+		"azure.vm.name":                              "name",
+		"azure.vm.size":                              "vmSize",
+		"azure.resourcegroup.name":                   "resourceGroup",
+		"azure.vm.scaleset.name":                     "myScaleset",
+		"azure.tag.tag1key":                          "value1",
 	}
 
 	notExpected := map[string]any{
