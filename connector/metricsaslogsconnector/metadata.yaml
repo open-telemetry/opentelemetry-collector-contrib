@@ -4,6 +4,6 @@ status:
   class: connector
   stability:
     alpha: [metrics_to_logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
-    active: [sokoide, kyo-ke]
+    active: [atoulme]
