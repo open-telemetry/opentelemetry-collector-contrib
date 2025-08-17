@@ -18,6 +18,13 @@ import (
     subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 )
 
+// Helper function to unmarshal logs and expect no error
+func unmarshalLogsExpectNoError(t *testing.T, e *encodingExtension, buf []byte) {
+    logs, err := e.UnmarshalLogs(buf)
+    require.NoError(t, err)
+    require.NotNil(t, logs)
+}
+
 func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
     e, err := newExtension(&Config{Format: formatCloudWatchLogsSubscriptionFilter}, extensiontest.NewNopSettings(extensiontest.NopType))
     require.NoError(t, err)
@@ -43,9 +50,8 @@ func TestNew_VPCFlowLog(t *testing.T) {
     require.NoError(t, err)
     require.NotNil(t, e)
 
-    // VPC Flow Log unmarshaler is resilient and handles invalid input gracefully
-    _, err = e.UnmarshalLogs([]byte("insufficient fields for vpc flow log"))
-    require.NoError(t, err) // Changed: VPC Flow Log doesn't error on invalid input
+    // VPC Flow Log unmarshaler handles non-log input gracefully
+    unmarshalLogsExpectNoError(t, e, []byte("some test input"))
 }
 
 func TestNew_S3AccessLog(t *testing.T) {
