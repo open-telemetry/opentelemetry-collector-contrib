@@ -240,11 +240,11 @@ components:
         - cpu
         - disk
         - filesystem
+        - hw
         - load
         - memory
         - network
         - nfs
-        - hw
         - paging
         - process
         - processes
