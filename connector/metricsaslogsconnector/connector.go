@@ -1,4 +1,4 @@
-package metricsaslogsconnector
+package metricsaslogsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/metricsaslogsconnector"
 
 import (
 	"context"
