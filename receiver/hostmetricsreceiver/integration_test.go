@@ -146,8 +146,8 @@ func Test_HwScrapeWithCustomHwmonPath(t *testing.T) {
 	).Run(t)
 }
 
-func Test_HwScrapeWithCPUOnly(t *testing.T) {
-	expectedFile := filepath.Join("testdata", "e2e", "expected_hw_cpu_only.yaml")
+func Test_HwScrapeWithSensorFiltering(t *testing.T) {
+	expectedFile := filepath.Join("testdata", "e2e", "expected_hw_filtered_sensors.yaml")
 	hwmonPath := filepath.Join("testdata", "e2e", "sys", "class", "hwmon")
 
 	scraperinttest.NewIntegrationTest(
@@ -159,7 +159,7 @@ func Test_HwScrapeWithCPUOnly(t *testing.T) {
 				f := hwscraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
 				hCfg.HwmonPath = hwmonPath
-				hCfg.Temperature.Include.Sensors = []string{"temp1", "temp2"}
+				hCfg.Temperature.Include.Sensors = []string{"temp1"}
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,
 				}
