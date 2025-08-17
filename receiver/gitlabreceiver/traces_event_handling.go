@@ -13,7 +13,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 var (
@@ -32,10 +32,10 @@ const (
 // It enables unified span creation logic while allowing type-specific customization
 // It must be implemented by all GitLab event types (pipeline, stage, job) to create spans
 type GitlabEvent interface {
-	setAttributes(ptrace.Span) error
+	setAttributes(pcommon.Map) error
 	setSpanIDs(ptrace.Span, pcommon.SpanID) error
 	setTimeStamps(ptrace.Span, string, string) error
-	setSpanData(ptrace.Span) error
+	setSpanData(ptrace.Span, pcommon.Map) error
 }
 
 func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace.Traces, error) {
@@ -124,7 +124,10 @@ func (*gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e Gi
 		return err
 	}
 
-	err = e.setSpanData(span)
+	// TODO: add the attributes to the span (appending them to the map)
+	attrs := span.Attributes()
+
+	err = e.setSpanData(span, attrs)
 	if err != nil {
 		return err
 	}
@@ -322,4 +325,21 @@ func parseGitlabTime(t string) (time.Time, error) {
 	}
 
 	return time.Time{}, err
+}
+
+// map GitLab status to OTel span status and set optional message
+// Relevant GitLab docs:
+// - Job: https://docs.gitlab.com/ci/jobs/#available-job-statuses
+// - Pipeline: https://docs.gitlab.com/api/pipelines/#list-project-pipelines (see status field)
+func setSpanStatusFromGitLab(span ptrace.Span, status string) {
+	switch status {
+	case "success":
+		span.Status().SetCode(ptrace.StatusCodeOk)
+	case "failed", "canceled":
+		span.Status().SetCode(ptrace.StatusCodeError)
+	case "skipped":
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+	default:
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+	}
 }
