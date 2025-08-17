@@ -5,7 +5,9 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -53,6 +55,8 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 		}
 	}
 
+	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: addMetricSuffixes, Namespace: namespace}
+	unitNamer := otlptranslator.UnitNamer{}
 	metadata := make([]*prompb.MetricMetadata, 0, metadataLength)
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -64,8 +68,8 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 				metric := scopeMetrics.Metrics().At(k)
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
-					MetricFamilyName: prometheustranslator.BuildCompliantName(metric, namespace, addMetricSuffixes),
-					Unit:             prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+					MetricFamilyName: metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
+					Unit:             unitNamer.Build(metric.Unit()),
 					Help:             metric.Description(),
 				}
 				metadata = append(metadata, &entry)

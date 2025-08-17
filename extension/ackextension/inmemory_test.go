@@ -57,7 +57,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 100; i++ {
 			// each partition has 3 events
-			map1[ext.ProcessEvent(fmt.Sprint(partitionName))] = struct{}{}
+			map1[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
 		wg.Done()
 	}()
@@ -65,7 +65,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 100; i++ {
 			// each partition has 3 events
-			map2[ext.ProcessEvent(fmt.Sprint(partitionName))] = struct{}{}
+			map2[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
 		wg.Done()
 	}()
@@ -73,7 +73,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 100; i++ {
 			// each partition has 3 events
-			map3[ext.ProcessEvent(fmt.Sprint(partitionName))] = struct{}{}
+			map3[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
 		wg.Done()
 	}()

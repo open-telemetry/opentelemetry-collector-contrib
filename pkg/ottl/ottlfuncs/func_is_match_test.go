@@ -24,7 +24,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match true",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "hello world", nil
 				},
 			},
@@ -34,7 +34,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match false",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "goodbye world", nil
 				},
 			},
@@ -44,7 +44,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match complex",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "-12.001", nil
 				},
 			},
@@ -54,7 +54,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target bool",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return true, nil
 				},
 			},
@@ -64,7 +64,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target int",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return int64(1), nil
 				},
 			},
@@ -74,7 +74,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target float",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 1.1, nil
 				},
 			},
@@ -84,7 +84,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target pcommon.Value",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					v := pcommon.NewValueEmpty()
 					v.SetStr("test")
 					return v, nil
@@ -96,7 +96,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "nil target",
 			target: &ottl.StandardStringLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -108,7 +108,7 @@ func Test_isMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isMatch(tt.target, tt.pattern)
 			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -117,7 +117,7 @@ func Test_isMatch(t *testing.T) {
 
 func Test_isMatch_validation(t *testing.T) {
 	target := &ottl.StandardStringLikeGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "anything", nil
 		},
 	}
@@ -127,12 +127,12 @@ func Test_isMatch_validation(t *testing.T) {
 
 func Test_isMatch_error(t *testing.T) {
 	target := &ottl.StandardStringLikeGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return make(chan int), nil
 		},
 	}
 	exprFunc, err := isMatch[any](target, "test")
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }

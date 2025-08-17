@@ -23,3 +23,9 @@ awslogs_encoding/s3_access_log:
 
 awslogs_encoding/waf_log:
   format: waf_log
+
+awslogs_encoding/cloudtrail_log:
+  format: cloudtrail_log
+
+awslogs_encoding/elb_access_log:
+  format: elb_access_log

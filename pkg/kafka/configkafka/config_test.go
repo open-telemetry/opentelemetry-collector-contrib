@@ -63,6 +63,18 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"sasl_aws_msk_iam_oauthbearer_with_region": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.Authentication.SASL = &SASLConfig{
+					Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
+					AWSMSK: AWSMSKConfig{
+						Region: "us-east-1",
+					},
+				}
+				return cfg
+			}(),
+		},
 		"sasl_plain": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()

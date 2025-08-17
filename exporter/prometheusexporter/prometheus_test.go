@@ -4,7 +4,6 @@
 package prometheusexporter
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -71,7 +71,7 @@ func TestPrometheusExporter(t *testing.T) {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
 			cfg := tt.config()
-			exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 
 			if tt.wantErr != "" {
 				require.Error(t, err)
@@ -81,7 +81,7 @@ func TestPrometheusExporter(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NotNil(t, exp)
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.wantStartErr != "" {
 				require.Error(t, err)
@@ -90,7 +90,7 @@ func TestPrometheusExporter(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			require.NoError(t, exp.Shutdown(context.Background()))
+			require.NoError(t, exp.Shutdown(t.Context()))
 		}
 	}
 }
@@ -105,13 +105,13 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
-			TLS: &configtls.ServerConfig{
+			TLS: configoptional.Some(configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
 					CAFile:   "./testdata/certs/ca.crt",
 				},
-			},
+			}),
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -121,7 +121,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 
 	tlscs := configtls.ClientConfig{
@@ -132,7 +132,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, err := tlscs.LoadTLSConfig(context.Background())
+	tls, err := tlscs.LoadTLSConfig(t.Context())
 	assert.NoError(t, err)
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -141,17 +141,17 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 
 	rsp, err := httpClient.Get("https://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
@@ -190,24 +190,24 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics from different targets
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8081")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8081")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8081")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8081")))
 
 		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -264,22 +264,22 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 
 		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -333,22 +333,22 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "node-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "node-exporter", "localhost:8080")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
 
 		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -405,20 +405,20 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 
 	rsp, err := http.Get("http://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
@@ -452,7 +452,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	m1 := ms.AppendEmpty()
 	m1.SetName(prefix + "this/one/there(where)")
 	m1.SetDescription("Extra ones")
-	m1.SetUnit("1")
+	m1.SetUnit("By")
 	d1 := m1.SetEmptySum()
 	d1.SetIsMonotonic(true)
 	d1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -466,7 +466,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	m2 := ms.AppendEmpty()
 	m2.SetName(prefix + "this/one/there(where)")
 	m2.SetDescription("Extra ones")
-	m2.SetUnit("1")
+	m2.SetUnit("By")
 	d2 := m2.SetEmptySum()
 	d2.SetIsMonotonic(true)
 	d2.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -478,4 +478,221 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	dp2.SetIntValue(100 + delta)
 
 	return md
+}
+
+func TestPrometheusExporter_TranslationStrategies(t *testing.T) {
+	tests := []struct {
+		name               string
+		featureGateEnabled bool
+		config             *Config
+		extraHeaders       map[string]string
+		want               string
+	}{
+		{
+			name:               "Legacy AddMetricSuffixes=true (no translation_strategy set)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes: true,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "Legacy AddMetricSuffixes=false (no translation_strategy set)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes: false,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "Legacy AddMetricSuffixes=true with feature gate enabled (no translation_strategy set)",
+			featureGateEnabled: true,
+			config: &Config{
+				AddMetricSuffixes: true, // Should be ignored and default 'translation_strategy' is used (UnderscoreEscapingWithSuffixes).
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "TranslationStrategy takes precedence over AddMetricSuffixes (feature gate disabled)",
+			featureGateEnabled: false,
+			config: &Config{
+				AddMetricSuffixes:   true, // This should be ignored
+				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "UnderscoreEscapingWithSuffixes",
+			config: &Config{
+				TranslationStrategy: underscoreEscapingWithSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_bytes_total Extra ones
+# TYPE this_one_there_where_bytes_total counter
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "UnderscoreEscapingWithoutSuffixes",
+			config: &Config{
+				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where Extra ones
+# TYPE this_one_there_where counter
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "NoUTF8EscapingWithSuffixes/escaping=allow-utf-8",
+			config: &Config{
+				TranslationStrategy: noUTF8EscapingWithSuffixes,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP "this/one/there(where)_bytes_total" Extra ones
+# TYPE "this/one/there(where)_bytes_total" counter
+{"this/one/there(where)_bytes_total",arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+{"this/one/there(where)_bytes_total",arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "NoUTF8EscapingWithSuffixes/escaping=underscores",
+			config: &Config{
+				TranslationStrategy: noUTF8EscapingWithSuffixes,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=underscores;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=underscores;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where__bytes_total Extra ones
+# TYPE this_one_there_where__bytes_total counter
+this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name:               "NoTranslation/escaping=allow-utf-8",
+			featureGateEnabled: true,
+			config: &Config{
+				TranslationStrategy: noTranslation,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP "this/one/there(where)" Extra ones
+# TYPE "this/one/there(where)" counter
+{"this/one/there(where)",arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+{"this/one/there(where)",arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+		{
+			name: "NoTranslation/escaping=underscores",
+			config: &Config{
+				TranslationStrategy: noTranslation,
+			},
+			extraHeaders: map[string]string{
+				"Accept": "application/openmetrics-text;version=1.0.0;escaping=underscores;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=underscores;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
+			},
+			want: `# HELP target_info Target metadata
+# TYPE target_info gauge
+target_info{instance="test-instance",job="test-service"} 1
+# HELP this_one_there_where_ Extra ones
+# TYPE this_one_there_where_ counter
+this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
+this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set feature gate state for this test
+			originalState := disableAddMetricSuffixesFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
+			defer testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, originalState)
+
+			// Configure the exporter
+			addr := testutil.GetAvailableLocalAddress(t)
+			cfg := tt.config
+			cfg.ServerConfig = confighttp.ServerConfig{
+				Endpoint: addr,
+			}
+			cfg.MetricExpiration = 120 * time.Minute
+
+			factory := NewFactory()
+			set := exportertest.NewNopSettings(metadata.Type)
+			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(t.Context()))
+			})
+
+			assert.NotNil(t, exp)
+			require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+			md := metricBuilder(0, "", "test-service", "test-instance")
+			assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+			// Scrape metrics, with the Accept header set to the value specified in the test case
+			req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/metrics", http.NoBody)
+			require.NoError(t, err)
+			for k, v := range tt.extraHeaders {
+				req.Header.Set(k, v)
+			}
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Failed to perform a scrape")
+			assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
+
+			blob, _ := io.ReadAll(res.Body)
+			_ = res.Body.Close()
+			output := string(blob)
+
+			assert.Equal(t, tt.want, output)
+		})
+	}
 }

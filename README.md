@@ -74,27 +74,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 - [Yang Song](https://github.com/songy23), DataDog
 
-For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).
+For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
 
 ### Approvers
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
-- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Christos Markou](https://github.com/ChrsMark), Elastic (On leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
-For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).
+For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
 ### Triagers
 
@@ -107,15 +107,16 @@ For more information about the approver role, see the [community repository](htt
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Roger Coll](https://github.com/rogercoll), Elastic
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
-For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#triagers).
+For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).
 
 ### Emeritus Maintainers
 
-- [Daniel Jaglowski](https://github.com/djaglowski), Bindplane
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
+- [Daniel Jaglowski](https://github.com/djaglowski)
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).

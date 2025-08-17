@@ -35,7 +35,7 @@ func factory() (rcvr.Factory, *Config) {
 }
 
 func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
@@ -163,7 +163,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

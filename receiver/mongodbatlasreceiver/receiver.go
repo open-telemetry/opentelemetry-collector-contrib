@@ -130,7 +130,7 @@ func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstr
 			continue
 		}
 
-		if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
+		if err := s.processProject(ctx, time, org.Name, project, &projectCfg); err != nil {
 			s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
 		}
 	}

@@ -4,14 +4,22 @@
 package prometheusreceiver
 
 import (
-	"context"
+	"fmt"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/discovery/file"
+	"github.com/prometheus/prometheus/discovery/http"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -75,6 +83,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
 	assert.Equal(t, 5*time.Second, r0.TargetAllocator.Timeout)
 	assert.Equal(t, "client.crt", r0.TargetAllocator.TLS.CertFile)
+	assert.Equal(t, "client.key", r0.TargetAllocator.TLS.KeyFile)
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -190,7 +199,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
-	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	_, err = createMetricsReceiver(t.Context(), creationSet, cfg, nil)
 	require.NoError(t, err)
 	// We should have received a warning
 	assert.Equal(t, 1, observedLogs.Len())
@@ -398,4 +407,163 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.Error(t, xconfmap.Validate(cfg))
+}
+
+func TestReloadPromConfigSecretHandling(t *testing.T) {
+	// This test verifies that the Reload() method preserves secrets instead of
+	// corrupting them to "<secret>" placeholders. This is critical for authentication
+	// to work properly when using configurations with basic auth or bearer tokens.
+
+	tests := []struct {
+		name       string
+		configYAML string
+		checkFn    func(t *testing.T, dst *PromConfig)
+	}{
+		{
+			name: "basic auth password preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-basic-auth"
+    basic_auth:
+      username: "testuser"
+      password: "mysecretpassword"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-basic-auth", scrapeConfig.JobName)
+
+				// The critical check: ensure the password is not "<secret>"
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(scrapeConfig.HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "mysecretpassword", password, "password should preserve original value")
+				assert.Equal(t, "testuser", scrapeConfig.HTTPClientConfig.BasicAuth.Username)
+			},
+		},
+		{
+			name: "bearer token preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-bearer-token"
+    authorization:
+      type: "Bearer"
+      credentials: "mySecretBearerToken123"
+    static_configs:
+      - targets: ["localhost:9090"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-bearer-token", scrapeConfig.JobName)
+
+				// Check that bearer token is preserved
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.Authorization, "authorization should be configured")
+				credentials := string(scrapeConfig.HTTPClientConfig.Authorization.Credentials)
+				assert.Equal(t, "mySecretBearerToken123", credentials, "credentials should preserve original value")
+				assert.Equal(t, "Bearer", scrapeConfig.HTTPClientConfig.Authorization.Type)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Load the config using promconfig.Load to simulate real usage
+			initialCfg, err := promconfig.Load(tt.configYAML, slog.New(slog.NewTextHandler(os.Stderr, nil)))
+			require.NoError(t, err)
+
+			// Convert to PromConfig and test the Reload method
+			// The Reload method should preserve secrets and not corrupt them
+			dst := (*PromConfig)(initialCfg)
+			err = dst.Reload()
+			require.NoError(t, err)
+
+			// Verify that secrets are preserved
+			tt.checkFn(t, dst)
+		})
+	}
+}
+
+func TestReloadPromConfigStaticConfigsWithLabels(t *testing.T) {
+	createGroup := func(idxArr ...int) *targetgroup.Group {
+		g := &targetgroup.Group{}
+		g.Labels = promModel.LabelSet{}
+		for _, idx := range idxArr {
+			g.Targets = append(g.Targets, promModel.LabelSet{
+				promModel.AddressLabel:                    promModel.LabelValue(fmt.Sprint("localhost:", 8080+idx)),
+				promModel.LabelName(fmt.Sprint("k", idx)): promModel.LabelValue(fmt.Sprint("v", idx)),
+			})
+			g.Labels[promModel.LabelName(fmt.Sprint("label", idx))] = promModel.LabelValue(fmt.Sprint("value", idx))
+		}
+		return g
+	}
+	create := func() *PromConfig {
+		return &PromConfig{
+			ScrapeConfigs: []*promconfig.ScrapeConfig{
+				{
+					JobName: "test_job",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						&http.SDConfig{
+							URL:             "http://localhost:8080",
+							RefreshInterval: promModel.Duration(time.Second) * 5,
+							HTTPClientConfig: promConfig.HTTPClientConfig{
+								TLSConfig: promConfig.TLSConfig{
+									InsecureSkipVerify: true,
+								},
+							},
+						},
+						discovery.StaticConfig{
+							createGroup(1),
+						},
+						&file.SDConfig{
+							Files: []string{"targets.json"},
+						},
+						discovery.StaticConfig{
+							createGroup(2),
+						},
+						discovery.StaticConfig{
+							createGroup(3, 4),
+							createGroup(5, 6),
+						},
+					},
+				},
+				{
+					JobName: "another_job",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						discovery.StaticConfig{
+							createGroup(10),
+						},
+						&file.SDConfig{
+							Files: []string{"another_targets.json"},
+						},
+					},
+				},
+			},
+		}
+	}
+	promConfig := create()
+	assert.NoError(t, promConfig.Reload())
+
+	for _, sc := range promConfig.ScrapeConfigs {
+		for _, sd := range sc.ServiceDiscoveryConfigs {
+			sc, ok := sd.(discovery.StaticConfig)
+			if !ok {
+				continue
+			}
+			for _, tg := range sc {
+				for _, target := range tg.Targets {
+					// Ensure that the targets have the expected labels.
+					assert.NotEmpty(t, target[promModel.AddressLabel])
+					assert.Greater(t, len(target), 1, "target should have more than just address label")
+				}
+				assert.NotEmpty(t, tg.Labels, "target group should have labels")
+			}
+		}
+	}
+
+	data1, _ := yaml.Marshal(promConfig)
+	assert.NoError(t, promConfig.Reload())
+	data2, _ := yaml.Marshal(promConfig)
+	assert.Equal(t, string(data1), string(data2), "Reload should not change the config")
 }

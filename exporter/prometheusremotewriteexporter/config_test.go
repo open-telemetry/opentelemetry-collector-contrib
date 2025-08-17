@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
 				ClientConfig:                clientConfig,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-				TargetInfo: &TargetInfo{
+				TargetInfo: TargetInfo{
 					Enabled: true,
 				},
 				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,

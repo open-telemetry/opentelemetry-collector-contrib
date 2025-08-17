@@ -5,7 +5,6 @@ package prometheusreceiver
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	promTestUtil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/promslog"
@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
@@ -91,9 +90,9 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	require.NoError(t, err, "Failed to create Prometheus receiver")
 	receiver.skipOffsetting = true
 
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
 	t.Cleanup(func() {
-		require.NoError(t, receiver.Shutdown(context.Background()))
+		require.NoError(t, receiver.Shutdown(t.Context()))
 	})
 
 	metricsCount := 0

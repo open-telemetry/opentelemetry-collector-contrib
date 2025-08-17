@@ -4,7 +4,6 @@
 package statsreader
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -33,7 +32,7 @@ func createMetricsMetadata(query string) *metadata.MetricsMetadata {
 	return createMetricsMetadataFromTimestampColumn(query, "INTERVAL_END")
 }
 
-func createMetricsMetadataFromTimestampColumn(query string, timestampColumn string) *metadata.MetricsMetadata {
+func createMetricsMetadataFromTimestampColumn(query, timestampColumn string) *metadata.MetricsMetadata {
 	labelValueMetadata, _ := metadata.NewLabelValueMetadata("metric_label", "METRIC_LABEL",
 		metadata.StringValueType)
 	// Labels
@@ -122,7 +121,7 @@ func createIntervalStatsReaderWithMaxRowsLimit(client *spanner.Client, backfillE
 func TestStatsReaders_Read(t *testing.T) {
 	t.Skip("Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6318")
 	timestamp := shiftToStartOfMinute(time.Now().UTC())
-	ctx := context.Background()
+	ctx := t.Context()
 	server, err := spannertest.NewServer(":0")
 	require.NoError(t, err)
 	defer server.Close()

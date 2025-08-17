@@ -70,7 +70,7 @@ func Test_SliceToMap(t *testing.T) {
 			wantExecutionErr: "could not extract key from element: provided object does not contain the path [notfound]",
 		},
 		{
-			name:      "flat object with key path and value path",
+			name:      "flat object with both key and value path",
 			keyPath:   []string{"name"},
 			valuePath: []string{"value"},
 			value: func() any {
@@ -222,14 +222,6 @@ func Test_SliceToMap(t *testing.T) {
 			wantExecutionErr: "could not cast element 'unsupported' to map[string]any",
 		},
 		{
-			name:    "empty key path",
-			keyPath: []string{},
-			value: func() any {
-				return pcommon.NewMap()
-			},
-			wantConfigErr: "key path must contain at least one element",
-		},
-		{
 			name:      "mixed data types with invalid element",
 			keyPath:   []string{"name"},
 			valuePath: []string{"value"},
@@ -273,21 +265,129 @@ func Test_SliceToMap(t *testing.T) {
 				return m
 			},
 		},
+		{
+			name: "flat object with no key path and value path",
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				thing1 := m.PutEmptyMap("0")
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := m.PutEmptyMap("1")
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+
+				return m
+			},
+		},
+		{
+			name:      "flat object with only value path",
+			valuePath: []string{"value"},
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutInt("0", 2)
+				m.PutInt("1", 5)
+
+				return m
+			},
+		},
+		{
+			name: "nested object with no key path and value path",
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("name", "foo")
+				thing1.PutEmptyMap("value").PutStr("test", "x")
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("name", "bar")
+				thing2.PutEmptyMap("value").PutStr("test", "y")
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				thing1 := m.PutEmptyMap("0")
+				thing1.PutStr("name", "foo")
+				thing1.PutEmptyMap("value").PutStr("test", "x")
+
+				thing2 := m.PutEmptyMap("1")
+				thing2.PutStr("name", "bar")
+				thing2.PutEmptyMap("value").PutStr("test", "y")
+
+				return m
+			},
+		},
+		{
+			name:      "nested object with only value path",
+			valuePath: []string{"value"},
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("name", "foo")
+				thing1.PutEmptyMap("value").PutStr("test", "x")
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("name", "bar")
+				thing2.PutEmptyMap("value").PutStr("test", "y")
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				thing1 := m.PutEmptyMap("0")
+				thing1.PutStr("test", "x")
+				thing2 := m.PutEmptyMap("1")
+				thing2.PutStr("test", "y")
+
+				return m
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			keyPathOptional := ottl.Optional[[]string]{}
+			if len(tt.keyPath) > 0 {
+				keyPathOptional = ottl.NewTestingOptional(tt.keyPath)
+			}
+
 			valuePathOptional := ottl.Optional[[]string]{}
 
 			if len(tt.valuePath) > 0 {
 				valuePathOptional = ottl.NewTestingOptional(tt.valuePath)
 			}
+
 			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.value(), nil
 					},
 				},
-				KeyPath:   tt.keyPath,
+				KeyPath:   keyPathOptional,
 				ValuePath: valuePathOptional,
 			})
 

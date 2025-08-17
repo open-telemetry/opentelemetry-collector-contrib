@@ -120,8 +120,9 @@ datasources:
 
 The following settings are required:
 
-- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets. Make sure use either `latency_histogram_buckets` or `exponential_histogram_max_size`.
     - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+- `exponential_histogram_max_size`: (no default) the maximum number of buckets per positive or negative number range. 
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
 
 The following settings can be optionally configured:
@@ -141,8 +142,8 @@ The following settings can be optionally configured:
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: `60s`
-- `database_name_attribute`(DEPRECATED): the attribute name used to identify the database name from span attributes.
-  - Default: `db.name`
+- `metrics_timestamp_offset`: the offset to subtract from metric timestamps. If set to a positive duration, metric timestamps will be set to (current time - offset), effectively shifting metrics to appear as if they were generated in the past.
+  - Default: `0`
 - `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
   - Default: `[db.name]`
 

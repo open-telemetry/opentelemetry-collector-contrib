@@ -87,8 +87,9 @@ type Config struct {
 	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+	IncludeFileRecordOffset bool            `mapstructure:"include_file_record_offset,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
-	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
+	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
@@ -190,6 +191,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:       c.MaxBatches,
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
+		pollsToArchive:   c.PollsToArchive,
 	}, nil
 }
 

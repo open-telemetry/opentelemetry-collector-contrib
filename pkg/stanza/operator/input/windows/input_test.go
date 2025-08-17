@@ -6,7 +6,6 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -106,7 +105,7 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
@@ -131,7 +130,7 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _ *uint16, _ *uint16, _ uintptr, _ uintptr, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
 	}
 
@@ -213,8 +212,7 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	}
 
 	// Call the method under test
-	ctx := context.Background()
-	input.read(ctx)
+	input.read(t.Context())
 
 	// Verify the correct number of calls to each mock
 	assert.Equal(t, 2, nextCalls, "nextProc should be called twice (initial failure and retry)")
@@ -244,7 +242,6 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
 	persister := testutil.NewMockPersister("")
 	fake := testutil.NewFakeOutput(t)
 	input.OutputOperators = []operator.Operator{fake}
@@ -252,7 +249,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	err := input.Start(persister)
 	require.NoError(t, err)
 
-	err = input.sendEvent(ctx, eventXML)
+	err = input.sendEvent(t.Context(), eventXML)
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
@@ -310,7 +307,6 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
 	persister := testutil.NewMockPersister("")
 	fake := testutil.NewFakeOutput(t)
 	input.OutputOperators = []operator.Operator{fake}
@@ -318,7 +314,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	err := input.Start(persister)
 	require.NoError(t, err)
 
-	err = input.sendEvent(ctx, eventXML)
+	err = input.sendEvent(t.Context(), eventXML)
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{

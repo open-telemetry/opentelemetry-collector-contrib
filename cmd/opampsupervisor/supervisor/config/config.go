@@ -7,20 +7,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
@@ -32,6 +37,7 @@ type Supervisor struct {
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -61,7 +67,7 @@ func Load(configFile string) (Supervisor, error) {
 	}
 
 	cfg := DefaultSupervisor()
-	if err = conf.Unmarshal(&cfg); err != nil {
+	if err := conf.Unmarshal(&cfg); err != nil {
 		return Supervisor{}, err
 	}
 
@@ -78,6 +84,10 @@ func (s Supervisor) Validate() error {
 	}
 
 	if err := s.Agent.Validate(); err != nil {
+		return err
+	}
+
+	if err := s.HealthCheck.Validate(); err != nil {
 		return err
 	}
 
@@ -187,6 +197,7 @@ type Agent struct {
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -218,7 +229,34 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	for _, file := range a.ConfigFiles {
+		if !strings.HasPrefix(file, "$") {
+			continue
+		}
+		if !slices.Contains(SpecialConfigFiles, SpecialConfigFile(file)) {
+			return fmt.Errorf("agent::config_files contains invalid special file: %q. Must be one of %v", file, SpecialConfigFiles)
+		}
+	}
+
+	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
+		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
 	return nil
+}
+
+type SpecialConfigFile string
+
+const (
+	SpecialConfigFileOwnTelemetry   SpecialConfigFile = "$OWN_TELEMETRY_CONFIG"
+	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
+	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
+)
+
+var SpecialConfigFiles = []SpecialConfigFile{
+	SpecialConfigFileOwnTelemetry,
+	SpecialConfigFileOpAMPExtension,
+	SpecialConfigFileRemoteConfig,
 }
 
 type AgentDescription struct {
@@ -229,11 +267,35 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs    Logs                   `mapstructure:"logs"`
-	Metrics Metrics                `mapstructure:"metrics"`
-	Traces  telemetry.TracesConfig `mapstructure:"traces"`
+	Logs    Logs                           `mapstructure:"logs"`
+	Metrics Metrics                        `mapstructure:"metrics"`
+	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
+}
+
+type HealthCheck struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
+}
+
+func (h HealthCheck) Port() int64 {
+	_, port, err := net.SplitHostPort(h.Endpoint)
+	if err != nil {
+		return 0
+	}
+	parsedPort, err := strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return parsedPort
+}
+
+func (h HealthCheck) Validate() error {
+	parsedPort := h.Port()
+	if parsedPort < 0 || parsedPort > 65535 {
+		return fmt.Errorf("healthcheck::endpoint must contain a valid port number, got %d", parsedPort)
+	}
+	return nil
 }
 
 type Logs struct {

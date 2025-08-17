@@ -59,6 +59,6 @@ func (sds *stefDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, sds.GetEndpoint())
 }
 
-func (sds *stefDataSender) ProtocolName() string {
+func (*stefDataSender) ProtocolName() string {
 	return "stef"
 }

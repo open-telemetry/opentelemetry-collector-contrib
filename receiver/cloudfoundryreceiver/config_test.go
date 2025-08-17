@@ -163,7 +163,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 	return configuration
 }
 
-func checkTypeFieldMatch(t *testing.T, fieldName string, localType reflect.Type, standardType reflect.Type) {
+func checkTypeFieldMatch(t *testing.T, fieldName string, localType, standardType reflect.Type) {
 	localField, localFieldPresent := localType.FieldByName(fieldName)
 	standardField, standardFieldPresent := standardType.FieldByName(fieldName)
 

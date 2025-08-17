@@ -47,14 +47,14 @@ func Test_HasSuffix(t *testing.T) {
 				ottl.FunctionContext{},
 				&HasSuffixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
 						},
 					},
 					Suffix: tt.suffix,
 				})
 			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -63,12 +63,12 @@ func Test_HasSuffix(t *testing.T) {
 
 func Test_HasSuffix_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return true, nil
 		},
 	}
 	exprFunc, err := HasSuffix[any](target, "test")
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }

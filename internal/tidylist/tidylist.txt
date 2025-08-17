@@ -124,12 +124,9 @@ internal/kafka
 pkg/batchpersignal
 pkg/kafka/topic
 exporter/kafkaexporter
-exporter/kineticaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
-pkg/translator/loki
-exporter/lokiexporter
 exporter/mezmoexporter
 exporter/opensearchexporter
 internal/grpcutil
@@ -149,6 +146,7 @@ exporter/sentryexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
+exporter/tinybirdexporter
 extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
@@ -204,6 +202,7 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
+pkg/translator/loki
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -215,6 +214,7 @@ processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/intervalprocessor
+processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
 processor/metricsgenerationprocessor

@@ -72,7 +72,7 @@ type dockerLabelMatcher struct {
 	exportSetting *commonExportSetting
 }
 
-func (d *dockerLabelMatcher) matcherType() matcherType {
+func (*dockerLabelMatcher) matcherType() matcherType {
 	return matcherTypeDockerLabel
 }
 
@@ -98,7 +98,7 @@ func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c ecstypes.Container
 	// Checks if the task does have the container port
 	portExists := false
 	for _, portMapping := range c.PortMappings {
-		if aws.ToInt32(portMapping.ContainerPort) == int32(port) {
+		if int64(aws.ToInt32(portMapping.ContainerPort)) == port {
 			portExists = true
 			break
 		}

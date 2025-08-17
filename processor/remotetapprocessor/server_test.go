@@ -4,7 +4,6 @@
 package remotetapprocessor
 
 import (
-	"context"
 	"net"
 	"testing"
 	"time"
@@ -30,10 +29,10 @@ func TestSocketConnectionLogs(t *testing.T) {
 		Limit: 1,
 	}
 	logSink := &consumertest.LogsSink{}
-	processor, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
+	processor, err := NewFactory().CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		logSink)
 	require.NoError(t, err)
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12001")
 	require.NoError(t, err)
@@ -43,18 +42,18 @@ func TestSocketConnectionLogs(t *testing.T) {
 	require.NoError(t, err)
 	log := plog.NewLogs()
 	log.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("foo")
-	err = processor.ConsumeLogs(context.Background(), log)
+	err = processor.ConsumeLogs(t.Context(), log)
 	require.NoError(t, err)
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeLogs(context.Background(), log)
+		err = processor.ConsumeLogs(t.Context(), log)
 		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
-		return n == 132
+		return n == 107
 	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"},"traceId":"","spanId":""}]}]}]}`, string(buf[0:132]))
+	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"}}]}]}]}`, string(buf[0:107]))
 
-	err = processor.Shutdown(context.Background())
+	err = processor.Shutdown(t.Context())
 	require.NoError(t, err)
 	err = rawConn.Close()
 	require.NoError(t, err)
@@ -68,10 +67,10 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		Limit: 1,
 	}
 	metricsSink := &consumertest.MetricsSink{}
-	processor, err := NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
+	processor, err := NewFactory().CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		metricsSink)
 	require.NoError(t, err)
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12002")
 	require.NoError(t, err)
@@ -83,14 +82,14 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeMetrics(context.Background(), metric)
+		err = processor.ConsumeMetrics(t.Context(), metric)
 		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 94
 	}, 1*time.Second, 100*time.Millisecond, "received message")
 	require.JSONEq(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
 
-	err = processor.Shutdown(context.Background())
+	err = processor.Shutdown(t.Context())
 	require.NoError(t, err)
 	err = rawConn.Close()
 	require.NoError(t, err)
@@ -104,10 +103,10 @@ func TestSocketConnectionTraces(t *testing.T) {
 		Limit: 1,
 	}
 	tracesSink := &consumertest.TracesSink{}
-	processor, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
+	processor, err := NewFactory().CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		tracesSink)
 	require.NoError(t, err)
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12003")
 	require.NoError(t, err)
@@ -119,14 +118,14 @@ func TestSocketConnectionTraces(t *testing.T) {
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeTraces(context.Background(), trace)
+		err = processor.ConsumeTraces(t.Context(), trace)
 		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
-		return n == 143
+		return n == 100
 	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"foo","status":{}}]}]}]}`, string(buf[0:143]))
+	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
 
-	err = processor.Shutdown(context.Background())
+	err = processor.Shutdown(t.Context())
 	require.NoError(t, err)
 	err = rawConn.Close()
 	require.NoError(t, err)

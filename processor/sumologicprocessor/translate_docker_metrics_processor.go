@@ -80,7 +80,7 @@ func newTranslateDockerMetricsProcessor(shouldTranslate bool) *translateDockerMe
 	}
 }
 
-func (proc *translateDockerMetricsProcessor) processLogs(_ plog.Logs) error {
+func (*translateDockerMetricsProcessor) processLogs(plog.Logs) error {
 	// No-op, this subprocessor doesn't process logs.
 	return nil
 }
@@ -106,7 +106,7 @@ func (proc *translateDockerMetricsProcessor) processMetrics(metrics pmetric.Metr
 	return nil
 }
 
-func (proc *translateDockerMetricsProcessor) processTraces(_ ptrace.Traces) error {
+func (*translateDockerMetricsProcessor) processTraces(ptrace.Traces) error {
 	// No-op, this subprocessor doesn't process traces.
 	return nil
 }
