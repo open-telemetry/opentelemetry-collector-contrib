@@ -40,7 +40,7 @@ func TestScrape(t *testing.T) {
 				Temperature: &TemperatureConfig{
 					Include: MatchConfig{
 						Config:  filterset.Config{MatchType: filterset.Regexp},
-						Sensors: []string{"temp*"},
+						Sensors: []string{".*"},
 					},
 				},
 			},
@@ -54,12 +54,11 @@ func TestScrape(t *testing.T) {
 				Temperature: &TemperatureConfig{
 					Include: MatchConfig{
 						Config:  filterset.Config{MatchType: filterset.Regexp},
-						Sensors: []string{"temp*"},
+						Sensors: []string{".*"},
 					},
 				},
 			},
 			expectedMetricCount: 0,
-			expectedErr:         "hwmon not available",
 		},
 		{
 			name: "No temperature config",
@@ -102,7 +101,7 @@ func TestScrapeOnNonLinux(t *testing.T) {
 		HwmonPath:            "/sys/class/hwmon",
 		Temperature: &TemperatureConfig{
 			Include: MatchConfig{
-				Sensors: []string{"temp*"},
+				Sensors: []string{".*"},
 			},
 		},
 	}

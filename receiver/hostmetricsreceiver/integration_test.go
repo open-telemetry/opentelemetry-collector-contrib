@@ -118,7 +118,7 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 	).Run(t)
 }
 
-func Test_HwScrapeWithCustomHwmonPath(t *testing.T) {
+func Test_HwScrape(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "e2e", "expected_hw.yaml")
 	hwmonPath := filepath.Join("testdata", "e2e", "sys", "class", "hwmon")
 
@@ -131,7 +131,8 @@ func Test_HwScrapeWithCustomHwmonPath(t *testing.T) {
 				f := hwscraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
 				hCfg.HwmonPath = hwmonPath
-				hCfg.Temperature.Include.Sensors = []string{"temp*"}
+				hCfg.Temperature.Include.Sensors = []string{".*"}
+				hCfg.MetricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled = true
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,
 				}
@@ -159,7 +160,7 @@ func Test_HwScrapeWithSensorFiltering(t *testing.T) {
 				f := hwscraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
 				hCfg.HwmonPath = hwmonPath
-				hCfg.Temperature.Include.Sensors = []string{"temp1"}
+				hCfg.Temperature.Include.Sensors = []string{"Composite"}
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,
 				}

@@ -41,18 +41,17 @@ func TestHwTemperatureScraperStart_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 		},
 		{
-			name:        "Invalid hwmon path",
-			hwmonPath:   "/nonexistent/path",
-			expectedErr: "hwmon not available",
+			name:      "Invalid hwmon path",
+			hwmonPath: "/nonexistent/path",
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 		},
@@ -76,7 +75,7 @@ func TestHwTemperatureScraperStart_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 				Exclude: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
@@ -141,7 +140,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
@@ -153,7 +152,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 			metricsConfig:       allEnabledMetrics,
@@ -165,7 +164,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 			metricsConfig:       disabledTempMetric,
@@ -177,7 +176,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 			metricsConfig:       disabledLimitMetric,
@@ -189,7 +188,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 			},
 			metricsConfig:       disabledStatusMetric,
@@ -201,7 +200,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 			config: &TemperatureConfig{
 				Include: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Regexp},
-					Sensors: []string{"temp*"},
+					Sensors: []string{".*"},
 				},
 				Exclude: MatchConfig{
 					Config:  filterset.Config{MatchType: filterset.Strict},

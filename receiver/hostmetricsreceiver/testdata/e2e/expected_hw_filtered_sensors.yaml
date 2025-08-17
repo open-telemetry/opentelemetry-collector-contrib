@@ -7,25 +7,6 @@ resourceMetrics:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper
           version: latest
         metrics:
-          - name: hw.temperature
-            description: Temperature in degrees Celsius.
-            unit: Cel
-            gauge:
-              dataPoints:
-                - asDouble: 30
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: mysterious_device_temp1
-                    - key: name
-                      value:
-                        stringValue: temp1
-                    - key: parent
-                      value:
-                        stringValue: mysterious_device
-                    - key: sensor_location
-                      value:
-                        stringValue: MYSTERIOUS_DEVICE_TEMP1
           - name: hw.status
             description: "Operational status: 1 (true) or 0 (false) for each of the possible states."
             unit: "1"
@@ -35,13 +16,13 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: mysterious_device_temp1
+                        stringValue: nvme_temp1
                     - key: name
                       value:
-                        stringValue: temp1
+                        stringValue: Composite
                     - key: parent
                       value:
-                        stringValue: mysterious_device
+                        stringValue: nvme
                     - key: state
                       value:
                         stringValue: ok
@@ -52,13 +33,13 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: mysterious_device_temp1
+                        stringValue: nvme_temp1
                     - key: name
                       value:
-                        stringValue: temp1
+                        stringValue: Composite
                     - key: parent
                       value:
-                        stringValue: mysterious_device
+                        stringValue: nvme
                     - key: state
                       value:
                         stringValue: degraded
@@ -69,13 +50,13 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: mysterious_device_temp1
+                        stringValue: nvme_temp1
                     - key: name
                       value:
-                        stringValue: temp1
+                        stringValue: Composite
                     - key: parent
                       value:
-                        stringValue: mysterious_device
+                        stringValue: nvme
                     - key: state
                       value:
                         stringValue: failed
@@ -86,13 +67,13 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: mysterious_device_temp1
+                        stringValue: nvme_temp1
                     - key: name
                       value:
-                        stringValue: temp1
+                        stringValue: Composite
                     - key: parent
                       value:
-                        stringValue: mysterious_device
+                        stringValue: nvme
                     - key: state
                       value:
                         stringValue: needs_cleaning
@@ -103,13 +84,13 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: mysterious_device_temp1
+                        stringValue: nvme_temp1
                     - key: name
                       value:
-                        stringValue: temp1
+                        stringValue: Composite
                     - key: parent
                       value:
-                        stringValue: mysterious_device
+                        stringValue: nvme
                     - key: state
                       value:
                         stringValue: predicted_failure
@@ -118,3 +99,22 @@ resourceMetrics:
                         stringValue: temperature
               aggregationTemporality: 2
               isMonotonic: false
+          - name: hw.temperature
+            description: Temperature in degrees Celsius.
+            unit: Cel
+            gauge:
+              dataPoints:
+                - asDouble: 55
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: sensor_location
+                      value:
+                        stringValue: NVME_TEMP1

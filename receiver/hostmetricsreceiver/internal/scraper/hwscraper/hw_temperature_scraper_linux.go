@@ -58,8 +58,9 @@ func (s *hwTemperatureScraper) start(_ context.Context) error {
 	}
 
 	if _, statErr := os.Stat(s.hwmonPath); os.IsNotExist(statErr) {
-		s.logger.Error("hwmon path does not exist", zap.String("path", s.hwmonPath))
-		return ErrHWMonUnavailable
+		s.logger.Debug("hwmon path does not exist, no sensors will be available", zap.String("path", s.hwmonPath))
+		s.sensors = []sensorInfo{} // Empty sensors list
+		return nil
 	}
 
 	s.sensors, err = s.scanTemperatureSensors()
@@ -73,6 +74,10 @@ func (s *hwTemperatureScraper) start(_ context.Context) error {
 func (s *hwTemperatureScraper) scrape(_ context.Context, mb *metadata.MetricsBuilder) error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var errors scrapererror.ScrapeErrors
+
+	if s.sensors == nil {
+		return nil
+	}
 
 	if s.metricsBuilderConfig.Metrics.HwTemperature.Enabled {
 		for _, sensor := range s.sensors {
