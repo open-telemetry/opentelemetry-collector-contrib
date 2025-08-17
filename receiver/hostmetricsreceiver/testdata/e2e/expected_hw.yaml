@@ -1,0 +1,143 @@
+resourceMetrics:
+  - resource:
+      attributes: []
+    scopeMetrics:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper
+        metrics:
+          - name: hw.temperature
+            description: Temperature in degrees Celsius.
+            unit: Cel
+            gauge:
+              dataPoints:
+                - asDouble: 45
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: coretemp_Core 0
+                    - key: name
+                      value:
+                        stringValue: coretemp Core 0
+                    - key: parent
+                      value:
+                        stringValue: coretemp
+                    - key: sensor_location
+                      value:
+                        stringValue: Core 0
+                - asDouble: 47
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: coretemp_Core 1
+                    - key: name
+                      value:
+                        stringValue: coretemp Core 1
+                    - key: parent
+                      value:
+                        stringValue: coretemp
+                    - key: sensor_location
+                      value:
+                        stringValue: Core 1
+                - asDouble: 65
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvidia_GPU
+                    - key: name
+                      value:
+                        stringValue: nvidia GPU
+                    - key: parent
+                      value:
+                        stringValue: nvidia
+                    - key: sensor_location
+                      value:
+                        stringValue: GPU
+                - asDouble: 30
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: mysterious_device_temp1
+                    - key: name
+                      value:
+                        stringValue: mysterious_device temp1
+                    - key: parent
+                      value:
+                        stringValue: mysterious_device
+                    - key: sensor_location
+                      value:
+                        stringValue: temp1
+          - name: hw.status
+            description: "Operational status: 1 (true) or 0 (false) for each of the possible states."
+            unit: "1"
+            sum:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: coretemp_Core 0
+                    - key: name
+                      value:
+                        stringValue: coretemp Core 0
+                    - key: parent
+                      value:
+                        stringValue: coretemp
+                    - key: state
+                      value:
+                        stringValue: ok
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "1"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: coretemp_Core 1
+                    - key: name
+                      value:
+                        stringValue: coretemp Core 1
+                    - key: parent
+                      value:
+                        stringValue: coretemp
+                    - key: state
+                      value:
+                        stringValue: ok
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "1"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvidia_GPU
+                    - key: name
+                      value:
+                        stringValue: nvidia GPU
+                    - key: parent
+                      value:
+                        stringValue: nvidia
+                    - key: state
+                      value:
+                        stringValue: ok
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "1"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: mysterious_device_temp1
+                    - key: name
+                      value:
+                        stringValue: mysterious_device temp1
+                    - key: parent
+                      value:
+                        stringValue: mysterious_device
+                    - key: state
+                      value:
+                        stringValue: ok
+                    - key: type
+                      value:
+                        stringValue: temperature
+              aggregationTemporality: 2
+              isMonotonic: false

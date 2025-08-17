@@ -1,0 +1,17 @@
+default:
+all_set:
+  metrics:
+    hw.status:
+      enabled: true
+    hw.temperature:
+      enabled: true
+    hw.temperature.limit:
+      enabled: true
+none_set:
+  metrics:
+    hw.status:
+      enabled: false
+    hw.temperature:
+      enabled: false
+    hw.temperature.limit:
+      enabled: false
