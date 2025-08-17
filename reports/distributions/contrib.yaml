@@ -244,6 +244,7 @@ components:
         - memory
         - network
         - nfs
+        - hw
         - paging
         - process
         - processes

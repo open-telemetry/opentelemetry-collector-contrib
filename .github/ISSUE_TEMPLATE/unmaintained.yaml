@@ -256,6 +256,7 @@ body:
       - receiver/hostmetrics/internal/scraper/cpuscraper
       - receiver/hostmetrics/internal/scraper/diskscraper
       - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/hwscraper
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
