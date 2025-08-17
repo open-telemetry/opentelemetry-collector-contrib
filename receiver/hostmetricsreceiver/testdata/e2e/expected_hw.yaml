@@ -7,67 +7,6 @@ resourceMetrics:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper
           version: latest
         metrics:
-          - name: hw.temperature
-            description: Temperature in degrees Celsius.
-            unit: Cel
-            gauge:
-              dataPoints:
-                - asDouble: 45
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: coretemp_temp1
-                    - key: name
-                      value:
-                        stringValue: Core 0
-                    - key: parent
-                      value:
-                        stringValue: coretemp
-                    - key: sensor_location
-                      value:
-                        stringValue: CORETEMP_TEMP1
-                - asDouble: 47
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: coretemp_temp2
-                    - key: name
-                      value:
-                        stringValue: Core 1
-                    - key: parent
-                      value:
-                        stringValue: coretemp
-                    - key: sensor_location
-                      value:
-                        stringValue: CORETEMP_TEMP2
-                - asDouble: 65
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: nvidia_temp1
-                    - key: name
-                      value:
-                        stringValue: GPU
-                    - key: parent
-                      value:
-                        stringValue: nvidia
-                    - key: sensor_location
-                      value:
-                        stringValue: NVIDIA_TEMP1
-                - asDouble: 30
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: mysterious_device_temp1
-                    - key: name
-                      value:
-                        stringValue: temp1
-                    - key: parent
-                      value:
-                        stringValue: mysterious_device
-                    - key: sensor_location
-                      value:
-                        stringValue: MYSTERIOUS_DEVICE_TEMP1
           - name: hw.status
             description: "Operational status: 1 (true) or 0 (false) for each of the possible states."
             unit: "1"
@@ -77,16 +16,84 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: coretemp_temp1
+                        stringValue: nvme_temp1
                     - key: name
                       value:
-                        stringValue: Core 0
+                        stringValue: Composite
                     - key: parent
                       value:
-                        stringValue: coretemp
+                        stringValue: nvme
                     - key: state
                       value:
                         stringValue: ok
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: state
+                      value:
+                        stringValue: degraded
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: state
+                      value:
+                        stringValue: failed
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: state
+                      value:
+                        stringValue: needs_cleaning
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: state
+                      value:
+                        stringValue: predicted_failure
                     - key: type
                       value:
                         stringValue: temperature
@@ -94,52 +101,175 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: coretemp_temp2
+                        stringValue: amdgpu_temp1
                     - key: name
                       value:
-                        stringValue: Core 1
+                        stringValue: edge
                     - key: parent
                       value:
-                        stringValue: coretemp
+                        stringValue: amdgpu
                     - key: state
                       value:
                         stringValue: ok
                     - key: type
                       value:
                         stringValue: temperature
-                - asInt: "1"
+                - asInt: "0"
                   attributes:
                     - key: id
                       value:
-                        stringValue: nvidia_temp1
+                        stringValue: amdgpu_temp1
                     - key: name
                       value:
-                        stringValue: GPU
+                        stringValue: edge
                     - key: parent
                       value:
-                        stringValue: nvidia
+                        stringValue: amdgpu
                     - key: state
                       value:
-                        stringValue: ok
+                        stringValue: degraded
                     - key: type
                       value:
                         stringValue: temperature
-                - asInt: "1"
+                - asInt: "0"
                   attributes:
                     - key: id
                       value:
-                        stringValue: mysterious_device_temp1
+                        stringValue: amdgpu_temp1
                     - key: name
                       value:
-                        stringValue: temp1
+                        stringValue: edge
                     - key: parent
                       value:
-                        stringValue: mysterious_device
+                        stringValue: amdgpu
                     - key: state
                       value:
-                        stringValue: ok
+                        stringValue: failed
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: amdgpu_temp1
+                    - key: name
+                      value:
+                        stringValue: edge
+                    - key: parent
+                      value:
+                        stringValue: amdgpu
+                    - key: state
+                      value:
+                        stringValue: needs_cleaning
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: amdgpu_temp1
+                    - key: name
+                      value:
+                        stringValue: edge
+                    - key: parent
+                      value:
+                        stringValue: amdgpu
+                    - key: state
+                      value:
+                        stringValue: predicted_failure
                     - key: type
                       value:
                         stringValue: temperature
               aggregationTemporality: 2
               isMonotonic: false
+          - name: hw.temperature
+            description: Temperature in degrees Celsius.
+            unit: Cel
+            gauge:
+              dataPoints:
+                - asDouble: 55
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: sensor_location
+                      value:
+                        stringValue: NVME_TEMP1
+                - asDouble: 72
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: amdgpu_temp1
+                    - key: name
+                      value:
+                        stringValue: edge
+                    - key: parent
+                      value:
+                        stringValue: amdgpu
+                    - key: sensor_location
+                      value:
+                        stringValue: AMDGPU_TEMP1
+          - name: hw.temperature.limit
+            description: Temperature limit in degrees Celsius.
+            unit: Cel
+            gauge:
+              dataPoints:
+                - asDouble: 100
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: limit_type
+                      value:
+                        stringValue: high.critical
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: sensor_location
+                      value:
+                        stringValue: NVME_TEMP1
+                - asDouble: 85
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: nvme_temp1
+                    - key: limit_type
+                      value:
+                        stringValue: high.degraded
+                    - key: name
+                      value:
+                        stringValue: Composite
+                    - key: parent
+                      value:
+                        stringValue: nvme
+                    - key: sensor_location
+                      value:
+                        stringValue: NVME_TEMP1
+                - asDouble: 95
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: amdgpu_temp1
+                    - key: limit_type
+                      value:
+                        stringValue: high.critical
+                    - key: name
+                      value:
+                        stringValue: edge
+                    - key: parent
+                      value:
+                        stringValue: amdgpu
+                    - key: sensor_location
+                      value:
+                        stringValue: AMDGPU_TEMP1
