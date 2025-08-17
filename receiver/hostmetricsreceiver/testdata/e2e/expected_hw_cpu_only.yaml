@@ -11,48 +11,6 @@ resourceMetrics:
             unit: Cel
             gauge:
               dataPoints:
-                - asDouble: 45
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: coretemp_temp1
-                    - key: name
-                      value:
-                        stringValue: Core 0
-                    - key: parent
-                      value:
-                        stringValue: coretemp
-                    - key: sensor_location
-                      value:
-                        stringValue: CORETEMP_TEMP1
-                - asDouble: 47
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: coretemp_temp2
-                    - key: name
-                      value:
-                        stringValue: Core 1
-                    - key: parent
-                      value:
-                        stringValue: coretemp
-                    - key: sensor_location
-                      value:
-                        stringValue: CORETEMP_TEMP2
-                - asDouble: 65
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: nvidia_temp1
-                    - key: name
-                      value:
-                        stringValue: GPU
-                    - key: parent
-                      value:
-                        stringValue: nvidia
-                    - key: sensor_location
-                      value:
-                        stringValue: NVIDIA_TEMP1
                 - asDouble: 30
                   attributes:
                     - key: id
@@ -76,54 +34,20 @@ resourceMetrics:
                   attributes:
                     - key: id
                       value:
-                        stringValue: coretemp_temp1
+                        stringValue: mysterious_device_temp1
                     - key: name
                       value:
-                        stringValue: Core 0
+                        stringValue: temp1
                     - key: parent
                       value:
-                        stringValue: coretemp
+                        stringValue: mysterious_device
                     - key: state
                       value:
                         stringValue: ok
                     - key: type
                       value:
                         stringValue: temperature
-                - asInt: "1"
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: coretemp_temp2
-                    - key: name
-                      value:
-                        stringValue: Core 1
-                    - key: parent
-                      value:
-                        stringValue: coretemp
-                    - key: state
-                      value:
-                        stringValue: ok
-                    - key: type
-                      value:
-                        stringValue: temperature
-                - asInt: "1"
-                  attributes:
-                    - key: id
-                      value:
-                        stringValue: nvidia_temp1
-                    - key: name
-                      value:
-                        stringValue: GPU
-                    - key: parent
-                      value:
-                        stringValue: nvidia
-                    - key: state
-                      value:
-                        stringValue: ok
-                    - key: type
-                      value:
-                        stringValue: temperature
-                - asInt: "1"
+                - asInt: "0"
                   attributes:
                     - key: id
                       value:
@@ -136,7 +60,58 @@ resourceMetrics:
                         stringValue: mysterious_device
                     - key: state
                       value:
-                        stringValue: ok
+                        stringValue: degraded
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: mysterious_device_temp1
+                    - key: name
+                      value:
+                        stringValue: temp1
+                    - key: parent
+                      value:
+                        stringValue: mysterious_device
+                    - key: state
+                      value:
+                        stringValue: failed
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: mysterious_device_temp1
+                    - key: name
+                      value:
+                        stringValue: temp1
+                    - key: parent
+                      value:
+                        stringValue: mysterious_device
+                    - key: state
+                      value:
+                        stringValue: needs_cleaning
+                    - key: type
+                      value:
+                        stringValue: temperature
+                - asInt: "0"
+                  attributes:
+                    - key: id
+                      value:
+                        stringValue: mysterious_device_temp1
+                    - key: name
+                      value:
+                        stringValue: temp1
+                    - key: parent
+                      value:
+                        stringValue: mysterious_device
+                    - key: state
+                      value:
+                        stringValue: predicted_failure
                     - key: type
                       value:
                         stringValue: temperature
