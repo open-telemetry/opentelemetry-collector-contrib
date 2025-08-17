@@ -5,6 +5,7 @@ resourceMetrics:
     scopeMetrics:
       - scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper
+          version: latest
         metrics:
           - name: hw.temperature
             description: Temperature in degrees Celsius.
