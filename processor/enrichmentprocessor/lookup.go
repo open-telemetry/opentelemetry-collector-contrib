@@ -61,7 +61,7 @@ func (l *Lookup) SetAll(data [][]string, headerIndex map[string]int, indexFields
 }
 
 // Lookup performs a lookup for the given key and returns matched row and index
-func (l *Lookup) Lookup(ctx context.Context, headerName string, value string) (enrichmentRow []string, headerIndex map[string]int, err error) {
+func (l *Lookup) Lookup(ctx context.Context, headerName, value string) (enrichmentRow []string, headerIndex map[string]int, err error) {
 	l.mutex.RLock()
 	defer l.mutex.RUnlock()
 

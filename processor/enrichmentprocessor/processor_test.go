@@ -30,7 +30,7 @@ func NewMockDataSource(data [][]string, headerIndex map[string]int, indexFields 
 	}
 }
 
-func (m *MockDataSource) Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error) {
+func (m *MockDataSource) Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
 	return m.lookup.Lookup(ctx, lookupField, key)
 }
 

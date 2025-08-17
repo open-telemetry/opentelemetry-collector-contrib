@@ -20,7 +20,7 @@ import (
 // DataSource represents an external data source for enrichment
 type DataSource interface {
 	// Lookup performs a lookup for the given key and returns enrichment data
-	Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error)
+	Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error)
 
 	// Start starts the data source (e.g., periodic refresh)
 	Start(ctx context.Context) error
@@ -91,7 +91,7 @@ func (h *HTTPDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (h *HTTPDataSource) Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error) {
+func (h *HTTPDataSource) Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
 	return h.lookup.Lookup(ctx, lookupField, key)
 }
 
@@ -302,7 +302,7 @@ func (f *FileDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (f *FileDataSource) Lookup(ctx context.Context, lookupField string, key string) (enrichmentRow []string, index map[string]int, err error) {
+func (f *FileDataSource) Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
 	return f.lookup.Lookup(ctx, lookupField, key)
 }
 
