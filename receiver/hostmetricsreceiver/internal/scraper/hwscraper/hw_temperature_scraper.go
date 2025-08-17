@@ -26,6 +26,6 @@ func (s *hwTemperatureScraper) start(_ context.Context) error {
 	return ErrHWMonUnavailable
 }
 
-func (s *hwTemperatureScraper) scrape(_ context.Context, _ *metadata.MetricsBuilder) error {
+func (*hwTemperatureScraper) scrape(_ context.Context, _ *metadata.MetricsBuilder) error {
 	return ErrHWMonUnavailable
 }

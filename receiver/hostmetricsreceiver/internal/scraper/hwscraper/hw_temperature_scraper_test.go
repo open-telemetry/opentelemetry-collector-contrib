@@ -6,7 +6,6 @@
 package hwscraper
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,10 +16,6 @@ import (
 )
 
 func TestHwTemperatureScraperStart(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("Test is for non-Linux platforms")
-	}
-
 	scraper := &hwTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
@@ -34,10 +29,6 @@ func TestHwTemperatureScraperStart(t *testing.T) {
 }
 
 func TestHwTemperatureScraperScrape(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("Test is for non-Linux platforms")
-	}
-
 	scraper := &hwTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
