@@ -3,6 +3,9 @@ on:
   pull_request:
     types: [opened]
 
+permissions:
+  contents: read
+
 jobs:
   welcome_first_contributor:
     runs-on: ubuntu-latest
