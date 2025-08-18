@@ -76,7 +76,8 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 	rmds := make([]*reader.Metadata, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
 		rmd := new(reader.Metadata)
-		if err = dec.Decode(rmd); err != nil {
+		err = dec.Decode(rmd)
+		if err != nil {
 			return nil, err
 		}
 		if rmd.FileAttributes == nil {

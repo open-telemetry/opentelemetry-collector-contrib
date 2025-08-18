@@ -28,7 +28,7 @@ func newLogFileContent(b *testing.B, nLogs int) io.Reader {
 	for i := 0; i < nLogs; i++ {
 		buf.Write(data)
 		if i != nLogs-1 {
-			buf.Write([]byte("\n"))
+			buf.WriteString("\n")
 		}
 	}
 

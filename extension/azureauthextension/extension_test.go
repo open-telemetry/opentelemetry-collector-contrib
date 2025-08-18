@@ -29,7 +29,7 @@ func TestGetToken(t *testing.T) {
 	auth := authenticator{
 		credential: &m,
 	}
-	_, err := auth.GetToken(context.Background(), policy.TokenRequestOptions{})
+	_, err := auth.GetToken(t.Context(), policy.TokenRequestOptions{})
 	require.NoError(t, err)
 }
 
@@ -132,7 +132,7 @@ func TestAuthenticate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := auth.Authenticate(context.Background(), test.headers)
+			_, err := auth.Authenticate(t.Context(), test.headers)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -209,7 +209,7 @@ type mockTokenCredential struct {
 
 var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 
-func (m *mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+func (m *mockTokenCredential) GetToken(context.Context, policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	args := m.Called()
 	return args.Get(0).(azcore.AccessToken), args.Error(1)
 }

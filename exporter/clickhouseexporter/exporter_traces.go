@@ -169,7 +169,7 @@ func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []str
 	return
 }
 
-func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []string, states []string, attrs []column.IterableOrderedMap) {
+func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []string, attrs []column.IterableOrderedMap) {
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))

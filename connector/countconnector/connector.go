@@ -40,7 +40,7 @@ type count struct {
 	profilesMetricDefs   map[string]metricDef[ottlprofile.TransformContext]
 }
 
-func (c *count) Capabilities() consumer.Capabilities {
+func (*count) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

@@ -67,11 +67,9 @@ body:
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
-      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
@@ -199,6 +197,7 @@ body:
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
+      - processor/isolationforest
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform

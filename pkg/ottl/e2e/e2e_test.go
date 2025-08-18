@@ -4,7 +4,6 @@
 package e2e
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -359,7 +358,7 @@ func Test_e2e_editors(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContextEditors()
-				_, _, _ = statement.Execute(context.Background(), tCtx)
+				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructLogTransformContextEditors()
 				tt.want(exTCtx)
@@ -556,6 +555,24 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(body, ConvertTextToElementsXML("<a><b/>foo</a><c><b/>bar</c>", "/a", "custom"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Body().SetStr("<a><b></b><custom>foo</custom></a><c><b></b>bar</c>")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseInt("0xAF", 0))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 175)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseInt("12345", 10))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 12345)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseInt("AF", 16))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 175)
 			},
 		},
 		{
@@ -881,6 +898,16 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(Values({"key1": true, "key2": "value", "key3": 1})))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetBool(true)
+				s.AppendEmpty().SetStr("value")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseSimplifiedXML("<Log><id>1</id><Message>This is a log message!</Message></Log>"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				attr := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
@@ -1097,6 +1124,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], "pass") where IsString(UUIDv7())`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "\\")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "\\")
@@ -1141,6 +1174,7 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutStr("user_agent.original", "curl/7.81.0")
 				m.PutStr("user_agent.name", "curl")
 				m.PutStr("user_agent.version", "7.81.0")
+				m.PutStr("os.name", "Other")
 			},
 		},
 		{
@@ -1152,6 +1186,19 @@ func Test_e2e_converters(t *testing.T) {
 				thing1.PutInt("value", 2)
 
 				thing2 := m.PutEmptyMap("bar")
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				thing1 := m.PutEmptyMap("0")
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := m.PutEmptyMap("1")
 				thing2.PutStr("name", "bar")
 				thing2.PutInt("value", 5)
 			},
@@ -1223,7 +1270,7 @@ func Test_e2e_converters(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
-				_, _, err = statement.Execute(context.Background(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
 				if tt.errMsg == "" {
 					assert.NoError(t, err)
 				} else {
@@ -1388,7 +1435,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
-				_, _, _ = statement.Execute(context.Background(), tCtx)
+				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
@@ -1461,7 +1508,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				assert.NoError(t, err)
 
 				for _, s := range logStatements {
-					_, _, _ = s.Execute(context.Background(), tCtx)
+					_, _, _ = s.Execute(t.Context(), tCtx)
 				}
 			}
 
@@ -1581,7 +1628,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructLogTransformContextValueExpressions()
-			val, err := valueExpr.Eval(context.Background(), tCtx)
+			val, err := valueExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			assert.Equal(t, tt.want(), val)
@@ -1614,7 +1661,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructSpanTransformContext()
-			_, _, _ = spanStatements.Execute(context.Background(), tCtx)
+			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
 
 			exTCtx := constructSpanTransformContext()
 			tt.want(exTCtx)
@@ -1648,7 +1695,7 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructSpanEventTransformContext()
-			_, _, _ = spanStatements.Execute(context.Background(), tCtx)
+			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
 
 			exTCtx := constructSpanEventTransformContext()
 			tt.want(exTCtx)
@@ -1930,7 +1977,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _, _ = logStatements.Execute(context.Background(), actualCtx)
+		_, _, _ = logStatements.Execute(b.Context(), actualCtx)
 	}
 
 	// Ensure correctness

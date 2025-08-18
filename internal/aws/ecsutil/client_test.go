@@ -4,7 +4,6 @@
 package ecsutil
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -49,7 +48,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(context.Background(), *endpoint, confighttp.NewDefaultClientConfig(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, err := defaultClient(t.Context(), *endpoint, confighttp.NewDefaultClientConfig(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())
@@ -184,7 +183,7 @@ var _ io.Reader = (*failingReader)(nil)
 
 type failingReader struct{}
 
-func (f *failingReader) Read([]byte) (n int, err error) {
+func (*failingReader) Read([]byte) (n int, err error) {
 	return 0, errors.New("error on read")
 }
 

@@ -6,6 +6,7 @@ package targetallocator // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -13,8 +14,10 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"syscall"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -67,8 +70,19 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		return err
 	}
 	m.settings.Logger.Info("Starting target allocator discovery")
+
+	operation := func() (uint64, error) {
+		savedHash, opErr := m.sync(uint64(0), httpClient)
+		if opErr != nil {
+			if errors.Is(opErr, syscall.ECONNREFUSED) {
+				return 0, backoff.RetryAfter(1)
+			}
+			return 0, opErr
+		}
+		return savedHash, nil
+	}
 	// immediately sync jobs, not waiting for the first tick
-	savedHash, err := m.sync(uint64(0), httpClient)
+	savedHash, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()))
 	if err != nil {
 		return err
 	}

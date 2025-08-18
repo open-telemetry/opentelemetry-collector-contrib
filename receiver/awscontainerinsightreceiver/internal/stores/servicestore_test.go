@@ -4,7 +4,6 @@
 package stores
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -16,7 +15,7 @@ import (
 
 type mockEndpoint struct{}
 
-func (m *mockEndpoint) PodKeyToServiceNames() map[string][]string {
+func (*mockEndpoint) PodKeyToServiceNames() map[string][]string {
 	return map[string][]string{
 		"namespace:default,podName:test-pod": {"test-service"},
 	}
@@ -29,7 +28,7 @@ func TestServiceStore(t *testing.T) {
 		endpointInfo:            &mockEndpoint{},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	s.lastRefreshed = time.Now().Add(-20 * time.Second)
 	s.RefreshTick(ctx)
 

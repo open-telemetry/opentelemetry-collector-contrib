@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -42,11 +43,12 @@ func createDefaultConfig() component.Config {
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	queueCfg.BlockOnOverflow = true
 	queueCfg.Sizer = exporterhelper.RequestSizerTypeItems
-	queueCfg.Batch = &exporterhelper.BatchConfig{
+	queueCfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: time.Second,
 		MinSize:      1000,
 		MaxSize:      1500,
-	}
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+	})
 	// The default is configured in items, this value represents
 	// 60-100 concurrent batches.
 	queueCfg.QueueSize = 100000
@@ -55,7 +57,7 @@ func createDefaultConfig() component.Config {
 	// the queue and call into an Arrow stream. When the exporter
 	// falls back to OTLP, this is the number of concurrent OTLP
 	// exports.
-	queueCfg.NumConsumers = int(queueCfg.QueueSize / queueCfg.Batch.MinSize)
+	queueCfg.NumConsumers = int(queueCfg.QueueSize / queueCfg.Batch.Get().MinSize)
 
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),

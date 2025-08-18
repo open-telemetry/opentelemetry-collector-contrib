@@ -134,7 +134,7 @@ func (s *K8sService) Env() EndpointEnv {
 	}
 }
 
-func (s *K8sService) Type() EndpointType {
+func (*K8sService) Type() EndpointType {
 	return K8sServiceType
 }
 
@@ -171,7 +171,7 @@ func (s *K8sIngress) Env() EndpointEnv {
 	}
 }
 
-func (s *K8sIngress) Type() EndpointType {
+func (*K8sIngress) Type() EndpointType {
 	return K8sIngressType
 }
 
@@ -199,7 +199,7 @@ func (p *Pod) Env() EndpointEnv {
 	}
 }
 
-func (p *Pod) Type() EndpointType {
+func (*Pod) Type() EndpointType {
 	return PodType
 }
 
@@ -224,7 +224,7 @@ func (p *PodContainer) Env() EndpointEnv {
 	}
 }
 
-func (p *PodContainer) Type() EndpointType {
+func (*PodContainer) Type() EndpointType {
 	return PodContainerType
 }
 
@@ -249,7 +249,7 @@ func (p *Port) Env() EndpointEnv {
 	}
 }
 
-func (p *Port) Type() EndpointType {
+func (*Port) Type() EndpointType {
 	return PortType
 }
 
@@ -279,7 +279,7 @@ func (h *HostPort) Env() EndpointEnv {
 	}
 }
 
-func (h *HostPort) Type() EndpointType {
+func (*HostPort) Type() EndpointType {
 	return HostPortType
 }
 
@@ -323,7 +323,7 @@ func (c *Container) Env() EndpointEnv {
 	}
 }
 
-func (c *Container) Type() EndpointType {
+func (*Container) Type() EndpointType {
 	return ContainerType
 }
 
@@ -367,16 +367,16 @@ func (n *K8sNode) Env() EndpointEnv {
 	}
 }
 
-func (n *K8sNode) Type() EndpointType {
+func (*K8sNode) Type() EndpointType {
 	return K8sNodeType
 }
 
 type KafkaTopic struct{}
 
-func (k *KafkaTopic) Env() EndpointEnv {
+func (*KafkaTopic) Env() EndpointEnv {
 	return map[string]any{}
 }
 
-func (k *KafkaTopic) Type() EndpointType {
+func (*KafkaTopic) Type() EndpointType {
 	return KafkaTopicType
 }

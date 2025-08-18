@@ -81,7 +81,8 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 		netReporter:  netReporter,
 		boundedQueue: bq,
 	}
-	if err = zstd.SetDecoderConfig(cfg.Arrow.Zstd); err != nil {
+	err = zstd.SetDecoderConfig(cfg.Arrow.Zstd)
+	if err != nil {
 		return nil, err
 	}
 
@@ -128,8 +129,8 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 	}
 
 	var authServer extensionauth.Server
-	if r.cfg.GRPC.Auth != nil {
-		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticator(ctx, host.GetExtensions())
+	if r.cfg.GRPC.Auth.HasValue() {
+		authServer, err = r.cfg.GRPC.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return err
 		}

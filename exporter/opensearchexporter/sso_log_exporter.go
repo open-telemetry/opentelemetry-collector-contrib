@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
@@ -18,7 +18,7 @@ import (
 )
 
 type logExporter struct {
-	client       *opensearch.Client
+	client       *opensearchapi.Client
 	Index        string
 	bulkAction   string
 	model        mappingModel
@@ -164,7 +164,7 @@ func convertGoTimeFormat(format string) string {
 }
 
 func getIndexName(dataset, namespace, index string) string {
-	if len(index) != 0 {
+	if index != "" {
 		return index
 	}
 

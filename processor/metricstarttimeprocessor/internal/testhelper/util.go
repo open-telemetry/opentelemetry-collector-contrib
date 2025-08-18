@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -329,7 +331,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 				}
 			}
 			var err error
-			adjusted, err = ma.AdjustMetrics(context.Background(), adjusted)
+			adjusted, err = ma.AdjustMetrics(t.Context(), adjusted)
 			assert.NoError(t, err)
 
 			// Add the instance/job to the expected metrics as well if they aren't already present.
@@ -339,7 +341,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
-			assert.Equal(t, test.Adjusted, adjusted)
+			assert.NoError(t, pmetrictest.CompareMetrics(test.Adjusted, adjusted))
 		})
 	}
 }

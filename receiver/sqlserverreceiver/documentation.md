@@ -220,6 +220,14 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.computer.uptime
+
+Computer uptime.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {seconds} | Gauge | Int |
+
 ### sqlserver.cpu.count
 
 Number of CPUs.

@@ -180,7 +180,7 @@ func Test_readTelemetryForTime(t *testing.T) {
 
 	dataCallbackKeys := make([]string, 0)
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, key string, data []byte) error {
+	err := reader.readTelemetryForTime(t.Context(), testTime, "traces", func(_ context.Context, key string, data []byte) error {
 		t.Helper()
 		require.Equal(t, "this is the body of the object", string(data))
 		dataCallbackKeys = append(dataCallbackKeys, key)
@@ -227,7 +227,7 @@ func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 		endTime:     testTime.Add(time.Minute),
 	}
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
+	err := reader.readTelemetryForTime(t.Context(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
 		t.Helper()
 		t.Fail()
 		return nil
@@ -262,7 +262,7 @@ func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 		endTime:     testTime.Add(time.Minute),
 	}
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
+	err := reader.readTelemetryForTime(t.Context(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
 		t.Helper()
 		t.Fail()
 		return nil
@@ -309,7 +309,7 @@ func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 		endTime:     testTime.Add(time.Minute),
 	}
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
+	err := reader.readTelemetryForTime(t.Context(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
 		t.Helper()
 		t.Fail()
 		return nil
@@ -321,11 +321,11 @@ type mockNotifier struct {
 	messages []statusNotification
 }
 
-func (m *mockNotifier) Start(_ context.Context, _ component.Host) error {
+func (*mockNotifier) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m *mockNotifier) Shutdown(_ context.Context) error {
+func (*mockNotifier) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -369,7 +369,7 @@ func Test_readAll(t *testing.T) {
 
 	dataCallbackKeys := make([]string, 0)
 
-	err := reader.readAll(context.Background(), "traces", func(_ context.Context, key string, data []byte) error {
+	err := reader.readAll(t.Context(), "traces", func(_ context.Context, key string, data []byte) error {
 		t.Helper()
 		require.Equal(t, "this is the body of the object", string(data))
 		dataCallbackKeys = append(dataCallbackKeys, key)
@@ -418,7 +418,7 @@ func Test_readAll_StatusMessages(t *testing.T) {
 
 	dataCallbackKeys := make([]string, 0)
 
-	err := reader.readAll(context.Background(), "traces", func(_ context.Context, key string, data []byte) error {
+	err := reader.readAll(t.Context(), "traces", func(_ context.Context, key string, data []byte) error {
 		t.Helper()
 		require.Equal(t, "this is the body of the object", string(data))
 		dataCallbackKeys = append(dataCallbackKeys, key)
@@ -487,7 +487,7 @@ func Test_readAll_ContextDone(t *testing.T) {
 	}
 
 	dataCallbackKeys := make([]string, 0)
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	cancelFunc()
 	err := reader.readAll(ctx, "traces", func(_ context.Context, key string, _ []byte) error {
 		t.Helper()

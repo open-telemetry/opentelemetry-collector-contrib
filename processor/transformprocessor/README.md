@@ -46,7 +46,7 @@ transform:
   <trace|metric|log>_statements: []
 ```
 
-The Transform Processor's primary configuration section is broken down by signal (traces, metrics, and logs)
+The Transform Processor's primary configuration section is broken down by signal (traces, metrics, logs, and profiles)
 and allows you to configure a list of statements for the processor to execute. The list can be made of:
 
 - OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
@@ -54,11 +54,12 @@ and allows you to configure a list of statements for the processor to execute. T
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
-| Signal            | Path Prefix Values                             |
-|-------------------|------------------------------------------------|
-| trace_statements  | `resource`, `scope`, `span`, and `spanevent`   |
-| metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
-| log_statements    | `resource`, `scope`, and `log`                 |
+| Signal             | Path Prefix Values                             |
+|--------------------|------------------------------------------------|
+| trace_statements   | `resource`, `scope`, `span`, and `spanevent`   |
+| metric_statements  | `resource`, `scope`, `metric`, and `datapoint` |
+| log_statements     | `resource`, `scope`, and `log`                 |
+| profile_statements | `resource`, `scope`, and `profile`             |
 
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
@@ -114,6 +115,10 @@ transform:
     - replace_all_matches(log.attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
     - replace_all_patterns(log.attributes, "value", "/account/\\d{4}", "/account/{accountId}")
     - set(log.body, log.attributes["http.route"])
+  profile_statements:
+    - keep_keys(resource.attributes, ["host.name"])
+    - set(profile.attributes["tag"], "profile#23")
+    - set(profile.original_payload_format, "json")
 ```
 
 In some situations a combination of Paths, functions, or enums is not allowed, and the solution 
@@ -133,7 +138,7 @@ Format:
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements:
+  <trace|metric|log|profile>_statements:
     - context: string
       error_mode: propagate
       conditions: 
@@ -252,11 +257,13 @@ These common functions can be used for any Signal.
 In addition to the common OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
 
 **Metrics only functions**
+
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [extract_count_metric](#extract_count_metric)
 - [extract_sum_metric](#extract_sum_metric)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
+- [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
@@ -365,6 +372,25 @@ Examples:
 - `convert_summary_count_val_to_sum("delta", true, ".count")`
 
 - `convert_summary_count_val_to_sum("cumulative", false, ".count")`
+
+### convert_summary_quantile_val_to_gauge
+
+`convert_summary_quantile_val_to_gauge(Optional[attributeKey], Optional[suffix])`
+
+The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric and injects each of the Summary's quantiles into a single Gauge datapoint.
+
+`attributeKey` is an optional string that specifies the attribute key holding the quantile value for each corresponding output data point. The default key is `quantile`.
+`suffix` is an optional string representing the suffix of the metric name. The default value is `.quantiles`.
+
+The name for the new metric will be `<summary metric name>.quantiles`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list. Function conditions will apply.
+
+Examples:
+
+- `convert_summary_quantile_val_to_gauge("custom_quantile", "custom_suffix")`
+
+- `convert_summary_quantile_val_to_gauge("custom_quantile")`
+
+- `convert_summary_quantile_val_to_gauge()`
 
 ### convert_summary_sum_val_to_sum
 

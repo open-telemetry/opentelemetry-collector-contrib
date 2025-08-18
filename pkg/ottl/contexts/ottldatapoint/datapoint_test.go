@@ -4,7 +4,6 @@
 package ottldatapoint
 
 import (
-	"context"
 	"slices"
 	"testing"
 	"time"
@@ -83,11 +82,11 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
 			exCache := pcommon.NewMap()
@@ -514,11 +513,11 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
 			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
@@ -961,11 +960,11 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
 			exNumberDataPoint := createHistogramDataPointTelemetry()
@@ -1492,11 +1491,11 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
 			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
@@ -1924,11 +1923,11 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
 			exNumberDataPoint := createSummaryDataPointTelemetry()
@@ -2105,11 +2104,11 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
 			exMetric := createMetricTelemetry()
@@ -2287,6 +2286,16 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
 			expected: instrumentationScope.Name(),
 		},
+		{
+			name:     "scope",
+			path:     &pathtest.Path[TransformContext]{N: "scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "scope with context",
+			path:     &pathtest.Path[TransformContext]{C: "scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -2294,7 +2303,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})

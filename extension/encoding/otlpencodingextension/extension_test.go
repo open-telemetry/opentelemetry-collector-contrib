@@ -3,7 +3,6 @@
 
 package otlpencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -30,7 +29,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "otlp_json"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 
@@ -40,7 +39,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "otlp_proto"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 	}
@@ -52,7 +51,7 @@ func TestExtension_Start(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			err = ext.Start(t.Context(), componenttest.NewNopHost())
 			if test.expectedErr != "" && err != nil {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -141,7 +140,7 @@ func TestOTLPProtoUnmarshal(t *testing.T) {
 func createAndExtension0(t *testing.T, c *Config) *otlpExtension {
 	ex, err := newExtension(c)
 	require.NoError(t, err)
-	err = ex.Start(context.TODO(), nil)
+	err = ex.Start(t.Context(), nil)
 	require.NoError(t, err)
 	return ex
 }
@@ -202,7 +201,7 @@ func generateProfiles() pprofile.Profiles {
 	for i := 0; i < num; i++ {
 		im := ilm.Profiles().AppendEmpty()
 		im.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
-		im.SetStartTime(pcommon.NewTimestampFromTime(now))
+		im.SetTime(pcommon.NewTimestampFromTime(now))
 		im.SetDuration(pcommon.NewTimestampFromTime(time.Now()))
 	}
 	return pd

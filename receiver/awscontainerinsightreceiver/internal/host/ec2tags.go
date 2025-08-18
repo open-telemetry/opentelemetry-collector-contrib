@@ -45,7 +45,7 @@ type ec2Tags struct {
 
 type ec2TagsOption func(*ec2Tags)
 
-func newEC2Tags(ctx context.Context, cfg aws.Config, instanceID string, region string, containerOrchestrator string,
+func newEC2Tags(ctx context.Context, cfg aws.Config, instanceID, region, containerOrchestrator string,
 	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption,
 ) ec2TagsProvider {
 	cfg.Region = region

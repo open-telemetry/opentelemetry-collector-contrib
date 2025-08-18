@@ -4,7 +4,6 @@
 package schemaprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -97,7 +96,7 @@ func TestMetrics_Rename(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := newTestSchemaProcessor(t, tt.transformations, tt.targetVersion)
-			ctx := context.Background()
+			ctx := t.Context()
 			out, err := pr.processMetrics(ctx, tt.in)
 			if err != nil {
 				t.Errorf("Error while processing metrics: %v", err)
@@ -170,7 +169,7 @@ func TestMetrics_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := newTestSchemaProcessor(t, tt.transformations, tt.targetVersion)
-			ctx := context.Background()
+			ctx := t.Context()
 			_, err := pr.processMetrics(ctx, tt.in)
 			require.Error(t, err)
 			assert.Equal(t, tt.errormsg, err.Error())

@@ -76,7 +76,7 @@ type serviceMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (s *serviceMatcher) matcherType() matcherType {
+func (*serviceMatcher) matcherType() matcherType {
 	return matcherTypeService
 }
 
@@ -97,7 +97,7 @@ func (s *serviceMatcher) matchTargets(t *taskAnnotated, c ecstypes.ContainerDefi
 func serviceConfigsToFilter(cfgs []ServiceConfig) (serviceNameFilter, error) {
 	// If no service config, don't describe any services
 	if len(cfgs) == 0 {
-		return func(_ string) bool {
+		return func(string) bool {
 			return false
 		}, nil
 	}

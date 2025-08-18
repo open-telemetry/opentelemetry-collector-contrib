@@ -73,17 +73,18 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ts := wr.Timeseries[0]
 		foundLabel := false
 		for _, label := range ts.Labels {
-			if label.Name == testIDKey {
-				id, err := strconv.Atoi(label.Value)
-				assert.NoError(t, err)
-				mu.Lock()
-				_, ok := received[id]
-				assert.False(t, ok) // fail if we already saw it
-				received[id] = ts
-				mu.Unlock()
-				foundLabel = true
-				break
+			if label.Name != testIDKey {
+				continue
 			}
+			id, err := strconv.Atoi(label.Value)
+			assert.NoError(t, err)
+			mu.Lock()
+			_, ok := received[id]
+			assert.False(t, ok) // fail if we already saw it
+			received[id] = ts
+			mu.Unlock()
+			foundLabel = true
+			break
 		}
 		assert.True(t, foundLabel)
 		w.WriteHeader(http.StatusOK)
@@ -107,7 +108,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ClientConfig:      clientConfig,
 		MaxBatchSizeBytes: 3000000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 		BackOffConfig:       retrySettings,
@@ -119,7 +120,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
 	defer func() {

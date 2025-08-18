@@ -4,7 +4,6 @@
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -75,7 +74,7 @@ func TestScraperStart(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := tc.scraper.start(context.Background(), componenttest.NewNopHost())
+			err := tc.scraper.start(t.Context(), componenttest.NewNopHost())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -113,28 +112,30 @@ func TestScraperScrape(t *testing.T) {
 	}
 
 	var taskmanagerMetricsInstances []*models.TaskmanagerMetrics
-	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
-		Host:          "mock-host",
-		TaskmanagerID: "mock-taskmanager-id",
-		Metrics:       *taskmanagerMetricsResponse,
-	})
-	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
-		Host:          "mock-host2",
-		TaskmanagerID: "mock-taskmanager-id2",
-		Metrics:       *taskmanagerMetricsResponse,
-	})
+	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances,
+		&models.TaskmanagerMetrics{
+			Host:          "mock-host",
+			TaskmanagerID: "mock-taskmanager-id",
+			Metrics:       *taskmanagerMetricsResponse,
+		},
+		&models.TaskmanagerMetrics{
+			Host:          "mock-host2",
+			TaskmanagerID: "mock-taskmanager-id2",
+			Metrics:       *taskmanagerMetricsResponse,
+		})
 
 	var jobsMetricsInstances []*models.JobMetrics
-	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
-		Host:    "mock-host",
-		JobName: "mock-job-name",
-		Metrics: *jobsMetricsResponse,
-	})
-	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
-		Host:    "mock-host2",
-		JobName: "mock-job-name2",
-		Metrics: *jobsMetricsResponse,
-	})
+	jobsMetricsInstances = append(jobsMetricsInstances,
+		&models.JobMetrics{
+			Host:    "mock-host",
+			JobName: "mock-job-name",
+			Metrics: *jobsMetricsResponse,
+		},
+		&models.JobMetrics{
+			Host:    "mock-host2",
+			JobName: "mock-job-name2",
+			Metrics: *jobsMetricsResponse,
+		})
 
 	var subtaskMetricsInstances []*models.SubtaskMetrics
 	subtaskMetricsInstances = append(subtaskMetricsInstances, &models.SubtaskMetrics{
@@ -250,7 +251,7 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 
 			if tc.expectedErr == nil {
 				require.NoError(t, err)

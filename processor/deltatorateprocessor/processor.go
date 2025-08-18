@@ -32,7 +32,7 @@ func newDeltaToRateProcessor(config *Config, logger *zap.Logger) *deltaToRatePro
 }
 
 // Start is invoked during service startup.
-func (dtrp *deltaToRateProcessor) Start(context.Context, component.Host) error {
+func (*deltaToRateProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -82,7 +82,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.M
 }
 
 // Shutdown is invoked during service shutdown.
-func (dtrp *deltaToRateProcessor) Shutdown(context.Context) error {
+func (*deltaToRateProcessor) Shutdown(context.Context) error {
 	return nil
 }
 

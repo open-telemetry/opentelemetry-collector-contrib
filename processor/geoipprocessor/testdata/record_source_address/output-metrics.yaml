@@ -20,13 +20,13 @@ resourceMetrics:
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -41,7 +41,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -61,13 +61,13 @@ resourceMetrics:
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -82,7 +82,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -115,13 +115,13 @@ resourceMetrics:
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -136,7 +136,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -168,13 +168,13 @@ resourceMetrics:
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -189,7 +189,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name

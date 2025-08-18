@@ -197,6 +197,54 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		{
+			desc: "valid config with auto_content_type enabled",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://opentelemetry.io",
+						},
+						Body:            `{"key": "value"}`,
+						AutoContentType: true,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid config with auto_content_type disabled",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://opentelemetry.io",
+						},
+						Body:            `{"key": "value"}`,
+						AutoContentType: false,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid config with auto_content_type default (zero value)",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://opentelemetry.io",
+						},
+						Body: `{"key": "value"}`,
+						// AutoContentType not set (zero value = false)
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -109,7 +109,7 @@ func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
 	)
 }
 
-func SortTemporal(regexKey string, ascending bool, layout string, location string) (Option, error) {
+func SortTemporal(regexKey string, ascending bool, layout, location string) (Option, error) {
 	if layout == "" {
 		return nil, errors.New("layout must be specified")
 	}

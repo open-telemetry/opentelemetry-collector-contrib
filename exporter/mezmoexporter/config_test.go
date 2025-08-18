@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -50,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnsPerHost:     defaultMaxConnsPerHost,
 					IdleConnTimeout:     defaultIdleConnTimeout,
 					Headers:             map[string]configopaque.String{},
+					ForceAttemptHTTP2:   true,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
