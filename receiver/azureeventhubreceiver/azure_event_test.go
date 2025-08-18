@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-event-hubs-go/v3"
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
 )
