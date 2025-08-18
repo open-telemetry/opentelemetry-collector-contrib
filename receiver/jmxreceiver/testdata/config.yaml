@@ -24,6 +24,13 @@ jmx/all:
     one: two
   additional_jars:
     - testdata/fake_additional.jar
+jmx/validscraperjmxconfigs:
+  jar_path: testdata/fake_jmx_scraper.jar
+  endpoint: myendpoint:55555
+  otlp:
+    endpoint: 0.0.0.0:0
+    timeout: 5s
+  jmx_configs: testdata/rules.yaml
 jmx/missingendpoint:
   jar_path: testdata/fake_jmx.jar
   target_system: jvm
