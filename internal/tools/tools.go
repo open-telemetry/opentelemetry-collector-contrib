@@ -18,6 +18,7 @@ import (
 	_ "github.com/google/addlicense"
 	_ "github.com/jcchavezs/porto/cmd/porto"
 	_ "github.com/jstemmer/go-junit-report"
+	_ "github.com/rhysd/actionlint/cmd/actionlint"
 	_ "go.opentelemetry.io/build-tools/checkapi"
 	_ "go.opentelemetry.io/build-tools/checkfile"
 	_ "go.opentelemetry.io/build-tools/chloggen"

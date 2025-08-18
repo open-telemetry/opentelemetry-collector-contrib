@@ -184,9 +184,9 @@ jobs:
 
       - name: Update version
         env:
-          VERSION: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
+          version: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
         run: |
-          if [[ ! $VERSION =~ -alpha$ ]]; then
+          if [[ ! $version =~ -alpha$ ]]; then
             echo currently expecting jmx scraper version to end with "-alpha"
             exit 1
           fi

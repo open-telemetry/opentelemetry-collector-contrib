@@ -508,7 +508,7 @@ jobs:
         run: make install-tools
       - name: Generate collector files
         run: make genotelcontribcol
-      - name: Build Collector ${{ matrix.binary }}
+      - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
