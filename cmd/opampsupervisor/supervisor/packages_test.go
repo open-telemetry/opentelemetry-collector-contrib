@@ -5,7 +5,6 @@ package supervisor
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
@@ -227,14 +226,14 @@ func TestPackageManager_LastReportedStatuses(t *testing.T) {
 func TestPackageManager_UpdateContent(t *testing.T) {
 	t.Run("non-agent package", func(t *testing.T) {
 		pm := initPackageManager(t, t.TempDir())
-		err := pm.UpdateContent(context.Background(), "random-package", nil, nil, nil)
+		err := pm.UpdateContent(t.Context(), "random-package", nil, nil, nil)
 		require.Equal(t, "package does not exist", err.Error())
 	})
 
 	t.Run("invalid hash", func(t *testing.T) {
 		pm := initPackageManager(t, t.TempDir())
 		invalidHash := []byte{0x01, 0x02}
-		err := pm.UpdateContent(context.Background(), agentPackageKey,
+		err := pm.UpdateContent(t.Context(), agentPackageKey,
 			bytes.NewReader([]byte("test data")), invalidHash, nil)
 		require.ErrorContains(t, err, "could not verify package integrity")
 	})
@@ -245,7 +244,7 @@ func TestPackageManager_UpdateContent(t *testing.T) {
 		hash := sha256.Sum256(data)
 		invalidSig := []byte("invalid-signature-no-space")
 
-		err := pm.UpdateContent(context.Background(), agentPackageKey,
+		err := pm.UpdateContent(t.Context(), agentPackageKey,
 			bytes.NewReader(data), hash[:], invalidSig)
 		require.ErrorContains(t, err, "signature must be formatted as a space separated cert and signature")
 	})
@@ -256,7 +255,7 @@ func TestPackageManager_UpdateContent(t *testing.T) {
 		hash := sha256.Sum256(data)
 		invalidSig := []byte("invalid-b64-cert valid-sig")
 
-		err := pm.UpdateContent(context.Background(), agentPackageKey,
+		err := pm.UpdateContent(t.Context(), agentPackageKey,
 			bytes.NewReader(data), hash[:], invalidSig)
 		require.ErrorContains(t, err, "b64 decode cert")
 	})
@@ -270,7 +269,7 @@ func TestPackageManager_UpdateContent(t *testing.T) {
 		fakeSig := base64.StdEncoding.EncodeToString([]byte("fake-sig"))
 		sig := []byte(fmt.Sprintf("%s %s", fakeCert, fakeSig))
 
-		err := pm.UpdateContent(context.Background(), agentPackageKey,
+		err := pm.UpdateContent(t.Context(), agentPackageKey,
 			bytes.NewReader(data), hash[:], sig)
 		require.ErrorContains(t, err, "could not verify package signature")
 	})
