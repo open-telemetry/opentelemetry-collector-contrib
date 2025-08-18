@@ -42,7 +42,7 @@ jobs:
                         --author opentelemetrybot \
                         --state open \
                         --search "in:title \"Add JMX metrics gatherer version $latest_version\"")
-          if [ ! -z "$matches" ]
+          if [ ! -n "$matches" ]
           then
             already_opened=true
           fi
@@ -158,7 +158,7 @@ jobs:
                         --author opentelemetrybot \
                         --state open \
                         --search "in:title \"Add JMX scraper version $latest_version\"")
-          if [ ! -z "$matches" ]
+          if [ ! -n "$matches" ]
           then
             already_opened=true
           fi
