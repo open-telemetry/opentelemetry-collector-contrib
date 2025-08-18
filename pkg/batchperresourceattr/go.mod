@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/consumer v1.37.1-0.20250811224948-302af250fdf1
-	go.opentelemetry.io/collector/consumer/consumertest v0.131.1-0.20250811224948-302af250fdf1
-	go.opentelemetry.io/collector/pdata v1.37.1-0.20250811224948-302af250fdf1
+	go.opentelemetry.io/collector/consumer v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/pdata v1.38.1-0.20250814180350-eb9588bb3b55
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -18,8 +18,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.131.1-0.20250811224948-302af250fdf1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.131.1-0.20250811224948-302af250fdf1 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect

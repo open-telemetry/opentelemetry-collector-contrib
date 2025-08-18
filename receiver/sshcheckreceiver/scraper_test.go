@@ -189,9 +189,9 @@ func TestScraper(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scrpr := newScraper(cfg, settings)
-			require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+			require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()), "failed starting scraper")
 
-			actualMetrics, err := scrpr.scrape(context.Background())
+			actualMetrics, err := scrpr.scrape(t.Context())
 			require.NoError(t, err, "failed scrape")
 			require.NoError(
 				t,
@@ -227,9 +227,9 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newScraper(cfg, settings)
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()), "failed starting scraper")
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err, "failed scrape")
 
 	resourceMetrics := actualMetrics.ResourceMetrics()
@@ -262,9 +262,9 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newScraper(cfg, settings)
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "should not err to start")
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()), "should not err to start")
 
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.NoError(t, err, "should not err")
 }
 
@@ -306,9 +306,9 @@ func TestCancellation(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scrpr := newScraper(cfg, settings)
-	require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()), "failed starting scraper")
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	_, err := scrpr.scrape(ctx)
@@ -334,6 +334,6 @@ func TestWithoutStartErrsNotPanics(t *testing.T) {
 
 	// scrape should error not panic
 	var err error
-	require.NotPanics(t, func() { _, err = scrpr.scrape(context.Background()) }, "scrape should not panic")
+	require.NotPanics(t, func() { _, err = scrpr.scrape(t.Context()) }, "scrape should not panic")
 	require.Error(t, err, "expected scrape to err when without start")
 }

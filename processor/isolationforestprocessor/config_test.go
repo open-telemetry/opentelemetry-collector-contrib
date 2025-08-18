@@ -55,7 +55,7 @@ func TestConfigurationValidation(t *testing.T) {
 	}{
 		{
 			name: "valid configuration",
-			modifyConfig: func(cfg *Config) {
+			modifyConfig: func(_ *Config) {
 				// Use default config - should be valid
 			},
 			expectError: false,
@@ -180,7 +180,7 @@ func TestMultiModelConfiguration(t *testing.T) {
 	assert.True(t, cfg.IsMultiModelMode(), "Should detect multi-model mode")
 
 	// Test model selection based on attributes
-	webServiceAttrs := map[string]interface{}{
+	webServiceAttrs := map[string]any{
 		"service.name": "frontend",
 		"http.method":  "GET",
 	}
@@ -190,7 +190,7 @@ func TestMultiModelConfiguration(t *testing.T) {
 	assert.Equal(t, 0.8, selectedModel.Threshold)
 
 	// Test with non-matching attributes
-	unknownServiceAttrs := map[string]interface{}{
+	unknownServiceAttrs := map[string]any{
 		"service.name": "unknown_service",
 	}
 	selectedModel = cfg.GetModelForAttributes(unknownServiceAttrs)
@@ -214,10 +214,10 @@ func TestDurationParsing(t *testing.T) {
 
 		trainingDur, err := cfg.GetTrainingWindowDuration()
 		require.NoError(t, err)
-		assert.True(t, trainingDur > 0)
+		assert.Positive(t, trainingDur)
 
 		updateDur, err := cfg.GetUpdateFrequencyDuration()
 		require.NoError(t, err)
-		assert.True(t, updateDur > 0)
+		assert.Positive(t, updateDur)
 	}
 }
