@@ -219,7 +219,7 @@ func Test_index_native_slices(t *testing.T) {
 			}
 
 			indexFn := index(ottl.NewValueComparator(), sourceExpr, valueExpr)
-			result, err := indexFn(context.Background(), nil)
+			result, err := indexFn(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -301,7 +301,7 @@ func Test_index_error_cases(t *testing.T) {
 			}
 
 			indexFn := index(ottl.NewValueComparator(), sourceExpr, valueExpr)
-			result, err := indexFn(context.Background(), nil)
+			result, err := indexFn(t.Context(), nil)
 
 			if tt.expectedErr != "" {
 				assert.Error(t, err)
