@@ -46,6 +46,3 @@ paths:
 
       # Some Windows bash scripts use Powershell functions that trip shellcheck.
       - '.*Want to escape a single quote.*'
-
-      # shellcheck gets confused between VERSION env var and version bash variable.
-      - ".*VERSION may not be assigned. Did you mean version.*"

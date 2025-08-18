@@ -73,8 +73,7 @@ jobs:
             exit 1
           fi
 
-          version=${VERSION//-alpha/}
-          hash=$(curl -L https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v$version/opentelemetry-jmx-metrics.jar \
+          hash=$(curl -L https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v${VERSION//-alpha/}/opentelemetry-jmx-metrics.jar \
                          | sha256sum \
                          | cut -d ' ' -f 1)
 
@@ -184,14 +183,14 @@ jobs:
 
       - name: Update version
         env:
-          version: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
+          VERSION: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
         run: |
-          if [[ ! $version =~ -alpha$ ]]; then
+          if [[ ! $VERSION =~ -alpha$ ]]; then
             echo currently expecting jmx scraper version to end with "-alpha"
             exit 1
           fi
 
-          hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar \
+          hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$VERSION.jar \
                          | sha256sum \
                          | cut -d ' ' -f 1)
 
