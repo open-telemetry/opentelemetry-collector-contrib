@@ -88,7 +88,6 @@ func accessLine[K Context]() ottl.StandardGetSetter[K] {
 				return errInvalidValueType
 			}
 			tCtx.GetProfileLocation().Line().RemoveIf(func(_ pprofile.Line) bool { return true })
-			_ = lines
 			for _, line := range lines.All() {
 				newLine := tCtx.GetProfileLocation().Line().AppendEmpty()
 				line.CopyTo(newLine)
