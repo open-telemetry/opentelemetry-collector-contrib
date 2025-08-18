@@ -96,11 +96,11 @@ processors:
     - name: Unique identifier for this source. Required.
     - type: "http" or "file". Required.
     - http: Required when type=http.
-      - url: Endpoint returning an array of JSON objects. Required.
+      - url: Endpoint returning an array of JSON or csv objects. Required.
       - headers: Optional map of request headers.
       - timeout: Request timeout (e.g., 30s, 1m). Optional.
       - refresh_interval: How often to refetch data (e.g., 5m). Required for periodic refresh.
-      - json_path: Optional; currently not used. The response must already be an array of objects.
+      - format: csv or json
     - file: Required when type=file.
       - path: Path to the file. Required.
       - format: "json" or "csv". Required.
