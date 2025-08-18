@@ -4,7 +4,6 @@
 package logzioexporter
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }

@@ -71,7 +71,7 @@ func Test_TruncateTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := TruncateTime(tt.time, tt.duration)
 			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
 		})
@@ -119,7 +119,7 @@ func Test_TruncateTimeError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := TruncateTime[any](tt.time, tt.duration)
 			require.NoError(t, err)
-			_, err = exprFunc(context.Background(), nil)
+			_, err = exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

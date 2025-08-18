@@ -4,7 +4,6 @@
 package filterottl
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,7 +125,7 @@ func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeKeyOnDatapoint(tt.key)
 			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), ottlmetric.NewTransformContext(tt.input(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			result, err := exprFunc(t.Context(), ottlmetric.NewTransformContext(tt.input(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -351,7 +350,7 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeOnDatapoint(tt.key, tt.expectedVal)
 			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), ottlmetric.NewTransformContext(tt.input(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			result, err := exprFunc(t.Context(), ottlmetric.NewTransformContext(tt.input(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})

@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ func TestDropEvaluatorNotSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(context.Background(), traceID, trace)
+	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, NotSampled, decision)
 }
@@ -58,7 +57,7 @@ func TestDropEvaluatorSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(context.Background(), traceID, trace)
+	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, Dropped, decision)
 }
@@ -83,7 +82,7 @@ func TestDropEvaluatorStringInvertMatch(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(context.Background(), traceID, trace)
+	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, Dropped, decision)
 }
@@ -108,7 +107,7 @@ func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(context.Background(), traceID, trace)
+	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, NotSampled, decision)
 }

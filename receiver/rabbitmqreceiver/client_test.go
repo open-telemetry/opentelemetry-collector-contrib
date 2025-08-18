@@ -4,7 +4,6 @@
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -73,7 +72,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(t.Context(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.ErrorContains(t, err, tc.expectError.Error())
@@ -109,7 +108,7 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				clusters, err := tc.GetQueues(context.Background())
+				clusters, err := tc.GetQueues(t.Context())
 				require.Nil(t, clusters)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -126,7 +125,7 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				clusters, err := tc.GetQueues(context.Background())
+				clusters, err := tc.GetQueues(t.Context())
 				require.Nil(t, clusters)
 				require.ErrorContains(t, err, "failed to decode response payload")
 			},
@@ -150,7 +149,7 @@ func TestGetQueuesDetails(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				clusters, err := tc.GetQueues(context.Background())
+				clusters, err := tc.GetQueues(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, clusters)
 			},
@@ -178,7 +177,7 @@ func TestGetNodesDetails(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.Nil(t, nodes)
 				require.EqualError(t, err, "non 200 code returned 403")
 			},
@@ -195,7 +194,7 @@ func TestGetNodesDetails(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.Nil(t, nodes)
 				require.ErrorContains(t, err, "failed to decode response payload")
 			},
@@ -219,7 +218,7 @@ func TestGetNodesDetails(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, nodes)
 			},
@@ -236,7 +235,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(context.Background(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	testClient, err := newClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }

@@ -4,7 +4,6 @@
 package githubscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -169,10 +168,10 @@ func TestScrape(t *testing.T) {
 			ghs.cfg.GitHubOrg = "open-telemetry"
 			ghs.cfg.Endpoint = server.URL
 
-			err := ghs.start(context.Background(), componenttest.NewNopHost())
+			err := ghs.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			actualMetrics, err := ghs.scrape(context.Background())
+			actualMetrics, err := ghs.scrape(t.Context())
 			require.NoError(t, err)
 
 			expectedFile := filepath.Join("testdata", "scraper", tc.testFile)

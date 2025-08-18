@@ -4,7 +4,6 @@
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,11 +30,11 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings(metadata.Type)
-	mReceiver, err := factory.CreateMetrics(context.Background(), set, cfg, nil)
+	mReceiver, err := factory.CreateMetrics(t.Context(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
-	tReceiver, err := factory.CreateTraces(context.Background(), set, cfg, nil)
+	tReceiver, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }

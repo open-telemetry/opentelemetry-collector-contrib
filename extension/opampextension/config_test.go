@@ -4,7 +4,6 @@
 package opampextension
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -205,7 +204,7 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			tlsConfig, err := tt.server.GetTLSConfig(ctx)
 			assert.NoError(t, err)
 			tt.expectedTLSConfig(t, tlsConfig)

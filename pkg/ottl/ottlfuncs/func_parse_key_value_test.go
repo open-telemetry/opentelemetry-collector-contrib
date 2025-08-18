@@ -254,7 +254,7 @@ hello!!world  `, nil
 			exprFunc, err := parseKeyValue[any](tt.target, tt.delimiter, tt.pairDelimiter)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			actual, ok := result.(pcommon.Map)
@@ -300,7 +300,7 @@ func Test_parseKeyValue_bad_target(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
@@ -314,7 +314,7 @@ func Test_parseKeyValue_empty_target(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
@@ -328,7 +328,7 @@ func Test_parseKeyValue_bad_split(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.ErrorContains(t, err, "failed to split pairs into key-values: cannot split \"hello_world\" into 2 items, got 1 item(s)")
 }
 
@@ -340,7 +340,7 @@ func Test_parseKeyValue_mismatch_quotes(t *testing.T) {
 	}
 	exprFunc, err := parseKeyValue[any](target, ottl.Optional[string]{}, ottl.Optional[string]{})
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
@@ -355,7 +355,7 @@ func Test_parseKeyValue_bad_delimiter(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=============")
 	exprFunc, err := parseKeyValue[any](target, delimiter, ottl.Optional[string]{})
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.ErrorContains(t, err, "failed to split pairs into key-values: cannot split \"a=b\" into 2 items, got 1 item(s)")
 }
 

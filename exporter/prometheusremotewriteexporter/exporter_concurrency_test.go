@@ -108,7 +108,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ClientConfig:      clientConfig,
 		MaxBatchSizeBytes: 3000000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 		BackOffConfig:       retrySettings,
@@ -120,7 +120,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
 	defer func() {

@@ -125,7 +125,7 @@ var (
 func TestFilterTraceProcessor(t *testing.T) {
 	for _, test := range standardTraceTests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				Spans: filterconfig.MatchConfig{
@@ -272,7 +272,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
-			got, err := processor.processTraces(context.Background(), constructTraces())
+			got, err := processor.processTraces(t.Context(), constructTraces())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -287,7 +287,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	processor, err := newFilterSpansProcessor(metadatatest.NewSettings(tel), &Config{
 		Traces: TraceFilters{
 			SpanConditions: []string{
@@ -297,7 +297,7 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	_, err = processor.processTraces(context.Background(), constructTraces())
+	_, err = processor.processTraces(t.Context(), constructTraces())
 	assert.NoError(t, err)
 
 	metadatatest.AssertEqualProcessorFilterSpansFiltered(t, tel, []metricdata.DataPoint[int64]{

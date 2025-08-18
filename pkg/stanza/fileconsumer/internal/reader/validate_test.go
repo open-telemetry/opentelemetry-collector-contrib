@@ -4,7 +4,6 @@
 package reader
 
 import (
-	"context"
 	"os"
 	"runtime"
 	"testing"
@@ -34,7 +33,7 @@ func TestValidateMoved(t *testing.T) {
 	reader, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 
-	reader.ReadToEnd(context.Background())
+	reader.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Validate before moving
@@ -49,7 +48,7 @@ func TestValidateMoved(t *testing.T) {
 	_, err = temp.WriteString("testlog2\n")
 	require.NoError(t, err)
 
-	reader.ReadToEnd(context.Background())
+	reader.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte("testlog2"))
 
 	// Validate after writing to the moved file
@@ -71,7 +70,7 @@ func TestInvalidateTruncated(t *testing.T) {
 	reader, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 
-	reader.ReadToEnd(context.Background())
+	reader.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Validate before truncating

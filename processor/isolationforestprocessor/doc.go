@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 // Package isolationforestprocessor provides an OpenTelemetry Collector processor
 // that uses the isolation forest machine learning algorithm for anomaly detection
 // in telemetry data.

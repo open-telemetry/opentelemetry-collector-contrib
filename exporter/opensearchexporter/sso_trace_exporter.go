@@ -7,7 +7,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
@@ -16,7 +17,7 @@ import (
 )
 
 type ssoTracesExporter struct {
-	client       *opensearch.Client
+	client       *opensearchapi.Client
 	Namespace    string
 	Dataset      string
 	bulkAction   string
@@ -67,18 +68,19 @@ func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 	return indexer.joinedError()
 }
 
-func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.Logger) (*opensearch.Client, error) {
-	transport := httpClient.Transport
-	return opensearch.NewClient(opensearch.Config{
-		Transport: transport,
+func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.Logger) (*opensearchapi.Client, error) {
+	return opensearchapi.NewClient(opensearchapi.Config{
+		Client: opensearch.Config{
+			Transport: httpClient.Transport,
 
-		// configure connection setup
-		Addresses:    []string{endpoint},
-		DisableRetry: true,
+			// configure connection setup
+			Addresses:    []string{endpoint},
+			DisableRetry: true,
 
-		// configure internal metrics reporting and logging
-		EnableMetrics:     false, // TODO
-		EnableDebugLogger: false, // TODO
-		Logger:            newClientLogger(logger),
+			// configure internal metrics reporting and logging
+			EnableMetrics:     false, // TODO
+			EnableDebugLogger: false, // TODO
+			Logger:            newClientLogger(logger),
+		},
 	})
 }

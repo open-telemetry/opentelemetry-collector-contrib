@@ -4,7 +4,6 @@
 package producer_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,7 @@ func benchXEmptyMessages(b *testing.B, msgCount int) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		assert.NoError(b, producer.Put(context.Background(), bt))
+		assert.NoError(b, producer.Put(b.Context(), bt))
 	}
 }
 

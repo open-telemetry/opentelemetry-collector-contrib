@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/shirou/gopsutil/v4 v4.25.7

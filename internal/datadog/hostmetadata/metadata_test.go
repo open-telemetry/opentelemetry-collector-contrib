@@ -205,7 +205,7 @@ func TestPushMetadata(t *testing.T) {
 	pcfg.MetricsEndpoint = ts.URL
 
 	pusher := NewPusher(mockExporterCreateSettings, pcfg)
-	err := pusher.Push(context.Background(), mockMetadata)
+	err := pusher.Push(t.Context(), mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -221,7 +221,7 @@ func TestFailPushMetadata(t *testing.T) {
 	pcfg.MetricsEndpoint = ts.URL
 
 	pusher := NewPusher(mockExporterCreateSettings, pcfg)
-	err := pusher.Push(context.Background(), mockMetadata)
+	err := pusher.Push(t.Context(), mockMetadata)
 	require.Error(t, err)
 }
 
@@ -239,7 +239,7 @@ func TestPusher(t *testing.T) {
 	attrs := testutil.NewAttributeMap(map[string]string{
 		attributes.AttributeDatadogHostname: "datadog-hostname",
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	server := testutil.DatadogServerMock()

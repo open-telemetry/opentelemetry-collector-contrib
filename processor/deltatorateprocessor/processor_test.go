@@ -4,7 +4,6 @@
 package deltatorateprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -120,7 +119,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
@@ -130,10 +129,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
+			ctx := t.Context()
 			require.NoError(t, mgp.Start(ctx, nil))
 
-			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
+			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 

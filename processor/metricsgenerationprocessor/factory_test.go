@@ -4,7 +4,6 @@
 package metricsgenerationprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -48,7 +47,7 @@ func TestCreateProcessors(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			tp, tErr := factory.CreateTraces(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
@@ -57,7 +56,7 @@ func TestCreateProcessors(t *testing.T) {
 			assert.Nil(t, tp)
 
 			mp, mErr := factory.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())

@@ -277,7 +277,7 @@ func Test_TimeError(t *testing.T) {
 			var localeOptional ottl.Optional[string]
 			exprFunc, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
-			_, err = exprFunc(context.Background(), nil)
+			_, err = exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

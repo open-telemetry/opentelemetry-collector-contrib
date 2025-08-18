@@ -177,14 +177,14 @@ func TestPathGetSetter(t *testing.T) {
 			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(context.Background(), newProfileContext(profile, dictionary), tt.val)
+			err = accessor.Set(t.Context(), newProfileContext(profile, dictionary), tt.val)
 			if tt.setFails {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), newProfileContext(profile, dictionary))
+			got, err := accessor.Get(t.Context(), newProfileContext(profile, dictionary))
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)

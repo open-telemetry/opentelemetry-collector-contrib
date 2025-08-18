@@ -4,7 +4,6 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -52,7 +51,7 @@ func TestClientCreation(t *testing.T) {
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	testEndpoint, _ := url.Parse("https://localhost:8089")
@@ -81,7 +80,7 @@ func TestClientCreateRequest(t *testing.T) {
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, err)
 
@@ -160,7 +159,7 @@ func TestAPIRequestCreate(t *testing.T) {
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, err)
 

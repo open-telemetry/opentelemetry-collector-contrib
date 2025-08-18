@@ -49,7 +49,7 @@ func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 func Test_tracerPublisher(t *testing.T) {
 	mProducer := &mockProducer{name: "producer1", topic: "default"}
 	producer := PulsarTracesProducer{client: nil, producer: mProducer, marshaler: tracesMarshalers()["jaeger_proto"]}
-	err := producer.tracesPusher(context.Background(), testdata.GenerateTracesManySpansSameResource(10))
+	err := producer.tracesPusher(t.Context(), testdata.GenerateTracesManySpansSameResource(10))
 
 	assert.NoError(t, err)
 }
@@ -57,7 +57,7 @@ func Test_tracerPublisher(t *testing.T) {
 func Test_tracerPublisher_marshaler_err(t *testing.T) {
 	mProducer := &mockProducer{name: "producer1", topic: "default"}
 	producer := PulsarTracesProducer{client: nil, producer: mProducer, marshaler: &customTraceMarshaler{encoding: "unknown"}}
-	err := producer.tracesPusher(context.Background(), testdata.GenerateTracesManySpansSameResource(10))
+	err := producer.tracesPusher(t.Context(), testdata.GenerateTracesManySpansSameResource(10))
 
 	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))

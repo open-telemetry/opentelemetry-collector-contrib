@@ -723,7 +723,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			allocator, err := setupMockTargetAllocator(tc.responses)
 			require.NoError(t, err, "Failed to create allocator", tc.responses)
@@ -849,7 +849,7 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 }
 
 func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	initialScrapeConfigs := []*promconfig.ScrapeConfig{
 		{
 			JobName:         "job1",

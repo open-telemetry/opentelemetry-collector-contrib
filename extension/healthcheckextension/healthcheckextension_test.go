@@ -4,7 +4,6 @@
 package healthcheckextension
 
 import (
-	"context"
 	"io"
 	"net"
 	"net/http"
@@ -181,8 +180,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 			hcExt := newServer(tt.config, componenttest.NewNopTelemetrySettings())
 			require.NotNil(t, hcExt)
 
-			require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+			require.NoError(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(t.Context())) })
 
 			// Give a chance for the server goroutine to run.
 			runtime.Gosched()
@@ -232,7 +231,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
@@ -247,10 +246,10 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+	require.NoError(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(t.Context())) })
 
-	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
@@ -265,9 +264,9 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, hcExt.Shutdown(context.Background()))
-	require.NoError(t, hcExt.Shutdown(context.Background()))
+	require.NoError(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, hcExt.Shutdown(t.Context()))
+	require.NoError(t, hcExt.Shutdown(t.Context()))
 }
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
@@ -281,5 +280,5 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	require.NoError(t, hcExt.Shutdown(context.Background()))
+	require.NoError(t, hcExt.Shutdown(t.Context()))
 }

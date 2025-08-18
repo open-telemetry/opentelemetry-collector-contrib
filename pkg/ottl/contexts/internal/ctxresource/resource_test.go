@@ -4,7 +4,6 @@
 package ctxresource_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -330,11 +329,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			resource := createResource()
 
-			got, err := accessor.Get(context.Background(), newTestContext(resource))
+			got, err := accessor.Get(t.Context(), newTestContext(resource))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newTestContext(resource), tt.newVal)
+			err = accessor.Set(t.Context(), newTestContext(resource), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedResource := createResource()

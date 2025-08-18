@@ -4,7 +4,6 @@
 package mezmoexporter
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -153,7 +152,7 @@ func createExporter(t *testing.T, config *Config, logger *zap.Logger) *mezmoExpo
 	exporter := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo, logger)
 	require.NotNil(t, exporter)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	return exporter
@@ -186,19 +185,19 @@ func TestLogsExporter(t *testing.T) {
 
 	t.Run("Test simple log data", func(t *testing.T) {
 		logs := createSimpleLogData(3)
-		err := exporter.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(t.Context(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max message size", func(t *testing.T) {
 		logs := createSizedPayloadLogData(maxMessageSize)
-		err := exporter.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(t.Context(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max body size", func(t *testing.T) {
 		logs := createMaxLogData()
-		err := exporter.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(t.Context(), logs)
 		require.NoError(t, err)
 	})
 }
@@ -231,7 +230,7 @@ func TestAddsRequiredAttributes(t *testing.T) {
 	exporter := createExporter(t, config, log)
 
 	logs := createMinimalAttributesLogData(4)
-	err := exporter.pushLogData(context.Background(), logs)
+	err := exporter.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 }
 
@@ -253,7 +252,7 @@ func Test404IngestError(t *testing.T) {
 	exporter := createExporter(t, config, log)
 
 	logs := createSizedPayloadLogData(1)
-	err := exporter.pushLogData(context.Background(), logs)
+	err := exporter.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, logObserver.Len())

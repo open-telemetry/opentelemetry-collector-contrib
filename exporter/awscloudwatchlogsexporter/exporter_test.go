@@ -335,7 +335,7 @@ func (mf *mockFactory) CreateMultiStreamPusher() cwlogs.Pusher {
 }
 
 func TestConsumeLogs(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -419,7 +419,7 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.MaxRetries = 0
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := newCwLogsExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 	assert.Nil(t, exp)
 	assert.Error(t, err)

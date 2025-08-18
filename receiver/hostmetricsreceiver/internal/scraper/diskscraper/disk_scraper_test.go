@@ -89,7 +89,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
+			scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -104,14 +104,14 @@ func TestScrape(t *testing.T) {
 				scraper.bootTime = test.bootTimeFunc
 			}
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectMetrics, md.MetricCount())

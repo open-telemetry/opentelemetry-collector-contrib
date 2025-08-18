@@ -3,7 +3,6 @@
 package add
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -349,7 +348,7 @@ func TestProcessAndBuild(t *testing.T) {
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, add.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = add.Process(context.Background(), val)
+			err = add.Process(t.Context(), val)
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {
