@@ -42,10 +42,10 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
-	if err := pConfig.PrometheusConfig.Reload(); err != nil {
+	if err = pConfig.PrometheusConfig.Reload(); err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
-	if err := pConfig.PrometheusConfig.Validate(); err != nil {
+	if err = pConfig.PrometheusConfig.Validate(); err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
 
