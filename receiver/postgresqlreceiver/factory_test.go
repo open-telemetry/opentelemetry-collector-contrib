@@ -4,7 +4,6 @@
 package postgresqlreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -34,7 +33,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{

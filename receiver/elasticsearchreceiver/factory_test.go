@@ -4,7 +4,6 @@
 package elasticsearchreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,7 +24,7 @@ func TestCreateMetrics(t *testing.T) {
 				t.Parallel()
 
 				_, err := createMetricsReceiver(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					createDefaultConfig(),
 					consumertest.NewNop(),
@@ -40,7 +39,7 @@ func TestCreateMetrics(t *testing.T) {
 				t.Parallel()
 
 				_, err := createMetricsReceiver(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
