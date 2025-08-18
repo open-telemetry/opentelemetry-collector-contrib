@@ -59,7 +59,7 @@ func TestHubWrapperLegacyImpl_GetEventHubProperties(t *testing.T) {
 
 	assert.Equal(t, results.CreatedAt, createdOn)
 	assert.Equal(t, results.Path, path)
-	assert.Len(t, len(partitionIDs), results.PartitionCount)
+	assert.Len(t, partitionIDs, results.PartitionCount)
 	assert.Equal(t, results.PartitionIDs, partitionIDs)
 }
 
