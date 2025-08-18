@@ -4,7 +4,6 @@
 package azuredataexplorerexporter
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -61,13 +60,13 @@ func TestCreateTracesE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	// create some traces
 	td, tID, attrs := createTraces()
-	err = exp.ConsumeTraces(context.Background(), td)
+	err = exp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 	// Statements
 	traceStmt := kql.New(traceValidationQuery)
@@ -118,7 +117,7 @@ func TestCreateTracesE2E(t *testing.T) {
 		assert.Equal(t, epochTimeString, recs[i].EndTime)
 		assert.Equal(t, attrs, recs[i].TraceAttributes)
 	}
-	t.Cleanup(func() { _ = exp.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = exp.Shutdown(t.Context()) })
 }
 
 // E2E tests while sending the logs data through the exporter
@@ -130,13 +129,13 @@ func TestCreateLogsE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	// Create some logs
 	ld, tID, attrs := createLogs()
-	err = exp.ConsumeLogs(context.Background(), ld)
+	err = exp.ConsumeLogs(t.Context(), ld)
 	require.NoError(t, err)
 	// Statements
 	logStmt := kql.New(logValidationQuery)
@@ -185,7 +184,7 @@ func TestCreateLogsE2E(t *testing.T) {
 		assert.Equal(t, attrs, crec.LogsAttributes)
 		assert.Equal(t, logStatement, crec.Body)
 	}
-	t.Cleanup(func() { _ = exp.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = exp.Shutdown(t.Context()) })
 }
 
 // E2E tests while sending the metrics data through the exporter
@@ -197,13 +196,13 @@ func TestCreateMetricsE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	// Create some metrics
 	md, attrs, metricName := createMetrics()
-	err = exp.ConsumeMetrics(context.Background(), md)
+	err = exp.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 	// Statements
 	metricStmt := kql.New(metricValidationQuery)
@@ -250,7 +249,7 @@ func TestCreateMetricsE2E(t *testing.T) {
 		assert.Equal(t, metricUnit, crec.MetricUnit)
 		assert.Equal(t, epochTimeString, crec.Timestamp)
 	}
-	t.Cleanup(func() { _ = exp.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = exp.Shutdown(t.Context()) })
 }
 
 func getConfig() (*Config, bool) {
@@ -357,7 +356,7 @@ func createClientAndExecuteQuery(t *testing.T, config Config, query azkustodata.
 	defer client.Close()
 	// Query using our singleNodeStmt, variable substituting for ParamNodeId
 	dataset, err := client.IterativeQuery(
-		context.Background(),
+		t.Context(),
 		config.Database,
 		query,
 		azkustodata.QueryParameters(params),

@@ -3,7 +3,6 @@
 package jsonarray
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -263,7 +262,7 @@ func TestParserJarray(t *testing.T) {
 			for i := range tc.inputEntries {
 				inputEntry := tc.inputEntries[i]
 				inputEntry.ObservedTimestamp = ots
-				err = op.Process(context.Background(), &inputEntry)
+				err = op.Process(t.Context(), &inputEntry)
 				if tc.expectProcessErr {
 					require.Error(t, err)
 					return
@@ -379,7 +378,7 @@ dd","eeee"]`,
 
 			entry := entry.New()
 			entry.Body = tc.input
-			err = op.Process(context.Background(), entry)
+			err = op.Process(t.Context(), entry)
 			require.NoError(t, err)
 			fake.ExpectBody(t, tc.expected)
 			fake.ExpectNoEntry(t, 100*time.Millisecond)

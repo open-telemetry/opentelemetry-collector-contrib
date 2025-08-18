@@ -4,7 +4,6 @@
 package carbonreceiver
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -24,13 +23,13 @@ func TestReporterObservability(t *testing.T) {
 	receiverID := component.NewIDWithName(metadata.Type, "fake_receiver")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	reporter, err := newReporter(receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	require.NoError(t, err)
 
-	ctx := reporter.OnDataReceived(context.Background())
+	ctx := reporter.OnDataReceived(t.Context())
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 

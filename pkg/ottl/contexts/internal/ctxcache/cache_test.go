@@ -4,7 +4,6 @@
 package ctxcache
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,7 +34,7 @@ func Test_PathExpressionParser(t *testing.T) {
 		getter, err := parser(path)
 		require.NoError(t, err)
 
-		val, err := getter.Get(context.Background(), ctx)
+		val, err := getter.Get(t.Context(), ctx)
 		require.NoError(t, err)
 		require.Equal(t, cache, val)
 
@@ -64,7 +63,7 @@ func Test_PathExpressionParser(t *testing.T) {
 		getter, err := parser(path)
 		require.NoError(t, err)
 
-		val, err := getter.Get(context.Background(), ctx)
+		val, err := getter.Get(t.Context(), ctx)
 		require.NoError(t, err)
 		assert.Equal(t, "value1", val)
 	})
@@ -80,7 +79,7 @@ func Test_PathExpressionParser(t *testing.T) {
 		newCache := pcommon.NewMap()
 		newCache.PutStr("new_key", "new_value")
 
-		err = getter.Set(context.Background(), ctx, newCache)
+		err = getter.Set(t.Context(), ctx, newCache)
 		require.NoError(t, err)
 
 		val, ok := ctx.cache.Get("new_key")
@@ -100,7 +99,7 @@ func Test_PathExpressionParser(t *testing.T) {
 		newCache := pcommon.NewMap()
 		newCache.PutStr("new_key", "new_value")
 
-		err = getter.Set(context.Background(), ctx, newCache.AsRaw())
+		err = getter.Set(t.Context(), ctx, newCache.AsRaw())
 		require.NoError(t, err)
 
 		val, ok := ctx.cache.Get("new_key")
@@ -122,7 +121,7 @@ func Test_PathExpressionParser(t *testing.T) {
 		getter, err := parser(path)
 		require.NoError(t, err)
 
-		err = getter.Set(context.Background(), ctx, "updated_value")
+		err = getter.Set(t.Context(), ctx, "updated_value")
 		require.NoError(t, err)
 
 		v, ok := ctx.cache.Get("key1")
@@ -143,7 +142,7 @@ func Test_PathExpressionParser(t *testing.T) {
 		getter, err := parser(path)
 		require.NoError(t, err)
 
-		err = getter.Set(context.Background(), ctx, "value3")
+		err = getter.Set(t.Context(), ctx, "value3")
 		require.NoError(t, err)
 
 		v, ok := ctx.cache.Get("key3")
@@ -172,11 +171,11 @@ func Test_PathExpressionParser(t *testing.T) {
 		getter, err := parser(path)
 		require.NoError(t, err)
 
-		val, err := getter.Get(context.Background(), ctx)
+		val, err := getter.Get(t.Context(), ctx)
 		require.NoError(t, err)
 		assert.Equal(t, "nested_value", val)
 
-		err = getter.Set(context.Background(), ctx, "updated_nested_value")
+		err = getter.Set(t.Context(), ctx, "updated_nested_value")
 		require.NoError(t, err)
 
 		parentValue, ok1 := ctx.cache.Get("parent")

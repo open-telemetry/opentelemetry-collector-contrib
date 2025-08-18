@@ -135,7 +135,7 @@ func Test_InsertXML(t *testing.T) {
 				})
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			if tt.expectErr == "" {
 				assert.NoError(t, err)
 			} else {
@@ -171,7 +171,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 		})
 	assert.NoError(t, err)
 	assert.NotNil(t, exprFunc)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 
 	// Invalid XML subdoc should error on function execution
@@ -187,6 +187,6 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 		})
 	assert.NoError(t, err)
 	assert.NotNil(t, exprFunc)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

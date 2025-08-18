@@ -4,7 +4,6 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -42,7 +41,7 @@ func TestScrape(t *testing.T) {
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -59,7 +58,7 @@ func TestScrape(t *testing.T) {
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -76,7 +75,7 @@ func TestScrape(t *testing.T) {
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
-		metrics, err := scraper.scrape(context.Background())
+		metrics, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		assert.Equal(t, 0, metrics.DataPointCount(), "Expected 0 datapoints to be collected")
 
@@ -88,7 +87,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
-		_, err := scraper.scrape(context.Background())
+		_, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		require.Equal(t, err, errors.New("no client available"))
 	})
@@ -102,7 +101,7 @@ func TestScrape(t *testing.T) {
 		scraper := newCouchdbScraper(settings, cfg)
 		scraper.client = mockClient
 
-		_, err := scraper.scrape(context.Background())
+		_, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		require.Equal(t, 1, logs.Len())
 		require.Equal(t, []observer.LoggedEntry{
@@ -126,7 +125,7 @@ func TestStart(t *testing.T) {
 		require.NoError(t, xconfmap.Validate(cfg))
 
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-		err := scraper.start(context.Background(), componenttest.NewNopHost())
+		err := scraper.start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 	})
 	t.Run("start fail", func(t *testing.T) {
@@ -138,7 +137,7 @@ func TestStart(t *testing.T) {
 		require.NoError(t, xconfmap.Validate(cfg))
 
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-		err := scraper.start(context.Background(), componenttest.NewNopHost())
+		err := scraper.start(t.Context(), componenttest.NewNopHost())
 		require.Error(t, err)
 	})
 }
@@ -164,7 +163,7 @@ func TestMetricSettings(t *testing.T) {
 	scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	scraper.client = mockClient
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.yaml"))

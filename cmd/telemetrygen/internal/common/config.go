@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 var (
@@ -65,7 +67,7 @@ func (*KeyValue) Type() string {
 type Config struct {
 	WorkerCount           int
 	Rate                  float64
-	TotalDuration         time.Duration
+	TotalDuration         types.DurationWithInf
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
 
@@ -162,7 +164,7 @@ func (c *Config) GetHeaders() map[string]string {
 func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.WorkerCount, "workers", c.WorkerCount, "Number of workers (goroutines) to run")
 	fs.Float64Var(&c.Rate, "rate", c.Rate, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
-	fs.DurationVar(&c.TotalDuration, "duration", c.TotalDuration, "For how long to run the test")
+	fs.Var(&c.TotalDuration, "duration", "For how long to run the test. Use 'inf' for infinite duration.")
 	fs.DurationVar(&c.ReportingInterval, "interval", c.ReportingInterval, "Reporting interval")
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", c.CustomEndpoint, "Destination endpoint for exporting logs, metrics and traces")
@@ -201,7 +203,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.WorkerCount = 1
 	c.Rate = 0
-	c.TotalDuration = 0
+	c.TotalDuration = types.DurationWithInf(0)
 	c.ReportingInterval = 1 * time.Second
 	c.CustomEndpoint = ""
 	c.Insecure = false

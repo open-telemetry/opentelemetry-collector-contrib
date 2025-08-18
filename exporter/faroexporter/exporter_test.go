@@ -72,7 +72,7 @@ func TestExporter_BaseTest(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			err = exp.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -183,7 +183,7 @@ func TestExporter_ErrorCases(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			err = exp.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -227,7 +227,7 @@ func TestExportContextCanceled(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	err = exp.start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	cancel()

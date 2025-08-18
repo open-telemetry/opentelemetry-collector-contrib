@@ -52,29 +52,29 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	bg := context.Background()
+	bg := t.Context()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	callCtxs := []context.Context{
-		client.NewContext(context.Background(), client.Info{
+		client.NewContext(t.Context(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"key1": {"first"},
 				"key2": {"second"},
 			}),
 		}),
-		client.NewContext(context.Background(), client.Info{
+		client.NewContext(t.Context(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"key1": {"third"},
 				"key2": {"fourth"},
@@ -158,17 +158,17 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg.MetadataCardinalityLimit = cardLimit
 	cfg.MetadataKeys = []string{"key1", "key2"}
 	set := exportertest.NewNopSettings(metadata.Type)
-	bg := context.Background()
+	bg := t.Context()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())

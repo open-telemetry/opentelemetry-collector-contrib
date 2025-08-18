@@ -4,7 +4,6 @@
 package githubscraper
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -339,7 +338,7 @@ func TestCheckOwnerExists(t *testing.T) {
 			defer server.Close()
 
 			client := graphql.NewClient(server.URL, ghs.client)
-			loginType, err := ghs.login(context.Background(), client, tc.login)
+			loginType, err := ghs.login(t.Context(), client, tc.login)
 
 			assert.Equal(t, tc.expectedOwnerType, loginType)
 			if !tc.expectedError {
@@ -453,7 +452,7 @@ func TestGetPullRequests(t *testing.T) {
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 
-			prs, err := ghs.getPullRequests(context.Background(), client, "repo name")
+			prs, err := ghs.getPullRequests(t.Context(), client, "repo name")
 
 			assert.Len(t, prs, tc.expectedPrCount)
 			if tc.expectedErr == nil {
@@ -556,7 +555,7 @@ func TestGetRepos(t *testing.T) {
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 
-			_, count, err := ghs.getRepos(context.Background(), client, "fake query")
+			_, count, err := ghs.getRepos(t.Context(), client, "fake query")
 
 			assert.Equal(t, tc.expected, count)
 			if tc.expectedErr == nil {
@@ -660,7 +659,7 @@ func TestGetBranches(t *testing.T) {
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 
-			_, count, err := ghs.getBranches(context.Background(), client, "deathstarrepo", "main")
+			_, count, err := ghs.getBranches(t.Context(), client, "deathstarrepo", "main")
 
 			assert.Equal(t, tc.expected, count)
 			if tc.expectedErr == nil {
@@ -718,7 +717,7 @@ func TestGetContributors(t *testing.T) {
 			client.BaseURL = url
 			client.UploadURL = url
 
-			contribs, err := ghs.getContributorCount(context.Background(), client, tc.repo)
+			contribs, err := ghs.getContributorCount(t.Context(), client, tc.repo)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedCount, contribs)
 		})
@@ -896,7 +895,7 @@ func TestEvalCommits(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
-			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
+			adds, dels, age, err := ghs.evalCommits(t.Context(), client, "repo1", tc.branch)
 
 			assert.Equal(t, tc.expectedDeletions, dels)
 			assert.Equal(t, tc.expectedAdditions, adds)

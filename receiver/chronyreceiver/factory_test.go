@@ -4,7 +4,6 @@
 package chronyreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -45,7 +44,7 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 		},
 	}
 	mem, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{

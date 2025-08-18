@@ -4,7 +4,6 @@
 package regex
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"sync"
@@ -148,7 +147,7 @@ func TestParserRegex(t *testing.T) {
 			tc.input.ObservedTimestamp = ots
 			tc.expected.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 
 			fake.ExpectEntry(t, tc.expected)

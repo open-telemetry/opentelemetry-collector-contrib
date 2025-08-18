@@ -109,7 +109,7 @@ func TestAdaptiveThreshold(t *testing.T) {
 	assert.True(t, finalThreshold >= 0.0 && finalThreshold <= 1.0, "Adaptive threshold should be between 0 and 1, got %f", finalThreshold)
 
 	// Verify statistics are reasonable
-	assert.True(t, finalStats.TotalSamples >= uint64(len(samples)), "Should have processed at least %d samples", len(samples))
+	assert.GreaterOrEqual(t, finalStats.TotalSamples, uint64(len(samples)), "Should have processed at least %d samples", len(samples))
 	assert.True(t, finalStats.WindowUtilization >= 0.0 && finalStats.WindowUtilization <= 1.0, "Window utilization should be between 0 and 1")
 }
 
@@ -135,7 +135,7 @@ func TestForestStatistics(t *testing.T) {
 
 	// Check updated statistics
 	stats = forest.GetStatistics()
-	assert.True(t, stats.TotalSamples >= uint64(len(samples)), "Should have processed at least %d samples", len(samples))
+	assert.GreaterOrEqual(t, stats.TotalSamples, uint64(len(samples)), "Should have processed at least %d samples", len(samples))
 	assert.True(t, stats.AnomalyRate >= 0.0 && stats.AnomalyRate <= 1.0, "Anomaly rate should be between 0 and 1")
 }
 
@@ -171,8 +171,8 @@ func TestTreePathLength(t *testing.T) {
 	// Test path length calculation for both sides of split
 	leftPath := tree.calculatePathLength([]float64{1.0, 2.0})  // Should go left
 	rightPath := tree.calculatePathLength([]float64{2.0, 2.0}) // Should go right
-	assert.True(t, leftPath > 0, "Left path should have positive length")
-	assert.True(t, rightPath > 0, "Right path should have positive length")
+	assert.Positive(t, leftPath, "Left path should have positive length")
+	assert.Positive(t, rightPath, "Right path should have positive length")
 }
 
 func TestExpectedPathLength(t *testing.T) {
@@ -187,8 +187,8 @@ func TestExpectedPathLength(t *testing.T) {
 	}
 
 	expectedLength := forest.getExpectedPathLength()
-	assert.True(t, expectedLength > 0, "Expected path length should be positive")
-	assert.True(t, expectedLength < 100, "Expected path length should be reasonable")
+	assert.Positive(t, expectedLength, "Expected path length should be positive")
+	assert.Less(t, expectedLength, 100.0, "Expected path length should be less than 100")
 }
 
 // Benchmark tests to verify performance characteristics
@@ -225,7 +225,7 @@ func BenchmarkFeatureExtraction(b *testing.B) {
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Attributes().PutStr("http.status_code", "200")
 
-	resourceAttrs := map[string]interface{}{
+	resourceAttrs := map[string]any{
 		"service.name": "benchmark-service",
 	}
 

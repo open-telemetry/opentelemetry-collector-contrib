@@ -37,8 +37,8 @@ func TestStartAndStopGRPC(t *testing.T) {
 	require.NotNil(t, s)
 
 	// test
-	assert.NoError(t, s.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, s.Shutdown(context.Background()))
+	assert.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, s.Shutdown(t.Context()))
 }
 
 func TestSamplingGRPCServer_Shutdown(t *testing.T) {
@@ -72,7 +72,7 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := &SamplingGRPCServer{grpcServer: tc.grpcServer}
-			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			ctx, cancel := context.WithTimeout(t.Context(), tc.timeout)
 			assert.NoError(t, tc.grpcServer.Serve(nil))
 			defer cancel()
 			assert.Equal(t, tc.expect, srv.Shutdown(ctx))
@@ -82,7 +82,7 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 
 func TestSamplingGRPCServerNotStarted_Shutdown(t *testing.T) {
 	srv := &SamplingGRPCServer{}
-	assert.Equal(t, errGRPCServerNotRunning, srv.Shutdown(context.Background()))
+	assert.Equal(t, errGRPCServerNotRunning, srv.Shutdown(t.Context()))
 }
 
 type grpcServerMock struct {

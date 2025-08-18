@@ -3,7 +3,6 @@
 package csv
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -808,7 +807,7 @@ func TestParserCSV(t *testing.T) {
 			for i := range tc.inputEntries {
 				inputEntry := tc.inputEntries[i]
 				inputEntry.ObservedTimestamp = ots
-				err = op.Process(context.Background(), &inputEntry)
+				err = op.Process(t.Context(), &inputEntry)
 				if tc.expectProcessErr {
 					require.Error(t, err)
 					return
@@ -1047,7 +1046,7 @@ cc""",dddd,eeee`,
 
 			entry := entry.New()
 			entry.Body = tc.input
-			err = op.Process(context.Background(), entry)
+			err = op.Process(t.Context(), entry)
 			require.NoError(t, err)
 			fake.ExpectBody(t, tc.expected)
 			fake.ExpectNoEntry(t, 100*time.Millisecond)
@@ -1070,7 +1069,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 
 		entry := entry.New()
 		entry.Body = "{\"name\": \"stanza\"}"
-		err = op.Process(context.Background(), entry)
+		err = op.Process(t.Context(), entry)
 		require.Error(t, err, "parse error on line 1, column 1: bare \" in non-quoted-field")
 		fake.ExpectBody(t, "{\"name\": \"stanza\"}")
 	})

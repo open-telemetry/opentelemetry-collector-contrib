@@ -109,7 +109,7 @@ func TestExporterNoData(t *testing.T) {
 		config.Watermark.Behavior = "earliest"
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, exporter.consumeLogs(ctx, plog.NewLogs()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))
 	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
@@ -128,7 +128,7 @@ func TestExporterClientError(t *testing.T) {
 		return nil, errors.New("something went wrong")
 	}
 
-	require.Error(t, exporter.start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestExporterSimpleData(t *testing.T) {
@@ -138,7 +138,7 @@ func TestExporterSimpleData(t *testing.T) {
 		logs := plog.NewLogs()
 		logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("some log message")
 
-		require.NoError(t, exporter.consumeLogs(context.Background(), logs))
+		require.NoError(t, exporter.consumeLogs(t.Context(), logs))
 		require.Len(t, publisher.requests, 1)
 
 		request := publisher.requests[0]
@@ -161,7 +161,7 @@ func TestExporterSimpleData(t *testing.T) {
 		metric.SetName("some.metric")
 		metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(42)
 
-		require.NoError(t, exporter.consumeMetrics(context.Background(), metrics))
+		require.NoError(t, exporter.consumeMetrics(t.Context(), metrics))
 		require.Len(t, publisher.requests, 1)
 
 		request := publisher.requests[0]
@@ -183,7 +183,7 @@ func TestExporterSimpleData(t *testing.T) {
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("some span")
 
-		require.NoError(t, exporter.consumeTraces(context.Background(), traces))
+		require.NoError(t, exporter.consumeTraces(t.Context(), traces))
 		require.Len(t, publisher.requests, 1)
 
 		request := publisher.requests[0]
@@ -210,7 +210,7 @@ func TestExporterSimpleDataWithCompression(t *testing.T) {
 		logs := plog.NewLogs()
 		logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("some log message")
 
-		require.NoError(t, exporter.consumeLogs(context.Background(), logs))
+		require.NoError(t, exporter.consumeLogs(t.Context(), logs))
 		require.Len(t, publisher.requests, 1)
 
 		request := publisher.requests[0]
@@ -237,7 +237,7 @@ func TestExporterSimpleDataWithCompression(t *testing.T) {
 		metric.SetName("some.metric")
 		metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(42)
 
-		require.NoError(t, exporter.consumeMetrics(context.Background(), metrics))
+		require.NoError(t, exporter.consumeMetrics(t.Context(), metrics))
 		require.Len(t, publisher.requests, 1)
 
 		request := publisher.requests[0]
@@ -260,7 +260,7 @@ func TestExporterSimpleDataWithCompression(t *testing.T) {
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("some span")
 
-		require.NoError(t, exporter.consumeTraces(context.Background(), traces))
+		require.NoError(t, exporter.consumeTraces(t.Context(), traces))
 		require.Len(t, publisher.requests, 1)
 
 		request := publisher.requests[0]
@@ -285,7 +285,7 @@ func TestExporterWithOrdering(t *testing.T) {
 		cfg.Ordering.RemoveResourceAttribute = true
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("logs", func(t *testing.T) {
 		exporter, publisher := newTestExporter(t, withOrdering)
@@ -457,8 +457,8 @@ func newTestExporter(t *testing.T, options ...func(*Config)) (*pubsubExporter, *
 		return uuid.Parse(defaultUUID)
 	}
 
-	require.NoError(t, exporter.start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { assert.NoError(t, exporter.shutdown(context.Background())) })
+	require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { assert.NoError(t, exporter.shutdown(t.Context())) })
 
 	return exporter, publisher
 }

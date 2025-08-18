@@ -144,7 +144,7 @@ func BenchmarkProcessor(gb *testing.B) {
 			b.ResetTimer()
 			b.StopTimer()
 
-			ctx := context.Background()
+			ctx := gb.Context()
 			for range b.N {
 				for i := range ms.Len() {
 					cs.next(ms.At(i))
@@ -234,7 +234,7 @@ func Benchmark(b *testing.B) {
 		// block until all others have too and recordings are reset
 		<-wait
 
-		ctx := context.Background()
+		ctx := b.Context()
 		for n := 0; pb.Next(); n++ {
 			for _, m := range ms {
 				// re-using output as input, so reset temporality to delta

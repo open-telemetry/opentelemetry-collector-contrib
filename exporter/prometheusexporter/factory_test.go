@@ -4,7 +4,6 @@
 package prometheusexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestCreateMetrics(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Endpoint = ""
 	exp, err := createMetricsExporter(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.Equal(t, errBlankPrometheusAddress, err)
@@ -43,7 +42,7 @@ func TestCreateMetricsExportHelperError(t *testing.T) {
 	set.Logger = nil
 
 	// Should give us an exporterhelper.errNilLogger
-	exp, err := createMetricsExporter(context.Background(), set, cfg)
+	exp, err := createMetricsExporter(t.Context(), set, cfg)
 
 	assert.Nil(t, exp)
 	assert.Error(t, err)

@@ -40,13 +40,13 @@ func TestConnectorStart(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	procCreationParams := connectortest.NewNopSettings(metadata.Type)
-	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
+	traceConnector, err := factory.CreateTracesToMetrics(t.Context(), procCreationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	// Test
 	smp := traceConnector.(*serviceGraphConnector)
-	err = smp.Start(context.Background(), componenttest.NewNopHost())
-	defer require.NoError(t, smp.Shutdown(context.Background()))
+	err = smp.Start(t.Context(), componenttest.NewNopHost())
+	defer require.NoError(t, smp.Shutdown(t.Context()))
 
 	// Verify
 	assert.NoError(t, err)
@@ -63,7 +63,7 @@ func TestConnectorShutdown(t *testing.T) {
 	set.Logger = zaptest.NewLogger(t)
 	p, err := newConnector(set, cfg, next)
 	require.NoError(t, err)
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -180,10 +180,10 @@ func TestConnectorConsume(t *testing.T) {
 			set.Logger = zaptest.NewLogger(t)
 			conn, err := newConnector(set, tc.cfg, newMockMetricsExporter())
 			require.NoError(t, err)
-			assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
 			// Send spans to the connector
-			assert.NoError(t, conn.ConsumeTraces(context.Background(), tc.sampleTraces))
+			assert.NoError(t, conn.ConsumeTraces(t.Context(), tc.sampleTraces))
 
 			// Force collection
 			if runtime.GOOS == "windows" {
@@ -196,7 +196,7 @@ func TestConnectorConsume(t *testing.T) {
 			tc.verifyMetrics(t, md)
 
 			// Shutdown the connector
-			assert.NoError(t, conn.Shutdown(context.Background()))
+			assert.NoError(t, conn.Shutdown(t.Context()))
 
 			// Unset feature gates
 			for _, gate := range tc.gates {
@@ -480,11 +480,11 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	set.Logger = zaptest.NewLogger(t)
 	p, err := newConnector(set, cfg, mockMetricsExporter)
 	require.NoError(t, err)
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
-	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
 
 	// Make series stale and force a cache cleanup
 	for key, metric := range p.keyToMetric {
@@ -496,10 +496,10 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
-	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
 
 	// Shutdown the connector
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
@@ -518,11 +518,11 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	set.Logger = zaptest.NewLogger(t)
 	p, err := newConnector(set, cfg, mockMetricsExporter)
 	require.NoError(t, err)
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
-	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
 
 	// Make series stale and force a cache cleanup
 	for key, metric := range p.keyToMetric {
@@ -559,7 +559,7 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	p.seriesMutex.Unlock()
 
 	// Shutdown the connector
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestValidateOwnTelemetry(t *testing.T) {
@@ -575,11 +575,11 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	p, err := newConnector(tel.NewTelemetrySettings(), cfg, mockMetricsExporter)
 	require.NoError(t, err)
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
-	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
 
 	// Make series stale and force a cache cleanup
 	for key, metric := range p.keyToMetric {
@@ -591,14 +591,14 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
-	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
 
 	// Shutdown the connector
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.NoError(t, p.Shutdown(t.Context()))
 	metadatatest.AssertEqualConnectorServicegraphTotalEdges(t, tel, []metricdata.DataPoint[int64]{
 		{Value: 2},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.NoError(t, tel.Shutdown(t.Context()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
@@ -616,12 +616,12 @@ func TestExtraDimensionsLabels(t *testing.T) {
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
 	assert.NoError(t, err)
 
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer require.NoError(t, conn.Shutdown(context.Background()))
+	assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	defer require.NoError(t, conn.Shutdown(t.Context()))
 
 	td, err := golden.ReadTraces("testdata/extra-dimensions-queue-db-trace.yaml")
 	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, conn.ConsumeTraces(t.Context(), td))
 
 	conn.store.Expire()
 
@@ -657,11 +657,11 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
 	assert.NoError(t, err)
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
 	td, err := golden.ReadTraces(trace)
 	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, conn.ConsumeTraces(t.Context(), td))
 
 	conn.store.Expire()
 	// Wait for metrics to be generated with timeout
@@ -672,7 +672,7 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NotEmpty(t, metrics, "no metrics generated within timeout")
-	require.NoError(t, conn.Shutdown(context.Background()))
+	require.NoError(t, conn.Shutdown(t.Context()))
 
 	expectedMetrics, err := golden.ReadMetrics(expected)
 	assert.NoError(t, err)
@@ -706,11 +706,11 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
 	assert.NoError(t, err)
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
 	td, err := golden.ReadTraces(trace)
 	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, conn.ConsumeTraces(t.Context(), td))
 
 	conn.store.Expire()
 	// Wait for metrics to be generated with timeout
@@ -721,7 +721,7 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NotEmpty(t, metrics, "no metrics generated within timeout")
-	require.NoError(t, conn.Shutdown(context.Background()))
+	require.NoError(t, conn.Shutdown(t.Context()))
 
 	expectedMetrics, err := golden.ReadMetrics(expected)
 	assert.NoError(t, err)
@@ -748,10 +748,10 @@ func TestExponentialHistogram(t *testing.T) {
 	}
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
 	require.NoError(t, err)
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Send spans to the connector
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
+	assert.NoError(t, conn.ConsumeTraces(t.Context(), buildSampleTrace(t, "val")))
 
 	// Force collection
 	if runtime.GOOS == "windows" {
@@ -811,7 +811,7 @@ func TestExponentialHistogram(t *testing.T) {
 	expectAttributes.CopyTo(expectClientDp.Attributes())
 	verifyExpDuration(t, mClientDuration, expectClientDp)
 
-	assert.NoError(t, conn.Shutdown(context.Background()))
+	assert.NoError(t, conn.Shutdown(t.Context()))
 }
 
 func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.ExponentialHistogramDataPoint) {

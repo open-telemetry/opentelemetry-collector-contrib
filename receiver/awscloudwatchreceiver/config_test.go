@@ -28,7 +28,7 @@ func TestValidate(t *testing.T) {
 			name: "Valid Config",
 			config: Config{
 				Region: "us-west-2",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -45,18 +45,10 @@ func TestValidate(t *testing.T) {
 			expectedErr: errNoRegion,
 		},
 		{
-			name: "Nil Logs",
-			config: Config{
-				Region: "us-west-2",
-				Logs:   nil,
-			},
-			expectedErr: errNoLogsConfigured,
-		},
-		{
 			name: "Invalid Event Limit",
 			config: Config{
 				Region: "us-west-2",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: -1,
 					PollInterval:        defaultPollInterval,
 				},
@@ -67,7 +59,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Poll Interval",
 			config: Config{
 				Region: "us-west-2",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        100 * time.Millisecond,
 					Groups: GroupConfig{
@@ -81,7 +73,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Log Group Limit",
 			config: Config{
 				Region: "us-east-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -97,7 +89,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Log Group Prefix And Pattern",
 			config: Config{
 				Region: "us-east-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -116,7 +108,7 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region:       "us-east-1",
 				IMDSEndpoint: "xyz",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -130,7 +122,7 @@ func TestValidate(t *testing.T) {
 			name: "Both Logs Autodiscover and Named Set",
 			config: Config{
 				Region: "us-east-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -173,7 +165,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "default",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -188,7 +180,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "prefix-log-group-autodiscover",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -204,7 +196,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "name-pattern-log-group-autodiscover",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -220,7 +212,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -238,7 +230,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -257,7 +249,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedConfig: &Config{
 				Profile: "my-profile",
 				Region:  "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -273,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedConfig: &Config{
 				Profile: "my-profile",
 				Region:  "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{

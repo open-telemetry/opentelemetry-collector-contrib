@@ -4,7 +4,6 @@
 package mezmoexporter
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -70,12 +69,12 @@ func TestCreateLogs(t *testing.T) {
 	cfg.IngestKey = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createLogsExporter(context.Background(), params, cfg)
+	_, err := createLogsExporter(t.Context(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsNoConfig(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createLogsExporter(context.Background(), params, nil)
+	_, err := createLogsExporter(t.Context(), params, nil)
 	assert.Error(t, err)
 }

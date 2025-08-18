@@ -102,7 +102,7 @@ func TestGetCPU(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cpuInfo = tt.fixtures.cpuInfo
 			cpuCounts = tt.fixtures.cpuCounts
-			gotInfo, err := getCPU(context.Background())
+			gotInfo, err := getCPU(t.Context())
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -164,7 +164,7 @@ func TestGetOS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hostInfo = tt.testfixtures.hostInfo
 			t.Setenv("HOST_ETC", tt.testfixtures.hostEtc)
-			gotInfo, err := getOS(context.Background())
+			gotInfo, err := getOS(t.Context())
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -194,7 +194,7 @@ func TestGetMemory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			memVirtualMemory = tt.memVirtualMemory
-			memory, err := getMemory(context.Background())
+			memory, err := getMemory(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, memory.toStringMap())
 		})

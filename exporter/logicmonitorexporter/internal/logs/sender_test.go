@@ -32,7 +32,7 @@ func TestSendLogs(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
@@ -54,7 +54,7 @@ func TestSendLogs(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
@@ -77,7 +77,7 @@ func TestSendLogs(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)

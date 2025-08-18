@@ -4,7 +4,6 @@
 package dynatrace
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -52,7 +51,7 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 	require.NoError(t, createTestFile(tempDir, dtHostMetadataProperties, testPropertiesFile))
 	d.(*Detector).enrichmentDirectory = tempDir
 
-	resource, _, err := d.Detect(context.Background())
+	resource, _, err := d.Detect(t.Context())
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
@@ -84,7 +83,7 @@ func TestDetector_DetectNoFileAvailable(t *testing.T) {
 
 	d.(*Detector).enrichmentDirectory = tempDir
 
-	resource, _, err := d.Detect(context.Background())
+	resource, _, err := d.Detect(t.Context())
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)

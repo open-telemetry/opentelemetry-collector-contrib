@@ -6,7 +6,6 @@
 package snmpreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -47,9 +46,9 @@ func TestIntegration(t *testing.T) {
 
 	container := getContainer(t, snmpAgentContainerRequest)
 	defer func() {
-		require.NoError(t, container.Terminate(context.Background()))
+		require.NoError(t, container.Terminate(t.Context()))
 	}()
-	_, err := container.Host(context.Background())
+	_, err := container.Host(t.Context())
 	require.NoError(t, err)
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
@@ -66,13 +65,13 @@ func TestIntegration(t *testing.T) {
 
 			consumer := new(consumertest.MetricsSink)
 			settings := receivertest.NewNopSettings(metadata.Type)
-			rcvr, err := factory.CreateMetrics(context.Background(), settings, snmpConfig, consumer)
+			rcvr, err := factory.CreateMetrics(t.Context(), settings, snmpConfig, consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
-			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 			require.Eventuallyf(t, func() bool {
 				return len(consumer.AllMetrics()) > 0
 			}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-			require.NoError(t, rcvr.Shutdown(context.Background()))
+			require.NoError(t, rcvr.Shutdown(t.Context()))
 
 			actualMetrics := consumer.AllMetrics()[0]
 			expectedFile := filepath.Join("testdata", "integration", testCase.expectedResultsFilename)
@@ -98,7 +97,7 @@ var snmpAgentContainerRequest = testcontainers.ContainerRequest{
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(
-		context.Background(),
+		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,

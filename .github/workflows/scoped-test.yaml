@@ -18,7 +18,7 @@ jobs:
       go_sources: ${{ steps.changes.outputs.go_sources }}
       go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
 
@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
           echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         id: go-setup
         with:

@@ -4,7 +4,6 @@
 package awsproxy
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestInvalidEndpoint(t *testing.T) {
 		componenttest.NewNopTelemetrySettings(),
 	)
 	assert.NoError(t, err)
-	err = x.Start(context.Background(), componenttest.NewNopHost())
-	defer assert.NoError(t, x.Shutdown(context.Background()))
+	err = x.Start(t.Context(), componenttest.NewNopHost())
+	defer assert.NoError(t, x.Shutdown(t.Context()))
 	assert.Error(t, err)
 }

@@ -36,7 +36,7 @@ func TestUnsuccessfulScrape(t *testing.T) {
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.Error(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
@@ -67,7 +67,7 @@ func TestScraper(t *testing.T) {
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
@@ -120,7 +120,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
@@ -145,7 +145,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
 
 		scraper = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
-		actualMetrics, err = scraper.scrape(context.Background())
+		actualMetrics, err = scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile = filepath.Join("testdata", "scraper", "otel", fileDefault)
@@ -198,7 +198,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -251,7 +251,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -305,7 +305,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -358,7 +358,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
@@ -385,7 +385,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -428,7 +428,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
 		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query"},
 	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32"))
-	actualLogs, err := scraper.scrapeQuerySamples(context.Background(), 30)
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)
@@ -503,7 +503,7 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
 	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow("[{\"Plan\":{\"Node Type\":\"Merge Join\",\"Parallel Aware\":false,\"Async Capable\":false,\"Join Type\":\"Inner\",\"Startup Cost\":0.43,\"Total Cost\":55.27,\"Plan Rows\":290,\"Plan Width\":1675,\"Inner Unique\":\"?\",\"Merge Cond\":\"( e.businessentityid = p.businessentityid )\",\"Plans\":[{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Outer\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Employee_BusinessEntityID\",\"Relation Name\":\"employee\",\"Alias\":\"e\",\"Startup Cost\":0.15,\"Total Cost\":21.5,\"Plan Rows\":290,\"Plan Width\":112},{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Inner\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Person_BusinessEntityID\",\"Relation Name\":\"person\",\"Alias\":\"p\",\"Startup Cost\":0.29,\"Total Cost\":2261.87,\"Plan Rows\":19972,\"Plan Width\":1563}]}}]"))
-	actualLogs, err := scraper.scrapeTopQuery(context.Background(), 31, 32, 33)
+	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "top-query", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)

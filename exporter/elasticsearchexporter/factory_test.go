@@ -4,7 +4,6 @@
 package elasticsearchexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +37,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 			cm := confmap.NewFromStringMap(tc.cfg)
 			require.NoError(t, cm.Unmarshal(cfg))
 
-			exporter, err := factory.CreateLogs(context.Background(), params, cfg.(*Config))
+			exporter, err := factory.CreateLogs(t.Context(), params, cfg.(*Config))
 			require.NoError(t, err)
 			require.NotNil(t, exporter)
 			require.Equal(t, len(tc.expectedLogs), observedLogs.Len())
@@ -47,7 +46,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 				assert.Contains(t, actualLogs[i].Message, expectedLog)
 			}
 
-			require.NoError(t, exporter.Shutdown(context.Background()))
+			require.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -65,7 +64,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 			cm := confmap.NewFromStringMap(tc.cfg)
 			require.NoError(t, cm.Unmarshal(cfg))
 
-			exporter, err := factory.CreateMetrics(context.Background(), params, cfg.(*Config))
+			exporter, err := factory.CreateMetrics(t.Context(), params, cfg.(*Config))
 			require.NoError(t, err)
 			require.NotNil(t, exporter)
 			require.Equal(t, len(tc.expectedLogs), observedLogs.Len())
@@ -74,7 +73,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 				assert.Contains(t, actualLogs[i].Message, expectedLog)
 			}
 
-			require.NoError(t, exporter.Shutdown(context.Background()))
+			require.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -92,7 +91,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 			cm := confmap.NewFromStringMap(tc.cfg)
 			require.NoError(t, cm.Unmarshal(cfg))
 
-			exporter, err := factory.CreateTraces(context.Background(), params, cfg.(*Config))
+			exporter, err := factory.CreateTraces(t.Context(), params, cfg.(*Config))
 			require.NoError(t, err)
 			require.NotNil(t, exporter)
 			require.Equal(t, len(tc.expectedLogs), observedLogs.Len())
@@ -101,7 +100,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 				assert.Contains(t, actualLogs[i].Message, expectedLog)
 			}
 
-			require.NoError(t, exporter.Shutdown(context.Background()))
+			require.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }

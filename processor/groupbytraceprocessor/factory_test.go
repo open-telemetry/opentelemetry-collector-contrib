@@ -4,7 +4,6 @@
 package groupbytraceprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ func TestCreateTestProcessor(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 
 	// test
-	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), c, consumertest.NewNop())
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), c, consumertest.NewNop())
 
 	// verify
 	assert.NoError(t, err)
@@ -59,7 +58,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, consumertest.NewNop())
+		p, err := f.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, consumertest.NewNop())
 
 		// verify
 		assert.ErrorIs(t, tt.expectedErr, err)

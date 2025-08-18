@@ -4,7 +4,6 @@
 package nfsscraper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,7 @@ func TestNfsScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
+	scraper, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	if supportedOS {
 		assert.NoError(t, err)

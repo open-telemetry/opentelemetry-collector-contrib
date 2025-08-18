@@ -70,7 +70,7 @@ func TestExport_Success(t *testing.T) {
 	logsClient, selfExp, selfProv := makeTraceServiceClient(t, logSink)
 
 	go logSink.unblock()
-	resp, err := logsClient.Export(context.Background(), req)
+	resp, err := logsClient.Export(t.Context(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
@@ -78,7 +78,7 @@ func TestExport_Success(t *testing.T) {
 	assert.Equal(t, ld, logSink.AllLogs()[0])
 
 	// One self-tracing spans is issued.
-	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
 	require.Len(t, selfExp.GetSpans(), 1)
 }
 
@@ -88,14 +88,14 @@ func TestExport_EmptyRequest(t *testing.T) {
 	empty := plogotlp.NewExportRequest()
 
 	go logSink.unblock()
-	resp, err := logsClient.Export(context.Background(), empty)
+	resp, err := logsClient.Export(t.Context(), empty)
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 
 	require.Empty(t, logSink.AllLogs())
 
 	// No self-tracing spans are issued.
-	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
 	require.Empty(t, selfExp.GetSpans())
 }
 
@@ -104,12 +104,12 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	req := plogotlp.NewExportRequestFromLogs(ld)
 
 	logsClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
-	resp, err := logsClient.Export(context.Background(), req)
+	resp, err := logsClient.Export(t.Context(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 
 	// One self-tracing spans is issued.
-	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
 	require.Len(t, selfExp.GetSpans(), 1)
 }
 
@@ -120,12 +120,12 @@ func TestExport_AdmissionRequestTooLarge(t *testing.T) {
 	logsClient, selfExp, selfProv := makeTraceServiceClient(t, logSink)
 
 	go logSink.unblock()
-	resp, err := logsClient.Export(context.Background(), req)
+	resp, err := logsClient.Export(t.Context(), req)
 	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 
 	// One self-tracing spans is issued.
-	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
 	require.Len(t, selfExp.GetSpans(), 1)
 }
 
@@ -144,7 +144,7 @@ func TestExport_AdmissionLimitExceeded(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func() {
 			defer wait.Done()
-			_, err := logsClient.Export(context.Background(), req)
+			_, err := logsClient.Export(t.Context(), req)
 			if err == nil {
 				// some succeed!
 				expectSuccess.Add(1)
@@ -158,7 +158,7 @@ func TestExport_AdmissionLimitExceeded(t *testing.T) {
 	wait.Wait()
 
 	// 10 self-tracing spans are issued
-	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
 	require.Len(t, selfExp.GetSpans(), 10)
 
 	// Expect the correct number of success and failure.

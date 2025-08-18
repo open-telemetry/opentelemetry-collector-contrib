@@ -4,7 +4,6 @@
 package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -82,7 +81,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(t.Context(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.ErrorContains(t, err, tc.expectError.Error())
@@ -118,7 +117,7 @@ func TestGetNewToken(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				err := tc.GetNewToken(context.Background())
+				err := tc.GetNewToken(t.Context())
 				require.EqualError(t, err, "non 200 code returned 401")
 				hasToken := tc.HasToken()
 				require.False(t, hasToken)
@@ -136,7 +135,7 @@ func TestGetNewToken(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				err := tc.GetNewToken(context.Background())
+				err := tc.GetNewToken(t.Context())
 				require.ErrorContains(t, err, "failed to decode response payload")
 				hasToken := tc.HasToken()
 				require.False(t, hasToken)
@@ -156,7 +155,7 @@ func TestGetNewToken(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				err := tc.GetNewToken(context.Background())
+				err := tc.GetNewToken(t.Context())
 				require.NoError(t, err)
 				hasToken := tc.HasToken()
 				require.True(t, hasToken)
@@ -191,7 +190,7 @@ func TestGetVirtualServers(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.Nil(t, virtualServers)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -215,7 +214,7 @@ func TestGetVirtualServers(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				pools, err := tc.GetPools(context.Background())
+				pools, err := tc.GetPools(t.Context())
 				require.Nil(t, pools)
 				require.ErrorContains(t, err, "failed to decode response payload")
 			},
@@ -239,7 +238,7 @@ func TestGetVirtualServers(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				expected := models.VirtualServers{}
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, &expected, virtualServers)
 			},
@@ -265,7 +264,7 @@ func TestGetVirtualServers(t *testing.T) {
 				err := json.Unmarshal(statsData, &expected)
 				require.NoError(t, err)
 
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, virtualServers)
 			},
@@ -292,7 +291,7 @@ func TestGetVirtualServers(t *testing.T) {
 				err := json.Unmarshal(statsData, &expected)
 				require.NoError(t, err)
 
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, virtualServers)
 			},
@@ -319,7 +318,7 @@ func TestGetVirtualServers(t *testing.T) {
 				err := json.Unmarshal(statsData, &expected)
 				require.NoError(t, err)
 
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, virtualServers)
 			},
@@ -350,7 +349,7 @@ func TestGetVirtualServers(t *testing.T) {
 				err := json.Unmarshal(combinedData, &expected)
 				require.NoError(t, err)
 
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, virtualServers)
 			},
@@ -368,7 +367,7 @@ func TestGetVirtualServers(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				expected := models.VirtualServers{}
-				virtualServers, err := tc.GetVirtualServers(context.Background())
+				virtualServers, err := tc.GetVirtualServers(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, &expected, virtualServers)
 			},
@@ -396,7 +395,7 @@ func TestGetPools(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				pools, err := tc.GetPools(context.Background())
+				pools, err := tc.GetPools(t.Context())
 				require.Nil(t, pools)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -413,7 +412,7 @@ func TestGetPools(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				pools, err := tc.GetPools(context.Background())
+				pools, err := tc.GetPools(t.Context())
 				require.Nil(t, pools)
 				require.ErrorContains(t, err, "failed to decode response payload")
 			},
@@ -437,7 +436,7 @@ func TestGetPools(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				pools, err := tc.GetPools(context.Background())
+				pools, err := tc.GetPools(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, pools)
 			},
@@ -455,7 +454,7 @@ func TestGetPools(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				expected := models.Pools{}
-				pools, err := tc.GetPools(context.Background())
+				pools, err := tc.GetPools(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, &expected, pools)
 			},
@@ -487,7 +486,7 @@ func TestGetPoolMembers(t *testing.T) {
 				err := json.Unmarshal(loadAPIResponseData(t, poolsStatsResponseFile), &pools)
 				require.NoError(t, err)
 
-				poolMembers, err := tc.GetPoolMembers(context.Background(), pools)
+				poolMembers, err := tc.GetPoolMembers(t.Context(), pools)
 				require.Nil(t, poolMembers)
 				require.EqualError(t, err, "all pool member requests have failed")
 			},
@@ -508,7 +507,7 @@ func TestGetPoolMembers(t *testing.T) {
 				err := json.Unmarshal(loadAPIResponseData(t, poolsStatsResponseFile), &pools)
 				require.NoError(t, err)
 
-				poolMembers, err := tc.GetPoolMembers(context.Background(), pools)
+				poolMembers, err := tc.GetPoolMembers(t.Context(), pools)
 				require.Nil(t, poolMembers)
 				require.EqualError(t, err, "all pool member requests have failed")
 			},
@@ -539,7 +538,7 @@ func TestGetPoolMembers(t *testing.T) {
 				err = json.Unmarshal(data1, &expected)
 				require.NoError(t, err)
 
-				poolMembers, err := tc.GetPoolMembers(context.Background(), pools)
+				poolMembers, err := tc.GetPoolMembers(t.Context(), pools)
 				require.EqualError(t, err, errors.New("non 200 code returned 401").Error())
 				require.Equal(t, expected, poolMembers)
 			},
@@ -566,7 +565,7 @@ func TestGetPoolMembers(t *testing.T) {
 
 				expected := models.PoolMembers{}
 
-				poolMembers, err := tc.GetPoolMembers(context.Background(), pools)
+				poolMembers, err := tc.GetPoolMembers(t.Context(), pools)
 				require.EqualError(t, err, errors.New("non 200 code returned 401").Error())
 				require.Equal(t, &expected, poolMembers)
 			},
@@ -600,7 +599,7 @@ func TestGetPoolMembers(t *testing.T) {
 				err = json.Unmarshal(combinedData, &expected)
 				require.NoError(t, err)
 
-				poolMembers, err := tc.GetPoolMembers(context.Background(), pools)
+				poolMembers, err := tc.GetPoolMembers(t.Context(), pools)
 				require.NoError(t, err)
 				require.Equal(t, expected, poolMembers)
 			},
@@ -622,7 +621,7 @@ func TestGetPoolMembers(t *testing.T) {
 				require.NoError(t, err)
 				expected := models.PoolMembers{}
 
-				poolMembers, err := tc.GetPoolMembers(context.Background(), pools)
+				poolMembers, err := tc.GetPoolMembers(t.Context(), pools)
 				require.NoError(t, err)
 				require.Equal(t, &expected, poolMembers)
 			},
@@ -650,7 +649,7 @@ func TestGetNodes(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.Nil(t, nodes)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -667,7 +666,7 @@ func TestGetNodes(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.Nil(t, nodes)
 				require.ErrorContains(t, err, "failed to decode response payload")
 			},
@@ -691,7 +690,7 @@ func TestGetNodes(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, nodes)
 			},
@@ -709,7 +708,7 @@ func TestGetNodes(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				expected := models.Nodes{}
-				nodes, err := tc.GetNodes(context.Background())
+				nodes, err := tc.GetNodes(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, &expected, nodes)
 			},
@@ -726,7 +725,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(context.Background(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	testClient, err := newClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }

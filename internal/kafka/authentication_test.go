@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"context"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -48,7 +47,7 @@ func TestAuthentication(t *testing.T) {
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Enable = true
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		region: "region",
 	}
 
@@ -143,7 +142,7 @@ func TestAuthentication(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			configureSaramaAuthentication(context.Background(), test.auth, config)
+			configureSaramaAuthentication(t.Context(), test.auth, config)
 
 			// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
 			config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc

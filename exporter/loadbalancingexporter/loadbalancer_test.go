@@ -100,9 +100,9 @@ func TestLoadBalancerStart(t *testing.T) {
 	p.res = &mockResolver{}
 
 	// test
-	res := p.Start(context.Background(), componenttest.NewNopHost())
+	res := p.Start(t.Context(), componenttest.NewNopHost())
 	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 	// verify
 	assert.NoError(t, res)
@@ -145,9 +145,9 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() { assert.NoError(t, p.Shutdown(context.Background())) }()
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
 
 	// test
 	_, e, _ := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
@@ -194,7 +194,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 	}
 
 	// test
-	res := p.Start(context.Background(), componenttest.NewNopHost())
+	res := p.Start(t.Context(), componenttest.NewNopHost())
 
 	// verify
 	assert.Equal(t, expectedErr, res)
@@ -208,7 +208,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	res := p.Shutdown(context.Background())
+	res := p.Shutdown(t.Context())
 
 	// verify
 	assert.NoError(t, res)
@@ -250,11 +250,11 @@ func TestRemoveExtraExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.addMissingExporters(context.Background(), []string{"endpoint-1", "endpoint-2"})
+	p.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
 	resolved := []string{"endpoint-1"}
 
 	// test
-	p.removeExtraExporters(context.Background(), resolved)
+	p.removeExtraExporters(t.Context(), resolved)
 
 	// verify
 	assert.Len(t, p.exporters, 1)
@@ -288,7 +288,7 @@ func TestAddMissingExporters(t *testing.T) {
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
-	p.addMissingExporters(context.Background(), resolved)
+	p.addMissingExporters(t.Context(), resolved)
 
 	// verify
 	assert.Len(t, p.exporters, 2)
@@ -323,7 +323,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
-	p.addMissingExporters(context.Background(), resolved)
+	p.addMissingExporters(t.Context(), resolved)
 
 	// verify
 	assert.Len(t, p.exporters, 1)
@@ -385,7 +385,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// simulate the case where one of the exporters failed to be created and do not exist in the internal map

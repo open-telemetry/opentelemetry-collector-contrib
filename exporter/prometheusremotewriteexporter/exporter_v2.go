@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -68,7 +67,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 					errMarshal := buf.protobuf.Marshal(request)
 					if errMarshal != nil {
 						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						errs = multierr.Append(errs, errMarshal)
 						mu.Unlock()
 						bufferPool.Put(buf)
 						return
@@ -76,7 +75,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 
 					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+						errs = multierr.Append(errs, errExecute)
 						mu.Unlock()
 					}
 					bufferPool.Put(buf)

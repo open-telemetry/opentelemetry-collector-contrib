@@ -46,18 +46,20 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		}
 	}
 
-	if cfg.Workload != nil {
+	if cfg.Workload.HasValue() {
+		workload := cfg.Workload.Get()
 		if credential, err = azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
-			ClientID:      cfg.Workload.ClientID,
-			TenantID:      cfg.Workload.TenantID,
-			TokenFilePath: cfg.Workload.FederatedTokenFile,
+			ClientID:      workload.ClientID,
+			TenantID:      workload.TenantID,
+			TokenFilePath: workload.FederatedTokenFile,
 		}); err != nil {
 			return nil, fmt.Errorf("%s workload identity: %w", failMsg, err)
 		}
 	}
 
-	if cfg.Managed != nil {
-		clientID := cfg.Managed.ClientID
+	if cfg.Managed.HasValue() {
+		managed := cfg.Managed.Get()
+		clientID := managed.ClientID
 		var options *azidentity.ManagedIdentityCredentialOptions
 		if clientID != "" {
 			options = &azidentity.ManagedIdentityCredentialOptions{
@@ -69,16 +71,17 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		}
 	}
 
-	if cfg.ServicePrincipal != nil {
-		if cfg.ServicePrincipal.ClientCertificatePath != "" {
-			cert, privateKey, errParse := getCertificateAndKey(cfg.ServicePrincipal.ClientCertificatePath)
+	if cfg.ServicePrincipal.HasValue() {
+		servicePrincipal := cfg.ServicePrincipal.Get()
+		if servicePrincipal.ClientCertificatePath != "" {
+			cert, privateKey, errParse := getCertificateAndKey(servicePrincipal.ClientCertificatePath)
 			if errParse != nil {
 				return nil, fmt.Errorf("%s service principal with certificate: %w", failMsg, errParse)
 			}
 
 			if credential, err = azidentity.NewClientCertificateCredential(
-				cfg.ServicePrincipal.TenantID,
-				cfg.ServicePrincipal.ClientID,
+				servicePrincipal.TenantID,
+				servicePrincipal.ClientID,
 				[]*x509.Certificate{cert},
 				privateKey,
 				nil,
@@ -86,11 +89,11 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 				return nil, fmt.Errorf("%s service principal with certificate: %w", failMsg, err)
 			}
 		}
-		if cfg.ServicePrincipal.ClientSecret != "" {
+		if servicePrincipal.ClientSecret != "" {
 			if credential, err = azidentity.NewClientSecretCredential(
-				cfg.ServicePrincipal.TenantID,
-				cfg.ServicePrincipal.ClientID,
-				cfg.ServicePrincipal.ClientSecret,
+				servicePrincipal.TenantID,
+				servicePrincipal.ClientID,
+				servicePrincipal.ClientSecret,
 				nil,
 			); err != nil {
 				return nil, fmt.Errorf("%s service principal with secret: %w", failMsg, err)

@@ -44,21 +44,21 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateLogs(t.Context(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
@@ -122,11 +122,11 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
-	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, next)
+	exp, err := factory.CreateTraces(t.Context(), creationParams, cfg, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -141,10 +141,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(otlpExporterFactory.Type()), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(t.Context(), exportertest.NewNopSettings(otlpExporterFactory.Type()), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(context.Background(), exportertest.NewNopSettings(otlpExporterFactory.Type()), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(t.Context(), exportertest.NewNopSettings(otlpExporterFactory.Type()), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
@@ -171,10 +171,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 			exp, err := newMetricProcessor(noopTelemetrySettings, cfg)
 			require.NoError(t, err)
 
-			err = exp.Start(context.Background(), host)
+			err = exp.Start(t.Context(), host)
 			// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
 			assert.NoError(t, err)
-			assert.NoError(t, exp.Shutdown(context.Background()))
+			assert.NoError(t, exp.Shutdown(t.Context()))
 		})
 	}
 }
@@ -194,12 +194,12 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	// test
-	err = exp.Shutdown(context.Background())
+	err = exp.Shutdown(t.Context())
 
 	// verify
 	assert.NoError(t, err)

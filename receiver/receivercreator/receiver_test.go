@@ -77,16 +77,16 @@ func TestMockedEndToEnd(t *testing.T) {
 	params := receivertest.NewNopSettings(metadata.Type)
 	mockConsumer := new(consumertest.MetricsSink)
 
-	rcvr, err := factory.CreateMetrics(context.Background(), params, cfg, mockConsumer)
+	rcvr, err := factory.CreateMetrics(t.Context(), params, cfg, mockConsumer)
 	require.NoError(t, err)
 	sc := rcvr.(*sharedcomponent.SharedComponent)
 	dyn := sc.Component.(*receiverCreator)
-	require.NoError(t, rcvr.Start(context.Background(), host))
+	require.NoError(t, rcvr.Start(t.Context(), host))
 
 	var shutdownOnce sync.Once
 	shutdown := func() {
 		shutdownOnce.Do(func() {
-			assert.NoError(t, rcvr.Shutdown(context.Background()))
+			assert.NoError(t, rcvr.Shutdown(t.Context()))
 		})
 	}
 
@@ -108,7 +108,7 @@ func TestMockedEndToEnd(t *testing.T) {
 		m.SetName("my-metric")
 		m.SetDescription("My metric")
 		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(123)
-		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, example.ConsumeMetrics(t.Context(), md))
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().

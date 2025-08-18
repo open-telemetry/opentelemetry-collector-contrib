@@ -4,7 +4,7 @@
 package prometheusreceiver
 
 import (
-	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,9 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/discovery/file"
+	"github.com/prometheus/prometheus/discovery/http"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -194,7 +199,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
-	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	_, err = createMetricsReceiver(t.Context(), creationSet, cfg, nil)
 	require.NoError(t, err)
 	// We should have received a warning
 	assert.Equal(t, 1, observedLogs.Len())
@@ -478,4 +483,87 @@ scrape_configs:
 			tt.checkFn(t, dst)
 		})
 	}
+}
+
+func TestReloadPromConfigStaticConfigsWithLabels(t *testing.T) {
+	createGroup := func(idxArr ...int) *targetgroup.Group {
+		g := &targetgroup.Group{}
+		g.Labels = promModel.LabelSet{}
+		for _, idx := range idxArr {
+			g.Targets = append(g.Targets, promModel.LabelSet{
+				promModel.AddressLabel:                    promModel.LabelValue(fmt.Sprint("localhost:", 8080+idx)),
+				promModel.LabelName(fmt.Sprint("k", idx)): promModel.LabelValue(fmt.Sprint("v", idx)),
+			})
+			g.Labels[promModel.LabelName(fmt.Sprint("label", idx))] = promModel.LabelValue(fmt.Sprint("value", idx))
+		}
+		return g
+	}
+	create := func() *PromConfig {
+		return &PromConfig{
+			ScrapeConfigs: []*promconfig.ScrapeConfig{
+				{
+					JobName: "test_job",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						&http.SDConfig{
+							URL:             "http://localhost:8080",
+							RefreshInterval: promModel.Duration(time.Second) * 5,
+							HTTPClientConfig: promConfig.HTTPClientConfig{
+								TLSConfig: promConfig.TLSConfig{
+									InsecureSkipVerify: true,
+								},
+							},
+						},
+						discovery.StaticConfig{
+							createGroup(1),
+						},
+						&file.SDConfig{
+							Files: []string{"targets.json"},
+						},
+						discovery.StaticConfig{
+							createGroup(2),
+						},
+						discovery.StaticConfig{
+							createGroup(3, 4),
+							createGroup(5, 6),
+						},
+					},
+				},
+				{
+					JobName: "another_job",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						discovery.StaticConfig{
+							createGroup(10),
+						},
+						&file.SDConfig{
+							Files: []string{"another_targets.json"},
+						},
+					},
+				},
+			},
+		}
+	}
+	promConfig := create()
+	assert.NoError(t, promConfig.Reload())
+
+	for _, sc := range promConfig.ScrapeConfigs {
+		for _, sd := range sc.ServiceDiscoveryConfigs {
+			sc, ok := sd.(discovery.StaticConfig)
+			if !ok {
+				continue
+			}
+			for _, tg := range sc {
+				for _, target := range tg.Targets {
+					// Ensure that the targets have the expected labels.
+					assert.NotEmpty(t, target[promModel.AddressLabel])
+					assert.Greater(t, len(target), 1, "target should have more than just address label")
+				}
+				assert.NotEmpty(t, tg.Labels, "target group should have labels")
+			}
+		}
+	}
+
+	data1, _ := yaml.Marshal(promConfig)
+	assert.NoError(t, promConfig.Reload())
+	data2, _ := yaml.Marshal(promConfig)
+	assert.Equal(t, string(data1), string(data2), "Reload should not change the config")
 }

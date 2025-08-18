@@ -47,7 +47,7 @@ func newNopHost() component.Host {
 func TestReceiver(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	client := newFakeClientWithAllResources()
@@ -65,7 +65,7 @@ func TestReceiver(t *testing.T) {
 	createNodes(t, client, numNodes)
 	createClusterQuota(t, osQuotaClient, 2)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHost()))
 
 	// Expects metric data from nodes and pods where each metric data
@@ -110,7 +110,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	createPods(t, client, numPods)
 
-	err := kr.Start(context.Background(), fakeHost)
+	err := kr.Start(t.Context(), fakeHost)
 	require.NoError(t, err)
 
 	// elected leader
@@ -126,13 +126,13 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	// lost election
 	fakeLeaderElection.InvokeOnStopping()
-	require.NoError(t, kr.Shutdown(context.Background()))
+	require.NoError(t, kr.Shutdown(t.Context()))
 }
 
 func TestNamespacedReceiver(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	client := newFakeClientWithAllResources()
@@ -150,7 +150,7 @@ func TestNamespacedReceiver(t *testing.T) {
 	createNodes(t, client, numNodes)
 	createClusterQuota(t, osQuotaClient, numQuotas)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHost()))
 
 	// Expects metric data from pods  only, where each metric data
@@ -182,7 +182,7 @@ func TestNamespacedReceiver(t *testing.T) {
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 	client := newFakeClientWithAllResources()
 
@@ -191,7 +191,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 
 	createPods(t, client, 1)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHost()))
 	require.Eventually(t, func() bool {
 		return r.resourceWatcher.initialSyncTimedOut.Load()
@@ -202,7 +202,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 func TestReceiverWithManyResources(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	client := newFakeClientWithAllResources()
@@ -217,7 +217,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	createPods(t, client, numPods)
 	createClusterQuota(t, osQuotaClient, 2)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHost()))
 
 	require.Eventually(t, func() bool {
@@ -241,7 +241,7 @@ var (
 func TestReceiverWithMetadata(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	client := newFakeClientWithAllResources()
@@ -256,7 +256,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	// Setup k8s resources.
 	pods := createPods(t, client, 1)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHostWithExporters()))
 
 	// Mock an update on the Pod object. It appears that the fake clientset

@@ -4,7 +4,6 @@
 package ecs
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -70,7 +69,7 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	d, _ := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
-	res, _, err := d.Detect(context.TODO())
+	res, _, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
@@ -136,7 +135,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 1}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
-	got, _, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
@@ -165,7 +164,7 @@ func Test_ecsDetectV4WithTaskArnVersion2(t *testing.T) {
 	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 2}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
-	got, _, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
@@ -189,7 +188,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.PutStr("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false, taskArnVersion: 1}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
-	got, _, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
@@ -213,7 +212,7 @@ func Test_ecsDetectV3WithTaskArnVersion2(t *testing.T) {
 	attr.PutStr("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false, taskArnVersion: 2}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
-	got, _, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, got)

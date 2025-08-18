@@ -194,7 +194,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.initValue.String(), func(t *testing.T) {
-			m := NewMetricTracker(context.Background(), zap.NewNop(), 0, tt.initValue)
+			m := NewMetricTracker(t.Context(), zap.NewNop(), 0, tt.initValue)
 
 			miSum := miSum
 			miSum.StartTimestamp = tt.metricStartTime
@@ -231,7 +231,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 	}
 
 	t.Run("Invalid metric identity", func(t *testing.T) {
-		m := NewMetricTracker(context.Background(), zap.NewNop(), 0, InitialValueAuto)
+		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueAuto)
 		invalidID := miIntSum
 		invalidID.MetricType = pmetric.MetricTypeGauge
 		_, valid := m.Convert(MetricPoint{
@@ -306,7 +306,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 }
 
 func Test_metricTracker_sweeper(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	sweepEvent := make(chan pcommon.Timestamp)
 	closed := &atomic.Bool{}
 
