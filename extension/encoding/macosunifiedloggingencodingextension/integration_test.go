@@ -48,35 +48,54 @@ func TestUnmarshalLogs_RealTracev3Data(t *testing.T) {
 	logs, err := ext.UnmarshalLogs(data)
 	require.NoError(t, err)
 
-	// Verify we get a log record
-	assert.Equal(t, 1, logs.ResourceLogs().Len())
+	// Verify we get log records - now expecting multiple individual entries
+	assert.GreaterOrEqual(t, logs.ResourceLogs().Len(), 1, "Should have at least one resource log")
 
+	// Check the first resource log
 	resourceLogs := logs.ResourceLogs().At(0)
 	assert.Equal(t, 1, resourceLogs.ScopeLogs().Len())
 
 	scopeLogs := resourceLogs.ScopeLogs().At(0)
-	assert.Equal(t, 1, scopeLogs.LogRecords().Len())
+	logRecordCount := scopeLogs.LogRecords().Len()
+	assert.GreaterOrEqual(t, logRecordCount, 1, "Should have at least one log record")
 
-	logRecord := scopeLogs.LogRecords().At(0)
-	message := logRecord.Body().AsString()
+	t.Logf("Successfully parsed %d individual log entries from tracev3 data", logRecordCount)
 
-	// Should contain information about the binary data read
-	assert.Contains(t, message, "macOS Unified Logging binary data")
-	assert.Contains(t, message, "1024 bytes")
+	// Check the first log record (header info)
+	firstLogRecord := scopeLogs.LogRecords().At(0)
+	firstMessage := firstLogRecord.Body().AsString()
 
-	// Check attributes
-	attrs := logRecord.Attributes()
+	// Should contain header information
+	assert.Contains(t, firstMessage, "TraceV3 Header", "First entry should be header info")
+	assert.Contains(t, firstMessage, "chunk_tag=", "Should contain chunk tag info")
+
+	// Check attributes of first record
+	attrs := firstLogRecord.Attributes()
 	source, exists := attrs.Get("source")
 	assert.True(t, exists)
 	assert.Equal(t, "macos_unified_logging", source.AsString())
 
-	dataSize, exists := attrs.Get("data_size")
-	assert.True(t, exists)
-	assert.Equal(t, int64(1024), dataSize.Int())
+	// If we have multiple log records, check that we have individual entries
+	if logRecordCount > 1 {
+		// Check a subsequent log record for individual entry characteristics
+		for i := 1; i < logRecordCount; i++ {
+			logRecord := scopeLogs.LogRecords().At(i)
+			message := logRecord.Body().AsString()
 
-	decoded, exists := attrs.Get("decoded")
-	assert.True(t, exists)
-	assert.False(t, decoded.Bool()) // Should be false since we're not decoding yet
+			// Individual entries should have different characteristics
+			attrs := logRecord.Attributes()
 
-	t.Logf("Successfully processed real tracev3 data: %s", message)
+			// Should have chunk type
+			chunkType, exists := attrs.Get("chunk.type")
+			assert.True(t, exists, "Individual entries should have chunk type")
+			t.Logf("Entry %d: chunk_type=%s, message=%q", i, chunkType.AsString(), message)
+
+			// Should be marked as decoded
+			decoded, exists := attrs.Get("decoded")
+			assert.True(t, exists)
+			assert.True(t, decoded.Bool(), "Individual entries should be marked as decoded")
+		}
+	}
+
+	t.Logf("Successfully processed real tracev3 data with %d individual log entries", logRecordCount)
 }

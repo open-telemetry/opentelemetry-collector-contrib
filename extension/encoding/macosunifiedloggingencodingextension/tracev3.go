@@ -57,15 +57,19 @@ type TraceV3Header struct {
 
 // TraceV3Entry represents a single log entry in the tracev3 format
 type TraceV3Entry struct {
-	Type      uint32 // Entry type (log, signpost, activity, etc.)
-	Size      uint32 // Size of this entry
-	Timestamp uint64 // Mach absolute time
-	ThreadID  uint64 // Thread identifier
-	ProcessID uint32 // Process identifier
-	Message   string // Log message content
-	Subsystem string // Subsystem (e.g., com.apple.SkyLight)
-	Category  string // Category within subsystem
-	Level     string // Log level (Default, Info, Debug, Error, Fault)
+	Type         uint32 // Entry type (log, signpost, activity, etc.)
+	Size         uint32 // Size of this entry
+	Timestamp    uint64 // Mach absolute time
+	ThreadID     uint64 // Thread identifier
+	ProcessID    uint32 // Process identifier
+	Message      string // Log message content
+	Subsystem    string // Subsystem (e.g., com.apple.SkyLight)
+	Category     string // Category within subsystem
+	Level        string // Log level (Default, Info, Debug, Error, Fault)
+	ChunkType    string // Type of chunk (header, firehose, oversize, statedump, simpledump, catalog, chunkset)
+	MessageType  string // Message type based on log level (Default, Debug, Info, Error, Fault, etc.)
+	EventType    string // Event type (logEvent, activityEvent, traceEvent, signpostEvent, lossEvent)
+	TimezoneName string // Timezone name extracted from header timezone path
 }
 
 // ParseTraceV3Header parses the tracev3 file header
@@ -211,9 +215,12 @@ func ParseTraceV3Data(data []byte) ([]*TraceV3Entry, error) {
 			ProcessID: header.LogdPID,
 			Message: fmt.Sprintf("TraceV3 Header: chunk_tag=0x%x, build=%s, hardware=%s, boot_uuid=%s",
 				header.ChunkTag, header.BuildVersionString, header.HardwareModelString, header.BootUUID),
-			Subsystem: "com.apple.logd",
-			Category:  "header",
-			Level:     "Info",
+			Subsystem:    "com.apple.logd",
+			Category:     "header",
+			Level:        "Info",
+			MessageType:  "Info",
+			EventType:    "logEvent",
+			TimezoneName: extractTimezoneName(header.TimezonePath),
 		},
 	}
 
@@ -232,9 +239,12 @@ func ParseTraceV3Data(data []byte) ([]*TraceV3Entry, error) {
 			ProcessID: header.LogdPID,
 			Message: fmt.Sprintf("Data section: %d bytes remaining after %d-byte header",
 				len(remainingData), headerSize),
-			Subsystem: "com.apple.logd",
-			Category:  "data",
-			Level:     "Info",
+			Subsystem:    "com.apple.logd",
+			Category:     "data",
+			Level:        "Info",
+			MessageType:  "Info",
+			EventType:    "logEvent",
+			TimezoneName: extractTimezoneName(header.TimezonePath),
 		})
 	}
 
@@ -246,39 +256,199 @@ func parseDataEntries(data []byte, header *TraceV3Header) []*TraceV3Entry {
 	entries := []*TraceV3Entry{}
 	offset := 0
 	entryCount := 0
-	maxEntries := 10 // Limit for now
 
-	for offset < len(data) && entryCount < maxEntries {
-		// Try to parse a basic entry structure
-		if offset+8 > len(data) {
+	for offset < len(data) {
+		// Need at least 20 bytes for a minimal chunk header
+		if offset+20 > len(data) {
 			break
 		}
 
-		entryType := binary.LittleEndian.Uint32(data[offset:])
-		entrySize := binary.LittleEndian.Uint32(data[offset+4:])
+		// Check for chunk preamble pattern
+		chunkTag := binary.LittleEndian.Uint32(data[offset:])
+		chunkSubTag := binary.LittleEndian.Uint32(data[offset+4:])
+		chunkDataSize := binary.LittleEndian.Uint64(data[offset+8:])
 
-		// Sanity check the entry size
-		if entrySize == 0 || entrySize > uint32(len(data)-offset) || entrySize > 0x100000 {
-			// Invalid entry size, skip ahead
-			offset += 8
+		// Validate chunk data size
+		if chunkDataSize == 0 || chunkDataSize > uint64(len(data)-offset) {
+			// Invalid chunk size, try to find next potential entry
+			offset += 4
 			continue
 		}
 
+		// Parse the chunk based on its type (including 16-byte preamble)
+		totalChunkSize := 16 + int(chunkDataSize) // Preamble + data size
+		if offset+totalChunkSize > len(data) {
+			break
+		}
+
+		// Extract basic entry information
 		entry := &TraceV3Entry{
-			Type:      entryType,
-			Size:      entrySize,
-			Timestamp: uint64(time.Now().UnixNano()) + uint64(entryCount)*1000, // Fake incrementing timestamps
-			ThreadID:  0,
-			ProcessID: header.LogdPID,
-			Message:   fmt.Sprintf("Entry #%d (type: 0x%x, size: %d bytes)", entryCount+1, entryType, entrySize),
-			Subsystem: "com.apple.unknown",
-			Category:  "parsed_entry",
-			Level:     "Info",
+			Type:         chunkTag,
+			Size:         uint32(chunkDataSize),
+			Timestamp:    header.ContinuousTime + uint64(entryCount)*1000000, // Use header time + offset
+			ThreadID:     0,
+			ProcessID:    header.LogdPID,
+			Level:        "Info",
+			MessageType:  "Default",
+			EventType:    "logEvent",
+			TimezoneName: extractTimezoneName(header.TimezonePath),
+		}
+
+		// Determine chunk type and parse accordingly
+		switch chunkTag {
+		case 0x6001:
+			// Firehose chunk - can contain multiple individual log entries
+			entry.ChunkType = "firehose"
+			entry.Subsystem = "com.apple.firehose"
+			entry.Category = "entry"
+			entry.Message = fmt.Sprintf("Firehose chunk found: tag=0x%x sub_tag=0x%x size=%d", chunkTag, chunkSubTag, chunkDataSize)
+			firehoseEntries := ParseFirehoseChunk(data[offset:offset+totalChunkSize], entry, header)
+			// Add all individual firehose entries to our result
+			entries = append(entries, firehoseEntries...)
+			// Continue to next chunk without adding the template entry
+			offset += totalChunkSize
+			entryCount++
+			continue
+		case 0x6002:
+			// Oversize chunk
+			entry.ChunkType = "oversize"
+			entry.Subsystem = "com.apple.oversize"
+			entry.Category = "oversize_data"
+			ParseOversizeChunk(data[offset:offset+int(chunkDataSize)], entry)
+		case 0x6003:
+			// Statedump chunk
+			entry.ChunkType = "statedump"
+			entry.Subsystem = "com.apple.statedump"
+			entry.Category = "system_state"
+			ParseStatedumpChunk(data[offset:offset+int(chunkDataSize)], entry)
+		case 0x6004:
+			// Simpledump chunk
+			entry.ChunkType = "simpledump"
+			entry.Subsystem = "com.apple.simpledump"
+			entry.Category = "simple_data"
+			ParseSimpledumpChunk(data[offset:offset+int(chunkDataSize)], entry)
+		case 0x600b:
+			// Catalog chunk
+			entry.ChunkType = "catalog"
+			entry.Subsystem = "com.apple.catalog"
+			entry.Category = "catalog_data"
+			ParseCatalogChunk(data[offset:offset+int(chunkDataSize)], entry)
+		case 0x600d:
+			// ChunkSet chunk - can contain many compressed individual log entries
+			entry.ChunkType = "chunkset"
+			entry.Subsystem = "com.apple.chunkset"
+			entry.Category = "chunkset_data"
+			chunksetEntries := ParseChunksetChunk(data[offset:offset+totalChunkSize], entry, header)
+			// Add all individual chunkset entries to our result
+			entries = append(entries, chunksetEntries...)
+			// Continue to next chunk without adding the template entry
+			offset += totalChunkSize
+			entryCount++
+			continue
+		default:
+			// Unknown chunk type
+			entry.ChunkType = "unknown"
+			entry.Subsystem = "com.apple.unknown"
+			entry.Category = fmt.Sprintf("unknown_0x%x", chunkTag)
+			entry.Message = fmt.Sprintf("Unknown chunk: tag=0x%x sub_tag=0x%x size=%d", chunkTag, chunkSubTag, chunkDataSize)
+		}
+
+		// Try to extract more detailed information from the firehose entry
+		entryData := data[offset : offset+int(chunkDataSize)]
+		if len(entryData) >= 48 { // Minimum size for firehose preamble
+			// Parse firehose preamble fields
+			firstProcID := binary.LittleEndian.Uint64(entryData[16:24])
+			secondProcID := binary.LittleEndian.Uint32(entryData[24:28])
+			baseContinuousTime := binary.LittleEndian.Uint64(entryData[40:48])
+
+			// Look for public data section
+			if len(entryData) >= 52 {
+				publicDataSize := binary.LittleEndian.Uint16(entryData[48:50])
+				privateDataOffset := binary.LittleEndian.Uint16(entryData[50:52])
+
+				entry.ThreadID = firstProcID
+				entry.ProcessID = secondProcID
+				entry.Timestamp = baseContinuousTime
+
+				// Try to extract log type and message information
+				if publicDataSize > 0 && len(entryData) >= int(52+publicDataSize) {
+					publicData := entryData[52 : 52+publicDataSize]
+					if len(publicData) >= 20 {
+						// Parse firehose log entry header
+						logActivityType := publicData[0]
+						logType := publicData[1]
+						flags := binary.LittleEndian.Uint16(publicData[2:4])
+						formatStringLocation := binary.LittleEndian.Uint32(publicData[4:8])
+						threadID := binary.LittleEndian.Uint64(publicData[8:16])
+						dataSize := binary.LittleEndian.Uint16(publicData[18:20])
+
+						entry.ThreadID = threadID
+
+						// Determine log level and message type based on log type and activity type
+						entry.MessageType = getLogType(logType, logActivityType)
+						entry.Level = entry.MessageType // Keep Level for backward compatibility
+
+						// Determine event type based on activity type
+						entry.EventType = getEventType(logActivityType)
+
+						// Determine entry category based on activity type
+						switch logActivityType {
+						case 0x2:
+							entry.Category = "activity"
+						case 0x4:
+							entry.Category = "log"
+						case 0x6:
+							entry.Category = "signpost"
+						case 0x3:
+							entry.Category = "trace"
+						case 0x7:
+							entry.Category = "loss"
+						default:
+							entry.Category = fmt.Sprintf("unknown(0x%x)", logActivityType)
+						}
+
+						entry.Message = fmt.Sprintf("Firehose entry: type=%s level=%s flags=0x%x format=0x%x thread=%d dataSize=%d",
+							entry.Category, entry.Level, flags, formatStringLocation, threadID, dataSize)
+
+						// If there's private data, note it
+						if privateDataOffset != 0x1000 {
+							entry.Message += fmt.Sprintf(" [has private data at offset 0x%x]", privateDataOffset)
+						}
+					}
+				}
+			}
+		}
+
+		if entry.Message == "" {
+			entry.Message = fmt.Sprintf("%s chunk: tag=0x%x sub_tag=0x%x size=%d", entry.ChunkType, chunkTag, chunkSubTag, chunkDataSize)
 		}
 
 		entries = append(entries, entry)
-		offset += int(entrySize)
+		offset += totalChunkSize
 		entryCount++
+
+		// Safety limit to prevent infinite loops
+		if entryCount >= 1000 {
+			break
+		}
+	}
+
+	// If we didn't find any firehose entries, create a summary entry
+	if len(entries) == 0 && len(data) > 0 {
+		entries = append(entries, &TraceV3Entry{
+			Type:         0x0000,
+			Size:         uint32(len(data)),
+			Timestamp:    header.ContinuousTime,
+			ThreadID:     0,
+			ProcessID:    header.LogdPID,
+			Message:      fmt.Sprintf("Unparsed data section: %d bytes (no valid firehose entries found)", len(data)),
+			Subsystem:    "com.apple.logd",
+			Category:     "unparsed",
+			Level:        "Info",
+			MessageType:  "Info",
+			EventType:    "logEvent",
+			TimezoneName: extractTimezoneName(header.TimezonePath),
+		})
 	}
 
 	return entries
@@ -313,16 +483,100 @@ func ConvertTraceV3EntriesToLogs(entries []*TraceV3Entry) plog.Logs {
 		// Set message body
 		logRecord.Body().SetStr(entry.Message)
 
-		// Set attributes
+		// Set attributes including new standard fields
 		logRecord.Attributes().PutStr("source", "macos_unified_logging")
 		logRecord.Attributes().PutStr("subsystem", entry.Subsystem)
 		logRecord.Attributes().PutStr("category", entry.Category)
+		logRecord.Attributes().PutStr("chunk.type", entry.ChunkType)
 		logRecord.Attributes().PutInt("entry.type", int64(entry.Type))
 		logRecord.Attributes().PutInt("entry.size", int64(entry.Size))
 		logRecord.Attributes().PutInt("thread.id", int64(entry.ThreadID))
 		logRecord.Attributes().PutInt("process.id", int64(entry.ProcessID))
 		logRecord.Attributes().PutBool("decoded", true)
+
+		// Add new standard fields that match log command output
+		logRecord.Attributes().PutStr("timezoneName", entry.TimezoneName)
+		logRecord.Attributes().PutStr("messageType", entry.MessageType)
+		logRecord.Attributes().PutStr("eventType", entry.EventType)
 	}
 
 	return logs
+}
+
+// getLogType returns the LogType (MessageType) based on log type and activity type
+// Based on the Rust implementation from mandiant/macos-UnifiedLogs
+func getLogType(logType uint8, activityType uint8) string {
+	switch logType {
+	case 0x1:
+		if activityType == 2 {
+			return "Create"
+		}
+		return "Info"
+	case 0x2:
+		return "Debug"
+	case 0x3:
+		return "Useraction"
+	case 0x10:
+		return "Error"
+	case 0x11:
+		return "Fault"
+	case 0x80:
+		return "ProcessSignpostEvent"
+	case 0x81:
+		return "ProcessSignpostStart"
+	case 0x82:
+		return "ProcessSignpostEnd"
+	case 0xc0:
+		return "SystemSignpostEvent"
+	case 0xc1:
+		return "SystemSignpostStart"
+	case 0xc2:
+		return "SystemSignpostEnd"
+	case 0x40:
+		return "ThreadSignpostEvent"
+	case 0x41:
+		return "ThreadSignpostStart"
+	case 0x42:
+		return "ThreadSignpostEnd"
+	default:
+		return "Default"
+	}
+}
+
+// getEventType returns the EventType based on activity type
+// Based on the Rust implementation from mandiant/macos-UnifiedLogs
+func getEventType(activityType uint8) string {
+	switch activityType {
+	case 0x4:
+		return "logEvent"
+	case 0x2:
+		return "activityEvent"
+	case 0x3:
+		return "traceEvent"
+	case 0x6:
+		return "signpostEvent"
+	case 0x7:
+		return "lossEvent"
+	default:
+		return "logEvent" // Default to logEvent like the rust parser
+	}
+}
+
+// extractTimezoneName extracts the timezone name from timezone path
+// Similar to the Rust implementation which gets the last path component
+func extractTimezoneName(timezonePath string) string {
+	if timezonePath == "" {
+		return ""
+	}
+
+	// Split path and get the last component
+	parts := strings.Split(timezonePath, "/")
+	if len(parts) > 0 {
+		name := parts[len(parts)-1]
+		if name != "" {
+			return name
+		}
+	}
+
+	return ""
 }
