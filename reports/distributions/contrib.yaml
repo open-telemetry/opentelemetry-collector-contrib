@@ -112,6 +112,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
+        - isolationforest
         - k8sattributes
         - logdedup
         - metricsgeneration
