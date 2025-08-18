@@ -662,13 +662,13 @@ func Test_newGetter(t *testing.T) {
 																	Int: ottltest.Intp(1),
 																},
 															},
-														},
-														{
-															Map: &mapValue{
-																Values: []mapItem{
-																	{
-																		Key:   ottltest.Strp("stringAttr"),
-																		Value: &value{String: ottltest.Strp("value")},
+															{
+																Map: &mapValue{
+																	Values: []mapItem{
+																		{
+																			Key:   ottltest.Strp("stringAttr"),
+																			Value: &value{String: ottltest.Strp("value")},
+																		},
 																	},
 																},
 															},

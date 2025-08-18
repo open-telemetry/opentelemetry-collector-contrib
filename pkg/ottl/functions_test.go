@@ -977,35 +977,41 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							List: &list{
-								Values: []value{
-									{
-										List: &list{
-											Values: []value{
-												{
-													Literal: &mathExprLiteral{
-														Int: ottltest.Intp(1),
-													},
-												},
-												{
-													Literal: &mathExprLiteral{
-														Int: ottltest.Intp(2),
+							List: &listOrComprehension{
+								List: &list{
+									Values: []value{
+										{
+											List: &listOrComprehension{
+												List: &list{
+													Values: []value{
+														{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(1),
+															},
+														},
+														{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(2),
+															},
+														},
 													},
 												},
 											},
 										},
-									},
-									{
-										List: &list{
-											Values: []value{
-												{
-													Literal: &mathExprLiteral{
-														Int: ottltest.Intp(1),
-													},
-												},
-												{
-													Literal: &mathExprLiteral{
-														Int: ottltest.Intp(2),
+										{
+											List: &listOrComprehension{
+												List: &list{
+													Values: []value{
+														{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(1),
+															},
+														},
+														{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(2),
+															},
+														},
 													},
 												},
 											},
@@ -1432,16 +1438,18 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							List: &list{
-								Values: []value{
-									{
-										Literal: &mathExprLiteral{
-											Int: ottltest.Intp(1),
+							List: &listOrComprehension{
+								List: &list{
+									Values: []value{
+										{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(1),
+											},
 										},
-									},
-									{
-										Literal: &mathExprLiteral{
-											Int: ottltest.Intp(2),
+										{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(2),
+											},
 										},
 									},
 								},
