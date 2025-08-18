@@ -38,7 +38,7 @@ jobs:
 
       - name: Reminder to Address Linting Errors
         if: failure()
-        run: echo "⚠️ Please address all linting errors before merging this pull request."
+        run: echo "⚠️ Please address all linting errors before merging this pull request. Run 'make actionlint' locally to check your files."
 
       - name: All linting checks passed
         if: success()
