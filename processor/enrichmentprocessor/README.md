@@ -25,9 +25,10 @@ Both HTTP and file sources are periodically refreshed.
 
 Accepted data format for metadata is CSV/JSON.
 
-CSV requires a header row and each row should contain same number of value.
-JSON should be simple list of key value pair like below: 
+CSV requires a header row and each row should contain same number of values.
+JSON should be simple list of key value pairs like below:
 
+**Service inventory data (JSON format):**
 ```json
 [
 	{
@@ -45,6 +46,14 @@ JSON should be simple list of key value pair like below:
 ]
 ```
 
+**Host metadata (CSV format):**
+```csv
+hostname,datacenter
+web-01,dc1
+web-02,dc2
+db-01,dc1
+```
+
 ## Configuration
 
 ```yaml
@@ -58,35 +67,34 @@ processors:
           headers: { }
           timeout: 30s
           refresh_interval: 5m
+          format: json  # json|csv
       - name: host_metadata
         type: file
         file:
           path: /etc/collector/hosts.csv
-          format: csv  # json|csv
+          format: csv
           refresh_interval: 1m
     enrichment_rules:
-      # Enrich resource attributes using host metadata
-      - name: enrich_resource_from_host
-        context: resource
-        data_source: host_metadata
-        lookup_attributekey: host.name            # attribute in telemetry
-        lookup_field: hostname           # field in data source
-        mappings:
-          - source_field: region
-            target_attribute: cloud.region
-          - source_field: environment
-            target_attribute: deployment.environment
-      # Enrich spans/logs/metrics with service metadata
       - name: enrich_individual_from_service
         context: individual
         data_source: service_inventory
-        lookup_attributekey: service.name
-        lookup_field: service_name
+        lookup_attributekey: service.name.      # attribute in telemetry
+        lookup_field: service_name.             # field in data source
         mappings:
           - source_field: owner_team
             target_attribute: team.name
           - source_field: environment
             target_attribute: deployment.environment
+          - source_field: region
+            target_attribute: cloud.region
+      - name: enrich_resource_from_host
+        context: individual
+        data_source: host_metadata
+        lookup_attributekey: host.name
+        lookup_field: hostname
+        mappings:
+          - source_field: datacenter
+            target_attribute: host.datacenter
 ```
 
 ## Configuration options
@@ -134,8 +142,50 @@ service:
       processors: [enrichment]
 ```
 
+## Example: How metrics are enriched
+
+Consider a metric with the following attributes before enrichment:
+```yaml
+# Input metric data point
+attributes:
+  service.name: "payment-service"
+  http.method: "POST"
+  host.name: web-01
+value: 42
+```
+
+After applying the enrichment rules with the service inventory data, the metric becomes:
+```yaml
+# Enriched metric data point  
+attributes:
+  service.name: "payment-service"      # original
+  http.method: "POST"                  # original
+  team.name: "payments-team"           # enriched from service inventory
+  deployment.environment: "production" # enriched from service inventory
+  cloud.region: "us-west-2"           # enriched from service inventory
+  host.name: web-01
+  host.datacenter: dc1
+
+value: 42
+```
+
+The processor looks up `service.name: "payment-service"` in the service inventory data source, finds the matching row, and adds the mapped attributes to the metric data point.
+
 ## Notes
-- Context must be one of: resource, individual.
-- HTTP and file sources are periodically refreshed using refresh_interval.
-- JSON files/endpoints must return an array of objects; CSV requires a header row.
-- When multiple rows share the same lookup_field value, the last one read wins.
+
+- **Context types:**
+  - `resource`: Enriches resource attributes that apply to all telemetry from that resource
+  - `individual`: Enriches individual span, log record, or metric data point attributes
+- **Data format requirements:**
+  - JSON files/endpoints must return an array of objects
+  - CSV files require a header row with consistent column counts per row
+- **Refresh behavior:**
+  - HTTP and file sources are periodically refreshed using `refresh_interval`
+  - Data is cached in memory between refreshes for performance
+- **Lookup behavior:**
+  - When multiple rows share the same `lookup_field` value, the last one read wins
+  - Empty values in source data are skipped (no attribute is set)
+  - Failed lookups are logged but don't stop processing other rules
+- **Error handling:**
+  - Rule errors are logged and processing continues with remaining rules
+  - Data source connection failures will retry on next refresh interval
