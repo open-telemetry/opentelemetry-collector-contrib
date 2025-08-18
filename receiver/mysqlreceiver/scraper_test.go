@@ -5,7 +5,6 @@ package mysqlreceiver
 
 import (
 	"bufio"
-	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
@@ -78,7 +77,7 @@ func TestScrape(t *testing.T) {
 
 		scraper.renameCommands = true
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -88,7 +87,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
-		actualLogs, err := scraper.scrapeLog(context.Background())
+		actualLogs, err := scraper.scrapeLog(t.Context())
 		require.NoError(t, err)
 		expectedLogFile := filepath.Join("testdata", "scraper", "expectedLogs.yaml")
 		// Uncomment this to regenerate the expected logs file
@@ -125,7 +124,7 @@ func TestScrape(t *testing.T) {
 			replicaStatusFile:           "replica_stats_empty",
 		}
 
-		actualMetrics, scrapeErr := scraper.scrape(context.Background())
+		actualMetrics, scrapeErr := scraper.scrape(t.Context())
 		require.Error(t, scrapeErr)
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.yaml")
@@ -167,7 +166,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 
 	scraper.renameCommands = true
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))

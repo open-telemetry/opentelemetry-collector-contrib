@@ -70,7 +70,7 @@ func TestK8sResolve(t *testing.T) {
 		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, returnHostnames, tb)
 		require.NoError(t, err)
 
-		require.NoError(t, res.start(context.Background()))
+		require.NoError(t, res.start(t.Context()))
 		// verify endpoints should be the same as expectInit
 		assert.NoError(t, err)
 		assert.Equal(t, expectInit, res.Endpoints())
@@ -80,7 +80,7 @@ func TestK8sResolve(t *testing.T) {
 				clientset: cl,
 				resolver:  res,
 			}, func(*testing.T) {
-				require.NoError(t, res.shutdown(context.Background()))
+				require.NoError(t, res.shutdown(t.Context()))
 			}
 	}
 	tests := []struct {
@@ -109,7 +109,7 @@ func TestK8sResolve(t *testing.T) {
 					return err
 				}
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			expectedEndpoints: []string{
@@ -135,7 +135,7 @@ func TestK8sResolve(t *testing.T) {
 					return err
 				}
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			onChangeFn: func([]string) {
@@ -166,7 +166,7 @@ func TestK8sResolve(t *testing.T) {
 					return err
 				}
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			expectedEndpoints: []string{
@@ -195,7 +195,7 @@ func TestK8sResolve(t *testing.T) {
 					return err
 				}
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			expectedEndpoints: []string{
@@ -212,7 +212,7 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				return suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Delete(context.TODO(), args.service, metav1.DeleteOptions{})
+					Delete(t.Context(), args.service, metav1.DeleteOptions{})
 			},
 			expectedEndpoints: nil,
 		},
@@ -250,7 +250,7 @@ func TestK8sResolve(t *testing.T) {
 // waitForCondition will poll the condition function until it returns true or times out.
 // Any errors returned from the condition are treated as test failures.
 func waitForCondition(t *testing.T, timeout, interval time.Duration, condition func(context.Context) (bool, error)) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(t.Context(), timeout)
 	defer cancel()
 	t.Helper()
 
