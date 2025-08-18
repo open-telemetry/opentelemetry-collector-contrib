@@ -4,7 +4,6 @@
 package ctxprofilelocation // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilelocation"
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -62,10 +61,10 @@ func TestPathGetSetter(t *testing.T) {
 			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(context.Background(), newProfileLocationContext(location, dictionary), tt.val)
+			err = accessor.Set(t.Context(), newProfileLocationContext(location, dictionary), tt.val)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), newProfileLocationContext(location, dictionary))
+			got, err := accessor.Get(t.Context(), newProfileLocationContext(location, dictionary))
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
