@@ -45,7 +45,7 @@ type Config struct {
 	//  APIServer has the settings to enable the receiver to host the Prometheus API
 	// server in agent mode. This allows the user to call the endpoint to get
 	// the config, service discovery, and targets for debugging purposes.
-	APIServer *APIServer `mapstructure:"api_server"`
+	APIServer APIServer `mapstructure:"api_server"`
 }
 
 // Validate checks the receiver configuration is valid.
@@ -54,10 +54,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
-	if cfg.APIServer != nil {
-		if err := cfg.APIServer.Validate(); err != nil {
-			return fmt.Errorf("invalid API server configuration settings: %w", err)
-		}
+	if err := cfg.APIServer.Validate(); err != nil {
+		return fmt.Errorf("invalid API server configuration settings: %w", err)
 	}
 
 	return nil
