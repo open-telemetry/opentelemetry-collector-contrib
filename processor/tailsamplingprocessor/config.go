@@ -254,6 +254,9 @@ type Config struct {
 	// NumTraces is the number of traces kept on memory. Typically most of the data
 	// of a trace is released after a sampling decision is taken.
 	NumTraces uint64 `mapstructure:"num_traces"`
+	// BlockOnOverflow determines the behavior when the component's NumTraces limit is reached.
+	// If true, the component will wait for space; otherwise, old traces will be evicted to make space.
+	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected_new_traces_per_sec"`
