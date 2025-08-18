@@ -14,7 +14,7 @@ import (
 
 type testListGetter[K any] struct{}
 
-func (t testListGetter[K]) Get(_ context.Context, tCtx K) (any, error) {
+func (_ testListGetter[K]) Get(_ context.Context, tCtx K) (any, error) {
 	return tCtx, nil
 }
 
@@ -105,7 +105,7 @@ func Test_comprehensions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.expr.Get(context.Background(), tt.collection)
+			result, err := tt.expr.Get(t.Context(), tt.collection)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})

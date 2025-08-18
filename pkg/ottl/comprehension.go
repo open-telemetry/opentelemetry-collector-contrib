@@ -5,6 +5,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -232,7 +233,7 @@ func newComprehensionParser[K any](p *Parser[K], ident string) (Parser[comprehen
 					// TODO - Remove this limitation in the future.
 					// Likely forces rewrite of Getter/Setter pattern.
 					if tCtx.currentValueID != ident {
-						return nil, fmt.Errorf("list comprehensions cannot be nested")
+						return nil, errors.New("list comprehensions cannot be nested")
 					}
 					return tCtx.currentValue, nil
 				},
