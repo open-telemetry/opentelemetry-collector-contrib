@@ -99,11 +99,15 @@ func TestEnrichmentProcessor_Core(t *testing.T) {
 		// Check that attributes were added
 		teamName, exists := attributes.Get("team.name")
 		assert.True(t, exists)
-		assert.Equal(t, "platform-team", teamName.AsString())
+		if exists {
+			assert.Equal(t, "platform-team", teamName.AsString())
+		}
 
 		environment, exists := attributes.Get("deployment.environment")
 		assert.True(t, exists)
-		assert.Equal(t, "production", environment.AsString())
+		if exists {
+			assert.Equal(t, "production", environment.AsString())
+		}
 	})
 
 	t.Run("enrichment_not_found", func(t *testing.T) {
@@ -144,11 +148,15 @@ func TestEnrichmentProcessor_Core(t *testing.T) {
 		// Check that attributes were added based on environment lookup
 		serviceName, exists := attributes.Get("service.name")
 		assert.True(t, exists)
-		assert.Equal(t, "payment-service", serviceName.AsString())
+		if exists {
+			assert.Equal(t, "payment-service", serviceName.AsString())
+		}
 
 		teamName, exists := attributes.Get("team.name")
 		assert.True(t, exists)
-		assert.Equal(t, "payments-team", teamName.AsString())
+		if exists {
+			assert.Equal(t, "payments-team", teamName.AsString())
+		}
 	})
 }
 
@@ -204,7 +212,9 @@ func TestApplyMappings(t *testing.T) {
 			for attrName, expectedValue := range tc.expectedAttrs {
 				value, exists := attributes.Get(attrName)
 				assert.True(t, exists, "Expected attribute %s should exist", attrName)
-				assert.Equal(t, expectedValue, value.AsString())
+				if exists {
+					assert.Equal(t, expectedValue, value.AsString())
+				}
 			}
 
 			// Check unexpected attributes
@@ -273,7 +283,9 @@ func TestEnrichmentContextFiltering(t *testing.T) {
 		// Should have team.name from resource_rule
 		teamName, exists := attributes.Get("team.name")
 		assert.True(t, exists)
-		assert.Equal(t, "platform-team", teamName.AsString())
+		if exists {
+			assert.Equal(t, "platform-team", teamName.AsString())
+		}
 
 		// Should not have service.version from individual_rule
 		_, exists = attributes.Get("service.version")
@@ -290,7 +302,9 @@ func TestEnrichmentContextFiltering(t *testing.T) {
 		// Should have service.version from individual_rule
 		version, exists := attributes.Get("service.version")
 		assert.True(t, exists)
-		assert.Equal(t, "1.2.3", version.AsString())
+		if exists {
+			assert.Equal(t, "1.2.3", version.AsString())
+		}
 
 		// Should not have team.name from resource_rule
 		_, exists = attributes.Get("team.name")
@@ -351,7 +365,9 @@ func TestEnrichmentWithConditions(t *testing.T) {
 
 	teamName, exists := attributes.Get("team.name")
 	assert.True(t, exists)
-	assert.Equal(t, "platform-team", teamName.AsString())
+	if exists {
+		assert.Equal(t, "platform-team", teamName.AsString())
+	}
 
 	// Test case 2: previously non-matching condition — enrichment still applies
 	attributes2 := pcommon.NewMap()
@@ -363,5 +379,7 @@ func TestEnrichmentWithConditions(t *testing.T) {
 
 	teamName2, exists := attributes2.Get("team.name")
 	assert.True(t, exists)
-	assert.Equal(t, "platform-team", teamName2.AsString())
+	if exists {
+		assert.Equal(t, "platform-team", teamName2.AsString())
+	}
 }

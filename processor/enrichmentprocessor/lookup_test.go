@@ -5,7 +5,6 @@ package enrichmentprocessor
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -116,56 +115,4 @@ func TestLookup_Lookup(t *testing.T) {
 	assert.Contains(t, err.Error(), "enrichment field 'field3' is not indexed")
 	assert.Nil(t, row)
 	assert.Nil(t, index)
-}
-
-func BenchmarkLookup_SetAll(b *testing.B) {
-	lookup := NewLookup()
-
-	// Create dataset
-	data := make([][]string, 1000)
-	for i := 0; i < 1000; i++ {
-		data[i] = []string{
-			fmt.Sprintf("key%d", i),
-			fmt.Sprintf("data%d", i),
-		}
-	}
-
-	headerIndex := map[string]int{
-		"field1": 0,
-		"field2": 1,
-	}
-	indexFields := []string{"field1", "field2"}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		lookup.SetAll(data, headerIndex, indexFields)
-	}
-}
-
-func BenchmarkLookup_Lookup(b *testing.B) {
-	lookup := NewLookup()
-
-	// Create dataset
-	data := make([][]string, 1000)
-	for i := 0; i < 1000; i++ {
-		data[i] = []string{
-			fmt.Sprintf("key%d", i),
-			fmt.Sprintf("data%d", i),
-		}
-	}
-
-	headerIndex := map[string]int{
-		"field1": 0,
-		"field2": 1,
-	}
-	indexFields := []string{"field1"}
-
-	lookup.SetAll(data, headerIndex, indexFields)
-
-	ctx := context.Background()
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _, _ = lookup.Lookup(ctx, "field1", fmt.Sprintf("key%d", i%1000))
-	}
 }

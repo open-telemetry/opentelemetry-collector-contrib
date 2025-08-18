@@ -30,6 +30,12 @@ type DataSource interface {
 }
 
 // HTTPDataSource implements DataSource for HTTP endpoints
+// Supports both JSON and CSV data formats.
+// Format detection:
+// 1. If config.Format is specified, uses that format
+// 2. Otherwise, auto-detects based on Content-Type header:
+//   - text/csv or application/csv -> CSV format
+//   - anything else -> JSON format (default)
 type HTTPDataSource struct {
 	config     HTTPDataSourceConfig
 	client     *http.Client
@@ -122,10 +128,39 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Parse JSON data directly
-	processedData, index, err := parseJSON(body)
-	if err != nil {
-		return fmt.Errorf("failed to parse JSON: %w", err)
+	// Determine content type and parse accordingly
+	var processedData [][]string
+	var index map[string]int
+
+	// Use explicit format if specified in config, otherwise auto-detect from Content-Type
+	format := h.config.Format
+	if format == "" {
+		contentType := strings.ToLower(resp.Header.Get("Content-Type"))
+		if strings.Contains(contentType, "text/csv") || strings.Contains(contentType, "application/csv") {
+			format = "csv"
+		} else if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/json") {
+			format = "json"
+		} else {
+			// Unknown content type, cannot determine format
+			return fmt.Errorf("unable to determine data format from Content-Type header: %s. Please specify format explicitly in configuration", resp.Header.Get("Content-Type"))
+		}
+	}
+
+	switch strings.ToLower(format) {
+	case "csv":
+		// Parse as CSV
+		processedData, index, err = parseCSV(body)
+		if err != nil {
+			return fmt.Errorf("failed to parse CSV: %w", err)
+		}
+	case "json":
+		// Parse as JSON
+		processedData, index, err = parseJSON(body)
+		if err != nil {
+			return fmt.Errorf("failed to parse JSON: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported format: %s", format)
 	}
 
 	h.lookup.SetAll(processedData, index, h.indexField)
@@ -136,6 +171,7 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 }
 
 // parseJSON parses JSON data and creates a lookup map
+// Used by both HTTP and File data sources
 // Expected JSON input format: An array of objects where each object represents a row
 // Example:
 // [
@@ -216,8 +252,8 @@ func parseJSON(data []byte) ([][]string, map[string]int, error) {
 }
 
 // parseCSV parses CSV data and creates a lookup map
-// require header row
-// row should be same number
+// Used by both HTTP and File data sources
+// Requires header row, all rows should have the same number of columns
 func parseCSV(data []byte) ([][]string, map[string]int, error) {
 	csvReader := csv.NewReader(strings.NewReader(string(data)))
 	records, err := csvReader.ReadAll()

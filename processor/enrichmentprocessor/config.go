@@ -53,6 +53,10 @@ type HTTPDataSourceConfig struct {
 
 	// RefreshInterval specifies how often to refresh the data
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
+
+	// Format specifies the data format (json, csv)
+	// If not specified, will be auto-detected from Content-Type header
+	Format string `mapstructure:"format"`
 }
 
 // FileDataSourceConfig defines configuration for file-based data sources
@@ -141,6 +145,10 @@ func (config *Config) Validate() error {
 			}
 			if ds.HTTP.URL == "" {
 				return fmt.Errorf("URL is required for HTTP data source: %s", ds.Name)
+			}
+			// Validate format if specified
+			if ds.HTTP.Format != "" && ds.HTTP.Format != "json" && ds.HTTP.Format != "csv" {
+				return fmt.Errorf("unsupported format '%s' for HTTP data source '%s'. Valid formats: json, csv", ds.HTTP.Format, ds.Name)
 			}
 		case "file":
 			if ds.File == nil {
