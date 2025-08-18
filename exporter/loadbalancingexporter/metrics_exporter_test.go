@@ -432,7 +432,7 @@ func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, lb)
 
-	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -442,10 +442,10 @@ func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
 	p.loadBalancer = lb
 
 	// Start everything up
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
 	// Test
@@ -454,7 +454,7 @@ func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
 	input, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
 	require.NoError(t, err)
 
-	err = p.ConsumeMetrics(context.Background(), input)
+	err = p.ConsumeMetrics(t.Context(), input)
 	require.NoError(t, err)
 
 	expectedOutput, err := golden.ReadMetrics(filepath.Join(dir, "output.yaml"))
