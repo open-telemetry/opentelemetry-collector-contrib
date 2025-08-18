@@ -4,7 +4,6 @@
 package internal
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -32,7 +31,7 @@ func createBenchmarkTransaction(tb testing.TB) *transaction {
 	)
 
 	scrapeCtx := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(context.Background(), target),
+		scrape.ContextWithTarget(tb.Context(), target),
 		testMetadataStore(testMetadata))
 
 	return newTransaction(
