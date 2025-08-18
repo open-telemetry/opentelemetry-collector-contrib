@@ -14,7 +14,7 @@ import (
 
 type testListGetter[K any] struct{}
 
-func (_ testListGetter[K]) Get(_ context.Context, tCtx K) (any, error) {
+func (testListGetter[K]) Get(_ context.Context, tCtx K) (any, error) {
 	return tCtx, nil
 }
 
