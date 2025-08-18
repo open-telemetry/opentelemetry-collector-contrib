@@ -4,7 +4,6 @@
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/ecs"
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -91,14 +90,14 @@ func TestECSProvider(t *testing.T) {
 				missingEndpoint: testInstance.missingEndpoint,
 				ecsMetadata:     testInstance.provider,
 			}
-			src, srcErr := p.Source(context.Background())
+			src, srcErr := p.Source(t.Context())
 			if srcErr != nil || testInstance.srcErr != "" {
 				assert.EqualError(t, srcErr, testInstance.srcErr)
 			} else {
 				assert.Equal(t, testInstance.src, src)
 			}
 
-			onECSFargate, onErr := p.OnECSFargate(context.Background())
+			onECSFargate, onErr := p.OnECSFargate(t.Context())
 			if onErr != nil || testInstance.onErr != "" {
 				assert.EqualError(t, onErr, testInstance.onErr)
 			} else {

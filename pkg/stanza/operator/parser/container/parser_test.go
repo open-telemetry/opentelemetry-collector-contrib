@@ -4,7 +4,6 @@
 package container
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -171,7 +170,7 @@ func TestProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 			// Stop the operator
@@ -454,7 +453,7 @@ func TestRecombineProcess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -519,7 +518,7 @@ func TestProcessWithDockerTime(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -678,7 +677,7 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()

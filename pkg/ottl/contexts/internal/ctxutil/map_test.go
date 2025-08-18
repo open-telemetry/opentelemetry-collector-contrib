@@ -123,7 +123,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			s := m.PutEmptySlice("slice")
 			s.AppendEmpty()
 
-			_, err := ctxutil.GetMapValue[any](context.Background(), nil, m, tt.keys)
+			_, err := ctxutil.GetMapValue[any](t.Context(), nil, m, tt.keys)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -140,13 +140,13 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 			S: ottltest.Strp("unknown key"),
 		},
 	}
-	result, err := ctxutil.GetMapValue[any](context.Background(), nil, m, keys)
+	result, err := ctxutil.GetMapValue[any](t.Context(), nil, m, keys)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func Test_GetMapValue_NilKey(t *testing.T) {
-	_, err := ctxutil.GetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil)
+	_, err := ctxutil.GetMapValue[any](t.Context(), nil, pcommon.NewMap(), nil)
 	assert.Error(t, err)
 }
 
@@ -255,7 +255,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			s := m.PutEmptySlice("slice")
 			s.AppendEmpty()
 
-			err := ctxutil.SetMapValue[any](context.Background(), nil, m, tt.keys, "value")
+			err := ctxutil.SetMapValue[any](t.Context(), nil, m, tt.keys, "value")
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -275,7 +275,7 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 			S: ottltest.Strp("foo"),
 		},
 	}
-	err := ctxutil.SetMapValue[any](context.Background(), nil, m, keys, "bar")
+	err := ctxutil.SetMapValue[any](t.Context(), nil, m, keys, "bar")
 	assert.NoError(t, err)
 
 	expected := pcommon.NewMap()
@@ -299,7 +299,7 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 			S: ottltest.Strp("foo"),
 		},
 	}
-	err := ctxutil.SetMapValue[any](context.Background(), nil, m, keys, "bar")
+	err := ctxutil.SetMapValue[any](t.Context(), nil, m, keys, "bar")
 	assert.NoError(t, err)
 
 	expected := pcommon.NewMap()
@@ -309,7 +309,7 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 }
 
 func Test_SetMapValue_NilKey(t *testing.T) {
-	err := ctxutil.SetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil, "bar")
+	err := ctxutil.SetMapValue[any](t.Context(), nil, pcommon.NewMap(), nil, "bar")
 	assert.Error(t, err)
 }
 
@@ -436,7 +436,7 @@ func Test_GetMapKeyName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resolvedKey, err := ctxutil.GetMapKeyName[any](context.Background(), nil, tt.keys[0])
+			resolvedKey, err := ctxutil.GetMapKeyName[any](t.Context(), nil, tt.keys[0])
 			if tt.err != nil {
 				assert.Equal(t, tt.err.Error(), err.Error())
 				return

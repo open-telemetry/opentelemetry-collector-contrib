@@ -4,7 +4,6 @@
 package sentryexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,11 +28,11 @@ func TestCreateExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	params := exportertest.NewNopSettings(metadata.Type)
 
-	te, err := factory.CreateTraces(context.Background(), params, eCfg)
+	te, err := factory.CreateTraces(t.Context(), params, eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetrics(context.Background(), params, eCfg)
+	me, err := factory.CreateMetrics(t.Context(), params, eCfg)
 	assert.Error(t, err)
 	assert.Nil(t, me)
 }
