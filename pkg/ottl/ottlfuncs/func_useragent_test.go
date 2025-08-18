@@ -145,7 +145,7 @@ func TestUserAgentParser(t *testing.T) {
 			}
 
 			exprFunc := userAgent[any](source) //revive:disable-line:var-naming
-			res, err := exprFunc(context.Background(), nil)
+			res, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			require.IsType(t, map[string]any{}, res)
 			resMap := res.(map[string]any)

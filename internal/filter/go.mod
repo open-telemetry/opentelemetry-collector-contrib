@@ -1,19 +1,19 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 
-go 1.23.0
+go 1.24
 
 require (
-	github.com/expr-lang/expr v1.17.5
+	github.com/expr-lang/expr v1.17.6
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.131.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.38.0
-	go.opentelemetry.io/collector/component/componenttest v0.132.0
-	go.opentelemetry.io/collector/confmap v1.38.0
-	go.opentelemetry.io/collector/featuregate v1.38.0
-	go.opentelemetry.io/collector/pdata v1.38.0
+	go.opentelemetry.io/collector/component v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/confmap v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/pdata v1.38.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -51,8 +51,8 @@ require (
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.132.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.132.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect

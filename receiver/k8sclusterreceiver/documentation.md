@@ -396,6 +396,20 @@ metrics:
     enabled: true
 ```
 
+### k8s.container.status.state
+
+Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {container} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | false |
+
 ### k8s.node.condition
 
 The condition of a particular Node.

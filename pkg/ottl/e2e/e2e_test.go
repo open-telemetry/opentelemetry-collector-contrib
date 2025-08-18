@@ -4,7 +4,6 @@
 package e2e
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -359,7 +358,7 @@ func Test_e2e_editors(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContextEditors()
-				_, _, _ = statement.Execute(context.Background(), tCtx)
+				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructLogTransformContextEditors()
 				tt.want(exTCtx)
@@ -1296,7 +1295,7 @@ func Test_e2e_converters(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
-				_, _, err = statement.Execute(context.Background(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
 				if tt.errMsg == "" {
 					assert.NoError(t, err)
 				} else {
@@ -1461,7 +1460,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
-				_, _, _ = statement.Execute(context.Background(), tCtx)
+				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
@@ -1534,7 +1533,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				assert.NoError(t, err)
 
 				for _, s := range logStatements {
-					_, _, _ = s.Execute(context.Background(), tCtx)
+					_, _, _ = s.Execute(t.Context(), tCtx)
 				}
 			}
 
@@ -1654,7 +1653,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructLogTransformContextValueExpressions()
-			val, err := valueExpr.Eval(context.Background(), tCtx)
+			val, err := valueExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			assert.Equal(t, tt.want(), val)
@@ -1687,7 +1686,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructSpanTransformContext()
-			_, _, _ = spanStatements.Execute(context.Background(), tCtx)
+			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
 
 			exTCtx := constructSpanTransformContext()
 			tt.want(exTCtx)
@@ -1721,7 +1720,7 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructSpanEventTransformContext()
-			_, _, _ = spanStatements.Execute(context.Background(), tCtx)
+			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
 
 			exTCtx := constructSpanEventTransformContext()
 			tt.want(exTCtx)
@@ -2009,7 +2008,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _, _ = logStatements.Execute(context.Background(), actualCtx)
+		_, _, _ = logStatements.Execute(b.Context(), actualCtx)
 	}
 
 	// Ensure correctness

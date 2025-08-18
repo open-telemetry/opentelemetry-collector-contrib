@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -64,13 +65,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
-					Explicit: &ExplicitHistogramConfig{
+					Explicit: configoptional.Some(ExplicitHistogramConfig{
 						Buckets: []time.Duration{
 							10 * time.Millisecond,
 							100 * time.Millisecond,
 							250 * time.Millisecond,
 						},
-					},
+					}),
 				},
 			},
 		},
@@ -87,9 +88,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
-					Exponential: &ExponentialHistogramConfig{
+					Exponential: configoptional.Some(ExponentialHistogramConfig{
 						MaxSize: 10,
-					},
+					}),
 				},
 			},
 		},
@@ -340,9 +341,9 @@ func TestConfigValidate(t *testing.T) {
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
-					Explicit: &ExplicitHistogramConfig{
+					Explicit: configoptional.Some(ExplicitHistogramConfig{
 						Buckets: []time.Duration{10 * time.Millisecond},
-					},
+					}),
 				},
 			},
 		},
@@ -388,12 +389,12 @@ func TestConfigValidate(t *testing.T) {
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
-					Explicit: &ExplicitHistogramConfig{
+					Explicit: configoptional.Some(ExplicitHistogramConfig{
 						Buckets: []time.Duration{10 * time.Millisecond},
-					},
-					Exponential: &ExponentialHistogramConfig{
+					}),
+					Exponential: configoptional.Some(ExponentialHistogramConfig{
 						MaxSize: 10,
-					},
+					}),
 				},
 			},
 			expectedErr: "use either `explicit` or `exponential` buckets histogram",
