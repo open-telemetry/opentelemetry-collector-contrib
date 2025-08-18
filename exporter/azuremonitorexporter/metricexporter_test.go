@@ -8,7 +8,6 @@ Contains tests for metricexporter.go and metric_to_envelopes.go
 */
 
 import (
-	"context"
 	"testing"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
@@ -27,7 +26,7 @@ func TestExporterMetricDataCallback(t *testing.T) {
 
 	metrics := getTestMetrics()
 
-	assert.NoError(t, exporter.consumeMetrics(context.Background(), metrics))
+	assert.NoError(t, exporter.consumeMetrics(t.Context(), metrics))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 5)
 }

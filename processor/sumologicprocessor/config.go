@@ -8,13 +8,13 @@ import (
 )
 
 type Config struct {
-	AddCloudNamespace           bool                      `mapstructure:"add_cloud_namespace"`
-	TranslateAttributes         bool                      `mapstructure:"translate_attributes"`
-	TranslateTelegrafAttributes bool                      `mapstructure:"translate_telegraf_attributes"`
-	NestAttributes              *NestingProcessorConfig   `mapstructure:"nest_attributes"`
-	AggregateAttributes         []aggregationPair         `mapstructure:"aggregate_attributes"`
-	LogFieldsAttributes         *logFieldAttributesConfig `mapstructure:"field_attributes"`
-	TranslateDockerMetrics      bool                      `mapstructure:"translate_docker_metrics"`
+	AddCloudNamespace           bool                     `mapstructure:"add_cloud_namespace"`
+	TranslateAttributes         bool                     `mapstructure:"translate_attributes"`
+	TranslateTelegrafAttributes bool                     `mapstructure:"translate_telegraf_attributes"`
+	NestAttributes              NestingProcessorConfig   `mapstructure:"nest_attributes"`
+	AggregateAttributes         []aggregationPair        `mapstructure:"aggregate_attributes"`
+	LogFieldsAttributes         logFieldAttributesConfig `mapstructure:"field_attributes"`
+	TranslateDockerMetrics      bool                     `mapstructure:"translate_docker_metrics"`
 }
 
 type aggregationPair struct {
@@ -58,7 +58,7 @@ func createDefaultConfig() component.Config {
 		AddCloudNamespace:           defaultAddCloudNamespace,
 		TranslateAttributes:         defaultTranslateAttributes,
 		TranslateTelegrafAttributes: defaultTranslateTelegrafAttributes,
-		NestAttributes: &NestingProcessorConfig{
+		NestAttributes: NestingProcessorConfig{
 			Separator:          defaultNestingSeparator,
 			Enabled:            defaultNestingEnabled,
 			Include:            defaultNestingInclude(),
@@ -66,7 +66,7 @@ func createDefaultConfig() component.Config {
 			SquashSingleValues: defaultNestingSquashSingleValues,
 		},
 		AggregateAttributes: defaultAggregateAttributes(),
-		LogFieldsAttributes: &logFieldAttributesConfig{
+		LogFieldsAttributes: logFieldAttributesConfig{
 			SeverityNumberAttribute: &logFieldAttribute{defaultAddSeverityNumberAttribute, SeverityNumberAttributeName},
 			SeverityTextAttribute:   &logFieldAttribute{defaultAddSeverityTextAttribute, SeverityTextAttributeName},
 			SpanIDAttribute:         &logFieldAttribute{defaultAddSpanIDAttribute, SpanIDAttributeName},

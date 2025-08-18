@@ -193,6 +193,7 @@ processor/geoipprocessor/                                        @open-telemetry
 processor/groupbyattrsprocessor/                                 @open-telemetry/collector-contrib-approvers @rnishtala-sumo @echlebek @amdprophet
 processor/groupbytraceprocessor/                                 @open-telemetry/collector-contrib-approvers @iblancasa
 processor/intervalprocessor/                                     @open-telemetry/collector-contrib-approvers @RichieSams @tombrk
+processor/isolationforestprocessor/                              @open-telemetry/collector-contrib-approvers @atoulme
 processor/k8sattributesprocessor/                                @open-telemetry/collector-contrib-approvers @dmitryax @fatsheep9146 @TylerHelmuth @ChrsMark
 processor/logdedupprocessor/                                     @open-telemetry/collector-contrib-approvers @MikeGoldsmith
 processor/logstransformprocessor/                                @open-telemetry/collector-contrib-approvers @dehaansa

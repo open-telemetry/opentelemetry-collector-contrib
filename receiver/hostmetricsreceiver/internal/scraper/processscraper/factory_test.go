@@ -4,7 +4,6 @@
 package processscraper
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -24,7 +23,7 @@ func TestCreateResourceMetricsScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
+	scraper, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" || runtime.GOOS == "freebsd" {
 		assert.NoError(t, err)
