@@ -171,9 +171,9 @@ func spanToEnvelopes(
 		applyResourcesToDataProperties(dataProperties, resourceAttributes)
 		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
-		applyApplicationTagsToEnvelope(envelope, resourceAttributes)
-		applyDeviceTagsToEnvelope(envelope, resourceAttributes)
-		applyInternalSdkVersionTagToEnvelope(envelope)
+		applyApplicationTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyDeviceTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyInternalSdkVersionTagToEnvelope(spanEventEnvelope)
 
 		// Sanitize the base data, the envelope and envelope tags
 		sanitize(dataSanitizeFunc, logger)
