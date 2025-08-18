@@ -19,6 +19,7 @@ import (
 	ul "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/macosunifiedloggingencodingextension"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // normalizedEntry is a best-effort normalization across different JSONL schemas
@@ -625,11 +626,11 @@ func isTraceV3(path string) bool {
 
 func decodeWithGo(inputPath, outPath string, verbose bool) error {
 	// Truncate existing output to avoid mixing runs
-	if f, err := os.Create(outPath); err == nil {
-		_ = f.Close()
-	} else {
+	outFile, err := os.Create(outPath)
+	if err != nil {
 		return err
 	}
+	defer outFile.Close()
 
 	// Build extension via factory
 	factory := ul.NewFactory()
@@ -665,13 +666,13 @@ func decodeWithGo(inputPath, outPath string, verbose bool) error {
 			if d.IsDir() || !isTraceV3(path) {
 				return nil
 			}
-			return decodeFile(dec, path, verbose)
+			return decodeFile(dec, path, outFile, verbose)
 		})
 	}
-	return decodeFile(dec, inputPath, verbose)
+	return decodeFile(dec, inputPath, outFile, verbose)
 }
 
-func decodeFile(dec encoding.LogsUnmarshalerExtension, path string, verbose bool) error {
+func decodeFile(dec encoding.LogsUnmarshalerExtension, path string, outFile *os.File, verbose bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", path, err)
@@ -681,7 +682,7 @@ func decodeFile(dec encoding.LogsUnmarshalerExtension, path string, verbose bool
 		fmt.Printf("  About to call UnmarshalLogs...\n")
 	}
 
-	_, err = dec.UnmarshalLogs(data)
+	logs, err := dec.UnmarshalLogs(data)
 	if err != nil {
 		if verbose {
 			fmt.Printf("  Error decoding %s: %v\n", path, err)
@@ -690,7 +691,61 @@ func decodeFile(dec encoding.LogsUnmarshalerExtension, path string, verbose bool
 	}
 
 	if verbose {
-		fmt.Printf("  UnmarshalLogs completed successfully\n")
+		fmt.Printf("  UnmarshalLogs completed successfully, got %d resource logs\n", logs.ResourceLogs().Len())
+	}
+
+	// Convert the logs to JSONL format and write to output file
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		resourceLog := logs.ResourceLogs().At(i)
+		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
+			scopeLog := resourceLog.ScopeLogs().At(j)
+			for k := 0; k < scopeLog.LogRecords().Len(); k++ {
+				logRecord := scopeLog.LogRecords().At(k)
+
+				// Create a simplified JSONL entry similar to what the rust parser would output
+				entry := map[string]interface{}{
+					"timestamp": logRecord.Timestamp(),
+					"message":   logRecord.Body().AsString(),
+					"level":     logRecord.SeverityText(),
+					"source":    "go_parser",
+				}
+
+				// Add attributes
+				logRecord.Attributes().Range(func(k string, v pcommon.Value) bool {
+					switch k {
+					case "subsystem":
+						entry["subsystem"] = v.AsString()
+					case "category":
+						entry["category"] = v.AsString()
+					case "chunk.type":
+						entry["chunk_type"] = v.AsString()
+					case "process.id":
+						entry["process_id"] = v.Int()
+					case "thread.id":
+						entry["thread_id"] = v.Int()
+					case "entry.type":
+						entry["entry_type"] = v.Int()
+					}
+					return true
+				})
+
+				// Write as JSONL
+				jsonData, err := json.Marshal(entry)
+				if err != nil {
+					if verbose {
+						fmt.Printf("  Error marshaling log entry: %v\n", err)
+					}
+					continue
+				}
+
+				if _, err := outFile.Write(jsonData); err != nil {
+					return fmt.Errorf("write to output file: %w", err)
+				}
+				if _, err := outFile.WriteString("\n"); err != nil {
+					return fmt.Errorf("write newline to output file: %w", err)
+				}
+			}
+		}
 	}
 
 	return nil
