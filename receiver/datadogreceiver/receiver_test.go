@@ -74,9 +74,12 @@ func TestDatadogServer(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 
 	require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
-	t.Cleanup(func() {
+	defer func() {
+		// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
+		// and the context shouldn't be already cancelled during a graceful shutdown
+		// if the server still can have any live connections. See issue #42005.
 		require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
-	})
+	}()
 
 	for _, tc := range []struct {
 		name     string
@@ -171,9 +174,12 @@ func TestDatadogResponse(t *testing.T) {
 			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
 
 			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
-			t.Cleanup(func() {
+			defer func() {
+				// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
+				// and the context shouldn't be already cancelled during a graceful shutdown
+				// if the server still can have any live connections. See issue #42005.
 				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
-			})
+			}()
 
 			apiPayload := pb.TracerPayload{}
 			var reqBytes []byte
@@ -302,9 +308,12 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 			dd.(*datadogReceiver).nextMetricsConsumer = tc.metricsConsumer
 
 			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
-			t.Cleanup(func() {
+			defer func() {
+				// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
+				// and the context shouldn't be already cancelled during a graceful shutdown
+				// if the server still can have any live connections. See issue #42005.
 				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
-			})
+			}()
 
 			req, err := http.NewRequest(
 				http.MethodPost,
