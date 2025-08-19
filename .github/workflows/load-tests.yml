@@ -84,7 +84,7 @@ jobs:
       - name: Set results filename
         if: ${{ failure() || success() }}
         id: filename
-        run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> $GITHUB_OUTPUT
+        run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> "$GITHUB_OUTPUT"
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true

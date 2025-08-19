@@ -1,0 +1,13 @@
+self-hosted-runner:
+  labels:
+    - oracle-bare-metal-64cpu-512gb-x86-64
+    - windows-11-arm
+
+config-variables: null
+
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+
+      # shellcheck gets confused between VERSION env var and version bash variable.
+      - ".*VERSION may not be assigned. Did you mean version.*"
