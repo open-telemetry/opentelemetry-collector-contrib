@@ -54,7 +54,7 @@ func BenchmarkExporter(b *testing.B) {
 }
 
 func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(b.Context())
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)
@@ -84,7 +84,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 }
 
 func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(b.Context())
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)
@@ -114,7 +114,7 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 }
 
 func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(b.Context())
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)

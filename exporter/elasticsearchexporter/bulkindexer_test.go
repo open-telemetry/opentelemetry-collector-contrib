@@ -4,7 +4,6 @@
 package elasticsearchexporter
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -115,13 +114,13 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			bulkIndexer, err := newAsyncBulkIndexer(client, &tt.config, false, tb, zap.NewNop())
 			require.NoError(t, err)
 
-			session := bulkIndexer.StartSession(context.Background())
-			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			session := bulkIndexer.StartSession(t.Context())
+			assert.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
-			assert.NoError(t, session.Flush(context.Background()))
+			assert.NoError(t, session.Flush(t.Context()))
 			session.End()
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
+			assert.NoError(t, bulkIndexer.Close(t.Context()))
 			// Assert internal telemetry metrics
 			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
 				{
@@ -419,11 +418,11 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			require.NoError(t, err)
 			bulkIndexer, err := newAsyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
 			require.NoError(t, err)
-			defer bulkIndexer.Close(context.Background())
+			defer bulkIndexer.Close(t.Context())
 
 			// Client metadata are not added to the telemetry for async bulk indexer
 			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
-			ctx := client.NewContext(context.Background(), info)
+			ctx := client.NewContext(t.Context(), info)
 			session := bulkIndexer.StartSession(ctx)
 			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
@@ -435,7 +434,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
 				}
 			}
-			assert.NoError(t, session.Flush(context.Background()))
+			assert.NoError(t, session.Flush(t.Context()))
 			session.End()
 			// Assert internal telemetry metrics
 			if tt.wantESBulkReqs != nil {
@@ -548,11 +547,11 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 	bulkIndexer, err := newAsyncBulkIndexer(client, config, false, tb, zap.NewNop())
 	require.NoError(t, err)
 
-	session := bulkIndexer.StartSession(context.Background())
-	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-	assert.NoError(t, session.Flush(context.Background()))
+	session := bulkIndexer.StartSession(t.Context())
+	assert.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	assert.NoError(t, session.Flush(t.Context()))
 	session.End()
-	assert.NoError(t, bulkIndexer.Close(context.Background()))
+	assert.NoError(t, bulkIndexer.Close(t.Context()))
 	// Assert internal telemetry metrics
 	metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
 		{
@@ -638,7 +637,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
 
 			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
-			ctx := client.NewContext(context.Background(), info)
+			ctx := client.NewContext(t.Context(), info)
 			session := bi.StartSession(ctx)
 			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			assert.Equal(t, int64(1), reqCnt.Load())
@@ -832,7 +831,7 @@ func TestNewBulkIndexer(t *testing.T) {
 
 			bi, err := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
 			require.NoError(t, err)
-			t.Cleanup(func() { bi.Close(context.Background()) })
+			t.Cleanup(func() { bi.Close(t.Context()) })
 
 			_, ok := bi.(*syncBulkIndexer)
 			assert.Equal(t, tc.expectSyncBulkIndexer, ok)

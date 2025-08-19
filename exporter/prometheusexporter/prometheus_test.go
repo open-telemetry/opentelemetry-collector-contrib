@@ -4,7 +4,6 @@
 package prometheusexporter
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,7 +71,7 @@ func TestPrometheusExporter(t *testing.T) {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
 			cfg := tt.config()
-			exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 
 			if tt.wantErr != "" {
 				require.Error(t, err)
@@ -82,7 +81,7 @@ func TestPrometheusExporter(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NotNil(t, exp)
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.wantStartErr != "" {
 				require.Error(t, err)
@@ -91,7 +90,7 @@ func TestPrometheusExporter(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			require.NoError(t, exp.Shutdown(context.Background()))
+			require.NoError(t, exp.Shutdown(t.Context()))
 		}
 	}
 }
@@ -122,7 +121,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 
 	tlscs := configtls.ClientConfig{
@@ -133,7 +132,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, err := tlscs.LoadTLSConfig(context.Background())
+	tls, err := tlscs.LoadTLSConfig(t.Context())
 	assert.NoError(t, err)
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -142,17 +141,17 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 
 	rsp, err := httpClient.Get("https://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
@@ -191,24 +190,24 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics from different targets
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8081")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8081")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8081")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8081")))
 
 		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -265,22 +264,22 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 
 		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -334,22 +333,22 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "node-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(128, "metric_1_", "node-exporter", "localhost:8080")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(t.Context(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
 
 		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -406,20 +405,20 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 
 	rsp, err := http.Get("http://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
@@ -666,22 +665,23 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 
 			factory := NewFactory()
 			set := exportertest.NewNopSettings(metadata.Type)
-			exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 			require.NoError(t, err)
 
 			t.Cleanup(func() {
-				require.NoError(t, exp.Shutdown(context.Background()))
+				require.NoError(t, exp.Shutdown(t.Context()))
 			})
 
 			assert.NotNil(t, exp)
-			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 			md := metricBuilder(0, "", "test-service", "test-instance")
-			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+			assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 
 			// Scrape metrics, with the Accept header set to the value specified in the test case
 			req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/metrics", http.NoBody)
 			require.NoError(t, err)
+			req.Close = true
 			for k, v := range tt.extraHeaders {
 				req.Header.Set(k, v)
 			}
