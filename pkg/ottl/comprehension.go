@@ -90,13 +90,12 @@ func newListComprehensionGetter[K any](p *Parser[K], c *listComprehension) (Gett
 	if err != nil {
 		return nil, err
 	}
-	cond := BoolExpr[comprehensionContext[any]]{alwaysTrue[comprehensionContext[any]]}
-	if c.Cond != nil {
-		cond, err = newParser.newBoolExpr(c.Cond)
-		if err != nil {
-			return nil, err
-		}
+
+	cond, err := newParser.newBoolExpr(c.Cond)
+	if err != nil {
+		return nil, err
 	}
+
 	return &comprehensionExpr[K]{
 		currentValueID: c.Ident,
 		listExpr:       list,
