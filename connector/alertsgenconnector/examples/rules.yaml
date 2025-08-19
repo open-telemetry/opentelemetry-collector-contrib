@@ -1,0 +1,9 @@
+rules:
+  - id: r1
+    signal: traces
+    match:
+      span.attribute:
+        http.status_code: ">=500"
+    for: 2s
+    reason: "error rate high"
+    severity: error

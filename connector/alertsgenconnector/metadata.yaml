@@ -1,0 +1,37 @@
+type: alertsgen
+status:
+  class: connector
+  stability:
+    alpha: [traces_to_logs, metrics_to_logs, traces_to_metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [aarvee11]
+
+telemetry:
+  metrics:
+    alerts_total:
+      description: "Total number of alert events generated"
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        aggregation_temporality: cumulative
+      attributes: [rule_id, signal, severity]
+    alerts_active:
+      description: "Number of active alerts"
+      unit: "1"
+      gauge:
+        value_type: int
+      attributes: [rule_id, signal, severity]
+    alerts_duration_ns:
+      description: "Duration of resolved alerts (nanoseconds)"
+      unit: "ns"
+      sum:
+        value_type: int
+        monotonic: true
+        aggregation_temporality: cumulative
+      attributes: [rule_id, signal, severity]
+  logs:
+    - name: "alert.event"
+      body: "Alert lifecycle events (firing, resolved, no_data)"
+      attributes: [rule_id, fingerprint, signal, severity, reason, labels]

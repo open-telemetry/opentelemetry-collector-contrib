@@ -1,0 +1,41 @@
+receivers:
+  otlp:
+    protocols: { grpc: {}, http: {} }
+
+exporters:
+  debug: {}
+  prometheusremotewrite:
+    endpoint: http://vmagent.victoriametrics.svc:8429/api/v1/write
+
+connectors:
+  alertsgen:
+    rules_file: ./examples/rules.yaml
+    for: 5s
+    grace_period: 2s
+    max_cardinality: 5000
+    governor_rps: 200
+    governor_burst: 400
+    severity_map:
+      info:    ["info","minor"]
+      warning: ["warn","warning"]
+      error:   ["error","critical"]
+      fatal:   ["fatal","panic"]
+    routes:
+      to_logs: true
+      to_metrics: true
+    carry_resource: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [alertsgen]
+    logs:
+      receivers: [alertsgen]
+      processors: [batch]
+      exporters: [debug]
+    metrics:
+      receivers: [alertsgen]
+      processors: [batch]
+      exporters: [prometheusremotewrite, debug]
