@@ -11,7 +11,7 @@ permissions: read-all
 jobs:
   changedfiles:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.sha != '' }}
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
