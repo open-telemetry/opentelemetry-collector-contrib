@@ -3,7 +3,10 @@
 
 package ctxprofilesample // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilesample"
 
-import "go.opentelemetry.io/collector/pdata/pprofile"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+)
 
 const (
 	Name   = "profilesample"
@@ -11,6 +14,7 @@ const (
 )
 
 type Context interface {
+	AttributeIndices() pcommon.Int32Slice
 	GetProfileSample() pprofile.Sample
 	GetProfilesDictionary() pprofile.ProfilesDictionary
 }
