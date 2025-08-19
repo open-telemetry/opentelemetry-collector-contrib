@@ -5,14 +5,13 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 permissions:
   contents: read
 
 jobs:
   welcome_first_contributor:
-    permissions:
-      issues: write
     runs-on: ubuntu-latest
     if: github.repository_owner == 'open-telemetry' && (github.event.pull_request.author_association == 'NONE' || github.event.label.name == 'first-contrib-test')
     steps:
