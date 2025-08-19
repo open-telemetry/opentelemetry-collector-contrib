@@ -764,8 +764,7 @@ func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMe
 		if err != nil {
 			s.logger.Error("oracleScraper failed getting metric rows", zap.Error(err))
 		} else {
-			obfuscatedSQLLowerCase := strings.ToLower(obfuscatedSQL)
-			hit.queryText = obfuscatedSQLLowerCase
+			hit.queryText = obfuscatedSQL
 			obfuscatedHits = append(obfuscatedHits, hit)
 		}
 	}
