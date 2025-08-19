@@ -150,7 +150,7 @@ to read resource information from the [metadata server](https://cloud.google.com
 application is running on, and detect the appropriate attributes for that platform. Regardless
 of the GCP platform the application is running on, use the gcp detector:
 
-It also can optionally gather tags for the GCE instance that the collector is running on.
+It also can optionally gather labels for the GCE instance that the collector is running on.
 Note that in order to fetch GCE labels, the service account assigned to the GCE instance must have the `roles/compute.viewer` role.
 
 Example:
