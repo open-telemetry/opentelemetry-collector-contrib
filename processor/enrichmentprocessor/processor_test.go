@@ -13,33 +13,33 @@ import (
 	"go.uber.org/zap"
 )
 
-// MockDataSource for testing
-type MockDataSource struct {
+// mockDataSource for testing
+type mockDataSource struct {
 	data        [][]string
 	headerIndex map[string]int
-	lookup      *Lookup
+	lookup      *lookup
 }
 
-func NewMockDataSource(data [][]string, headerIndex map[string]int, indexFields []string) *MockDataSource {
-	lookup := NewLookup()
+func newMockDataSource(data [][]string, headerIndex map[string]int, indexFields []string) *mockDataSource {
+	lookup := newLookup()
 	lookup.SetAll(data, headerIndex, indexFields)
 
-	return &MockDataSource{
+	return &mockDataSource{
 		data:        data,
 		headerIndex: headerIndex,
 		lookup:      lookup,
 	}
 }
 
-func (m *MockDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
+func (m *mockDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
 	return m.lookup.Lookup(lookupField, key)
 }
 
-func (*MockDataSource) Start(context.Context) error {
+func (*mockDataSource) Start(context.Context) error {
 	return nil
 }
 
-func (*MockDataSource) Stop() error {
+func (*mockDataSource) Stop() error {
 	return nil
 }
 
@@ -57,7 +57,7 @@ func TestEnrichmentProcessor_Core(t *testing.T) {
 	}
 	indexFields := []string{"name", "environment"}
 
-	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
+	mockDataSource := newMockDataSource(data, headerIndex, indexFields)
 
 	// Create processor with mock data source
 	processor := &enrichmentProcessor{
@@ -237,7 +237,7 @@ func TestEnrichmentContextFiltering(t *testing.T) {
 	}
 	indexFields := []string{"name"}
 
-	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
+	mockDataSource := newMockDataSource(data, headerIndex, indexFields)
 
 	processor := &enrichmentProcessor{
 		config: &Config{
@@ -321,7 +321,7 @@ func TestEnrichmentWithConditions(t *testing.T) {
 	}
 	indexFields := []string{"name"}
 
-	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
+	mockDataSource := newMockDataSource(data, headerIndex, indexFields)
 
 	// Create processor with conditional rule (conditions are ignored)
 	processor := &enrichmentProcessor{
@@ -388,7 +388,7 @@ func TestMetricsProcessorEnrichment(t *testing.T) {
 	}
 	indexFields := []string{"name"}
 
-	mockDataSource := NewMockDataSource(data, headerIndex, indexFields)
+	mockDataSource := newMockDataSource(data, headerIndex, indexFields)
 
 	enrichmentProc := &enrichmentProcessor{
 		config: &Config{
@@ -587,12 +587,12 @@ func TestDataSourceCreation(t *testing.T) {
 func TestProcessorShutdown(t *testing.T) {
 	// Create a mock data source that can simulate error on Stop
 	type ErrorDataSource struct {
-		*MockDataSource
+		*mockDataSource
 		shouldError bool
 	}
 
 	errorDS := &ErrorDataSource{
-		MockDataSource: NewMockDataSource([][]string{}, map[string]int{}, []string{}),
+		mockDataSource: newMockDataSource([][]string{}, map[string]int{}, []string{}),
 		shouldError:    true,
 	}
 
@@ -626,7 +626,7 @@ func TestEmptyConfiguration(t *testing.T) {
 }
 
 func TestEnrichmentRuleErrors(t *testing.T) {
-	mockDataSource := NewMockDataSource([][]string{}, map[string]int{}, []string{})
+	mockDataSource := newMockDataSource([][]string{}, map[string]int{}, []string{})
 
 	processor := &enrichmentProcessor{
 		config: &Config{

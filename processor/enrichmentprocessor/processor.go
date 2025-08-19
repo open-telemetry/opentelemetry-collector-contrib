@@ -86,13 +86,13 @@ func (ep *enrichmentProcessor) createDataSource(config DataSourceConfig) (DataSo
 		if config.HTTP == nil {
 			return nil, errors.New("HTTP configuration is required for http data source")
 		}
-		return NewHTTPDataSource(*config.HTTP, ep.logger, indexFields), nil
+		return newHTTPDataSource(*config.HTTP, ep.logger, indexFields), nil
 
 	case "file":
 		if config.File == nil {
 			return nil, errors.New("File configuration is required for file data source")
 		}
-		return NewFileDataSource(*config.File, ep.logger, indexFields), nil
+		return newFileDataSource(*config.File, ep.logger, indexFields), nil
 
 	default:
 		return nil, errors.New("unsupported data source type: " + config.Type)

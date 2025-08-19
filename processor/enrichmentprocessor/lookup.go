@@ -9,31 +9,31 @@ import (
 	"sync"
 )
 
-// Lookup handles data lookup operations
-type Lookup struct {
+// lookup handles data lookup operations
+type lookup struct {
 	data              [][]string
-	LookupColumnIndex map[string]map[string]int
+	lookupColumnIndex map[string]map[string]int
 	headerIndex       map[string]int
 	mutex             sync.RWMutex
 }
 
-// NewLookup creates a new Lookup instance
-func NewLookup() *Lookup {
-	return &Lookup{
+// newLookup creates a new lookup instance
+func newLookup() *lookup {
+	return &lookup{
 		data:              make([][]string, 0),
-		LookupColumnIndex: make(map[string]map[string]int),
+		lookupColumnIndex: make(map[string]map[string]int),
 		headerIndex:       make(map[string]int),
 	}
 }
 
 // SetAll replaces all data in the lookup
-func (l *Lookup) SetAll(data [][]string, headerIndex map[string]int, indexFields []string) {
+func (l *lookup) SetAll(data [][]string, headerIndex map[string]int, indexFields []string) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	l.data = data
 	l.headerIndex = headerIndex
-	l.LookupColumnIndex = make(map[string]map[string]int)
+	l.lookupColumnIndex = make(map[string]map[string]int)
 
 	// Iterate through all index fields
 	for _, lookupField := range indexFields {
@@ -46,27 +46,27 @@ func (l *Lookup) SetAll(data [][]string, headerIndex map[string]int, indexFields
 			continue
 		}
 
-		if l.LookupColumnIndex[lookupField] == nil {
-			l.LookupColumnIndex[lookupField] = make(map[string]int)
+		if l.lookupColumnIndex[lookupField] == nil {
+			l.lookupColumnIndex[lookupField] = make(map[string]int)
 		}
 
 		for i, row := range data {
 			if lookupFieldColumnIndex < len(row) {
 				// WARNING: if column has same field, only last one will remain
 				fieldValue := row[lookupFieldColumnIndex]
-				l.LookupColumnIndex[lookupField][fieldValue] = i
+				l.lookupColumnIndex[lookupField][fieldValue] = i
 			}
 		}
 	}
 }
 
 // Lookup performs a lookup operation
-func (l *Lookup) Lookup(headerName, value string) (enrichmentRow []string, headerIndex map[string]int, err error) {
+func (l *lookup) Lookup(headerName, value string) (enrichmentRow []string, headerIndex map[string]int, err error) {
 	l.mutex.RLock()
 	defer l.mutex.RUnlock()
 
-	// Check if the header name exists in LookupColumnIndex
-	headerMap, headerExists := l.LookupColumnIndex[headerName]
+	// Check if the header name exists in lookupColumnIndex
+	headerMap, headerExists := l.lookupColumnIndex[headerName]
 	if !headerExists {
 		return nil, nil, errors.New("enrichment field '" + headerName + "' is not indexed")
 	}

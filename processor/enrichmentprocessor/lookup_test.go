@@ -11,16 +11,16 @@ import (
 )
 
 func TestNewLookup(t *testing.T) {
-	lookup := NewLookup()
+	lookup := newLookup()
 
 	assert.NotNil(t, lookup)
 	assert.NotNil(t, lookup.data)
-	assert.NotNil(t, lookup.LookupColumnIndex)
+	assert.NotNil(t, lookup.lookupColumnIndex)
 	assert.NotNil(t, lookup.headerIndex)
 }
 
 func TestLookup_SetAll(t *testing.T) {
-	lookup := NewLookup()
+	lookup := newLookup()
 
 	data := [][]string{
 		{"value1", "data1", "info1"},
@@ -39,19 +39,19 @@ func TestLookup_SetAll(t *testing.T) {
 	// Verify basic fields are set
 	assert.Equal(t, data, lookup.data)
 	assert.Equal(t, headerIndex, lookup.headerIndex)
-	assert.Len(t, lookup.LookupColumnIndex, 2)
+	assert.Len(t, lookup.lookupColumnIndex, 2)
 
 	// Verify indexing works correctly
-	assert.Equal(t, 0, lookup.LookupColumnIndex["field1"]["value1"])
-	assert.Equal(t, 1, lookup.LookupColumnIndex["field1"]["value2"])
-	assert.Equal(t, 2, lookup.LookupColumnIndex["field1"]["value3"])
-	assert.Equal(t, 0, lookup.LookupColumnIndex["field2"]["data1"])
-	assert.Equal(t, 1, lookup.LookupColumnIndex["field2"]["data2"])
-	assert.Equal(t, 2, lookup.LookupColumnIndex["field2"]["data3"])
+	assert.Equal(t, 0, lookup.lookupColumnIndex["field1"]["value1"])
+	assert.Equal(t, 1, lookup.lookupColumnIndex["field1"]["value2"])
+	assert.Equal(t, 2, lookup.lookupColumnIndex["field1"]["value3"])
+	assert.Equal(t, 0, lookup.lookupColumnIndex["field2"]["data1"])
+	assert.Equal(t, 1, lookup.lookupColumnIndex["field2"]["data2"])
+	assert.Equal(t, 2, lookup.lookupColumnIndex["field2"]["data3"])
 }
 
 func TestLookup_SetAll_EdgeCases(t *testing.T) {
-	lookup := NewLookup()
+	lookup := newLookup()
 
 	data := [][]string{
 		{"value1", "data1"},
@@ -67,18 +67,18 @@ func TestLookup_SetAll_EdgeCases(t *testing.T) {
 	lookup.SetAll(data, headerIndex, indexFields)
 
 	// Only valid fields should be indexed
-	assert.Len(t, lookup.LookupColumnIndex, 2)
-	assert.Contains(t, lookup.LookupColumnIndex, "field1")
-	assert.Contains(t, lookup.LookupColumnIndex, "field2")
+	assert.Len(t, lookup.lookupColumnIndex, 2)
+	assert.Contains(t, lookup.lookupColumnIndex, "field1")
+	assert.Contains(t, lookup.lookupColumnIndex, "field2")
 
 	// field1 should have all values
-	assert.Len(t, lookup.LookupColumnIndex["field1"], 3)
+	assert.Len(t, lookup.lookupColumnIndex["field1"], 3)
 	// field2 should skip the short row
-	assert.Len(t, lookup.LookupColumnIndex["field2"], 2)
+	assert.Len(t, lookup.lookupColumnIndex["field2"], 2)
 }
 
 func TestLookup_Lookup(t *testing.T) {
-	lookup := NewLookup()
+	lookup := newLookup()
 
 	data := [][]string{
 		{"key1", "data1", "info1"},

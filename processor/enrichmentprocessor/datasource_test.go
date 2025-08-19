@@ -37,7 +37,7 @@ func TestHTTPDataSource_Lifecycle(t *testing.T) {
 
 	logger := zap.NewNop()
 	indexFields := []string{"name"}
-	dataSource := NewHTTPDataSource(config, logger, indexFields)
+	dataSource := newHTTPDataSource(config, logger, indexFields)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -72,7 +72,7 @@ func TestFileDataSource_Lifecycle(t *testing.T) {
 
 	logger := zap.NewNop()
 	indexFields := []string{"hostname"}
-	dataSource := NewFileDataSource(config, logger, indexFields)
+	dataSource := newFileDataSource(config, logger, indexFields)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -97,7 +97,7 @@ func TestHTTPDataSource_FormatDetection(t *testing.T) {
 			URL:             server.URL,
 			RefreshInterval: 1 * time.Minute,
 		}
-		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
+		dataSource := newHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
 		err := dataSource.Start(t.Context())
 		require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestHTTPDataSource_FormatDetection(t *testing.T) {
 			URL:             server.URL,
 			RefreshInterval: 1 * time.Minute,
 		}
-		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
+		dataSource := newHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
 		err := dataSource.Start(t.Context())
 		assert.Error(t, err)
@@ -135,7 +135,7 @@ func TestHTTPDataSource_ErrorHandling(t *testing.T) {
 			URL:             server.URL,
 			RefreshInterval: 1 * time.Minute,
 		}
-		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
+		dataSource := newHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
 		err := dataSource.Start(t.Context())
 		assert.Error(t, err)
@@ -154,7 +154,7 @@ func TestHTTPDataSource_ErrorHandling(t *testing.T) {
 			Format:          "json",
 			RefreshInterval: 1 * time.Minute,
 		}
-		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
+		dataSource := newHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
 		err := dataSource.Start(t.Context())
 		assert.Error(t, err)

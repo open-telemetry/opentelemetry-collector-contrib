@@ -31,37 +31,37 @@ type DataSource interface {
 	Stop() error
 }
 
-// HTTPDataSource implements DataSource for HTTP endpoints
+// httpDataSource implements DataSource for HTTP endpoints
 // Supports both JSON and CSV data formats.
 // Format detection:
 // 1. If config.Format is specified, uses that format
 // 2. Otherwise, auto-detects based on Content-Type header:
 //   - text/csv or application/csv -> CSV format
 //   - anything else -> JSON format (default)
-type HTTPDataSource struct {
+type httpDataSource struct {
 	config     HTTPDataSourceConfig
 	client     *http.Client
-	lookup     *Lookup
+	lookup     *lookup
 	logger     *zap.Logger
 	cancel     context.CancelFunc
 	indexField []string
 }
 
-// NewHTTPDataSource creates a new HTTP data source
-func NewHTTPDataSource(config HTTPDataSourceConfig, logger *zap.Logger, indexField []string) *HTTPDataSource {
-	return &HTTPDataSource{
+// newHTTPDataSource creates a new HTTP data source
+func newHTTPDataSource(config HTTPDataSourceConfig, logger *zap.Logger, indexField []string) *httpDataSource {
+	return &httpDataSource{
 		config: config,
 		client: &http.Client{
 			Timeout: config.Timeout,
 		},
-		lookup:     NewLookup(),
+		lookup:     newLookup(),
 		logger:     logger,
 		indexField: indexField,
 	}
 }
 
 // Start starts the HTTP data source
-func (h *HTTPDataSource) Start(ctx context.Context) error {
+func (h *httpDataSource) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	h.cancel = cancel
 
@@ -91,7 +91,7 @@ func (h *HTTPDataSource) Start(ctx context.Context) error {
 }
 
 // Stop stops the HTTP data source
-func (h *HTTPDataSource) Stop() error {
+func (h *httpDataSource) Stop() error {
 	if h.cancel != nil {
 		h.cancel()
 	}
@@ -99,12 +99,12 @@ func (h *HTTPDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (h *HTTPDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
+func (h *httpDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
 	return h.lookup.Lookup(lookupField, key)
 }
 
 // refresh refreshes the HTTP data source
-func (h *HTTPDataSource) refresh(ctx context.Context) error {
+func (h *httpDataSource) refresh(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.config.URL, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -288,28 +288,28 @@ func parseCSV(data []byte) ([][]string, map[string]int, error) {
 	return dataRows, index, nil
 }
 
-// FileDataSource implements DataSource for file-based sources
-type FileDataSource struct {
+// fileDataSource implements DataSource for file-based sources
+type fileDataSource struct {
 	config     FileDataSourceConfig
-	lookup     *Lookup
+	lookup     *lookup
 	logger     *zap.Logger
 	cancel     context.CancelFunc
 	lastMod    time.Time
 	indexField []string
 }
 
-// NewFileDataSource creates a new file data source
-func NewFileDataSource(config FileDataSourceConfig, logger *zap.Logger, indexField []string) *FileDataSource {
-	return &FileDataSource{
+// newFileDataSource creates a new file data source
+func newFileDataSource(config FileDataSourceConfig, logger *zap.Logger, indexField []string) *fileDataSource {
+	return &fileDataSource{
 		config:     config,
-		lookup:     NewLookup(),
+		lookup:     newLookup(),
 		logger:     logger,
 		indexField: indexField,
 	}
 }
 
 // Start starts the file data source
-func (f *FileDataSource) Start(ctx context.Context) error {
+func (f *fileDataSource) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	f.cancel = cancel
 
@@ -339,7 +339,7 @@ func (f *FileDataSource) Start(ctx context.Context) error {
 }
 
 // Stop stops the file data source
-func (f *FileDataSource) Stop() error {
+func (f *fileDataSource) Stop() error {
 	if f.cancel != nil {
 		f.cancel()
 	}
@@ -347,12 +347,12 @@ func (f *FileDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (f *FileDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
+func (f *fileDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
 	return f.lookup.Lookup(lookupField, key)
 }
 
 // refresh loads data from the file
-func (f *FileDataSource) refresh(_ context.Context) error {
+func (f *fileDataSource) refresh(_ context.Context) error {
 	fileInfo, err := os.Stat(f.config.Path)
 	if err != nil {
 		return fmt.Errorf("failed to stat file: %w", err)
