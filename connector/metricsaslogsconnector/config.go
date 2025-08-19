@@ -15,7 +15,7 @@ type Config struct {
 	_ struct{}
 }
 
-func (c *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }
 

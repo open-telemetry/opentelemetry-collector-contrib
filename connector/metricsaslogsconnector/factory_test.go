@@ -4,7 +4,6 @@
 package metricsaslogsconnector
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ func TestCreateMetricsToLogs(t *testing.T) {
 	consumer := &consumertest.LogsSink{}
 
 	connector, err := factory.CreateMetricsToLogs(
-		context.Background(),
+		t.Context(),
 		set,
 		cfg,
 		consumer,

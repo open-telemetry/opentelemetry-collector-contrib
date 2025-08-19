@@ -4,7 +4,6 @@
 package metricsaslogsconnector
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -33,7 +32,7 @@ func TestConsumeMetrics_EmptyMetrics(t *testing.T) {
 	}
 
 	metrics := pmetric.NewMetrics()
-	err := connector.ConsumeMetrics(context.Background(), metrics)
+	err := connector.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 	assert.Empty(t, sink.AllLogs())
 }
@@ -43,7 +42,7 @@ func TestConsumeMetrics_GaugeMetric(t *testing.T) {
 		name          string
 		config        *Config
 		setupMetric   func(pmetric.Metric)
-		expectedAttrs map[string]interface{}
+		expectedAttrs map[string]any
 		checkResource bool
 		checkScope    bool
 	}{
@@ -64,7 +63,7 @@ func TestConsumeMetrics_GaugeMetric(t *testing.T) {
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1234567890, 0)))
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1234567800, 0)))
 			},
-			expectedAttrs: map[string]interface{}{
+			expectedAttrs: map[string]any{
 				attrMetricName:        "test_gauge",
 				attrMetricType:        "Gauge",
 				attrMetricDescription: "Test gauge metric",
@@ -87,7 +86,7 @@ func TestConsumeMetrics_GaugeMetric(t *testing.T) {
 				dp.SetDoubleValue(3.14)
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1234567890, 0)))
 			},
-			expectedAttrs: map[string]interface{}{
+			expectedAttrs: map[string]any{
 				attrMetricName: "test_gauge_double",
 				attrMetricType: "Gauge",
 				attrGaugeValue: 3.14,
@@ -106,7 +105,7 @@ func TestConsumeMetrics_GaugeMetric(t *testing.T) {
 			}
 
 			metrics := createTestMetrics(tt.setupMetric, tt.checkResource, tt.checkScope)
-			err := connector.ConsumeMetrics(context.Background(), metrics)
+			err := connector.ConsumeMetrics(t.Context(), metrics)
 			require.NoError(t, err)
 
 			require.Len(t, sink.AllLogs(), 1)
@@ -121,13 +120,13 @@ func TestConsumeMetrics_SumMetric(t *testing.T) {
 		name          string
 		isMonotonic   bool
 		temporality   pmetric.AggregationTemporality
-		expectedAttrs map[string]interface{}
+		expectedAttrs map[string]any
 	}{
 		{
 			name:        "monotonic_cumulative_sum",
 			isMonotonic: true,
 			temporality: pmetric.AggregationTemporalityCumulative,
-			expectedAttrs: map[string]interface{}{
+			expectedAttrs: map[string]any{
 				attrMetricName:                   "test_sum",
 				attrMetricType:                   "Sum",
 				attrSumValue:                     int64(100),
@@ -139,7 +138,7 @@ func TestConsumeMetrics_SumMetric(t *testing.T) {
 			name:        "non_monotonic_delta_sum",
 			isMonotonic: false,
 			temporality: pmetric.AggregationTemporalityDelta,
-			expectedAttrs: map[string]interface{}{
+			expectedAttrs: map[string]any{
 				attrMetricName:                   "test_sum",
 				attrMetricType:                   "Sum",
 				attrSumValue:                     int64(100),
@@ -169,7 +168,7 @@ func TestConsumeMetrics_SumMetric(t *testing.T) {
 			}
 
 			metrics := createTestMetrics(setupMetric, false, false)
-			err := connector.ConsumeMetrics(context.Background(), metrics)
+			err := connector.ConsumeMetrics(t.Context(), metrics)
 			require.NoError(t, err)
 
 			require.Len(t, sink.AllLogs(), 1)
@@ -202,7 +201,7 @@ func TestConsumeMetrics_HistogramMetric(t *testing.T) {
 	}
 
 	metrics := createTestMetrics(setupMetric, false, false)
-	err := connector.ConsumeMetrics(context.Background(), metrics)
+	err := connector.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 
 	require.Len(t, sink.AllLogs(), 1)
@@ -260,14 +259,14 @@ func TestConsumeMetrics_ExponentialHistogramMetric(t *testing.T) {
 	}
 
 	metrics := createTestMetrics(setupMetric, false, false)
-	err := connector.ConsumeMetrics(context.Background(), metrics)
+	err := connector.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 
 	require.Len(t, sink.AllLogs(), 1)
 	logs := sink.AllLogs()[0]
 	lr := getLogRecord(t, logs)
 
-	expectedAttrs := map[string]interface{}{
+	expectedAttrs := map[string]any{
 		attrMetricName:                    "test_exp_histogram",
 		attrMetricType:                    "ExponentialHistogram",
 		attrExponentialHistogramCount:     int64(20),
@@ -313,7 +312,7 @@ func TestConsumeMetrics_SummaryMetric(t *testing.T) {
 	}
 
 	metrics := createTestMetrics(setupMetric, false, false)
-	err := connector.ConsumeMetrics(context.Background(), metrics)
+	err := connector.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 
 	require.Len(t, sink.AllLogs(), 1)
@@ -366,7 +365,7 @@ func TestConsumeMetrics_UnknownMetricType(t *testing.T) {
 	metric.SetName("unknown_metric")
 	// Note: Not setting any metric type will result in MetricTypeEmpty
 
-	err := connector.ConsumeMetrics(context.Background(), metrics)
+	err := connector.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 
 	// Should produce resource and scope logs but no log records since unknown metric type is skipped
@@ -411,7 +410,7 @@ func createTestMetrics(setupMetric func(pmetric.Metric), withResource, withScope
 	return metrics
 }
 
-func validateLogRecord(t *testing.T, logs plog.Logs, expectedAttrs map[string]interface{}, checkResource, checkScope bool) {
+func validateLogRecord(t *testing.T, logs plog.Logs, expectedAttrs map[string]any, checkResource, checkScope bool) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 	rl := logs.ResourceLogs().At(0)
 

@@ -54,7 +54,7 @@ type metricsAsLogs struct {
 	component.ShutdownFunc
 }
 
-func (m *metricsAsLogs) Capabilities() consumer.Capabilities {
+func (*metricsAsLogs) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -204,16 +204,16 @@ func (m *metricsAsLogs) convertSummaryDataPointToLogRecordWithMetric(metric pmet
 	m.addSummaryDataPointAttributes(logRecord, dataPoint)
 }
 
-func (m *metricsAsLogs) addAggregationTemporalityAttribute(logRecord plog.LogRecord, temporality pmetric.AggregationTemporality) {
+func (*metricsAsLogs) addAggregationTemporalityAttribute(logRecord plog.LogRecord, temporality pmetric.AggregationTemporality) {
 	logRecord.Attributes().PutStr(attrMetricAggregationTemporality, temporality.String())
 }
 
-func (m *metricsAsLogs) addCommonMetricAttributes(logRecord plog.LogRecord, metric pmetric.Metric) {
+func (*metricsAsLogs) addCommonMetricAttributes(logRecord plog.LogRecord, metric pmetric.Metric) {
 	logRecord.Attributes().PutStr(attrMetricDescription, metric.Description())
 	logRecord.Attributes().PutStr(attrMetricUnit, metric.Unit())
 }
 
-func (m *metricsAsLogs) addNumberDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.NumberDataPoint, valueAttr string) {
+func (*metricsAsLogs) addNumberDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.NumberDataPoint, valueAttr string) {
 	switch dataPoint.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
 		logRecord.Attributes().PutInt(valueAttr, dataPoint.IntValue())
@@ -222,7 +222,7 @@ func (m *metricsAsLogs) addNumberDataPointAttributes(logRecord plog.LogRecord, d
 	}
 }
 
-func (m *metricsAsLogs) addHistogramDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.HistogramDataPoint) {
+func (*metricsAsLogs) addHistogramDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.HistogramDataPoint) {
 	logRecord.Attributes().PutInt(attrHistogramCount, int64(dataPoint.Count()))
 	logRecord.Attributes().PutDouble(attrHistogramSum, dataPoint.Sum())
 
@@ -244,7 +244,7 @@ func (m *metricsAsLogs) addHistogramDataPointAttributes(logRecord plog.LogRecord
 	}
 }
 
-func (m *metricsAsLogs) addExponentialHistogramDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.ExponentialHistogramDataPoint) {
+func (*metricsAsLogs) addExponentialHistogramDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.ExponentialHistogramDataPoint) {
 	logRecord.Attributes().PutInt(attrExponentialHistogramCount, int64(dataPoint.Count()))
 	logRecord.Attributes().PutDouble(attrExponentialHistogramSum, dataPoint.Sum())
 	logRecord.Attributes().PutInt(attrExponentialHistogramScale, int64(dataPoint.Scale()))
@@ -258,7 +258,7 @@ func (m *metricsAsLogs) addExponentialHistogramDataPointAttributes(logRecord plo
 	}
 }
 
-func (m *metricsAsLogs) addSummaryDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.SummaryDataPoint) {
+func (*metricsAsLogs) addSummaryDataPointAttributes(logRecord plog.LogRecord, dataPoint pmetric.SummaryDataPoint) {
 	logRecord.Attributes().PutInt(attrSummaryCount, int64(dataPoint.Count()))
 	logRecord.Attributes().PutDouble(attrSummarySum, dataPoint.Sum())
 
@@ -273,7 +273,7 @@ func (m *metricsAsLogs) addSummaryDataPointAttributes(logRecord plog.LogRecord, 
 	}
 }
 
-func (m *metricsAsLogs) setLogRecordFromDataPoint(logRecord plog.LogRecord, metricName, metricType string, attributes pcommon.Map, timestamp, startTimestamp pcommon.Timestamp) {
+func (*metricsAsLogs) setLogRecordFromDataPoint(logRecord plog.LogRecord, metricName, metricType string, attributes pcommon.Map, timestamp, startTimestamp pcommon.Timestamp) {
 	logRecord.SetTimestamp(timestamp)
 	if startTimestamp != 0 {
 		logRecord.SetObservedTimestamp(startTimestamp)
