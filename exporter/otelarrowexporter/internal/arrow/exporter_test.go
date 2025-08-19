@@ -634,7 +634,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 				sendCtx := ctx
 				if withDeadline {
 					var sendCancel context.CancelFunc
-					sendCtx, sendCancel = context.WithTimeout(sendCtx, 10*time.Second)
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, 1*time.Second)
 					defer sendCancel()
 				}
 
@@ -655,9 +655,9 @@ func TestArrowExporterHeaders(t *testing.T) {
 					require.NotEmpty(t, dead[0])
 					to, err := grpcutil.DecodeTimeout(dead[0])
 					require.NoError(t, err)
-					// Allow the test to lapse for 0.5s.
+					// expect the test runs in 0.5s .. 10s.
 					require.Less(t, time.Second/2, to)
-					require.GreaterOrEqual(t, time.Second, to)
+					require.GreaterOrEqual(t, 10*time.Second, to)
 					out.Delete("grpc-timeout")
 				}
 			}
