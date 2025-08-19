@@ -1,66 +1,75 @@
+
 package alertsgenconnector
 
 import (
-    "go.opentelemetry.io/collector/pdata/plog"
-    "go.opentelemetry.io/collector/pdata/pcommon"
-    "go.opentelemetry.io/collector/pdata/pmetric"
-    "time"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func buildLogs(events []alertEvent) plog.Logs {
-    ld := plog.NewLogs()
-    rl := ld.ResourceLogs().AppendEmpty()
-    sl := rl.ScopeLogs().AppendEmpty()
-    recs := sl.LogRecords()
-    now := pcommon.NewTimestampFromTime(time.Now())
-    for _, e := range events {
-        lr := recs.AppendEmpty()
-        if e.State == "firing" {
-            lr.SetSeverityText("ERROR")
-        } else {
-            lr.SetSeverityText("INFO")
-        }
-        body := lr.Body()
-        body.SetStr(e.Rule + " -> " + e.State)
-        lr.Attributes().PutStr("alert.rule", e.Rule)
-        lr.Attributes().PutStr("alert.state", e.State)
-        lr.Attributes().PutStr("alert.severity", e.Severity)
-        lr.Attributes().PutStr("window", e.Window)
-        lr.Attributes().PutStr("for", e.For)
-        lr.Attributes().PutDouble("value", e.Value)
-        for k,v := range e.Labels {
-            lr.Attributes().PutStr(k, v)
-        }
-        lr.SetTimestamp(now)
-    }
-    return ld
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	recs := sl.LogRecords()
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	for _, e := range events {
+		lr := recs.AppendEmpty()
+		lr.SetTimestamp(now)
+		lr.Body().SetStr(e.Rule + ":" + e.State)
+		lr.SetSeverityText(e.Severity)
+		attrs := lr.Attributes()
+		for k, v := range e.Labels {
+			attrs.PutStr(k, v)
+		}
+		attrs.PutStr("window", e.Window)
+		attrs.PutStr("for", e.For)
+		attrs.PutDouble("value", e.Value)
+	}
+	return ld
 }
 
-func buildMetrics(states []stateMetric) pmetric.Metrics {
-    md := pmetric.NewMetrics()
-    rm := md.ResourceMetrics().AppendEmpty()
-    sm := rm.ScopeMetrics().AppendEmpty()
-    now := pcommon.NewTimestampFromTime(time.Now())
-    for _, s := range states {
-        m1 := sm.Metrics().AppendEmpty()
-        m1.SetName("otel_alerts_active")
-        g1 := m1.SetEmptyGauge()
-        dp1 := g1.DataPoints().AppendEmpty()
-        dp1.SetDoubleValue(float64(s.Active))
-        for k,v := range s.Labels { dp1.Attributes().PutStr(k, v) }
-        dp1.Attributes().PutStr("rule", s.Rule)
-        dp1.Attributes().PutStr("severity", s.Severity)
-        dp1.SetTimestamp(now)
+type metricView = stateMetric
 
-        m2 := sm.Metrics().AppendEmpty()
-        m2.SetName("otel_alerts_last_value")
-        g2 := m2.SetEmptyGauge()
-        dp2 := g2.DataPoints().AppendEmpty()
-        dp2.SetDoubleValue(s.LastValue)
-        for k,v := range s.Labels { dp2.Attributes().PutStr(k, v) }
-        dp2.Attributes().PutStr("rule", s.Rule)
-        dp2.Attributes().PutStr("severity", s.Severity)
-        dp2.SetTimestamp(now)
-    }
-    return md
+func buildMetrics(mv []metricView) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+
+	// active gauge
+	mAct := sm.Metrics().AppendEmpty()
+	mAct.SetName("otel_alert_active")
+	mAct.SetEmptyGauge()
+	ga := mAct.Gauge().DataPoints()
+
+	// last value as gauge as well
+	mVal := sm.Metrics().AppendEmpty()
+	mVal.SetName("otel_alert_last_value")
+	mVal.SetEmptyGauge()
+	gv := mVal.Gauge().DataPoints()
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, s := range mv {
+		dp := ga.AppendEmpty()
+		dp.SetTimestamp(now)
+		dp.SetIntValue(s.Active)
+		for k, v := range s.Labels {
+			dp.Attributes().PutStr(k, v)
+		}
+		dp.Attributes().PutStr("rule", s.Rule)
+		dp.Attributes().PutStr("severity", s.Severity)
+
+		dp2 := gv.AppendEmpty()
+		dp2.SetTimestamp(now)
+		dp2.SetDoubleValue(s.LastValue)
+		for k, v := range s.Labels {
+			dp2.Attributes().PutStr(k, v)
+		}
+		dp2.Attributes().PutStr("rule", s.Rule)
+		dp2.Attributes().PutStr("severity", s.Severity)
+	}
+	return md
 }

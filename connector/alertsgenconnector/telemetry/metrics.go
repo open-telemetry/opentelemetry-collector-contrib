@@ -1,3 +1,4 @@
+
 package telemetry
 
 import (
@@ -14,17 +15,16 @@ type Metrics struct {
 	evalDuration  metric.Float64Histogram
 	eventsEmitted metric.Int64Counter
 	notifyTotal   metric.Int64Counter
-	notifyErrors  metric.Int64Counter
+	activeGauge   metric.Int64UpDownCounter
 	droppedTotal  metric.Int64Counter
-	activeAlerts  metric.Int64UpDownCounter
 }
 
-// New initializes metrics using provided meter provider.
-func New(meterProvider metric.MeterProvider) (*Metrics, error) {
-	if meterProvider == nil {
-		meterProvider = global.MeterProvider()
+// New creates a metrics bundle using the provided meter provider (global if nil).
+func New(mp metric.MeterProvider) (*Metrics, error) {
+	if mp == nil {
+		mp = global.MeterProvider()
 	}
-	meter := meterProvider.Meter("otelcol.connector.alertsgen")
+	meter := mp.Meter("alertsgenconnector")
 
 	evalTotal, err := meter.Int64Counter("otel_alert_evaluations_total",
 		metric.WithDescription("Total number of rule evaluations"))
@@ -45,25 +45,19 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	notifyTotal, err := meter.Int64Counter("otel_alert_notifications_total",
-		metric.WithDescription("Total number of alert notifications sent"))
+		metric.WithDescription("Total number of alert notification batches"))
 	if err != nil {
 		return nil, err
 	}
 
-	notifyErrors, err := meter.Int64Counter("otel_alert_notification_errors_total",
-		metric.WithDescription("Total number of alert notification errors"))
+	activeGauge, err := meter.Int64UpDownCounter("otel_alert_active_total",
+		metric.WithDescription("Number of active firing alerts (up/down)"))
 	if err != nil {
 		return nil, err
 	}
 
 	droppedTotal, err := meter.Int64Counter("otel_alert_dropped_total",
-		metric.WithDescription("Total number of alerts dropped"))
-	if err != nil {
-		return nil, err
-	}
-
-	activeAlerts, err := meter.Int64UpDownCounter("otel_alert_active_total",
-		metric.WithDescription("Number of active alerts"))
+		metric.WithDescription("Number of alerts dropped by limiter/dedup"))
 	if err != nil {
 		return nil, err
 	}
@@ -73,53 +67,43 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		evalDuration:  evalDuration,
 		eventsEmitted: eventsEmitted,
 		notifyTotal:   notifyTotal,
-		notifyErrors:  notifyErrors,
+		activeGauge:   activeGauge,
 		droppedTotal:  droppedTotal,
-		activeAlerts:  activeAlerts,
 	}, nil
 }
 
-// --- Helper methods ---
-
-func (m *Metrics) RecordEvaluation(ctx context.Context, ruleID string, result string, duration time.Duration) {
+func (m *Metrics) RecordEvaluation(ctx context.Context, rule string, status string, dur time.Duration) {
 	if m == nil {
 		return
 	}
-	labels := []metric.AddOption{
-		metric.WithAttributes(),
-	}
-	m.evalTotal.Add(ctx, 1, labels...)
-	m.evalDuration.Record(ctx, duration.Seconds(), labels...)
+	m.evalTotal.Add(ctx, 1, metric.WithAttributes())
+	m.evalDuration.Record(ctx, dur.Seconds(), metric.WithAttributes())
 }
 
-func (m *Metrics) RecordEvents(ctx context.Context, count int, ruleID string, state string) {
-	if m == nil {
+func (m *Metrics) RecordEvents(ctx context.Context, n int, rule string, sev string) {
+	if m == nil || n <= 0 {
 		return
 	}
-	m.eventsEmitted.Add(ctx, int64(count))
+	m.eventsEmitted.Add(ctx, int64(n), metric.WithAttributes())
 }
 
-func (m *Metrics) RecordNotify(ctx context.Context, success bool) {
-	if m == nil {
+func (m *Metrics) AddActive(ctx context.Context, delta int, rule string, sev string) {
+	if m == nil || delta == 0 {
 		return
 	}
-	if success {
-		m.notifyTotal.Add(ctx, 1)
-	} else {
-		m.notifyErrors.Add(ctx, 1)
-	}
+	m.activeGauge.Add(ctx, int64(delta), metric.WithAttributes())
 }
 
-func (m *Metrics) RecordDrop(ctx context.Context, count int) {
+func (m *Metrics) RecordNotify(ctx context.Context, ok bool) {
 	if m == nil {
 		return
 	}
-	m.droppedTotal.Add(ctx, int64(count))
+	m.notifyTotal.Add(ctx, 1, metric.WithAttributes())
 }
 
-func (m *Metrics) SetActive(ctx context.Context, delta int) {
-	if m == nil {
+func (m *Metrics) RecordDropped(ctx context.Context, n int, reason string) {
+	if m == nil || n <= 0 {
 		return
 	}
-	m.activeAlerts.Add(ctx, int64(delta))
+	m.droppedTotal.Add(ctx, int64(n), metric.WithAttributes())
 }
