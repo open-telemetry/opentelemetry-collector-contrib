@@ -27,13 +27,13 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
+          files="$(git diff --name-only --diff-filter=ACMRTUXB "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD" | grep .md$ | xargs)"
 
-          if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
+          if [ -z "$files" ] && git diff --name-only "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD" | grep -q "package.json"; then
             files="**/*.md"
           fi
 
-          echo "files=$files" >> $GITHUB_OUTPUT
+          echo "files=$files" >> "$GITHUB_OUTPUT"
 
   check-links:
     runs-on: ubuntu-24.04
