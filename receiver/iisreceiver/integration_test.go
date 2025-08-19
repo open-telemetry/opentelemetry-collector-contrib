@@ -24,7 +24,9 @@ func TestIntegration(t *testing.T) {
 				rCfg.CollectionInterval = 100 * time.Millisecond
 			}),
 		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("iis.application_pool"),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.MatchResourceAttributeValue("iis.site", "Default Web Site"),
+			pmetrictest.MatchResourceAttributeValue("iis.application_pool", "DefaultAppPool"),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
