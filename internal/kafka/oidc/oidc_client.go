@@ -52,6 +52,7 @@ func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePat
 		TokenURL:             tokenURL,
 		Scopes:               scopes,
 		refreshAhead:         refreshAhead,
+		refreshCooldown:      1 * time.Second,
 		EndpointParams:       endPointParams,
 		AuthStyle:            authStyle,
 	}
@@ -86,7 +87,7 @@ func (p *OIDCfileTokenProvider) updateToken() (*oauth2.Token, error) {
 	// as it may have changed in the meantime.
 	clientSecret, err := os.ReadFile(p.ClientSecretFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read client secret: %w", err)
+		return nil, fmt.Errorf("failed to read client secret from %s: %w", p.ClientSecretFilePath, err)
 	}
 
 	oauthTok, err := (&clientcredentials.Config{
@@ -145,7 +146,7 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 	p.backgroundOnce.Do(func() {
 		go func() {
 			for {
-				sleepDuration := 0 * time.Minute
+				sleepDuration := p.refreshCooldown
 
 				p.mu.RLock()
 				if p.cachedToken != nil && p.cachedToken.AccessToken != "" {
@@ -166,8 +167,14 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 				case <-p.Ctx.Done():
 					return
 				default:
-					if _, err := p.updateToken(); err != nil {
-						log.Printf("background token refresh failed: %v\n", err)
+					// Check if context is done before trying to update token
+					select {
+					case <-p.Ctx.Done():
+						return
+					default:
+						if _, err := p.updateToken(); err != nil {
+							log.Printf("background token refresh failed: %v\n", err)
+						}
 					}
 				}
 			}
