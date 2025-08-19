@@ -45,8 +45,11 @@ func TestHandleLogLine(t *testing.T) {
 			expectedErr: `failed to handle log entry`,
 		},
 		{
-			name:    "valid",
-			logLine: []byte(`{"logName": "projects/open-telemetry/logs/log-test"}`),
+			name: "valid",
+			logLine: []byte(`{
+	"logName": "projects/open-telemetry/logs/log-test", 
+	"timestamp": "2024-05-05T10:31:19.45570687Z"
+}`),
 		},
 	}
 
@@ -119,6 +122,62 @@ func TestUnmarshalLogs(t *testing.T) {
 				expected.ResourceLogs().At(0).ScopeLogs().CopyTo(sl)
 			}
 
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+		})
+	}
+}
+
+func TestPayloads(t *testing.T) {
+	// TODO Keep adding tests when adding new log types support
+
+	tests := []struct {
+		name             string
+		logFilename      string
+		expectedFilename string
+		expectedErr      string
+	}{
+		{
+			name:             "audit log - activity",
+			logFilename:      "testdata/auditlog/activity.json",
+			expectedFilename: "testdata/auditlog/activity_expected.yaml",
+		},
+		{
+			name:             "audit log - data access",
+			logFilename:      "testdata/auditlog/data_access.json",
+			expectedFilename: "testdata/auditlog/data_access_expected.yaml",
+		},
+		{
+			name:             "audit log - policy",
+			logFilename:      "testdata/auditlog/policy.json",
+			expectedFilename: "testdata/auditlog/policy_expected.yaml",
+		},
+		{
+			name:             "audit log - system event",
+			logFilename:      "testdata/auditlog/system_event.json",
+			expectedFilename: "testdata/auditlog/system_event_expected.yaml",
+		},
+	}
+
+	extension := newTestExtension(t, Config{})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			data, err := os.ReadFile(tt.logFilename)
+			require.NoError(t, err)
+
+			content := bytes.NewBuffer([]byte{})
+			err = gojson.Compact(content, data)
+			require.NoError(t, err)
+
+			logs, err := extension.UnmarshalLogs(content.Bytes())
+			require.NoError(t, err)
+
+			// write expected log with:
+			// golden.WriteLogs(t, tt.expectedFilename, logs)
+
+			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
+			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})
 	}

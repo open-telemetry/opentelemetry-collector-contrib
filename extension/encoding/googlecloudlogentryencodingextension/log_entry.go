@@ -17,6 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
 
 const (
@@ -153,59 +156,21 @@ type appHub struct {
 	} `json:"workload"`
 }
 
-func strToInt(numberStr string) (int64, error) {
-	num, err := strconv.ParseInt(numberStr, 10, 64)
-	if err != nil {
-		return -1, fmt.Errorf("failed to convert string %q to int64", numberStr)
-	}
-	return num, nil
-}
-
-func addStrAsInt(s, field string, attributes pcommon.Map) error {
-	if s == "" {
-		return nil
-	}
-	n, err := strToInt(s)
-	if err != nil {
-		return err
-	}
-	attributes.PutInt(field, n)
-	return nil
-}
-
-func putStr(attr pcommon.Map, field, value string) {
-	if value != "" {
-		attr.PutStr(field, value)
-	}
-}
-
-func putInt(attr pcommon.Map, field string, value *int64) {
-	if value != nil {
-		attr.PutInt(field, *value)
-	}
-}
-
-func putBool(attr pcommon.Map, field string, value *bool) {
-	if value != nil {
-		attr.PutBool(field, *value)
-	}
-}
-
 // handleHTTPRequestField will place the HTTP attributes in the log record
 func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	if req == nil {
 		return nil
 	}
 
-	if err := addStrAsInt(req.ResponseSize, string(semconv.HTTPResponseSizeKey), attributes); err != nil {
+	if err := shared.AddStrAsInt(string(semconv.HTTPResponseSizeKey), req.ResponseSize, attributes); err != nil {
 		return fmt.Errorf("failed to add response size: %w", err)
 	}
 
-	if err := addStrAsInt(req.RequestSize, string(semconv.HTTPRequestSizeKey), attributes); err != nil {
+	if err := shared.AddStrAsInt(string(semconv.HTTPRequestSizeKey), req.RequestSize, attributes); err != nil {
 		return fmt.Errorf("failed to add request size: %w", err)
 	}
 
-	if err := addStrAsInt(req.CacheFillBytes, gcpCacheFillBytes, attributes); err != nil {
+	if err := shared.AddStrAsInt(gcpCacheFillBytes, req.CacheFillBytes, attributes); err != nil {
 		return fmt.Errorf("failed to add cache fill bytes: %w", err)
 	}
 
@@ -230,9 +195,9 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse request url %q: %w", req.RequestURL, err)
 		}
-		putStr(attributes, string(semconv.URLPathKey), u.Path)
-		putStr(attributes, string(semconv.URLQueryKey), u.RawQuery)
-		putStr(attributes, string(semconv.URLDomainKey), u.Host)
+		shared.PutStr(string(semconv.URLPathKey), u.Path, attributes)
+		shared.PutStr(string(semconv.URLQueryKey), u.RawQuery, attributes)
+		shared.PutStr(string(semconv.URLDomainKey), u.Host, attributes)
 	}
 
 	if req.Protocol != "" {
@@ -253,15 +218,15 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 		attributes.PutStr(string(semconv.NetworkProtocolVersionKey), version)
 	}
 
-	putInt(attributes, string(semconv.HTTPResponseStatusCodeKey), req.Status)
-	putStr(attributes, string(semconv.HTTPRequestMethodKey), req.RequestMethod)
-	putStr(attributes, string(semconv.UserAgentOriginalKey), req.UserAgent)
-	putStr(attributes, string(semconv.ClientAddressKey), req.RemoteIP)
-	putStr(attributes, string(semconv.ServerAddressKey), req.ServerIP)
-	putStr(attributes, refererHeaderField, req.Referer)
-	putBool(attributes, gcpCacheLookupField, req.CacheLookup)
-	putBool(attributes, gcpCacheHitField, req.CacheHit)
-	putBool(attributes, gcpCacheValidatedWithOriginSeverField, req.CacheValidatedWithOriginServer)
+	shared.PutInt(string(semconv.HTTPResponseStatusCodeKey), req.Status, attributes)
+	shared.PutStr(string(semconv.HTTPRequestMethodKey), req.RequestMethod, attributes)
+	shared.PutStr(string(semconv.UserAgentOriginalKey), req.UserAgent, attributes)
+	shared.PutStr(string(semconv.ClientAddressKey), req.RemoteIP, attributes)
+	shared.PutStr(string(semconv.ServerAddressKey), req.ServerIP, attributes)
+	shared.PutStr(refererHeaderField, req.Referer, attributes)
+	shared.PutBool(gcpCacheLookupField, req.CacheLookup, attributes)
+	shared.PutBool(gcpCacheHitField, req.CacheHit, attributes)
+	shared.PutBool(gcpCacheValidatedWithOriginSeverField, req.CacheValidatedWithOriginServer, attributes)
 	return nil
 }
 
@@ -271,10 +236,10 @@ func handleOperationField(attributes pcommon.Map, op *operation) {
 		return
 	}
 
-	putStr(attributes, gcpOperationIDField, op.ID)
-	putStr(attributes, gcpOperationProducerField, op.Producer)
-	putBool(attributes, gcpOperationFirstField, op.First)
-	putBool(attributes, gcpOperationLast, op.Last)
+	shared.PutStr(gcpOperationIDField, op.ID, attributes)
+	shared.PutStr(gcpOperationProducerField, op.Producer, attributes)
+	shared.PutBool(gcpOperationFirstField, op.First, attributes)
+	shared.PutBool(gcpOperationLast, op.Last, attributes)
 }
 
 // handleSourceLocationField will place the source location attributes in the log record
@@ -283,11 +248,11 @@ func handleSourceLocationField(attributes pcommon.Map, sourceLoc *sourceLocation
 		return nil
 	}
 
-	if err := addStrAsInt(sourceLoc.Line, string(semconv.CodeLineNumberKey), attributes); err != nil {
+	if err := shared.AddStrAsInt(string(semconv.CodeLineNumberKey), sourceLoc.Line, attributes); err != nil {
 		return fmt.Errorf("expected source location line %q to be a number: %w", sourceLoc.Line, err)
 	}
-	putStr(attributes, string(semconv.CodeFilePathKey), sourceLoc.File)
-	putStr(attributes, string(semconv.CodeFunctionNameKey), sourceLoc.Function)
+	shared.PutStr(string(semconv.CodeFilePathKey), sourceLoc.File, attributes)
+	shared.PutStr(string(semconv.CodeFunctionNameKey), sourceLoc.Function, attributes)
 	return nil
 }
 
@@ -297,9 +262,9 @@ func handleSplitField(attributes pcommon.Map, s *split) {
 		return
 	}
 
-	putStr(attributes, gcpSplitUIDField, s.UID)
-	putInt(attributes, gcpSplitIndexField, s.Index)
-	putInt(attributes, gcpSplitTotalField, s.TotalSplits)
+	shared.PutStr(gcpSplitUIDField, s.UID, attributes)
+	shared.PutInt(gcpSplitIndexField, s.Index, attributes)
+	shared.PutInt(gcpSplitTotalField, s.TotalSplits, attributes)
 }
 
 // handleErrorGroupField will place all ids of the error group in a new log record attribute
@@ -323,7 +288,7 @@ func handleAppHubField(attributes pcommon.Map, appHub *appHub, prefix string) {
 
 	addAppHubAttr := func(field, value string) {
 		field = prefix + "." + field
-		putStr(attributes, field, value)
+		shared.PutStr(field, value, attributes)
 	}
 
 	if application := appHub.Application; application != nil {
@@ -450,28 +415,31 @@ func handleProtoPayloadField(logRecord plog.LogRecord, value gojson.RawMessage, 
 	}
 }
 
-// handleLogNameField will parse the logName and fill the expected attributes
-func handleLogNameField(logName string, resourceAttr pcommon.Map) error {
+// handleLogNameField parses a GCP logName string and extracts resource identifiers and log type.
+// The logName must follow one of these formats:
+//   - "projects/[PROJECT_ID]/logs/[LOG_ID]"
+//   - "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
+//   - "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
+//   - "folders/[FOLDER_ID]/logs/[LOG_ID]"
+//
+// The function populates the provided resourceAttr map with the extracted ID and log type
+// under the appropriate attribute keys. Returns the log type and any error encountered.
+func handleLogNameField(logName string, resourceAttr pcommon.Map) (string, error) {
 	if logName == "" {
-		return nil
+		return "", nil
 	}
 
-	// logName has one of the following formats:
-	// "projects/[PROJECT_ID]/logs/[LOG_ID]"
-	// "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
-	// "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
-	// "folders/[FOLDER_ID]/logs/[LOG_ID]"
-	addIDsAttributes := func(prefix, format, field string) error {
+	addIDsAttributes := func(prefix, format, field string) (string, error) {
 		_, rest, _ := strings.Cut(logName, prefix)
-		id, cloudID, _ := strings.Cut(rest, "/logs/")
-		if cloudID == "" || id == "" {
-			return fmt.Errorf(
+		id, logType, _ := strings.Cut(rest, "/logs/")
+		if logType == "" || id == "" {
+			return "", fmt.Errorf(
 				`expected log name %q to have format "%s/%s/logs/[LOG_ID]"`, logName, prefix, format,
 			)
 		}
 		resourceAttr.PutStr(field, id)
-		resourceAttr.PutStr(string(semconv.CloudResourceIDKey), cloudID)
-		return nil
+		resourceAttr.PutStr(string(semconv.CloudResourceIDKey), logType)
+		return logType, nil
 	}
 
 	switch {
@@ -484,24 +452,62 @@ func handleLogNameField(logName string, resourceAttr pcommon.Map) error {
 	case strings.HasPrefix(logName, "folders/"):
 		return addIDsAttributes("folders/", "[FOLDER_ID]/", gcpFolderField)
 	default:
-		return fmt.Errorf("unrecognized log name %q", logName)
+		return "", fmt.Errorf("unrecognized log name %q", logName)
 	}
+}
+
+func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg Config) error {
+	switch logType {
+	case auditlog.ActivityLogNameSuffix,
+		auditlog.DataAccessLogNameSuffix,
+		auditlog.SystemEventLogNameSuffix,
+		auditlog.PolicyLogNameSuffix:
+		if err := auditlog.ParsePayloadIntoAttributes(log.ProtoPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
+		}
+		return nil
+		// TODO Add support for more log types
+	}
+
+	// if the log type was not recognized, add the payload to the log record body
+
+	if len(log.ProtoPayload) > 0 {
+		if err := handleProtoPayloadField(logRecord, log.ProtoPayload, cfg); err != nil {
+			return fmt.Errorf("failed to handle proto payload field: %w", err)
+		}
+	}
+	if len(log.JSONPayload) > 0 {
+		if err := handleJSONPayloadField(logRecord, log.JSONPayload, cfg); err != nil {
+			return fmt.Errorf("failed to handle json payload field: %w", err)
+		}
+	}
+	if log.TextPayload != "" {
+		handleTextPayloadField(logRecord, log.TextPayload)
+	}
+	return nil
 }
 
 // handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
 // or as part of the log body, in case of payload.
 func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, cfg Config) error {
-	if ts := log.Timestamp; ts != nil {
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(*ts))
+	ts := log.Timestamp
+	if ts == nil {
+		return errors.New("missing timestamp")
 	}
-	if ts := log.ReceiveTimestamp; ts != nil {
-		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(*ts))
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(*ts))
+
+	if receivedTs := log.ReceiveTimestamp; receivedTs != nil {
+		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(*receivedTs))
 	}
 
-	putStr(logRecord.Attributes(), string(semconv.LogRecordUIDKey), log.InsertID)
+	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
-	if err := handleLogNameField(log.LogName, resourceAttributes); err != nil {
-		return fmt.Errorf("failed to handle log name field: %w", err)
+	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
+	if errLogName != nil {
+		return fmt.Errorf("failed to handle log name field: %w", errLogName)
+	}
+	if err := handlePayload(logType, log, logRecord, cfg); err != nil {
+		return fmt.Errorf("failed to handle payload field: %w", err)
 	}
 
 	if err := handleHTTPRequestField(logRecord.Attributes(), log.HTTPRequest); err != nil {
@@ -555,20 +561,6 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 
 	handleAppHubField(logRecord.Attributes(), log.AppHub, gcpAppHubPrefix)
 	handleAppHubField(logRecord.Attributes(), log.AppHubDestination, gcpAppHubDestinationPrefix)
-
-	if len(log.ProtoPayload) > 0 {
-		if err := handleProtoPayloadField(logRecord, log.ProtoPayload, cfg); err != nil {
-			return fmt.Errorf("failed to handle proto payload field: %w", err)
-		}
-	}
-	if len(log.JSONPayload) > 0 {
-		if err := handleJSONPayloadField(logRecord, log.JSONPayload, cfg); err != nil {
-			return fmt.Errorf("failed to handle json payload field: %w", err)
-		}
-	}
-	if log.TextPayload != "" {
-		handleTextPayloadField(logRecord, log.TextPayload)
-	}
 
 	return nil
 }

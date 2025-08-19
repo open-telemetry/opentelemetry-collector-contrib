@@ -15,7 +15,10 @@
 
 This extension can be used to unmarshall a [Cloud Logging LogEntry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) message type. The extension expects each log to take up 1 line, and it will decode as many logs as log lines received.
 
-The following configuration options are supported:
+Currently, this extension [can parse the following logs](#supported-log-types) into log record attributes:
+- [Cloud audit logs](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog) (extension [mapping](#cloud-audit-logs))
+
+For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
 * `handle_json_payload_as` (Optional): This controls how the json payload of the log entry  is parsed into the body.
   The default `json` parses it as standard JSON, while `text` will the put the payload as a single string.
@@ -64,9 +67,9 @@ The [log entry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEn
 | `sourceLocation.file`                        | Log record attribute: `code.file.path`                                                                                                                                             |
 | `sourceLocation.line`                        | Log record attribute: `code.line.number`                                                                                                                                           |
 | `sourceLocation.function`                    | Log record attribute: `code.function.name`                                                                                                                                         |
-| `protoPayload`                               | Placed on the record body as is                                                                                                                                                    |
-| `textPayload`                                | Placed on the record body as is                                                                                                                                                    |
-| `jsonPayload`                                | Placed on the record body as is                                                                                                                                                    |
+| `protoPayload`                               | Placed on the record body as is, unless log type is supported                                                                                                                      |
+| `textPayload`                                | Placed on the record body as is, unless log type is supported                                                                                                                      |
+| `jsonPayload`                                | Placed on the record body as is, unless log type is supported                                                                                                                      |
 | `split.uid`                                  | Log record attribute: `gcp.split.uid`                                                                                                                                              |                                                                         |
 | `split.index`                                | Log record attribute: `gcp.split.index`                                                                                                                                            |                                                                         |
 | `split.totalSplits`                          | Log record attribute: `gcp.split.total`                                                                                                                                            |                                                                         |
@@ -105,3 +108,51 @@ The severity is mapped from [Google Cloud Log Severity](https://cloud.google.com
 | `CRITICAL`(600)  | `FATAL`(21)      | Critical events cause more severe problems or outages.                                 |
 | `ALERT`(700)     | `FATAL2`(22)     | A person must take an action immediately.                                              |
 | `EMERGENCY`(800) | `FATAL4`(24)     | One or more systems are unusable.                                                      |
+
+## Supported log types
+
+Currently, these are the log types that are specifically parsed into log record attributes.
+
+### Cloud Audit Logs
+
+See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog). The fields are mapped this way in the extension:
+
+
+| Original field                                                             | Log record attribute                                                |
+|----------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `serviceName`                                                              | `gcp.audit.service.name`                                            |
+| `methodName`                                                               | `gcp.audit.method.name`                                             |
+| `resourceName`                                                             | `gcp.audit.resource.name`                                           |
+| `resourceLocation.currentLocations`                                        | `gcp.audit.resource.location.current`                               |
+| `resourceLocation.originalLocations`                                       | `gcp.audit.resource.location.original`                              |
+| `resourceOriginalState`                                                    | _Currently not supported_                                           |
+| `numResponseItems`                                                         | `gcp.audit.response.items`                                          |
+| `status.code`                                                              | `rpc.jsonrpc.error_code`                                            |
+| `status.message`                                                           | `rpc.jsonrpc.error_message`                                         |
+| `status.details`                                                           | _Currently not supported_                                           |
+| `authenticationInfo.principalEmail`                                        | `user.email`                                                        |
+| `authenticationInfo.authoritySelector`                                     | `gcp.audit.authentication.authority_selector`                       |
+| `authenticationInfo.thirdPartyPrincipal`                                   | _Currently not supported_                                           |
+| `authenticationInfo.serviceAccountKeyName`                                 | `gcp.audit.authentication.service_account.key.name`                 |
+| `authenticationInfo.serviceAccountDelegationInfo`                          | _Currently not supported_                                           |
+| `authenticationInfo.principalSubject`                                      | `user.id`                                                           |
+| `authorizationInfo[*].resource`                                            | Item entry `resource` in map `gcp.audit.authorization`              |
+| `authorizationInfo[*].permission`                                          | Item entry `permission` in map `gcp.audit.authorization`            |
+| `authorizationInfo[*].granted`                                             | Item entry `granted` in map `gcp.audit.authorization``              |
+| `authorizationInfo.resourceAttributes`                                     | _Currently not supported_                                           |
+| `policyViolationInfo.orgPolicyViolationInfo.payload`                       | _Currently not supported_                                           |
+| `policyViolationInfo.orgPolicyViolationInfo.resourceType`                  | `gcp.audit.policy_violation.resource.type`                          |
+| `policyViolationInfo.orgPolicyViolationInfo.resourceTags`                  | `gcp.audit.policy_violation.resource.tags`                          |
+| `policyViolationInfo.orgPolicyViolationInfo.violationInfo[*].constraint`   | Item entry `constraint` in map `gcp.audit.policy_violation.info`    |
+| `policyViolationInfo.orgPolicyViolationInfo.violationInfo[*].errorMessage` | Item entry `error_message` in map `gcp.audit.policy_violation.info` |
+| `policyViolationInfo.orgPolicyViolationInfo.violationInfo[*].checkedValue` | Item entry `checked_value` in map `gcp.audit.policy_violation.info` |
+| `policyViolationInfo.orgPolicyViolationInfo.violationInfo[*].policyType`   | Item entry `policy_type` in map `gcp.audit.policy_violation.info`   |
+| `requestMetadata.callerIp`                                                 | `client.address`                                                    |
+| `requestMetadata.callerSuppliedUserAgent`                                  | `user_agent.original`                                               |
+| `requestMetadata.callerNetwork`                                            | `gcp.audit.request.caller.network`                                  |
+| `requestMetadata.requestAttributes`                                        | _Currently not supported_                                           |
+| `requestMetadata.destinationAttributes`                                    | _Currently not supported_                                           |
+| `request`                                                                  | _Currently not supported_                                           |
+| `response`                                                                 | _Currently not supported_                                           |
+| `metadata`                                                                 | _Currently not supported_                                           |
+| `serviceData`                                                              | [GCP Deprecated field]<br>_Currently not supported_                 |
