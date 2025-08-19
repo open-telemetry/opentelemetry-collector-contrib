@@ -43,6 +43,9 @@ resourceLogs:
               - key: oracledb.child_number
                 value:
                   stringValue: "0"
+              - key: oracledb.child_address
+                value:
+                  stringValue: ""
               - key: oracledb.sid
                 value:
                   stringValue: "675"
@@ -87,9 +90,7 @@ resourceLogs:
                   doubleValue: 1
             body: {}
             eventName: db.server.query_sample
-            spanId: ""
-            timeUnixNano: "1752581882636677000"
-            traceId: ""
+            timeUnixNano: "1755606249243744000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
