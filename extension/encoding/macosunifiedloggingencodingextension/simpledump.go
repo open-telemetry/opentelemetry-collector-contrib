@@ -11,6 +11,12 @@ import (
 
 // SimpleDumpChunk represents a parsed Simpledump chunk
 type SimpleDumpChunk struct {
+	// Header fields (16 bytes)
+	ChunkTag      uint32
+	ChunkSubtag   uint32
+	ChunkDataSize uint64
+
+	// Payload fields (matching rust implementation)
 	FirstProcID                 uint64
 	SecondProcID                uint64
 	ContinuousTime              uint64
@@ -27,13 +33,14 @@ type SimpleDumpChunk struct {
 	MessageString               string
 }
 
-// parseUUID converts a 16-byte UUID to string format
+// parseUUID converts a 16-byte UUID to string format matching the rust implementation
 func parseUUID(data []byte) string {
 	if len(data) < 16 {
 		return ""
 	}
 
-	// Read as little-endian uint128 and format as hex string
+	// Format as uppercase hex string to match rust implementation
+	// The rust code does format!("{uuid:02X?}") which creates a debug format with uppercase hex
 	return fmt.Sprintf("%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
 		data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
 		data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15])
@@ -59,17 +66,31 @@ func extractString(data []byte) string {
 
 // ParseSimpledumpChunk parses a Simpledump chunk (0x6004) containing simple string data
 // Based on the rust implementation in chunks/simpledump.rs
-// Note: The data passed in is the chunk payload AFTER the chunk header has been parsed by TraceV3
+// Note: The data passed in includes the complete chunk with 16-byte header (tag, subtag, size)
 func ParseSimpledumpChunk(data []byte, entry *TraceV3Entry) {
-	if len(data) < 68 { // Minimum payload size: 8+8+8+8+4+2+2+16+16+4+4+4 = 84
-		entry.Message = fmt.Sprintf("Simpledump chunk too small: %d bytes (need at least 68)", len(data))
+	if len(data) < 84 { // Minimum size: 16-byte header + 68-byte payload
+		entry.Message = fmt.Sprintf("Simpledump chunk too small: %d bytes (need at least 84)", len(data))
 		return
 	}
 
 	var chunk SimpleDumpChunk
 	offset := 0
 
-	// Parse simpledump payload (the chunk header tag, subtag, size are already parsed by TraceV3)
+	// Parse chunk header (16 bytes total)
+	chunk.ChunkTag = binary.LittleEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	chunk.ChunkSubtag = binary.LittleEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	chunk.ChunkDataSize = binary.LittleEndian.Uint64(data[offset : offset+8])
+	offset += 8
+
+	// Validate chunk tag
+	if chunk.ChunkTag != 0x6004 {
+		entry.Message = fmt.Sprintf("Invalid simpledump chunk tag: expected 0x6004, got 0x%x", chunk.ChunkTag)
+		return
+	}
+
+	// Parse simpledump payload fields
 	chunk.FirstProcID = binary.LittleEndian.Uint64(data[offset : offset+8])
 	offset += 8
 	chunk.SecondProcID = binary.LittleEndian.Uint64(data[offset : offset+8])
@@ -106,6 +127,13 @@ func ParseSimpledumpChunk(data []byte, entry *TraceV3Entry) {
 	offset += 4
 	chunk.UnknownSizeMessageString = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
+
+	// Validate string sizes are reasonable
+	if chunk.UnknownSizeSubsystemString > 1024 || chunk.UnknownSizeMessageString > 1024 {
+		entry.Message = fmt.Sprintf("Simpledump string sizes too large: subsystem=%d, message=%d",
+			chunk.UnknownSizeSubsystemString, chunk.UnknownSizeMessageString)
+		return
+	}
 
 	// Parse subsystem string
 	if chunk.UnknownSizeSubsystemString > 0 {

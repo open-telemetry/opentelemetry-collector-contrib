@@ -695,12 +695,17 @@ func decodeFile(dec encoding.LogsUnmarshalerExtension, path string, outFile *os.
 	}
 
 	// Convert the logs to JSONL format and write to output file
+	totalLogRecords := 0
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLog := logs.ResourceLogs().At(i)
 		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
 			scopeLog := resourceLog.ScopeLogs().At(j)
+			if verbose {
+				fmt.Printf("  Processing scope log %d with %d log records\n", j, scopeLog.LogRecords().Len())
+			}
 			for k := 0; k < scopeLog.LogRecords().Len(); k++ {
 				logRecord := scopeLog.LogRecords().At(k)
+				totalLogRecords++
 
 				// Create a simplified JSONL entry similar to what the rust parser would output
 				entry := map[string]interface{}{
@@ -746,6 +751,10 @@ func decodeFile(dec encoding.LogsUnmarshalerExtension, path string, outFile *os.
 				}
 			}
 		}
+	}
+
+	if verbose {
+		fmt.Printf("  Total log records written to JSONL: %d\n", totalLogRecords)
 	}
 
 	return nil
