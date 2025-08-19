@@ -33,6 +33,7 @@ extensions:
     cluster_name: 'Cluster-1' # cluster name need manual config
     cluster_region: 'us-west-2' # region can be configured directly or use AWS_REGION env var
     result_file: '/etc/ecs_sd_targets.yaml' # the directory for file must already exists
+    job_label_name: 'prometheus_job' # optional: override for job label name
     services:
       - name_pattern: '^retail-.*$'
     docker_labels:
@@ -86,6 +87,7 @@ service:
 | cluster_region   | Mandatory | target ECS cluster's AWS region name                                                                                |
 | refresh_interval | Optional  | how often to look for changes in endpoints (default: 10s)                                                           |
 | result_file      | Mandatory | path of YAML file to write scrape target results. NOTE: the observer always returns empty in initial implementation |
+| job_label_name   | Optional  | override for prometheus job label name. If empty or set to "job", no behavior change.                               |
 | services         | Optional  | list of service name patterns [detail](#ecs-service-name-based-filter-configuration)                                |
 | task_definitions | Optional  | list of task definition arn patterns [detail](#ecs-task-definition-based-filter-configuration)                      |
 | docker_labels    | Optional  | list of docker labels [detail](#docker-label-based-filter-configuration)                                            |
@@ -302,6 +304,15 @@ Required for prometheus to scrape the target.
 | `__address__`       | ECS Task and TaskDefinition  | string | `host:port` `host` is private ip from ECS Task, `port` is the mapped port |
 | ` __metrics_path__` | ECS TaskDefinition or Config | string | Default is `/metrics`, changes based on config/label                      |
 | `job`               | ECS TaskDefinition or Config | string | Name for scrape job                                                       |
+
+### Job Label Behavior
+
+The `job_label_name` configuration controls how job labels are handled in the targets printed to the results file:
+
+- **Empty or unset or set to "job"**: Preserves the original `job` label from Docker labels or task definitions
+- **Set to custom name**: Renames the `job` label to the specified name (e.g., `prometheus_job`)
+
+This renaming works around Prometheus receiver limitations where the `job` label conflicts with internal processing.
 
 ### Additional Labels
 

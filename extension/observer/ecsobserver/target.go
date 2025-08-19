@@ -158,7 +158,7 @@ func targetsToFileSDTargets(targets []prometheusECSTarget, jobLabelName string) 
 		// We can't relabel it using prometheus's relabel config as it would cause the same problem on receiver.
 		// We 'relabel' it to job outside prometheus receiver using other processors in collector's pipeline.
 		job := labels[labelJob]
-		if job != "" && jobLabelName != labelJob {
+		if job != "" && jobLabelName != "" && jobLabelName != labelJob {
 			delete(labels, labelJob)
 			labels[jobLabelName] = job
 		}

@@ -173,6 +173,41 @@ func TestNewDiscovery(t *testing.T) {
 		assert.Equal(t, string(expectedContent), string(mustReadFile(t, outputFile)))
 	})
 
+	t.Run("job_label_name_empty_string", func(t *testing.T) {
+		cfg2 := cfg
+		cfg2.JobLabelName = ""
+
+		sd, err := newDiscovery(cfg2, opts)
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), cfg2.RefreshInterval*2)
+		defer cancel()
+		err = sd.runAndWriteFile(ctx)
+		require.NoError(t, err)
+
+		assert.FileExists(t, outputFile)
+		expectedFile := "testdata/ut_targets_expected_no_job_relabel.yaml"
+		expectedContent := bytes.ReplaceAll(mustReadFile(t, expectedFile), []byte("\r\n"), []byte("\n"))
+		assert.Equal(t, string(expectedContent), string(mustReadFile(t, outputFile)))
+	})
+
+	t.Run("job_label_name_is_job", func(t *testing.T) {
+		cfg2 := cfg
+		cfg2.JobLabelName = "job"
+		sd, err := newDiscovery(cfg2, opts)
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), cfg2.RefreshInterval*2)
+		defer cancel()
+		err = sd.runAndWriteFile(ctx)
+		require.NoError(t, err)
+
+		assert.FileExists(t, outputFile)
+		expectedFile := "testdata/ut_targets_expected_no_job_relabel.yaml"
+		expectedContent := bytes.ReplaceAll(mustReadFile(t, expectedFile), []byte("\r\n"), []byte("\n"))
+		assert.Equal(t, string(expectedContent), string(mustReadFile(t, outputFile)))
+	})
+
 	t.Run("fail to write file", func(t *testing.T) {
 		cfg2 := cfg
 		cfg2.ResultFile = "testdata/folder/does/not/exists/ut_targets.yaml"
