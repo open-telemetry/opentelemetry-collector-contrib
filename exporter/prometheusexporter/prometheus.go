@@ -25,17 +25,18 @@ type prometheusExporter struct {
 	collector    *collector
 	registry     *prometheus.Registry
 	settings     component.TelemetrySettings
+	telemetry    *telemetry
 }
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
-func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusExporter, error) {
+func newPrometheusExporter(config *Config, set exporter.Settings, tel *telemetry) (*prometheusExporter, error) {
 	addr := strings.TrimSpace(config.Endpoint)
 	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
 
-	collector := newCollector(config, set.Logger)
+	collector := newCollector(config, set.Logger, tel)
 	registry := prometheus.NewRegistry()
 	_ = registry.Register(collector)
 	return &prometheusExporter{
@@ -44,6 +45,7 @@ func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusEx
 		endpoint:     addr,
 		collector:    collector,
 		registry:     registry,
+		telemetry:    tel,
 		shutdownFunc: func(_ context.Context) error { return nil },
 		handler: promhttp.HandlerFor(
 			registry,

@@ -4,6 +4,7 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	ometric "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -45,6 +48,8 @@ type accumulator interface {
 type lastValueAccumulator struct {
 	logger *zap.Logger
 
+	telemetry *telemetry
+
 	registeredMetrics sync.Map
 
 	// metricExpiration contains duration for which metric
@@ -53,10 +58,11 @@ type lastValueAccumulator struct {
 }
 
 // NewAccumulator returns LastValueAccumulator
-func newAccumulator(logger *zap.Logger, metricExpiration time.Duration) accumulator {
+func newAccumulator(logger *zap.Logger, metricExpiration time.Duration, tel *telemetry) accumulator {
 	return &lastValueAccumulator{
 		logger:           logger,
 		metricExpiration: metricExpiration,
+		telemetry:        tel,
 	}
 }
 
@@ -95,6 +101,16 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 			zap.String("data_type", string(metric.Type())),
 			zap.String("metric_name", metric.Name()),
 		).Error("failed to translate metric")
+
+		if a.telemetry != nil {
+			// For unknown types, we can't determine exact point count, so default to 1
+			a.telemetry.refusedMetricPoints.Add(context.Background(), 1,
+				ometric.WithAttributes(
+					attribute.String("exporter", "prometheus"),
+					attribute.String("reason", "unknown_metric_type"),
+					attribute.String("metric_name", metric.Name()),
+				))
+		}
 	}
 
 	return 0
@@ -173,7 +189,20 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 
 	// Drop non-monotonic and non-cumulative metrics
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !doubleSum.IsMonotonic() {
-		return
+		a.logger.Debug("refusing non-monotonic delta sum metric",
+			zap.String("metric_name", metric.Name()),
+			zap.String("reason", "non-monotonic sum with delta aggregation temporality is not supported"))
+
+		if a.telemetry != nil {
+			pointCount := doubleSum.DataPoints().Len()
+			a.telemetry.refusedMetricPoints.Add(context.Background(), int64(pointCount),
+				ometric.WithAttributes(
+					attribute.String("exporter", "prometheus"),
+					attribute.String("reason", "unsupported_delta_non_monotonic_sum"),
+					attribute.String("metric_name", metric.Name()),
+				))
+		}
+		return 0
 	}
 
 	dps := doubleSum.DataPoints()
