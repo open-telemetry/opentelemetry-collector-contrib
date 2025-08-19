@@ -339,7 +339,7 @@ func parseDataEntries(data []byte, header *TraceV3Header) []*TraceV3Entry {
 		case 0x6004:
 			// Simpledump chunk
 			entry.ChunkType = "simpledump"
-			ParseSimpledumpChunk(data[offset:offset+int(chunkDataSize)], entry)
+			ParseSimpledumpChunk(data[offset:offset+totalChunkSize], entry)
 		case 0x600b:
 			// Catalog chunk
 			entry.ChunkType = "catalog"
