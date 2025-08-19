@@ -32,8 +32,8 @@ github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c h1:RGWPOewvK
 github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/SAP/go-hdb v1.13.13 h1:ewSBL80dgyNXQFld99QqqAqkoZ46ANu3sS68jcJYKiI=
-github.com/SAP/go-hdb v1.13.13/go.mod h1:LN8AsJSmXl7ZCW7Qw56jZh60g/mE1IaAm3SQazPi+G4=
+github.com/SAP/go-hdb v1.14.0 h1:k7PPnbv/gN6Go0gaj0MSljXiZaBomOkVY/z3QypW+cI=
+github.com/SAP/go-hdb v1.14.0/go.mod h1:fPz5AU18vCKvJwyHHYtiqwIlNcXZinngJummZ4rLdU0=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
 github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/apache/arrow-go/v18 v18.0.0 h1:1dBDaSbH3LtulTyOVYaBCHO3yVRwjV+TZaqn3g6V7ZM=
