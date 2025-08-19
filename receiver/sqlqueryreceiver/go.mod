@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 
 go 1.24.0
 
-toolchain go1.24.6
-
 require (
 	github.com/docker/go-connections v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.132.0
