@@ -32,7 +32,7 @@ jobs:
                              | sed 's/^v//')
 
           # jmx metric gatherer is currently alpha
-          latest_version=$latest_version-alpha
+          latest_version="$latest_version"-alpha
 
           if grep -Pzo "version: \"$latest_version\",\s*jar:\s*\"JMX metrics gatherer\"" receiver/jmxreceiver/supported_jars.go; then
             already_added=true
@@ -42,14 +42,12 @@ jobs:
                         --author opentelemetrybot \
                         --state open \
                         --search "in:title \"Add JMX metrics gatherer version $latest_version\"")
-          if [ ! -z "$matches" ]
+          if [ -n "$matches" ]
           then
             already_opened=true
           fi
 
-          echo "latest-version=$latest_version" >> $GITHUB_OUTPUT
-          echo "already-added=$already_added" >> $GITHUB_OUTPUT
-          echo "already-opened=$already_opened" >> $GITHUB_OUTPUT
+          echo "latest-version=$latest_version"; echo "already-added=$already_added"; echo "already-opened=$already_opened" >> "$GITHUB_OUTPUT"
 
   update-jmx-metrics-component:
     permissions:
@@ -68,13 +66,13 @@ jobs:
         env:
           VERSION: ${{ needs.check-jmx-metrics-version.outputs.latest-version }}
         run: |
-          if [[ ! $VERSION =~ -alpha$ ]]; then
+          if [[ ! "$VERSION" =~ -alpha$ ]]; then
             echo currently expecting jmx metrics version to end with "-alpha"
             exit 1
           fi
 
-          version=${VERSION//-alpha/}
-          hash=$(curl -L https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v$version/opentelemetry-jmx-metrics.jar \
+          version="${VERSION//-alpha/}"
+          hash=$(curl -L "https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v$version/opentelemetry-jmx-metrics.jar" \
                          | sha256sum \
                          | cut -d ' ' -f 1)
 
@@ -87,7 +85,7 @@ jobs:
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
 
-      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -106,9 +104,9 @@ jobs:
           "
           branch="otelbot/add-jmx-metrics-gatherer-${VERSION}"
 
-          git checkout -b $branch
+          git checkout -b "$branch"
           git commit -a -m "$message"
-          git push --set-upstream origin $branch
+          git push --set-upstream origin "$branch"
           url=$(gh pr create --title "$message" \
                              --body "$body" \
                              --base main)
@@ -116,14 +114,14 @@ jobs:
           pull_request_number=${url//*\//}
 
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
-          cat > .chloggen/add-jmx-metrics-gatherer-$VERSION.yaml << EOF
+          cat > ".chloggen/add-jmx-metrics-gatherer-$VERSION.yaml" << EOF
           change_type: enhancement
           component: jmxreceiver
-          note: Add the JMX metrics gatherer version $VERSION to the supported jars hash list
+          note: Add the JMX metrics gatherer version "$VERSION" to the supported jars hash list
           issues: [ $pull_request_number ]
           EOF
 
-          git add .chloggen/add-jmx-metrics-gatherer-$VERSION.yaml
+          git add ".chloggen/add-jmx-metrics-gatherer-$VERSION.yaml"
 
           git commit -m "Add change log entry"
           git push
@@ -150,7 +148,7 @@ jobs:
                              | sed 's/^v//')
 
           # jmx scraper is currently alpha
-          latest_version=$latest_version-alpha
+          latest_version="$latest_version"-alpha
 
           if grep -Pzo "version: \"$latest_version\",\s*jar:\s*\"JMX scraper\"" receiver/jmxreceiver/supported_jars.go; then
             already_added=true
@@ -160,14 +158,12 @@ jobs:
                         --author opentelemetrybot \
                         --state open \
                         --search "in:title \"Add JMX scraper version $latest_version\"")
-          if [ ! -z "$matches" ]
+          if [ -n "$matches" ]
           then
             already_opened=true
           fi
 
-          echo "latest-version=$latest_version" >> $GITHUB_OUTPUT
-          echo "already-added=$already_added" >> $GITHUB_OUTPUT
-          echo "already-opened=$already_opened" >> $GITHUB_OUTPUT
+          echo "latest-version=$latest_version"; echo "already-added=$already_added"; echo "already-opened=$already_opened" >> "$GITHUB_OUTPUT"
 
   update-jmx-scraper-component:
     permissions:
@@ -184,14 +180,14 @@ jobs:
 
       - name: Update version
         env:
-          VERSION: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
+          version: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
         run: |
-          if [[ ! $VERSION =~ -alpha$ ]]; then
+          if [[ ! "$version" =~ -alpha$ ]]; then
             echo currently expecting jmx scraper version to end with "-alpha"
             exit 1
           fi
 
-          hash=$(curl -L https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar \
+          hash=$(curl -L "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar" \
                          | sha256sum \
                          | cut -d ' ' -f 1)
 
@@ -205,7 +201,7 @@ jobs:
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
 
-      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -224,24 +220,24 @@ jobs:
           "
           branch="otelbot/add-jmx-scraper-${VERSION}"
 
-          git checkout -b $branch
+          git checkout -b "$branch"
           git commit -a -m "$message"
-          git push --set-upstream origin $branch
+          git push --set-upstream origin "$branch"
           url=$(gh pr create --title "$message" \
                              --body "$body" \
                              --base main)
 
-          pull_request_number=${url//*\//}
+          pull_request_number="${url//*\//}"
 
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
-          cat > .chloggen/add-jmx-scraper-$VERSION.yaml << EOF
+          cat > ".chloggen/add-jmx-scraper-$VERSION.yaml" << EOF
           change_type: enhancement
           component: jmxreceiver
-          note: Add the JMX scraper version $VERSION to the supported jars hash list
-          issues: [ $pull_request_number ]
+          note: Add the JMX scraper version "$VERSION" to the supported jars hash list
+          issues: [ "$pull_request_number" ]
           EOF
 
-          git add .chloggen/add-jmx-scraper-$VERSION.yaml
+          git add ".chloggen/add-jmx-scraper-$VERSION.yaml"
 
           git commit -m "Add change log entry"
           git push
