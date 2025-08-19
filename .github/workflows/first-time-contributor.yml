@@ -1,4 +1,4 @@
-name: 'First time contributor'
+name: 'First time contributor - test'
 on:
   pull_request:
     types: [opened, labeled]
