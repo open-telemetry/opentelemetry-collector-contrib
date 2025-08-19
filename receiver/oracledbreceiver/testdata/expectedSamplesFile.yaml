@@ -43,6 +43,9 @@ resourceLogs:
               - key: oracledb.child_number
                 value:
                   stringValue: "0"
+              - key: oracledb.child_address
+                value:
+                  stringValue: "SDF3SDF1234D"
               - key: oracledb.sid
                 value:
                   stringValue: "675"

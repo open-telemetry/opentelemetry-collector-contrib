@@ -693,6 +693,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const sqlID = "SQL_ID"
 	const schemaName = "SCHEMANAME"
 	const sqlChildNumber = "SQL_CHILD_NUMBER"
+	const childAddress = "CHILD_ADDRESS"
 	const sid = "SID"
 	const serialNumber = "SERIAL#"
 	const status = "STATUS"
@@ -741,7 +742,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		}
 
 		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
-			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[sid], row[serialNumber], row[process],
+			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], row[objectName], row[objectType],
 			row[osUser], queryDuration)
 	}
