@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.6
 
 require (
 	github.com/docker/go-connections v0.6.0
@@ -25,7 +27,7 @@ require (
 )
 
 require (
-	github.com/SAP/go-hdb v1.13.13
+	github.com/SAP/go-hdb v1.14.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.2
