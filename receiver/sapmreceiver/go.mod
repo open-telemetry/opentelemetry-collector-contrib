@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.132.0
-	github.com/signalfx/sapm-proto v0.17.0
+	github.com/signalfx/sapm-proto v0.18.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/component/componentstatus v0.132.1-0.20250814180350-eb9588bb3b55
@@ -47,7 +47,6 @@ require (
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
-	github.com/jaegertracing/jaeger v1.66.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
