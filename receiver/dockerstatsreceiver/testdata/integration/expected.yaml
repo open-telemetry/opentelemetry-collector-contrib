@@ -1,0 +1,212 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: container.hostname
+          value:
+            stringValue: kind-control-plane
+        - key: container.id
+          value:
+            stringValue: d81f768ce54c682f096254f97da1016d8c39b1bfdda49dff988caf5f59a86975
+        - key: container.image.name
+          value:
+            stringValue: kindest/node:v1.30.0
+        - key: container.name
+          value:
+            stringValue: kind-control-plane
+        - key: container.runtime
+          value:
+            stringValue: docker
+    schemaUrl: https://opentelemetry.io/schemas/1.27.0
+    scopeMetrics:
+      - metrics:
+          - description: Number of bytes transferred to/from the disk by the group and descendant groups.
+            name: container.blockio.io_service_bytes_recursive
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1641717760"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "210460672"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "299008"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "16"
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "16"
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
+            name: container.cpu.usage.kernelmode
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "140905695000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ns
+          - description: Total CPU time consumed.
+            name: container.cpu.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "415521175000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ns
+          - description: Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
+            name: container.cpu.usage.usermode
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "274615480000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ns
+          - description: Percent of CPU used by the container.
+            gauge:
+              dataPoints:
+                - asDouble: 37.61221507352941
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.utilization
+            unit: "1"
+          - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
+            name: container.memory.file
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1538748416"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Percentage of memory used.
+            gauge:
+              dataPoints:
+                - asDouble: 36.48623525348137
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.memory.percent
+            unit: "1"
+          - description: Memory limit of the container.
+            name: container.memory.usage.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8217890816"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Memory usage of the container. This excludes the cache.
+            name: container.memory.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2998398976"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Bytes received by the container.
+            name: container.network.io.usage.rx_bytes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "573142"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Incoming packets dropped.
+            name: container.network.io.usage.rx_dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Bytes sent.
+            name: container.network.io.usage.tx_bytes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "534125"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Outgoing packets dropped.
+            name: container.network.io.usage.tx_dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+          version: latest
