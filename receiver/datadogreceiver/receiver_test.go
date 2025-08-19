@@ -5,7 +5,6 @@ package datadogreceiver
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -62,8 +61,7 @@ func TestDatadogServer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -74,12 +72,14 @@ func TestDatadogServer(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 
 	require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
-	defer func() {
-		// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
-		// and the context shouldn't be already cancelled during a graceful shutdown
-		// if the server still can have any live connections. See issue #42005.
+	t.Cleanup(func() {
+		// The test uses t.Parallel and the server should only be shutdown after all
+		// tests, so perform the shutdown inside t.Cleanup. Beware that this requires
+		// all connections to the server to be already closed when Shutdown(ctx) is called
+		// so it never checks the status of the context, since a t.Context
+		// is already canceled when functions in the t.Cleanup list are called.
 		require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
-	}()
+	})
 
 	for _, tc := range []struct {
 		name     string
@@ -128,6 +128,11 @@ func TestDatadogServer(t *testing.T) {
 			)
 			require.NoError(t, err, "Must not error when creating request")
 
+			// Because tests are parallel, and the call to shutdown is happening on a t.Cleanup,
+			// we need to ensure the request does not use keep-alives so Shutdown(ctx) never
+			// checks the status of the context. See issue #42005.
+			req.Close = true
+
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Must not error performing request")
 
@@ -162,8 +167,7 @@ func TestDatadogResponse(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
-			ctx, cancel := context.WithCancel(t.Context())
-			t.Cleanup(cancel)
+			ctx := t.Context()
 
 			dd, err := newDataDogReceiver(
 				ctx,
@@ -294,8 +298,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
-			ctx, cancel := context.WithCancel(t.Context())
-			t.Cleanup(cancel)
+			ctx := t.Context()
 
 			dd, err := newDataDogReceiver(
 				ctx,
@@ -338,8 +341,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -404,8 +406,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -488,8 +489,7 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -571,8 +571,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -662,8 +661,7 @@ func TestStats_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -757,8 +755,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(t.Context())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
