@@ -25,6 +25,8 @@ jobs:
       - name: Get changes
         shell: bash
         id: changes
+        env:
+          PR_HEAD: ${{ github.head_ref }}
         run: |
           changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD")"
           echo changed_files
