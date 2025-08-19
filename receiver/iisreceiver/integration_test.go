@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -22,11 +23,12 @@ func TestIntegration(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 100 * time.Millisecond
-			}),
+				rCfg.MetricsBuilderConfig.ResourceAttributes.IisSite.MetricsInclude = []filter.Config{{Strict: "Default Web Site"}}
+				rCfg.ResourceAttributes.IisApplicationPool.MetricsInclude = []filter.Config{{Strict: "DefaultAppPool"}}
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.MatchResourceAttributeValue("iis.site", "Default Web Site"),
-			pmetrictest.MatchResourceAttributeValue("iis.application_pool", "DefaultAppPool"),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
