@@ -7,10 +7,12 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,7 +22,7 @@ import (
 // DataSource represents an external data source for enrichment
 type DataSource interface {
 	// Lookup performs a lookup for the given key and returns enrichment data
-	Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error)
+	Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error)
 
 	// Start starts the data source (e.g., periodic refresh)
 	Start(ctx context.Context) error
@@ -97,13 +99,13 @@ func (h *HTTPDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (h *HTTPDataSource) Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
-	return h.lookup.Lookup(ctx, lookupField, key)
+func (h *HTTPDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
+	return h.lookup.Lookup(lookupField, key)
 }
 
-// refresh fetches data from the HTTP endpoint
+// refresh refreshes the HTTP data source
 func (h *HTTPDataSource) refresh(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", h.config.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.config.URL, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -120,7 +122,7 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP request failed with status: %d", resp.StatusCode)
+		return errors.New("HTTP request failed with status: " + strconv.Itoa(resp.StatusCode))
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -135,15 +137,10 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 	// Use explicit format if specified in config, otherwise auto-detect from Content-Type
 	format := h.config.Format
 	if format == "" {
-		contentType := strings.ToLower(resp.Header.Get("Content-Type"))
-		if strings.Contains(contentType, "text/csv") || strings.Contains(contentType, "application/csv") {
-			format = "csv"
-		} else if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/json") {
-			format = "json"
-		} else {
-			// Unknown content type, cannot determine format
-			return fmt.Errorf("unable to determine data format from Content-Type header: %s. Please specify format explicitly in configuration", resp.Header.Get("Content-Type"))
-		}
+		format = detectFormatFromHeader(resp.Header.Get("Content-Type"))
+	}
+	if format == "" {
+		return errors.New("unable to determine data format from Content-Type header: " + resp.Header.Get("Content-Type") + ". Please specify format explicitly in configuration")
 	}
 
 	switch strings.ToLower(format) {
@@ -160,7 +157,7 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 			return fmt.Errorf("failed to parse JSON: %w", err)
 		}
 	default:
-		return fmt.Errorf("unsupported format: %s", format)
+		return errors.New("unsupported format: " + format)
 	}
 
 	h.lookup.SetAll(processedData, index, h.indexField)
@@ -168,6 +165,18 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 	h.logger.Info("Refreshed HTTP data source", zap.String("url", h.config.URL))
 
 	return nil
+}
+
+// detectFormatFromHeader detects the data format from HTTP Content-Type header
+func detectFormatFromHeader(contentType string) string {
+	contentType = strings.ToLower(contentType)
+	if strings.Contains(contentType, "text/csv") || strings.Contains(contentType, "application/csv") {
+		return "csv"
+	}
+	if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/json") {
+		return "json"
+	}
+	return ""
 }
 
 // parseJSON parses JSON data and creates a lookup map
@@ -192,27 +201,27 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 // ]
 // This will be converted to a 2D string array with headers mapping to column indices
 func parseJSON(data []byte) ([][]string, map[string]int, error) {
-	var jsonData interface{}
+	var jsonData any
 	if err := json.Unmarshal(data, &jsonData); err != nil {
 		return nil, nil, err
 	}
 
 	// Only accept array of objects format
-	dataArray, ok := jsonData.([]interface{})
+	dataArray, ok := jsonData.([]any)
 	if !ok {
-		return nil, nil, fmt.Errorf("JSON must be an array of objects")
+		return nil, nil, errors.New("JSON must be an array of objects")
 	}
 
 	if len(dataArray) == 0 {
-		return nil, nil, fmt.Errorf("JSON array cannot be empty")
+		return nil, nil, errors.New("JSON array cannot be empty")
 	}
 
 	// First pass: collect all unique keys to build the header mapping
 	allKeys := make(map[string]bool)
 	for _, item := range dataArray {
-		itemMap, ok := item.(map[string]interface{})
+		itemMap, ok := item.(map[string]any)
 		if !ok {
-			return nil, nil, fmt.Errorf("all items in JSON array must be objects")
+			return nil, nil, errors.New("all items in JSON array must be objects")
 		}
 
 		// Add all keys from this object
@@ -232,9 +241,9 @@ func parseJSON(data []byte) ([][]string, map[string]int, error) {
 	// Second pass: process each row with all columns
 	var rows [][]string
 	for _, item := range dataArray {
-		itemMap, ok := item.(map[string]interface{})
+		itemMap, ok := item.(map[string]any)
 		if !ok {
-			return nil, nil, fmt.Errorf("all items in JSON array must be objects")
+			return nil, nil, errors.New("all items in JSON array must be objects")
 		}
 
 		row := make([]string, len(index))
@@ -262,7 +271,7 @@ func parseCSV(data []byte) ([][]string, map[string]int, error) {
 	}
 
 	if len(records) < 2 {
-		return nil, nil, fmt.Errorf("CSV file must have at least 2 rows (header + data)")
+		return nil, nil, errors.New("CSV file must have at least 2 rows (header + data)")
 	}
 
 	headers := records[0]
@@ -338,12 +347,12 @@ func (f *FileDataSource) Stop() error {
 }
 
 // Lookup performs a lookup for the given key
-func (f *FileDataSource) Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
-	return f.lookup.Lookup(ctx, lookupField, key)
+func (f *FileDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
+	return f.lookup.Lookup(lookupField, key)
 }
 
 // refresh loads data from the file
-func (f *FileDataSource) refresh(ctx context.Context) error {
+func (f *FileDataSource) refresh(_ context.Context) error {
 	fileInfo, err := os.Stat(f.config.Path)
 	if err != nil {
 		return fmt.Errorf("failed to stat file: %w", err)
@@ -374,7 +383,7 @@ func (f *FileDataSource) refresh(ctx context.Context) error {
 	case "csv":
 		data, index, err = parseCSV(fileData)
 	default:
-		return fmt.Errorf("unsupported file format: %s", f.config.Format)
+		return errors.New("unsupported file format: " + f.config.Format)
 	}
 
 	if err != nil {

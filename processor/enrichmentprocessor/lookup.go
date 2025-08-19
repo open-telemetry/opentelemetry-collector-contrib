@@ -4,8 +4,8 @@
 package enrichmentprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/enrichmentprocessor"
 
 import (
-	"context"
-	"fmt"
+	"errors"
+	"strconv"
 	"sync"
 )
 
@@ -60,25 +60,25 @@ func (l *Lookup) SetAll(data [][]string, headerIndex map[string]int, indexFields
 	}
 }
 
-// Lookup performs a lookup for the given key and returns matched row and index
-func (l *Lookup) Lookup(ctx context.Context, headerName, value string) (enrichmentRow []string, headerIndex map[string]int, err error) {
+// Lookup performs a lookup operation
+func (l *Lookup) Lookup(headerName, value string) (enrichmentRow []string, headerIndex map[string]int, err error) {
 	l.mutex.RLock()
 	defer l.mutex.RUnlock()
 
 	// Check if the header name exists in LookupColumnIndex
 	headerMap, headerExists := l.LookupColumnIndex[headerName]
 	if !headerExists {
-		return nil, nil, fmt.Errorf("enrichment field '%s' is not indexed", headerName)
+		return nil, nil, errors.New("enrichment field '" + headerName + "' is not indexed")
 	}
 
 	// Check if the value exists in the header's map
 	rowIndex, valueExists := headerMap[value]
 	if !valueExists {
-		return nil, nil, fmt.Errorf("enrichment data not found for field '%s' with value '%s'", headerName, value)
+		return nil, nil, errors.New("enrichment data not found for field '" + headerName + "' with value '" + value + "'")
 	}
 
 	if rowIndex >= len(l.data) {
-		return nil, nil, fmt.Errorf("enrichment data index out of range for field '%s' with value '%s' (index: %d, data length: %d)", headerName, value, rowIndex, len(l.data))
+		return nil, nil, errors.New("enrichment data index out of range for field '" + headerName + "' with value '" + value + "' (index: " + strconv.Itoa(rowIndex) + ", data length: " + strconv.Itoa(len(l.data)) + ")")
 	}
 
 	return l.data[rowIndex], l.headerIndex, nil

@@ -31,15 +31,15 @@ func NewMockDataSource(data [][]string, headerIndex map[string]int, indexFields 
 	}
 }
 
-func (m *MockDataSource) Lookup(ctx context.Context, lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
-	return m.lookup.Lookup(ctx, lookupField, key)
+func (m *MockDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
+	return m.lookup.Lookup(lookupField, key)
 }
 
-func (m *MockDataSource) Start(ctx context.Context) error {
+func (*MockDataSource) Start(context.Context) error {
 	return nil
 }
 
-func (m *MockDataSource) Stop() error {
+func (*MockDataSource) Stop() error {
 	return nil
 }
 
@@ -88,13 +88,11 @@ func TestEnrichmentProcessor_Core(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	ctx := context.Background()
-
 	t.Run("successful_enrichment", func(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("service.name", "test-service")
 
-		err := processor.applyEnrichmentRule(ctx, processor.config.EnrichmentRules[0], attributes)
+		err := processor.applyEnrichmentRule(processor.config.EnrichmentRules[0], attributes)
 		assert.NoError(t, err)
 
 		// Check that attributes were added
@@ -115,7 +113,7 @@ func TestEnrichmentProcessor_Core(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("service.name", "non-existent-service")
 
-		err := processor.applyEnrichmentRule(ctx, processor.config.EnrichmentRules[0], attributes)
+		err := processor.applyEnrichmentRule(processor.config.EnrichmentRules[0], attributes)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "enrichment data not found for field 'name' with value 'non-existent-service'")
 	})
@@ -143,7 +141,7 @@ func TestEnrichmentProcessor_Core(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("deployment.environment", "staging")
 
-		err := processor.applyEnrichmentRule(ctx, environmentRule, attributes)
+		err := processor.applyEnrichmentRule(environmentRule, attributes)
 		assert.NoError(t, err)
 
 		// Check that attributes were added based on environment lookup
@@ -272,14 +270,11 @@ func TestEnrichmentContextFiltering(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	ctx := context.Background()
-
 	t.Run("resource_context_filtering", func(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("service.name", "test-service")
 
-		err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTRESOURCE)
-		assert.NoError(t, err)
+		processor.enrichAttributes(attributes, ENRICHCONTEXTRESOURCE)
 
 		// Should have team.name from resource_rule
 		teamName, exists := attributes.Get("team.name")
@@ -297,8 +292,7 @@ func TestEnrichmentContextFiltering(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("service.name", "test-service")
 
-		err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTINDIVIDUAL)
-		assert.NoError(t, err)
+		processor.enrichAttributes(attributes, ENRICHCONTEXTINDIVIDUAL)
 
 		// Should have service.version from individual_rule
 		version, exists := attributes.Get("service.version")
@@ -354,15 +348,12 @@ func TestEnrichmentWithConditions(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	ctx := context.Background()
-
 	// Test case 1: previously matching condition — now enrichment always applies
 	attributes := pcommon.NewMap()
 	attributes.PutStr("service.name", "test-service")
 	attributes.PutStr("environment", "production")
 
-	err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTINDIVIDUAL)
-	assert.NoError(t, err)
+	processor.enrichAttributes(attributes, ENRICHCONTEXTINDIVIDUAL)
 
 	teamName, exists := attributes.Get("team.name")
 	assert.True(t, exists)
@@ -375,8 +366,7 @@ func TestEnrichmentWithConditions(t *testing.T) {
 	attributes2.PutStr("service.name", "test-service")
 	attributes2.PutStr("environment", "staging")
 
-	err = processor.enrichAttributes(ctx, attributes2, ENRICHCONTEXTINDIVIDUAL)
-	assert.NoError(t, err)
+	processor.enrichAttributes(attributes2, ENRICHCONTEXTINDIVIDUAL)
 
 	teamName2, exists := attributes2.Get("team.name")
 	assert.True(t, exists)
@@ -435,8 +425,6 @@ func TestMetricsProcessorEnrichment(t *testing.T) {
 		enrichmentProcessor: enrichmentProc,
 	}
 
-	ctx := context.Background()
-
 	t.Run("enrich_gauge_metrics", func(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("test_gauge")
@@ -445,7 +433,7 @@ func TestMetricsProcessorEnrichment(t *testing.T) {
 		dp.Attributes().PutStr("service.name", "test-service")
 		dp.SetDoubleValue(42.0)
 
-		processor.enrichMetricDataPoints(ctx, metric)
+		processor.enrichMetricDataPoints(metric)
 
 		// Check individual enrichment on data point
 		dpAttrs := gauge.DataPoints().At(0).Attributes()
@@ -464,7 +452,7 @@ func TestMetricsProcessorEnrichment(t *testing.T) {
 		dp.Attributes().PutStr("service.name", "test-service")
 		dp.SetDoubleValue(100.0)
 
-		processor.enrichMetricDataPoints(ctx, metric)
+		processor.enrichMetricDataPoints(metric)
 
 		// Check individual enrichment on data point
 		dpAttrs := sum.DataPoints().At(0).Attributes()
@@ -483,7 +471,7 @@ func TestMetricsProcessorEnrichment(t *testing.T) {
 		dp.Attributes().PutStr("service.name", "test-service")
 		dp.SetCount(10)
 
-		processor.enrichMetricDataPoints(ctx, metric)
+		processor.enrichMetricDataPoints(metric)
 
 		// Check individual enrichment on data point
 		dpAttrs := histogram.DataPoints().At(0).Attributes()
@@ -502,7 +490,7 @@ func TestMetricsProcessorEnrichment(t *testing.T) {
 		dp.Attributes().PutStr("service.name", "test-service")
 		dp.SetCount(5)
 
-		processor.enrichMetricDataPoints(ctx, metric)
+		processor.enrichMetricDataPoints(metric)
 
 		// Check individual enrichment on data point
 		dpAttrs := summary.DataPoints().At(0).Attributes()
@@ -616,13 +604,12 @@ func TestProcessorShutdown(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := processor.Shutdown(ctx)
 	assert.NoError(t, err) // Should not return error even if data source Stop fails
 }
 
 func TestEmptyConfiguration(t *testing.T) {
-	ctx := context.Background()
 	processor := &enrichmentProcessor{
 		config:      &Config{},
 		logger:      zap.NewNop(),
@@ -632,8 +619,7 @@ func TestEmptyConfiguration(t *testing.T) {
 	attributes := pcommon.NewMap()
 	attributes.PutStr("service.name", "test-service")
 
-	err := processor.enrichAttributes(ctx, attributes, ENRICHCONTEXTINDIVIDUAL)
-	assert.NoError(t, err)
+	processor.enrichAttributes(attributes, ENRICHCONTEXTINDIVIDUAL)
 
 	// No enrichment should have occurred
 	assert.Equal(t, 1, attributes.Len()) // Only the original attribute
@@ -666,13 +652,11 @@ func TestEnrichmentRuleErrors(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	ctx := context.Background()
-
 	t.Run("missing_lookup_attribute", func(t *testing.T) {
 		attributes := pcommon.NewMap()
 		// No service.name attribute
 
-		err := processor.applyEnrichmentRule(ctx, processor.config.EnrichmentRules[0], attributes)
+		err := processor.applyEnrichmentRule(processor.config.EnrichmentRules[0], attributes)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "lookup key service.name not found")
 	})
@@ -681,7 +665,7 @@ func TestEnrichmentRuleErrors(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("service.name", "")
 
-		err := processor.applyEnrichmentRule(ctx, processor.config.EnrichmentRules[0], attributes)
+		err := processor.applyEnrichmentRule(processor.config.EnrichmentRules[0], attributes)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "lookup key service.name has empty value")
 	})
@@ -704,7 +688,7 @@ func TestEnrichmentRuleErrors(t *testing.T) {
 		attributes := pcommon.NewMap()
 		attributes.PutStr("service.name", "test-service")
 
-		err := processor.applyEnrichmentRule(ctx, rule, attributes)
+		err := processor.applyEnrichmentRule(rule, attributes)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "data source nonexistent not found")
 	})

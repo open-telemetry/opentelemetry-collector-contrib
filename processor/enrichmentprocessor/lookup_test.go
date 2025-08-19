@@ -4,7 +4,6 @@
 package enrichmentprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,7 +39,7 @@ func TestLookup_SetAll(t *testing.T) {
 	// Verify basic fields are set
 	assert.Equal(t, data, lookup.data)
 	assert.Equal(t, headerIndex, lookup.headerIndex)
-	assert.Equal(t, 2, len(lookup.LookupColumnIndex))
+	assert.Len(t, lookup.LookupColumnIndex, 2)
 
 	// Verify indexing works correctly
 	assert.Equal(t, 0, lookup.LookupColumnIndex["field1"]["value1"])
@@ -68,14 +67,14 @@ func TestLookup_SetAll_EdgeCases(t *testing.T) {
 	lookup.SetAll(data, headerIndex, indexFields)
 
 	// Only valid fields should be indexed
-	assert.Equal(t, 2, len(lookup.LookupColumnIndex))
+	assert.Len(t, lookup.LookupColumnIndex, 2)
 	assert.Contains(t, lookup.LookupColumnIndex, "field1")
 	assert.Contains(t, lookup.LookupColumnIndex, "field2")
 
 	// field1 should have all values
-	assert.Equal(t, 3, len(lookup.LookupColumnIndex["field1"]))
+	assert.Len(t, lookup.LookupColumnIndex["field1"], 3)
 	// field2 should skip the short row
-	assert.Equal(t, 2, len(lookup.LookupColumnIndex["field2"]))
+	assert.Len(t, lookup.LookupColumnIndex["field2"], 2)
 }
 
 func TestLookup_Lookup(t *testing.T) {
@@ -94,23 +93,21 @@ func TestLookup_Lookup(t *testing.T) {
 
 	lookup.SetAll(data, headerIndex, indexFields)
 
-	ctx := context.Background()
-
 	// Test successful lookup
-	row, index, err := lookup.Lookup(ctx, "field1", "key2")
+	row, index, err := lookup.Lookup("field1", "key2")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"key2", "data2", "info2"}, row)
 	assert.Equal(t, headerIndex, index)
 
 	// Test lookup with non-existent value
-	row, index, err = lookup.Lookup(ctx, "field1", "nonexistent")
+	row, index, err = lookup.Lookup("field1", "nonexistent")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "enrichment data not found for field 'field1' with value 'nonexistent'")
 	assert.Nil(t, row)
 	assert.Nil(t, index)
 
 	// Test lookup with non-indexed field
-	row, index, err = lookup.Lookup(ctx, "field3", "info1")
+	row, index, err = lookup.Lookup("field3", "info1")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "enrichment field 'field3' is not indexed")
 	assert.Nil(t, row)

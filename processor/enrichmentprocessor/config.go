@@ -5,7 +5,6 @@ package enrichmentprocessor // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -125,37 +124,37 @@ func (config *Config) Validate() error {
 		}
 
 		if dataSourceNames[ds.Name] {
-			return fmt.Errorf("duplicate data source name: %s", ds.Name)
+			return errors.New("duplicate data source name: " + ds.Name)
 		}
 		dataSourceNames[ds.Name] = true
 
 		if ds.Type == "" {
-			return fmt.Errorf("data source type cannot be empty for data source: %s", ds.Name)
+			return errors.New("data source type cannot be empty for data source: " + ds.Name)
 		}
 
 		if ds.Type != "http" && ds.Type != "file" {
-			return fmt.Errorf("unsupported data source type: %s", ds.Type)
+			return errors.New("unsupported data source type: " + ds.Type)
 		}
 
 		// Validate type-specific configuration
 		switch ds.Type {
 		case "http":
 			if ds.HTTP == nil {
-				return fmt.Errorf("HTTP configuration is required for http data source: %s", ds.Name)
+				return errors.New("HTTP configuration is required for http data source: " + ds.Name)
 			}
 			if ds.HTTP.URL == "" {
-				return fmt.Errorf("URL is required for HTTP data source: %s", ds.Name)
+				return errors.New("URL is required for HTTP data source: " + ds.Name)
 			}
 			// Validate format if specified
 			if ds.HTTP.Format != "" && ds.HTTP.Format != "json" && ds.HTTP.Format != "csv" {
-				return fmt.Errorf("unsupported format '%s' for HTTP data source '%s'. Valid formats: json, csv", ds.HTTP.Format, ds.Name)
+				return errors.New("unsupported format '" + ds.HTTP.Format + "' for HTTP data source '" + ds.Name + "'. Valid formats: json, csv")
 			}
 		case "file":
 			if ds.File == nil {
-				return fmt.Errorf("File configuration is required for file data source: %s", ds.Name)
+				return errors.New("File configuration is required for file data source: " + ds.Name)
 			}
 			if ds.File.Path == "" {
-				return fmt.Errorf("Path is required for file data source: %s", ds.Name)
+				return errors.New("Path is required for file data source: " + ds.Name)
 			}
 		}
 	}
@@ -168,43 +167,43 @@ func (config *Config) Validate() error {
 		}
 
 		if ruleNames[rule.Name] {
-			return fmt.Errorf("duplicate enrichment rule name: %s", rule.Name)
+			return errors.New("duplicate enrichment rule name: " + rule.Name)
 		}
 		ruleNames[rule.Name] = true
 
 		if rule.DataSource == "" {
-			return fmt.Errorf("data source must be specified for rule: %s", rule.Name)
+			return errors.New("data source must be specified for rule: " + rule.Name)
 		}
 
 		if !dataSourceNames[rule.DataSource] {
-			return fmt.Errorf("data source %s not found for rule: %s", rule.DataSource, rule.Name)
+			return errors.New("data source " + rule.DataSource + " not found for rule: " + rule.Name)
 		}
 
 		if rule.LookupAttributeKey == "" {
-			return fmt.Errorf("lookup key must be specified for rule: %s", rule.Name)
+			return errors.New("lookup key must be specified for rule: " + rule.Name)
 		}
 
 		if rule.LookupField == "" {
-			return fmt.Errorf("lookup field must be specified for rule: %s", rule.Name)
+			return errors.New("lookup field must be specified for rule: " + rule.Name)
 		}
 
 		if len(rule.Mappings) == 0 {
-			return fmt.Errorf("at least one mapping must be specified for rule: %s", rule.Name)
+			return errors.New("at least one mapping must be specified for rule: " + rule.Name)
 		}
 		// Validate context if specified
 		if rule.Context != "" {
 			if rule.Context != ENRICHCONTEXTRESOURCE && rule.Context != ENRICHCONTEXTINDIVIDUAL {
-				return fmt.Errorf("invalid context value %s for rule %s. Valid values: resource, individual", rule.Context, rule.Name)
+				return errors.New("invalid context value " + rule.Context + " for rule " + rule.Name + ". Valid values: resource, individual")
 			}
 		}
 		// Validate mappings
 		for _, mapping := range rule.Mappings {
 			if mapping.SourceField == "" {
-				return fmt.Errorf("source field cannot be empty in rule: %s", rule.Name)
+				return errors.New("source field cannot be empty in rule: " + rule.Name)
 			}
 
 			if mapping.TargetAttribute == "" {
-				return fmt.Errorf("target attribute cannot be empty in rule: %s", rule.Name)
+				return errors.New("target attribute cannot be empty in rule: " + rule.Name)
 			}
 		}
 	}

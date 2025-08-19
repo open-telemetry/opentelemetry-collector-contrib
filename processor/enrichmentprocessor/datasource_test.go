@@ -19,13 +19,13 @@ import (
 )
 
 func TestHTTPDataSource_Lifecycle(t *testing.T) {
-	testData := []map[string]interface{}{
+	testData := []map[string]any{
 		{"name": "user-service", "owner": "platform-team"},
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(testData)
+		_ = json.NewEncoder(w).Encode(testData)
 	}))
 	defer server.Close()
 
@@ -39,7 +39,7 @@ func TestHTTPDataSource_Lifecycle(t *testing.T) {
 	indexFields := []string{"name"}
 	dataSource := NewHTTPDataSource(config, logger, indexFields)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	err := dataSource.Start(ctx)
@@ -52,7 +52,7 @@ func TestHTTPDataSource_Lifecycle(t *testing.T) {
 }
 
 func TestFileDataSource_Lifecycle(t *testing.T) {
-	testData := []map[string]interface{}{
+	testData := []map[string]any{
 		{"hostname": "web-01", "environment": "production"},
 	}
 
@@ -61,7 +61,7 @@ func TestFileDataSource_Lifecycle(t *testing.T) {
 
 	jsonData, err := json.Marshal(testData)
 	require.NoError(t, err)
-	err = os.WriteFile(testFile, jsonData, 0o644)
+	err = os.WriteFile(testFile, jsonData, 0o600)
 	require.NoError(t, err)
 
 	config := FileDataSourceConfig{
@@ -74,7 +74,7 @@ func TestFileDataSource_Lifecycle(t *testing.T) {
 	indexFields := []string{"hostname"}
 	dataSource := NewFileDataSource(config, logger, indexFields)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	err = dataSource.Start(ctx)
@@ -87,9 +87,9 @@ func TestFileDataSource_Lifecycle(t *testing.T) {
 func TestHTTPDataSource_FormatDetection(t *testing.T) {
 	t.Run("csv_format", func(t *testing.T) {
 		csvData := "name,owner\nuser-service,platform-team"
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "text/csv")
-			w.Write([]byte(csvData))
+			_, _ = w.Write([]byte(csvData))
 		}))
 		defer server.Close()
 
@@ -99,16 +99,16 @@ func TestHTTPDataSource_FormatDetection(t *testing.T) {
 		}
 		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
-		err := dataSource.Start(context.Background())
+		err := dataSource.Start(t.Context())
 		require.NoError(t, err)
-		dataSource.Stop()
+		_ = dataSource.Stop()
 	})
 
 	t.Run("unknown_content_type", func(t *testing.T) {
 		jsonData := `[{"name": "test"}]`
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/xml")
-			w.Write([]byte(jsonData))
+			_, _ = w.Write([]byte(jsonData))
 		}))
 		defer server.Close()
 
@@ -118,7 +118,7 @@ func TestHTTPDataSource_FormatDetection(t *testing.T) {
 		}
 		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
-		err := dataSource.Start(context.Background())
+		err := dataSource.Start(t.Context())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unable to determine data format from Content-Type header")
 	})
@@ -126,7 +126,7 @@ func TestHTTPDataSource_FormatDetection(t *testing.T) {
 
 func TestHTTPDataSource_ErrorHandling(t *testing.T) {
 	t.Run("http_error", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}))
 		defer server.Close()
@@ -137,15 +137,15 @@ func TestHTTPDataSource_ErrorHandling(t *testing.T) {
 		}
 		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
-		err := dataSource.Start(context.Background())
+		err := dataSource.Start(t.Context())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "HTTP request failed with status: 500")
 	})
 
 	t.Run("invalid_json", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte("invalid json"))
+			_, _ = w.Write([]byte("invalid json"))
 		}))
 		defer server.Close()
 
@@ -156,7 +156,7 @@ func TestHTTPDataSource_ErrorHandling(t *testing.T) {
 		}
 		dataSource := NewHTTPDataSource(config, zap.NewNop(), []string{"name"})
 
-		err := dataSource.Start(context.Background())
+		err := dataSource.Start(t.Context())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse JSON")
 	})
@@ -167,7 +167,7 @@ func TestParseJSON(t *testing.T) {
 	rows, headerIndex, err := parseJSON([]byte(jsonData))
 
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(rows))
+	assert.Len(t, rows, 1)
 	assert.Contains(t, headerIndex, "name")
 	assert.Contains(t, headerIndex, "owner")
 }
@@ -177,7 +177,7 @@ func TestParseCSV(t *testing.T) {
 	rows, headerIndex, err := parseCSV([]byte(csvData))
 
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(rows))
+	assert.Len(t, rows, 1)
 	assert.Contains(t, headerIndex, "name")
 	assert.Contains(t, headerIndex, "owner")
 }

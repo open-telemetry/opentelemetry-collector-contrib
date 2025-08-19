@@ -46,7 +46,7 @@ func TestCreateProcessors_EmptyConfig(t *testing.T) {
 	set := processortest.NewNopSettings(metadata.Type)
 
 	// Test creating processors with empty config
-	processor, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
+	processor, err := factory.CreateLogs(t.Context(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, processor)
 }
@@ -57,11 +57,11 @@ func TestCreateProcessors_ValidConfig(t *testing.T) {
 	// Create test file
 	tempDir := t.TempDir()
 	jsonFile := filepath.Join(tempDir, "test.json")
-	jsonData := []map[string]interface{}{
+	jsonData := []map[string]any{
 		{"name": "test-service", "owner": "test-team"},
 	}
 	data, _ := json.Marshal(jsonData)
-	os.WriteFile(jsonFile, data, 0o644)
+	_ = os.WriteFile(jsonFile, data, 0o600)
 
 	config := &Config{
 		DataSources: []DataSourceConfig{
@@ -89,12 +89,12 @@ func TestCreateProcessors_ValidConfig(t *testing.T) {
 	}
 
 	set := processortest.NewNopSettings(metadata.Type)
-	processor, err := factory.CreateLogs(context.Background(), set, config, consumertest.NewNop())
+	processor, err := factory.CreateLogs(t.Context(), set, config, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, processor)
 
 	// Cleanup
 	if shutdownable, ok := processor.(interface{ Shutdown(context.Context) error }); ok {
-		shutdownable.Shutdown(context.Background())
+		_ = shutdownable.Shutdown(t.Context())
 	}
 }
