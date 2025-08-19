@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -818,70 +817,88 @@ func TestExportErrorHandling(t *testing.T) {
 }
 
 func TestExportBuffers(t *testing.T) {
+	type args struct {
+		buffers  []*bytes.Buffer
+		statuses []int
+	}
+	type want struct {
+		err            bool
+		permanentErr   bool
+		numberRequests int
+	}
 	tests := []struct {
-		name          string
-		buffers       []*bytes.Buffer
-		status        int
-		wantErr       bool
-		wantPermanent bool
+		name string
+		args args
+		want want
 	}{
 		{
 			name: "successful export",
-			buffers: []*bytes.Buffer{
-				bytes.NewBufferString("data1"),
-				bytes.NewBufferString("data2"),
+			args: args{
+				buffers: []*bytes.Buffer{
+					bytes.NewBufferString("data1"),
+					bytes.NewBufferString("data2"),
+				},
+				statuses: []int{http.StatusOK, http.StatusOK},
 			},
-			status:  http.StatusOK,
-			wantErr: false,
+			want: want{
+				err:            false,
+				permanentErr:   false,
+				numberRequests: 2,
+			},
 		},
 		{
 			name: "first buffer fails",
-			buffers: []*bytes.Buffer{
-				bytes.NewBufferString("data1"),
-				bytes.NewBufferString("data2"),
+			args: args{
+				buffers: []*bytes.Buffer{
+					bytes.NewBufferString("data1"),
+					bytes.NewBufferString("data2"),
+				},
+				statuses: []int{http.StatusInternalServerError},
 			},
-			status:        http.StatusInternalServerError,
-			wantErr:       true,
-			wantPermanent: false,
+			want: want{
+				err:            true,
+				permanentErr:   false,
+				numberRequests: 1,
+			},
 		},
 		{
 			name: "second buffer fails with a retryable error after success",
-			buffers: []*bytes.Buffer{
-				bytes.NewBufferString("data1"),
-				bytes.NewBufferString("data2"),
+			args: args{
+				buffers: []*bytes.Buffer{
+					bytes.NewBufferString("data1"),
+					bytes.NewBufferString("data2"),
+				},
+				statuses: []int{http.StatusOK, http.StatusInternalServerError},
 			},
-			status:        http.StatusInternalServerError,
-			wantErr:       true,
-			wantPermanent: true,
+			want: want{
+				err:            true,
+				permanentErr:   true,
+				numberRequests: 2,
+			},
 		},
 		{
-			name:    "empty buffers",
-			buffers: []*bytes.Buffer{},
-			status:  http.StatusOK,
-			wantErr: false,
+			name: "empty buffers",
+			args: args{
+				buffers:  []*bytes.Buffer{},
+				statuses: []int{},
+			},
+			want: want{
+				err:            false,
+				permanentErr:   false,
+				numberRequests: 0,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			requestCount := 0
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				requestCount++
-				r.Header.Set("X-Request-Count", strconv.Itoa(requestCount))
-
-				// Handle the special case for "second buffer fails with a retryable error after success"
-				var status int
-				if tt.name == "second buffer fails with a retryable error after success" {
-					if requestCount == 1 {
-						status = http.StatusOK
-					} else {
-						status = http.StatusInternalServerError
-					}
-				} else {
-					status = tt.status
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if requestCount == len(tt.args.statuses) {
+					t.Fatalf("There are more requests than provided statuses")
 				}
-
-				w.WriteHeader(status)
+				w.WriteHeader(tt.args.statuses[requestCount])
+				requestCount++
 			}))
 			defer server.Close()
 
@@ -894,36 +911,21 @@ func TestExportBuffers(t *testing.T) {
 				Wait:  false,
 			}
 			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
-
-			// Start the exporter to initialize the HTTP client
 			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 			// Test exportBuffers
-			err := exp.exportBuffers(t.Context(), "test_datasource", tt.buffers)
+			err := exp.exportBuffers(t.Context(), "test_datasource", tt.args.buffers)
 
 			// Verify results
-			if tt.wantErr {
+			if tt.want.err {
 				assert.Error(t, err, tt.name)
-				if tt.wantPermanent {
-					assert.True(t, consumererror.IsPermanent(err), tt.name)
-				} else {
-					assert.False(t, consumererror.IsPermanent(err), tt.name)
-				}
+				assert.Equal(t, tt.want.permanentErr, consumererror.IsPermanent(err), tt.name)
 			} else {
 				assert.NoError(t, err, tt.name)
 			}
 
 			// Verify that the correct number of requests were made
-			var expectedRequests int
-			if tt.wantErr && !tt.wantPermanent {
-				// For retryable errors, only the first buffer is processed
-				expectedRequests = 1
-			} else if len(tt.buffers) == 0 {
-				expectedRequests = 0
-			} else {
-				expectedRequests = len(tt.buffers)
-			}
-			assert.Equal(t, expectedRequests, requestCount, tt.name)
+			assert.Equal(t, tt.want.numberRequests, requestCount, tt.name)
 		})
 	}
 }
