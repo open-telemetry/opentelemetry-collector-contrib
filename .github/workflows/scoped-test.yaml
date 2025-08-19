@@ -26,30 +26,30 @@ jobs:
         shell: bash
         id: changes
         run: |
-          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+          changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD")"
           echo changed_files
-          echo $changed_files
+          echo "$changed_files"
 
           go_sources=$(echo "$changed_files" | tr ' ' '\n' | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
           echo go_sources
-          echo $go_sources
+          echo "$go_sources"
           if [[ -n "$go_sources" ]]; then
             {
               echo 'go_sources<<EOF'
-              echo $go_sources
+              echo "$go_sources"
               echo EOF
-            } >> $GITHUB_OUTPUT
+            } >> "$GITHUB_OUTPUT"
           fi
 
           go_tests=$(echo "$changed_files" | tr ' ' '\n' | grep -E '.*_test\.go$' || true)
           echo go_tests
-          echo $go_tests
+          echo "$go_tests"
           if [[ -n "$go_tests" ]]; then
             {
               echo 'go_tests<<EOF'
-              echo $go_tests
+              echo "$go_tests"
               echo EOF
-            } >> $GITHUB_OUTPUT
+            } >> "$GITHUB_OUTPUT"
           fi
 
   scoped-tests:
