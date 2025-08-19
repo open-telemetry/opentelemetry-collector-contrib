@@ -251,34 +251,49 @@ func ParseTraceV3Data(data []byte) ([]*TraceV3Entry, error) {
 	return entries, nil
 }
 
+// paddingSize8 calculates 8-byte alignment padding like the rust implementation
+func paddingSize8(dataSize uint64) uint64 {
+	alignment := uint64(8)
+	return (alignment - (dataSize & (alignment - 1))) & (alignment - 1)
+}
+
 // parseDataEntries attempts to parse individual entries from the data section
+// Based on the Rust implementation logic from mandiant/macos-UnifiedLogs
 func parseDataEntries(data []byte, header *TraceV3Header) []*TraceV3Entry {
 	entries := []*TraceV3Entry{}
 	offset := 0
 	entryCount := 0
+	chunkPreambleSize := 16 // Always 16 bytes for preamble
 
 	for offset < len(data) {
-		// Need at least 20 bytes for a minimal chunk header
-		if offset+20 > len(data) {
+		// Need at least 16 bytes for preamble (matching rust implementation)
+		if offset+chunkPreambleSize > len(data) {
 			break
 		}
 
-		// Check for chunk preamble pattern
+		// Parse preamble (detect_preamble equivalent)
 		chunkTag := binary.LittleEndian.Uint32(data[offset:])
 		chunkSubTag := binary.LittleEndian.Uint32(data[offset+4:])
 		chunkDataSize := binary.LittleEndian.Uint64(data[offset+8:])
 
-		// Validate chunk data size
-		if chunkDataSize == 0 || chunkDataSize > uint64(len(data)-offset) {
-			// Invalid chunk size, try to find next potential entry
+		// Validate chunk data size (matching rust validation)
+		if chunkDataSize == 0 {
+			// Skip invalid chunks
 			offset += 4
 			continue
 		}
 
-		// Parse the chunk based on its type (including 16-byte preamble)
-		totalChunkSize := 16 + int(chunkDataSize) // Preamble + data size
+		// Calculate total chunk size (preamble + data, matching rust logic)
+		totalChunkSize := chunkPreambleSize + int(chunkDataSize)
 		if offset+totalChunkSize > len(data) {
+			// Not enough data for complete chunk
 			break
+		}
+
+		// Additional safety check for reasonable chunk sizes
+		if chunkDataSize > uint64(100*1024*1024) { // 100MB max per chunk
+			offset += 4
+			continue
 		}
 
 		// Extract basic entry information
@@ -324,8 +339,6 @@ func parseDataEntries(data []byte, header *TraceV3Header) []*TraceV3Entry {
 		case 0x6004:
 			// Simpledump chunk
 			entry.ChunkType = "simpledump"
-			entry.Subsystem = "com.apple.simpledump"
-			entry.Category = "simple_data"
 			ParseSimpledumpChunk(data[offset:offset+int(chunkDataSize)], entry)
 		case 0x600b:
 			// Catalog chunk
@@ -424,7 +437,19 @@ func parseDataEntries(data []byte, header *TraceV3Header) []*TraceV3Entry {
 		}
 
 		entries = append(entries, entry)
+
+		// Move to next chunk position (preamble + data)
 		offset += totalChunkSize
+
+		// Handle 8-byte alignment padding (critical for boundary detection)
+		// This matches the rust implementation's padding_size_8 logic
+		paddingBytes := paddingSize8(chunkDataSize)
+		if offset+int(paddingBytes) > len(data) {
+			// Not enough data for padding, stop parsing
+			break
+		}
+		offset += int(paddingBytes)
+
 		entryCount++
 
 		// Safety limit to prevent infinite loops
