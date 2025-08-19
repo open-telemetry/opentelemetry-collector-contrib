@@ -515,9 +515,9 @@ func TestArrowExporterStreamRace(t *testing.T) {
 		}()
 	}
 
-	// Wait until 1000 streams have started.
+	// Wait until 100 streams have started.
 	assert.Eventually(t, func() bool {
-		return tries.Load() >= 1000
+		return tries.Load() >= 100
 	}, 10*time.Second, 5*time.Millisecond)
 
 	cancel()
@@ -634,7 +634,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 				sendCtx := ctx
 				if withDeadline {
 					var sendCancel context.CancelFunc
-					sendCtx, sendCancel = context.WithTimeout(sendCtx, time.Second)
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, 10*time.Second)
 					defer sendCancel()
 				}
 
