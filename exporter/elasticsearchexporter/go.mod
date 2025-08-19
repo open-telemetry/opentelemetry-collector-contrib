@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.38.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/pdata v1.38.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250814180350-eb9588bb3b55
-	go.opentelemetry.io/ebpf-profiler v0.0.0-20250212075250-7bf12d3f962f
+	go.opentelemetry.io/ebpf-profiler v0.0.202531
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
@@ -48,7 +48,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/cilium/ebpf v0.16.0 // indirect
+	github.com/cilium/ebpf v0.19.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
 	github.com/elastic/go-sysinfo v1.15.3 // indirect
@@ -108,7 +108,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
+	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
