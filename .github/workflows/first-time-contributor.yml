@@ -5,11 +5,10 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   welcome_first_contributor:
-    permissions:
-      issues: write
     runs-on: ubuntu-latest
     if: github.repository_owner == 'open-telemetry' && (github.event.pull_request.author_association == 'NONE' || github.event.label.name == 'first-contrib-test')
     steps:
@@ -21,7 +20,7 @@ jobs:
           LABELS: 'first-time contributor'
 
       - name: Comment on PR
-        uses: actions-ecosystem/action-create-comment@5b43c092bf96ebc715dbbe5682ecf3b771223855 # v1.0.0
+        uses: actions-ecosystem/action-create-comment@e23bc59fbff7aac7f9044bd66c2dc0fe1286f80b # v1.0.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           body: |
