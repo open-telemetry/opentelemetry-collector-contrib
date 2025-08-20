@@ -3,87 +3,28 @@ resourceMetrics:
       attributes:
         - key: container.hostname
           value:
-            stringValue: kind-control-plane
+            stringValue: 3ecf3a3aad62
         - key: container.id
           value:
-            stringValue: d81f768ce54c682f096254f97da1016d8c39b1bfdda49dff988caf5f59a86975
+            stringValue: 3ecf3a3aad626973cbab205f6d2711dfe780d6c652237f40e52d2c07c92add9b
         - key: container.image.name
           value:
-            stringValue: kindest/node:v1.30.0
+            stringValue: testcontainers/ryuk:0.12.0
         - key: container.name
           value:
-            stringValue: kind-control-plane
+            stringValue: reaper_4e6f8d70ea063b87839ea5165e89d88386180b9908a76c32924f4bba3f2c0a11
         - key: container.runtime
           value:
             stringValue: docker
     schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
-          - description: Number of bytes transferred to/from the disk by the group and descendant groups.
-            name: container.blockio.io_service_bytes_recursive
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1641717760"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "210460672"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "299008"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "16"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "16"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: By
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
             name: container.cpu.usage.kernelmode
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "140905695000"
+                - asInt: "16433000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -93,7 +34,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "415521175000"
+                - asInt: "24649000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -103,7 +44,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "274615480000"
+                - asInt: "8216000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -111,7 +52,7 @@ resourceMetrics:
           - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
-                - asDouble: 37.61221507352941
+                - asDouble: 0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
@@ -121,14 +62,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1538748416"
+                - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
           - description: Percentage of memory used.
             gauge:
               dataPoints:
-                - asDouble: 36.48623525348137
+                - asDouble: 0.0646955297781362
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.memory.percent
@@ -147,7 +88,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2998398976"
+                - asInt: "5316608"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -156,7 +97,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "573142"
+                - asInt: "2038"
                   attributes:
                     - key: interface
                       value:
@@ -184,7 +125,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "534125"
+                - asInt: "518"
                   attributes:
                     - key: interface
                       value:
