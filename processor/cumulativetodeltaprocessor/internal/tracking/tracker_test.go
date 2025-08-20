@@ -253,7 +253,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 					wantOut: DeltaValue{
 						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(2 * time.Minute)),
 						HistogramValue: &HistogramPoint{Count: 1, Sum: 0, Buckets: []uint64{1, 1, 0, 0}},
-					}},
+					},
+				},
 				{
 					name: "histogram - drop on mismatching buckets",
 					value: ValuePoint{
