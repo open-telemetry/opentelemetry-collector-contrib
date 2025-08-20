@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"net"
 	"net/http"
@@ -72,7 +71,6 @@ type opsrampOTLPExporter struct {
 
 	settings component.TelemetrySettings
 	mut      sync.Mutex
-	logger   *zap.Logger
 
 	// Default user-agent header.
 	userAgent   string
@@ -278,17 +276,14 @@ func (e *opsrampOTLPExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 		e.skipExpired(ld)
 	}
 	if ld.LogRecordCount() <= 0 {
-		e.logger.Debug("No log records to export")
 		return nil
 	}
 
 	if e.config.Masking != nil {
-		e.logger.Debug("Applying masking to logs")
 		e.applyMasking(ld)
 	}
 
 	if e.config.ExpirationSkip != 0 {
-		e.logger.Debug("Skipping expired logs")
 		e.skipExpired(ld)
 	}
 
