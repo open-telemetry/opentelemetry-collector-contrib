@@ -384,28 +384,28 @@ func TestParseGitlabTime(t *testing.T) {
 	}
 }
 
-func TestIncludeUserDetails(t *testing.T) {
+func TestIncludeUserAttributes(t *testing.T) {
 	tests := []struct {
-		name               string
-		includeUserDetails bool
-		expectUserAttrs    bool
+		name                  string
+		includeUserAttributes bool
+		expectUserAttrs       bool
 	}{
 		{
-			name:               "user details excluded by default",
-			includeUserDetails: false,
-			expectUserAttrs:    false,
+			name:                  "user details excluded by default",
+			includeUserAttributes: false,
+			expectUserAttrs:       false,
 		},
 		{
-			name:               "user details included when enabled",
-			includeUserDetails: true,
-			expectUserAttrs:    true,
+			name:                  "user details included when enabled",
+			includeUserAttributes: true,
+			expectUserAttrs:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			receiver := setupGitlabTracesReceiver(t)
-			receiver.cfg.WebHook.IncludeUserDetails = tt.includeUserDetails
+			receiver.cfg.WebHook.IncludeUserAttributes = tt.includeUserAttributes
 
 			var pipelineEvent gitlab.PipelineEvent
 			err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
@@ -441,6 +441,231 @@ func TestIncludeUserDetails(t *testing.T) {
 			// Non-sensitive attributes should always be present
 			_, hasServiceName := attrs.Get("service.name")
 			require.True(t, hasServiceName, "service.name should always be present")
+		})
+	}
+}
+
+func TestSetAttributes(t *testing.T) {
+	receiver := setupGitlabTracesReceiver(t)
+	receiver.cfg.WebHook.IncludeUserAttributes = true
+
+	var pipelineEvent gitlab.PipelineEvent
+	err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
+	require.NoError(t, err)
+
+	// Resource attributes
+	attrs := pcommon.NewMap()
+	receiver.setResourceAttributes(attrs, &pipelineEvent)
+
+	// VCS
+	vcsProvider, _ := attrs.Get("vcs.provider.name")
+	require.Equal(t, "gitlab", vcsProvider.Str())
+
+	repoName, _ := attrs.Get("vcs.repository.name")
+	require.Equal(t, "my-project", repoName.Str())
+
+	repoURL, _ := attrs.Get("vcs.repository.url.full")
+	require.Equal(t, "https://gitlab.example.com/test/project", repoURL.Str())
+
+	visibility, _ := attrs.Get(AttributeVCSRepositoryVisibility)
+	require.Equal(t, "private", visibility.Str())
+
+	namespace, _ := attrs.Get(AttributeVCSRepositoryNamespace)
+	require.Equal(t, "test", namespace.Str())
+
+	defaultBranch, _ := attrs.Get(AttributeVCSRepositoryRefDefault)
+	require.Equal(t, "main", defaultBranch.Str())
+
+	// Pipeline
+	pipelineAttrs := pcommon.NewMap()
+	glPipeline := &glPipeline{&pipelineEvent}
+	glPipeline.setAttributes(pipelineAttrs)
+
+	pipelineSource, _ := pipelineAttrs.Get(AttributeGitlabPipelineSource)
+	require.Equal(t, "push", pipelineSource.Str())
+
+	// Job
+	if len(pipelineEvent.Builds) > 0 {
+		job := &glPipelineJob{
+			event:  &glJobEvent{},
+			jobURL: "https://example.com/job/1",
+		}
+		buildData, _ := json.Marshal(pipelineEvent.Builds[0])
+		json.Unmarshal(buildData, job.event)
+
+		jobAttrs := pcommon.NewMap()
+		job.setAttributes(jobAttrs)
+
+		queuedDuration, _ := jobAttrs.Get(AttributeGitlabJobQueuedDuration)
+		require.Equal(t, 60.5, queuedDuration.Double())
+
+		allowFailure, _ := jobAttrs.Get(AttributeGitlabJobAllowFailure)
+		require.Equal(t, false, allowFailure.Bool())
+
+		runnerType, _ := jobAttrs.Get(AttributeCICDWorkerType)
+		require.Equal(t, "instance_type", runnerType.Str())
+
+		isShared, _ := jobAttrs.Get(AttributeCICDWorkerShared)
+		require.Equal(t, true, isShared.Bool())
+
+		tags, _ := jobAttrs.Get(AttributeCICDWorkerTags)
+		require.Equal(t, 2, tags.Slice().Len())
+		require.Equal(t, "docker", tags.Slice().At(0).Str())
+		require.Equal(t, "linux", tags.Slice().At(1).Str())
+	}
+}
+
+func TestMultiPipeline(t *testing.T) {
+	var pipelineEvent gitlab.PipelineEvent
+	err := json.Unmarshal([]byte(validMultiPipelineWebhookEvent), &pipelineEvent)
+	require.NoError(t, err)
+
+	pipelineAttrs := pcommon.NewMap()
+	glPipeline := &glPipeline{&pipelineEvent}
+	glPipeline.setAttributes(pipelineAttrs)
+
+	// Pipeline source
+	pipelineSource, _ := pipelineAttrs.Get(AttributeGitlabPipelineSource)
+	require.Equal(t, "parent_pipeline", pipelineSource.Str())
+
+	// Parent pipeline
+	parentProjectID, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineProjectID)
+	require.Equal(t, int64(123), parentProjectID.Int())
+
+	parentPipelineID, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineID)
+	require.Equal(t, int64(1), parentPipelineID.Int())
+
+	parentJobID, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineJobID)
+	require.Equal(t, int64(99), parentJobID.Int())
+
+	parentProjectNamespace, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineProjectNamespace)
+	require.Equal(t, "test/parent-project", parentProjectNamespace.Str())
+
+	parentProjectURL, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineProjectURL)
+	require.Equal(t, "https://gitlab.example.com/test/parent-project", parentProjectURL.Str())
+}
+
+func TestEnvironmentAttributes(t *testing.T) {
+	var pipelineEvent gitlab.PipelineEvent
+	err := json.Unmarshal([]byte(validPipelineWithEnvironmentEvent), &pipelineEvent)
+	require.NoError(t, err)
+
+	stagingJob := &glPipelineJob{
+		event:  &glJobEvent{},
+		jobURL: "https://example.com/job/10",
+	}
+
+	buildData, _ := json.Marshal(pipelineEvent.Builds[0])
+	json.Unmarshal(buildData, stagingJob.event)
+
+	stagingAttrs := pcommon.NewMap()
+	stagingJob.setAttributes(stagingAttrs)
+
+	envName, _ := stagingAttrs.Get(AttributeCICDTaskEnvironmentName)
+	require.Equal(t, "staging", envName.Str())
+
+	deploymentTier, _ := stagingAttrs.Get(AttributeGitlabEnvironmentDeploymentTier)
+	require.Equal(t, "staging", deploymentTier.Str())
+
+	envAction, _ := stagingAttrs.Get(AttributeGitlabEnvironmentAction)
+	require.Equal(t, "start", envAction.Str())
+
+	prodJob := &glPipelineJob{
+		event:  &glJobEvent{},
+		jobURL: "https://example.com/job/11",
+	}
+	buildData, _ = json.Marshal(pipelineEvent.Builds[1])
+	json.Unmarshal(buildData, prodJob.event)
+
+	prodAttrs := pcommon.NewMap()
+	prodJob.setAttributes(prodAttrs)
+
+	envName, _ = prodAttrs.Get(AttributeCICDTaskEnvironmentName)
+	require.Equal(t, "production", envName.Str())
+
+	deploymentTier, _ = prodAttrs.Get(AttributeGitlabEnvironmentDeploymentTier)
+	require.Equal(t, "production", deploymentTier.Str())
+
+	failureReason, _ := prodAttrs.Get(AttributeGitlabJobFailureReason)
+	require.Equal(t, "script_failure", failureReason.Str())
+
+	allowFailure, _ := prodAttrs.Get(AttributeGitlabJobAllowFailure)
+	require.Equal(t, true, allowFailure.Bool())
+}
+
+func TestRunnerAttributes(t *testing.T) {
+	tests := []struct {
+		name           string
+		runnerData     string
+		expectedType   string
+		expectedShared bool
+		expectedTags   []string
+	}{
+		{
+			name:           "instance runner with tags",
+			runnerData:     `{"id":100,"description":"shared-runner","active":true,"is_shared":true,"runner_type":"instance_type","tags":["docker","linux","amd64"]}`,
+			expectedType:   "instance_type",
+			expectedShared: true,
+			expectedTags:   []string{"docker", "linux", "amd64"},
+		},
+		{
+			name:           "group runner",
+			runnerData:     `{"id":200,"description":"group-runner","active":true,"is_shared":false,"runner_type":"group_type","tags":["kubernetes"]}`,
+			expectedType:   "group_type",
+			expectedShared: false,
+			expectedTags:   []string{"kubernetes"},
+		},
+		{
+			name:           "project runner without tags",
+			runnerData:     `{"id":300,"description":"project-runner","active":true,"is_shared":false,"runner_type":"project_type","tags":[]}`,
+			expectedType:   "project_type",
+			expectedShared: false,
+			expectedTags:   []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var runner struct {
+				ID          int      `json:"id"`
+				Description string   `json:"description"`
+				Active      bool     `json:"active"`
+				IsShared    bool     `json:"is_shared"`
+				RunnerType  string   `json:"runner_type"`
+				Tags        []string `json:"tags"`
+			}
+			err := json.Unmarshal([]byte(tt.runnerData), &runner)
+			require.NoError(t, err)
+
+			job := &glPipelineJob{
+				event: &glJobEvent{
+					ID:     1,
+					Name:   "test-job",
+					Runner: runner,
+				},
+				jobURL: "https://example.com/job/1",
+			}
+
+			attrs := pcommon.NewMap()
+			job.setAttributes(attrs)
+
+			runnerType, _ := attrs.Get(AttributeCICDWorkerType)
+			require.Equal(t, tt.expectedType, runnerType.Str())
+
+			isShared, _ := attrs.Get(AttributeCICDWorkerShared)
+			require.Equal(t, tt.expectedShared, isShared.Bool())
+
+			if len(tt.expectedTags) > 0 {
+				tags, found := attrs.Get(AttributeCICDWorkerTags)
+				require.True(t, found, "expected runner tags")
+				require.Equal(t, len(tt.expectedTags), tags.Slice().Len())
+				for i, expectedTag := range tt.expectedTags {
+					require.Equal(t, expectedTag, tags.Slice().At(i).Str())
+				}
+			} else {
+				_, found := attrs.Get(AttributeCICDWorkerTags)
+				require.False(t, found, "unexpected runner tags for runner without tags")
+			}
 		})
 	}
 }

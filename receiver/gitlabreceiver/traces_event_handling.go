@@ -379,11 +379,11 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 
 	// Ref/branch
 	attrs.PutStr(string(semconv.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
-	if !e.ObjectAttributes.Tag {
-		attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
-	} else {
-		attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeTag.Value.AsString())
+	refType := semconv.VCSRefTypeBranch.Value.AsString()
+	if e.ObjectAttributes.Tag {
+		refType = semconv.VCSRefTypeTag.Value.AsString()
 	}
+	attrs.PutStr(string(semconv.VCSRefHeadTypeKey), refType)
 	attrs.PutStr(string(semconv.VCSRefHeadRevisionKey), e.ObjectAttributes.SHA)
 
 	// Merge Request attributes (only for MR-triggered pipelines)
@@ -398,22 +398,43 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	// ---------- The following attributes are not part of semconv yet ----------
 
 	// VCS
-	attrs.PutStr(AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp.Format(gitlabEventTimeFormat))
-	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
-	attrs.PutStr(AttributeVCSRepositoryNamespace, e.Project.Namespace)
-	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
+	putTimeIfNotNil(attrs, AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp, gitlabEventTimeFormat)
+	putStrIfNotEmpty(attrs, AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
+	putStrIfNotEmpty(attrs, AttributeVCSRepositoryNamespace, e.Project.Namespace)
+	putStrIfNotEmpty(attrs, AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
 
 	// User details are only included if explicitly enabled in configuration
 	// This protects potentially sensitive information (PII) by default
-	if gtr.cfg.WebHook.IncludeUserDetails {
+	if gtr.cfg.WebHook.IncludeUserAttributes {
 		// Commit author information
-		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorName, e.Commit.Author.Name)
-		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.Commit.Author.Email)
-		attrs.PutStr(AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
+		putStrIfNotEmpty(attrs, AttributeVCSRefHeadRevisionAuthorName, e.Commit.Author.Name)
+		putStrIfNotEmpty(attrs, AttributeVCSRefHeadRevisionAuthorEmail, e.Commit.Author.Email)
+		putStrIfNotEmpty(attrs, AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
 
-		// Pipeline actor information
-		attrs.PutInt(AttributeCICDPipelineRunActorID, int64(e.User.ID))
-		attrs.PutStr(AttributeCICDPipelineRunActorUsername, e.User.Username)
-		attrs.PutStr(AttributeCICDPipelineRunActorName, e.User.Name)
+		// Pipeline actor information (User can be nil)
+		if e.User != nil {
+			putIntIfNotZero(attrs, AttributeCICDPipelineRunActorID, int64(e.User.ID))
+			putStrIfNotEmpty(attrs, AttributeCICDPipelineRunActorUsername, e.User.Username)
+			putStrIfNotEmpty(attrs, AttributeCICDPipelineRunActorName, e.User.Name)
+		}
+	}
+}
+
+// Helper functions to only set the attribute if the value is not empty
+func putStrIfNotEmpty(attrs pcommon.Map, key, value string) {
+	if value != "" {
+		attrs.PutStr(key, value)
+	}
+}
+
+func putIntIfNotZero(attrs pcommon.Map, key string, value int64) {
+	if value != 0 {
+		attrs.PutInt(key, value)
+	}
+}
+
+func putTimeIfNotNil(attrs pcommon.Map, key string, t *time.Time, format string) {
+	if t != nil && !t.IsZero() {
+		attrs.PutStr(key, t.Format(format))
 	}
 }
