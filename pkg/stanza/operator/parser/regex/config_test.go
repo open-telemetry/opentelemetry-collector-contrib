@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -62,7 +64,7 @@ func TestParserGoldenConfig(t *testing.T) {
 						Layout:     "%Y-%m-%d",
 						ParseFrom:  &parseField,
 					}
-					cfg.TimeParser = &newTime
+					cfg.TimeParser = configoptional.Some(newTime)
 					return cfg
 				}(),
 			},
@@ -80,7 +82,7 @@ func TestParserGoldenConfig(t *testing.T) {
 						"debug":    "2xx",
 					}
 					severityParser.Mapping = mapping
-					cfg.SeverityConfig = &severityParser
+					cfg.SeverityConfig = configoptional.Some(severityParser)
 					return cfg
 				}(),
 			},
@@ -100,7 +102,7 @@ func TestParserGoldenConfig(t *testing.T) {
 					parseField := entry.NewBodyField("logger_name_field")
 					loggerNameParser := helper.NewScopeNameParser()
 					loggerNameParser.ParseFrom = parseField
-					cfg.ScopeNameParser = &loggerNameParser
+					cfg.ScopeNameParser = configoptional.Some(loggerNameParser)
 					return cfg
 				}(),
 			},

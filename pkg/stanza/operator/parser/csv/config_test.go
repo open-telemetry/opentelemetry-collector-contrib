@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -80,11 +82,11 @@ func TestConfig(t *testing.T) {
 					p := NewConfig()
 					p.Header = "timestamp_field,severity,message"
 					newTime := helper.NewTimeParser()
-					p.TimeParser = &newTime
 					parseFrom := entry.NewBodyField("timestamp_field")
-					p.TimeParser.ParseFrom = &parseFrom
-					p.TimeParser.LayoutType = "strptime"
-					p.TimeParser.Layout = "%Y-%m-%d"
+					newTime.ParseFrom = &parseFrom
+					newTime.LayoutType = "strptime"
+					newTime.Layout = "%Y-%m-%d"
+					p.TimeParser = configoptional.Some(newTime)
 					return p
 				}(),
 			},

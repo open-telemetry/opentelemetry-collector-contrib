@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -25,13 +26,13 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 // ParserConfig provides the basic implementation of a parser config.
 type ParserConfig struct {
 	TransformerConfig `mapstructure:",squash"`
-	ParseFrom         entry.Field         `mapstructure:"parse_from"`
-	ParseTo           entry.RootableField `mapstructure:"parse_to"`
-	BodyField         *entry.Field        `mapstructure:"body"`
-	TimeParser        *TimeParser         `mapstructure:"timestamp,omitempty"`
-	SeverityConfig    *SeverityConfig     `mapstructure:"severity,omitempty"`
-	TraceParser       *TraceParser        `mapstructure:"trace,omitempty"`
-	ScopeNameParser   *ScopeNameParser    `mapstructure:"scope_name,omitempty"`
+	ParseFrom         entry.Field                              `mapstructure:"parse_from"`
+	ParseTo           entry.RootableField                      `mapstructure:"parse_to"`
+	BodyField         *entry.Field                             `mapstructure:"body"`
+	TimeParser        configoptional.Optional[TimeParser]      `mapstructure:"timestamp,omitempty"`
+	SeverityConfig    configoptional.Optional[SeverityConfig]  `mapstructure:"severity,omitempty"`
+	TraceParser       configoptional.Optional[TraceParser]     `mapstructure:"trace,omitempty"`
+	ScopeNameParser   configoptional.Optional[ScopeNameParser] `mapstructure:"scope_name,omitempty"`
 }
 
 // Build will build a parser operator.
@@ -52,30 +53,34 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 		BodyField:           c.BodyField,
 	}
 
-	if c.TimeParser != nil {
-		if err := c.TimeParser.Validate(); err != nil {
+	if c.TimeParser.HasValue() {
+		timeParser := c.TimeParser.Get()
+		if err := timeParser.Validate(); err != nil {
 			return ParserOperator{}, err
 		}
-		parserOperator.TimeParser = c.TimeParser
+		parserOperator.TimeParser = timeParser
 	}
 
-	if c.SeverityConfig != nil {
-		severityParser, err := c.SeverityConfig.Build(set)
+	if c.SeverityConfig.HasValue() {
+		severityConfig := c.SeverityConfig.Get()
+		severityParser, err := severityConfig.Build(set)
 		if err != nil {
 			return ParserOperator{}, err
 		}
 		parserOperator.SeverityParser = &severityParser
 	}
 
-	if c.TraceParser != nil {
-		if err := c.TraceParser.Validate(); err != nil {
+	if c.TraceParser.HasValue() {
+		traceParser := c.TraceParser.Get()
+		if err := traceParser.Validate(); err != nil {
 			return ParserOperator{}, err
 		}
-		parserOperator.TraceParser = c.TraceParser
+		parserOperator.TraceParser = traceParser
 	}
 
-	if c.ScopeNameParser != nil {
-		parserOperator.ScopeNameParser = c.ScopeNameParser
+	if c.ScopeNameParser.HasValue() {
+		scopeNameParser := c.ScopeNameParser.Get()
+		parserOperator.ScopeNameParser = scopeNameParser
 	}
 
 	return parserOperator, nil

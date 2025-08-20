@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -99,11 +100,11 @@ func TestParser(t *testing.T) {
 			"with_timestamp",
 			func(p *Config) {
 				parseFrom := entry.NewAttributeField("timestamp")
-				p.TimeParser = &helper.TimeParser{
+				p.TimeParser = configoptional.Some(helper.TimeParser{
 					ParseFrom:  &parseFrom,
 					LayoutType: "epoch",
 					Layout:     "s",
-				}
+				})
 			},
 			&entry.Entry{
 				Body: `{"superkey":"superval","timestamp":1136214245}`,
@@ -120,9 +121,9 @@ func TestParser(t *testing.T) {
 		{
 			"with_scope",
 			func(p *Config) {
-				p.ScopeNameParser = &helper.ScopeNameParser{
+				p.ScopeNameParser = configoptional.Some(helper.ScopeNameParser{
 					ParseFrom: entry.NewAttributeField("logger_name"),
-				}
+				})
 			},
 			&entry.Entry{
 				Body: `{"superkey":"superval","logger_name":"logger"}`,

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -29,11 +30,11 @@ func TestParserConfigMissingBase(t *testing.T) {
 func TestParserConfigInvalidTimeParser(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
 	f := entry.NewBodyField("timestamp")
-	cfg.TimeParser = &TimeParser{
+	cfg.TimeParser = configoptional.Some(TimeParser{
 		ParseFrom:  &f,
 		Layout:     "",
 		LayoutType: "strptime",
-	}
+	})
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
@@ -56,21 +57,21 @@ func TestParserConfigBuildValid(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
 
 	timeField := entry.NewBodyField("timestamp")
-	cfg.TimeParser = &TimeParser{
+	cfg.TimeParser = configoptional.Some(TimeParser{
 		ParseFrom:  &timeField,
 		Layout:     "",
 		LayoutType: "native",
-	}
+	})
 
 	sevField := entry.NewBodyField("timestamp")
-	cfg.SeverityConfig = &SeverityConfig{
+	cfg.SeverityConfig = configoptional.Some(SeverityConfig{
 		ParseFrom: &sevField,
-	}
+	})
 
 	traceIDField := entry.NewBodyField("trace_id")
 	spanIDField := entry.NewBodyField("span_id")
 	traceFlagsField := entry.NewBodyField("trace_flags")
-	cfg.TraceParser = &TraceParser{
+	cfg.TraceParser = configoptional.Some(TraceParser{
 		TraceID: &TraceIDConfig{
 			ParseFrom: &traceIDField,
 		},
@@ -80,12 +81,12 @@ func TestParserConfigBuildValid(t *testing.T) {
 		TraceFlags: &TraceFlagsConfig{
 			ParseFrom: &traceFlagsField,
 		},
-	}
+	})
 
 	scopeNameField := entry.NewBodyField("logger")
-	cfg.ScopeNameParser = &ScopeNameParser{
+	cfg.ScopeNameParser = configoptional.Some(ScopeNameParser{
 		ParseFrom: scopeNameField,
-	}
+	})
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -688,18 +689,18 @@ func NewTestParserConfig() ParserConfig {
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.RootableField{Field: entry.NewBodyField("to")}
 	tp := NewTimeParser()
-	expect.TimeParser = &tp
+	expect.TimeParser = configoptional.Some(tp)
 
 	sp := NewSeverityConfig()
 	sp.Mapping = map[string]any{
 		"info": "3xx",
 		"warn": "4xx",
 	}
-	expect.SeverityConfig = &sp
+	expect.SeverityConfig = configoptional.Some(sp)
 
 	lnp := NewScopeNameParser()
 	lnp.ParseFrom = entry.NewBodyField("logger")
-	expect.ScopeNameParser = &lnp
+	expect.ScopeNameParser = configoptional.Some(lnp)
 	return expect
 }
 
