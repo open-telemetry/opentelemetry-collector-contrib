@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -32,16 +33,17 @@ const (
 // It enables unified span creation logic while allowing type-specific customization
 // It must be implemented by all GitLab event types (pipeline, stage, job) to create spans
 type GitlabEvent interface {
-	setAttributes(pcommon.Map) error
+	setAttributes(pcommon.Map)
 	setSpanIDs(ptrace.Span, pcommon.SpanID) error
 	setTimeStamps(ptrace.Span, string, string) error
-	setSpanData(ptrace.Span, pcommon.Map) error
+	setSpanData(ptrace.Span) error
 }
 
 func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
-	r.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
+
+	gtr.setResourceAttributes(r.Resource().Attributes(), e)
 
 	traceID, err := newTraceID(e.ObjectAttributes.ID, e.ObjectAttributes.FinishedAt)
 	if err != nil {
@@ -95,11 +97,16 @@ func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipel
 }
 
 func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPipeline, traceID pcommon.TraceID, stages map[string]*glPipelineStage) error {
-	for _, job := range p.Builds {
-		jobEvent := glPipelineJob(job)
+	baseJobURL := p.Project.WebURL + "/-/jobs/"
 
-		if job.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage, stages[job.Stage].StartedAt)
+	for i := range p.Builds {
+		jobEvent := glPipelineJob{
+			event:  (*glJobEvent)(&p.Builds[i]),
+			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
+		}
+
+		if jobEvent.event.FinishedAt != "" {
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, jobEvent.event.Stage, stages[jobEvent.event.Stage].StartedAt)
 			if err != nil {
 				return err
 			}
@@ -124,10 +131,7 @@ func (*gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e Gi
 		return err
 	}
 
-	// TODO: add the attributes to the span (appending them to the map)
-	attrs := span.Attributes()
-
-	err = e.setSpanData(span, attrs)
+	err = e.setSpanData(span)
 	if err != nil {
 		return err
 	}
@@ -237,7 +241,7 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 			}
 			stages[job.Stage] = stage
 		}
-		if err := gtr.setStageTime(stage, job); err != nil {
+		if err := gtr.setStageTime(stage, job.StartedAt, job.FinishedAt); err != nil {
 			return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
 		}
 	}
@@ -246,12 +250,12 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 }
 
 // setStageTime determines stage start/finish times by finding the earliest start and latest finish time
-func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipelineJob) error {
+func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, jobStartedAt, jobFinishedAt string) error {
 	// Handle start time
 	if stage.StartedAt == "" {
-		stage.StartedAt = job.StartedAt
-	} else if job.StartedAt != "" {
-		jobStartTime, err := parseGitlabTime(job.StartedAt)
+		stage.StartedAt = jobStartedAt
+	} else if jobStartedAt != "" {
+		jobStartTime, err := parseGitlabTime(jobStartedAt)
 		if err != nil {
 			return fmt.Errorf("parsing job start time: %w", err)
 		}
@@ -262,15 +266,15 @@ func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipeline
 		}
 
 		if jobStartTime.Before(stageStartTime) {
-			stage.StartedAt = job.StartedAt
+			stage.StartedAt = jobStartedAt
 		}
 	}
 
 	// Handle finish time
 	if stage.FinishedAt == "" {
-		stage.FinishedAt = job.FinishedAt
-	} else if job.FinishedAt != "" {
-		jobFinishTime, err := parseGitlabTime(job.FinishedAt)
+		stage.FinishedAt = jobFinishedAt
+	} else if jobFinishedAt != "" {
+		jobFinishTime, err := parseGitlabTime(jobFinishedAt)
 		if err != nil {
 			return fmt.Errorf("parsing job finish time: %w", err)
 		}
@@ -281,7 +285,7 @@ func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipeline
 		}
 
 		if jobFinishTime.After(stageFinishTime) {
-			stage.FinishedAt = job.FinishedAt
+			stage.FinishedAt = jobFinishedAt
 		}
 	}
 
@@ -331,7 +335,7 @@ func parseGitlabTime(t string) (time.Time, error) {
 // Relevant GitLab docs:
 // - Job: https://docs.gitlab.com/ci/jobs/#available-job-statuses
 // - Pipeline: https://docs.gitlab.com/api/pipelines/#list-project-pipelines (see status field)
-func setSpanStatusFromGitLab(span ptrace.Span, status string) {
+func setSpanStatus(span ptrace.Span, status string) {
 	switch status {
 	case "success":
 		span.Status().SetCode(ptrace.StatusCodeOk)
@@ -341,5 +345,35 @@ func setSpanStatusFromGitLab(span ptrace.Span, status string) {
 		span.Status().SetCode(ptrace.StatusCodeUnset)
 	default:
 		span.Status().SetCode(ptrace.StatusCodeUnset)
+	}
+}
+
+func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *gitlab.PipelineEvent) {
+	// Service information
+	attrs.PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
+
+	// VCS provider
+	attrs.PutStr(string(semconv.VCSProviderNameGitlab.Key), semconv.VCSProviderNameGitlab.Value.AsString())
+
+	// Repository information
+	attrs.PutStr(string(semconv.VCSRepositoryNameKey), e.Project.Name)
+	attrs.PutStr(string(semconv.VCSRepositoryURLFullKey), e.Project.WebURL)
+
+	// Ref/branch information
+	attrs.PutStr(string(semconv.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
+	if !e.ObjectAttributes.Tag {
+		attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
+	} else {
+		attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeTag.Value.AsString())
+	}
+	attrs.PutStr(string(semconv.VCSRefHeadRevisionKey), e.ObjectAttributes.SHA)
+
+	// Merge Request attributes (only for MR-triggered pipelines)
+	if e.MergeRequest.ID != 0 {
+		attrs.PutStr(string(semconv.VCSChangeIDKey), strconv.Itoa(e.MergeRequest.ID))
+		attrs.PutStr(string(semconv.VCSChangeStateKey), e.MergeRequest.State)
+		attrs.PutStr(string(semconv.VCSChangeTitleKey), e.MergeRequest.Title)
+		attrs.PutStr(string(semconv.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
+		attrs.PutStr(string(semconv.VCSRefBaseTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
 	}
 }

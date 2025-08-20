@@ -18,7 +18,6 @@ var (
 	errSetPipelineTimestamps = errors.New("failed to set pipeline span timestamps")
 	errSetStageTimestamps    = errors.New("failed to set stage span timestamps")
 	errSetJobTimestamps      = errors.New("failed to set job span timestamps")
-	errSetSpanAttributes     = errors.New("failed to set span attributes")
 )
 
 // glPipeline is a wrapper that implements the GitlabEvent interface
@@ -26,7 +25,7 @@ type glPipeline struct {
 	*gitlab.PipelineEvent
 }
 
-func (p *glPipeline) setSpanData(span ptrace.Span, attrs pcommon.Map) error {
+func (p *glPipeline) setSpanData(span ptrace.Span) error {
 	var pipelineName string
 	if p.ObjectAttributes.Name != "" {
 		pipelineName = p.ObjectAttributes.Name
@@ -41,12 +40,9 @@ func (p *glPipeline) setSpanData(span ptrace.Span, attrs pcommon.Map) error {
 		return fmt.Errorf("%w: %w", errSetPipelineTimestamps, err)
 	}
 
-	setSpanStatusFromGitLab(span, p.ObjectAttributes.Status)
+	p.setAttributes(span.Attributes())
 
-	err = p.setAttributes(attrs)
-	if err != nil {
-		return fmt.Errorf("%w: %w", errSetSpanAttributes, err)
-	}
+	setSpanStatus(span, p.ObjectAttributes.Status)
 
 	return nil
 }
@@ -61,42 +57,9 @@ func (*glPipeline) setTimeStamps(span ptrace.Span, startTime, endTime string) er
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func (p *glPipeline) setAttributes(attrs pcommon.Map) error {
-	p.setVCSAttributes(attrs)
-	p.setCICDAttributes(attrs)
-	return nil
-}
+func (p *glPipeline) setAttributes(attrs pcommon.Map) {
+	// CICD attributes
 
-func (p *glPipeline) setVCSAttributes(attrs pcommon.Map) pcommon.Map {
-	// Provider (GitLab)
-	attrs.PutStr(string(semconv.VCSProviderNameGitlab.Key), semconv.VCSProviderNameGitlab.Value.AsString())
-
-	// Repository
-	attrs.PutStr(string(semconv.VCSRepositoryNameKey), p.Project.Name)
-	attrs.PutStr(string(semconv.VCSRepositoryURLFullKey), p.Project.WebURL)
-
-	// Merge Request (only applies to MR pipelines)
-	if p.MergeRequest.ID != 0 {
-		attrs.PutStr(string(semconv.VCSChangeIDKey), strconv.Itoa(p.MergeRequest.ID))
-		attrs.PutStr(string(semconv.VCSChangeStateKey), p.MergeRequest.State)
-		attrs.PutStr(string(semconv.VCSChangeTitleKey), p.MergeRequest.Title)
-		attrs.PutStr(string(semconv.VCSRefBaseNameKey), p.MergeRequest.TargetBranch)
-		attrs.PutStr(string(semconv.VCSRefBaseTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
-
-		// Head Branch
-		attrs.PutStr(string(semconv.VCSRefHeadNameKey), p.ObjectAttributes.Ref)
-		if !p.ObjectAttributes.Tag {
-			attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
-		} else {
-			attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeTag.Value.AsString())
-		}
-		attrs.PutStr(string(semconv.VCSRefHeadRevisionKey), p.ObjectAttributes.SHA)
-	}
-
-	return attrs
-}
-
-func (p *glPipeline) setCICDAttributes(attrs pcommon.Map) pcommon.Map {
 	// ObjectAttributes.Name is the pipeline name, but it was added later in GitLab starting with version 16.1 (https://gitlab.com/gitlab-org/gitlab/-/merge_requests/123639)
 	// The name isn't always present in the GitLab webhook events, therefore we need to check if it's empty
 	if p.ObjectAttributes.Name != "" {
@@ -107,7 +70,6 @@ func (p *glPipeline) setCICDAttributes(attrs pcommon.Map) pcommon.Map {
 	attrs.PutStr(string(semconv.CICDPipelineRunIDKey), strconv.Itoa(p.ObjectAttributes.ID))
 	attrs.PutStr(string(semconv.CICDPipelineRunURLFullKey), p.ObjectAttributes.URL)
 
-	return attrs
 }
 
 // glPipelineStage represents a stage in a pipeline event
@@ -120,7 +82,7 @@ type glPipelineStage struct {
 	FinishedAt         string
 }
 
-func (s *glPipelineStage) setSpanData(span ptrace.Span, attrs pcommon.Map) error {
+func (s *glPipelineStage) setSpanData(span ptrace.Span) error {
 	span.SetName(s.Name)
 	span.SetKind(ptrace.SpanKindServer)
 
@@ -129,12 +91,9 @@ func (s *glPipelineStage) setSpanData(span ptrace.Span, attrs pcommon.Map) error
 		return fmt.Errorf("%w: %w", errSetStageTimestamps, err)
 	}
 
-	setSpanStatusFromGitLab(span, s.Status)
+	setSpanStatus(span, s.Status)
 
-	err = s.setAttributes(attrs)
-	if err != nil {
-		return fmt.Errorf("%w: %w", errSetSpanAttributes, err)
-	}
+	s.setAttributes(span.Attributes())
 
 	return nil
 }
@@ -159,15 +118,13 @@ const (
 	CICDPipelineTaskTypeStatusKey = "cicd.pipeline.task.type.status" //ToDo: check if we should add to semconv
 )
 
-func (s *glPipelineStage) setAttributes(attrs pcommon.Map) error {
+func (s *glPipelineStage) setAttributes(attrs pcommon.Map) {
 	attrs.PutStr(string(semconv.CICDPipelineTaskTypeKey), s.Name)
 	attrs.PutStr(CICDPipelineTaskTypeStatusKey, s.Status)
-	return nil
 }
 
-// glPipelineJob represents a job in a pipeline event.
-// This is a copy of the "PipelineEvent.Builds" struct in the Gitlab API client - it's not exported as type, so we need to use this struct to represent it
-type glPipelineJob struct {
+// glJobEvent represents the anonymous struct type from PipelineEvent.Builds - it's not exported as type by the Gitlab API client, so we need to use this struct to represent it
+type glJobEvent struct {
 	ID             int               `json:"id"`
 	Stage          string            `json:"stage"`
 	Name           string            `json:"name"`
@@ -201,21 +158,24 @@ type glPipelineJob struct {
 	} `json:"environment"`
 }
 
-func (j *glPipelineJob) setSpanData(span ptrace.Span, attrs pcommon.Map) error {
-	span.SetName(j.Name)
+// glPipelineJob wraps a pointer to the GitLab job data with additional fields like jobUrl (required for span attributes)
+type glPipelineJob struct {
+	event  *glJobEvent
+	jobURL string
+}
+
+func (j *glPipelineJob) setSpanData(span ptrace.Span) error {
+	span.SetName(j.event.Name)
 	span.SetKind(ptrace.SpanKindServer)
 
-	err := j.setTimeStamps(span, j.StartedAt, j.FinishedAt)
+	err := j.setTimeStamps(span, j.event.StartedAt, j.event.FinishedAt)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errSetJobTimestamps, err)
 	}
 
-	setSpanStatusFromGitLab(span, j.Status)
+	setSpanStatus(span, j.event.Status)
 
-	err = j.setAttributes(attrs)
-	if err != nil {
-		return fmt.Errorf("%w: %w", errSetSpanAttributes, err)
-	}
+	j.setAttributes(span.Attributes())
 
 	return nil
 }
@@ -223,7 +183,7 @@ func (j *glPipelineJob) setSpanData(span ptrace.Span, attrs pcommon.Map) error {
 func (j *glPipelineJob) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
 	span.SetParentSpanID(parentSpanID)
 
-	spanID, err := newJobSpanID(j.ID, j.StartedAt)
+	spanID, err := newJobSpanID(j.event.ID, j.event.StartedAt)
 	if err != nil {
 		return err
 	}
@@ -235,15 +195,14 @@ func (*glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string)
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func (j *glPipelineJob) setAttributes(attrs pcommon.Map) error {
-	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), j.Name)
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunIDKey), strconv.Itoa(j.ID))
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunResultKey), j.Status)
-	// attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), fmt.Sprintf("%s/jobs/%d", p.ObjectAttributes.URL, j.ID)	) - ToDo: We need to pass in pipeline attrs somehow
+func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
+	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), j.event.Name)
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunIDKey), strconv.Itoa(j.event.ID))
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunResultKey), j.event.Status)
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), j.jobURL)
 
-	// Runner Attributes
-	attrs.PutStr(string(semconv.CICDWorkerIDKey), strconv.Itoa(j.Runner.ID))
-	attrs.PutStr(string(semconv.CICDWorkerNameKey), j.Runner.Description)
+	// Runner attributes
+	attrs.PutStr(string(semconv.CICDWorkerIDKey), strconv.Itoa(j.event.Runner.ID))
+	attrs.PutStr(string(semconv.CICDWorkerNameKey), j.event.Runner.Description)
 
-	return nil
 }
