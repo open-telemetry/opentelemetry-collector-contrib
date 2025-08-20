@@ -4,7 +4,6 @@
 package mysqlreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -58,7 +57,7 @@ func TestCreateMetrics(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	logsReceiver, err := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{

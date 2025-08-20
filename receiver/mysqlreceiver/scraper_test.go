@@ -5,7 +5,6 @@ package mysqlreceiver
 
 import (
 	"bufio"
-	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
@@ -106,7 +105,7 @@ func TestScrape(t *testing.T) {
 		// Scrape top queries
 		scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
 		scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
-		actualTopQueries, err := scraper.scrapeTopQueryFunc(context.Background())
+		actualTopQueries, err := scraper.scrapeTopQueryFunc(t.Context())
 		require.NoError(t, err)
 		expectedTopQueriesFile := filepath.Join("testdata", "scraper", "expectedTopQueries.yaml")
 		// Uncomment this to regenerate the expected logs file
