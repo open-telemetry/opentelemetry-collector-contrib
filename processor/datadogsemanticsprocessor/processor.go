@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/transform"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -38,26 +39,11 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 		otelres := rspan.Resource()
 		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
-			// Note: default value from GetOTelService is "otlpresourcenoservicename"
-			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", traceutil.GetOTelService(otelres, true))
-			if err != nil {
-				return ptrace.Traces{}, err
-			}
-
 			serviceVersion := ""
 			if serviceVersionAttr, ok := otelres.Attributes().Get(string(semconv.ServiceVersionKey)); ok {
 				serviceVersion = serviceVersionAttr.AsString()
 			}
 			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion)
-			if err != nil {
-				return ptrace.Traces{}, err
-			}
-
-			env := "default"
-			if envFromAttr := traceutil.GetOTelEnv(otelres); envFromAttr != "" {
-				env = envFromAttr
-			}
-			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env)
 			if err != nil {
 				return ptrace.Traces{}, err
 			}
@@ -96,8 +82,20 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				otelspan := libspans.Spans().At(k)
 				sattr := otelspan.Attributes()
 
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan))
-				if err != nil {
+				// Note: default value from GetOTelService is "otlpresourcenoservicename"
+				if err := tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", traceutil.GetOTelService(otelspan, otelres, true)); err != nil {
+					return ptrace.Traces{}, err
+				}
+
+				env := "default"
+				if envFromAttr := transform.GetOTelEnv(otelspan, otelres, false); envFromAttr != "" {
+					env = envFromAttr
+				}
+				if err := tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env); err != nil {
+					return ptrace.Traces{}, err
+				}
+
+				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan, otelres)); err != nil {
 					return ptrace.Traces{}, err
 				}
 				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres))
@@ -131,7 +129,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				}
 
 				metaMap := make(map[string]string)
-				code := traceutil.GetOTelStatusCode(otelspan)
+				code := transform.GetOTelStatusCode(otelspan, otelres, false)
 				if code != 0 {
 					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code))
 					if err != nil {
