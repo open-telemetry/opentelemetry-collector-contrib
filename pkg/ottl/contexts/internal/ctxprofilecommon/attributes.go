@@ -28,6 +28,7 @@ func AccessAttributes[K ProfileAttributeContext]() ottl.StandardGetSetter[K] {
 			if err != nil {
 				return err
 			}
+			tCtx.AttributeIndices().FromRaw([]int32{})
 			for k, v := range m.All() {
 				if err := pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx, k, v); err != nil {
 					return err
