@@ -93,14 +93,14 @@ func parseHexField(entry *entry.Entry, field *entry.Field) ([]byte, error) {
 // Parse will parse a trace (trace_id, span_id and flags) from a field and attach it to the entry
 func (t *TraceParser) Parse(entry *entry.Entry) error {
 	var errTraceID, errSpanID, errTraceFlags error
-	if traceIDConfig := t.TraceID.Get(); traceIDConfig != nil {
-		entry.TraceID, errTraceID = parseHexField(entry, traceIDConfig.ParseFrom)
+	if t.TraceID.HasValue() {
+		entry.TraceID, errTraceID = parseHexField(entry, t.TraceID.Get().ParseFrom)
 	}
-	if spanIDConfig := t.SpanID.Get(); spanIDConfig != nil {
-		entry.SpanID, errSpanID = parseHexField(entry, spanIDConfig.ParseFrom)
+	if t.SpanID.HasValue() {
+		entry.SpanID, errSpanID = parseHexField(entry, t.SpanID.Get().ParseFrom)
 	}
-	if traceFlagsConfig := t.TraceFlags.Get(); traceFlagsConfig != nil {
-		entry.TraceFlags, errTraceFlags = parseHexField(entry, traceFlagsConfig.ParseFrom)
+	if t.TraceFlags.HasValue() {
+		entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.Get().ParseFrom)
 	}
 	if errTraceID != nil || errTraceFlags != nil || errSpanID != nil {
 		err := errors.NewError("Error decoding traces for logs", "")

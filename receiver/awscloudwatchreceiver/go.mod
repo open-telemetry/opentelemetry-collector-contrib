@@ -67,6 +67,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/extension v1.38.1-0.20250814180350-eb9588bb3b55 // indirect
