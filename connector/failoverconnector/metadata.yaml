@@ -11,3 +11,13 @@ status:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+
+telemetry:
+  metrics:
+    connector_failover_count:
+      enabled: true
+      description: Number of times the connector failed from the respective level
+      unit: "{times}"
+      sum:
+        value_type: int
+        monotonic: true
