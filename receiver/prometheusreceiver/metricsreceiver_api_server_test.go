@@ -63,7 +63,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		require.NoError(t, err)
 		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
-			APIServer: &APIServer{
+			APIServer: APIServer{
 				Enabled: true,
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: endpoint,

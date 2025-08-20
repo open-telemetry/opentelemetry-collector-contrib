@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -66,14 +67,14 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	config := &Config{
 		PrometheusConfig:     (*PromConfig)(pCfg),
 		StartTimeMetricRegex: "",
-		TargetAllocator: &targetallocator.Config{
+		TargetAllocator: configoptional.Some(targetallocator.Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: tas.srv.URL,
 			},
 			CollectorID:  "1",
 			HTTPSDConfig: (*targetallocator.PromHTTPSDConfig)(promSDConfig),
 			Interval:     60 * time.Second,
-		},
+		}),
 	}
 
 	cms := new(consumertest.MetricsSink)
