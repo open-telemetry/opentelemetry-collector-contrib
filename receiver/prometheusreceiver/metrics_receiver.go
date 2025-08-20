@@ -96,7 +96,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 		registry:     registry,
 		targetAllocatorManager: targetallocator.NewManager(
 			set,
-			cfg.TargetAllocator,
+			cfg.TargetAllocator.Get(),
 			&baseCfg,
 			enableNativeHistogramsGate.IsEnabled(),
 		),

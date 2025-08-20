@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
@@ -40,7 +41,7 @@ type Config struct {
 	// ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
-	TargetAllocator *targetallocator.Config `mapstructure:"target_allocator"`
+	TargetAllocator configoptional.Optional[targetallocator.Config] `mapstructure:"target_allocator"`
 
 	//  APIServer has the settings to enable the receiver to host the Prometheus API
 	// server in agent mode. This allows the user to call the endpoint to get
@@ -50,7 +51,7 @@ type Config struct {
 
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
-	if !cfg.PrometheusConfig.ContainsScrapeConfigs() && cfg.TargetAllocator == nil {
+	if !cfg.PrometheusConfig.ContainsScrapeConfigs() && !cfg.TargetAllocator.HasValue() {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 

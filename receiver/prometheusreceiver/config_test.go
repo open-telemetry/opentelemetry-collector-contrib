@@ -57,14 +57,15 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
-	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
-	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)
-	assert.Equal(t, "collector-1", r1.TargetAllocator.CollectorID)
-	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HTTPSDConfig.RefreshInterval)
-	assert.Equal(t, "prometheus", r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
-	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
-	assert.Equal(t, "scrape_prometheus", r1.TargetAllocator.HTTPScrapeConfig.BasicAuth.Username)
-	assert.Equal(t, promConfig.Secret("scrape_changeme"), r1.TargetAllocator.HTTPScrapeConfig.BasicAuth.Password)
+	ta := r1.TargetAllocator.Get()
+	assert.Equal(t, "http://my-targetallocator-service", ta.Endpoint)
+	assert.Equal(t, 30*time.Second, ta.Interval)
+	assert.Equal(t, "collector-1", ta.CollectorID)
+	assert.Equal(t, promModel.Duration(60*time.Second), ta.HTTPSDConfig.RefreshInterval)
+	assert.Equal(t, "prometheus", ta.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("changeme"), ta.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
+	assert.Equal(t, "scrape_prometheus", ta.HTTPScrapeConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("scrape_changeme"), ta.HTTPScrapeConfig.BasicAuth.Password)
 }
 
 func TestLoadTargetAllocatorConfig(t *testing.T) {
@@ -80,12 +81,13 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
-	assert.Equal(t, 5*time.Second, r0.TargetAllocator.Timeout)
-	assert.Equal(t, "client.crt", r0.TargetAllocator.TLS.CertFile)
-	assert.Equal(t, "client.key", r0.TargetAllocator.TLS.KeyFile)
-	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
-	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+	ta0 := r0.TargetAllocator.Get()
+	assert.Equal(t, "http://localhost:8080", ta0.Endpoint)
+	assert.Equal(t, 5*time.Second, ta0.Timeout)
+	assert.Equal(t, "client.crt", ta0.TLS.CertFile)
+	assert.Equal(t, "client.key", ta0.TLS.KeyFile)
+	assert.Equal(t, 30*time.Second, ta0.Interval)
+	assert.Equal(t, "collector-1", ta0.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withScrape").String())
@@ -96,9 +98,10 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
-	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
-	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+	ta1 := r0.TargetAllocator.Get()
+	assert.Equal(t, "http://localhost:8080", ta1.Endpoint)
+	assert.Equal(t, 30*time.Second, ta1.Interval)
+	assert.Equal(t, "collector-1", ta1.CollectorID)
 
 	assert.Len(t, r1.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
