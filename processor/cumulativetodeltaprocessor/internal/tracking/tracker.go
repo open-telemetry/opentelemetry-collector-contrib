@@ -65,10 +65,11 @@ type State struct {
 }
 
 type DeltaValue struct {
-	StartTimestamp pcommon.Timestamp
-	FloatValue     float64
-	IntValue       int64
-	HistogramValue *HistogramPoint
+	StartTimestamp    pcommon.Timestamp
+	FloatValue        float64
+	IntValue          int64
+	HistogramValue    *HistogramPoint
+	ExpHistogramValue *ExpHistogramPoint
 }
 
 func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initalValue InitialValue) *MetricTracker {
@@ -123,7 +124,10 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		case pmetric.MetricTypeSum:
 			out.IntValue = metricPoint.IntValue
 			out.FloatValue = metricPoint.FloatValue
-		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+		case pmetric.MetricTypeExponentialHistogram:
+			val := metricPoint.ExpHistogramValue.Clone()
+			out.ExpHistogramValue = &val
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 		}
 		switch t.initialValue {
 		case InitialValueAuto:
@@ -171,6 +175,33 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		}
 
 		out.HistogramValue = &delta
+	case pmetric.MetricTypeExponentialHistogram:
+		value := metricPoint.ExpHistogramValue
+		prevValue := state.PrevPoint.ExpHistogramValue
+		if math.IsNaN(value.Sum) {
+			value.Sum = prevValue.Sum
+		}
+
+		if !value.isCompatible(prevValue) || value.isReset(prevValue) {
+			valid = false
+		}
+
+		delta := value.Clone()
+
+		if valid {
+			delta.Count -= prevValue.Count
+			delta.Sum -= prevValue.Sum
+			delta.ZeroCount -= prevValue.ZeroCount
+
+			for index := 0; index < len(delta.PosBuckets) && index < len(prevValue.PosBuckets); index++ {
+				delta.PosBuckets[index] -= prevValue.PosBuckets[index]
+			}
+			for index := 0; index < len(delta.NegBuckets) && index < len(prevValue.NegBuckets); index++ {
+				delta.NegBuckets[index] -= prevValue.NegBuckets[index]
+			}
+		}
+
+		out.ExpHistogramValue = &delta
 	case pmetric.MetricTypeSum:
 		if metricID.IsFloatVal() {
 			value := metricPoint.FloatValue
@@ -195,7 +226,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			out.IntValue = delta
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 	}
 
 	state.PrevPoint = metricPoint

@@ -69,6 +69,8 @@ func getMetricTypeFilter(types []string) (map[pmetric.MetricType]bool, error) {
 			res[pmetric.MetricTypeSum] = true
 		case strings.ToLower(pmetric.MetricTypeHistogram.String()):
 			res[pmetric.MetricTypeHistogram] = true
+		case strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()):
+			res[pmetric.MetricTypeExponentialHistogram] = true
 		default:
 			return nil, fmt.Errorf("unsupported metric type filter: %s", t)
 		}
@@ -131,7 +133,31 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+				case pmetric.MetricTypeExponentialHistogram:
+					ms := m.ExponentialHistogram()
+					if ms.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+						return false
+					}
+
+					if ms.DataPoints().Len() == 0 {
+						return false
+					}
+
+					baseIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.Scope(),
+						MetricType:             m.Type(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+						MetricIsMonotonic:      true,
+						MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+					}
+
+					ctdp.convertExponentialHistogramDataPoints(ms.DataPoints(), baseIdentity)
+
+					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					return ms.DataPoints().Len() == 0
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 					fallthrough
 				default:
 					return false
@@ -231,6 +257,58 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in any, baseI
 					dp.SetSum(delta.HistogramValue.Sum)
 				}
 				dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
+				dp.RemoveMin()
+				dp.RemoveMax()
+				return false
+			}
+
+			return !valid
+		})
+	}
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(in any, baseIdentity tracking.MetricIdentity) {
+	if dps, ok := in.(pmetric.ExponentialHistogramDataPointSlice); ok {
+		dps.RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
+			id := baseIdentity
+			id.StartTimestamp = dp.StartTimestamp()
+			id.Attributes = dp.Attributes()
+
+			if dp.Flags().NoRecordedValue() {
+				// drop points with no value
+				return true
+			}
+
+			point := tracking.ValuePoint{
+				ObservedTimestamp: dp.Timestamp(),
+				ExpHistogramValue: &tracking.ExpHistogramPoint{
+					Count:               dp.Count(),
+					Sum:                 dp.Sum(),
+					Scale:               dp.Scale(),
+					ZeroCount:           dp.ZeroCount(),
+					ZeroThreshold:       dp.ZeroThreshold(),
+					PositiveOffsetIndex: dp.Positive().Offset(),
+					NegativeOffsetIndex: dp.Negative().Offset(),
+					PosBuckets:          dp.Positive().BucketCounts().AsRaw(),
+					NegBuckets:          dp.Negative().BucketCounts().AsRaw(),
+				},
+			}
+
+			trackingPoint := tracking.MetricPoint{
+				Identity: id,
+				Value:    point,
+			}
+			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+
+			if valid {
+				dp.SetStartTimestamp(delta.StartTimestamp)
+				dp.SetCount(delta.ExpHistogramValue.Count)
+				if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+					dp.SetSum(delta.ExpHistogramValue.Sum)
+				}
+				dp.Positive().BucketCounts().FromRaw(delta.ExpHistogramValue.PosBuckets)
+				dp.Negative().BucketCounts().FromRaw(delta.ExpHistogramValue.NegBuckets)
+				dp.SetZeroCount(delta.ExpHistogramValue.ZeroCount)
 				dp.RemoveMin()
 				dp.RemoveMax()
 				return false

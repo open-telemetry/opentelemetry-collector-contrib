@@ -75,8 +75,8 @@ type testHistogramMetric struct {
 func (tm testHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time) {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
-		m.SetName(name)
 		hist := m.SetEmptyHistogram()
+		m.SetName(name)
 
 		if tm.isCumulative[i] {
 			hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -109,6 +109,72 @@ func (tm testHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time
 			if len(tm.flags) > i && len(tm.flags[i]) > index {
 				dp.SetFlags(tm.flags[i][index])
 			}
+		}
+	}
+}
+
+type testExpHistogramMetric struct {
+	metricNames           []string
+	metricScales          [][]int32
+	metricPosIndexOffsets [][]int32
+	metricNegIndexOffsets [][]int32
+	metricZeroThresholds  [][]float64
+	isCumulative          []bool
+	flags                 [][]pmetric.DataPointFlags
+
+	metricCounts     [][]uint64
+	metricSums       [][]float64
+	metricMins       [][]float64
+	metricMaxes      [][]float64
+	metricZeroCounts [][]uint64
+	metricPosCounts  [][][]uint64
+	metricNegCounts  [][][]uint64
+}
+
+func (tm testExpHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time) {
+	for i, name := range tm.metricNames {
+		m := ms.AppendEmpty()
+		m.SetName(name)
+		hist := m.SetEmptyExponentialHistogram()
+
+		if tm.isCumulative[i] {
+			hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		} else {
+			hist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		}
+
+		for index, count := range tm.metricCounts[i] {
+			dp := m.ExponentialHistogram().DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetCount(count)
+			dp.SetScale(tm.metricScales[i][index])
+
+			sums := tm.metricSums[i]
+			if len(sums) > 0 {
+				dp.SetSum(sums[index])
+			}
+			if tm.metricMins != nil {
+				mins := tm.metricMins[i]
+				if len(mins) > 0 {
+					dp.SetMin(mins[index])
+				}
+			}
+			if tm.metricMaxes != nil {
+				maxes := tm.metricMaxes[i]
+				if len(maxes) > 0 {
+					dp.SetMax(maxes[index])
+				}
+			}
+			if len(tm.flags) > i && len(tm.flags[i]) > index {
+				dp.SetFlags(tm.flags[i][index])
+			}
+
+			dp.SetZeroCount(tm.metricZeroCounts[i][index])
+			dp.SetZeroThreshold(tm.metricZeroThresholds[i][index])
+			dp.Positive().BucketCounts().FromRaw(tm.metricPosCounts[i][index])
+			dp.Positive().SetOffset(tm.metricPosIndexOffsets[i][index])
+			dp.Negative().BucketCounts().FromRaw(tm.metricNegCounts[i][index])
+			dp.Negative().SetOffset(tm.metricNegIndexOffsets[i][index])
 		}
 	}
 }
@@ -261,11 +327,11 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				},
 				metricMins: [][]float64{
 					{0, 5.0, 2.0, 3.0},
-					{2.0, 2.0, 2.0},
+					{2.0},
 				},
 				metricMaxes: [][]float64{
 					{0, 800.0, 825.0, 800.0},
-					{3.0, 3.0, 3.0},
+					{3.0},
 				},
 				isCumulative: []bool{true, true},
 			}),
@@ -279,11 +345,11 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				},
 				metricMins: [][]float64{
 					nil,
-					{2.0, 2.0, 2.0},
+					{2.0},
 				},
 				metricMaxes: [][]float64{
 					nil,
-					{3.0, 3.0, 3.0},
+					{3.0},
 				},
 				isCumulative: []bool{false, true},
 			}),
@@ -410,6 +476,329 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			}),
 		},
 		{
+			name: "cumulative_to_delta_exphistogram_min_and_max",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0, 0}, {1}},
+				metricPosIndexOffsets: [][]int32{{5, 5, 5, 5}, {0}},
+				metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2}, {0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0}, {0}},
+				isCumulative:          []bool{true, true},
+
+				metricCounts:     [][]uint64{{0, 180, 220, 283}, {114}},
+				metricSums:       [][]float64{{0, 150, 180, 225}, {90}},
+				metricMins:       [][]float64{{0, 0.1, 0.15, 0.2}, {0.1}},
+				metricMaxes:      [][]float64{{0, 10.0, 12.0, 15.0}, {8.0}},
+				metricZeroCounts: [][]uint64{{0, 5, 10, 20}, {2}},
+				metricPosCounts: [][][]uint64{
+					{{0}, {100, 50, 25}, {120, 60, 30}, {150, 75, 38}},
+					{{64, 32, 16}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{}, {}, {}, {}},
+					{{}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0}, {1}},
+				metricPosIndexOffsets: [][]int32{{5, 5, 5}, {0}},
+				metricNegIndexOffsets: [][]int32{{-2, -2, -2}, {0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0}, {0}},
+				isCumulative:          []bool{false, true},
+
+				metricCounts:     [][]uint64{{180, 40, 63}, {114}},
+				metricSums:       [][]float64{{150, 30, 45}, {90}},
+				metricMins:       [][]float64{nil, {0.1}},
+				metricMaxes:      [][]float64{nil, {8.0}},
+				metricZeroCounts: [][]uint64{{5, 8, 10}, {2}},
+				metricPosCounts: [][][]uint64{
+					{{100, 50, 25}, {20, 10, 5}, {30, 15, 8}},
+					{{64, 32, 16}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{}, {}, {}},
+					{{}},
+				},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_exphistogram_nan_sum",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0, 0}, {1}},
+				metricPosIndexOffsets: [][]int32{{-2, -2, -2, -2}, {0}},
+				metricNegIndexOffsets: [][]int32{{5, 5, 5, 5}, {0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0}, {0}},
+				isCumulative:          []bool{true, true},
+
+				metricCounts:     [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:       [][]float64{{0, 100, math.NaN(), 500}, {4}},
+				metricZeroCounts: [][]uint64{{0, 5, 8, 10}, {2}},
+				metricPosCounts: [][][]uint64{
+					{{0}, {100, 50, 25}, {120, 60, 30}, {150, 75, 38}},
+					{{64, 32, 16}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{}, {}, {}, {}},
+					{{}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0}, {1}},
+				metricPosIndexOffsets: [][]int32{{-2, -2, -2}, {0}},
+				metricNegIndexOffsets: [][]int32{{5, 5, 5}, {0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0}, {0}},
+				isCumulative:          []bool{false, true},
+
+				metricZeroCounts: [][]uint64{{5, 3, 2}, {2}},
+				metricCounts:     [][]uint64{{100, 100, 300}, {4}},
+				metricSums:       [][]float64{{100, math.NaN(), 400}, {4}},
+				metricPosCounts: [][][]uint64{
+					{{100, 50, 25}, {20, 10, 5}, {30, 15, 8}},
+					{{64, 32, 16}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{}, {}, {}},
+					{{}},
+				},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_exphistogram_novalue",
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0, 0}, {1, 1, 1, 1, 1}},
+				metricPosIndexOffsets: [][]int32{{0, 0, 0, 0}, {0, 0, 0, 0, 0}},
+				metricNegIndexOffsets: [][]int32{{0, 0, 0, 0}, {0, 0, 0, 0, 0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0}, {0, 0, 0, 0, 0}},
+				isCumulative:          []bool{true, true},
+				flags: [][]pmetric.DataPointFlags{
+					{zeroFlag, zeroFlag, noValueFlag, zeroFlag},
+					{zeroFlag, zeroFlag, noValueFlag, noValueFlag, zeroFlag},
+				},
+
+				metricCounts:     [][]uint64{{0, 100, 0, 500}, {0, 2, 0, 0, 16}},
+				metricSums:       [][]float64{{0, 100, 0, 500}, {0, 3, 0, 0, 81}},
+				metricZeroCounts: [][]uint64{{0, 5, 0, 10}, {0, 2, 5, 10, 12}},
+				metricPosCounts: [][][]uint64{
+					{{0, 0, 0}, {50, 25, 25}, {0, 0, 0}, {250, 125, 125}},
+					{{0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {21, 40, 20}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{0, 0, 0}, {100, 50, 25}, {0, 0, 0}, {150, 75, 38}},
+					{{0, 0, 0}, {2, 2, 2}, {0, 0, 0}, {0, 0, 0}, {4, 3, 4}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0}, {1, 1}},
+				metricPosIndexOffsets: [][]int32{{0, 0}, {0, 0}},
+				metricNegIndexOffsets: [][]int32{{0, 0}, {0, 0}},
+				metricZeroThresholds:  [][]float64{{0, 0}, {0, 0}},
+				isCumulative:          []bool{false, false},
+				flags: [][]pmetric.DataPointFlags{
+					{zeroFlag, zeroFlag},
+					{zeroFlag, zeroFlag},
+				},
+
+				metricCounts:     [][]uint64{{100, 400}, {2, 14}},
+				metricSums:       [][]float64{{100, 400}, {3, 78}},
+				metricZeroCounts: [][]uint64{{0, 5}, {2, 5}},
+				metricPosCounts: [][][]uint64{
+					{{50, 25, 25}, {200, 100, 100}},
+					{{1, 1, 1}, {20, 39, 19}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{100, 50, 25}, {50, 25, 13}},
+					{{2, 2, 2}, {2, 1, 2}},
+				},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_exphistogram_one_positive_without_sums",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0, 0}, {1}},
+				metricPosIndexOffsets: [][]int32{{0, 0, 0, 0}, {0}},
+				metricNegIndexOffsets: [][]int32{{0, 0, 0, 0}, {0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0}, {0}},
+				metricZeroCounts:      [][]uint64{{0, 5, 105, 106}, {2}},
+				isCumulative:          []bool{true, true},
+
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{}, {4}},
+				metricPosCounts: [][][]uint64{
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1", "metric_2"},
+				metricScales:          [][]int32{{0, 0, 0}, {1}},
+				metricPosIndexOffsets: [][]int32{{0, 0, 0}, {0}},
+				metricNegIndexOffsets: [][]int32{{0, 0, 0}, {0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0}, {0}},
+				isCumulative:          []bool{false, true},
+
+				metricZeroCounts: [][]uint64{{5, 100, 1}, {2}},
+				metricCounts:     [][]uint64{{100, 100, 300}, {4}},
+				metricSums:       [][]float64{{}, {4}},
+				metricPosCounts: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_exphistogram_incompatible",
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1"},
+				metricScales:          [][]int32{{0, 0, 1, 0, 0, 0}},
+				metricPosIndexOffsets: [][]int32{{0, 0, 0, -1, 0, 0}},
+				metricNegIndexOffsets: [][]int32{{0, 0, 0, 0, -1, 0}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0, 0, 0.5}},
+				isCumulative:          []bool{true},
+
+				metricZeroCounts: [][]uint64{{0, 5, 75, 105, 106, 109}},
+				metricCounts:     [][]uint64{{0, 205, 385, 505, 1269}},
+				metricSums:       [][]float64{{0, 30, 35, 40, 50, 200}},
+				metricPosCounts: [][][]uint64{
+					{{0, 0, 0}, {50, 25, 25}, {75, 40, 40}, {100, 50, 50}, {250, 125, 125}, {280, 150, 150}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{0, 0, 0}, {50, 25, 25}, {75, 40, 40}, {100, 50, 50}, {250, 125, 125}, {280, 150, 150}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1"},
+				metricScales:          [][]int32{{0}},
+				metricPosIndexOffsets: [][]int32{{0}},
+				metricNegIndexOffsets: [][]int32{{0}},
+				metricZeroThresholds:  [][]float64{{0}},
+				isCumulative:          []bool{false},
+
+				metricZeroCounts: [][]uint64{{5}},
+				metricCounts:     [][]uint64{{205}},
+				metricSums:       [][]float64{{30}},
+				metricPosCounts: [][][]uint64{
+					{{50, 25, 25}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{50, 25, 25}},
+				},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_exphistogram_bucket_count_reset",
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1"},
+				metricScales:          [][]int32{{0, 0, 0, 0}},
+				metricPosIndexOffsets: [][]int32{{5, 5, 5, 5}},
+				metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0}},
+				isCumulative:          []bool{true},
+
+				metricCounts:     [][]uint64{{0, 360, 370, 618}},
+				metricSums:       [][]float64{{0, 150, 180, 225}},
+				metricZeroCounts: [][]uint64{{0, 5, 10, 20}},
+				metricPosCounts: [][][]uint64{
+					{{0}, {100, 50, 25}, {180}, {210, 75, 38}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{0}, {80, 60, 40}, {180}, {180, 25, 100}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1"},
+				metricScales:          [][]int32{{0, 0}},
+				metricPosIndexOffsets: [][]int32{{5, 5}},
+				metricNegIndexOffsets: [][]int32{{-2, -2}},
+				metricZeroThresholds:  [][]float64{{0, 0}},
+				isCumulative:          []bool{false},
+
+				metricCounts:     [][]uint64{{360, 248}},
+				metricSums:       [][]float64{{150, 45}},
+				metricZeroCounts: [][]uint64{{5, 10}},
+				metricPosCounts: [][][]uint64{
+					{{100, 50, 25}, {30, 75, 38}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{80, 60, 40}, {0, 25, 100}},
+				},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_exphistogram_count_reset",
+			inMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1"},
+				metricScales:          [][]int32{{0, 0, 0, 0, 0, 0}},
+				metricPosIndexOffsets: [][]int32{{5, 5, 5, 5, 5, 5}},
+				metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2, -2, -2}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0, 0, 0, 0}},
+				isCumulative:          []bool{true},
+
+				metricCounts:     [][]uint64{{0, 360, 320, 608, 685, 770}},
+				metricSums:       [][]float64{{0, 150, 180, 225, 200, 100}},
+				metricZeroCounts: [][]uint64{{0, 5, 10, 20, 10, 15}},
+				metricPosCounts: [][][]uint64{
+					{{0, 0, 0}, {100, 50, 25}, {50, 20, 30}, {150, 75, 38}, {175, 90, 50}, {190, 100, 75}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{0, 0, 0}, {80, 60, 40}, {100, 50, 60}, {150, 75, 100}, {180, 80, 100}, {200, 85, 105}},
+				},
+			}),
+			outMetrics: generateTestExpHistogramMetrics(testExpHistogramMetric{
+				metricNames:           []string{"metric_1"},
+				metricScales:          [][]int32{{0, 0, 0}},
+				metricPosIndexOffsets: [][]int32{{5, 5, 5}},
+				metricNegIndexOffsets: [][]int32{{-2, -2, -2}},
+				metricZeroThresholds:  [][]float64{{0, 0, 0}},
+				isCumulative:          []bool{false},
+
+				metricCounts:     [][]uint64{{360, 288, 85}},
+				metricSums:       [][]float64{{150, 45, -100}},
+				metricZeroCounts: [][]uint64{{5, 10, 5}},
+				metricPosCounts: [][][]uint64{
+					{{100, 50, 25}, {100, 55, 8}, {15, 10, 25}},
+				},
+				metricNegCounts: [][][]uint64{
+					{{80, 60, 40}, {50, 25, 40}, {20, 5, 5}},
+				},
+			}),
+		},
+
+		{
 			name: "cumulative_to_delta_all",
 			include: MatchMetrics{
 				Metrics: []string{".*"},
@@ -532,6 +921,26 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					},
 					isCumulative: []bool{true},
 				},
+				testExpHistogramMetric{
+					metricNames:           []string{"metric_3"},
+					metricScales:          [][]int32{{0, 0, 0, 0}},
+					metricPosIndexOffsets: [][]int32{{5, 5, 5, 5}},
+					metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2}},
+					metricZeroThresholds:  [][]float64{{0, 0, 0, 0}},
+					isCumulative:          []bool{true},
+
+					metricCounts:     [][]uint64{{0, 180, 220, 283}},
+					metricSums:       [][]float64{{0, 150, 180, 225}},
+					metricMins:       [][]float64{{0, 0.1, 0.15, 0.2}},
+					metricMaxes:      [][]float64{{0, 10.0, 12.0, 15.0}},
+					metricZeroCounts: [][]uint64{{0, 5, 10, 20}},
+					metricPosCounts: [][][]uint64{
+						{{0, 0, 0}, {100, 50, 25}, {120, 60, 30}, {150, 75, 38}},
+					},
+					metricNegCounts: [][][]uint64{
+						{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					},
+				},
 			),
 			outMetrics: generateMixedTestMetrics(
 				testSumMetric{
@@ -554,7 +963,26 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+				testExpHistogramMetric{
+					metricNames:           []string{"metric_3"},
+					metricScales:          [][]int32{{0, 0, 0}},
+					metricPosIndexOffsets: [][]int32{{5, 5, 5}},
+					metricNegIndexOffsets: [][]int32{{-2, -2, -2}},
+					metricZeroThresholds:  [][]float64{{0, 0, 0}},
+					isCumulative:          []bool{false},
+
+					metricCounts:     [][]uint64{{180, 40, 63}},
+					metricSums:       [][]float64{{150, 30, 45}},
+					metricZeroCounts: [][]uint64{{5, 8, 10}},
+					metricPosCounts: [][][]uint64{
+						{{100, 50, 25}, {20, 10, 5}, {30, 15, 8}},
+					},
+					metricNegCounts: [][][]uint64{
+						{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					},
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_include_histogram_metrics",
@@ -583,6 +1011,26 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					},
 					isCumulative: []bool{true},
 				},
+				testExpHistogramMetric{
+					metricNames:           []string{"metric_3"},
+					metricScales:          [][]int32{{0, 0, 0, 0}},
+					metricPosIndexOffsets: [][]int32{{5, 5, 5, 5}},
+					metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2}},
+					metricZeroThresholds:  [][]float64{{0, 0, 0, 0}},
+					isCumulative:          []bool{true},
+
+					metricCounts:     [][]uint64{{0, 180, 220, 283}},
+					metricSums:       [][]float64{{0, 150, 180, 225}},
+					metricMins:       [][]float64{{0, 0.1, 0.15, 0.2}},
+					metricMaxes:      [][]float64{{0, 10.0, 12.0, 15.0}},
+					metricZeroCounts: [][]uint64{{0, 5, 10, 20}},
+					metricPosCounts: [][][]uint64{
+						{{0, 0, 0}, {100, 50, 25}, {120, 60, 30}, {150, 75, 38}},
+					},
+					metricNegCounts: [][][]uint64{
+						{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					},
+				},
 			),
 			outMetrics: generateMixedTestMetrics(
 				testSumMetric{
@@ -605,7 +1053,118 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+				testExpHistogramMetric{
+					metricNames:           []string{"metric_3"},
+					metricScales:          [][]int32{{0, 0, 0, 0}},
+					metricPosIndexOffsets: [][]int32{{5, 5, 5, 5}},
+					metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2}},
+					metricZeroThresholds:  [][]float64{{0, 0, 0, 0}},
+					isCumulative:          []bool{true},
+
+					metricCounts:     [][]uint64{{0, 180, 220, 283}},
+					metricSums:       [][]float64{{0, 150, 180, 225}},
+					metricMins:       [][]float64{{0, 0.1, 0.15, 0.2}},
+					metricMaxes:      [][]float64{{0, 10.0, 12.0, 15.0}},
+					metricZeroCounts: [][]uint64{{0, 5, 10, 20}},
+					metricPosCounts: [][][]uint64{
+						{{0, 0, 0}, {100, 50, 25}, {120, 60, 30}, {150, 75, 38}},
+					},
+					metricNegCounts: [][][]uint64{
+						{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					},
+				},
+			),
+		},
+		{
+			name: "cumulative_to_delta_include_exp_histogram_metrics",
+			include: MatchMetrics{
+				MetricTypes: []string{"exponentialhistogram"},
+			},
+			inMetrics: generateMixedTestMetrics(
+				testSumMetric{
+					metricNames:  []string{"metric_1"},
+					metricValues: [][]float64{{0, 100, 200, 500}},
+					isCumulative: []bool{true, true},
+					isMonotonic:  []bool{true, true},
+				},
+				testHistogramMetric{
+					metricNames:  []string{"metric_2"},
+					metricCounts: [][]uint64{{0, 100, 200, 500}},
+					metricSums:   [][]float64{{0, 100, 200, 500}},
+					metricBuckets: [][][]uint64{
+						{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					},
+					metricMins: [][]float64{
+						{0, 5.0, 2.0, 3.0},
+					},
+					metricMaxes: [][]float64{
+						{0, 800.0, 825.0, 800.0},
+					},
+					isCumulative: []bool{true},
+				},
+				testExpHistogramMetric{
+					metricNames:           []string{"metric_3"},
+					metricScales:          [][]int32{{0, 0, 0, 0}},
+					metricPosIndexOffsets: [][]int32{{5, 5, 5, 5}},
+					metricNegIndexOffsets: [][]int32{{-2, -2, -2, -2}},
+					metricZeroThresholds:  [][]float64{{0, 0, 0, 0}},
+					isCumulative:          []bool{true},
+
+					metricCounts:     [][]uint64{{0, 180, 220, 283}},
+					metricSums:       [][]float64{{0, 150, 180, 225}},
+					metricMins:       [][]float64{{0, 0.1, 0.15, 0.2}},
+					metricMaxes:      [][]float64{{0, 10.0, 12.0, 15.0}},
+					metricZeroCounts: [][]uint64{{0, 5, 10, 20}},
+					metricPosCounts: [][][]uint64{
+						{{0, 0, 0}, {100, 50, 25}, {120, 60, 30}, {150, 75, 38}},
+					},
+					metricNegCounts: [][][]uint64{
+						{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					},
+				},
+			),
+			outMetrics: generateMixedTestMetrics(
+				testSumMetric{
+					metricNames:  []string{"metric_1"},
+					metricValues: [][]float64{{0, 100, 200, 500}},
+					isCumulative: []bool{true},
+					isMonotonic:  []bool{true},
+				},
+				testHistogramMetric{
+					metricNames:  []string{"metric_2"},
+					metricCounts: [][]uint64{{0, 100, 200, 500}},
+					metricSums:   [][]float64{{0, 100, 200, 500}},
+					metricBuckets: [][][]uint64{
+						{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					},
+					metricMins: [][]float64{
+						{0, 5.0, 2.0, 3.0},
+					},
+					metricMaxes: [][]float64{
+						{0, 800.0, 825.0, 800.0},
+					},
+					isCumulative: []bool{true},
+				},
+				testExpHistogramMetric{
+					metricNames:           []string{"metric_3"},
+					metricScales:          [][]int32{{0, 0, 0}},
+					metricPosIndexOffsets: [][]int32{{5, 5, 5}},
+					metricNegIndexOffsets: [][]int32{{-2, -2, -2}},
+					metricZeroThresholds:  [][]float64{{0, 0, 0}},
+					isCumulative:          []bool{false},
+
+					metricCounts:     [][]uint64{{180, 40, 63}},
+					metricSums:       [][]float64{{150, 30, 45}},
+					metricZeroCounts: [][]uint64{{5, 8, 10}},
+					metricPosCounts: [][][]uint64{
+						{{100, 50, 25}, {20, 10, 5}, {30, 15, 8}},
+					},
+					metricNegCounts: [][][]uint64{
+						{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					},
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_unsupported_include_metric_type",
@@ -646,8 +1205,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			}
 			assert.NotNil(t, mgp)
 			assert.NoError(t, err)
-
 			caps := mgp.Capabilities()
+
 			assert.True(t, caps.MutatesData)
 			ctx := context.Background()
 			require.NoError(t, mgp.Start(ctx, nil))
@@ -718,6 +1277,29 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags())
 					}
 				}
+
+				if eM.Type() == pmetric.MetricTypeExponentialHistogram {
+					eDataPoints := eM.ExponentialHistogram().DataPoints()
+					aDataPoints := aM.ExponentialHistogram().DataPoints()
+
+					require.Equal(t, eDataPoints.Len(), aDataPoints.Len(), "Number of datapoints does not match")
+					require.Equal(t, eM.ExponentialHistogram().AggregationTemporality(), aM.ExponentialHistogram().AggregationTemporality(), "Temporality does not match")
+
+					for j := 0; j < eDataPoints.Len(); j++ {
+						require.Equal(t, eDataPoints.At(j).Count(), aDataPoints.At(j).Count(), "Count does not match at index %d", j)
+						require.Equal(t, eDataPoints.At(j).HasSum(), aDataPoints.At(j).HasSum(), "HasSum does not match at index %d", j)
+						require.Equal(t, eDataPoints.At(j).HasMin(), aDataPoints.At(j).HasMin(), "HasMin does not match at index %d", j)
+						require.Equal(t, eDataPoints.At(j).HasMax(), aDataPoints.At(j).HasMax(), "HasMax does not match at index %d", j)
+						if math.IsNaN(eDataPoints.At(j).Sum()) {
+							require.True(t, math.IsNaN(aDataPoints.At(j).Sum()), "Expected sum to be NaN at index %d", j)
+						} else {
+							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum(), "Sum does not match at index %d", j)
+						}
+						require.Equal(t, eDataPoints.At(j).Positive().BucketCounts(), aDataPoints.At(j).Positive().BucketCounts(), "Positive bucket counts do not match at index %d", j)
+						require.Equal(t, eDataPoints.At(j).Negative().BucketCounts(), aDataPoints.At(j).Negative().BucketCounts(), "Negative bucket counts do not match at index %d", j)
+						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags(), "Flags do not match at index %d", j)
+					}
+				}
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))
@@ -747,7 +1329,18 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 	return md
 }
 
-func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric) pmetric.Metrics {
+func generateTestExpHistogramMetrics(tm testExpHistogramMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	now := time.Now()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+	tm.addToMetrics(ms, now)
+
+	return md
+}
+
+func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric, tehm testExpHistogramMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
 
@@ -756,6 +1349,7 @@ func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric) pmetri
 
 	tsm.addToMetrics(ms, now)
 	thm.addToMetrics(ms, now)
+	tehm.addToMetrics(ms, now)
 
 	return md
 }
