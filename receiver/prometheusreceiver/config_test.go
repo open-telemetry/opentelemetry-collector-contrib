@@ -389,7 +389,6 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(cfg))
 
 	r1 := cfg.(*Config)
-	assert.NotNil(t, r1.APIServer)
 	assert.False(t, r1.APIServer.Enabled)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
@@ -400,7 +399,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 
 	r2 := cfg.(*Config)
 	assert.NotNil(t, r2.PrometheusConfig)
-	assert.Nil(t, r2.APIServer)
+	assert.False(t, r2.APIServer.Enabled)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
 	require.NoError(t, err)
