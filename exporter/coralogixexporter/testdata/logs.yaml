@@ -1,5 +1,4 @@
 coralogix/logs:
-  endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   logs:
     endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

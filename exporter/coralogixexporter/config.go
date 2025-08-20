@@ -31,11 +31,6 @@ type Config struct {
 	// GRPC Settings used with Domain
 	DomainSettings configgrpc.ClientConfig `mapstructure:"domain_settings"`
 
-	// Deprecated: [v0.60.0] Coralogix jaeger based trace endpoint
-	// will be removed in the next version
-	// Please use OTLP endpoint using traces.endpoint
-	configgrpc.ClientConfig `mapstructure:",squash"`
-
 	// Coralogix traces ingress endpoint
 	Traces configgrpc.ClientConfig `mapstructure:"traces"`
 
@@ -92,12 +87,6 @@ func (c *Config) Validate() error {
 	if c.AppName == "" {
 		return errors.New("`application_name` not specified, please fix the configuration")
 	}
-
-	if len(c.Headers) == 0 {
-		c.Headers = make(map[string]configopaque.String)
-	}
-	c.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.Headers["appName"] = configopaque.String(c.AppName)
 
 	if c.RateLimiter.Enabled {
 		if c.RateLimiter.Threshold <= 0 {
