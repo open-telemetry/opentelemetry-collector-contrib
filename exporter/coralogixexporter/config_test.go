@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -73,23 +72,6 @@ func TestLoadConfig(t *testing.T) {
 					WaitForReady:    false,
 					BalancerName:    "",
 				},
-				ClientConfig: configgrpc.ClientConfig{
-					Endpoint: "https://",
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
-					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					Headers: map[string]configopaque.String{
-						"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-						"appName":      "APP_NAME",
-					},
-					BalancerName: "",
-				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   false,
 					Threshold: 10,
@@ -135,23 +117,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
-				ClientConfig: configgrpc.ClientConfig{
-					Endpoint: "https://",
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
-					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					Headers: map[string]configopaque.String{
-						"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-						"appName":      "APP_NAME",
-					},
-					BalancerName: "",
-				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   false,
 					Threshold: 10,

@@ -30,7 +30,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.2
 	github.com/sijms/go-ora/v2 v2.9.0
-	github.com/snowflakedb/gosnowflake v1.15.0
+	github.com/snowflakedb/gosnowflake v1.16.0
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/confmap/xconfmap v0.132.1-0.20250814180350-eb9588bb3b55
@@ -185,8 +185,8 @@ require (
 	golang.org/x/tools v0.35.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
-	google.golang.org/grpc v1.74.2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
