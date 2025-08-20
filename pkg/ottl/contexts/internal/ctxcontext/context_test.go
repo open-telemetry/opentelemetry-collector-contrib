@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -18,13 +19,14 @@ import (
 )
 
 func TestContextClientMetadata(t *testing.T) {
-	clientMD := client.NewMetadata(map[string][]string{
+	clientMDRaw := map[string][]string{
 		"auth":         {"Bearer token123"},
 		"content-type": {"application/json"},
 		"user-agent":   {"test-agent/1.0"},
 		"empty-key":    {},
 		"multi-values": {"value1", "value2"},
-	})
+	}
+	clientMD := client.NewMetadata(clientMDRaw)
 
 	ctx := client.NewContext(t.Context(), client.Info{
 		Metadata: clientMD,
@@ -48,16 +50,17 @@ func TestContextClientMetadata(t *testing.T) {
 
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
-		require.Equal(t, clientMD, val)
 
-		result, ok := val.(client.Metadata)
+		result, ok := val.(pcommon.Map)
 		require.True(t, ok)
 
-		auth := result.Get("auth")
-		assert.Equal(t, []string{"Bearer token123"}, auth)
+		auth, ok := result.Get("auth")
+		require.True(t, ok)
+		require.Equal(t, []any{"Bearer token123"}, auth.Slice().AsRaw())
 
-		contentType := result.Get("content-type")
-		assert.Equal(t, []string{"application/json"}, contentType)
+		contentType, ok := result.Get("content-type")
+		require.True(t, ok)
+		require.Equal(t, []any{"application/json"}, contentType.Slice().AsRaw())
 	})
 
 	t.Run("access specific metadata key", func(t *testing.T) {
@@ -81,7 +84,9 @@ func TestContextClientMetadata(t *testing.T) {
 
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
-		assert.Equal(t, "Bearer token123", val)
+		result, ok := val.(pcommon.Slice)
+		require.True(t, ok)
+		assert.Equal(t, []any{"Bearer token123"}, result.AsRaw())
 	})
 
 	t.Run("access non-existent metadata key", func(t *testing.T) {
@@ -153,8 +158,38 @@ func TestContextClientMetadata(t *testing.T) {
 
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
-		// Should return nil when there are multiple values
-		assert.Nil(t, val)
+		result, ok := val.(pcommon.Slice)
+		require.True(t, ok)
+		assert.Equal(t, []any{"value1", "value2"}, result.AsRaw())
+	})
+
+	t.Run("access metadata key with multiple values by index", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "context",
+			NextPath: &pathtest.Path[testContext]{
+				N: "client",
+				NextPath: &pathtest.Path[testContext]{
+					N: "metadata",
+					KeySlice: []ottl.Key[testContext]{
+						&pathtest.Key[testContext]{
+							S: ottltest.Strp("multi-values"),
+						},
+						&pathtest.Key[testContext]{
+							I: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+		}
+
+		getter, err := parser(path)
+		require.NoError(t, err)
+
+		val, err := getter.Get(ctx, testContext{})
+		require.NoError(t, err)
+		result, ok := val.(string)
+		require.True(t, ok)
+		assert.Equal(t, "value1", result)
 	})
 
 	t.Run("cannot set entire metadata", func(t *testing.T) {
@@ -232,54 +267,9 @@ func TestContextClientMetadata(t *testing.T) {
 
 		val, err := getter.Get(emptyCtx, testContext{})
 		require.NoError(t, err)
-		// Should return empty metadata when no client is in context
-		emptyMetadata := client.Metadata{}
-		assert.Equal(t, emptyMetadata, val)
-	})
-
-	t.Run("access different metadata keys", func(t *testing.T) {
-		testCases := []struct {
-			name     string
-			key      string
-			expected string
-		}{
-			{
-				name:     "content-type header",
-				key:      "content-type",
-				expected: "application/json",
-			},
-			{
-				name:     "user-agent header",
-				key:      "user-agent",
-				expected: "test-agent/1.0",
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				path := &pathtest.Path[testContext]{
-					N: "context",
-					NextPath: &pathtest.Path[testContext]{
-						N: "client",
-						NextPath: &pathtest.Path[testContext]{
-							N: "metadata",
-							KeySlice: []ottl.Key[testContext]{
-								&pathtest.Key[testContext]{
-									S: ottltest.Strp(tc.key),
-								},
-							},
-						},
-					},
-				}
-
-				getter, err := parser(path)
-				require.NoError(t, err)
-
-				val, err := getter.Get(ctx, testContext{})
-				require.NoError(t, err)
-				assert.Equal(t, tc.expected, val)
-			})
-		}
+		// Should return empty pcommon.Map when no client is in context
+		emptyMap := pcommon.NewMap()
+		assert.Equal(t, emptyMap, val)
 	})
 }
 
@@ -341,10 +331,14 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
-		m, ok := val.(map[string]string)
+		m, ok := val.(pcommon.Map)
 		require.True(t, ok)
-		assert.Equal(t, "user-123", m["subject"])
-		assert.Equal(t, "[\"admin\",\"user\"]", m["roles"]) // JSON stringified slice
+		user, ok := m.Get("subject")
+		require.True(t, ok)
+		assert.Equal(t, "user-123", user.AsString())
+		roles, ok := m.Get("roles")
+		require.True(t, ok)
+		assert.Equal(t, "[\"admin\",\"user\"]", roles.AsString())
 
 		err = getter.Set(ctx, testContext{}, map[string]string{"k": "v"})
 		require.Error(t, err)
@@ -398,7 +392,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 	})
 
 	t.Run("attributes key without keys error", func(t *testing.T) {
-		getter := accessAuthAttributesKey[testContext]([]ottl.Key[testContext]{})
+		getter := accessClientAuthAttributesKey[testContext]([]ottl.Key[testContext]{})
 		_, err := getter.Get(ctx, testContext{})
 		require.Error(t, err)
 		assert.Equal(t, "cannot get map value without keys", err.Error())
@@ -433,10 +427,15 @@ func TestContextGrpcMetadata(t *testing.T) {
 		require.NoError(t, err)
 		val, err := getter.Get(ctxWithMD, testContext{})
 		require.NoError(t, err)
-		mdVal, ok := val.(metadata.MD)
+		mdVal, ok := val.(pcommon.Map)
 		require.True(t, ok)
-		assert.Equal(t, []string{"v1", "v2"}, mdVal.Get("k1"))
-		assert.Equal(t, []string{"only"}, mdVal.Get("single"))
+		k, ok := mdVal.Get("k1")
+		require.True(t, ok)
+		assert.Equal(t, []any{"v1", "v2"}, k.Slice().AsRaw())
+
+		s, ok := mdVal.Get("single")
+		require.True(t, ok)
+		assert.Equal(t, []any{"only"}, s.Slice().AsRaw())
 
 		err = getter.Set(ctxWithMD, testContext{}, metadata.MD{})
 		require.Error(t, err)
@@ -460,7 +459,9 @@ func TestContextGrpcMetadata(t *testing.T) {
 		require.NoError(t, err)
 		val, err := getter.Get(ctxWithMD, testContext{})
 		require.NoError(t, err)
-		assert.Equal(t, []string{"v1", "v2"}, val)
+		sl, ok := val.(pcommon.Slice)
+		require.True(t, ok)
+		assert.Equal(t, []any{"v1", "v2"}, sl.AsRaw())
 
 		err = getter.Set(ctxWithMD, testContext{}, []string{"x"})
 		require.Error(t, err)
@@ -488,7 +489,7 @@ func TestContextGrpcMetadata(t *testing.T) {
 	})
 
 	t.Run("grpc metadata without keys error", func(t *testing.T) {
-		getter := accessGrpcMetadataContextKey[testContext]([]ottl.Key[testContext]{})
+		getter := accessGRPCMetadataKey[testContext]([]ottl.Key[testContext]{})
 		_, err := getter.Get(ctxWithMD, testContext{})
 		require.Error(t, err)
 		assert.Equal(t, "cannot get map value without keys", err.Error())

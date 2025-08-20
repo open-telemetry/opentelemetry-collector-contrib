@@ -28,7 +28,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return nil, nil
 	}
 
-	return getIndexableValue[K](ctx, tCtx, val, keys[1:])
+	return GetIndexableValue[K](ctx, tCtx, val, keys[1:])
 }
 
 func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], val any) error {
