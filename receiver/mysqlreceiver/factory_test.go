@@ -4,6 +4,7 @@
 package mysqlreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 

@@ -5,6 +5,7 @@ package mysqlreceiver
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
