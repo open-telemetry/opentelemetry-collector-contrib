@@ -1,0 +1,85 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: cloudaudit.googleapis.com%2Factivity
+        - key: gcp.resource_type
+          value:
+            stringValue: k8s_cluster
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+        - key: gcp.label.location
+          value:
+            stringValue: us-central1-c
+        - key: gcp.label.cluster_name
+          value:
+            stringValue: ensemble-k8s-dkohl
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 91515bc0-f1e8-4365-9bf5-e24ce587b653
+              - key: gcp.audit.service.name
+                value:
+                  stringValue: k8s.io
+              - key: gcp.audit.method.name
+                value:
+                  stringValue: io.k8s.coordination.v1.leases.update
+              - key: gcp.audit.resource.name
+                value:
+                  stringValue: coordination.k8s.io/v1/namespaces/kube-system/leases/gcp-controller-manager
+              - key: rpc.jsonrpc.error_code
+                value:
+                  intValue: "0"
+              - key: user.email
+                value:
+                  stringValue: system:gcp-controller-manager
+              - key: gcp.audit.authorization
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: permission
+                              value:
+                                stringValue: io.k8s.coordination.v1.leases.update
+                            - key: granted
+                              value:
+                                boolValue: true
+                            - key: resource
+                              value:
+                                stringValue: coordination.k8s.io/v1/namespaces/kube-system/leases/gcp-controller-manager
+              - key: client.address
+                value:
+                  stringValue: 172.16.0.3
+              - key: user_agent.original
+                value:
+                  stringValue: gcp-controller-manager/v0.0.0 (linux/amd64) kubernetes/$Format/leader-election
+              - key: gcp.label.authorization.k8_s.io/reason
+                value:
+                  stringValue: 'RBAC: allowed by ClusterRoleBinding "system:gcp-controller-manager" of ClusterRole "system:gcp-controller-manager" to User "system:gcp-controller-manager"'
+              - key: gcp.label.authorization.k8_s.io/decision
+                value:
+                  stringValue: allow
+              - key: gcp.operation.id
+                value:
+                  stringValue: 91515bc0-f1e8-4365-9bf5-e24ce587b653
+              - key: gcp.operation.producer
+                value:
+                  stringValue: k8s.io
+              - key: gcp.operation.first
+                value:
+                  boolValue: true
+              - key: gcp.operation.last
+                value:
+                  boolValue: true
+            body: {}
+            observedTimeUnixNano: "1755262477402958638"
+            timeUnixNano: "1755262474966334000"
+        scope: {}

@@ -80,4 +80,5 @@ resourceLogs:
                       stringValue: cloudresourcemanager.googleapis.com
             spanId: ""
             traceId: ""
+            timeUnixNano: "1714905079455706870"
         scope: {}
