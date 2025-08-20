@@ -5,6 +5,7 @@ package tracking
 
 import (
 	"context"
+	"math"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,11 +31,22 @@ func TestMetricTracker_Convert(t *testing.T) {
 	miIntSum.MetricValueType = pmetric.NumberDataPointValueTypeInt
 	miSum.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
+	miHistogram := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricIsMonotonic:      true,
+		MetricName:             "",
+		MetricUnit:             "",
+		Attributes:             pcommon.NewMap(),
+	}
+
 	type subTest struct {
 		name    string
 		value   ValuePoint
 		wantOut DeltaValue
 		noOut   bool
+		invalid bool
 	}
 
 	future := time.Now().Add(1 * time.Hour)
@@ -45,11 +57,13 @@ func TestMetricTracker_Convert(t *testing.T) {
 			ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
 			FloatValue:        225,
 			IntValue:          225,
+			HistogramValue:    &HistogramPoint{Count: 4, Sum: 26, Buckets: []uint64{1, 3, 3, 4}},
 		},
 		wantOut: DeltaValue{
 			StartTimestamp: pcommon.NewTimestampFromTime(future),
 			FloatValue:     125,
 			IntValue:       125,
+			HistogramValue: &HistogramPoint{Count: 1, Sum: 1, Buckets: []uint64{1, 1, 1, 1}},
 		},
 	}
 
@@ -68,10 +82,12 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future),
 						FloatValue:        100,
 						IntValue:          100,
+						HistogramValue:    &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 					wantOut: DeltaValue{
-						FloatValue: 100,
-						IntValue:   100,
+						FloatValue:     100,
+						IntValue:       100,
+						HistogramValue: &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 				},
 				keepSubsequentTest,
@@ -86,6 +102,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future),
 						FloatValue:        100,
 						IntValue:          100,
+						HistogramValue:    &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 					noOut: true,
 				},
@@ -101,6 +118,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future),
 						FloatValue:        100,
 						IntValue:          100,
+						HistogramValue:    &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 					noOut: true,
 				},
@@ -117,6 +135,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future),
 						FloatValue:        100,
 						IntValue:          100,
+						HistogramValue:    &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 					noOut: true,
 				},
@@ -133,11 +152,13 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
 						FloatValue:        100.0,
 						IntValue:          100,
+						HistogramValue:    &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 					wantOut: DeltaValue{
 						StartTimestamp: pcommon.NewTimestampFromTime(future),
 						FloatValue:     100.0,
 						IntValue:       100,
+						HistogramValue: &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
 					},
 				},
 				{
@@ -146,11 +167,13 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(2 * time.Minute)),
 						FloatValue:        225.0,
 						IntValue:          225,
+						HistogramValue:    &HistogramPoint{Count: 4, Sum: 26, Buckets: []uint64{1, 3, 3, 4}},
 					},
 					wantOut: DeltaValue{
 						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
 						FloatValue:     125.0,
 						IntValue:       125,
+						HistogramValue: &HistogramPoint{Count: 1, Sum: 1, Buckets: []uint64{1, 1, 1, 1}},
 					},
 				},
 				{
@@ -159,6 +182,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(3 * time.Minute)),
 						FloatValue:        75.0,
 						IntValue:          75,
+						HistogramValue:    &HistogramPoint{Count: 2, Sum: 25, Buckets: []uint64{0, 1, 2, 3}},
 					},
 					noOut: true,
 				},
@@ -168,11 +192,13 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(4 * time.Minute)),
 						FloatValue:        300.0,
 						IntValue:          300,
+						HistogramValue:    &HistogramPoint{Count: 4, Sum: 26, Buckets: []uint64{0, 3, 2, 3}},
 					},
 					wantOut: DeltaValue{
 						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(3 * time.Minute)),
 						FloatValue:     225.0,
 						IntValue:       225,
+						HistogramValue: &HistogramPoint{Count: 2, Sum: 1, Buckets: []uint64{0, 2, 0, 0}},
 					},
 				},
 				{
@@ -181,12 +207,61 @@ func TestMetricTracker_Convert(t *testing.T) {
 						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(5 * time.Minute)),
 						FloatValue:        325.0,
 						IntValue:          325,
+						HistogramValue:    &HistogramPoint{Count: 6, Sum: 28, Buckets: []uint64{0, 3, 4, 5}},
 					},
 					wantOut: DeltaValue{
 						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(4 * time.Minute)),
 						FloatValue:     25.0,
 						IntValue:       25,
+						HistogramValue: &HistogramPoint{Count: 2, Sum: 2, Buckets: []uint64{0, 0, 2, 2}},
 					},
+				},
+			},
+		},
+		{
+			initValue:       InitialValueAuto,
+			metricStartTime: pcommon.NewTimestampFromTime(future),
+			tests: []subTest{
+				{
+					name: "histogram - set initial value",
+					value: ValuePoint{
+						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
+						HistogramValue:    &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
+					},
+					wantOut: DeltaValue{
+						StartTimestamp: pcommon.NewTimestampFromTime(future),
+						HistogramValue: &HistogramPoint{Count: 3, Sum: 25, Buckets: []uint64{0, 2, 2, 3}},
+					},
+				},
+				{
+					name: "histogram - restart if bucket count is lower",
+					value: ValuePoint{
+						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(2 * time.Minute)),
+						HistogramValue:    &HistogramPoint{Count: 4, Sum: 11, Buckets: []uint64{0, 1, 3, 4}},
+					},
+					wantOut: DeltaValue{
+						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
+						HistogramValue: &HistogramPoint{Count: 4, Sum: 11, Buckets: []uint64{0, 1, 3, 4}},
+					},
+				},
+				{
+					name: "histogram - keep sum on NaN",
+					value: ValuePoint{
+						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(3 * time.Minute)),
+						HistogramValue:    &HistogramPoint{Count: 5, Sum: math.NaN(), Buckets: []uint64{1, 2, 3, 4}},
+					},
+					wantOut: DeltaValue{
+						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(2 * time.Minute)),
+						HistogramValue: &HistogramPoint{Count: 1, Sum: 0, Buckets: []uint64{1, 1, 0, 0}},
+					}},
+				{
+					name: "histogram - drop on mismatching buckets",
+					value: ValuePoint{
+						ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(4 * time.Minute)),
+						HistogramValue:    &HistogramPoint{Count: 99, Sum: 99, Buckets: []uint64{0}},
+					},
+					noOut:   true,
+					invalid: true,
 				},
 			},
 		},
@@ -200,30 +275,50 @@ func TestMetricTracker_Convert(t *testing.T) {
 			miSum.StartTimestamp = tt.metricStartTime
 			miIntSum := miIntSum
 			miIntSum.StartTimestamp = tt.metricStartTime
+			miHistogram := miHistogram
+			miHistogram.StartTimestamp = tt.metricStartTime
 
 			for _, ttt := range tt.tests {
 				t.Run(ttt.name, func(t *testing.T) {
-					floatPoint := MetricPoint{
-						Identity: miSum,
-						Value:    ttt.value,
-					}
-					intPoint := MetricPoint{
-						Identity: miIntSum,
-						Value:    ttt.value,
-					}
-
-					gotOut, valid := m.Convert(floatPoint)
-					if !ttt.noOut {
-						require.True(t, valid)
-						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
-						assert.Equal(t, ttt.wantOut.FloatValue, gotOut.FloatValue)
+					if ttt.value.FloatValue != 0 {
+						floatPoint := MetricPoint{
+							Identity: miSum,
+							Value:    ttt.value,
+						}
+						gotOut, valid := m.Convert(floatPoint)
+						if !ttt.noOut {
+							require.True(t, valid)
+							assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+							assert.Equal(t, ttt.wantOut.FloatValue, gotOut.FloatValue)
+						}
 					}
 
-					gotOut, valid = m.Convert(intPoint)
-					if !ttt.noOut {
-						require.True(t, valid)
-						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
-						assert.Equal(t, ttt.wantOut.IntValue, gotOut.IntValue)
+					if ttt.value.IntValue != 0 {
+						intPoint := MetricPoint{
+							Identity: miIntSum,
+							Value:    ttt.value,
+						}
+						gotOut, valid := m.Convert(intPoint)
+						if !ttt.noOut {
+							require.True(t, valid)
+							assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+							assert.Equal(t, ttt.wantOut.IntValue, gotOut.IntValue)
+						}
+					}
+
+					if ttt.value.HistogramValue != nil {
+						histogramPoint := MetricPoint{
+							Identity: miHistogram,
+							Value:    ttt.value,
+						}
+						gotOut, valid := m.Convert(histogramPoint)
+						if !ttt.noOut {
+							require.True(t, valid)
+							assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+							assert.Equal(t, ttt.wantOut.HistogramValue, gotOut.HistogramValue)
+						} else if ttt.invalid {
+							require.False(t, valid)
+						}
 					}
 				})
 			}
