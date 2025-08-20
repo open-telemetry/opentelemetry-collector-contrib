@@ -92,6 +92,7 @@ func (c *ZorkianConsumer) ConsumeTimeSeries(
 	dims *metrics.Dimensions,
 	typ metrics.DataType,
 	timestamp uint64,
+	_ int64,
 	value float64,
 ) {
 	dt := c.toDataType(typ)
@@ -105,6 +106,7 @@ func (c *ZorkianConsumer) ConsumeSketch(
 	_ context.Context,
 	dims *metrics.Dimensions,
 	timestamp uint64,
+	_ int64,
 	sketch *quantile.Sketch,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{

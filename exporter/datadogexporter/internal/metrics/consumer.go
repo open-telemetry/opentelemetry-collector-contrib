@@ -106,10 +106,11 @@ func (c *Consumer) ConsumeTimeSeries(
 	dims *metrics.Dimensions,
 	typ metrics.DataType,
 	timestamp uint64,
+	interval int64,
 	value float64,
 ) {
 	dt := c.toDataType(typ)
-	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met := NewMetric(dims.Name(), dt, timestamp, interval, value, dims.Tags())
 	met.SetResources([]datadogV2.MetricResource{
 		{
 			Name: datadog.PtrString(dims.Host()),
@@ -124,13 +125,14 @@ func (c *Consumer) ConsumeSketch(
 	_ context.Context,
 	dims *metrics.Dimensions,
 	timestamp uint64,
+	interval int64,
 	sketch *quantile.Sketch,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
 		Name:     dims.Name(),
 		Tags:     dims.Tags(),
 		Host:     dims.Host(),
-		Interval: 1,
+		Interval: interval,
 		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),
 			Sketch: sketch,
