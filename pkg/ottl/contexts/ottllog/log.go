@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcontext"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -128,6 +129,7 @@ func EnablePathContextNames() ottl.Option[TransformContext] {
 			ctxscope.LegacyName,
 			ctxscope.Name,
 			ctxresource.Name,
+			ctxcontext.Name,
 		})(p)
 	}
 }
@@ -209,5 +211,6 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.Pa
 			ctxscope.Name:       ctxscope.PathGetSetter[TransformContext],
 			ctxscope.LegacyName: ctxscope.PathGetSetter[TransformContext],
 			ctxlog.Name:         ctxlog.PathGetSetter[TransformContext],
+			ctxcontext.Name:     ctxcontext.PathGetSetter[TransformContext],
 		})
 }

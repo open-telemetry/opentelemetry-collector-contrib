@@ -1,47 +1,37 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlscope // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
-
+package ottlcontext // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcontext"
 import (
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcontext"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"go.opentelemetry.io/collector/component"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcontext"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-// ContextName is the name of the context for instrumentation scopes.
+// ContextName is the name of the context for context.
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
-const ContextName = ctxscope.Name
+const ContextName = ctxcontext.Name
 
 var (
-	_ ctxresource.Context     = (*TransformContext)(nil)
-	_ ctxscope.Context        = (*TransformContext)(nil)
 	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 )
 
-// TransformContext represents an instrumentation scope and its associated hierarchy.
+// TransformContext its associated hierarchy.
 type TransformContext struct {
-	instrumentationScope pcommon.InstrumentationScope
-	resource             pcommon.Resource
-	cache                pcommon.Map
-	schemaURLItem        ctxcommon.SchemaURLItem
+	cache pcommon.Map
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
-	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	err := encoder.AddObject("cache", logging.Map(tCtx.cache))
 	return err
 }
 
@@ -49,37 +39,14 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 type TransformContextOption func(*TransformContext)
 
 // NewTransformContext creates a new TransformContext with the provided parameters.
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) TransformContext {
+func NewTransformContext(options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
-		instrumentationScope: instrumentationScope,
-		resource:             resource,
-		cache:                pcommon.NewMap(),
-		schemaURLItem:        schemaURLItem,
+		cache: pcommon.NewMap(),
 	}
 	for _, opt := range options {
 		opt(&tc)
 	}
 	return tc
-}
-
-// GetInstrumentationScope returns the instrumentation scope from the TransformContext.
-func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return tCtx.instrumentationScope
-}
-
-// GetResource returns the resource from the TransformContext.
-func (tCtx TransformContext) GetResource() pcommon.Resource {
-	return tCtx.resource
-}
-
-// GetScopeSchemaURLItem returns the schema URL item for the scope from the TransformContext.
-func (tCtx TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
-	return tCtx.schemaURLItem
-}
-
-// GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
-func (tCtx TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
-	return tCtx.schemaURLItem
 }
 
 // EnablePathContextNames enables the support for path's context names on statements.
@@ -89,11 +56,7 @@ func (tCtx TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem 
 // Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[TransformContext] {
 	return func(p *ottl.Parser[TransformContext]) {
-		ottl.WithPathContextNames[TransformContext]([]string{
-			ContextName,
-			ctxresource.Name,
-			ctxcontext.Name,
-		})(p)
+		ottl.WithPathContextNames[TransformContext]([]string{ContextName})(p)
 	}
 }
 
@@ -135,7 +98,7 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
-// NewParser creates a new scope parser with the provided functions and options.
+// NewParser creates a new context parser with the provided functions and options.
 func NewParser(
 	functions map[string]ottl.Factory[TransformContext],
 	telemetrySettings component.TelemetrySettings,
@@ -151,7 +114,7 @@ func NewParser(
 }
 
 func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
-	return nil, errors.New("instrumentation scope context does not provide Enum support")
+	return nil, errors.New("context context does not provide Enum support")
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {
@@ -160,13 +123,10 @@ func getCache(tCtx TransformContext) pcommon.Map {
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {
 	return ctxcommon.PathExpressionParser(
-		ctxscope.Name,
-		ctxscope.DocRef,
+		ctxcontext.Name,
+		ctxcontext.DocRef,
 		cacheGetter,
 		map[string]ottl.PathExpressionParser[TransformContext]{
-			ctxresource.Name:    ctxresource.PathGetSetter[TransformContext],
-			ctxscope.Name:       ctxscope.PathGetSetter[TransformContext],
-			ctxscope.LegacyName: ctxscope.PathGetSetter[TransformContext],
-			ctxcontext.Name:     ctxcontext.PathGetSetter[TransformContext],
+			ctxcontext.Name: ctxcontext.PathGetSetter[TransformContext],
 		})
 }

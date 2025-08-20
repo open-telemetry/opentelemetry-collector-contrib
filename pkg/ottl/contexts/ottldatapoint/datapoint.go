@@ -6,6 +6,7 @@ package ottldatapoint // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcontext"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -134,6 +135,7 @@ func EnablePathContextNames() ottl.Option[TransformContext] {
 			ctxscope.LegacyName,
 			ctxscope.Name,
 			ctxmetric.Name,
+			ctxcontext.Name,
 		})(p)
 	}
 }
@@ -214,5 +216,6 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.Pa
 			ctxscope.LegacyName: ctxscope.PathGetSetter[TransformContext],
 			ctxmetric.Name:      ctxmetric.PathGetSetter[TransformContext],
 			ctxdatapoint.Name:   ctxdatapoint.PathGetSetter[TransformContext],
+			ctxcontext.Name:     ctxcontext.PathGetSetter[TransformContext],
 		})
 }

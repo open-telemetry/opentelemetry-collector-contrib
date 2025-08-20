@@ -23,20 +23,14 @@ const (
 	DocRef = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlcontext"
 )
 
-func PathExpressionParser[K any]() ottl.PathExpressionParser[K] {
-	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
-		nextPath := path.Next()
-		if nextPath == nil {
-			return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
-		}
-		switch nextPath.Name() {
-		case "client":
-			return accessClient[K](nextPath)
-		case "grpc":
-			return accessGRPC[K](nextPath)
-		default:
-			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
-		}
+func PathGetSetter[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+	switch path.Name() {
+	case "client":
+		return accessClient[K](path)
+	case "grpc":
+		return accessGRPC[K](path)
+	default:
+		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 }
 
@@ -95,6 +89,9 @@ func accessClientAddr[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, _ K) (any, error) {
 			cl := client.FromContext(ctx)
+			if cl.Addr == nil {
+				return nil, nil
+			}
 			return cl.Addr.String(), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
@@ -133,7 +130,7 @@ func accessGRPCMetadataKeys[K any]() ottl.StandardGetSetter[K] {
 		Getter: func(ctx context.Context, _ K) (any, error) {
 			md, ok := metadata.FromIncomingContext(ctx)
 			if !ok {
-				return nil, nil
+				return pcommon.NewMap(), nil
 			}
 			return convertGRPCMetadataToMap(md), nil
 		},
@@ -185,12 +182,12 @@ func accessClientAuth[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 }
 
-func getAuthAttributeValue(attr any) (string, error) {
+func getAuthAttributeValue(attr any) (any, error) {
 	switch a := attr.(type) {
 	case string:
 		return a, nil
 	case nil:
-		return "", nil
+		return nil, nil
 	default:
 		b, err := json.Marshal(attr)
 		if err != nil {
@@ -202,6 +199,9 @@ func getAuthAttributeValue(attr any) (string, error) {
 
 func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
 	authMap := pcommon.NewMap()
+	if authData == nil {
+		return authMap, nil
+	}
 	names := authData.GetAttributeNames()
 	for _, name := range names {
 		attrVal := authData.GetAttribute(name)
@@ -209,7 +209,12 @@ func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
 		if err != nil {
 			return pcommon.NewMap(), err
 		}
-		authMap.PutStr(name, attrStr)
+		switch attrStr.(type) {
+		case string:
+			authMap.PutStr(name, attrStr.(string))
+		default:
+			authMap.PutEmpty(name)
+		}
 	}
 	return authMap, nil
 }
@@ -236,6 +241,9 @@ func accessClientAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSe
 			key, err := ctxutil.GetMapKeyName(ctx, tCtx, keys[0])
 			if err != nil {
 				return nil, err
+			}
+			if cl.Auth == nil {
+				return nil, nil
 			}
 			attrVal := cl.Auth.GetAttribute(*key)
 			attrStr, err := getAuthAttributeValue(attrVal)

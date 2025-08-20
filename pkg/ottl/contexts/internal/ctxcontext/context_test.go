@@ -32,20 +32,15 @@ func TestContextClientMetadata(t *testing.T) {
 		Metadata: clientMD,
 	})
 
-	parser := PathExpressionParser[testContext]()
-
 	t.Run("access entire metadata", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-				},
+				N: "metadata",
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -65,21 +60,18 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("access specific metadata key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{
-							S: ottltest.Strp("auth"),
-						},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{
+						S: ottltest.Strp("auth"),
 					},
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -91,21 +83,18 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("access non-existent metadata key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{
-							S: ottltest.Strp("non-existent"),
-						},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{
+						S: ottltest.Strp("non-existent"),
 					},
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -115,21 +104,18 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("access empty metadata key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{
-							S: ottltest.Strp("empty-key"),
-						},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{
+						S: ottltest.Strp("empty-key"),
 					},
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -139,21 +125,18 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("access metadata key with multiple values", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{
-							S: ottltest.Strp("multi-values"),
-						},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{
+						S: ottltest.Strp("multi-values"),
 					},
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -165,24 +148,21 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("access metadata key with multiple values by index", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{
-							S: ottltest.Strp("multi-values"),
-						},
-						&pathtest.Key[testContext]{
-							I: ottltest.Intp(0),
-						},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{
+						S: ottltest.Strp("multi-values"),
+					},
+					&pathtest.Key[testContext]{
+						I: ottltest.Intp(0),
 					},
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -194,16 +174,13 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("cannot set entire metadata", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-				},
+				N: "metadata",
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		newMetadata := client.NewMetadata(map[string][]string{
@@ -217,21 +194,18 @@ func TestContextClientMetadata(t *testing.T) {
 
 	t.Run("cannot set specific metadata key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{
-							S: ottltest.Strp("auth"),
-						},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{
+						S: ottltest.Strp("auth"),
 					},
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		err = getter.Set(ctx, testContext{}, "new-value")
@@ -253,16 +227,13 @@ func TestContextClientMetadata(t *testing.T) {
 		emptyCtx := t.Context()
 
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-				},
+				N: "metadata",
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(emptyCtx, testContext{})
@@ -274,19 +245,14 @@ func TestContextClientMetadata(t *testing.T) {
 }
 
 func TestContextClientAddr(t *testing.T) {
-	parser := PathExpressionParser[testContext]()
-
 	path := &pathtest.Path[testContext]{
-		N: "context",
+		N: "client",
 		NextPath: &pathtest.Path[testContext]{
-			N: "client",
-			NextPath: &pathtest.Path[testContext]{
-				N: "addr",
-			},
+			N: "addr",
 		},
 	}
 
-	getter, err := parser(path)
+	getter, err := PathGetSetter[testContext](path)
 	require.NoError(t, err)
 
 	addr := testAddr{"127.0.0.1:4317"}
@@ -302,8 +268,6 @@ func TestContextClientAddr(t *testing.T) {
 }
 
 func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
-	parser := PathExpressionParser[testContext]()
-
 	auth := testAuth{
 		attrs: map[string]any{
 			"subject": "user-123",
@@ -314,19 +278,16 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 
 	t.Run("all attributes map", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
+				N: "auth",
 				NextPath: &pathtest.Path[testContext]{
-					N: "auth",
-					NextPath: &pathtest.Path[testContext]{
-						N: "attributes",
-					},
+					N: "attributes",
 				},
 			},
 		}
 
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 
 		val, err := getter.Get(ctx, testContext{})
@@ -347,21 +308,18 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 
 	t.Run("specific attribute key present", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
+				N: "auth",
 				NextPath: &pathtest.Path[testContext]{
-					N: "auth",
-					NextPath: &pathtest.Path[testContext]{
-						N: "attributes",
-						KeySlice: []ottl.Key[testContext]{
-							&pathtest.Key[testContext]{S: ottltest.Strp("subject")},
-						},
+					N: "attributes",
+					KeySlice: []ottl.Key[testContext]{
+						&pathtest.Key[testContext]{S: ottltest.Strp("subject")},
 					},
 				},
 			},
 		}
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
@@ -370,21 +328,18 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 
 	t.Run("specific attribute key missing returns empty string", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "client",
 			NextPath: &pathtest.Path[testContext]{
-				N: "client",
+				N: "auth",
 				NextPath: &pathtest.Path[testContext]{
-					N: "auth",
-					NextPath: &pathtest.Path[testContext]{
-						N: "attributes",
-						KeySlice: []ottl.Key[testContext]{
-							&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
-						},
+					N: "attributes",
+					KeySlice: []ottl.Key[testContext]{
+						&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
 					},
 				},
 			},
 		}
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
@@ -400,8 +355,6 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 }
 
 func TestContextGrpcMetadata(t *testing.T) {
-	parser := PathExpressionParser[testContext]()
-
 	base := t.Context()
 	// include client context too, to ensure coexistence
 	base = client.NewContext(base, client.Info{})
@@ -415,15 +368,12 @@ func TestContextGrpcMetadata(t *testing.T) {
 
 	t.Run("get entire grpc metadata", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "grpc",
 			NextPath: &pathtest.Path[testContext]{
-				N: "grpc",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-				},
+				N: "metadata",
 			},
 		}
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 		val, err := getter.Get(ctxWithMD, testContext{})
 		require.NoError(t, err)
@@ -444,18 +394,15 @@ func TestContextGrpcMetadata(t *testing.T) {
 
 	t.Run("get specific grpc metadata key values", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "grpc",
 			NextPath: &pathtest.Path[testContext]{
-				N: "grpc",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("k1")},
-					},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{S: ottltest.Strp("k1")},
 				},
 			},
 		}
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 		val, err := getter.Get(ctxWithMD, testContext{})
 		require.NoError(t, err)
@@ -470,18 +417,15 @@ func TestContextGrpcMetadata(t *testing.T) {
 
 	t.Run("grpc metadata key missing returns nil", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "grpc",
 			NextPath: &pathtest.Path[testContext]{
-				N: "grpc",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
-					},
+				N: "metadata",
+				KeySlice: []ottl.Key[testContext]{
+					&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
 				},
 			},
 		}
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 		val, err := getter.Get(ctxWithMD, testContext{})
 		require.NoError(t, err)
@@ -495,21 +439,18 @@ func TestContextGrpcMetadata(t *testing.T) {
 		assert.Equal(t, "cannot get map value without keys", err.Error())
 	})
 
-	t.Run("no grpc metadata in context returns nil", func(t *testing.T) {
+	t.Run("no grpc metadata in context returns Map", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
-			N: "context",
+			N: "grpc",
 			NextPath: &pathtest.Path[testContext]{
-				N: "grpc",
-				NextPath: &pathtest.Path[testContext]{
-					N: "metadata",
-				},
+				N: "metadata",
 			},
 		}
-		getter, err := parser(path)
+		getter, err := PathGetSetter[testContext](path)
 		require.NoError(t, err)
 		val, err := getter.Get(t.Context(), testContext{})
 		require.NoError(t, err)
-		assert.Nil(t, val)
+		require.Equal(t, pcommon.NewMap(), val.(pcommon.Map))
 	})
 }
 
