@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -28,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -328,7 +331,7 @@ func Test_onMessage(t *testing.T) {
 		}
 		require.NoError(t, s.createTemplates())
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
 				NewInstanceUid: newID[:],
 			},
@@ -355,7 +358,7 @@ func Test_onMessage(t *testing.T) {
 		}
 		require.NoError(t, s.createTemplates())
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
 				NewInstanceUid: []byte("invalid-value"),
 			},
@@ -402,7 +405,7 @@ func Test_onMessage(t *testing.T) {
 			doneChan:                       make(chan struct{}),
 		}
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			CustomMessage: customMessage,
 		})
 
@@ -443,7 +446,7 @@ func Test_onMessage(t *testing.T) {
 			doneChan:                       make(chan struct{}),
 		}
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			CustomCapabilities: customCapabilities,
 		})
 
@@ -484,7 +487,7 @@ func Test_onMessage(t *testing.T) {
 		}
 		require.NoError(t, s.createTemplates())
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
 				NewInstanceUid: newID[:],
 			},
@@ -605,7 +608,7 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -706,7 +709,7 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -774,7 +777,7 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -874,7 +877,7 @@ service:
 			configMapIsEmpty: false,
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -981,7 +984,7 @@ service:
 			configMapIsEmpty: false,
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -1367,6 +1370,10 @@ type mockOpAMPClient struct {
 	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
+func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
+	return nil
+}
+
 func (mockOpAMPClient) Start(context.Context, types.StartSettings) error {
 	return nil
 }
@@ -1483,7 +1490,7 @@ func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 
 		s.agentDescription = agentDesc
 
-		configChanged := s.setupOwnTelemetry(context.Background(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
+		configChanged := s.setupOwnTelemetry(t.Context(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "",
 		}})
 
@@ -1523,7 +1530,7 @@ func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 
 		require.NoError(t, err)
 
-		configChanged := s.setupOwnTelemetry(context.Background(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
+		configChanged := s.setupOwnTelemetry(t.Context(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "http://127.0.0.1:4318",
 			Headers: &protobufs.Headers{
 				Headers: []*protobufs.Header{
@@ -2006,4 +2013,136 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 			require.Equal(t, tc.expectedConfigFiles, supervisor.config.Agent.ConfigFiles)
 		})
 	}
+}
+
+func TestSupervisor_HealthCheckServer(t *testing.T) {
+	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+	s := &Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		persistentState:   &persistentState{InstanceID: testUUID},
+		cfgState:          &atomic.Value{},
+		doneChan:          make(chan struct{}),
+	}
+
+	healthyConfig := &configState{
+		mergedConfig:     "test-config",
+		configMapIsEmpty: false,
+	}
+	s.cfgState.Store(healthyConfig)
+
+	t.Run("Health check isn't started when port isn't configured", func(t *testing.T) {
+		err := s.startHealthCheckServer()
+		require.NoError(t, err)
+		require.Nil(t, s.healthCheckServer)
+	})
+
+	t.Run("Health check server is started when port is configured", func(t *testing.T) {
+		s.config = config.Supervisor{
+			HealthCheck: config.HealthCheck{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:23233",
+				},
+			},
+		}
+		err := s.startHealthCheckServer()
+		require.NoError(t, err)
+		require.NotNil(t, s.healthCheckServer)
+	})
+
+	addr := fmt.Sprintf("localhost:%d", s.config.HealthCheck.Port())
+	require.NotEmpty(t, addr)
+
+	sendHealthCheckRequest := func() (*http.Response, error) {
+		return http.Get(fmt.Sprintf("http://%s/health", addr))
+	}
+
+	t.Run("Health check server startup", func(t *testing.T) {
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		body, bodyErr := io.ReadAll(resp.Body)
+		require.NoError(t, bodyErr)
+		assert.Equalf(t, http.StatusOK, resp.StatusCode, "expected %d, got %d, response body: %s", http.StatusOK, resp.StatusCode, string(body))
+	})
+
+	t.Run("/health endpoint returns OK when healthy", func(t *testing.T) {
+		s.cfgState.Store(healthyConfig)
+		s.persistentState = &persistentState{InstanceID: testUUID}
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 503 when persistent state is nil", func(t *testing.T) {
+		originalState := s.persistentState
+		t.Cleanup(func() {
+			s.persistentState = originalState
+		})
+		s.persistentState = nil
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 503 when config state is not loaded", func(t *testing.T) {
+		originalCfgState := s.cfgState.Load()
+		t.Cleanup(func() {
+			s.cfgState.Store(originalCfgState)
+		})
+		s.cfgState = &atomic.Value{}
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 503 when config state is nil", func(t *testing.T) {
+		originalCfgState := s.cfgState.Load()
+		t.Cleanup(func() {
+			s.cfgState.Store(originalCfgState)
+		})
+		s.cfgState = &atomic.Value{}
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	})
+
+	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
+		newSupervisor := &Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			cfgState:          &atomic.Value{},
+			doneChan:          make(chan struct{}),
+			config: config.Supervisor{
+				HealthCheck: config.HealthCheck{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:23233",
+					},
+				},
+			},
+		}
+		err := newSupervisor.startHealthCheckServer()
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to listen on port 23233")
+	})
+
+	t.Run("Health check server shutdown is handled gracefully in Supervisor.Shutdown", func(t *testing.T) {
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		s.Shutdown()
+
+		_, err = sendHealthCheckRequest()
+		assert.Error(t, err)
+	})
 }

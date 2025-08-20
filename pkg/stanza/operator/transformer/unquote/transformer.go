@@ -19,7 +19,7 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	return t.ProcessBatchWithTransform(ctx, entries, t.unquote)
 }
 
 // Process will unquote a string

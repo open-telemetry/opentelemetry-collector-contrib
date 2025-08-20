@@ -307,7 +307,7 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	}
 
 	groupInfo = &vmGroupInfo{poweredOff: 0, poweredOn: 0, suspended: 0, templates: 0}
-	if vm.Config.Template {
+	if vm.Config != nil && vm.Config.Template {
 		groupInfo.templates++
 	} else {
 		switch vm.Runtime.PowerState {

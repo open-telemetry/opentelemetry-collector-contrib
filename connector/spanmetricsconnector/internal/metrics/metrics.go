@@ -30,14 +30,14 @@ type Histogram interface {
 type explicitHistogramMetrics struct {
 	metrics          map[Key]*explicitHistogram
 	bounds           []float64
-	maxExemplarCount *int
+	maxExemplarCount int
 	cardinalityLimit int
 }
 
 type exponentialHistogramMetrics struct {
 	metrics          map[Key]*exponentialHistogram
 	maxSize          int32
-	maxExemplarCount *int
+	maxExemplarCount int
 	cardinalityLimit int
 }
 
@@ -51,7 +51,7 @@ type explicitHistogram struct {
 
 	bounds []float64
 
-	maxExemplarCount *int
+	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
 }
@@ -62,14 +62,14 @@ type exponentialHistogram struct {
 
 	histogram *structure.Histogram[float64]
 
-	maxExemplarCount *int
+	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
 }
 
 type BuildAttributesFun func() pcommon.Map
 
-func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int, cardinalityLimit int) HistogramMetrics {
+func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount, cardinalityLimit int) HistogramMetrics {
 	return &exponentialHistogramMetrics{
 		metrics:          make(map[Key]*exponentialHistogram),
 		maxSize:          maxSize,
@@ -78,7 +78,7 @@ func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int, cardin
 	}
 }
 
-func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount *int, cardinalityLimit int) HistogramMetrics {
+func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount, cardinalityLimit int) HistogramMetrics {
 	return &explicitHistogramMetrics{
 		metrics:          make(map[Key]*explicitHistogram),
 		bounds:           bounds,
@@ -270,7 +270,7 @@ func (h *explicitHistogram) Observe(value float64) {
 }
 
 func (h *explicitHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
-	if h.maxExemplarCount != nil && h.exemplars.Len() >= *h.maxExemplarCount {
+	if h.exemplars.Len() >= h.maxExemplarCount {
 		return
 	}
 	e := h.exemplars.AppendEmpty()
@@ -284,7 +284,7 @@ func (h *exponentialHistogram) Observe(value float64) {
 }
 
 func (h *exponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
-	if h.maxExemplarCount != nil && h.exemplars.Len() >= *h.maxExemplarCount {
+	if h.exemplars.Len() >= h.maxExemplarCount {
 		return
 	}
 	e := h.exemplars.AppendEmpty()
@@ -298,7 +298,7 @@ type Sum struct {
 	count      uint64
 
 	exemplars        pmetric.ExemplarSlice
-	maxExemplarCount *int
+	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
 	// isFirst is used to track if this datapoint is new to the Sum. This
@@ -312,7 +312,7 @@ func (s *Sum) Add(value uint64) {
 	s.count += value
 }
 
-func NewSumMetrics(maxExemplarCount *int, cardinalityLimit int) SumMetrics {
+func NewSumMetrics(maxExemplarCount, cardinalityLimit int) SumMetrics {
 	return SumMetrics{
 		metrics:          make(map[Key]*Sum),
 		maxExemplarCount: maxExemplarCount,
@@ -322,7 +322,7 @@ func NewSumMetrics(maxExemplarCount *int, cardinalityLimit int) SumMetrics {
 
 type SumMetrics struct {
 	metrics          map[Key]*Sum
-	maxExemplarCount *int
+	maxExemplarCount int
 	cardinalityLimit int
 }
 
@@ -366,7 +366,7 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 }
 
 func (s *Sum) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
-	if s.maxExemplarCount != nil && s.exemplars.Len() >= *s.maxExemplarCount {
+	if s.exemplars.Len() >= s.maxExemplarCount {
 		return
 	}
 	e := s.exemplars.AppendEmpty()

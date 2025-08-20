@@ -1,0 +1,59 @@
+groups:
+  - id: file.mtime
+    type: metric
+    metric_name: file.mtime
+    stability: beta
+    brief: "Elapsed time since the last modification of the file or folder, in seconds since Epoch."
+    instrument: updowncounter
+    unit: "s"
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: file.ctime
+    type: metric
+    metric_name: file.ctime
+    stability: beta
+    brief: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
+    instrument: updowncounter
+    unit: "s"
+    attributes:
+      - ref: file.permissions
+        requirement_level: required
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: file.atime
+    type: metric
+    metric_name: file.atime
+    stability: beta
+    brief: Elapsed time since last access of the file or folder, in seconds since Epoch.
+    instrument: updowncounter
+    unit: "s"
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: file.size
+    type: metric
+    metric_name: file.size
+    stability: beta
+    brief: The size of the file or folder, in bytes.
+    instrument: gauge
+    unit: "b"
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: file.count
+    type: metric
+    metric_name: file.count
+    stability: beta
+    brief: The number of files matched
+    instrument: gauge
+    unit: "{file}"
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int

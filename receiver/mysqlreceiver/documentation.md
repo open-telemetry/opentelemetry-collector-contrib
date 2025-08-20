@@ -68,7 +68,7 @@ The number of pages in the InnoDB buffer pool.
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc`` | false |
+| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc``, ``total`` | false |
 
 ### mysql.buffer_pool.usage
 
@@ -453,6 +453,14 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | kind | The worker thread count kind. | Str: ``available``, ``active`` | false |
+
+### mysql.page_size
+
+InnoDB page size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
 
 ### mysql.query.client.count
 

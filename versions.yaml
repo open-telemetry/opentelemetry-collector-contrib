@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.130.0
+    version: v0.132.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -58,7 +58,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
@@ -194,6 +193,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor

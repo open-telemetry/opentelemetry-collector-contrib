@@ -4,7 +4,6 @@
 package k8sleaderelector
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -70,7 +69,7 @@ func TestNewFactory(t *testing.T) {
 
 				f := NewFactory()
 				_, err := f.Create(
-					context.Background(),
+					t.Context(),
 					extensiontest.NewNopSettings(f.Type()),
 					cfg,
 				)

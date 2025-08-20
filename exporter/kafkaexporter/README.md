@@ -48,9 +48,9 @@ The following settings can be optionally configured:
   - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `topic` (Deprecated in v0.124.0: use `logs::topic`, `metrics::topic`, and `traces::topic`) If specified, this is used as the default topic, but will be overridden by signal-specific configuration. See [Destination Topic](#destination-topic) below for more details.
-- `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details. 
+- `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details.
 - `encoding` (Deprecated in v0.124.0: use `logs::encoding`, `metrics::encoding`, and `traces::encoding`) If specified, this is used as the default encoding, but will be overridden by signal-specific configuration. See [Supported encodings](#supported-encodings) below for more details.
-- `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored.
+- `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. The keys also partition the data before export if `sending_queue::batch` is defined.
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
@@ -80,10 +80,11 @@ The following settings can be optionally configured:
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the
     startup.
+  - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
   - `retry`
     - `max` (default = 3): The number of retries to get metadata
     - `backoff` (default = 250ms): How long to wait between metadata retries
-- `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
+- `timeout` (default = 5s): Time to wait per individual attempt to produce data to Kafka.
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -98,8 +99,8 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
-  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks
-  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type
+  - `required_acks` (default = 1) controls when a message is regarded as transmitted. <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks>
+  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type>
   - `compression_params`
     - `level` (default = -1) the compression level used when producing messages to kafka.
     - The following are valid combinations of `compression` and `level`
@@ -123,17 +124,20 @@ The following settings can be optionally configured:
 The Kafka exporter supports encoding extensions, as well as the following built-in encodings.
 
 Available for all signals:
-  - `otlp_proto`: data is encoded as OTLP Protobuf
-  - `otlp_json`: data is encoded as OTLP JSON
+
+- `otlp_proto`: data is encoded as OTLP Protobuf
+- `otlp_json`: data is encoded as OTLP JSON
 
 Available only for traces:
-  - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
-  - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
-  - `zipkin_proto`: the payload is serialized to Zipkin v2 proto Span.
-  - `zipkin_json`: the payload is serialized to Zipkin v2 JSON Span.
+
+- `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
+- `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+- `zipkin_proto`: the payload is serialized to Zipkin v2 proto Span.
+- `zipkin_json`: the payload is serialized to Zipkin v2 JSON Span.
 
 Available only for logs:
-  - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
+
+- `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 
 ### Example configuration
 

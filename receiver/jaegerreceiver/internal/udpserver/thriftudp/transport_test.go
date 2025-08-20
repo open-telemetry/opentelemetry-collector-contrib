@@ -6,7 +6,6 @@
 package thriftudp
 
 import (
-	"context"
 	"net"
 	"strings"
 	"sync"
@@ -127,7 +126,7 @@ func TestWriteRead(t *testing.T) {
 	n, err = client.Write([]byte("string1"))
 	require.NoError(t, err)
 	require.Equal(t, 7, n)
-	require.NoError(t, client.Flush(context.Background()))
+	require.NoError(t, client.Flush(t.Context()))
 
 	// another packet
 	n, err = client.Write([]byte("test"))
@@ -136,7 +135,7 @@ func TestWriteRead(t *testing.T) {
 	n, err = client.Write([]byte("string2"))
 	require.NoError(t, err)
 	require.Equal(t, 7, n)
-	require.NoError(t, client.Flush(context.Background()))
+	require.NoError(t, client.Flush(t.Context()))
 
 	expected := "teststring1"
 	readBuf := make([]byte, 20)
@@ -203,7 +202,7 @@ func TestFlushErrors(t *testing.T) {
 
 		// flushing closed transport
 		trans.Close()
-		err = trans.Flush(context.Background())
+		err = trans.Flush(t.Context())
 		require.Error(t, err)
 
 		// error when trying to write in flush
@@ -213,7 +212,7 @@ func TestFlushErrors(t *testing.T) {
 
 		_, err = trans.Write([]byte{1, 2, 3, 4})
 		require.NoError(t, err)
-		err = trans.Flush(context.Background())
+		err = trans.Flush(t.Context())
 		require.Error(t, err, "Flush with data should fail")
 	})
 }
@@ -229,7 +228,7 @@ func TestResetInFlush(t *testing.T) {
 	require.NoError(t, err)
 	trans.conn.Close() // close the transport's connection via back door
 
-	err = trans.Flush(context.Background())
+	err = trans.Flush(t.Context())
 	require.Error(t, err, "should fail to write to closed connection")
 	assert.Equal(t, 0, trans.writeBuf.Len(), "should reset the buffer")
 }

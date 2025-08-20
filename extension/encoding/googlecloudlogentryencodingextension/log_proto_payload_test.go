@@ -4,10 +4,11 @@
 package googlecloudlogentryencodingextension
 
 import (
-	stdjson "encoding/json"
+	"bytes"
 	"os"
 	"testing"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,6 +47,9 @@ func TestProtoPayload(t *testing.T) {
 
 	input, err := os.ReadFile("testdata/proto_payload/proto_payload.json")
 	require.NoError(t, err)
+	compacted := bytes.NewBuffer([]byte{})
+	err = gojson.Compact(compacted, input)
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.scenario, func(t *testing.T) {
@@ -56,7 +60,7 @@ func TestProtoPayload(t *testing.T) {
 			wantRes, err := golden.ReadLogs(tt.wantFile)
 			require.NoError(t, err)
 
-			gotRes, err := extension.UnmarshalLogs(input)
+			gotRes, err := extension.UnmarshalLogs(compacted.Bytes())
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(wantRes, gotRes))
@@ -73,9 +77,10 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			scenario: "String",
 			input: []byte(`{
-  "protoPayload": {
-    "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
-    "serviceName": "OpenTelemetry"
+  "timestamp":"2024-05-05T10:31:19.45570687Z",
+  "protoPayload":{
+    "@type":"type.googleapis.com/google.cloud.audit.AuditLog",
+    "serviceName":"OpenTelemetry"
   }
 }`),
 			expectedBody: map[string]any{
@@ -86,13 +91,14 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			scenario: "Boolean",
 			input: []byte(`{
-  "protoPayload": {
-	"@type": "type.googleapis.com/google.cloud.audit.AuditLog",
-	"authorizationInfo": [
-	  {
-		"granted": true
-	  }
-	]
+  "timestamp":"2024-05-05T10:31:19.45570687Z",
+  "protoPayload":{
+    "@type":"type.googleapis.com/google.cloud.audit.AuditLog",
+    "authorizationInfo":[
+      {
+        "granted":true
+      }
+    ]
   }
 }`),
 			expectedBody: map[string]any{
@@ -104,17 +110,18 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			scenario: "EnumByString",
 			input: []byte(`{
-  "protoPayload": {
-	"@type": "type.googleapis.com/google.cloud.audit.AuditLog",
-	"policyViolationInfo": {
-	  "orgPolicyViolationInfo": {
-		"violationInfo": [
-		  {
-			"policyType": "CUSTOM_CONSTRAINT"
-		  }
-		]
-	  }
-	}
+  "timestamp":"2024-05-05T10:31:19.45570687Z",
+  "protoPayload":{
+    "@type":"type.googleapis.com/google.cloud.audit.AuditLog",
+    "policyViolationInfo":{
+      "orgPolicyViolationInfo":{
+        "violationInfo":[
+          {
+            "policyType":"CUSTOM_CONSTRAINT"
+          }
+        ]
+      }
+    }
   }
 }`),
 			expectedBody: map[string]any{
@@ -125,17 +132,18 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			scenario: "EnumByNumber",
 			input: []byte(`{
-  "protoPayload": {
-	"@type": "type.googleapis.com/google.cloud.audit.AuditLog",
-	"policyViolationInfo": {
-	  "orgPolicyViolationInfo": {
-		"violationInfo": [
-		  {
-			"policyType": 3
-		  }
-		]
-	  }
-	}
+  "timestamp":"2024-05-05T10:31:19.45570687Z",
+  "protoPayload":{
+    "@type":"type.googleapis.com/google.cloud.audit.AuditLog",
+    "policyViolationInfo":{
+      "orgPolicyViolationInfo":{
+        "violationInfo":[
+          {
+            "policyType":3
+          }
+        ]
+      }
+    }
   }
 }`),
 			expectedBody: map[string]any{
@@ -146,6 +154,7 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			scenario: "BestEffortAnyType",
 			input: []byte(`{
+  "timestamp":"2024-05-05T10:31:19.45570687Z",
   "protoPayload": {
 	"@type": "type.examples/does.not.Exist",
 	"noName": "Foobar"
@@ -166,88 +175,16 @@ func TestProtoFieldTypes(t *testing.T) {
 
 			extension := newTestExtension(t, config)
 
-			gotRes, err := extension.UnmarshalLogs(tt.input)
+			compactInput := bytes.NewBuffer([]byte{})
+			err := gojson.Compact(compactInput, tt.input)
+			require.NoError(t, err)
+			gotRes, err := extension.UnmarshalLogs(compactInput.Bytes())
 			require.NoError(t, err)
 
 			require.Equal(t, 1, gotRes.LogRecordCount())
 
 			lr := gotRes.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 			require.Equal(t, tt.expectedBody, lr.Body().AsRaw())
-		})
-	}
-}
-
-func TestProtoErrors(t *testing.T) {
-	tests := []struct {
-		scenario     string
-		input        []byte
-		expectsErr   string
-		expectedBody any
-		expectedAttr map[string]any
-	}{
-		{
-			scenario: "UnknownJSONName",
-			input: []byte(`{
-  "protoPayload": {
-    "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
-    "ServiceName": 42
-  }
-}`),
-			expectsErr: "google.cloud.audit.AuditLog has no known field with JSON name ServiceName",
-			expectedAttr: map[string]any{
-				"gcp.proto_payload": map[string]any{},
-			},
-			expectedBody: map[string]any{},
-		},
-		{
-			scenario: "EnumTypeError",
-			input: []byte(`{
-  "protoPayload": {
-    "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
-    "policyViolationInfo": {
-      "orgPolicyViolationInfo": {
-        "violationInfo": [
-          {
-            "policyType": {}
-          }
-        ]
-      }
-    }
-  }
-}`),
-			expectsErr: "wrong type for enum: object",
-			expectedBody: map[string]any{
-				"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": nil}}}},
-			},
-			expectedAttr: map[string]any{
-				"gcp.proto_payload": map[string]any{
-					"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": nil}}}},
-				},
-			},
-		},
-	}
-
-	config := Config{
-		HandleProtoPayloadAs: HandleAsProtobuf,
-	}
-	for _, tt := range tests {
-		t.Run(tt.scenario, func(t *testing.T) {
-			t.Parallel()
-
-			extension := newTestExtension(t, config)
-
-			gotRes, err := extension.translateLogEntry(tt.input)
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
-			} else {
-				require.NoError(t, err)
-			}
-
-			require.Equal(t, 1, gotRes.LogRecordCount())
-
-			lr := gotRes.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-			require.Equal(t, tt.expectedBody, lr.Body().AsRaw())
-			require.Equal(t, tt.expectedAttr, lr.Attributes().AsRaw())
 		})
 	}
 }
@@ -288,7 +225,7 @@ func TestGetTokenType(t *testing.T) {
 		t.Run(tt.scenario, func(t *testing.T) {
 			t.Parallel()
 
-			j := stdjson.RawMessage{}
+			j := gojson.RawMessage{}
 			err := j.UnmarshalJSON([]byte(tt.input))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, getTokenType(j))

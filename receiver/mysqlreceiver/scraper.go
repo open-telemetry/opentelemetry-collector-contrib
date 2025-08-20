@@ -157,6 +157,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Innodb_buffer_pool_pages_free":
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesFree))
+		case "Innodb_buffer_pool_pages_total":
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesTotal))
 		case "Innodb_buffer_pool_pages_misc":
 			_, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
@@ -438,6 +441,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// uptime
 		case "Uptime":
 			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
+
+		// page size
+		case "Innodb_page_size":
+			addPartialIfError(errs, m.mb.RecordMysqlPageSizeDataPoint(now, v))
 		}
 	}
 }

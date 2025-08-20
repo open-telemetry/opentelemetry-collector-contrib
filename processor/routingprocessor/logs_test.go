@@ -4,7 +4,6 @@
 package routingprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,7 +59,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
@@ -68,7 +67,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("grpc metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
+			metadata.NewIncomingContext(t.Context(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
 			})),
 			l,
@@ -83,7 +82,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("grpc metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
+			metadata.NewIncomingContext(t.Context(), metadata.New(map[string]string{
 				"X-Tenant": "some-custom-value1",
 			})),
 			l,
@@ -98,7 +97,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	t.Run("client.Info metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
-			client.NewContext(context.Background(),
+			client.NewContext(t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"X-Tenant": {"acme"},
 				})}),
@@ -113,7 +112,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	})
 
 	t.Run("client.Info metadata: default route is taken when no matching route can be found", func(t *testing.T) {
-		assert.NoError(t, exp.ConsumeLogs(client.NewContext(context.Background(),
+		assert.NoError(t, exp.ConsumeLogs(client.NewContext(t.Context(),
 			client.Info{Metadata: client.NewMetadata(map[string][]string{
 				"X-Tenant": {"some-custom-value1"},
 			})}),
@@ -152,14 +151,14 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
-		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+		assert.NoError(t, exp.ConsumeLogs(t.Context(), l))
 		assert.Empty(t, defaultExp.AllLogs(),
 			"log should not be routed to default exporter",
 		)
@@ -173,7 +172,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
-		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+		assert.NoError(t, exp.ConsumeLogs(t.Context(), l))
 		assert.Len(t, defaultExp.AllLogs(), 1,
 			"log should be routed to default exporter",
 		)
@@ -208,14 +207,14 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	l := plog.NewLogs()
 	rm := l.ResourceLogs().AppendEmpty()
 	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rm.Resource().Attributes().PutStr("attr", "acme")
 
-	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+	assert.NoError(t, exp.ConsumeLogs(t.Context(), l))
 	logs := lExp.AllLogs()
 	require.Len(t, logs, 1, "log should be routed to non-default exporter")
 	require.Equal(t, 1, logs[0].ResourceLogs().Len())
@@ -265,7 +264,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, exp.Start(ctx, host))
 	require.NoError(t, exp.ConsumeLogs(ctx, l))
 
@@ -308,7 +307,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	t.Run("logs matched by no expressions", func(t *testing.T) {
 		defaultExp.Reset()
@@ -320,7 +319,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+		require.NoError(t, exp.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultExp.AllLogs(), 1)
 		assert.Empty(t, firstExp.AllLogs())
@@ -338,7 +337,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "xacme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+		require.NoError(t, exp.ConsumeLogs(t.Context(), l))
 
 		assert.Empty(t, defaultExp.AllLogs())
 		assert.Len(t, firstExp.AllLogs(), 1)
@@ -360,7 +359,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+		require.NoError(t, exp.ConsumeLogs(t.Context(), l))
 
 		assert.Empty(t, defaultExp.AllLogs())
 		assert.Len(t, firstExp.AllLogs(), 1)
@@ -386,7 +385,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+		require.NoError(t, exp.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultExp.AllLogs(), 1)
 		assert.Len(t, firstExp.AllLogs(), 1)
@@ -431,11 +430,11 @@ func TestLogsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	rl.Resource().Attributes().PutInt("value", 1)
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	// test
 	// before #26464, this would panic
-	require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+	require.NoError(t, exp.ConsumeLogs(t.Context(), l))
 
 	// verify
 	assert.Len(t, defaultExp.AllLogs(), 1)
