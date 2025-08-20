@@ -92,6 +92,21 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 			c.Traces.Encoding = c.Encoding
 		}
 	}
+
+	// Set OnPermanentError default value to inherit from OnError for backward compatibility
+	// Only if OnPermanentError was not explicitly set in the config
+	rawConf := conf.Get("message_marking")
+	if rawConf != nil {
+		if messageMarkingConf, ok := rawConf.(map[string]any); ok {
+			if _, hasOnPermanentError := messageMarkingConf["on_permanent_error"]; !hasOnPermanentError {
+				c.MessageMarking.OnPermanentError = c.MessageMarking.OnError
+			}
+		}
+	} else {
+		// If message_marking section doesn't exist, set defaults
+		c.MessageMarking.OnPermanentError = c.MessageMarking.OnError
+	}
+
 	return conf.Unmarshal(c)
 }
 
@@ -116,11 +131,18 @@ type MessageMarking struct {
 	// If true, the messages are marked after the pipeline execution
 	After bool `mapstructure:"after"`
 
-	// If false, only the successfully processed messages are marked, it has no impact if
-	// After is set to false.
+	// If false, only the successfully processed messages are marked. This only applies
+	// to non-permanent errors. It has no impact if After is set to false.
+	// Note: this can block the entire partition in case a message processing returns
+	// a non-permanent error.
+	OnError bool `mapstructure:"on_error"`
+
+	// If false, only the successfully processed messages are marked. This only applies
+	// to permanent errors. It has no impact if After is set to false.
+	// Default value inherits from OnError for backward compatibility.
 	// Note: this can block the entire partition in case a message processing returns
 	// a permanent error.
-	OnError bool `mapstructure:"on_error"`
+	OnPermanentError bool `mapstructure:"on_permanent_error"`
 }
 
 type HeaderExtraction struct {

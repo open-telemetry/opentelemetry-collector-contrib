@@ -61,3 +61,40 @@ kafka/rebalance_strategy:
     encoding: otlp_proto
   group_rebalance_strategy: sticky
   group_instance_id: test-instance
+kafka/message_marking:
+  metrics:
+    topic: otlp_metrics
+    encoding: otlp_proto
+  traces:
+    topic: otlp_spans
+    encoding: otlp_proto
+  logs:
+    topic: otlp_logs
+    encoding: otlp_proto
+  message_marking:
+    after: true
+    on_error: true
+    on_permanent_error: false
+kafka/message_marking_not_specified:
+  metrics:
+    topic: otlp_metrics
+    encoding: otlp_proto
+  traces:
+    topic: otlp_spans
+    encoding: otlp_proto
+  logs:
+    topic: otlp_logs
+    encoding: otlp_proto
+kafka/message_marking_on_permanent_error_inherited:
+  metrics:
+    topic: otlp_metrics
+    encoding: otlp_proto
+  traces:
+    topic: otlp_spans
+    encoding: otlp_proto
+  logs:
+    topic: otlp_logs
+    encoding: otlp_proto
+  message_marking:
+    after: true
+    on_error: true

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -300,7 +301,8 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metric.WithAttributeSet(attrs))
 		logger.Error("failed to unmarshal message", zap.Error(err))
 		handler.endObsReport(obsCtx, n, err)
-		return err
+		// Return permanent error for unmarshalling failures
+		return consumererror.NewPermanent(err)
 	}
 
 	// Add resource attributes from headers if configured
