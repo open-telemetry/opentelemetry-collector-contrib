@@ -32,11 +32,21 @@ type MaskingSettings struct {
 	Placeholder string `mapstructure:"placeholder"`
 }
 
-type SecuritySettings struct {
-	OAuthServiceURL string `mapstructure:"oauth_service_url"`
-	ClientID        string `mapstructure:"client_id"`
-	ClientSecret    string `mapstructure:"client_secret"`
-}
+type (
+	SecuritySettings struct {
+		OAuthServiceURL     string             `mapstructure:"oauth_service_url"`
+		ClientID            string             `mapstructure:"client_id"`
+		ClientSecret        string             `mapstructure:"client_secret"`
+		OtelExporterSetting CustomtOtelSetting `mapstructure:"otel_exporter_setting"`
+	}
+
+	CustomtOtelSetting struct {
+		ReadBufferSize  int `mapstructure:"otel_exporter_read_buffer_size"`
+		WriteBufferSize int `mapstructure:"otel_exporter_write_buffer_size"`
+		GrpcMaxSendSize int `mapstructure:"grpc_max_call_send_msg_size"`
+		GrpcMaxRecvSize int `mapstructure:"grpc_max_call_recv_msg_size"`
+	}
+)
 
 type Credentials struct {
 	AccessToken string `json:"access_token"`

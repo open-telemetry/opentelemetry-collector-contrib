@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"io"
 	"net"
 	"net/http"
@@ -71,13 +73,14 @@ type opsrampOTLPExporter struct {
 
 	settings component.TelemetrySettings
 	mut      sync.Mutex
+	logger   *zap.Logger
 
 	// Default user-agent header.
 	userAgent   string
 	accessToken string
 }
 
-// Crete new exporter and start it. The exporter will begin connecting but
+// Crete new exporter and start it. The exporter will begin connecting, but
 // this function may return before the connection is established.
 func newExporter(cfg component.Config, set exporter.Settings) (*opsrampOTLPExporter, error) {
 	oCfg := cfg.(*Config)
@@ -169,6 +172,7 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (err error) {
+	e.logger = initLogger()
 	e.clientConn, err = e.config.ClientConfig.ToClientConn(
 		ctx,
 		host,
@@ -206,8 +210,17 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 	e.metadata = metadata.New(headers)
 	e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
 	e.callOptions = []grpc.CallOption{
+		grpc.MaxCallSendMsgSize(e.config.Security.OtelExporterSetting.GrpcMaxSendSize),
+		grpc.MaxCallRecvMsgSize(e.config.Security.OtelExporterSetting.GrpcMaxRecvSize),
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
+
+	e.logger.Debug(
+		"OTLP Exporter started",
+		zap.String("Calloptions", fmt.Sprintf("%v", e.callOptions)),
+		zap.Int("Calloptions -> grpc.MaxCallSendMsgSize", e.config.Security.OtelExporterSetting.GrpcMaxSendSize),
+		zap.Int("Calloptions -> grpc.MaxCallRecvMsgSize", e.config.Security.OtelExporterSetting.GrpcMaxRecvSize),
+	)
 	return
 }
 
@@ -271,14 +284,33 @@ func (e *opsrampOTLPExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	if e.config.ExpirationSkip != 0 {
 		e.skipExpired(ld)
 	}
-	if ld.ResourceLogs().Len() <= 0 {
+	if ld.LogRecordCount() <= 0 {
+		e.logger.Debug("No log records to export")
 		return nil
+	}
+
+	if e.config.Masking != nil {
+		e.logger.Debug("Applying masking to logs")
+		e.applyMasking(ld)
+	}
+
+	if e.config.ExpirationSkip != 0 {
+		e.logger.Debug("Skipping expired logs")
+		e.skipExpired(ld)
 	}
 
 	req := plogotlp.NewExportRequestFromLogs(ld)
 
+	data, _ := req.MarshalJSON()
+	e.logger.Debug("Export request details",
+		zap.String("e.call options", fmt.Sprintf("%v", e.callOptions)),
+		zap.Int("ResourceLogsCount", ld.ResourceLogs().Len()),
+		zap.Int("TotalLogRecordCount", ld.LogRecordCount()),
+		zap.Int("RequestSizeBytes", len(data)),
+	)
+
 	_, err := e.logExporter.Export(e.enhanceContext(context.Background()), req, e.callOptions...)
-	// trying to get new access token in case of expiration
+	// trying to get a new access token in case of expiration
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.Unauthenticated {
@@ -475,4 +507,22 @@ func getAuthTokenWithTlsDisabled(cfg SecuritySettings) (string, error) {
 	}
 
 	return credentials.AccessToken, nil
+}
+
+func initLogger() *zap.Logger {
+	writer := &lumberjack.Logger{
+		Filename:   "/var/log/opsramp/debug.log", // or any path you prefer
+		MaxSize:    10,                           // megabytes
+		MaxBackups: 5,                            // number of old files to keep
+		MaxAge:     30,                           // days to keep
+		Compress:   true,                         // gzip
+	}
+
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.AddSync(writer),
+		zap.DebugLevel,
+	)
+
+	return zap.New(core)
 }

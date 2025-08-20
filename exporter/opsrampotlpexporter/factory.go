@@ -28,6 +28,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+const (
+	DefaultWriteBufferSize = 512 * 1024
+	DefaultReadBufferSize  = 512 * 1024
+)
+
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -41,14 +46,15 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to gzip compression
 			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
+			WriteBufferSize: DefaultWriteBufferSize,
+			ReadBufferSize:  DefaultReadBufferSize,
 		},
 	}
 }
@@ -110,7 +116,7 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
