@@ -10,9 +10,10 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/testcontainers/testcontainers-go"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestIntegration(t *testing.T) {
