@@ -4,7 +4,6 @@
 package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -67,22 +66,22 @@ func benchmarkPeerTags(b *testing.B) {
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	metricsSink := &consumertest.MetricsSink{}
 
-	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
+	tconn, err := factory.CreateTracesToMetrics(b.Context(), creationParams, cfg, metricsSink)
 	assert.NoError(b, err)
 
-	err = tconn.Start(context.Background(), componenttest.NewNopHost())
+	err = tconn.Start(b.Context(), componenttest.NewNopHost())
 	if err != nil {
 		b.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		require.NoError(b, tconn.Shutdown(context.Background()))
+		require.NoError(b, tconn.Shutdown(b.Context()))
 	}()
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		err = tconn.ConsumeTraces(context.Background(), genTrace())
+		err = tconn.ConsumeTraces(b.Context(), genTrace())
 		assert.NoError(b, err)
 		for {
 			metrics := metricsSink.AllMetrics()

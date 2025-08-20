@@ -47,7 +47,6 @@ beta_modules=(
   "go.opentelemetry.io/collector/pdata/pprofile"
   "go.opentelemetry.io/collector/pdata/testdata"
   "go.opentelemetry.io/collector/pdata/xpdata"
-  "go.opentelemetry.io/collector/pipeline"
   "go.opentelemetry.io/collector/pipeline/xpipeline"
   "go.opentelemetry.io/collector/processor/processortest"
   "go.opentelemetry.io/collector/processor/processorhelper"
@@ -87,6 +86,7 @@ stable_modules=(
   "go.opentelemetry.io/collector/consumer"
   "go.opentelemetry.io/collector/extension"
   "go.opentelemetry.io/collector/extension/extensionauth"
+  "go.opentelemetry.io/collector/pipeline"
   "go.opentelemetry.io/collector/processor"
   "go.opentelemetry.io/collector/receiver"
 )

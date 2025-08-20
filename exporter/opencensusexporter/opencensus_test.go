@@ -4,7 +4,6 @@
 package opencensusexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -31,11 +30,11 @@ func TestSendTraces(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.NetAddr.Endpoint = endpoint
 	set := receivertest.NewNopSettings(metadata.Type)
-	recv, err := rFactory.CreateTraces(context.Background(), set, rCfg, sink)
+	recv, err := rFactory.CreateTraces(t.Context(), set, rCfg, sink)
 	assert.NoError(t, err)
-	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		assert.NoError(t, recv.Shutdown(context.Background()))
+		assert.NoError(t, recv.Shutdown(t.Context()))
 	})
 
 	factory := NewFactory()
@@ -47,17 +46,17 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := factory.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 	t.Cleanup(func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	td := testdata.GenerateTraces(1)
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, exp.ConsumeTraces(t.Context(), td))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
 	}, 10*time.Second, 5*time.Millisecond)
@@ -70,7 +69,7 @@ func TestSendTraces(t *testing.T) {
 	td.ResourceSpans().At(0).Resource().Attributes().Clear()
 	newData := ptrace.NewTraces()
 	td.CopyTo(newData)
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), newData))
+	assert.NoError(t, exp.ConsumeTraces(t.Context(), newData))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
 	}, 10*time.Second, 5*time.Millisecond)
@@ -88,18 +87,18 @@ func TestSendTraces_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := factory.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 	t.Cleanup(func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	td := testdata.GenerateTraces(1)
 	for i := 0; i < 10000; i++ {
-		assert.Error(t, exp.ConsumeTraces(context.Background(), td))
+		assert.Error(t, exp.ConsumeTraces(t.Context(), td))
 	}
 }
 
@@ -112,15 +111,15 @@ func TestSendTraces_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := factory.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	require.NoError(t, exp.Start(t.Context(), host))
+	assert.NoError(t, exp.Shutdown(t.Context()))
 
 	td := testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
+	assert.Error(t, exp.ConsumeTraces(t.Context(), td))
 }
 
 func TestSendMetrics(t *testing.T) {
@@ -130,11 +129,11 @@ func TestSendMetrics(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.NetAddr.Endpoint = endpoint
 	set := receivertest.NewNopSettings(metadata.Type)
-	recv, err := rFactory.CreateMetrics(context.Background(), set, rCfg, sink)
+	recv, err := rFactory.CreateMetrics(t.Context(), set, rCfg, sink)
 	assert.NoError(t, err)
-	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		assert.NoError(t, recv.Shutdown(context.Background()))
+		assert.NoError(t, recv.Shutdown(t.Context()))
 	})
 
 	factory := NewFactory()
@@ -146,17 +145,17 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 	t.Cleanup(func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	md := testdata.GenerateMetrics(1)
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	}, 10*time.Second, 5*time.Millisecond)
@@ -167,7 +166,7 @@ func TestSendMetrics(t *testing.T) {
 	// Sending data no node.
 	sink.Reset()
 	md.ResourceMetrics().At(0).Resource().Attributes().Clear()
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	}, 10*time.Second, 5*time.Millisecond)
@@ -185,18 +184,18 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 	t.Cleanup(func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	})
 
 	md := testdata.GenerateMetrics(1)
 	for i := 0; i < 10000; i++ {
-		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
+		assert.Error(t, exp.ConsumeMetrics(t.Context(), md))
 	}
 }
 
@@ -209,13 +208,13 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	require.NoError(t, exp.Start(t.Context(), host))
+	assert.NoError(t, exp.Shutdown(t.Context()))
 
 	md := testdata.GenerateMetrics(1)
-	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.Error(t, exp.ConsumeMetrics(t.Context(), md))
 }

@@ -16,9 +16,8 @@ This extension implements both `extensionauth.HTTPClient` and `extensionauth.Ser
 
 Additionally, the extension also implements `azcore.TokenCredential` so that Azure components can get the token by running the function `GetToken`. If the component supports HTTP client, then this should not be necessary, as the token will be placed in the authorization header.
 
-> **WARNING**: Currently, the token is not cached, so if you use the extension as an implementation of `extensionauth.HTTPClient` and `extensionauth.Server`, instead of `azcore.TokenCredential`, use it with caution. Each of these requests to get a token will cause a new request being sent to Azure Identity. Under high load, be careful to not hit the service [request limits](https://learn.microsoft.com/en-us/entra/identity/users/directory-service-limits-restrictions). The requests that go through the extension for this purpose need to have the `Host` header. Read more about [request headers](https://learn.microsoft.com/en-us/azure/azure-app-configuration/rest-api-headers#request-headers).
-
 It supports 4 different types of authentication:
+
 - Managed identity for Azure resources
 - Workload identity for Kubernetes
 - Service principal with either a client secret or client certificate path for non Azure.
@@ -29,6 +28,7 @@ It supports 4 different types of authentication:
 ### Managed identity
 
 User based:
+
 ```yaml
 extensions:
   azureauth:
@@ -37,6 +37,7 @@ extensions:
 ```
 
 System based (leave `client_id` field empty):
+
 ```yaml
 extensions:
   azureauth:
@@ -57,6 +58,7 @@ extensions:
 ### Service principal
 
 With client secret:
+
 ```yaml
 extensions:
   azureauth:
@@ -67,6 +69,7 @@ extensions:
 ```
 
 With client certificate path:
+
 ```yaml
 extensions:
   azureauth:
@@ -79,8 +82,21 @@ extensions:
 ### Default authentication
 
 Not recommended for production.
+
 ```yaml
 extensions:
   azureauth:
     use_default: true
+```
+
+### With custom scopes
+
+You can set custom scopes if the audience required in the token does not match the host you are trying to reach.
+This is useful for Azure Monitor Workspaces since the workspace hostname is specific to your instance whereas the audience required is `https://monitor.azure.com/.default`
+
+```yaml:
+extensions:
+  azureauth:
+    scopes:
+      - https://monitor.azure.com/.default
 ```
