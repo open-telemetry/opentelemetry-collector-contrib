@@ -1,6 +1,6 @@
 include ../../Makefile.Common
 
-WEAVER_CONTAINER=otel/weaver@sha256:0466739a9c9bba8273ef5767ed2b417b82ef652d4e5fd3498185c714fa809460
+WEAVER_CONTAINER=otel/weaver:v0.17.1
 
 # Next - we want to run docker as our local file user, so generated code is not
 # owned by root, and we don't give unecessary access.
