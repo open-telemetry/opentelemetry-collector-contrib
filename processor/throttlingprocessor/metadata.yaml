@@ -1,0 +1,26 @@
+type: log_throttle
+
+status:
+  class: processor
+  stability:
+    alpha: [logs]
+  distributions: [contrib, k8s]
+  warnings: []
+  codeowners:
+    active: [MikeGoldsmith]
+    emeritus: [djaglowski]
+
+tests:
+  config:
+    interval: 1
+    threshold: 1
+    key_expression: Concat([attributes["key1"], attributes["key2"]], "_")
+
+telemetry:
+  metrics:
+    dedup_processor_aggregated_logs:
+      description: Number of log records that were aggregated together.
+      unit: "{records}"
+      enabled: true
+      histogram:
+        value_type: int
