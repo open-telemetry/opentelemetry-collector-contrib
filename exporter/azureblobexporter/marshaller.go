@@ -17,11 +17,13 @@ import (
 var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  &ptrace.JSONMarshaler{},
 	formatTypeProto: &ptrace.ProtoMarshaler{},
+	formatTypeJSONL: &tracesJSONLMarshaler{},
 }
 
 var metricsMarshalers = map[string]pmetric.Marshaler{
 	formatTypeJSON:  &pmetric.JSONMarshaler{},
 	formatTypeProto: &pmetric.ProtoMarshaler{},
+	formatTypeJSONL: &metricsJSONLMarshaler{},
 }
 
 var logsMarshalers = map[string]plog.Marshaler{
@@ -41,11 +43,11 @@ func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
 		return nil, errors.New("unknown logs format type: " + config.Formats.Logs)
 	}
 
-	if config.Formats.Metrics != formatTypeJSON && config.Formats.Metrics != formatTypeProto {
+	if config.Formats.Metrics != formatTypeJSON && config.Formats.Metrics != formatTypeProto && config.Formats.Metrics != formatTypeJSONL {
 		return nil, errors.New("unknown metrics format type: " + config.Formats.Metrics)
 	}
 
-	if config.Formats.Traces != formatTypeJSON && config.Formats.Traces != formatTypeProto {
+	if config.Formats.Traces != formatTypeJSON && config.Formats.Traces != formatTypeProto && config.Formats.Traces != formatTypeJSONL {
 		return nil, errors.New("unknown traces format type: " + config.Formats.Traces)
 	}
 

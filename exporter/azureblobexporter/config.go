@@ -124,11 +124,11 @@ func (c *Config) Validate() error {
 		return errors.New("unknown logs format type: " + c.Formats.Logs)
 	}
 
-	if c.Formats.Metrics != formatTypeJSON && c.Formats.Metrics != formatTypeProto {
+	if c.Formats.Metrics != formatTypeJSON && c.Formats.Metrics != formatTypeProto && c.Formats.Metrics != formatTypeJSONL {
 		return errors.New("unknown metrics format type: " + c.Formats.Metrics)
 	}
 
-	if c.Formats.Traces != formatTypeJSON && c.Formats.Traces != formatTypeProto {
+	if c.Formats.Traces != formatTypeJSON && c.Formats.Traces != formatTypeProto && c.Formats.Traces != formatTypeJSONL {
 		return errors.New("unknown traces format type: " + c.Formats.Traces)
 	}
 
