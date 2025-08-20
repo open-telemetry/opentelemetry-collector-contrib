@@ -87,6 +87,9 @@ type Config struct {
 
 	// OTLP mTLS configuration
 	ClientAuth ClientAuth
+
+	// Export behavior configuration
+	AllowExportFailures bool
 }
 
 type ClientAuth struct {
@@ -195,6 +198,9 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.ClientAuth.Enabled, "mtls", c.ClientAuth.Enabled, "Whether to require client authentication for mTLS")
 	fs.StringVar(&c.ClientAuth.ClientCertFile, "client-cert", c.ClientAuth.ClientCertFile, "Client certificate file")
 	fs.StringVar(&c.ClientAuth.ClientKeyFile, "client-key", c.ClientAuth.ClientKeyFile, "Client private key file")
+
+	// Export behavior configuration
+	fs.BoolVar(&c.AllowExportFailures, "allow-export-failures", c.AllowExportFailures, "Whether to continue running when export operations fail (instead of terminating)")
 }
 
 // SetDefaults is here to mirror the defaults for flags above,
@@ -218,4 +224,5 @@ func (c *Config) SetDefaults() {
 	c.ClientAuth.Enabled = false
 	c.ClientAuth.ClientCertFile = ""
 	c.ClientAuth.ClientKeyFile = ""
+	c.AllowExportFailures = false
 }

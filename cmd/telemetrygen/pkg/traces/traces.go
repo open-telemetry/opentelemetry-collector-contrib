@@ -152,6 +152,7 @@ func run(c *Config, logger *zap.Logger) error {
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
 			spanDuration:     c.SpanDuration,
+			allowFailures:    c.AllowExportFailures,
 		}
 
 		go w.simulateTraces(telemetryAttributes)
