@@ -18,7 +18,6 @@ import (
 )
 
 type telemetry struct {
-	meter               metric.Meter
 	refusedMetricPoints metric.Int64Counter
 }
 
@@ -37,7 +36,6 @@ func newTelemetry(set exporter.Settings) (*telemetry, error) {
 	}
 
 	return &telemetry{
-		meter:               meter,
 		refusedMetricPoints: refusedMetricPoints,
 	}, nil
 }
