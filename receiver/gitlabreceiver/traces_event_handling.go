@@ -349,17 +349,35 @@ func setSpanStatus(span ptrace.Span, status string) {
 }
 
 func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *gitlab.PipelineEvent) {
-	// Service information
+	// Service
 	attrs.PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
 
-	// VCS provider
+	// CICD
+
+	// ObjectAttributes.Name is the pipeline name, but it was added later in GitLab starting with version 16.1 (https://gitlab.com/gitlab-org/gitlab/-/merge_requests/123639)
+	// The name isn't always present in the GitLab webhook events, therefore we need to check if it's empty
+	if e.ObjectAttributes.Name != "" {
+		attrs.PutStr(string(semconv.CICDPipelineNameKey), e.ObjectAttributes.Name)
+	}
+
+	attrs.PutStr(string(semconv.CICDPipelineResultKey), e.ObjectAttributes.Status) //ToDo: Check against well known values and compare with run.state
+	attrs.PutStr(string(semconv.CICDPipelineRunIDKey), strconv.Itoa(e.ObjectAttributes.ID))
+	attrs.PutStr(string(semconv.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
+
+	// Resource attributes for workers are not applicable for GitLab, because GitLab provide worker information on job level
+	// One pipeline can have multiple jobs, and each job can have a different worker
+	// Therefore we set the worker attributes on job level
+
+	// VCS
+
+	// Provider
 	attrs.PutStr(string(semconv.VCSProviderNameGitlab.Key), semconv.VCSProviderNameGitlab.Value.AsString())
 
-	// Repository information
+	// Repository
 	attrs.PutStr(string(semconv.VCSRepositoryNameKey), e.Project.Name)
 	attrs.PutStr(string(semconv.VCSRepositoryURLFullKey), e.Project.WebURL)
 
-	// Ref/branch information
+	// Ref/branch
 	attrs.PutStr(string(semconv.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
 	if !e.ObjectAttributes.Tag {
 		attrs.PutStr(string(semconv.VCSRefHeadTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
@@ -375,5 +393,27 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 		attrs.PutStr(string(semconv.VCSChangeTitleKey), e.MergeRequest.Title)
 		attrs.PutStr(string(semconv.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
 		attrs.PutStr(string(semconv.VCSRefBaseTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
+	}
+
+	// ---------- The following attributes are not part of semconv yet ----------
+
+	// VCS
+	attrs.PutStr(AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp.Format(gitlabEventTimeFormat))
+	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
+	attrs.PutStr(AttributeVCSRepositoryNamespace, e.Project.Namespace)
+	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
+
+	// User details are only included if explicitly enabled in configuration
+	// This protects potentially sensitive information (PII) by default
+	if gtr.cfg.WebHook.IncludeUserDetails {
+		// Commit author information
+		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorName, e.Commit.Author.Name)
+		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.Commit.Author.Email)
+		attrs.PutStr(AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
+
+		// Pipeline actor information
+		attrs.PutInt(AttributeCICDPipelineRunActorID, int64(e.User.ID))
+		attrs.PutStr(AttributeCICDPipelineRunActorUsername, e.User.Username)
+		attrs.PutStr(AttributeCICDPipelineRunActorName, e.User.Name)
 	}
 }

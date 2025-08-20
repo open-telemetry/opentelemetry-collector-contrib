@@ -383,3 +383,64 @@ func TestParseGitlabTime(t *testing.T) {
 		})
 	}
 }
+
+func TestIncludeUserDetails(t *testing.T) {
+	tests := []struct {
+		name               string
+		includeUserDetails bool
+		expectUserAttrs    bool
+	}{
+		{
+			name:               "user details excluded by default",
+			includeUserDetails: false,
+			expectUserAttrs:    false,
+		},
+		{
+			name:               "user details included when enabled",
+			includeUserDetails: true,
+			expectUserAttrs:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			receiver := setupGitlabTracesReceiver(t)
+			receiver.cfg.WebHook.IncludeUserDetails = tt.includeUserDetails
+
+			var pipelineEvent gitlab.PipelineEvent
+			err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
+			require.NoError(t, err)
+
+			attrs := pcommon.NewMap()
+			receiver.setResourceAttributes(attrs, &pipelineEvent)
+
+			// Check for user-related attributes
+			_, hasAuthorName := attrs.Get(AttributeVCSRefHeadRevisionAuthorName)
+			_, hasAuthorEmail := attrs.Get(AttributeVCSRefHeadRevisionAuthorEmail)
+			_, hasCommitMessage := attrs.Get(AttributeVCSRefHeadRevisionMessage)
+			_, hasActorID := attrs.Get(AttributeCICDPipelineRunActorID)
+			_, hasActorUsername := attrs.Get(AttributeCICDPipelineRunActorUsername)
+			_, hasActorName := attrs.Get(AttributeCICDPipelineRunActorName)
+
+			if tt.expectUserAttrs {
+				require.True(t, hasAuthorName, "expected author name attribute")
+				require.True(t, hasAuthorEmail, "expected author email attribute")
+				require.True(t, hasCommitMessage, "expected commit message attribute")
+				require.True(t, hasActorID, "expected actor ID attribute")
+				require.True(t, hasActorUsername, "expected actor username attribute")
+				require.True(t, hasActorName, "expected actor name attribute")
+			} else {
+				require.False(t, hasAuthorName, "unexpected author name attribute")
+				require.False(t, hasAuthorEmail, "unexpected author email attribute")
+				require.False(t, hasCommitMessage, "unexpected commit message attribute")
+				require.False(t, hasActorID, "unexpected actor ID attribute")
+				require.False(t, hasActorUsername, "unexpected actor username attribute")
+				require.False(t, hasActorName, "unexpected actor name attribute")
+			}
+
+			// Non-sensitive attributes should always be present
+			_, hasServiceName := attrs.Get("service.name")
+			require.True(t, hasServiceName, "service.name should always be present")
+		})
+	}
+}
