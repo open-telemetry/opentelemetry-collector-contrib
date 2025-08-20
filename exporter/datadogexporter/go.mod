@@ -15,7 +15,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.67.0
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.67.0
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.67.0-devel.0.20250507144401-a64863d1e01a
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
 	github.com/DataDog/datadog-agent/pkg/util/log v0.68.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.43.0
@@ -157,6 +157,7 @@ require (
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.32.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/rum v0.32.0 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect

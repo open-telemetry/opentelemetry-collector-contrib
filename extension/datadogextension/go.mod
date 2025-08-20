@@ -57,7 +57,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/fips v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.67.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.67.0 // indirect

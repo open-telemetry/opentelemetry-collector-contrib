@@ -80,10 +80,10 @@ github.com/DataDog/datadog-api-client-go/v2 v2.42.0 h1:0L03LqChbOf7IaaiBUZpXi1Ss
 github.com/DataDog/datadog-api-client-go/v2 v2.42.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee h1:tXibLZk3G6HncIFJKaNItsdzcrk4YqILNDZlXPTNt4k=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee/go.mod h1:nTot/Iy0kW16bXgXr6blEc8gFeAS7vTqYlhAxh+dbc0=
-github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1 h1:La4jmC38Pv1CMlUhIMYl7uTZoH33FjplK+faeO7LK+c=
-github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1/go.mod h1:7g86HsKmsUkON9d8LfiPZRZiS1+ucuvVB3SEwPuuF3c=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1 h1:RoHver8/fv4qKZtmb11TJ/zcOMd0SqOKT8H9ZQIjjPA=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1/go.mod h1:yN8VBQrExGN/nbIpn8E2jrMJn94e69mnq8a5PDCKY/g=
+github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.32.0 h1:DHb9z/LaIbLtU5QRp27HNbx7Qc1M9MKWnSg/2ZcHanU=
+github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.32.0/go.mod h1:XAA4PqY8ZBsxF1mbq8FL0tKfLTYPVXbYsBNDVJXaIKI=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.32.0 h1:wucwQecuP7e7aYRBE87OKN+zQOYu6IgcCwML4Q12pfQ=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.32.0/go.mod h1:q7AMEka3+lPohgnNcfA8U9kQXgiLkTaU1NSQbC0OSpM=
 github.com/DataDog/sketches-go v1.4.7 h1:eHs5/0i2Sdf20Zkj0udVFWuCrXGRFig2Dcfm5rtcTxc=
 github.com/DataDog/sketches-go v1.4.7/go.mod h1:eAmQ/EBmtSO+nQp7IZMZVRPT4BQTmIc5RZQ+deGlTPM=
 github.com/DataDog/viper v1.14.0 h1:dIjTe/uJiah+QFqFZ+MXeqgmUvWhg37l37ZxFWxr3is=

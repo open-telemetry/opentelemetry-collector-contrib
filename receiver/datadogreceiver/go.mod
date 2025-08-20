@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.157
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.68.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.42.0
 	github.com/DataDog/sketches-go v1.4.7

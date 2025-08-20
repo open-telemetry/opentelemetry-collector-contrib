@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.157
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.67.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
@@ -136,6 +136,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.32.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.32.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.32.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/rum v0.32.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.32.0 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect

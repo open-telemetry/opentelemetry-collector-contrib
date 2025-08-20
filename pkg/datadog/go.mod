@@ -61,7 +61,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/metrics v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.67.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.67.0 // indirect
@@ -237,7 +237,7 @@ require (
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/grpc v1.74.2 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
