@@ -72,15 +72,15 @@ func TestParserConfigBuildValid(t *testing.T) {
 	spanIDField := entry.NewBodyField("span_id")
 	traceFlagsField := entry.NewBodyField("trace_flags")
 	cfg.TraceParser = configoptional.Some(TraceParser{
-		TraceID: &TraceIDConfig{
+		TraceID: configoptional.Some(TraceIDConfig{
 			ParseFrom: &traceIDField,
-		},
-		SpanID: &SpanIDConfig{
+		}),
+		SpanID: configoptional.Some(SpanIDConfig{
 			ParseFrom: &spanIDField,
-		},
-		TraceFlags: &TraceFlagsConfig{
+		}),
+		TraceFlags: configoptional.Some(TraceFlagsConfig{
 			ParseFrom: &traceFlagsField,
-		},
+		}),
 	})
 
 	scopeNameField := entry.NewBodyField("logger")

@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -211,12 +212,12 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
-		cfg.TLS = &configtls.ServerConfig{
+		cfg.TLS = configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "test.crt",
 				KeyFile:  "test.key",
 			},
-		}
+		})
 
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)
@@ -331,12 +332,12 @@ func TestBuild(t *testing.T) {
 				BaseConfig: BaseConfig{
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "/tmp/cert/missing",
 							KeyFile:  "/tmp/key/missing",
 						},
-					},
+					}),
 				},
 			},
 			true,

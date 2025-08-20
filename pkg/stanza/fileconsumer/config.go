@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -73,24 +74,24 @@ func NewConfig() *Config {
 type Config struct {
 	matcher.Criteria        `mapstructure:",squash"`
 	attrs.Resolver          `mapstructure:",squash"`
-	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
-	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
-	StartAt                 string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
-	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	Encoding                string          `mapstructure:"encoding,omitempty"`
-	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
-	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
-	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
-	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
-	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
-	IncludeFileRecordOffset bool            `mapstructure:"include_file_record_offset,omitempty"`
-	Compression             string          `mapstructure:"compression,omitempty"`
-	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
-	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
+	PollInterval            time.Duration                         `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles      int                                   `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int                                   `mapstructure:"max_batches,omitempty"`
+	StartAt                 string                                `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize                       `mapstructure:"fingerprint_size,omitempty"`
+	InitialBufferSize       helper.ByteSize                       `mapstructure:"initial_buffer_size,omitempty"`
+	MaxLogSize              helper.ByteSize                       `mapstructure:"max_log_size,omitempty"`
+	Encoding                string                                `mapstructure:"encoding,omitempty"`
+	SplitConfig             split.Config                          `mapstructure:"multiline,omitempty"`
+	TrimConfig              trim.Config                           `mapstructure:",squash,omitempty"`
+	FlushPeriod             time.Duration                         `mapstructure:"force_flush_period,omitempty"`
+	Header                  configoptional.Optional[HeaderConfig] `mapstructure:"header,omitempty"`
+	DeleteAfterRead         bool                                  `mapstructure:"delete_after_read,omitempty"`
+	IncludeFileRecordNumber bool                                  `mapstructure:"include_file_record_number,omitempty"`
+	IncludeFileRecordOffset bool                                  `mapstructure:"include_file_record_offset,omitempty"`
+	Compression             string                                `mapstructure:"compression,omitempty"`
+	PollsToArchive          int                                   `mapstructure:"polls_to_archive,omitempty"`
+	AcquireFSLock           bool                                  `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -140,8 +141,9 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	var hCfg *header.Config
-	if c.Header != nil {
-		hCfg, err = header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc)
+	if c.Header.HasValue() {
+		headerConfig := c.Header.Get()
+		hCfg, err = header.NewConfig(set, headerConfig.Pattern, headerConfig.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -230,7 +232,7 @@ func (c Config) validate() error {
 		}
 	}
 
-	if c.Header != nil {
+	if c.Header.HasValue() {
 		if !AllowHeaderMetadataParsing.IsEnabled() {
 			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
 		}
@@ -238,7 +240,8 @@ func (c Config) validate() error {
 			return errors.New("'header' cannot be specified with 'start_at: end'")
 		}
 		set := component.TelemetrySettings{Logger: zap.NewNop()}
-		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+		headerConfig := c.Header.Get()
+		if _, errConfig := header.NewConfig(set, headerConfig.Pattern, headerConfig.MetadataOperators, enc); errConfig != nil {
 			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
 	}

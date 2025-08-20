@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
@@ -17,23 +19,23 @@ func NewTraceParser() TraceParser {
 	spanID := entry.NewBodyField("span_id")
 	traceFlags := entry.NewBodyField("trace_flags")
 	return TraceParser{
-		TraceID: &TraceIDConfig{
+		TraceID: configoptional.Some(TraceIDConfig{
 			ParseFrom: &traceID,
-		},
-		SpanID: &SpanIDConfig{
+		}),
+		SpanID: configoptional.Some(SpanIDConfig{
 			ParseFrom: &spanID,
-		},
-		TraceFlags: &TraceFlagsConfig{
+		}),
+		TraceFlags: configoptional.Some(TraceFlagsConfig{
 			ParseFrom: &traceFlags,
-		},
+		}),
 	}
 }
 
 // TraceParser is a helper that parses trace spans (and flags) onto an entry.
 type TraceParser struct {
-	TraceID    *TraceIDConfig    `mapstructure:"trace_id,omitempty"`
-	SpanID     *SpanIDConfig     `mapstructure:"span_id,omitempty"`
-	TraceFlags *TraceFlagsConfig `mapstructure:"trace_flags,omitempty"`
+	TraceID    configoptional.Optional[TraceIDConfig]    `mapstructure:"trace_id,omitempty"`
+	SpanID     configoptional.Optional[SpanIDConfig]     `mapstructure:"span_id,omitempty"`
+	TraceFlags configoptional.Optional[TraceFlagsConfig] `mapstructure:"trace_flags,omitempty"`
 }
 
 type TraceIDConfig struct {
@@ -50,26 +52,26 @@ type TraceFlagsConfig struct {
 
 // Validate validates a TraceParser, and reconfigures it if necessary
 func (t *TraceParser) Validate() error {
-	if t.TraceID == nil {
-		t.TraceID = &TraceIDConfig{}
+	if !t.TraceID.HasValue() {
+		t.TraceID = configoptional.Some(TraceIDConfig{})
 	}
-	if t.TraceID.ParseFrom == nil {
+	if traceIDConfig := t.TraceID.Get(); traceIDConfig != nil && traceIDConfig.ParseFrom == nil {
 		field := entry.NewBodyField("trace_id")
-		t.TraceID.ParseFrom = &field
+		traceIDConfig.ParseFrom = &field
 	}
-	if t.SpanID == nil {
-		t.SpanID = &SpanIDConfig{}
+	if !t.SpanID.HasValue() {
+		t.SpanID = configoptional.Some(SpanIDConfig{})
 	}
-	if t.SpanID.ParseFrom == nil {
+	if spanIDConfig := t.SpanID.Get(); spanIDConfig != nil && spanIDConfig.ParseFrom == nil {
 		field := entry.NewBodyField("span_id")
-		t.SpanID.ParseFrom = &field
+		spanIDConfig.ParseFrom = &field
 	}
-	if t.TraceFlags == nil {
-		t.TraceFlags = &TraceFlagsConfig{}
+	if !t.TraceFlags.HasValue() {
+		t.TraceFlags = configoptional.Some(TraceFlagsConfig{})
 	}
-	if t.TraceFlags.ParseFrom == nil {
+	if traceFlagsConfig := t.TraceFlags.Get(); traceFlagsConfig != nil && traceFlagsConfig.ParseFrom == nil {
 		field := entry.NewBodyField("trace_flags")
-		t.TraceFlags.ParseFrom = &field
+		traceFlagsConfig.ParseFrom = &field
 	}
 	return nil
 }
@@ -91,9 +93,15 @@ func parseHexField(entry *entry.Entry, field *entry.Field) ([]byte, error) {
 // Parse will parse a trace (trace_id, span_id and flags) from a field and attach it to the entry
 func (t *TraceParser) Parse(entry *entry.Entry) error {
 	var errTraceID, errSpanID, errTraceFlags error
-	entry.TraceID, errTraceID = parseHexField(entry, t.TraceID.ParseFrom)
-	entry.SpanID, errSpanID = parseHexField(entry, t.SpanID.ParseFrom)
-	entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.ParseFrom)
+	if traceIDConfig := t.TraceID.Get(); traceIDConfig != nil {
+		entry.TraceID, errTraceID = parseHexField(entry, traceIDConfig.ParseFrom)
+	}
+	if spanIDConfig := t.SpanID.Get(); spanIDConfig != nil {
+		entry.SpanID, errSpanID = parseHexField(entry, spanIDConfig.ParseFrom)
+	}
+	if traceFlagsConfig := t.TraceFlags.Get(); traceFlagsConfig != nil {
+		entry.TraceFlags, errTraceFlags = parseHexField(entry, traceFlagsConfig.ParseFrom)
+	}
 	if errTraceID != nil || errTraceFlags != nil || errSpanID != nil {
 		err := errors.NewError("Error decoding traces for logs", "")
 		if errTraceID != nil {

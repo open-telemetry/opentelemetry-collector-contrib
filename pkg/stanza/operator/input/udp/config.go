@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -66,13 +67,13 @@ type AsyncConfig struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
-	OneLogPerPacket bool         `mapstructure:"one_log_per_packet,omitempty"`
-	AddAttributes   bool         `mapstructure:"add_attributes,omitempty"`
-	Encoding        string       `mapstructure:"encoding,omitempty"`
-	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
-	TrimConfig      trim.Config  `mapstructure:",squash"`
-	AsyncConfig     *AsyncConfig `mapstructure:"async,omitempty"`
+	ListenAddress   string                               `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket bool                                 `mapstructure:"one_log_per_packet,omitempty"`
+	AddAttributes   bool                                 `mapstructure:"add_attributes,omitempty"`
+	Encoding        string                               `mapstructure:"encoding,omitempty"`
+	SplitConfig     split.Config                         `mapstructure:"multiline,omitempty"`
+	TrimConfig      trim.Config                          `mapstructure:",squash"`
+	AsyncConfig     configoptional.Optional[AsyncConfig] `mapstructure:"async,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -108,15 +109,16 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		resolver = helper.NewIPResolver()
 	}
 
-	if c.AsyncConfig != nil {
-		if c.AsyncConfig.Readers <= 0 {
-			c.AsyncConfig.Readers = defaultReaders
+	if c.AsyncConfig.HasValue() {
+		asyncConfig := c.AsyncConfig.Get()
+		if asyncConfig.Readers <= 0 {
+			asyncConfig.Readers = defaultReaders
 		}
-		if c.AsyncConfig.Processors <= 0 {
-			c.AsyncConfig.Processors = defaultProcessors
+		if asyncConfig.Processors <= 0 {
+			asyncConfig.Processors = defaultProcessors
 		}
-		if c.AsyncConfig.MaxQueueLength <= 0 {
-			c.AsyncConfig.MaxQueueLength = defaultMaxQueueLength
+		if asyncConfig.MaxQueueLength <= 0 {
+			asyncConfig.MaxQueueLength = defaultMaxQueueLength
 		}
 	}
 
@@ -129,11 +131,12 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		splitFunc:       splitFunc,
 		resolver:        resolver,
 		OneLogPerPacket: c.OneLogPerPacket,
-		AsyncConfig:     c.AsyncConfig,
+		AsyncConfig:     c.AsyncConfig.Get(),
 	}
 
-	if c.AsyncConfig != nil {
-		udpInput.messageQueue = make(chan messageAndAddress, c.AsyncConfig.MaxQueueLength)
+	if c.AsyncConfig.HasValue() {
+		asyncConfig := c.AsyncConfig.Get()
+		udpInput.messageQueue = make(chan messageAndAddress, asyncConfig.MaxQueueLength)
 		udpInput.readBufferPool = sync.Pool{
 			New: func() any {
 				buffer := make([]byte, MaxUDPSize)

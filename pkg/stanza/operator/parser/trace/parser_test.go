@@ -9,9 +9,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func TestInit(t *testing.T) {
@@ -53,7 +55,7 @@ func TestBuild(t *testing.T) {
 			func() (*Config, error) {
 				parseFrom := entry.NewBodyField("app_span_id")
 				cfg := NewConfigWithID("test_id")
-				cfg.SpanID.ParseFrom = &parseFrom
+				cfg.SpanID = configoptional.Some(helper.SpanIDConfig{ParseFrom: &parseFrom})
 				return cfg, nil
 			},
 			false,
@@ -63,7 +65,7 @@ func TestBuild(t *testing.T) {
 			func() (*Config, error) {
 				parseFrom := entry.NewBodyField("app_trace_id")
 				cfg := NewConfigWithID("test_id")
-				cfg.TraceID.ParseFrom = &parseFrom
+				cfg.TraceID = configoptional.Some(helper.TraceIDConfig{ParseFrom: &parseFrom})
 				return cfg, nil
 			},
 			false,
@@ -73,7 +75,7 @@ func TestBuild(t *testing.T) {
 			func() (*Config, error) {
 				parseFrom := entry.NewBodyField("trace-flags-field")
 				cfg := NewConfigWithID("test_id")
-				cfg.TraceFlags.ParseFrom = &parseFrom
+				cfg.TraceFlags = configoptional.Some(helper.TraceFlagsConfig{ParseFrom: &parseFrom})
 				return cfg, nil
 			},
 			false,
@@ -128,9 +130,9 @@ func TestProcess(t *testing.T) {
 				spanFrom := entry.NewBodyField("app_span_id")
 				traceFrom := entry.NewBodyField("app_trace_id")
 				flagsFrom := entry.NewBodyField("trace_flags_field")
-				cfg.SpanID.ParseFrom = &spanFrom
-				cfg.TraceID.ParseFrom = &traceFrom
-				cfg.TraceFlags.ParseFrom = &flagsFrom
+				cfg.SpanID = configoptional.Some(helper.SpanIDConfig{ParseFrom: &spanFrom})
+				cfg.TraceID = configoptional.Some(helper.TraceIDConfig{ParseFrom: &traceFrom})
+				cfg.TraceFlags = configoptional.Some(helper.TraceFlagsConfig{ParseFrom: &flagsFrom})
 				set := componenttest.NewNopTelemetrySettings()
 				return cfg.Build(set)
 			},

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
@@ -43,11 +45,11 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Encoding = "utf-8"
 					cfg.SplitConfig.LineStartPattern = "ABC"
 					cfg.SplitConfig.LineEndPattern = ""
-					cfg.AsyncConfig = &AsyncConfig{
+					cfg.AsyncConfig = configoptional.Some(AsyncConfig{
 						Readers:        2,
 						Processors:     2,
 						MaxQueueLength: 100,
-					}
+					})
 					return cfg
 				}(),
 			},

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -37,9 +38,9 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 	syslog.BaseConfig  `mapstructure:",squash"`
-	TCP                *tcp.BaseConfig `mapstructure:"tcp"`
-	UDP                *udp.BaseConfig `mapstructure:"udp"`
-	OnError            string          `mapstructure:"on_error"`
+	TCP                configoptional.Optional[tcp.BaseConfig] `mapstructure:"tcp"`
+	UDP                configoptional.Optional[udp.BaseConfig] `mapstructure:"udp"`
+	OnError            string                                  `mapstructure:"on_error"`
 }
 
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
@@ -61,11 +62,12 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
 	}
 
-	if c.TCP != nil {
+	if c.TCP.HasValue() {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.AttributerConfig = c.AttributerConfig
 		tcpInputCfg.IdentifierConfig = c.IdentifierConfig
-		tcpInputCfg.BaseConfig = *c.TCP
+		tcpConfig := c.TCP.Get()
+		tcpInputCfg.BaseConfig = *tcpConfig
 		if syslogParserCfg.EnableOctetCounting {
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
 		}
@@ -87,11 +89,12 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}, nil
 	}
 
-	if c.UDP != nil {
+	if c.UDP.HasValue() {
 		udpInputCfg := udp.NewConfigWithID(inputBase.ID() + "_internal_udp")
 		udpInputCfg.AttributerConfig = c.AttributerConfig
 		udpInputCfg.IdentifierConfig = c.IdentifierConfig
-		udpInputCfg.BaseConfig = *c.UDP
+		udpConfig := c.UDP.Get()
+		udpInputCfg.BaseConfig = *udpConfig
 
 		// Octet counting and Non-Transparent-Framing are invalid for UDP connections
 		if syslogParserCfg.EnableOctetCounting || syslogParserCfg.NonTransparentFramingTrailer != nil {
