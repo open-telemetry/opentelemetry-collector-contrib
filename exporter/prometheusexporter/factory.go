@@ -29,7 +29,7 @@ func newTelemetry(set exporter.Settings) (*telemetry, error) {
 
 	refusedMetricPoints, err := meter.Int64Counter(
 		"otelcol_exporter_refused_metric_points",
-		metric.WithDescription("Number of metric points refused by the prometheus exporter"),
+		metric.WithDescription("Number of metric points refused by the prometheus exporter. [alpha]"),
 	)
 	if err != nil {
 		return nil, err
