@@ -495,16 +495,16 @@ func flushBulkIndexer(
 		tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, successAttrSet)
 	}
 
-	var tooManyReqs, clientFailed, serverFailed int64
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
+		var outcome string
 		switch {
 		case resp.Status == http.StatusTooManyRequests:
-			tooManyReqs++
+			outcome = "too_many"
 		case resp.Status >= 500:
-			serverFailed++
+			outcome = "failed_server"
 		case resp.Status >= 400:
-			clientFailed++
+			outcome = "failed_client"
 		}
 
 		if resp.Error.Type == "version_conflict_engine_exception" &&
@@ -515,6 +515,17 @@ func flushBulkIndexer(
 			// to log these here.
 			continue
 		}
+    
+		tb.ElasticsearchDocsProcessed.Add(
+			ctx,
+			int64(1),
+			metric.WithAttributeSet(attribute.NewSet(
+				append([]attribute.KeyValue{
+					attribute.String("outcome", outcome),
+					attribute.String("error.type", resp.Error.Type),
+				}, defaultMetaAttrs...)...,
+			)),
+		)
 
 		// Log failed docs
 		fields = append(fields,
@@ -540,39 +551,6 @@ func flushBulkIndexer(
 			metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
 					attribute.String("outcome", "success"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
-	}
-	if tooManyReqs > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			tooManyReqs,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "too_many"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
-	}
-	if clientFailed > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			clientFailed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failed_client"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
-	}
-	if serverFailed > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			serverFailed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failed_server"),
 				}, defaultMetaAttrs...)...,
 			)),
 		)
