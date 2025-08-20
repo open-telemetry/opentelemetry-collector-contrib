@@ -515,7 +515,7 @@ func flushBulkIndexer(
 			// to log these here.
 			continue
 		}
-    
+
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			int64(1),
