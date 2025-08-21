@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// The following attributes are not part of semconv yet, but potenital candidates for future inclusion
+	// The following attributes are not part of semconv yet, but potential candidates for future inclusion
 	// They are highly experimental and subject to change
 
 	// Repository
