@@ -528,10 +528,6 @@ component_management:
     name: processor_resource
     paths:
     - processor/resourceprocessor/**
-  - component_id: processor_routing
-    name: processor_routing
-    paths:
-    - processor/routingprocessor/**
   - component_id: processor_schema
     name: processor_schema
     paths:

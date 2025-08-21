@@ -209,7 +209,6 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/dynatrace
-      - processor/routing
       - processor/schema
       - processor/span
       - processor/sumologic
