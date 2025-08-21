@@ -21,6 +21,9 @@ attributes:
     description: The status of the failure store.
     type: string
     enum: [unknown, not_enabled, used, failed]
+  error.type:
+    description: The type of error that occurred when processing the documents.
+    type: string
 
 telemetry:
   metrics:
@@ -55,7 +58,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [outcome, http.response.status_code, failure_store]
+      attributes: [outcome, http.response.status_code, failure_store, error.type]
     elasticsearch.docs.retried:
       prefix: otelcol.
       stability:

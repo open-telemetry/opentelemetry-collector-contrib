@@ -91,7 +91,12 @@ func TestReception(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
+	defer func() {
+		// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
+		// and the context shouldn't be already cancelled during a graceful shutdown
+		// if the server still can have any live connections. See issue #42072.
+		require.NoError(t, jr.Shutdown(t.Context()))
+	}()
 
 	// 2. Then send spans to the Jaeger receiver.
 	_, port, _ := net.SplitHostPort(addr)

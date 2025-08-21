@@ -50,7 +50,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 func TestMultipleCreateWithAPIServer(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.APIServer = &APIServer{
+	cfg.APIServer = APIServer{
 		Enabled: true,
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:9090",

@@ -158,69 +158,6 @@ resourceMetrics:
       attributes:
         - key: iis.application_pool
           value:
-            stringValue: .NET v4.5 Classic
-    scopeMetrics:
-      - metrics:
-          - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
-            gauge:
-              dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.state
-            unit: '{state}'
-          - description: The application pools uptime period since the last restart.
-            gauge:
-              dataPoints:
-                - asInt: "815"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.uptime
-            unit: '{ms}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: iis.application_pool
-          value:
-            stringValue: '---1'
-    scopeMetrics:
-      - metrics:
-          - description: Age of oldest request in the queue.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.request.queue.age.max
-            unit: ms
-          - description: Current number of requests in the queue.
-            name: iis.request.queue.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            unit: '{requests}'
-          - description: Total number of requests rejected.
-            name: iis.request.rejected
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-              isMonotonic: true
-            unit: '{requests}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: iis.application_pool
-          value:
             stringValue: DefaultAppPool
     scopeMetrics:
       - metrics:
@@ -267,32 +204,6 @@ resourceMetrics:
                   timeUnixNano: "1752035887080036000"
               isMonotonic: true
             unit: '{requests}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: iis.application_pool
-          value:
-            stringValue: .NET v4.5
-    scopeMetrics:
-      - metrics:
-          - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
-            gauge:
-              dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.state
-            unit: '{state}'
-          - description: The application pools uptime period since the last restart.
-            gauge:
-              dataPoints:
-                - asInt: "815"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.uptime
-            unit: '{ms}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
           version: latest

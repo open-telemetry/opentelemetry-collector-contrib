@@ -1,0 +1,51 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-siem
+        - key: cloud.resource_id
+          value:
+            stringValue: cloudaudit.googleapis.com%2Fpolicy
+        - key: gcp.resource_type
+          value:
+            stringValue: audited_resource
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-siem
+        - key: gcp.label.method
+          value:
+            stringValue: google.storage.buckets.get
+        - key: gcp.label.service
+          value:
+            stringValue: storage.googleapis.com
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: d21cmyd7av9
+              - key: gcp.audit.service.name
+                value:
+                  stringValue: storage.googleapis.com
+              - key: gcp.audit.method.name
+                value:
+                  stringValue: google.storage.buckets.get
+              - key: gcp.audit.resource.name
+                value:
+                  stringValue: projects/elastic-siem
+              - key: rpc.jsonrpc.error_code
+                value:
+                  intValue: "7"
+              - key: rpc.jsonrpc.error_message
+                value:
+                  stringValue: PERMISSION_DENIED
+              - key: client.address
+                value:
+                  stringValue: 192.168.1.1
+            body: {}
+            observedTimeUnixNano: "1631502615410616031"
+            severityNumber: 17
+            severityText: ERROR
+            timeUnixNano: "1631502614801613786"
+        scope: {}

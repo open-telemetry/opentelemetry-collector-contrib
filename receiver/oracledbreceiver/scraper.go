@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -680,6 +681,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 }
 
 func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs) error {
+	const action = "ACTION"
 	const duration = "DURATION_SEC"
 	const event = "EVENT"
 	const hostName = "MACHINE"
@@ -706,6 +708,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	var scrapeErrors []error
 
 	dbClients := s.samplesQueryClient
+	propagator := propagation.TraceContext{}
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	rows, err := dbClients.metricRows(ctx, s.querySampleCfg.MaxRowsPerQuery)
@@ -740,7 +743,11 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			clientPort = 0
 		}
 
-		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
+		queryContext := propagator.Extract(ctx, propagation.MapCarrier{
+			"traceparent": row[action],
+		})
+
+		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], row[objectName], row[objectType],
 			row[osUser], queryDuration)

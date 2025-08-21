@@ -223,7 +223,6 @@ processor/metricstransformprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
-processor/routingprocessor
 processor/schemaprocessor
 processor/spanprocessor
 processor/sumologicprocessor

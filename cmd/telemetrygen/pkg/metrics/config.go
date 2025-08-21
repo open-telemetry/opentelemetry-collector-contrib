@@ -41,6 +41,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", c.HTTPPath, "Which URL path to write to")
 
 	fs.IntVar(&c.NumMetrics, "metrics", c.NumMetrics, "Number of metrics to generate in each worker (ignored if duration is provided)")
+	fs.StringVar(&c.MetricName, "otlp-metric-name", c.MetricName, "Metric name of the exported metric")
 
 	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID to use as exemplar")
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID to use as exemplar")

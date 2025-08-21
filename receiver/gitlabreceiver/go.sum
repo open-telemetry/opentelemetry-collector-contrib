@@ -137,8 +137,8 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-gitlab.com/gitlab-org/api/client-go v0.138.0 h1:2BmPq3or7PU0HqDXPsmgA2dwopRZ1RsOHbVBKNKqAAE=
-gitlab.com/gitlab-org/api/client-go v0.138.0/go.mod h1:vY0XbE86FvL7v5jCGDiaFgDyCV8YbmjIIkBhXx+ZDWM=
+gitlab.com/gitlab-org/api/client-go v0.141.1 h1:d27K2wKSAzp6ytoc7pwJrNGQy5PRAVNXgVav16KfEMg=
+gitlab.com/gitlab-org/api/client-go v0.141.1/go.mod h1:IVkgruxTxL3I9250JBxDeSS1gt+/OO5fQnQnMINMtZ0=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector v0.132.0 h1:uNCmTPZ+AnIV+KHdUzOSkKrugl5/RCS0Er8Fb3fxwCM=

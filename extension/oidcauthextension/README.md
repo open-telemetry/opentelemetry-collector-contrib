@@ -67,3 +67,36 @@ extensions:
 ```
 
 Although this configuration is still accepted by the extension, it is deprecated and support for it will be dropped in the future.
+
+## Accessing JWT Claims
+
+The OIDC extension allows you to access JWT claims in the processor context.
+This allows you to implement custom labeling based on received JWT token claims.
+
+```yaml
+extensions:
+  oidc:
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        audience: account
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        auth:
+          authenticator: oidc
+
+processors:
+  resource:
+    attributes:
+      # Add predefined OIDC claims to the resource attributes
+      - key: subject
+        action: upsert
+        from_context: auth.claims.subject
+
+      # Adding dynamic claims from the JWT token
+      - key: tenant_id
+        action: upsert
+        from_context: auth.claims.tenant_id
+```

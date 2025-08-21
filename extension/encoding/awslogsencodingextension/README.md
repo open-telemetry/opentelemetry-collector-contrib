@@ -206,6 +206,7 @@ extensions:
 | `userIdentity.arn`                    | `aws.principal.arn`                                           |
 | `userIdentity.principalId`            | `aws.principal.id`                                            |
 | `userIdentity.type`                   | `aws.principal.type`                                          |
+| `userIdentity.accessKeyId`            | `aws.access_key.id`                                           |
 | `requestParameters`                   | `aws.request.parameters` (map of all request parameters)      |
 | `requestID`                           | `aws.request_id`                                              |
 | `resources`                           | `aws.resources` (as an array, if available)                   |
