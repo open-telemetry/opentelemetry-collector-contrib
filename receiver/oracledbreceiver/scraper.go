@@ -681,7 +681,6 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 }
 
 func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs) error {
-	s.logger.Info(">>>>  collecting sqmples")
 	const action = "ACTION"
 	const duration = "DURATION_SEC"
 	const event = "EVENT"
