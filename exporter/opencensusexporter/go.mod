@@ -1,3 +1,4 @@
+// Deprecated: this exporter is no longer maintained and has reached end-of-life. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36791
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
 
 go 1.24
