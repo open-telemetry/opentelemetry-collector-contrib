@@ -12,10 +12,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.67.0
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.67.0
 	github.com/DataDog/datadog-agent/pkg/serializer v0.67.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.71.0-devel.0.20250820164444-fcef12608466
 	github.com/DataDog/datadog-agent/pkg/util/compression v0.67.0
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.67.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.31.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.132.0
 	github.com/stretchr/testify v1.10.0
@@ -154,7 +154,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.2.2 // indirect
-	github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 // indirect
+	github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -187,7 +187,7 @@ require (
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.7 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.8-0.20250809033336-ffcdc2b7662f // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.8.0 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
@@ -237,7 +237,7 @@ require (
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/grpc v1.74.2 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
@@ -253,7 +253,7 @@ require (
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
