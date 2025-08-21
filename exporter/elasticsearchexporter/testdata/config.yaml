@@ -120,13 +120,21 @@ elasticsearch/metadata_keys:
   metadata_keys:
     - x-test-1
     - x-test-2
-elasticsearch/queuebatch_enabled:
+elasticsearch/queuebatch_enabled_invalid:
   endpoint: https://elastic.example.com:9200
   sending_queue:
     enabled: true
     num_consumers: 100
+    batch: {}
+elasticsearch/queuebatch_enabled_complete:
+  endpoint: https://elastic.example.com:9200
+  sending_queue:
+    enabled: true
+    num_consumers: 100
+    sizer: items
+    queue_size: 1000
     batch:
-      flush_timeout: 1s
+      flush_timeout: 2s
       sizer: bytes
-      min_size: 10000
-      max_size: 100000
+      min_size: 100000
+      max_size: 10000000

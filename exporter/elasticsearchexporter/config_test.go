@@ -47,6 +47,7 @@ func TestConfig(t *testing.T) {
 		configFile string
 		id         component.ID
 		expected   component.Config
+		invalid    bool
 	}{
 		{
 			id:         component.NewIDWithName(metadata.Type, ""),
@@ -362,8 +363,9 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "queuebatch_enabled"),
+			id:         component.NewIDWithName(metadata.Type, "queuebatch_enabled_invalid"),
 			configFile: "config.yaml",
+			invalid:    true,
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
@@ -372,12 +374,32 @@ func TestConfig(t *testing.T) {
 				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeRequests
 				cfg.QueueBatchConfig.Batch = configoptional.Some(
 					exporterhelper.BatchConfig{
-						FlushTimeout: time.Second,
-						Sizer: exporterhelper.RequestSizerTypeBytes,
-						MinSize: 10000,
-						MaxSize: 100000,
+						// Note: It's not obvious how this "requests" sizer
+						// is configured, given that config.yaml reads "{}".
+						// This is part of the test expectation.
+						// This config is invalid for at least one other
+						// missing field in this configuration, not because
+						// of an unset sizer as we might expect!
+						Sizer: exporterhelper.RequestSizerTypeRequests,
 					},
 				)
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "queuebatch_enabled_complete"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.QueueBatchConfig.Enabled = true
+				cfg.QueueBatchConfig.NumConsumers = 100
+				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeItems
+				cfg.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					FlushTimeout: 2*time.Second,
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+					MinSize: 100000,
+					MaxSize: 10000000,
+				})
 			}),
 		},
 	}
@@ -394,7 +416,11 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			if tt.invalid {
+				assert.Error(t, xconfmap.Validate(cfg))
+			} else {
+				assert.NoError(t, xconfmap.Validate(cfg))
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
