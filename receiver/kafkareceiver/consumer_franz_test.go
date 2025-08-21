@@ -238,10 +238,14 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil)
 	require.NoError(t, err)
 
+	// `Shutdown` must be idempotent and succeed even if never started.
 	for i := 0; i < 2; i++ {
-		require.EqualError(t, c.Shutdown(t.Context()),
-			"kafka consumer: consumer isn't running")
+		require.NoError(t, c.Shutdown(t.Context()))
 	}
+
+	// Verify internal signal that there's nothing to shut down.
+	// (Same package, so we can call the unexported helper.)
+	require.False(t, c.triggerShutdown(), "triggerShutdown should indicate no-op when never started")
 }
 
 // TestRaceLostVsConsume verifies no data race occurs between concurrent
