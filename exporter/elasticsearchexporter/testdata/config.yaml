@@ -125,4 +125,8 @@ elasticsearch/queuebatch_enabled:
   sending_queue:
     enabled: true
     num_consumers: 100
-    batch: {}
+    batch:
+      flush_timeout: 1s
+      sizer: bytes
+      min_size: 10000
+      max_size: 100000
