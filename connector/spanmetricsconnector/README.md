@@ -55,7 +55,12 @@ across all spans:
 - `span.name`
 - `span.kind`
 - `status.code`
+- `service.instance.id`
 
+The `service.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector 
+does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
+Currently, `service.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeServiceInstanceID`.
+More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
 
@@ -244,9 +249,12 @@ For more example configuration covering various other use cases, please visit th
 
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 
-## Known Limitation: Violation of the Single Writer Principle
+## Known Limitation: the Single Writer Principle
 
-The `spanmetricsconnector` currently does not guarantee adherence to the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer), which is a core requirement in the OpenTelemetry metrics data model. Depending on how the collector is configured, multiple components may write to the same metric stream. This can result in inconsistent data, metric conflicts, or dropped series in metric backends.
+Proper configuration of the `spanmetricsconnector` ensures compliance with the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer),
+which is a core requirement in the OpenTelemetry metrics data model. Misconfiguration, however, 
+may allow multiple components to write to the same metric stream, resulting in data inconsistency, 
+metric conflicts, or the dropping of time series by metric backends.
 
 ### Why this happens
 
@@ -260,8 +268,16 @@ This issue typically arises when:
 
 To reduce the risk of conflicting writes:
 
-* Avoid using multiple instances of the `spanmetricsconnector` unless metrics are partitioned (e.g., by attribute filtering) so each stream has a single writer
-* If multiple pipelines are used, ensure each produces uniquely identified metrics (e.g., inject attributes using a processor)
+* Add `resource_metrics_key_attributes` to your configuration.
+```
+connectors:
+  spanmetrics:
+    resource_metrics_key_attributes:
+      - service.name
+      - telemetry.sdk.language
+      - telemetry.sdk.name
+```
+* Manually enabled the feature gate: `connector.spanmetrics.includeServiceInstanceID` to produces uniquely identified metrics.
 * For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
 
 More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
@@ -49,6 +50,7 @@ func TestNewConnector(t *testing.T) {
 			factory := NewFactory()
 
 			creationParams := connectortest.NewNopSettings(metadata.Type)
+			creationParams.Resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instanceID)
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Explicit = configoptional.Some(ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,

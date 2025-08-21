@@ -51,6 +51,8 @@ const (
 
 	sampleRegion   = "us-east-1"
 	sampleDuration = float64(11)
+
+	instanceID = "0044953a-2946-449f-a5c8-2971f2a63928"
 )
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
@@ -490,7 +492,7 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 		MetricsFlushInterval: time.Nanosecond,
 	}
 
-	c, err := newConnector(zap.NewNop(), cfg, clock)
+	c, err := newConnector(zap.NewNop(), cfg, clock, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +507,7 @@ func stringp(str string) *string {
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
@@ -525,7 +527,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ExcludeDimensions = []string{"span.kind", "service.name", "span.name", "status.code"}
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
@@ -538,7 +540,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ExcludeDimensions = []string{"span.kind", "service.name.wrong.name", "span.name", "status.code"}
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
@@ -550,7 +552,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 func TestBuildKeyWithDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
 	defaultFoo := pcommon.NewValueStr("bar")
@@ -691,7 +693,7 @@ func TestConnectorCapabilities(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	// Override the default no-op consumer for testing.
 	c.metricsConsumer = new(consumertest.MetricsSink)
 	assert.NoError(t, err)
@@ -1519,7 +1521,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Events = tt.eventsConfig
-			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 			require.NoError(t, err)
 			err = c.ConsumeTraces(t.Context(), buildSampleTrace())
 			require.NoError(t, err)
@@ -1873,7 +1875,7 @@ func TestSeparateDimensions(t *testing.T) {
 	cfg.Dimensions = []Dimension{{Name: stringAttrName, Default: nil}}
 	cfg.CallsDimensions = []Dimension{{Name: intAttrName, Default: stringp("0")}}
 	cfg.Histogram.Dimensions = []Dimension{{Name: doubleAttrName, Default: stringp("0.0")}}
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 	err = c.ConsumeTraces(t.Context(), buildSampleTrace())
 	require.NoError(t, err)
@@ -2030,7 +2032,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 		{Name: "region"},
 	}
 
-	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
 	require.NotNil(t, connector)
@@ -2168,7 +2170,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 		{Name: "event.name"},
 	}
 
-	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 	require.NotNil(t, connector)
 
@@ -2250,4 +2252,82 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 
 	assert.Equal(t, 2, normalCount, "expected 2 normal metrics")
 	assert.Equal(t, 1, overflowCount, "expected 1 overflow metric")
+}
+
+func TestBuildAttributesWithFeatureGate(t *testing.T) {
+	tests := []struct {
+		name                       string
+		instrumentationScope       pcommon.InstrumentationScope
+		config                     Config
+		want                       map[string]string
+		includeCollectorInstanceID bool
+	}{
+		{
+			name: "disable includeServiceInstanceID feature-gate",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:                 "test_service",
+				spanNameKey:                    "test_span",
+				spanKindKey:                    "SPAN_KIND_INTERNAL",
+				statusCodeKey:                  "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:    "express",
+				instrumentationScopeVersionKey: "1.0.0",
+			},
+		},
+		{
+			name: "enable includeServiceInstanceID feature-gate",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:                           "test_service",
+				spanNameKey:                              "test_span",
+				spanKindKey:                              "SPAN_KIND_INTERNAL",
+				statusCodeKey:                            "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:              "express",
+				instrumentationScopeVersionKey:           "1.0.0",
+				string(conventions.ServiceInstanceIDKey): instanceID,
+			},
+			includeCollectorInstanceID: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: tt.config, instanceID: instanceID}
+			if tt.includeCollectorInstanceID {
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeServiceInstanceID.ID(), true))
+			}
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeServiceInstanceID.ID(), false))
+			}()
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.Str())
+			}
+		})
+	}
 }
