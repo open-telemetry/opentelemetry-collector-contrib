@@ -414,7 +414,6 @@ func TestIncludeUserAttributes(t *testing.T) {
 			attrs := pcommon.NewMap()
 			receiver.setResourceAttributes(attrs, &pipelineEvent)
 
-			// Check for user-related attributes
 			_, hasAuthorName := attrs.Get(AttributeVCSRefHeadRevisionAuthorName)
 			_, hasAuthorEmail := attrs.Get(AttributeVCSRefHeadRevisionAuthorEmail)
 			_, hasCommitMessage := attrs.Get(AttributeVCSRefHeadRevisionMessage)
@@ -453,7 +452,6 @@ func TestSetAttributes(t *testing.T) {
 	err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
 	require.NoError(t, err)
 
-	// Resource attributes
 	attrs := pcommon.NewMap()
 	receiver.setResourceAttributes(attrs, &pipelineEvent)
 
@@ -491,7 +489,8 @@ func TestSetAttributes(t *testing.T) {
 			jobURL: "https://example.com/job/1",
 		}
 		buildData, _ := json.Marshal(pipelineEvent.Builds[0])
-		json.Unmarshal(buildData, job.event)
+		err := json.Unmarshal(buildData, job.event)
+		require.NoError(t, err)
 
 		jobAttrs := pcommon.NewMap()
 		job.setAttributes(jobAttrs)
@@ -500,13 +499,13 @@ func TestSetAttributes(t *testing.T) {
 		require.Equal(t, 60.5, queuedDuration.Double())
 
 		allowFailure, _ := jobAttrs.Get(AttributeGitlabJobAllowFailure)
-		require.Equal(t, false, allowFailure.Bool())
+		require.False(t, allowFailure.Bool())
 
 		runnerType, _ := jobAttrs.Get(AttributeCICDWorkerType)
 		require.Equal(t, "instance_type", runnerType.Str())
 
 		isShared, _ := jobAttrs.Get(AttributeCICDWorkerShared)
-		require.Equal(t, true, isShared.Bool())
+		require.True(t, isShared.Bool())
 
 		tags, _ := jobAttrs.Get(AttributeCICDWorkerTags)
 		require.Equal(t, 2, tags.Slice().Len())
@@ -556,7 +555,8 @@ func TestEnvironmentAttributes(t *testing.T) {
 	}
 
 	buildData, _ := json.Marshal(pipelineEvent.Builds[0])
-	json.Unmarshal(buildData, stagingJob.event)
+	err = json.Unmarshal(buildData, stagingJob.event)
+	require.NoError(t, err)
 
 	stagingAttrs := pcommon.NewMap()
 	stagingJob.setAttributes(stagingAttrs)
@@ -575,7 +575,8 @@ func TestEnvironmentAttributes(t *testing.T) {
 		jobURL: "https://example.com/job/11",
 	}
 	buildData, _ = json.Marshal(pipelineEvent.Builds[1])
-	json.Unmarshal(buildData, prodJob.event)
+	err = json.Unmarshal(buildData, prodJob.event)
+	require.NoError(t, err)
 
 	prodAttrs := pcommon.NewMap()
 	prodJob.setAttributes(prodAttrs)
@@ -590,7 +591,7 @@ func TestEnvironmentAttributes(t *testing.T) {
 	require.Equal(t, "script_failure", failureReason.Str())
 
 	allowFailure, _ := prodAttrs.Get(AttributeGitlabJobAllowFailure)
-	require.Equal(t, true, allowFailure.Bool())
+	require.True(t, allowFailure.Bool())
 }
 
 func TestRunnerAttributes(t *testing.T) {

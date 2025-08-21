@@ -6,7 +6,6 @@ package gitlabreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -118,9 +117,9 @@ func (p *glPipeline) setAttributes(attrs pcommon.Map) {
 
 	// Parent Pipeline (only added if it's a multi-pipeline)
 	if p.SourcePipeline.PipelineID > 0 {
-		attrs.PutInt(AttributeGitlabPipelineSourcePipelineProjectID, int64(p.SourcePipeline.Project.ID))
 		attrs.PutInt(AttributeGitlabPipelineSourcePipelineID, int64(p.SourcePipeline.PipelineID))
-		attrs.PutInt(AttributeGitlabPipelineSourcePipelineJobID, int64(p.SourcePipeline.JobID))
+		putIntIfNotZero(attrs, AttributeGitlabPipelineSourcePipelineProjectID, int64(p.SourcePipeline.Project.ID))
+		putIntIfNotZero(attrs, AttributeGitlabPipelineSourcePipelineJobID, int64(p.SourcePipeline.JobID))
 		putStrIfNotEmpty(attrs, AttributeGitlabPipelineSourcePipelineProjectNamespace, p.SourcePipeline.Project.PathWithNamespace)
 		putStrIfNotEmpty(attrs, AttributeGitlabPipelineSourcePipelineProjectURL, p.SourcePipeline.Project.WebURL)
 	}
@@ -249,19 +248,19 @@ func (*glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string)
 
 func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
 	// Job
-	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), j.event.Name)
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunIDKey), strconv.Itoa(j.event.ID))
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunResultKey), j.event.Status)
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), j.jobURL)
+	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskNameKey), j.event.Name)
+	putIntIfNotZero(attrs, string(semconv.CICDPipelineTaskRunIDKey), int64(j.event.ID))
+	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskRunResultKey), j.event.Status)
+	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskRunURLFullKey), j.jobURL)
 
 	// Worker/Runner
-	attrs.PutStr(string(semconv.CICDWorkerIDKey), strconv.Itoa(j.event.Runner.ID))
-	attrs.PutStr(string(semconv.CICDWorkerNameKey), j.event.Runner.Description)
+	putIntIfNotZero(attrs, string(semconv.CICDWorkerIDKey), int64(j.event.Runner.ID))
+	putStrIfNotEmpty(attrs, string(semconv.CICDWorkerNameKey), j.event.Runner.Description)
 
 	// ---------- The following attributes are not part of semconv yet ----------
 
 	// Job
-	attrs.PutDouble(AttributeGitlabJobQueuedDuration, j.event.QueuedDuration)
+	putDoubleIfNotZero(attrs, AttributeGitlabJobQueuedDuration, j.event.QueuedDuration)
 	putStrIfNotEmpty(attrs, AttributeGitlabJobFailureReason, j.event.FailureReason)
 	attrs.PutBool(AttributeGitlabJobAllowFailure, j.event.AllowFailure)
 

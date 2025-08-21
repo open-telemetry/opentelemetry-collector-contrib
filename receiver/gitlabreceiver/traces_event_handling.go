@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -336,12 +337,12 @@ func parseGitlabTime(t string) (time.Time, error) {
 // - Job: https://docs.gitlab.com/ci/jobs/#available-job-statuses
 // - Pipeline: https://docs.gitlab.com/api/pipelines/#list-project-pipelines (see status field)
 func setSpanStatus(span ptrace.Span, status string) {
-	switch status {
-	case "success":
+	switch strings.ToLower(status) {
+	case pipelineStatusSuccess:
 		span.Status().SetCode(ptrace.StatusCodeOk)
-	case "failed", "canceled":
+	case pipelineStatusFailed, pipelineStatusCanceled:
 		span.Status().SetCode(ptrace.StatusCodeError)
-	case "skipped":
+	case pipelineStatusSkipped:
 		span.Status().SetCode(ptrace.StatusCodeUnset)
 	default:
 		span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -353,16 +354,10 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	attrs.PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
 
 	// CICD
-
-	// ObjectAttributes.Name is the pipeline name, but it was added later in GitLab starting with version 16.1 (https://gitlab.com/gitlab-org/gitlab/-/merge_requests/123639)
-	// The name isn't always present in the GitLab webhook events, therefore we need to check if it's empty
-	if e.ObjectAttributes.Name != "" {
-		attrs.PutStr(string(semconv.CICDPipelineNameKey), e.ObjectAttributes.Name)
-	}
-
-	attrs.PutStr(string(semconv.CICDPipelineResultKey), e.ObjectAttributes.Status) //ToDo: Check against well known values and compare with run.state
-	attrs.PutStr(string(semconv.CICDPipelineRunIDKey), strconv.Itoa(e.ObjectAttributes.ID))
-	attrs.PutStr(string(semconv.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
+	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineNameKey), e.ObjectAttributes.Name)
+	attrs.PutStr(string(semconv.CICDPipelineResultKey), e.ObjectAttributes.Status)
+	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), int64(e.ObjectAttributes.ID))
+	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
 
 	// Resource attributes for workers are not applicable for GitLab, because GitLab provide worker information on job level
 	// One pipeline can have multiple jobs, and each job can have a different worker
@@ -374,8 +369,8 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	attrs.PutStr(string(semconv.VCSProviderNameGitlab.Key), semconv.VCSProviderNameGitlab.Value.AsString())
 
 	// Repository
-	attrs.PutStr(string(semconv.VCSRepositoryNameKey), e.Project.Name)
-	attrs.PutStr(string(semconv.VCSRepositoryURLFullKey), e.Project.WebURL)
+	putStrIfNotEmpty(attrs, string(semconv.VCSRepositoryNameKey), e.Project.Name)
+	putStrIfNotEmpty(attrs, string(semconv.VCSRepositoryURLFullKey), e.Project.WebURL)
 
 	// Ref/branch
 	attrs.PutStr(string(semconv.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
@@ -389,9 +384,9 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	// Merge Request attributes (only for MR-triggered pipelines)
 	if e.MergeRequest.ID != 0 {
 		attrs.PutStr(string(semconv.VCSChangeIDKey), strconv.Itoa(e.MergeRequest.ID))
-		attrs.PutStr(string(semconv.VCSChangeStateKey), e.MergeRequest.State)
-		attrs.PutStr(string(semconv.VCSChangeTitleKey), e.MergeRequest.Title)
-		attrs.PutStr(string(semconv.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
+		putStrIfNotEmpty(attrs, string(semconv.VCSChangeStateKey), e.MergeRequest.State)
+		putStrIfNotEmpty(attrs, string(semconv.VCSChangeTitleKey), e.MergeRequest.Title)
+		putStrIfNotEmpty(attrs, string(semconv.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
 		attrs.PutStr(string(semconv.VCSRefBaseTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
 	}
 
@@ -404,14 +399,13 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	putStrIfNotEmpty(attrs, AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
 
 	// User details are only included if explicitly enabled in configuration
-	// This protects potentially sensitive information (PII) by default
 	if gtr.cfg.WebHook.IncludeUserAttributes {
-		// Commit author information
+		// Commit author
 		putStrIfNotEmpty(attrs, AttributeVCSRefHeadRevisionAuthorName, e.Commit.Author.Name)
 		putStrIfNotEmpty(attrs, AttributeVCSRefHeadRevisionAuthorEmail, e.Commit.Author.Email)
 		putStrIfNotEmpty(attrs, AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
 
-		// Pipeline actor information (User can be nil)
+		// Pipeline actor
 		if e.User != nil {
 			putIntIfNotZero(attrs, AttributeCICDPipelineRunActorID, int64(e.User.ID))
 			putStrIfNotEmpty(attrs, AttributeCICDPipelineRunActorUsername, e.User.Username)
@@ -436,5 +430,11 @@ func putIntIfNotZero(attrs pcommon.Map, key string, value int64) {
 func putTimeIfNotNil(attrs pcommon.Map, key string, t *time.Time, format string) {
 	if t != nil && !t.IsZero() {
 		attrs.PutStr(key, t.Format(format))
+	}
+}
+
+func putDoubleIfNotZero(attrs pcommon.Map, key string, value float64) {
+	if value != 0 {
+		attrs.PutDouble(key, value)
 	}
 }
