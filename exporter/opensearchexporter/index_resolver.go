@@ -13,20 +13,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// IndexResolver handles dynamic index name resolution for logs and traces
-type IndexResolver struct {
+// indexResolver handles dynamic index name resolution for logs and traces
+type indexResolver struct {
 	placeholderPattern *regexp.Regexp
 }
 
-// NewIndexResolver creates a new index resolver instance
-func NewIndexResolver() *IndexResolver {
-	return &IndexResolver{
+// newIndexResolver creates a new index resolver instance
+func newIndexResolver() *indexResolver {
+	return &indexResolver{
 		placeholderPattern: regexp.MustCompile(`%\{([^}]+)\}`),
 	}
 }
 
 // ResolveLogIndex resolves the logs index name using placeholders, fallback, and time format
-func (r *IndexResolver) ResolveLogIndex(cfg *Config, ld plog.Logs, timestamp time.Time) string {
+func (r *indexResolver) ResolveLogIndex(cfg *Config, ld plog.Logs, timestamp time.Time) string {
 	if cfg.LogsIndex == "" {
 		// Use default pattern
 		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_logs")
@@ -38,7 +38,7 @@ func (r *IndexResolver) ResolveLogIndex(cfg *Config, ld plog.Logs, timestamp tim
 }
 
 // ResolveTraceIndex resolves the traces index name using placeholders, fallback, and time format
-func (r *IndexResolver) ResolveTraceIndex(cfg *Config, td ptrace.Traces, timestamp time.Time) string {
+func (r *indexResolver) ResolveTraceIndex(cfg *Config, td ptrace.Traces, timestamp time.Time) string {
 	if cfg.TracesIndex == "" {
 		// Use default pattern
 		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_traces")
@@ -50,7 +50,7 @@ func (r *IndexResolver) ResolveTraceIndex(cfg *Config, td ptrace.Traces, timesta
 }
 
 // resolveIndexName handles the common logic for resolving index names with placeholders
-func (r *IndexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, attrs map[string]string, timestamp time.Time) string {
+func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, attrs map[string]string, timestamp time.Time) string {
 	index := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
 		key := r.placeholderPattern.FindStringSubmatch(match)[1]
 		if val, ok := attrs[key]; ok && val != "" {
@@ -66,7 +66,7 @@ func (r *IndexResolver) resolveIndexName(indexPattern, fallback, timeFormat stri
 }
 
 // appendTimeFormat appends time suffix if format is specified
-func (*IndexResolver) appendTimeFormat(index, timeFormat string, timestamp time.Time) string {
+func (*indexResolver) appendTimeFormat(index, timeFormat string, timestamp time.Time) string {
 	if timeFormat != "" {
 		return index + "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
 	}
@@ -74,7 +74,7 @@ func (*IndexResolver) appendTimeFormat(index, timeFormat string, timestamp time.
 }
 
 // collectLogAttributes extracts resource and log record attributes into a flat map for placeholder resolution
-func (*IndexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
+func (*indexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
 	attrs := make(map[string]string)
 	resLogsSlice := ld.ResourceLogs()
 	for i := 0; i < resLogsSlice.Len(); i++ {
@@ -114,7 +114,7 @@ func (*IndexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
 }
 
 // collectTraceAttributes extracts resource and span attributes into a flat map for placeholder resolution
-func (*IndexResolver) collectTraceAttributes(td ptrace.Traces) map[string]string {
+func (*indexResolver) collectTraceAttributes(td ptrace.Traces) map[string]string {
 	attrs := make(map[string]string)
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {

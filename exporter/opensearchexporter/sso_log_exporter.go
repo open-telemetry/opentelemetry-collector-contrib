@@ -22,7 +22,7 @@ type logExporter struct {
 	httpSettings  confighttp.ClientConfig
 	telemetry     component.TelemetrySettings
 	config        *Config
-	indexResolver *IndexResolver
+	indexResolver *indexResolver
 }
 
 func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
@@ -43,7 +43,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 		httpSettings:  cfg.ClientConfig,
 		model:         model,
 		config:        cfg,
-		indexResolver: NewIndexResolver(),
+		indexResolver: newIndexResolver(),
 	}
 }
 

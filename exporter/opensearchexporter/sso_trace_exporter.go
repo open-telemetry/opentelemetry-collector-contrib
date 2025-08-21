@@ -26,7 +26,7 @@ type ssoTracesExporter struct {
 	httpSettings  confighttp.ClientConfig
 	telemetry     component.TelemetrySettings
 	config        *Config
-	indexResolver *IndexResolver
+	indexResolver *indexResolver
 }
 
 func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter {
@@ -43,7 +43,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 		model:         model,
 		httpSettings:  cfg.ClientConfig,
 		config:        cfg,
-		indexResolver: NewIndexResolver(),
+		indexResolver: newIndexResolver(),
 	}
 }
 

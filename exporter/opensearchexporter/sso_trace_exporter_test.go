@@ -9,7 +9,7 @@ import (
 )
 
 func TestTraceExporter_ResolveIndexName_WithServiceName(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		TracesIndex:           "otel-traces-%{service.name}",
 		TracesIndexFallback:   "default-service",
@@ -28,7 +28,7 @@ func TestTraceExporter_ResolveIndexName_WithServiceName(t *testing.T) {
 }
 
 func TestTraceExporter_ResolveIndexName_MissingServiceName(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		TracesIndex:           "otel-traces-%{service.name}",
 		TracesIndexFallback:   "default-service",
@@ -47,7 +47,7 @@ func TestTraceExporter_ResolveIndexName_MissingServiceName(t *testing.T) {
 }
 
 func TestTraceExporter_ResolveIndexName_NoFallback(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		TracesIndex:           "otel-traces-%{service.name}",
 		TracesIndexFallback:   "",
@@ -66,7 +66,7 @@ func TestTraceExporter_ResolveIndexName_NoFallback(t *testing.T) {
 }
 
 func TestTraceExporter_ResolveIndexName_EmptyTracesIndex(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		TracesIndex:           "",
 		TracesIndexFallback:   "",
@@ -85,7 +85,7 @@ func TestTraceExporter_ResolveIndexName_EmptyTracesIndex(t *testing.T) {
 }
 
 func TestTraceExporter_ResolveIndexName_WithCustomAttribute(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		TracesIndex:           "otel-traces-%{custom.label}",
 		TracesIndexFallback:   "fallback",
@@ -104,7 +104,7 @@ func TestTraceExporter_ResolveIndexName_WithCustomAttribute(t *testing.T) {
 }
 
 func TestTraceExporter_ResolveIndexName_EmptyTimeFormat(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		TracesIndex:         "otel-traces-%{service.name}",
 		TracesIndexFallback: "default-service",

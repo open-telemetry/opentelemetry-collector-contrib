@@ -9,7 +9,7 @@ import (
 )
 
 func TestLogExporter_ResolveIndexName_WithServiceName(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "default-service",
@@ -28,7 +28,7 @@ func TestLogExporter_ResolveIndexName_WithServiceName(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_MissingServiceName(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "default-service",
@@ -47,7 +47,7 @@ func TestLogExporter_ResolveIndexName_MissingServiceName(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_NoFallback(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "",
@@ -66,7 +66,7 @@ func TestLogExporter_ResolveIndexName_NoFallback(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_EmptyLogsIndex(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "",
 		LogsIndexFallback:   "",
@@ -85,7 +85,7 @@ func TestLogExporter_ResolveIndexName_EmptyLogsIndex(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_UnknownPlaceholder(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{doesnotexist}",
 		LogsIndexFallback:   "",
@@ -104,7 +104,7 @@ func TestLogExporter_ResolveIndexName_UnknownPlaceholder(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_EmptyTimeFormat(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}",
 		LogsIndexFallback:   "default-service",
@@ -123,7 +123,7 @@ func TestLogExporter_ResolveIndexName_EmptyTimeFormat(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_TwoPlaceholders(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}-%{custom.label}",
 		LogsIndexFallback:   "fallback",
@@ -142,7 +142,7 @@ func TestLogExporter_ResolveIndexName_TwoPlaceholders(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_TwoPlaceholders_OneMissing(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "otel-logs-%{service.name}-%{custom.label}",
 		LogsIndexFallback:   "fallback",
@@ -161,7 +161,7 @@ func TestLogExporter_ResolveIndexName_TwoPlaceholders_OneMissing(t *testing.T) {
 }
 
 func TestLogExporter_ResolveIndexName_AttributeWithSpecialChars(t *testing.T) {
-	resolver := NewIndexResolver()
+	resolver := newIndexResolver()
 	cfg := &Config{
 		LogsIndex:           "%{attribute.something}",
 		LogsIndexFallback:   "fallback",
