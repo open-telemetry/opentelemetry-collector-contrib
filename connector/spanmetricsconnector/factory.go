@@ -11,25 +11,23 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jonboulle/clockwork"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 )
 
 const (
-	DefaultNamespace               = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID = "connector.spanmetrics.legacyMetricNames"
-	includeServiceInstanceIDGateID = "connector.spanmetrics.includeServiceInstanceID"
+	DefaultNamespace                 = "traces.span.metrics"
+	legacyMetricNamesFeatureGateID   = "connector.spanmetrics.legacyMetricNames"
+	includeCollectorInstanceIDGateID = "connector.spanmetrics.includeCollectorInstanceID"
 )
 
 var (
 	legacyMetricNamesFeatureGate *featuregate.Gate
-	includeServiceInstanceID     *featuregate.Gate
+	includeCollectorInstanceID   *featuregate.Gate
 )
 
 func init() {
@@ -40,10 +38,10 @@ func init() {
 		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
 	)
-	includeServiceInstanceID = featuregate.GlobalRegistry().MustRegister(
-		includeServiceInstanceIDGateID,
+	includeCollectorInstanceID = featuregate.GlobalRegistry().MustRegister(
+		includeCollectorInstanceIDGateID,
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, connector add service.instance.id to default dimensions."),
+		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
 }
@@ -72,7 +70,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToMetricsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	instanceID, ok := params.Resource.Attributes().Get(string(conventions.ServiceInstanceIDKey))
+	instanceID, ok := params.Resource.Attributes().Get(collectorInstanceKey)
 	// This never happens: the OpenTelemetry Collector automatically adds this attribute.
 	// See: https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/internal/resource/config.go#L31
 	//

@@ -32,6 +32,7 @@ const (
 	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
+	collectorInstanceKey           = "collector.instance.id"              // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
@@ -544,9 +545,9 @@ func (p *connectorImp) buildAttributes(
 	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
-	if includeServiceInstanceID.IsEnabled() {
-		if !contains(p.config.ExcludeDimensions, string(conventions.ServiceInstanceIDKey)) {
-			attr.PutStr(string(conventions.ServiceInstanceIDKey), p.instanceID)
+	if includeCollectorInstanceID.IsEnabled() {
+		if !contains(p.config.ExcludeDimensions, collectorInstanceKey) {
+			attr.PutStr(collectorInstanceKey, p.instanceID)
 		}
 	}
 

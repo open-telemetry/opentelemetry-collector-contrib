@@ -2263,7 +2263,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 		includeCollectorInstanceID bool
 	}{
 		{
-			name: "disable includeServiceInstanceID feature-gate",
+			name: "disable includeCollectorInstanceID feature-gate",
 			instrumentationScope: func() pcommon.InstrumentationScope {
 				scope := pcommon.NewInstrumentationScope()
 				scope.SetName("express")
@@ -2283,7 +2283,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			},
 		},
 		{
-			name: "enable includeServiceInstanceID feature-gate",
+			name: "enable includeCollectorInstanceID feature-gate",
 			instrumentationScope: func() pcommon.InstrumentationScope {
 				scope := pcommon.NewInstrumentationScope()
 				scope.SetName("express")
@@ -2294,13 +2294,13 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 				IncludeInstrumentationScope: []string{"express"},
 			},
 			want: map[string]string{
-				serviceNameKey:                           "test_service",
-				spanNameKey:                              "test_span",
-				spanKindKey:                              "SPAN_KIND_INTERNAL",
-				statusCodeKey:                            "STATUS_CODE_UNSET",
-				instrumentationScopeNameKey:              "express",
-				instrumentationScopeVersionKey:           "1.0.0",
-				string(conventions.ServiceInstanceIDKey): instanceID,
+				serviceNameKey:                 "test_service",
+				spanNameKey:                    "test_span",
+				spanKindKey:                    "SPAN_KIND_INTERNAL",
+				statusCodeKey:                  "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:    "express",
+				instrumentationScopeVersionKey: "1.0.0",
+				collectorInstanceKey:           instanceID,
 			},
 			includeCollectorInstanceID: true,
 		},
@@ -2310,10 +2310,10 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &connectorImp{config: tt.config, instanceID: instanceID}
 			if tt.includeCollectorInstanceID {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeServiceInstanceID.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
 			}
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeServiceInstanceID.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
 			}()
 
 			span := ptrace.NewSpan()

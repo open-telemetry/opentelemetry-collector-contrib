@@ -8,12 +8,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 const (
@@ -42,7 +40,7 @@ type Config struct {
 	// - span.kind
 	// - span.kind
 	// - status.code
-	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeServiceInstanceID
+	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
@@ -197,8 +195,8 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
 	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
-	if includeServiceInstanceID.IsEnabled() {
-		intervalLabels = append(intervalLabels, string(conventions.ServiceInstanceIDKey))
+	if includeCollectorInstanceID.IsEnabled() {
+		intervalLabels = append(intervalLabels, collectorInstanceKey)
 	}
 
 	for _, key := range intervalLabels {

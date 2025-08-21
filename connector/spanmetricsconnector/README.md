@@ -55,11 +55,11 @@ across all spans:
 - `span.name`
 - `span.kind`
 - `status.code`
-- `service.instance.id`
+- `collector.instance.id`
 
-The `service.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector 
+The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector 
 does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
-Currently, `service.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeServiceInstanceID`.
+Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeServiceInstanceID`.
 More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
