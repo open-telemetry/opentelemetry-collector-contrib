@@ -35,7 +35,7 @@ The WebHook configuration exposes the following settings:
 * `health_path`: (default = `/health`) - The path for health checks.
 * `secret`: (optional) - The secret used to [validate the payload](https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#custom-headers).
 * `required_headers`: (optional) - One or more key-value pairs representing required headers for incoming requests. These headers must not conflict with the fixed default GitLab headers. See the customizable and fixed GitLab headers in [config.go](./config.go).
-* `include_user_attributes`: (default = `false`) - When enabled, includes user information such as commit author details (name, email), commit messages, and pipeline actor information (username, name) in the trace attributes. **Note**: This data may contain sensitive information.
+* `include_user_attributes`: (default = `false`) - When enabled, includes user information such as commit author details (name, email), commit messages, and pipeline actor information (username, name) in the span attributes. **Note**: This data may contain sensitive information.
 
 The WebHook configuration block also accepts all the [confighttp](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ServerConfig)
 settings.

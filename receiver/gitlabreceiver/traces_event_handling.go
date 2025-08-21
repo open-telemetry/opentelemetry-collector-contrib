@@ -359,7 +359,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), int64(e.ObjectAttributes.ID))
 	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
 
-	// Resource attributes for workers are not applicable for GitLab, because GitLab provide worker information on job level
+	// Resource attributes for workers are not applicable for GitLab, because GitLab provides worker information on job level
 	// One pipeline can have multiple jobs, and each job can have a different worker
 	// Therefore we set the worker attributes on job level
 

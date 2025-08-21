@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// ---------- SEMCONV-ALIGNED (NOT IN SEMCONV YET) ----------
-	// Follow semconv patterns, candidates for future inclusion, highly experimental and subject to change
+	// The following attributes are not part of semconv yet, but potenital candidates for future inclusion
+	// They are highly experimental and subject to change
 
 	// Repository
 	AttributeVCSRepositoryVisibility = "vcs.repository.visibility"
