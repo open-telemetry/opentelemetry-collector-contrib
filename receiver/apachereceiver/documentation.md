@@ -12,6 +12,20 @@ metrics:
     enabled: false
 ```
 
+### apache.connections.async
+
+The number connections in different asynchronous states reported by Apache's server-status.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| connection_state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | false |
+
 ### apache.cpu.load
 
 Current load of the CPU.
