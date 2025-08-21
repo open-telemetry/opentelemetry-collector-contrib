@@ -101,18 +101,18 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 	baseJobURL := p.Project.WebURL + "/-/jobs/"
 
 	for i := range p.Builds {
-		jobEvent := glPipelineJob{
+		glJob := glPipelineJob{
 			event:  (*glJobEvent)(&p.Builds[i]),
 			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
 		}
 
-		if jobEvent.event.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, jobEvent.event.Stage, stages[jobEvent.event.Stage].StartedAt)
+		if glJob.event.FinishedAt != "" {
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stages[glJob.event.Stage].StartedAt)
 			if err != nil {
 				return err
 			}
 
-			err = gtr.createSpan(r, &jobEvent, traceID, parentSpanID)
+			err = gtr.createSpan(r, &glJob, traceID, parentSpanID)
 			if err != nil {
 				return err
 			}
