@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // config.go - CORRECTED VERSION with proper interface implementations
 
 package isolationforestprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor"
@@ -130,7 +133,7 @@ func (cfg *Config) IsMultiModelMode() bool {
 	return len(cfg.Models) > 0
 }
 
-func (cfg *Config) GetModelForAttributes(attributes map[string]interface{}) *ModelConfig {
+func (cfg *Config) GetModelForAttributes(attributes map[string]any) *ModelConfig {
 	if !cfg.IsMultiModelMode() {
 		return nil
 	}

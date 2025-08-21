@@ -44,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+	traceToMetricsConnector, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	_, ok := traceToMetricsConnector.(*traceToMetricConnector)
@@ -63,7 +63,7 @@ func TestTraceToTraceConnector(t *testing.T) {
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+	traceToTracesConnector, err := factory.CreateTracesToTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	_, ok := traceToTracesConnector.(*traceToTraceConnector)
@@ -132,7 +132,7 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 
 	metricsSink := &consumertest.MetricsSink{}
 
-	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
+	traceToMetricsConnector, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, metricsSink)
 	assert.NoError(t, err)
 
 	connector, ok := traceToMetricsConnector.(*traceToMetricConnector)
@@ -142,23 +142,23 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 
 func TestContainerTags(t *testing.T) {
 	connector, metricsSink := creteConnector(t)
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		_ = connector.Shutdown(context.Background())
+		_ = connector.Shutdown(t.Context())
 	}()
 
 	trace1 := generateTrace()
 
-	err = connector.ConsumeTraces(context.Background(), trace1)
+	err = connector.ConsumeTraces(t.Context(), trace1)
 	assert.NoError(t, err)
 
 	// Send two traces to ensure unique container tags are added to the cache
 	trace2 := generateTrace()
-	err = connector.ConsumeTraces(context.Background(), trace2)
+	err = connector.ConsumeTraces(t.Context(), trace2)
 	assert.NoError(t, err)
 	// check if the container tags are added to the cache
 	assert.Len(t, connector.containerTagCache.Items(), 1)
@@ -179,7 +179,7 @@ func TestContainerTags(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -208,13 +208,13 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
 	}()
 	connector, metricsSink := creteConnector(t)
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		_ = connector.Shutdown(context.Background())
+		_ = connector.Shutdown(t.Context())
 	}()
 
 	trace := generateTrace()
@@ -222,7 +222,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 
 	sattr.PutStr("deployment.environment.name", "do-not-use")
 
-	err = connector.ConsumeTraces(context.Background(), trace)
+	err = connector.ConsumeTraces(t.Context(), trace)
 	assert.NoError(t, err)
 
 	for len(metricsSink.AllMetrics()) == 0 {
@@ -235,7 +235,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -264,13 +264,13 @@ func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceName
 		t.Fatal(err)
 	}
 	connector, metricsSink := creteConnector(t)
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		_ = connector.Shutdown(context.Background())
+		_ = connector.Shutdown(t.Context())
 	}()
 
 	trace := generateTrace()
@@ -278,7 +278,7 @@ func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceName
 	rspan.Resource().Attributes().PutStr("deployment.environment.name", "new_env")
 	rspan.ScopeSpans().At(0).Spans().At(0).SetKind(ptrace.SpanKindServer)
 
-	err = connector.ConsumeTraces(context.Background(), trace)
+	err = connector.ConsumeTraces(t.Context(), trace)
 	assert.NoError(t, err)
 
 	for len(metricsSink.AllMetrics()) == 0 {
@@ -291,7 +291,7 @@ func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceName
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -334,7 +334,7 @@ func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []b
 func TestDataRace(t *testing.T) {
 	connector, _ := creteConnector(t)
 	trace1 := generateTrace()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
 	wg.Add(1)

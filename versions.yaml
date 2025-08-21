@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.131.0
+    version: v0.132.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -193,6 +193,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
@@ -204,7 +205,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor

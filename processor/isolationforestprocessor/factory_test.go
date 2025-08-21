@@ -5,12 +5,10 @@
 package isolationforestprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -39,12 +37,12 @@ func TestFactory_CreateTraces(t *testing.T) {
 	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	next := consumertest.NewNop()
-	p, err := factory.CreateTraces(context.Background(), settings, rawCfg, next)
+	p, err := factory.CreateTraces(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
-	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, p.Shutdown(context.Background()))
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestFactory_CreateMetrics(t *testing.T) {
@@ -53,12 +51,12 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	next := consumertest.NewNop()
-	p, err := factory.CreateMetrics(context.Background(), settings, rawCfg, next)
+	p, err := factory.CreateMetrics(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
-	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, p.Shutdown(context.Background()))
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestFactory_CreateLogs(t *testing.T) {
@@ -67,10 +65,10 @@ func TestFactory_CreateLogs(t *testing.T) {
 	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 
 	next := consumertest.NewNop()
-	p, err := factory.CreateLogs(context.Background(), settings, rawCfg, next)
+	p, err := factory.CreateLogs(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
-	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, p.Shutdown(context.Background()))
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.Shutdown(t.Context()))
 }

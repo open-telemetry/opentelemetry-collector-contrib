@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -88,13 +89,13 @@ func TestTracesExporter_Start(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.traceExporter)
 	assert.Contains(t, exp.config.Traces.Headers, "Authorization")
 
-	err = exp.shutdown(context.Background())
+	err = exp.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -112,7 +113,7 @@ func TestTracesExporter_EnhanceContext(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	enhancedCtx := exp.enhanceContext(ctx)
 	assert.NotEqual(t, ctx, enhancedCtx)
 }
@@ -129,10 +130,10 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -143,7 +144,7 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 	resource := rs.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
-	err = exp.pushTraces(context.Background(), traces)
+	err = exp.pushTraces(t.Context(), traces)
 	assert.Error(t, err)
 }
 
@@ -180,10 +181,10 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 			require.NoError(t, err)
 
-			err = exp.start(context.Background(), componenttest.NewNopHost())
+			err = exp.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				err = exp.shutdown(context.Background())
+				err = exp.shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 
@@ -197,7 +198,7 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			resource := rs.Resource()
 			resource.Attributes().PutStr("service.name", "test-service")
 
-			err = exp.pushTraces(context.Background(), traces)
+			err = exp.pushTraces(t.Context(), traces)
 			assert.Error(t, err)
 			if tt.configEnabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
@@ -283,10 +284,10 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -321,7 +322,7 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 
-	err = exp.pushTraces(context.Background(), traces)
+	err = exp.pushTraces(t.Context(), traces)
 	require.NoError(t, err)
 
 	entries := observed.All()
@@ -373,12 +374,12 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to create traces exporter: %v", err)
 	}
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(b.Context(), componenttest.NewNopHost())
 	if err != nil {
 		b.Fatalf("failed to start traces exporter: %v", err)
 	}
 	defer func() {
-		_ = exp.shutdown(context.Background())
+		_ = exp.shutdown(b.Context())
 	}()
 
 	testCases := []int{
@@ -403,7 +404,7 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 					span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 					span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 				}
-				_ = exp.pushTraces(context.Background(), traces)
+				_ = exp.pushTraces(b.Context(), traces)
 			}
 		})
 	}
@@ -411,6 +412,11 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 }
 
 func TestTracesExporter_PushTraces_Performance(t *testing.T) {
+	isIntegrationTest := os.Getenv("INTEGRATION_TEST")
+	if isIntegrationTest != "true" {
+		t.Skip("Skipping E2E test: INTEGRATION_TEST not set")
+	}
+
 	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
 	defer stopFn()
 
@@ -433,10 +439,10 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -458,7 +464,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -489,7 +495,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		duration := time.Since(start)
 
 		assert.Error(t, err)
@@ -510,7 +516,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 			testSpan.SetName("test-span")
 			testSpan.SetTraceID(getTraceID("test-trace"))
 
-			errPush := exp.pushTraces(context.Background(), testTraces)
+			errPush := exp.pushTraces(t.Context(), testTraces)
 			return errPush == nil
 		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
 
@@ -533,7 +539,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -565,10 +571,10 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -587,13 +593,13 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName("test-span")
 
-	err = exp.pushTraces(context.Background(), traces)
+	err = exp.pushTraces(t.Context(), traces)
 	assert.Error(t, err)
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 	assert.Equal(t, 0, srv.recvCount)
 
 	require.Eventually(t, func() bool {
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		return err == nil &&
 			exp.rateError.errorCount.Load() == 0 &&
 			srv.recvCount == 1
@@ -622,10 +628,10 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -644,7 +650,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Initial successful push", func(t *testing.T) {
 		traces := createTestTraces()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 1, srv.recvCount)
@@ -660,7 +666,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Successful push after errors", func(t *testing.T) {
 		traces := createTestTraces()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 2, srv.recvCount)
@@ -668,7 +674,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Verify error count stays at 0", func(t *testing.T) {
 		traces := createTestTraces()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 3, srv.recvCount)
