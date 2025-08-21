@@ -71,17 +71,9 @@ func TestUserAgent(t *testing.T) {
 			},
 			want: "telemetry-sdk (incrediblyverboselan/notsemanticversionin)",
 		},
-		"WithNvmeEBSMetrics": {
-			metrics: []string{"node_diskio_ebs_total_read_ops"},
-			want:    "feature:(nvme_ebs)",
-		},
-		"WithNvmeISMetrics": {
-			metrics: []string{"node_diskio_instance_store_total_read_ops"},
-			want:    "feature:(nvme_is)",
-		},
-		"WithBothNvmeMetrics": {
-			metrics: []string{"node_diskio_ebs_total_read_ops", "node_diskio_instance_store_total_read_ops"},
-			want:    "feature:(nvme_ebs nvme_is)",
+		"WithEBSMetrics": {
+			metrics: []string{"node_diskio_ebs_something"},
+			want:    "feature:(ci_ebs)",
 		},
 		"WithBothTelemetryAndEBS": {
 			labelSets: []map[string]string{

@@ -6,7 +6,6 @@ package useragent // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -26,16 +25,10 @@ const (
 	cacheSize = 5
 	// attrLengthLimit is the maximum length of the language and version that will be used for the user agent.
 	attrLengthLimit = 20
-
 	// TODO: Available in semconv/v1.21.0+. Replace after collector dependency is v0.91.0+.
 	attributeTelemetryDistroVersion = "telemetry.distro.version"
-
-	attributeNvmeEBS    = "nvme_ebs"
-	nvmeEbsMetricPrefix = "node_diskio_ebs"
-
-	numFeatures        = 2
-	attributeNvmeIS    = "nvme_is"
-	nvmeIsMetricPrefix = "node_diskio_instance_store"
+	attributeEBS                    = "ci_ebs"
+	ebsMetricPrefix                 = "node_diskio_ebs"
 )
 
 type UserAgent struct {
@@ -76,7 +69,10 @@ func (ua *UserAgent) Handler() request.NamedHandler {
 func (ua *UserAgent) handle(r *request.Request) {
 	ua.mu.RLock()
 	defer ua.mu.RUnlock()
-	request.AddToUserAgent(r, ua.prebuiltStr)
+	currentUA := r.HTTPRequest.Header.Get("User-Agent")
+	if !strings.Contains(currentUA, ua.prebuiltStr) {
+		request.AddToUserAgent(r, ua.prebuiltStr)
+	}
 }
 
 // Process takes the telemetry SDK language and version and adds them to the cache. If it already exists in the
@@ -100,10 +96,9 @@ func (ua *UserAgent) Process(labels map[string]string) {
 
 // ProcessMetrics checks metric names for specific patterns and updates user agent accordingly
 func (ua *UserAgent) ProcessMetrics(metrics pmetric.Metrics) {
-	if len(ua.featureList) == numFeatures {
+	if _, exists := ua.featureList[attributeEBS]; exists {
 		return
 	}
-	var changed bool
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
@@ -111,25 +106,13 @@ func (ua *UserAgent) ProcessMetrics(metrics pmetric.Metrics) {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				metric := ms.At(k)
-				name := metric.Name()
-				log.Println("Here is the useragent metric:", name)
-				if strings.HasPrefix(name, nvmeEbsMetricPrefix) {
-					if _, exists := ua.featureList[attributeNvmeEBS]; !exists {
-						ua.featureList[attributeNvmeEBS] = struct{}{}
-						changed = true
-					}
-				}
-				if strings.HasPrefix(name, nvmeIsMetricPrefix) {
-					if _, exists := ua.featureList[attributeNvmeIS]; !exists {
-						ua.featureList[attributeNvmeIS] = struct{}{}
-						changed = true
-					}
+				if strings.HasPrefix(metric.Name(), ebsMetricPrefix) {
+					ua.featureList[attributeEBS] = struct{}{}
+					ua.build()
+					return
 				}
 			}
 		}
-	}
-	if changed {
-		ua.build()
 	}
 }
 
@@ -146,7 +129,6 @@ func (ua *UserAgent) build() {
 		sort.Strings(items)
 		ua.prebuiltStr = fmt.Sprintf("telemetry-sdk (%s)", strings.Join(items, ";"))
 	}
-
 	if len(ua.featureList) > 0 {
 		if ua.prebuiltStr != "" {
 			ua.prebuiltStr += " "
