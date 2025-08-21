@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.24
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.69.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.32.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/component/componentstatus v0.132.1-0.20250814180350-eb9588bb3b55
@@ -75,6 +75,7 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/pipeline v1.38.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
+	go.opentelemetry.io/collector/semconv v0.125.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
