@@ -6,6 +6,7 @@ package useragent // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -29,8 +30,12 @@ const (
 	// TODO: Available in semconv/v1.21.0+. Replace after collector dependency is v0.91.0+.
 	attributeTelemetryDistroVersion = "telemetry.distro.version"
 
-	attributeEBS    = "ci_ebs"
-	ebsMetricPrefix = "node_diskio_ebs"
+	attributeNvmeEBS    = "nvme_ebs"
+	nvmeEbsMetricPrefix = "node_diskio_ebs"
+
+	numFeatures        = 2
+	attributeNvmeIS    = "nvme_is"
+	nvmeIsMetricPrefix = "node_diskio_instance_store"
 )
 
 type UserAgent struct {
@@ -95,11 +100,10 @@ func (ua *UserAgent) Process(labels map[string]string) {
 
 // ProcessMetrics checks metric names for specific patterns and updates user agent accordingly
 func (ua *UserAgent) ProcessMetrics(metrics pmetric.Metrics) {
-	// Check if we've already detected NVME
-	if _, exists := ua.featureList[attributeEBS]; exists {
+	if len(ua.featureList) == numFeatures {
 		return
 	}
-
+	var changed bool
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
@@ -107,13 +111,25 @@ func (ua *UserAgent) ProcessMetrics(metrics pmetric.Metrics) {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				metric := ms.At(k)
-				if strings.HasPrefix(metric.Name(), ebsMetricPrefix) {
-					ua.featureList[attributeEBS] = struct{}{}
-					ua.build()
-					return
+				name := metric.Name()
+				log.Println("Here is the useragent metric:", name)
+				if strings.HasPrefix(name, nvmeEbsMetricPrefix) {
+					if _, exists := ua.featureList[attributeNvmeEBS]; !exists {
+						ua.featureList[attributeNvmeEBS] = struct{}{}
+						changed = true
+					}
+				}
+				if strings.HasPrefix(name, nvmeIsMetricPrefix) {
+					if _, exists := ua.featureList[attributeNvmeIS]; !exists {
+						ua.featureList[attributeNvmeIS] = struct{}{}
+						changed = true
+					}
 				}
 			}
 		}
+	}
+	if changed {
+		ua.build()
 	}
 }
 
