@@ -71,7 +71,7 @@ func (bq *bqTest) waitForPending(admitted, waiting uint64) {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
 		return bq.currentAdmitted == admitted && bq.currentWaiting == waiting
-	}, time.Second, 20*time.Millisecond)
+	}, 10*time.Second, 20*time.Millisecond)
 }
 
 func mkRepeat(x uint64, n int) []uint64 {

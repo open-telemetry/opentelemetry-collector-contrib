@@ -310,7 +310,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 var samplesQueryResponses = map[string][]metricRow{
 	samplesQuery: {{
-		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "OBJECT_NAME": "BLAH", "CHILD_ADDRESS": "SDF3SDF1234D",
+		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "OBJECT_NAME": "BLAH", "CHILD_ADDRESS": "SDF3SDF1234D",
 		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "OBJECT_TYPE": "OBJECT_TYPE-A",
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1",
 	}},

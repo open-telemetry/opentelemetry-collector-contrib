@@ -148,8 +148,8 @@ func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timeseri
 				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(), PreviousZeroCount: currentDist.ZeroCount(),
 				Scale:            currentDist.Scale(),
 				StartTime:        currentDist.Timestamp(),
-				PreviousPositive: currentDist.Positive(),
-				PreviousNegative: currentDist.Negative(),
+				PreviousPositive: datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive()),
+				PreviousNegative: datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative()),
 			}
 
 			// For the first point, set the start time as the point timestamp.
@@ -171,8 +171,8 @@ func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timeseri
 		}
 
 		// Update only previous values.
-		refTsi.ExponentialHistogram.PreviousPositive = currentDist.Positive()
-		refTsi.ExponentialHistogram.PreviousNegative = currentDist.Negative()
+		refTsi.ExponentialHistogram.PreviousPositive = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive())
+		refTsi.ExponentialHistogram.PreviousNegative = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative())
 		refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
 		currentDist.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 	}
