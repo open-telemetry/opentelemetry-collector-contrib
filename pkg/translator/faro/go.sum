@@ -73,6 +73,7 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector/featuregate v1.38.0 h1:+t+u3a7Zp0o0fn9+4hgbleHjcI8GT8eC9e5uy2tQnfU=
 go.opentelemetry.io/collector/featuregate v1.38.0/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
+go.opentelemetry.io/collector/featuregate v1.38.1-0.20250821131138-2ed38f571b7d/go.mod h1:A72x92glpH3zxekaUybml1vMSv94BH6jQRn5+/htcjw=
 go.opentelemetry.io/collector/pdata v1.38.1-0.20250821131138-2ed38f571b7d h1:B3QKP2UmxuDI0OGdehCJWbhcZwgEQ9JYBGjxOVfk4OE=
 go.opentelemetry.io/collector/pdata v1.38.1-0.20250821131138-2ed38f571b7d/go.mod h1:B8Xe4N5PlobvY/h6xyB88CNQ4jY8YMxWN0EKoFjRWhM=
 go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250821131138-2ed38f571b7d h1:DJy6FEknvzw5MtPp5hV97YkqhYKC38U/pB3KI2FJWcA=
