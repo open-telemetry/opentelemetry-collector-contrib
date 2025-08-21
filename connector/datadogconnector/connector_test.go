@@ -220,7 +220,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 	trace := generateTrace()
 	sattr := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 
-	sattr.PutStr("deployment.environment.name", "do-not-use")
+	sattr.PutStr("deployment.environment.name", "from-sattrs")
 
 	err = connector.ConsumeTraces(t.Context(), trace)
 	assert.NoError(t, err)
@@ -243,11 +243,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 	err = proto.Unmarshal(msg, sp)
 	require.NoError(t, err)
 
-	if enableReceiveResourceSpansV2 {
-		assert.Equal(t, "none", sp.Stats[0].Env)
-	} else {
-		assert.Equal(t, "do-not-use", sp.Stats[0].Env)
-	}
+	assert.Equal(t, "from-sattrs", sp.Stats[0].Env)
 }
 
 func TestOperationAndResourceNameV2(t *testing.T) {
