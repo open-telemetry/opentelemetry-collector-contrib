@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -253,7 +254,7 @@ func testdataConfigYaml() *FileLogConfig {
 						sevField := entry.NewAttributeField("sev")
 						sevCfg := helper.NewSeverityConfig()
 						sevCfg.ParseFrom = &sevField
-						cfg.SeverityConfig = &sevCfg
+						cfg.SeverityConfig = configoptional.Some(sevCfg)
 						timeField := entry.NewAttributeField("time")
 						timeCfg := helper.NewTimeParser()
 						timeCfg.Layout = "%Y-%m-%d"
@@ -262,7 +263,7 @@ func testdataConfigYaml() *FileLogConfig {
 						// object that need to be set for later comparison.
 						// If validation fails, the test will fail, so discard the error.
 						_ = timeCfg.Validate()
-						cfg.TimeParser = &timeCfg
+						cfg.TimeParser = configoptional.Some(timeCfg)
 						return cfg
 					}(),
 				},
@@ -295,7 +296,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 						timeCfg := helper.NewTimeParser()
 						timeCfg.Layout = "%Y-%m-%d"
 						timeCfg.ParseFrom = &timeField
-						cfg.TimeParser = &timeCfg
+						cfg.TimeParser = configoptional.Some(timeCfg)
 						return cfg
 					}(),
 				},
@@ -326,11 +327,11 @@ func TestConsumeContract(t *testing.T) {
 	cfg.InputConfig.StartAt = "beginning"
 	jsonParser := json.NewConfig()
 	tsField := entry.NewAttributeField("ts")
-	jsonParser.TimeParser = &helper.TimeParser{
+	jsonParser.TimeParser = configoptional.Some(helper.TimeParser{
 		ParseFrom:  &tsField,
 		Layout:     time.RFC3339,
 		LayoutType: "gotime",
-	}
+	})
 	jsonParser.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
 	logField := entry.NewAttributeField("log")
 	jsonParser.BodyField = &logField

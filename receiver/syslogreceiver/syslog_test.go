@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -46,7 +47,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	if cfg.InputConfig.TCP != nil {
+	if cfg.InputConfig.TCP.HasValue() {
 		conn, err = net.Dial("tcp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	} else {
@@ -100,8 +101,9 @@ func testdataConfigYaml() *SysLogConfig {
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
-			c.TCP = &tcp.NewConfig().BaseConfig
-			c.TCP.ListenAddress = "127.0.0.1:29018"
+			tcpCfg := tcp.NewConfig().BaseConfig
+			tcpCfg.ListenAddress = "127.0.0.1:29018"
+			c.TCP = configoptional.Some(tcpCfg)
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -115,8 +117,9 @@ func testdataUDPConfig() *SysLogConfig {
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
-			c.UDP = &udp.NewConfig().BaseConfig
-			c.UDP.ListenAddress = "127.0.0.1:29018"
+			udpCfg := udp.NewConfig().BaseConfig
+			udpCfg.ListenAddress = "127.0.0.1:29018"
+			c.UDP = configoptional.Some(udpCfg)
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -132,7 +135,8 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
-			c.TCP = &tcp.NewConfig().BaseConfig
+			tcpCfg := tcp.NewConfig().BaseConfig
+			c.TCP = configoptional.Some(tcpCfg)
 			c.Protocol = "fake"
 			return *c
 		}(),

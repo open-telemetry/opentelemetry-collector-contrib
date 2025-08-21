@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -34,12 +35,12 @@ func TestLoadConfig(t *testing.T) {
 						sevField := entry.NewAttributeField("sev")
 						sevCfg := helper.NewSeverityConfig()
 						sevCfg.ParseFrom = &sevField
-						cfg.SeverityConfig = &sevCfg
+						cfg.SeverityConfig = configoptional.Some(sevCfg)
 						timeField := entry.NewAttributeField("time")
 						timeCfg := helper.NewTimeParser()
 						timeCfg.Layout = "%Y-%m-%d %H:%M:%S"
 						timeCfg.ParseFrom = &timeField
-						cfg.TimeParser = &timeCfg
+						cfg.TimeParser = configoptional.Some(timeCfg)
 						return cfg
 					}(),
 				},

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -32,13 +33,12 @@ func TestUdp(t *testing.T) {
 func TestUdpAsync(t *testing.T) {
 	listenAddress := "127.0.0.1:29019"
 	cfg := testdataConfigYaml(listenAddress)
-	cfg.InputConfig.AsyncConfig = &udp.AsyncConfig{
+	cfg.InputConfig.AsyncConfig = configoptional.Some(udp.AsyncConfig{
 		Readers:        2,
 		Processors:     2,
 		MaxQueueLength: 100,
-	}
+	})
 
-	cfg.InputConfig.AsyncConfig.Readers = 2
 	testUDP(t, testdataConfigYaml(listenAddress), listenAddress)
 }
 

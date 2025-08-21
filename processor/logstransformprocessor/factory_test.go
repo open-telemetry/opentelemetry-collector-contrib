@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -38,12 +39,12 @@ func TestCreateProcessor(t *testing.T) {
 						sevField := entry.NewAttributeField("sev")
 						sevCfg := helper.NewSeverityConfig()
 						sevCfg.ParseFrom = &sevField
-						cfg.SeverityConfig = &sevCfg
+						cfg.SeverityConfig = configoptional.Some(sevCfg)
 						timeField := entry.NewAttributeField("time")
 						timeCfg := helper.NewTimeParser()
 						timeCfg.Layout = "%Y-%m-%d"
 						timeCfg.ParseFrom = &timeField
-						cfg.TimeParser = &timeCfg
+						cfg.TimeParser = configoptional.Some(timeCfg)
 						return cfg
 					}(),
 				},

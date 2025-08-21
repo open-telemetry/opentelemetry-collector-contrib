@@ -20,6 +20,7 @@ require (
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.132.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/config/configoptional v0.132.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/confmap/xconfmap v0.132.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250814180350-eb9588bb3b55
 	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250814180350-eb9588bb3b55
@@ -59,7 +60,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250814180350-eb9588bb3b55 // indirect
 	go.opentelemetry.io/collector/extension v1.38.1-0.20250814180350-eb9588bb3b55 // indirect
