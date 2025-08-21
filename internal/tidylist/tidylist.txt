@@ -80,6 +80,7 @@ exporter/datadogexporter
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
+connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
