@@ -71,7 +71,7 @@ func newBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 ) (bulkIndexer, error) {
-	if config.Batcher.enabledSet {
+	if config.Batcher.enabledSet || (config.QueueBatchConfig.Enabled && config.QueueBatchConfig.Batch.HasValue()) {
 		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
 	}
 	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
@@ -428,8 +428,20 @@ func flushBulkIndexer(
 			ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet),
 		)
 	}
+
+	var fields []zap.Field
+	// append metadata attributes to error log fields
+	for _, kv := range defaultMetaAttrs {
+		switch kv.Value.Type() {
+		case attribute.STRINGSLICE:
+			fields = append(fields, zap.Strings(string(kv.Key), kv.Value.AsStringSlice()))
+		default:
+			// For other types, convert to string
+			fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
+		}
+	}
 	if err != nil {
-		logger.Error("bulk indexer flush error", zap.Error(err))
+		logger.Error("bulk indexer flush error", append(fields, zap.Error(err))...)
 		var bulkFailedErr docappender.ErrorFlushFailed
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
@@ -483,23 +495,36 @@ func flushBulkIndexer(
 		tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, successAttrSet)
 	}
 
-	var tooManyReqs, clientFailed, serverFailed int64
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
+		var outcome string
 		switch {
 		case resp.Status == http.StatusTooManyRequests:
-			tooManyReqs++
+			outcome = "too_many"
 		case resp.Status >= 500:
-			serverFailed++
+			outcome = "failed_server"
 		case resp.Status >= 400:
-			clientFailed++
+			outcome = "failed_client"
 		}
+
+		tb.ElasticsearchDocsProcessed.Add(
+			ctx,
+			int64(1),
+			metric.WithAttributeSet(attribute.NewSet(
+				append([]attribute.KeyValue{
+					attribute.String("outcome", outcome),
+					attribute.String("error.type", resp.Error.Type),
+				}, defaultMetaAttrs...)...,
+			)),
+		)
+
 		// Log failed docs
-		fields := []zap.Field{
+		fields = append(fields,
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
-		}
+		)
+
 		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
 			fields = append(fields, zap.String("hint", hint))
 		}
@@ -517,39 +542,6 @@ func flushBulkIndexer(
 			metric.WithAttributeSet(attribute.NewSet(
 				append([]attribute.KeyValue{
 					attribute.String("outcome", "success"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
-	}
-	if tooManyReqs > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			tooManyReqs,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "too_many"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
-	}
-	if clientFailed > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			clientFailed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failed_client"),
-				}, defaultMetaAttrs...)...,
-			)),
-		)
-	}
-	if serverFailed > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			serverFailed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failed_server"),
 				}, defaultMetaAttrs...)...,
 			)),
 		)

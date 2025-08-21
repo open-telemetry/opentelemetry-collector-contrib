@@ -77,6 +77,38 @@ The planned schedule for this feature gate is the following:
 - Introduce as `Alpha` (disabled by default) in v0.122.0
 - Move to `Beta` (enabled by default) after transform operators support batching and after all receivers that are selected to support batching support it
 
+Here's the summary of current support for batching in Stanza operators:
+
+Operators that support batching:
+
+- `add`
+- `assign_keys`
+- `copy`
+- `flatten`
+- `json_array_parser`
+- `json_parser`
+- `key_value_parser`
+- `move`
+- `regex_parser`
+- `regex_replace`
+- `remove`
+- `retain`
+- `scope_name`
+- `severity`
+- `timestamp`
+- `trace_parser`
+- `unquote`
+- `uri_parser`
+
+Operators that do not support batching:
+
+- `container`
+- `csv_parser`
+- `filter`
+- `recombine`
+- `router`
+- `syslog`
+
 ### FAQ
 
 Q: Why don't we make every parser and transform operator into a distinct OpenTelemetry processor?

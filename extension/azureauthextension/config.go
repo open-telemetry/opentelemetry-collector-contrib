@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 var (
@@ -27,10 +28,11 @@ var (
 )
 
 type Config struct {
-	Managed          *ManagedIdentity  `mapstructure:"managed_identity"`
-	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
-	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
-	UseDefault       bool              `mapstructure:"use_default"`
+	Managed          configoptional.Optional[ManagedIdentity]  `mapstructure:"managed_identity"`
+	Workload         configoptional.Optional[WorkloadIdentity] `mapstructure:"workload_identity"`
+	ServicePrincipal configoptional.Optional[ServicePrincipal] `mapstructure:"service_principal"`
+	UseDefault       bool                                      `mapstructure:"use_default"`
+	Scopes           []string                                  `mapstructure:"scopes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -105,9 +107,27 @@ func (cfg *ServicePrincipal) Validate() error {
 
 func (cfg *Config) Validate() error {
 	var errs []error
-	if !cfg.UseDefault && cfg.ServicePrincipal == nil && cfg.Workload == nil && cfg.Managed == nil {
+	if !cfg.UseDefault && !cfg.ServicePrincipal.HasValue() && !cfg.Workload.HasValue() && !cfg.Managed.HasValue() {
 		errs = append(errs, errEmptyAuthentication)
 	}
+
+	// TODO: Remove after https://github.com/open-telemetry/opentelemetry-collector/pull/13611 is merged
+	if cfg.ServicePrincipal.HasValue() {
+		if err := cfg.ServicePrincipal.Get().Validate(); err != nil {
+			errs = append(errs, fmt.Errorf("service_principal: %w", err))
+		}
+	}
+	if cfg.Workload.HasValue() {
+		if err := cfg.Workload.Get().Validate(); err != nil {
+			errs = append(errs, fmt.Errorf("workload_identity: %w", err))
+		}
+	}
+	if cfg.Managed.HasValue() {
+		if err := cfg.Managed.Get().Validate(); err != nil {
+			errs = append(errs, fmt.Errorf("managed_identity: %w", err))
+		}
+	}
+
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}

@@ -4,7 +4,6 @@
 package otelarrowexporter
 
 import (
-	"context"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -57,7 +56,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	oexp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
@@ -193,21 +192,21 @@ func TestCreateTraces(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopSettings(metadata.Type)
 			cfg := tt.config
-			consumer, err := factory.CreateTraces(context.Background(), set, &cfg)
+			consumer, err := factory.CreateTraces(t.Context(), set, &cfg)
 			if tt.mustFailOnCreate {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
 			assert.NotNil(t, consumer)
-			err = consumer.Start(context.Background(), componenttest.NewNopHost())
+			err = consumer.Start(t.Context(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
 			// Shutdown is called even when Start fails
-			err = consumer.Shutdown(context.Background())
+			err = consumer.Shutdown(t.Context())
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
 				// exporter may already stop because it cannot connect.
@@ -223,7 +222,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+	oexp, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
@@ -236,7 +235,7 @@ func TestCreateArrowTracesExporter(t *testing.T) {
 		NumStreams: 1,
 	}
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateTraces(context.Background(), set, cfg)
+	oexp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }

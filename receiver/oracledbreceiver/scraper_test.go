@@ -4,7 +4,6 @@
 package oracledbreceiver
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -35,7 +34,7 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 			return nil, errors.New("oops")
 		},
 	}
-	err := scrpr.start(context.Background(), componenttest.NewNopHost())
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -166,12 +165,12 @@ func TestScraper_Scrape(t *testing.T) {
 				id:                   component.ID{},
 				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
-			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				assert.NoError(t, scrpr.shutdown(context.Background()))
+				assert.NoError(t, scrpr.shutdown(t.Context()))
 			}()
 			require.NoError(t, err)
-			m, err := scrpr.scrape(context.Background())
+			m, err := scrpr.scrape(t.Context())
 			if test.errWanted != "" {
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 				require.EqualError(t, err, test.errWanted)
@@ -285,14 +284,14 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				assert.NoError(t, scrpr.shutdown(context.Background()))
+				assert.NoError(t, scrpr.shutdown(t.Context()))
 			}()
 			require.NoError(t, err)
 			expectedQueryPlanFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
 
-			logs, err := scrpr.scrapeLogs(context.Background())
+			logs, err := scrpr.scrapeLogs(t.Context())
 
 			if test.errWanted != "" {
 				require.EqualError(t, err, test.errWanted)
@@ -311,7 +310,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 var samplesQueryResponses = map[string][]metricRow{
 	samplesQuery: {{
-		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "OBJECT_NAME": "BLAH",
+		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "OBJECT_NAME": "BLAH",
 		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "OBJECT_TYPE": "OBJECT_TYPE-A",
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1",
 	}},
@@ -368,12 +367,12 @@ func TestSamplesQuery(t *testing.T) {
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				assert.NoError(t, scrpr.shutdown(context.Background()))
+				assert.NoError(t, scrpr.shutdown(t.Context()))
 			}()
 			require.NoError(t, err)
-			logs, err := scrpr.scrapeLogs(context.Background())
+			logs, err := scrpr.scrapeLogs(t.Context())
 			expectedSamplesFile := filepath.Join("testdata", "expectedSamplesFile.yaml")
 
 			if test.errWanted != "" {

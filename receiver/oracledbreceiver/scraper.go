@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -650,6 +651,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			s.hostName,
 			hit.queryText,
 			planString, hit.sqlID, hit.childNumber,
+			hit.childAddress,
 			asFloatInSeconds(hit.metrics[applicationWaitTimeMetric]),
 			hit.metrics[bufferGetsMetric],
 			asFloatInSeconds(hit.metrics[clusterWaitTimeMetric]),
@@ -679,6 +681,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 }
 
 func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs) error {
+	const action = "ACTION"
 	const duration = "DURATION_SEC"
 	const event = "EVENT"
 	const hostName = "MACHINE"
@@ -705,6 +708,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	var scrapeErrors []error
 
 	dbClients := s.samplesQueryClient
+	propagator := propagation.TraceContext{}
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	rows, err := dbClients.metricRows(ctx, s.querySampleCfg.MaxRowsPerQuery)
@@ -739,7 +743,11 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			clientPort = 0
 		}
 
-		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
+		queryContext := propagator.Extract(ctx, propagation.MapCarrier{
+			"traceparent": row[action],
+		})
+
+		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], row[objectName], row[objectType],
 			row[osUser], queryDuration)
@@ -793,6 +801,8 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	for _, row := range planData {
 		currentChildAddress := row[childAddressAttr]
 		jsonPlansSlice, ok := childAddressToPlanMap[currentChildAddress]
+		// child address was for internal use only, it's not going to be used beyond this point
+		delete(row, childAddressAttr)
 		if ok {
 			childAddressToPlanMap[currentChildAddress] = append(jsonPlansSlice, row)
 		} else {

@@ -6,7 +6,6 @@
 package datasetexporter
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -97,10 +96,10 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 		},
 	}
 
-	logs, err := createLogsExporter(context.Background(), createSettings, config)
+	logs, err := createLogsExporter(t.Context(), createSettings, config)
 	waitingTime := time.Duration(0)
 	if assert.NoError(t, err) {
-		err = logs.Start(context.Background(), componenttest.NewNopHost())
+		err = logs.Start(t.Context(), componenttest.NewNopHost())
 		assert.NoError(t, err)
 
 		for bI := 0; bI < maxBatchCount; bI++ {
@@ -116,7 +115,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 				log.Attributes().PutStr("p1", strings.Repeat("A", rand.IntN(2000)))
 				expectedKeys[key] = 1
 			}
-			err = logs.ConsumeLogs(context.Background(), batch)
+			err = logs.ConsumeLogs(t.Context(), batch)
 			assert.NoError(t, err)
 			time.Sleep(time.Duration(float64(maxDelay.Nanoseconds()) * 0.7))
 		}
@@ -124,7 +123,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 		assert.NotNil(t, logs)
 
 		time.Sleep(time.Second)
-		err = logs.Shutdown(context.Background())
+		err = logs.Shutdown(t.Context())
 		assert.NoError(t, err)
 		lastProcessed := uint64(0)
 		sameNumber := 0

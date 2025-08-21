@@ -194,6 +194,7 @@ body:
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
+      - processor/isolationforest
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
@@ -206,7 +207,6 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/dynatrace
-      - processor/routing
       - processor/schema
       - processor/span
       - processor/sumologic
@@ -370,6 +370,10 @@ body:
       options:
         - label: The component describes the resource attributes.
         - label: The component documents the name, description, type, attributes, and unit of each metric.
+  - type: input
+    attributes:
+      label: Reviewer(s)
+      description: The name of one or more contrib approvers who are reviewing and signing off on the promotion
   - type: dropdown
     attributes:
       label: Tip
@@ -377,7 +381,3 @@ body:
       options:
         - <sub>[React](https://github.blog/news-insights/product-news/add-reactions-to-pull-requests-issues-and-comments/) with 👍 to help prioritize this issue. Please use comments to provide useful context, avoiding `+1` or `me too`, to help us triage it. Learn more [here](https://opentelemetry.io/community/end-user/issue-participation/).</sub>
       default: 0
-  - type: input
-    attributes:
-      label: Reviewer(s)
-      description: The name of one or more contrib approvers who are reviewing and signing off on the promotion

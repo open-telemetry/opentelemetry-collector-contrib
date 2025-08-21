@@ -4,7 +4,6 @@
 package otlpjsonconnector
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -45,21 +44,21 @@ func TestLogsToLogs2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.LogsSink{}
-			conn, err := factory.CreateLogsToLogs(context.Background(),
+			conn, err := factory.CreateLogsToLogs(t.Context(),
 
 				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
 
-			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, conn.Shutdown(context.Background()))
+				assert.NoError(t, conn.Shutdown(t.Context()))
 			}()
 
 			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", tc.inputFile))
 			assert.NoError(t, err)
-			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
+			assert.NoError(t, conn.ConsumeLogs(t.Context(), testLogs))
 
 			allLogs := sink.AllLogs()
 			assert.Len(t, allLogs, tc.expectedLogs)
@@ -98,21 +97,21 @@ func TestLogsToMetrics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
-			conn, err := factory.CreateLogsToMetrics(context.Background(),
+			conn, err := factory.CreateLogsToMetrics(t.Context(),
 
 				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
 
-			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, conn.Shutdown(context.Background()))
+				assert.NoError(t, conn.Shutdown(t.Context()))
 			}()
 
 			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logsToMetrics", tc.inputFile))
 			assert.NoError(t, err)
-			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
+			assert.NoError(t, conn.ConsumeLogs(t.Context(), testLogs))
 
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, tc.expectedMetrics)
@@ -151,21 +150,21 @@ func TestLogsToTraces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.TracesSink{}
-			conn, err := factory.CreateLogsToTraces(context.Background(),
+			conn, err := factory.CreateLogsToTraces(t.Context(),
 
 				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
 
-			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, conn.Shutdown(context.Background()))
+				assert.NoError(t, conn.Shutdown(t.Context()))
 			}()
 
 			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logsToTraces", tc.inputFile))
 			assert.NoError(t, err)
-			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
+			assert.NoError(t, conn.ConsumeLogs(t.Context(), testLogs))
 
 			allMetrics := sink.AllTraces()
 			assert.Len(t, allMetrics, tc.expectedTraces)
@@ -189,30 +188,30 @@ func BenchmarkConsumeLogs(b *testing.B) {
 	factory := NewFactory()
 	// initialize log -> log connector
 	logsink := &consumertest.LogsSink{}
-	logscon, _ := factory.CreateLogsToLogs(context.Background(),
+	logscon, _ := factory.CreateLogsToLogs(b.Context(),
 		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), logsink)
 
-	require.NoError(b, logscon.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, logscon.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(b, logscon.Shutdown(context.Background()))
+		assert.NoError(b, logscon.Shutdown(b.Context()))
 	}()
 
 	// initialize log -> traces connector
 	tracesink := &consumertest.TracesSink{}
-	traceconn, _ := factory.CreateLogsToTraces(context.Background(),
+	traceconn, _ := factory.CreateLogsToTraces(b.Context(),
 		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), tracesink)
-	require.NoError(b, traceconn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, traceconn.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(b, traceconn.Shutdown(context.Background()))
+		assert.NoError(b, traceconn.Shutdown(b.Context()))
 	}()
 
 	// initialize log -> metric connector
 	metricsink := &consumertest.MetricsSink{}
-	metricconn, _ := factory.CreateLogsToMetrics(context.Background(),
+	metricconn, _ := factory.CreateLogsToMetrics(b.Context(),
 		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), metricsink)
-	require.NoError(b, metricconn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, metricconn.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(b, metricconn.Shutdown(context.Background()))
+		assert.NoError(b, metricconn.Shutdown(b.Context()))
 	}()
 
 	testLogs, _ := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", inputlogs))
@@ -220,8 +219,8 @@ func BenchmarkConsumeLogs(b *testing.B) {
 	testMetrics, _ := golden.ReadLogs(filepath.Join("testdata", "logsToMetrics", inputMetrics))
 
 	for i := 0; i < b.N; i++ {
-		assert.NoError(b, logscon.ConsumeLogs(context.Background(), testLogs))
-		assert.NoError(b, traceconn.ConsumeLogs(context.Background(), testTraces))
-		assert.NoError(b, metricconn.ConsumeLogs(context.Background(), testMetrics))
+		assert.NoError(b, logscon.ConsumeLogs(b.Context(), testLogs))
+		assert.NoError(b, traceconn.ConsumeLogs(b.Context(), testTraces))
+		assert.NoError(b, metricconn.ConsumeLogs(b.Context(), testMetrics))
 	}
 }

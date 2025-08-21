@@ -4,7 +4,6 @@
 package tailsamplingprocessor
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -24,10 +23,10 @@ func FuzzConsumeTraces(f *testing.F) {
 		sink := new(consumertest.TracesSink)
 		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
-		tsp, err := newTracesProcessor(context.Background(), set, sink, *cfg)
+		tsp, err := newTracesProcessor(t.Context(), set, sink, *cfg)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_ = tsp.ConsumeTraces(context.Background(), traces)
+		_ = tsp.ConsumeTraces(t.Context(), traces)
 	})
 }
