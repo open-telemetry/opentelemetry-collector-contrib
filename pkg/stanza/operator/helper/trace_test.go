@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
@@ -16,21 +17,21 @@ func TestValidateDoesntChangeFields(t *testing.T) {
 	spanID := entry.NewBodyField("spanID")
 	traceFlags := entry.NewBodyField("traceFlags")
 	parser := TraceParser{
-		TraceID: &TraceIDConfig{
+		TraceID: configoptional.Some(TraceIDConfig{
 			ParseFrom: &traceID,
-		},
-		SpanID: &SpanIDConfig{
+		}),
+		SpanID: configoptional.Some(SpanIDConfig{
 			ParseFrom: &spanID,
-		},
-		TraceFlags: &TraceFlagsConfig{
+		}),
+		TraceFlags: configoptional.Some(TraceFlagsConfig{
 			ParseFrom: &traceFlags,
-		},
+		}),
 	}
 	err := parser.Validate()
 	require.NoError(t, err)
-	require.Equal(t, &traceID, parser.TraceID.ParseFrom)
-	require.Equal(t, &spanID, parser.SpanID.ParseFrom)
-	require.Equal(t, &traceFlags, parser.TraceFlags.ParseFrom)
+	require.Equal(t, &traceID, parser.TraceID.Get().ParseFrom)
+	require.Equal(t, &spanID, parser.SpanID.Get().ParseFrom)
+	require.Equal(t, &traceFlags, parser.TraceFlags.Get().ParseFrom)
 }
 
 func TestValidateSetsDefaultFields(t *testing.T) {
@@ -40,7 +41,7 @@ func TestValidateSetsDefaultFields(t *testing.T) {
 	parser := TraceParser{}
 	err := parser.Validate()
 	require.NoError(t, err)
-	require.Equal(t, &traceID, parser.TraceID.ParseFrom)
-	require.Equal(t, &spanID, parser.SpanID.ParseFrom)
-	require.Equal(t, &traceFlags, parser.TraceFlags.ParseFrom)
+	require.Equal(t, &traceID, parser.TraceID.Get().ParseFrom)
+	require.Equal(t, &spanID, parser.SpanID.Get().ParseFrom)
+	require.Equal(t, &traceFlags, parser.TraceFlags.Get().ParseFrom)
 }

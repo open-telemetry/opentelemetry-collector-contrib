@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -32,14 +33,14 @@ func TestUnmarshal(t *testing.T) {
 					cfg.AddAttributes = true
 					cfg.Encoding = "utf-8"
 					cfg.SplitConfig.LineStartPattern = "ABC"
-					cfg.TLS = &configtls.ServerConfig{
+					cfg.TLS = configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "foo",
 							KeyFile:  "foo2",
 							CAFile:   "foo3",
 						},
 						ClientCAFile: "foo4",
-					}
+					})
 					return cfg
 				}(),
 			},

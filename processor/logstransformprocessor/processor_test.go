@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -37,12 +38,12 @@ var cfg = &Config{
 					sevField := entry.NewAttributeField("sev")
 					sevCfg := helper.NewSeverityConfig()
 					sevCfg.ParseFrom = &sevField
-					cfg.SeverityConfig = &sevCfg
+					cfg.SeverityConfig = configoptional.Some(sevCfg)
 					timeField := entry.NewAttributeField("time")
 					timeCfg := helper.NewTimeParser()
 					timeCfg.Layout = "%Y-%m-%d %H:%M:%S"
 					timeCfg.ParseFrom = &timeField
-					cfg.TimeParser = &timeCfg
+					cfg.TimeParser = configoptional.Some(timeCfg)
 					return cfg
 				}(),
 			},

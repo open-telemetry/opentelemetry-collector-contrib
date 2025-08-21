@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -60,12 +61,12 @@ type BaseConfig struct {
 
 // Build will build a JSON parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
-	if c.TimeParser == nil {
+	if !c.TimeParser.HasValue() {
 		parseFromField := entry.NewAttributeField("timestamp")
-		c.TimeParser = &helper.TimeParser{
+		c.TimeParser = configoptional.Some(helper.TimeParser{
 			ParseFrom:  &parseFromField,
 			LayoutType: helper.NativeKey,
-		}
+		})
 	}
 
 	parserOperator, err := c.ParserConfig.Build(set)

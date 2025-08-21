@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -36,7 +38,7 @@ func TestConfig(t *testing.T) {
 					cfg.ParseFrom = &parseFrom
 
 					c := NewConfig()
-					c.SpanID = &cfg
+					c.SpanID = configoptional.Some(cfg)
 					return c
 				}(),
 			},
@@ -48,7 +50,7 @@ func TestConfig(t *testing.T) {
 					cfg.ParseFrom = &parseFrom
 
 					c := NewConfig()
-					c.TraceID = &cfg
+					c.TraceID = configoptional.Some(cfg)
 					return c
 				}(),
 			},
@@ -60,7 +62,7 @@ func TestConfig(t *testing.T) {
 					cfg.ParseFrom = &parseFrom
 
 					c := NewConfig()
-					c.TraceFlags = &cfg
+					c.TraceFlags = configoptional.Some(cfg)
 					return c
 				}(),
 			},

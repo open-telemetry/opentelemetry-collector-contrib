@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -425,14 +426,14 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
 					regexCfg := regex.NewConfig()
-					cfg.Header = &HeaderConfig{
+					cfg.Header = configoptional.Some(HeaderConfig{
 						Pattern: "^#",
 						MetadataOperators: []operator.Config{
 							{
 								Builder: regexCfg,
 							},
 						},
-					}
+					})
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -585,7 +586,7 @@ func TestBuild(t *testing.T) {
 		{
 			"HeaderConfigNoFlag",
 			func(cfg *Config) {
-				cfg.Header = &HeaderConfig{}
+				cfg.Header = configoptional.Some(HeaderConfig{})
 			},
 			require.Error,
 			nil,
@@ -676,7 +677,7 @@ func TestBuildWithHeader(t *testing.T) {
 		{
 			"InvalidHeaderConfig",
 			func(cfg *Config) {
-				cfg.Header = &HeaderConfig{}
+				cfg.Header = configoptional.Some(HeaderConfig{})
 				cfg.StartAt = "beginning"
 			},
 			require.Error,
@@ -687,14 +688,14 @@ func TestBuildWithHeader(t *testing.T) {
 			func(cfg *Config) {
 				regexCfg := regex.NewConfig()
 				regexCfg.Regex = "^(?P<field>.*)"
-				cfg.Header = &HeaderConfig{
+				cfg.Header = configoptional.Some(HeaderConfig{
 					Pattern: "^#",
 					MetadataOperators: []operator.Config{
 						{
 							Builder: regexCfg,
 						},
 					},
-				}
+				})
 				cfg.StartAt = "end"
 			},
 			require.Error,
@@ -705,14 +706,14 @@ func TestBuildWithHeader(t *testing.T) {
 			func(cfg *Config) {
 				regexCfg := regex.NewConfig()
 				regexCfg.Regex = "^(?P<field>.*)"
-				cfg.Header = &HeaderConfig{
+				cfg.Header = configoptional.Some(HeaderConfig{
 					Pattern: "^#",
 					MetadataOperators: []operator.Config{
 						{
 							Builder: regexCfg,
 						},
 					},
-				}
+				})
 				cfg.StartAt = "beginning"
 			},
 			require.NoError,
@@ -750,14 +751,14 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 	regexOpConfig := regex.NewConfig()
 	regexOpConfig.Regex = extractRegex
 
-	c.Header = &HeaderConfig{
+	c.Header = configoptional.Some(HeaderConfig{
 		Pattern: headerMatchPattern,
 		MetadataOperators: []operator.Config{
 			{
 				Builder: regexOpConfig,
 			},
 		},
-	}
+	})
 
 	return c
 }

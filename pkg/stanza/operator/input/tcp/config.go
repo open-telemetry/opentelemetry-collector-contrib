@@ -13,6 +13,7 @@ import (
 
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"golang.org/x/text/encoding"
 
@@ -63,15 +64,15 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize       helper.ByteSize         `mapstructure:"max_log_size,omitempty"`
-	ListenAddress    string                  `mapstructure:"listen_address,omitempty"`
-	TLS              *configtls.ServerConfig `mapstructure:"tls,omitempty"`
-	AddAttributes    bool                    `mapstructure:"add_attributes,omitempty"`
-	OneLogPerPacket  bool                    `mapstructure:"one_log_per_packet,omitempty"`
-	Encoding         string                  `mapstructure:"encoding,omitempty"`
-	SplitConfig      split.Config            `mapstructure:"multiline,omitempty"`
-	TrimConfig       trim.Config             `mapstructure:",squash"`
-	SplitFuncBuilder SplitFuncBuilder        `mapstructure:"-"`
+	MaxLogSize       helper.ByteSize                                 `mapstructure:"max_log_size,omitempty"`
+	ListenAddress    string                                          `mapstructure:"listen_address,omitempty"`
+	TLS              configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls,omitempty"`
+	AddAttributes    bool                                            `mapstructure:"add_attributes,omitempty"`
+	OneLogPerPacket  bool                                            `mapstructure:"one_log_per_packet,omitempty"`
+	Encoding         string                                          `mapstructure:"encoding,omitempty"`
+	SplitConfig      split.Config                                    `mapstructure:"multiline,omitempty"`
+	TrimConfig       trim.Config                                     `mapstructure:",squash"`
+	SplitFuncBuilder SplitFuncBuilder                                `mapstructure:"-"`
 }
 
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
@@ -140,8 +141,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		resolver: resolver,
 	}
 
-	if c.TLS != nil {
-		tcpInput.tls, err = c.TLS.LoadTLSConfig(context.Background())
+	if c.TLS.HasValue() {
+		tcpInput.tls, err = c.TLS.Get().LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}

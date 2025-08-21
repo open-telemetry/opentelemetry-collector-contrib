@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -148,11 +149,11 @@ func TestInput(t *testing.T) {
 	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}, cfg))
 	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, cfg))
 
-	cfg.AsyncConfig = &AsyncConfig{
+	cfg.AsyncConfig = configoptional.Some(AsyncConfig{
 		Readers:        2,
 		Processors:     2,
 		MaxQueueLength: 100,
-	}
+	})
 	t.Run("SimpleAsync", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
 }
 

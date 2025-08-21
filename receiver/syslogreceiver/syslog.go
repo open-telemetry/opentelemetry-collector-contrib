@@ -5,6 +5,7 @@ package syslogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -68,9 +69,9 @@ func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if componentParser.IsSet("tcp") {
-		cfg.InputConfig.TCP = &tcp.NewConfig().BaseConfig
+		cfg.InputConfig.TCP = configoptional.Some(tcp.NewConfig().BaseConfig)
 	} else if componentParser.IsSet("udp") {
-		cfg.InputConfig.UDP = &udp.NewConfig().BaseConfig
+		cfg.InputConfig.UDP = configoptional.Some(udp.NewConfig().BaseConfig)
 	}
 
 	return componentParser.Unmarshal(cfg)

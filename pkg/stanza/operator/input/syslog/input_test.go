@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -109,8 +110,9 @@ func TestInput(t *testing.T) {
 		if tc.ValidForTCP {
 			tcpCfg := NewConfigWithTCP(&cfg)
 			if tc.Name == syslogtest.RFC6587OctetCountingPreserveSpaceTest {
-				tcpCfg.TCP.TrimConfig.PreserveLeading = true
-				tcpCfg.TCP.TrimConfig.PreserveTrailing = true
+				tcpConfig := tcpCfg.TCP.Get()
+				tcpConfig.TrimConfig.PreserveLeading = true
+				tcpConfig.TrimConfig.PreserveTrailing = true
 			}
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
 				InputTest(t, tc, tcpCfg, nil, nil)
@@ -119,8 +121,9 @@ func TestInput(t *testing.T) {
 		if tc.ValidForUDP {
 			udpCfg := NewConfigWithUDP(&cfg)
 			if tc.Name == syslogtest.RFC6587OctetCountingPreserveSpaceTest {
-				udpCfg.UDP.TrimConfig.PreserveLeading = true
-				udpCfg.UDP.TrimConfig.PreserveTrailing = true
+				udpConfig := udpCfg.UDP.Get()
+				udpConfig.TrimConfig.PreserveLeading = true
+				udpConfig.TrimConfig.PreserveTrailing = true
 			}
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
 				InputTest(t, tc, udpCfg, nil, nil)
@@ -162,12 +165,12 @@ func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc, attr map[str
 	require.NoError(t, err)
 
 	var conn net.Conn
-	if cfg.TCP != nil {
-		conn, err = net.Dial("tcp", cfg.TCP.ListenAddress)
+	if cfg.TCP.HasValue() {
+		conn, err = net.Dial("tcp", cfg.TCP.Get().ListenAddress)
 		require.NoError(t, err)
 	}
-	if cfg.UDP != nil {
-		conn, err = net.Dial("udp", cfg.UDP.ListenAddress)
+	if cfg.UDP.HasValue() {
+		conn, err = net.Dial("udp", cfg.UDP.Get().ListenAddress)
 		require.NoError(t, err)
 	}
 
@@ -251,8 +254,9 @@ func TestSyslogIDs(t *testing.T) {
 func NewConfigWithTCP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg := NewConfigWithID("test_syslog")
 	cfg.BaseConfig = *syslogCfg
-	cfg.TCP = &tcp.NewConfigWithID("test_syslog_tcp").BaseConfig
-	cfg.TCP.ListenAddress = ":14201"
+	tcpConfig := tcp.NewConfigWithID("test_syslog_tcp").BaseConfig
+	tcpConfig.ListenAddress = ":14201"
+	cfg.TCP = configoptional.Some(tcpConfig)
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
@@ -260,8 +264,9 @@ func NewConfigWithTCP(syslogCfg *syslog.BaseConfig) *Config {
 func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg := NewConfigWithID("test_syslog")
 	cfg.BaseConfig = *syslogCfg
-	cfg.UDP = &udp.NewConfigWithID("test_syslog_udp").BaseConfig
-	cfg.UDP.ListenAddress = ":12032"
+	udpConfig := udp.NewConfigWithID("test_syslog_udp").BaseConfig
+	udpConfig.ListenAddress = ":12032"
+	cfg.UDP = configoptional.Some(udpConfig)
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }

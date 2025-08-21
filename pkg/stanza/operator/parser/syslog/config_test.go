@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -87,7 +88,7 @@ func TestUnmarshal(t *testing.T) {
 						Layout:     "%Y-%m-%d",
 						ParseFrom:  &parseField,
 					}
-					cfg.TimeParser = &newTime
+					cfg.TimeParser = configoptional.Some(newTime)
 					return cfg
 				}(),
 			},
@@ -106,7 +107,7 @@ func TestUnmarshal(t *testing.T) {
 						"debug":    "2xx",
 					}
 					severityParser.Mapping = mapping
-					cfg.SeverityConfig = &severityParser
+					cfg.SeverityConfig = configoptional.Some(severityParser)
 					return cfg
 				}(),
 			},
@@ -117,7 +118,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Protocol = RFC5424
 					loggerNameParser := helper.NewScopeNameParser()
 					loggerNameParser.ParseFrom = entry.NewBodyField("logger_name_field")
-					cfg.ScopeNameParser = &loggerNameParser
+					cfg.ScopeNameParser = configoptional.Some(loggerNameParser)
 					return cfg
 				}(),
 			},
