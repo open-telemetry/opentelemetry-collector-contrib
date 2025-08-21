@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -238,7 +239,8 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 		if emf.config.IsAppSignalsEnabled() {
 			emf.processResourceLabels = userAgent.Process
 		}
-		if emf.config.IsEnhancedContainerInsights() {
+		if !emf.config.IsEnhancedContainerInsights() {
+			log.Println("about to call process metrics")
 			emf.processMetrics = userAgent.ProcessMetrics
 		}
 	}
