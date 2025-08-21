@@ -153,23 +153,24 @@ func TestEventsScraper(t *testing.T) {
 					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
 				var actualLog plog.Logs
+				found := false
+
 				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 					actualLog, err = scraper.ScrapeLogs(t.Context())
 					assert.NotNil(tt, actualLog)
 					assert.NoError(tt, err)
 					assert.Positive(tt, actualLog.LogRecordCount())
-				}, 10*time.Second, 100*time.Millisecond)
-				found := false
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
-
-					query := attributes["db.query.text"].(string)
-					if query == "SELECT * FROM dbo.test_table" {
-						found = true
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						query := attributes["db.query.text"].(string)
+						if query == "SELECT * FROM dbo.test_table" {
+							found = true
+						}
 					}
-				}
-				assert.True(t, found)
+					assert.True(tt, found)
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
