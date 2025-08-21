@@ -21,7 +21,7 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 ## Getting Started
 
 > [!NOTE]
-> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> You can opt-out to use [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
 > `receiver.kafkareceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
 > for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 >
@@ -109,10 +109,10 @@ The following settings can be optionally configured:
     **Note: this can block the entire partition in case a message processing returns a permanent error**
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
-  - `headers` (default = []): List of headers they'd like to extract from kafka record. 
-  **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
+  - `headers` (default = []): List of headers they'd like to extract from kafka record.
+  **Note: Matching pattern will be `exact`. Regexes are not supported as of now.**
 - `error_backoff`: [BackOff](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.116.0/config/configretry/backoff.go#L27-L43) configuration in case of errors
-  - `enabled`: (default = false) Whether to enable backoff when next consumers return errors 
+  - `enabled`: (default = false) Whether to enable backoff when next consumers return errors
   - `initial_interval`: The time to wait after the first error before retrying
   - `max_interval`: The upper bound on backoff interval between consecutive retries
   - `multiplier`: The value multiplied by the backoff interval bounds
@@ -190,7 +190,7 @@ be configured to extract and attach specific headers as resource attributes. e.g
 ```yaml
 receivers:
   kafka:
-    header_extraction: 
+    header_extraction:
       extract_headers: true
       headers: ["header1", "header2"]
 ```
