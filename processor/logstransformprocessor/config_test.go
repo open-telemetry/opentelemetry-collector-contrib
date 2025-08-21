@@ -39,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 						timeField := entry.NewAttributeField("time")
 						timeCfg := helper.NewTimeParser()
 						timeCfg.Layout = "%Y-%m-%d %H:%M:%S"
+						timeCfg.LayoutType = ""
 						timeCfg.ParseFrom = &timeField
 						cfg.TimeParser = configoptional.Some(timeCfg)
 						return cfg
