@@ -55,7 +55,7 @@ The OpenSearch exporter supports dynamic index names for both logs and traces us
 
 **Time Suffix Format:**
 
-Both logs and traces support time-formatted suffixes using `*_time_format` options.
+Both logs and traces support time-formatted suffixes using `*_time_format` options. The time suffix only supports UTC.
 
 - **Valid tokens** (case-sensitive):
   - `yyyy` (4-digit year), `yy` (2-digit year)
