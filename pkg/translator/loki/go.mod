@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.38.1-0.20250814180350-eb9588bb3b55
+	go.opentelemetry.io/collector/pdata v1.38.1-0.20250821131138-2ed38f571b7d
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
 )
@@ -23,6 +23,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
@@ -32,6 +33,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250821131138-2ed38f571b7d // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
