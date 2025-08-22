@@ -98,7 +98,7 @@ func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile
 }
 
 func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
-	dic := profiles.ProfilesDictionary()
+	dic := profiles.Dictionary()
 	for l := 0; l < dic.AttributeTable().Len(); l++ {
 		a := dic.AttributeTable().At(l)
 		if a.Key() == opt.attributeName {

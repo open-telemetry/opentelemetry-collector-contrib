@@ -369,10 +369,11 @@ func TestConfig(t *testing.T) {
 
 				cfg.QueueBatchConfig.Enabled = true
 				cfg.QueueBatchConfig.NumConsumers = 100
-				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeRequests
+				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeItems
 				cfg.QueueBatchConfig.Batch = configoptional.Some(
 					exporterhelper.BatchConfig{
-						Sizer: exporterhelper.RequestSizerTypeRequests,
+						Sizer:        exporterhelper.RequestSizerTypeItems,
+						FlushTimeout: 10 * time.Second,
 					},
 				)
 			}),

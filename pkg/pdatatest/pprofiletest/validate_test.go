@@ -856,7 +856,7 @@ func TestGeneratedData(t *testing.T) {
 			sp := rp.ScopeProfiles().At(j)
 			for k := range sp.Profiles().Len() {
 				p := sp.Profiles().At(k)
-				err := ValidateProfile(data.ProfilesDictionary(), p)
+				err := ValidateProfile(data.Dictionary(), p)
 				if err != nil {
 					err = fmt.Errorf("profile ResourceProfiles[%d]ScopeProfiles[%d]Profiles[%d]: %w", i, j, k, err)
 				}

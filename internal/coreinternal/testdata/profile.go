@@ -36,15 +36,15 @@ func GenerateProfilesOneEmptyProfile() pprofile.Profiles {
 
 func GenerateProfilesOneProfile() pprofile.Profiles {
 	pd := GenerateProfilesOneEmptyProfile()
-	fillProfileOne(pd.ProfilesDictionary(), pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
+	fillProfileOne(pd.Dictionary(), pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
 	return pd
 }
 
 func GenerateProfilesTwoProfilesSameResource() pprofile.Profiles {
 	pd := GenerateProfilesOneEmptyProfile()
 	profiles := pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles()
-	fillProfileOne(pd.ProfilesDictionary(), profiles.At(0))
-	fillProfileTwo(pd.ProfilesDictionary(), profiles.AppendEmpty())
+	fillProfileOne(pd.Dictionary(), profiles.At(0))
+	fillProfileTwo(pd.Dictionary(), profiles.AppendEmpty())
 	return pd
 }
 

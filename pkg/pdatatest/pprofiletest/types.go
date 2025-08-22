@@ -29,7 +29,7 @@ type ResourceProfile struct {
 func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfiles {
 	prp := pp.ResourceProfiles().AppendEmpty()
 	for _, sp := range rp.ScopeProfiles {
-		sp.Transform(pp.ProfilesDictionary(), prp)
+		sp.Transform(pp.Dictionary(), prp)
 	}
 	for _, a := range rp.Resource.Attributes {
 		if prp.Resource().Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {

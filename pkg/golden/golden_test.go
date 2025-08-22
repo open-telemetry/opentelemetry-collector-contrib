@@ -368,7 +368,7 @@ func TestProfilesRoundTrip(t *testing.T) {
 
 func CreateTestProfiles() pprofile.Profiles {
 	profiles := pprofile.NewProfiles()
-	dic := profiles.ProfilesDictionary()
+	dic := profiles.Dictionary()
 	resource := profiles.ResourceProfiles().AppendEmpty()
 	scope := resource.ScopeProfiles().AppendEmpty()
 	profile := scope.Profiles().AppendEmpty()
