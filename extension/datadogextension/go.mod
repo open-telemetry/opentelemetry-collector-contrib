@@ -40,7 +40,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.67.0 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.69.2 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/fips v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.69.2 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.70.0-devel.0.20250801132403-9300d3e37608 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.69.2 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.42.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.44.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1 // indirect
