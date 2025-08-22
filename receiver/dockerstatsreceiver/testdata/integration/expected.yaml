@@ -1,0 +1,153 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: container.hostname
+          value:
+            stringValue: 3ecf3a3aad62
+        - key: container.id
+          value:
+            stringValue: 3ecf3a3aad626973cbab205f6d2711dfe780d6c652237f40e52d2c07c92add9b
+        - key: container.image.name
+          value:
+            stringValue: testcontainers/ryuk:0.12.0
+        - key: container.name
+          value:
+            stringValue: reaper_4e6f8d70ea063b87839ea5165e89d88386180b9908a76c32924f4bba3f2c0a11
+        - key: container.runtime
+          value:
+            stringValue: docker
+    schemaUrl: https://opentelemetry.io/schemas/1.27.0
+    scopeMetrics:
+      - metrics:
+          - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
+            name: container.cpu.usage.kernelmode
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16433000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ns
+          - description: Total CPU time consumed.
+            name: container.cpu.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "24649000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ns
+          - description: Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
+            name: container.cpu.usage.usermode
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8216000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ns
+          - description: Percent of CPU used by the container.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.utilization
+            unit: "1"
+          - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
+            name: container.memory.file
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Percentage of memory used.
+            gauge:
+              dataPoints:
+                - asDouble: 0.0646955297781362
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.memory.percent
+            unit: "1"
+          - description: Memory limit of the container.
+            name: container.memory.usage.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8217890816"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Memory usage of the container. This excludes the cache.
+            name: container.memory.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5316608"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Bytes received by the container.
+            name: container.network.io.usage.rx_bytes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2038"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Incoming packets dropped.
+            name: container.network.io.usage.rx_dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Bytes sent.
+            name: container.network.io.usage.tx_bytes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "518"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Outgoing packets dropped.
+            name: container.network.io.usage.tx_dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+          version: latest
