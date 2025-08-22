@@ -425,7 +425,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		}
 
 		// Shut down and check that the partition close metric is updated.
-		err = r.Shutdown(t.Context())
+		err = r.Shutdown(context.Background())
 		require.NoError(t, err)
 		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
@@ -748,7 +748,7 @@ func TestComponentStatus(t *testing.T) {
 			},
 		}))
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(t.Context()))
+			assert.NoError(t, r.Shutdown(context.Background()))
 		})
 
 		// Connection to the Kafka cluster is asynchronous; the receiver
