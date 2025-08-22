@@ -4,14 +4,14 @@
 package ottlcontext // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcontext"
 import (
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
-	"go.opentelemetry.io/collector/component"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcontext"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
@@ -20,9 +20,7 @@ import (
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxcontext.Name
 
-var (
-	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
-)
+var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
 // TransformContext its associated hierarchy.
 type TransformContext struct {

@@ -209,9 +209,9 @@ func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
 		if err != nil {
 			return pcommon.NewMap(), err
 		}
-		switch attrStr.(type) {
+		switch v := attrStr.(type) {
 		case string:
-			authMap.PutStr(name, attrStr.(string))
+			authMap.PutStr(name, v)
 		default:
 			authMap.PutEmpty(name)
 		}
