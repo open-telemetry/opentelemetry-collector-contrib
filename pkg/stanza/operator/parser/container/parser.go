@@ -63,6 +63,7 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
+	filepathPattern         *regexp.Regexp
 	criLogEmitter           *helper.BatchingLogEmitter
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
@@ -278,7 +279,11 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
 	}
 
-	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
+	if p.filepathPattern == nil {
+		p.filepathPattern = pathMatcher
+	}
+
+	parsedValues, err := helper.MatchValues(rawLogPath, p.filepathPattern)
 	if err != nil {
 		return errors.New("failed to detect a valid log path")
 	}

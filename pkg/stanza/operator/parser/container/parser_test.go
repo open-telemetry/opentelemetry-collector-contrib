@@ -163,6 +163,39 @@ func TestProcess(t *testing.T) {
 				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
 			},
 		},
+		{
+			"k8s_with_auto_detection_and_metadata_from_custom_file_path",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.Format = "containerd"
+				cfg.AddMetadataFromFilePath = true
+				cfg.FilePathPattern = "^.*\\/(?P<pod_name>[^_]+)_(?P<namespace>[^_]+)_(?P<container_name>[^\\._]+)-(?P<uid>[a-f0-9\\-]+)\\.log$"
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `2025-08-22T07:05:02.645567383Z stderr F I0822 07:20:50.742554       1 proxier.go:828] "Syncing iptables rules" ipFamily="IPv4"`,
+				Attributes: map[string]any{
+					attrs.LogFilePath: "/var/log/containers/eks-pod-identity-agent-nw5kg_kube-system_eks-pod-identity-agent-12f6fe3cfbe7185a80b4397e10a4392df72c3dcfd19bb398df12bf79b0aa698c.log",
+				},
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"log.iostream":    "stderr",
+					"logtag":          "F",
+					attrs.LogFilePath: "/var/log/containers/eks-pod-identity-agent-nw5kg_kube-system_eks-pod-identity-agent-12f6fe3cfbe7185a80b4397e10a4392df72c3dcfd19bb398df12bf79b0aa698c.log",
+				},
+				Body: `I0822 07:20:50.742554       1 proxier.go:828] "Syncing iptables rules" ipFamily="IPv4"`,
+				Resource: map[string]any{
+					"k8s.pod.name":                "eks-pod-identity-agent-nw5kg",
+					"k8s.pod.uid":                 "12f6fe3cfbe7185a80b4397e10a4392df72c3dcfd19bb398df12bf79b0aa698c",
+					"k8s.container.name":          "eks-pod-identity-agent",
+					"k8s.container.restart_count": nil,
+					"k8s.namespace.name":          "kube-system",
+				},
+				Timestamp: time.Date(2025, time.August, 22, 7, 5, 2, 645567383, time.UTC),
+			},
+		},
 	}
 
 	for _, tc := range cases {

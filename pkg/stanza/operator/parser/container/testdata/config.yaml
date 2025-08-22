@@ -9,6 +9,9 @@ on_error_drop:
 add_metadata_from_file_path:
   type: container
   add_metadata_from_file_path: true
+filepath_pattern:
+  type: container
+  filepath_pattern: ""
 max_log_size:
   type: container
   max_log_size: 10242

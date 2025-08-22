@@ -6,6 +6,7 @@ package container // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,6 +40,7 @@ func NewConfigWithID(operatorID string) *Config {
 		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
 		Format:                  "",
 		AddMetadataFromFilePath: true,
+		FilePathPattern:         "",
 		MaxLogSize:              0,
 	}
 }
@@ -50,6 +52,7 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	FilePathPattern         string          `mapstructure:"filepath_pattern,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -57,6 +60,14 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
 		return nil, err
+	}
+
+	var filePathPattern *regexp.Regexp
+	if c.FilePathPattern != "" {
+		filePathPattern, err = regexp.Compile(c.FilePathPattern)
+		if err != nil {
+			return nil, fmt.Errorf("compiling filepath regex: %w", err)
+		}
 	}
 
 	if c.Format != "" {
@@ -77,6 +88,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		ParserOperator:          parserOperator,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
+		filepathPattern:         filePathPattern,
 		criConsumers:            &wg,
 	}
 
