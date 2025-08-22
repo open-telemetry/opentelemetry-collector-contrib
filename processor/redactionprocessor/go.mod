@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.68.3
+	github.com/grafana/clusterurl v0.0.0-20250807194035-5e7bb040a64c
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.1-0.20250821131138-2ed38f571b7d
 	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250821131138-2ed38f571b7d
@@ -21,6 +22,7 @@ require (
 )
 
 require (
+	github.com/AlessandroPomponio/go-gibberish v0.0.0-20191004143433-a2d4156f0396 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.68.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.68.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.68.3 // indirect
@@ -38,6 +40,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
