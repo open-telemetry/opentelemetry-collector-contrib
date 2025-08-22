@@ -20,7 +20,7 @@ NATS Core exporter exports logs, metrics and traces to [NATS Core](https://docs.
 The following configuration options are supported:
 
 - `endpoint` (default = nats://localhost:4222): The NATS server URL.
-- `tls`: See [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.`
+- `tls`: See [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `logs`
   - `subject` (default = otel_logs): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for logs.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal logs. See [Supported Marshalers](#supported-marshalers).
@@ -37,7 +37,7 @@ The following configuration options are supported:
   - `token`: The plaintext token used for [token auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/tokens).
   - `username`: The username used for [username/password auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/username_password).
   - `password`: The password used for [username/password auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/username_password).
-  - `nkey`: The public key used for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth)
+  - `nkey`: The public key used for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
   - `seed`: The seed used for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
   - `jwt`: The JWT used for [decentralized NKey auth (JWT auth)](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt).
 
