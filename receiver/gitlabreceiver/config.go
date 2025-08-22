@@ -62,7 +62,7 @@ type WebHook struct {
 	Secret string `mapstructure:"secret"` // secret for webhook
 
 	// IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included
-	// Default: false (sensitive data is excluded for privacy)
+	// Default: false (user information is excluded by default for privacy)
 	IncludeUserAttributes bool `mapstructure:"include_user_attributes"`
 }
 

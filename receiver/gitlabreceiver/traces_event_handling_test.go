@@ -11,6 +11,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 // Helper function to parse a PipelineEvent from JSON for the remaining tests
@@ -61,6 +62,12 @@ func TestHandlePipeline(t *testing.T) {
 			expectError:     true,
 			expectedErrText: "invalid finishedAt timestamp: time is empty",
 			spanCount:       0,
+		},
+		{
+			name:        "pipeline_with_minimal_fields",
+			jsonEvent:   minimalValidPipelineWebhookEvent,
+			expectError: false,
+			spanCount:   1,
 		},
 	}
 
@@ -418,7 +425,7 @@ func TestIncludeUserAttributes(t *testing.T) {
 			_, hasAuthorEmail := attrs.Get(AttributeVCSRefHeadRevisionAuthorEmail)
 			_, hasCommitMessage := attrs.Get(AttributeVCSRefHeadRevisionMessage)
 			_, hasActorID := attrs.Get(AttributeCICDPipelineRunActorID)
-			_, hasActorUsername := attrs.Get(AttributeCICDPipelineRunActorUsername)
+			_, hasActorUsername := attrs.Get(AttributeGitLabPipelineRunActorUsername)
 			_, hasActorName := attrs.Get(AttributeCICDPipelineRunActorName)
 
 			if tt.expectUserAttrs {
@@ -479,7 +486,7 @@ func TestSetAttributes(t *testing.T) {
 	glPipeline := &glPipeline{&pipelineEvent}
 	glPipeline.setAttributes(pipelineAttrs)
 
-	pipelineSource, _ := pipelineAttrs.Get(AttributeGitlabPipelineSource)
+	pipelineSource, _ := pipelineAttrs.Get(AttributeGitLabPipelineSource)
 	require.Equal(t, "push", pipelineSource.Str())
 
 	// Job
@@ -495,10 +502,10 @@ func TestSetAttributes(t *testing.T) {
 		jobAttrs := pcommon.NewMap()
 		job.setAttributes(jobAttrs)
 
-		queuedDuration, _ := jobAttrs.Get(AttributeGitlabJobQueuedDuration)
+		queuedDuration, _ := jobAttrs.Get(AttributeGitLabJobQueuedDuration)
 		require.Equal(t, 60.5, queuedDuration.Double())
 
-		allowFailure, _ := jobAttrs.Get(AttributeGitlabJobAllowFailure)
+		allowFailure, _ := jobAttrs.Get(AttributeGitLabJobAllowFailure)
 		require.False(t, allowFailure.Bool())
 
 		runnerType, _ := jobAttrs.Get(AttributeCICDWorkerType)
@@ -524,24 +531,72 @@ func TestMultiPipeline(t *testing.T) {
 	glPipeline.setAttributes(pipelineAttrs)
 
 	// Pipeline source
-	pipelineSource, _ := pipelineAttrs.Get(AttributeGitlabPipelineSource)
+	pipelineSource, _ := pipelineAttrs.Get(AttributeGitLabPipelineSource)
 	require.Equal(t, "parent_pipeline", pipelineSource.Str())
 
 	// Parent pipeline
-	parentProjectID, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineProjectID)
+	parentProjectID, _ := pipelineAttrs.Get(AttributeGitLabPipelineSourcePipelineProjectID)
 	require.Equal(t, int64(123), parentProjectID.Int())
 
-	parentPipelineID, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineID)
+	parentPipelineID, _ := pipelineAttrs.Get(AttributeGitLabPipelineSourcePipelineID)
 	require.Equal(t, int64(1), parentPipelineID.Int())
 
-	parentJobID, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineJobID)
+	parentJobID, _ := pipelineAttrs.Get(AttributeGitLabPipelineSourcePipelineJobID)
 	require.Equal(t, int64(99), parentJobID.Int())
 
-	parentProjectNamespace, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineProjectNamespace)
+	parentProjectNamespace, _ := pipelineAttrs.Get(AttributeGitLabPipelineSourcePipelineProjectNamespace)
 	require.Equal(t, "test/parent-project", parentProjectNamespace.Str())
 
-	parentProjectURL, _ := pipelineAttrs.Get(AttributeGitlabPipelineSourcePipelineProjectURL)
+	parentProjectURL, _ := pipelineAttrs.Get(AttributeGitLabPipelineSourcePipelineProjectURL)
 	require.Equal(t, "https://gitlab.example.com/test/parent-project", parentProjectURL.Str())
+}
+
+func TestPipelineWithMissingOptionalFields(t *testing.T) {
+	receiver, pipeline, _, _ := setupTestPipelineFromJSON(t, minimalValidPipelineWebhookEvent)
+	receiver.cfg.WebHook.IncludeUserAttributes = true
+
+	traces, err := receiver.handlePipeline(pipeline)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, traces.SpanCount())
+
+	resource := traces.ResourceSpans().At(0).Resource()
+	attrs := resource.Attributes()
+
+	// Required fields should be present
+	serviceName, found := attrs.Get(string(semconv.ServiceNameKey))
+	require.True(t, found)
+	require.Equal(t, "test/project", serviceName.Str())
+
+	// Optional fields should be present but may be empty
+	pipelineName, found := attrs.Get(string(semconv.CICDPipelineNameKey))
+	require.True(t, found)
+	require.Equal(t, "Test Pipeline", pipelineName.Str())
+
+	repoName, found := attrs.Get(string(semconv.VCSRepositoryNameKey))
+	require.True(t, found)
+	require.Empty(t, repoName.Str())
+
+	// Timestamp should not be present since it's nil
+	_, found = attrs.Get(AttributeVCSRefHeadRevisionTimestamp)
+	require.False(t, found)
+
+	// User attributes with include_user_attributes=true but user is nil
+	_, found = attrs.Get(AttributeCICDPipelineRunActorID)
+	require.False(t, found)
+
+	// Author fields should be empty strings
+	authorName, found := attrs.Get(AttributeVCSRefHeadRevisionAuthorName)
+	require.True(t, found)
+	require.Empty(t, authorName.Str())
+
+	authorEmail, found := attrs.Get(AttributeVCSRefHeadRevisionAuthorEmail)
+	require.True(t, found)
+	require.Empty(t, authorEmail.Str())
+
+	// Merge request ID should not create attributes when 0
+	_, found = attrs.Get(string(semconv.VCSChangeIDKey))
+	require.False(t, found)
 }
 
 func TestEnvironmentAttributes(t *testing.T) {
@@ -564,10 +619,10 @@ func TestEnvironmentAttributes(t *testing.T) {
 	envName, _ := stagingAttrs.Get(AttributeCICDTaskEnvironmentName)
 	require.Equal(t, "staging", envName.Str())
 
-	deploymentTier, _ := stagingAttrs.Get(AttributeGitlabEnvironmentDeploymentTier)
+	deploymentTier, _ := stagingAttrs.Get(AttributeGitLabEnvironmentDeploymentTier)
 	require.Equal(t, "staging", deploymentTier.Str())
 
-	envAction, _ := stagingAttrs.Get(AttributeGitlabEnvironmentAction)
+	envAction, _ := stagingAttrs.Get(AttributeGitLabEnvironmentAction)
 	require.Equal(t, "start", envAction.Str())
 
 	prodJob := &glPipelineJob{
@@ -584,13 +639,13 @@ func TestEnvironmentAttributes(t *testing.T) {
 	envName, _ = prodAttrs.Get(AttributeCICDTaskEnvironmentName)
 	require.Equal(t, "production", envName.Str())
 
-	deploymentTier, _ = prodAttrs.Get(AttributeGitlabEnvironmentDeploymentTier)
+	deploymentTier, _ = prodAttrs.Get(AttributeGitLabEnvironmentDeploymentTier)
 	require.Equal(t, "production", deploymentTier.Str())
 
-	failureReason, _ := prodAttrs.Get(AttributeGitlabJobFailureReason)
+	failureReason, _ := prodAttrs.Get(AttributeGitLabJobFailureReason)
 	require.Equal(t, "script_failure", failureReason.Str())
 
-	allowFailure, _ := prodAttrs.Get(AttributeGitlabJobAllowFailure)
+	allowFailure, _ := prodAttrs.Get(AttributeGitLabJobAllowFailure)
 	require.True(t, allowFailure.Bool())
 }
 

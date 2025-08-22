@@ -17,53 +17,44 @@ import (
 const (
 	// The following attributes are not part of semconv yet, but potential candidates for future inclusion
 	// They are highly experimental and subject to change
-
-	// Repository
 	AttributeVCSRepositoryVisibility = "vcs.repository.visibility"
 	AttributeVCSRepositoryNamespace  = "vcs.repository.namespace"
 	AttributeVCSRepositoryRefDefault = "vcs.repository.ref.default"
 
-	// Commit (might contain sensitive information)
 	AttributeVCSRefHeadRevisionMessage     = "vcs.ref.head.revision.message"
 	AttributeVCSRefHeadRevisionTimestamp   = "vcs.ref.head.revision.timestamp"
 	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"
 	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email"
 
-	// Pipeline user (might contain sensitive information)
-	AttributeCICDPipelineRunActorID       = "cicd.pipeline.run.actor.id"
-	AttributeCICDPipelineRunActorUsername = "cicd.pipeline.run.actor.username"
-	AttributeCICDPipelineRunActorName     = "cicd.pipeline.run.actor.name"
+	AttributeCICDPipelineRunActorID   = "cicd.pipeline.run.actor.id"
+	AttributeCICDPipelineRunActorName = "cicd.pipeline.run.actor.name"
 
-	// Task type
 	AttributeCICDTaskTypeStatus = "cicd.pipeline.task.type.status"
 
-	// Task run
 	AttributeCICDTaskEnvironmentName = "cicd.pipeline.task.run.environment.name"
 
-	// Runner/Worker
 	AttributeCICDWorkerType   = "cicd.worker.type"
 	AttributeCICDWorkerTags   = "cicd.worker.tags"
 	AttributeCICDWorkerShared = "cicd.worker.shared"
 
 	// The following attributes are EXCLUSIVE to GitLab but not listed under Vendor Extensions within Semantic Conventions yet
 	// They are highly experimental and subject to change
+	AttributeGitLabPipelineRunActorUsername = "gitlab.pipeline.run.actor.username"
 
-	AttributeGitlabPipelineSource              = "gitlab.pipeline.source" // Source of the pipeline: https://docs.gitlab.com/ci/jobs/job_rules/#ci_pipeline_source-predefined-variable
-	AttributeGitlabPipelineSourcePipelineID    = "gitlab.pipeline.source.pipeline.id"
-	AttributeGitlabPipelineSourcePipelineJobID = "gitlab.pipeline.source.pipeline.job.id"
+	AttributeGitLabPipelineSource              = "gitlab.pipeline.source" // Source of the pipeline: https://docs.gitlab.com/ci/jobs/job_rules/#ci_pipeline_source-predefined-variable
+	AttributeGitLabPipelineSourcePipelineID    = "gitlab.pipeline.source.pipeline.id"
+	AttributeGitLabPipelineSourcePipelineJobID = "gitlab.pipeline.source.pipeline.job.id"
 
-	AttributeGitlabPipelineSourcePipelineProjectID        = "gitlab.pipeline.source.pipeline.project.id"
-	AttributeGitlabPipelineSourcePipelineProjectNamespace = "gitlab.pipeline.source.pipeline.project.namespace"
-	AttributeGitlabPipelineSourcePipelineProjectURL       = "gitlab.pipeline.source.pipeline.project.url"
+	AttributeGitLabPipelineSourcePipelineProjectID        = "gitlab.pipeline.source.pipeline.project.id"
+	AttributeGitLabPipelineSourcePipelineProjectNamespace = "gitlab.pipeline.source.pipeline.project.namespace"
+	AttributeGitLabPipelineSourcePipelineProjectURL       = "gitlab.pipeline.source.pipeline.project.url"
 
-	// Job
-	AttributeGitlabJobQueuedDuration = "gitlab.job.queued_duration"
-	AttributeGitlabJobFailureReason  = "gitlab.job.failure_reason"
-	AttributeGitlabJobAllowFailure   = "gitlab.job.allow_failure"
+	AttributeGitLabJobQueuedDuration = "gitlab.job.queued_duration"
+	AttributeGitLabJobFailureReason  = "gitlab.job.failure_reason"
+	AttributeGitLabJobAllowFailure   = "gitlab.job.allow_failure"
 
-	// Environment
-	AttributeGitlabEnvironmentAction         = "gitlab.environment.action"
-	AttributeGitlabEnvironmentDeploymentTier = "gitlab.environment.deployment_tier"
+	AttributeGitLabEnvironmentAction         = "gitlab.environment.action"
+	AttributeGitLabEnvironmentDeploymentTier = "gitlab.environment.deployment_tier"
 )
 
 var (
@@ -113,15 +104,15 @@ func (p *glPipeline) setAttributes(attrs pcommon.Map) {
 	// ---------- The following attributes are not part of semconv yet ----------
 
 	// Pipeline
-	putStrIfNotEmpty(attrs, AttributeGitlabPipelineSource, p.ObjectAttributes.Source)
+	attrs.PutStr(AttributeGitLabPipelineSource, p.ObjectAttributes.Source)
 
 	// Parent Pipeline (only added if it's a multi-pipeline)
 	if p.SourcePipeline.PipelineID > 0 {
-		attrs.PutInt(AttributeGitlabPipelineSourcePipelineID, int64(p.SourcePipeline.PipelineID))
-		putIntIfNotZero(attrs, AttributeGitlabPipelineSourcePipelineProjectID, int64(p.SourcePipeline.Project.ID))
-		putIntIfNotZero(attrs, AttributeGitlabPipelineSourcePipelineJobID, int64(p.SourcePipeline.JobID))
-		putStrIfNotEmpty(attrs, AttributeGitlabPipelineSourcePipelineProjectNamespace, p.SourcePipeline.Project.PathWithNamespace)
-		putStrIfNotEmpty(attrs, AttributeGitlabPipelineSourcePipelineProjectURL, p.SourcePipeline.Project.WebURL)
+		attrs.PutInt(AttributeGitLabPipelineSourcePipelineID, int64(p.SourcePipeline.PipelineID))
+		attrs.PutInt(AttributeGitLabPipelineSourcePipelineProjectID, int64(p.SourcePipeline.Project.ID))
+		attrs.PutInt(AttributeGitLabPipelineSourcePipelineJobID, int64(p.SourcePipeline.JobID))
+		attrs.PutStr(AttributeGitLabPipelineSourcePipelineProjectNamespace, p.SourcePipeline.Project.PathWithNamespace)
+		attrs.PutStr(AttributeGitLabPipelineSourcePipelineProjectURL, p.SourcePipeline.Project.WebURL)
 	}
 }
 
@@ -168,10 +159,10 @@ func (*glPipelineStage) setTimeStamps(span ptrace.Span, startTime, endTime strin
 }
 
 func (s *glPipelineStage) setAttributes(attrs pcommon.Map) {
-	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskTypeKey), s.Name)
+	attrs.PutStr(string(semconv.CICDPipelineTaskTypeKey), s.Name)
 
 	// ---------- The following attribute is not part of semconv yet ----------
-	putStrIfNotEmpty(attrs, AttributeCICDTaskTypeStatus, s.Status)
+	attrs.PutStr(AttributeCICDTaskTypeStatus, s.Status)
 }
 
 // glJobEvent represents the PipelineEvent.Builds struct from the pipeline webhook event - it's not exported as type by the Gitlab API client, so we need to use this struct to represent it
@@ -248,26 +239,26 @@ func (*glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string)
 
 func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
 	// Job
-	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskNameKey), j.event.Name)
-	putIntIfNotZero(attrs, string(semconv.CICDPipelineTaskRunIDKey), int64(j.event.ID))
-	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskRunResultKey), j.event.Status)
-	putStrIfNotEmpty(attrs, string(semconv.CICDPipelineTaskRunURLFullKey), j.jobURL)
+	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), j.event.Name)
+	attrs.PutInt(string(semconv.CICDPipelineTaskRunIDKey), int64(j.event.ID))
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunResultKey), j.event.Status)
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), j.jobURL)
 
 	// Worker/Runner
-	putIntIfNotZero(attrs, string(semconv.CICDWorkerIDKey), int64(j.event.Runner.ID))
-	putStrIfNotEmpty(attrs, string(semconv.CICDWorkerNameKey), j.event.Runner.Description)
+	attrs.PutInt(string(semconv.CICDWorkerIDKey), int64(j.event.Runner.ID))
+	attrs.PutStr(string(semconv.CICDWorkerNameKey), j.event.Runner.Description)
 
 	// ---------- The following attributes are not part of semconv yet ----------
 
 	// Job
-	putDoubleIfNotZero(attrs, AttributeGitlabJobQueuedDuration, j.event.QueuedDuration)
-	putStrIfNotEmpty(attrs, AttributeGitlabJobFailureReason, j.event.FailureReason)
-	attrs.PutBool(AttributeGitlabJobAllowFailure, j.event.AllowFailure)
+	attrs.PutDouble(AttributeGitLabJobQueuedDuration, j.event.QueuedDuration)
+	attrs.PutStr(AttributeGitLabJobFailureReason, j.event.FailureReason)
+	attrs.PutBool(AttributeGitLabJobAllowFailure, j.event.AllowFailure)
 
 	// Environment
-	putStrIfNotEmpty(attrs, AttributeCICDTaskEnvironmentName, j.event.Environment.Name)
-	putStrIfNotEmpty(attrs, AttributeGitlabEnvironmentDeploymentTier, j.event.Environment.DeploymentTier)
-	putStrIfNotEmpty(attrs, AttributeGitlabEnvironmentAction, j.event.Environment.Action)
+	attrs.PutStr(AttributeCICDTaskEnvironmentName, j.event.Environment.Name)
+	attrs.PutStr(AttributeGitLabEnvironmentDeploymentTier, j.event.Environment.DeploymentTier)
+	attrs.PutStr(AttributeGitLabEnvironmentAction, j.event.Environment.Action)
 
 	// Worker/Runner
 	if len(j.event.Runner.Tags) > 0 {
@@ -279,6 +270,6 @@ func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
 		}
 	}
 
-	putStrIfNotEmpty(attrs, AttributeCICDWorkerType, j.event.Runner.RunnerType)
+	attrs.PutStr(AttributeCICDWorkerType, j.event.Runner.RunnerType)
 	attrs.PutBool(AttributeCICDWorkerShared, j.event.Runner.IsShared)
 }
