@@ -6,7 +6,6 @@ package natscoreexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"text/template"
 
 	"go.opentelemetry.io/collector/config/configtls"
@@ -58,34 +57,74 @@ type MetricsConfig SignalConfig
 // TracesConfig defines the configuration for traces.
 type TracesConfig SignalConfig
 
+// TokenConfig defines the configuration for token auth.
+//
+// See: https://pkg.go.dev/github.com/nats-io/nats.go#Token
+type TokenConfig struct {
+	Token string `mapstructure:"token"`
+}
+
+// UserInfoConfig defines the configuration for username/password auth.
+//
+// See: https://pkg.go.dev/github.com/nats-io/nats.go#UserInfo
+type UserInfoConfig struct {
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+
+	// Prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NKeyConfig defines the configuration for NKey auth.
+//
+// See: https://pkg.go.dev/github.com/nats-io/nats.go#Nkey
+type NKeyConfig struct {
+	PubKey string `mapstructure:"pub_key"`
+	SigKey string `mapstructure:"sig_key"`
+
+	// Prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// UserJWTConfig defines the configuration for NKey auth via JWT.
+//
+// See: https://pkg.go.dev/github.com/nats-io/nats.go#UserJWT
+type UserJWTConfig struct {
+	JWT    string `mapstructure:"jwt"`
+	SigKey string `mapstructure:"sig_key"`
+
+	// Prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// UserCredentialsConfig defines the configuration for NKey auth via credentials file.
+//
+// See: https://pkg.go.dev/github.com/nats-io/nats.go#UserCredentials
+type UserCredentialsConfig struct {
+	UserFile string `mapstructure:"user_file"`
+
+	// Prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // AuthConfig defines the auth configuration for the NATS client.
 //
 // See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro
 type AuthConfig struct {
-	// Token is the plaintext token used for token auth.
-	Token string `mapstructure:"token"`
+	// Token holds the configuration for token auth.
+	Token *TokenConfig `mapstructure:"token"`
 
-	// Username is the plaintext username used for username/password auth.
-	Username string `mapstructure:"username"`
-	// Password is the plaintext password used for username/password auth.
-	Password string `mapstructure:"password"`
+	// UserInfo holds the configuration for username/password auth.
+	UserInfo *UserInfoConfig `mapstructure:"user_info"`
 
-	// NKey is the public key used for basic NKey auth.
-	//
-	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth
-	NKey string `mapstructure:"nkey"`
-	// Seed is the private key used for NKey auth.
-	//
-	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth
-	Seed string `mapstructure:"seed"`
-	// JWT is the JWT used for decentralized NKey auth via JWT.
-	//
-	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt
-	JWT string `mapstructure:"jwt"`
-	// Creds is the path to the credentials file used for decentralized NKey auth via credentials file.
-	//
-	// See: https://docs.nats.io/using-nats/developer/connecting/creds
-	Creds string `mapstructure:"creds"`
+	// NKey holds the configuration for NKey auth.
+	NKey *NKeyConfig `mapstructure:"nkey"`
+
+	// UserJWT holds the configuration for JWT auth.
+	UserJWT *UserJWTConfig `mapstructure:"user_jwt"`
+
+	// UserCredentials holds the configuration for credentials file auth.
+	UserCredentials *UserCredentialsConfig `mapstructure:"user_credentials"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
@@ -106,14 +145,14 @@ type Config struct {
 	// Traces holds the configuration for the traces signal.
 	Traces TracesConfig `mapstructure:"traces"`
 
-	// Auth holds the configuration for the NATS auth.
-	Auth AuthConfig `mapstructure:"auth"`
+	// Auth holds the configuration for NATS auth.
+	Auth AuthConfig `mapstructure:",squash"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
 }
 
-func (c SignalConfig) Validate() error {
+func (c *SignalConfig) Validate() error {
 	var errs error
 
 	if c.Subject != "" {
@@ -134,73 +173,101 @@ func (c SignalConfig) Validate() error {
 	return errs
 }
 
-func (c LogsConfig) Validate() error {
-	return SignalConfig(c).Validate()
+func (c *LogsConfig) Validate() error {
+	return (*SignalConfig)(c).Validate()
 }
 
-func (c MetricsConfig) Validate() error {
-	errs := SignalConfig(c).Validate()
+func (c *MetricsConfig) Validate() error {
+	errs := (*SignalConfig)(c).Validate()
 
 	if c.Marshaler == LogBodyMarshaler {
-		errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler: %s", c.Marshaler))
+		errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler for metrics: %s", c.Marshaler))
 	}
 
 	return errs
 }
 
-func (c TracesConfig) Validate() error {
-	errs := SignalConfig(c).Validate()
+func (c *TracesConfig) Validate() error {
+	errs := (*SignalConfig)(c).Validate()
 
 	if c.Marshaler == LogBodyMarshaler {
-		errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler: %s", c.Marshaler))
+		errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler for traces: %s", c.Marshaler))
 	}
 
 	return errs
 }
 
-func (c AuthConfig) Validate() error {
-	const (
-		hasNone     = 0
-		hasToken    = 1 << 0
-		hasUsername = 1 << 1
-		hasPassword = 1 << 2
-		hasSeed     = 1 << 3
-		hasNKey     = 1 << 4
-		hasJWT      = 1 << 5
-		hasCreds    = 1 << 6
-	)
-
-	bitmask := 0
-	for bit, isSet := range map[int]bool{
-		hasToken:    c.Token != "",
-		hasUsername: c.Username != "",
-		hasPassword: c.Password != "",
-		hasSeed:     c.Seed != "",
-		hasNKey:     c.NKey != "",
-		hasJWT:      c.JWT != "",
-		hasCreds:    c.Creds != "",
-	} {
-		if isSet {
-			bitmask |= bit
-		}
+func (c *TokenConfig) Validate() error {
+	if c == nil || c.Token != "" {
+		return nil
 	}
 
-	validBitmasks := []int{
-		hasNone,
-		hasToken,
-		hasUsername | hasPassword,
-		hasNKey | hasSeed,
-		hasJWT | hasSeed,
-		hasCreds,
-	}
-	if !slices.Contains(validBitmasks, bitmask) {
-		return errors.New("invalid auth configuration")
-	}
-
-	return nil
+	return errors.New("incomplete token configuration")
 }
 
-func (c Config) Validate() error {
+func (c *UserInfoConfig) Validate() error {
+	if c == nil || (c.User != "" && c.Password != "") {
+		return nil
+	}
+
+	return errors.New("incomplete user_info configuration")
+}
+
+func (c *NKeyConfig) Validate() error {
+	if c == nil || (c.PubKey != "" && c.SigKey != "") {
+		return nil
+	}
+
+	return errors.New("incomplete nkey configuration")
+}
+
+func (c *UserJWTConfig) Validate() error {
+	if c == nil || (c.JWT != "" && c.SigKey != "") {
+		return nil
+	}
+
+	return errors.New("incomplete user_jwt configuration")
+}
+
+func (c *UserCredentialsConfig) Validate() error {
+	if c == nil || c.UserFile != "" {
+		return nil
+	}
+
+	return errors.New("incomplete user_credentials configuration")
+}
+
+func (c *AuthConfig) Validate() error {
+	var errs error
+
+	if err := c.Token.Validate(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if err := c.UserInfo.Validate(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if err := c.NKey.Validate(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if err := c.UserJWT.Validate(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if err := c.UserCredentials.Validate(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if c.NKey != nil && (c.UserJWT != nil || c.UserCredentials != nil) {
+		errs = multierr.Append(errs, errors.New("nkey and user_jwt/user_credentials cannot be configured simultaneously"))
+	}
+
+	return errs
+}
+
+func (c *Config) Validate() error {
 	var errs error
 
 	if err := c.TLS.Validate(); err != nil {
