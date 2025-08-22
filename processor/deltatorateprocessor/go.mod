@@ -4,15 +4,15 @@ go 1.24
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.38.1-0.20250821131138-2ed38f571b7d
+	go.opentelemetry.io/collector/component v1.38.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250821131138-2ed38f571b7d
-	go.opentelemetry.io/collector/confmap v1.38.1-0.20250821131138-2ed38f571b7d
+	go.opentelemetry.io/collector/confmap v1.38.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/confmap/xconfmap v0.132.1-0.20250821131138-2ed38f571b7d
-	go.opentelemetry.io/collector/consumer v1.38.1-0.20250821131138-2ed38f571b7d
+	go.opentelemetry.io/collector/consumer v1.38.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.1-0.20250821131138-2ed38f571b7d
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250821131138-2ed38f571b7d
-	go.opentelemetry.io/collector/pdata v1.38.1-0.20250821131138-2ed38f571b7d
-	go.opentelemetry.io/collector/processor v1.38.1-0.20250821131138-2ed38f571b7d
+	go.opentelemetry.io/collector/pdata v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/processor v1.38.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/processor/processorhelper v0.132.1-0.20250821131138-2ed38f571b7d
 	go.opentelemetry.io/collector/processor/processortest v0.132.1-0.20250821131138-2ed38f571b7d
 	go.uber.org/goleak v1.3.0
@@ -40,11 +40,11 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.132.1-0.20250821131138-2ed38f571b7d // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250821131138-2ed38f571b7d // indirect
-	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250821131138-2ed38f571b7d // indirect
+	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250822050819-711177175dd4 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.132.1-0.20250821131138-2ed38f571b7d // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250821131138-2ed38f571b7d // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.132.1-0.20250821131138-2ed38f571b7d // indirect
-	go.opentelemetry.io/collector/pipeline v1.38.1-0.20250821131138-2ed38f571b7d // indirect
+	go.opentelemetry.io/collector/pipeline v1.38.1-0.20250822050819-711177175dd4 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.132.1-0.20250821131138-2ed38f571b7d // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
