@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/pool"
 )
 
 type logExporter struct {
@@ -28,15 +30,22 @@ type logExporter struct {
 }
 
 func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
-	model := &encodeModel{
-		dedup:             cfg.Dedup,
-		dedot:             cfg.Dedot,
-		sso:               cfg.Mode == MappingSS4O.String(),
-		flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
-		timestampField:    cfg.TimestampField,
-		unixTime:          cfg.UnixTimestamp,
-		dataset:           cfg.Dataset,
-		namespace:         cfg.Namespace,
+	var model mappingModel
+	if cfg.Mode == MappingBodyMap.String() {
+		model = &BodyMapMappingModel{
+			bufferPool: pool.NewBufferPool(),
+		}
+	} else {
+		model = &encodeModel{
+			dedup:             cfg.Dedup,
+			dedot:             cfg.Dedot,
+			sso:               cfg.Mode == MappingSS4O.String(),
+			flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
+			timestampField:    cfg.TimestampField,
+			unixTime:          cfg.UnixTimestamp,
+			dataset:           cfg.Dataset,
+			namespace:         cfg.Namespace,
+		}
 	}
 
 	return &logExporter{
