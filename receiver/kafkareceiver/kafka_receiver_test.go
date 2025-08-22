@@ -812,7 +812,7 @@ func TestComponentStatus(t *testing.T) {
 			assertNoStatusEvent(t)
 		}
 
-		assert.NoError(t, r.Shutdown(t.Context()))
+		assert.NoError(t, r.Shutdown(context.Background()))
 
 		// Shut down and check that the partition close metric is updated.
 		if franzGoConsumerFeatureGate.IsEnabled() {
