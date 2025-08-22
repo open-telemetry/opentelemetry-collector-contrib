@@ -112,6 +112,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
+        - isolationforest
         - k8sattributes
         - logdedup
         - metricsgeneration
@@ -122,7 +123,6 @@ components:
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
         - sumologic
         - tail_sampling
