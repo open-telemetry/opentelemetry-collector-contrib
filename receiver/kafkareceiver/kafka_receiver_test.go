@@ -425,7 +425,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		}
 
 		// Shut down and check that the partition close metric is updated.
-		err = r.Shutdown(context.Background())
+		err = r.Shutdown(context.Background()) //nolint:usetesting
 		require.NoError(t, err)
 		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
@@ -748,7 +748,7 @@ func TestComponentStatus(t *testing.T) {
 			},
 		}))
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(context.Background()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 
 		// Connection to the Kafka cluster is asynchronous; the receiver
@@ -812,7 +812,7 @@ func TestComponentStatus(t *testing.T) {
 			assertNoStatusEvent(t)
 		}
 
-		assert.NoError(t, r.Shutdown(context.Background()))
+		assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 
 		// Shut down and check that the partition close metric is updated.
 		if franzGoConsumerFeatureGate.IsEnabled() {
