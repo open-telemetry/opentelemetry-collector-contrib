@@ -33,10 +33,6 @@ var Opts = cmp.Options{
 	}),
 }
 
-func Equal[T any](a, b T, opts ...cmp.Option) bool {
-	return cmp.Equal(a, b, Opts, cmp.Options(opts))
-}
-
 func Diff[T any](a, b T, opts ...cmp.Option) string {
 	return cmp.Diff(a, b, Opts, cmp.Options(opts))
 }
