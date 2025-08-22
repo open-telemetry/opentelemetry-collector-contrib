@@ -1,0 +1,34 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "1000.25"
+    },
+    "ordering_operation": {
+      "using_filesort": true,
+      "table": {
+        "table_name": "events_statements_summary_by_digest",
+        "access_type": "ALL",
+        "rows_examined_per_scan": 10000,
+        "rows_produced_per_join": 2703,
+        "filtered": "27.03",
+        "cost_info": {
+          "read_cost": "189.12",
+          "eval_cost": "270.35",
+          "prefix_cost": "1000.25",
+          "data_read_per_join": "2M"
+        },
+        "used_columns": [
+          "SCHEMA_NAME",
+          "DIGEST",
+          "DIGEST_TEXT",
+          "COUNT_STAR",
+          "SUM_TIMER_WAIT",
+          "LAST_SEEN",
+          "QUERY_SAMPLE_TEXT"
+        ],
+        "attached_condition": "((`performance_schema`.`events_statements_summary_by_digest`.`LAST_SEEN` >= <cache>((now() - interval 10000 second))) and (((not((`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT` like 'EXPLAIN %'))) and (not((`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT` like '/* otel-collector-ignore */%')))) or (`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT` is null)))"
+      }
+    }
+  }
+}
