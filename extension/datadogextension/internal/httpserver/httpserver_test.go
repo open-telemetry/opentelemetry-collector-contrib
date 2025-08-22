@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -77,7 +78,7 @@ func TestServerStart(t *testing.T) {
 			}
 
 			// Stop the server
-			s.Stop(context.Background())
+			s.Stop(t.Context())
 		})
 	}
 }
@@ -416,7 +417,7 @@ func TestServerStop(t *testing.T) {
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithTimeout(context.Background(), 100*time.Millisecond)
+				return context.WithTimeout(t.Context(), 100*time.Millisecond)
 			},
 			expectedLogs:  []string{},
 			expectTimeout: false,
@@ -444,7 +445,7 @@ func TestServerStop(t *testing.T) {
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithTimeout(context.Background(), 1*time.Second)
+				return context.WithTimeout(t.Context(), 1*time.Second)
 			},
 			expectedLogs:  []string{},
 			expectTimeout: false,
@@ -480,12 +481,7 @@ func TestServerStop(t *testing.T) {
 				return srv, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				ctx, cancel := context.WithCancel(context.Background())
-				go func() {
-					time.Sleep(10 * time.Millisecond)
-					cancel()
-				}()
-				return ctx, cancel
+				return context.WithCancel(t.Context())
 			},
 			expectedLogs:     []string{"Context cancelled while waiting for server shutdown"},
 			expectTimeout:    true,
@@ -495,28 +491,25 @@ func TestServerStop(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "Context cancelled before shutdown completes" {
-				t.Skip("flaky test https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41146")
-			}
 			srv, logs := tt.setupServer()
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
 
 			if srv.server != nil && srv.server.Addr != "" {
+				listener, err := net.Listen("tcp", srv.server.Addr)
+				require.NoError(t, err)
 				go func() {
-					if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					if err := srv.server.Serve(listener); err != nil && err != http.ErrServerClosed {
 						t.Logf("Unexpected server error: %v", err)
 					}
 				}()
-				time.Sleep(10 * time.Millisecond)
 
 				if tt.simulateSlowStop {
-					go func() {
-						resp, err := http.Get("http://" + srv.server.Addr + "/block")
-						if err == nil {
-							_ = resp.Body.Close()
-						}
-					}()
+					cancel()
+					resp, err := http.Get("http://" + srv.server.Addr + "/block")
+					if err == nil {
+						_ = resp.Body.Close()
+					}
 				}
 			}
 
@@ -579,7 +572,7 @@ func TestServerStopChannelBehavior(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Let server start
 
 	t.Run("Channel closed on successful shutdown", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Use a channel to detect when Stop completes
 		done := make(chan struct{})
@@ -644,7 +637,7 @@ func TestServerStopConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func(_ int) {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+			ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 			defer cancel()
 			srv.Stop(ctx)
 		}(i)
@@ -786,7 +779,7 @@ func TestNewServerErrorPaths(t *testing.T) {
 
 		// Stop should not panic even if server was never started
 		assert.NotPanics(t, func() {
-			s.Stop(context.Background())
+			s.Stop(t.Context())
 		})
 	})
 
@@ -802,7 +795,7 @@ func TestNewServerErrorPaths(t *testing.T) {
 
 		// Stop should not panic with nil server
 		assert.NotPanics(t, func() {
-			s.Stop(context.Background())
+			s.Stop(t.Context())
 		})
 	})
 }

@@ -52,10 +52,10 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	err = ext.Start(context.Background(), componenttest.NewNopHost())
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	err = ext.Shutdown(context.Background())
+	err = ext.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
@@ -93,10 +93,10 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	err = ext.Start(context.Background(), componenttest.NewNopHost())
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err := ext.Shutdown(context.Background())
+		err := ext.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}()
 
