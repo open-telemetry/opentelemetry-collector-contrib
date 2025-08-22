@@ -24,12 +24,11 @@ The following configuration options are supported:
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal traces. See [Supported Marshalers](#supported-marshalers).
   - `encoder`: The name of the encoding extension used to marshal traces. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `auth`
-
   - `token`: Configuration options for [token auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/tokens).
     - `token`: The plaintext token.
   - `user_info`: Configuration options for [username/password auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/username_password).
-    - `user`: The username.
-    - `password`: The password.
+    - `user`: The plaintext username.
+    - `password`: The plaintext password.
   - `nkey`: Configuration options for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
     - `pub_key`: The public key.
     - `sig_key`: The private/signing key.
