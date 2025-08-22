@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datatest // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
+package datatest // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/datatest"
 
 import (
 	"reflect"
@@ -45,11 +45,6 @@ func New(tb testing.TB) T {
 func (is T) Equal(want, got any) {
 	is.Helper()
 	equal(is.TB, want, got, "")
-}
-
-func (is T) Equalf(want, got any, name string) {
-	is.Helper()
-	equal(is.TB, want, got, name)
 }
 
 func equal(tb testing.TB, want, got any, name string) bool {

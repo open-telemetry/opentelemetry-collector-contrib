@@ -20,6 +20,10 @@ var allow = []string{
 var Opts = cmp.Options{
 	cmpopts.EquateApprox(0, 1e-9),
 	cmp.Exporter(func(ty reflect.Type) bool {
+		// Ignore internal.State.
+		if ty.String() == "go.opentelemetry.io/collector/pdata/internal.State" {
+			return false
+		}
 		for _, prefix := range allow {
 			if strings.HasPrefix(ty.PkgPath(), prefix) {
 				return true

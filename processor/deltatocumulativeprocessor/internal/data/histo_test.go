@@ -6,9 +6,11 @@ package data
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
+	"github.com/stretchr/testify/require"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo/histotest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/datatest"
 )
 
 func TestHistoAdd(t *testing.T) {
@@ -52,7 +54,6 @@ func TestHistoAdd(t *testing.T) {
 	for _, cs := range cases {
 		t.Run(cs.name, func(t *testing.T) {
 			var add Adder
-			is := datatest.New(t)
 
 			var (
 				dp   = cs.dp.Into()
@@ -61,8 +62,8 @@ func TestHistoAdd(t *testing.T) {
 			)
 
 			err := add.Histograms(dp, in)
-			is.Equal(nil, err)
-			is.Equal(want, dp)
+			require.NoError(t, err)
+			datatest.New(t).Equal(want, dp)
 		})
 	}
 }

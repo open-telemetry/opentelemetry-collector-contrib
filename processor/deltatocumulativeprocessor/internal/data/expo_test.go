@@ -7,9 +7,9 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
@@ -188,7 +188,6 @@ func TestExpoAdd(t *testing.T) {
 		run := func(dp, in, want expdp) func(t *testing.T) {
 			return func(t *testing.T) {
 				var add Adder
-				is := datatest.New(t)
 
 				var (
 					dp   = dp.Into()
@@ -197,8 +196,8 @@ func TestExpoAdd(t *testing.T) {
 				)
 
 				err := add.Exponential(dp, in)
-				is.Equal(nil, err)
-				is.Equal(want, dp)
+				assert.NoError(t, err)
+				assert.Equal(t, want, dp)
 			}
 		}
 
