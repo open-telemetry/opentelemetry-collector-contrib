@@ -500,7 +500,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	// the specified mapping mode.
 	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
 	defer scopeMappingModeSessions.End()
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 
 	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
