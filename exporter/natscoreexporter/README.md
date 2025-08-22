@@ -28,7 +28,7 @@ The following configuration options are supported:
   - `token`: Configuration options for [token auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/tokens).
     - `token`: The plaintext token.
   - `user_info`: Configuration options for [username/password auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/username_password).
-    - `username`: The username.
+    - `user`: The username.
     - `password`: The password.
   - `nkey`: Configuration options for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
     - `pub_key`: The public key.

@@ -81,6 +81,21 @@ func TestConfigValidate(t *testing.T) {
 			err: errors.New("incomplete token configuration"),
 		},
 		{
+			name: "token and nkey",
+			cfg: Config{
+				Auth: AuthConfig{
+					Token: &TokenConfig{
+						Token: "token",
+					},
+					NKey: &NKeyConfig{
+						PubKey: "pub_key",
+						SigKey: "sig_key",
+					},
+				},
+			},
+			err: nil,
+		},
+		{
 			name: "nkey and user_jwt/user_credentials",
 			cfg: Config{
 				Auth: AuthConfig{
