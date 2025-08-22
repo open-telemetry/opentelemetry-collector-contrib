@@ -31,11 +31,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
@@ -511,10 +513,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 }
 
 func TestNewExporter_Zorkian(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableMetricExportSerializer())
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
@@ -542,6 +543,8 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	}
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
+	core, logs := observer.New(zap.WarnLevel)
+	params.Logger = zap.New(core)
 
 	// The client should have been created correctly
 	exp, err := f.CreateMetrics(t.Context(), params, cfg)
@@ -559,13 +562,15 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
+
+	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 2)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
+
 	attrs := map[string]string{
 		string(conventions.DeploymentEnvironmentKey): "dev",
 		"custom_attribute":                           "custom_value",
@@ -924,6 +929,9 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err, "unexpected error")
+
+			core, logs := observer.New(zap.WarnLevel)
+			exp.params.Logger = zap.New(core)
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
@@ -951,6 +959,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
+				assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 2)
 			}
 		})
 	}
