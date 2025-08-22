@@ -161,12 +161,25 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 		delta := value.Clone()
 
-		// Calculate deltas unless histogram count was reset
+		// Calculate deltas unless the histogram count was reset, in which case
+		// take the current data point as the delta.
 		if valid && delta.Count >= prevValue.Count {
-			delta.Count -= prevValue.Count
-			delta.Sum -= prevValue.Sum
+			// It's possible the overall count remained the same after a reset,
+			// so verify each bucket. Histogram bucket values cannot decrease,
+			// so a lower value indicates a reset.
+			reset := false
 			for index, prevBucket := range prevValue.Buckets {
-				delta.Buckets[index] -= prevBucket
+				if prevBucket > delta.Buckets[index] {
+					reset = true
+				}
+			}
+
+			if !reset {
+				delta.Count -= prevValue.Count
+				delta.Sum -= prevValue.Sum
+				for index, prevBucket := range prevValue.Buckets {
+					delta.Buckets[index] -= prevBucket
+				}
 			}
 		}
 
