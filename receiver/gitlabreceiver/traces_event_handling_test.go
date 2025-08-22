@@ -571,7 +571,7 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	// Optional fields should be present but may be empty
 	pipelineName, found := attrs.Get(string(semconv.CICDPipelineNameKey))
 	require.True(t, found)
-	require.Equal(t, "Test Pipeline", pipelineName.Str())
+	require.Empty(t, pipelineName.Str())
 
 	repoName, found := attrs.Get(string(semconv.VCSRepositoryNameKey))
 	require.True(t, found)
