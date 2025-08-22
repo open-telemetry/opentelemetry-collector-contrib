@@ -262,13 +262,17 @@ func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
 	if pid, ok := l.Data[fieldName]; ok && pid != nil {
 		pid := strings.ReplaceAll(pid.(string), "-", "")
 		pidByteArray, err := hex.DecodeString(pid)
-		if err == nil {
-			if len(pidByteArray) == 32 {
-				pidByteArray = pidByteArray[8:24]
-			} else if len(pidByteArray) >= 16 {
-				pidByteArray = pidByteArray[0:16]
+		if err == nil && len(pidByteArray) >= 8 {
+			// Extract 8 bytes for SpanID
+			var spanIDArray [8]byte
+			if len(pidByteArray) >= 16 {
+				// If it's a TraceID (16+ bytes), take the last 8 bytes as SpanID
+				copy(spanIDArray[:], pidByteArray[len(pidByteArray)-8:])
+			} else {
+				// If it's already 8 bytes, use as-is
+				copy(spanIDArray[:], pidByteArray[:8])
 			}
-			return trc.SpanID(pidByteArray), nil
+			return trc.SpanID(spanIDArray), nil
 		}
 		return trc.SpanID{}, errors.New("parent id is not a valid span id")
 	}
@@ -300,33 +304,31 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
 		tid := strings.ReplaceAll(tid.(string), "-", "")
 		tidByteArray, err := hex.DecodeString(tid)
-		if err == nil {
-			if len(tidByteArray) >= 32 {
-				tidByteArray = tidByteArray[0:32]
-			}
-			newSpan.SetTraceID(pcommon.TraceID(tidByteArray))
+		if err == nil && len(tidByteArray) == 16 {
+			// Convert slice to [16]byte array
+			var traceIDArray [16]byte
+			copy(traceIDArray[:], tidByteArray)
+			newSpan.SetTraceID(pcommon.TraceID(traceIDArray))
 		} else {
 			newSpan.SetTraceID(pcommon.TraceID(traceIDFrom(tid)))
 		}
 	} else {
-		newSpan.SetTraceID(pcommon.TraceID(generateAnID(32)))
+		newSpan.SetTraceID(pcommon.TraceID(generateAnID(16)))
 	}
 
 	if sid, ok := l.Data[cfg.Attributes.SpanID]; ok {
 		sid := strings.ReplaceAll(sid.(string), "-", "")
 		sidByteArray, err := hex.DecodeString(sid)
-		if err == nil {
-			if len(sidByteArray) == 32 {
-				sidByteArray = sidByteArray[8:24]
-			} else if len(sidByteArray) >= 16 {
-				sidByteArray = sidByteArray[0:16]
-			}
-			newSpan.SetSpanID(pcommon.SpanID(sidByteArray))
+		if err == nil && len(sidByteArray) == 8 {
+			// Convert slice to [8]byte array
+			var spanIDArray [8]byte
+			copy(spanIDArray[:], sidByteArray)
+			newSpan.SetSpanID(pcommon.SpanID(spanIDArray))
 		} else {
 			newSpan.SetSpanID(pcommon.SpanID(spanIDFrom(sid)))
 		}
 	} else {
-		newSpan.SetSpanID(pcommon.SpanID(generateAnID(16)))
+		newSpan.SetSpanID(pcommon.SpanID(generateAnID(8)))
 	}
 
 	newSpan.SetStartTimestamp(pcommon.Timestamp(timeNs))
