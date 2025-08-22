@@ -133,7 +133,7 @@ func TestOldCodeWouldPanic(t *testing.T) {
 		hexString := "1234567890abcdef1234567890abcdef" // 16 bytes when decoded
 		tidByteArray, err := hex.DecodeString(hexString)
 		require.NoError(t, err)
-		assert.Equal(t, 16, len(tidByteArray))
+		assert.Len(t, tidByteArray, 16)
 
 		// Old code logic:
 		// if len(tidByteArray) >= 32 {
@@ -153,7 +153,7 @@ func TestOldCodeWouldPanic(t *testing.T) {
 		hexString := "1234567890abcdef1234567890abcdef" // 16 bytes when decoded
 		sidByteArray, err := hex.DecodeString(hexString)
 		require.NoError(t, err)
-		assert.Equal(t, 16, len(sidByteArray))
+		assert.Len(t, sidByteArray, 16)
 
 		// Old code logic:
 		// if len(sidByteArray) >= 16 {
@@ -163,7 +163,7 @@ func TestOldCodeWouldPanic(t *testing.T) {
 
 		// Even after slicing, sidByteArray is still a []byte slice, not a [8]byte array
 		slicedData := sidByteArray[0:16] // Still a []byte slice of length 16
-		assert.Equal(t, 16, len(slicedData))
+		assert.Len(t, slicedData, 16)
 
 		// This would panic: cannot convert slice with length 16 to array or pointer to array with length 8
 		// _ = pcommon.SpanID(slicedData)  // This line would panic
