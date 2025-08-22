@@ -81,14 +81,14 @@ natscoreexporter:
 
 ### Decentralized NKey auth via JWT
 
-Basic NKey auth requires a public key to be centrally stored in the NATS server configuration. To provide more scalable alternative, NATS supports [using JWTs as signed public keys](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt) for decentralized NKey auth.
+Basic NKey auth requires a public key to be centrally stored in the NATS server configuration. To provide a more scalable alternative, NATS supports [using JWTs](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt) for decentralized NKey auth.
 
 Below is an example of NKey auth via JWT:
 
 ```yaml
 natscoreexporter:
   auth:
-    # Signed public key
+    # JWT
     jwt: "eyJ0eXAiOiJKV1QiLCJhbGciOiJlZDI1NTE5LW5rZXkifQ.eyJqdGkiOiJWR0c3TUZFRFRCSkYzQkhGQ0tTNUdCWkpRMlNBVFFPTVNYM1hQU00ySTROV0FJNkpLNE1BIiwiaWF0IjoxNzU1ODI1NDIxLCJpc3MiOiJBQUZBU0lZV1dQSVFSQ1pPMk9YVVIyMlpKRE5SQlpEUjU2Nk5BR09LTUQ2RkNHU1RQWVRJU1VJSCIsIm5hbWUiOiJkdW1teSIsInN1YiI6IlVENEk2Wlo3UjZST0ZRT0tMNEFZWFdKNlRCVldXWFk0T1ZLR0w0UFozN0hWUTNWNFJQUFNUUFhMIiwibmF0cyI6eyJwdWIiOnt9LCJzdWIiOnt9LCJzdWJzIjotMSwiZGF0YSI6LTEsInBheWxvYWQiOi0xLCJ0eXBlIjoidXNlciIsInZlcnNpb24iOjJ9fQ.oiNbwJUDSA8ue65iSAuzlohw4qKlVWU9mhdyZhmvCbweEL5Q1jVesoB2BZ5a76M37iJA5GDWHHaGKfbObmeJCQ"
     # Private key
     seed: "SUACFIJ5FF6K35NHC43M66HRFAD46YRZZ3FEEVFVFNKKAJMGOMCLKYEPUQ"
