@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datad
 go 1.24
 
 require (
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.67.0
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.67.0
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.68.0
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.69.2
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.69.2
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.2
 	github.com/DataDog/datadog-agent/pkg/proto v0.69.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.71.0-devel.0.20250820164444-fcef12608466
-	github.com/DataDog/datadog-go/v5 v5.6.0
+	github.com/DataDog/datadog-go/v5 v5.7.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.31.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1
 	github.com/google/go-cmp v0.7.0
@@ -63,8 +63,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.67.0 // indirect
-	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.67.0 // indirect
+	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.69.2 // indirect
+	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.69.2 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/metrics v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.67.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/serializer v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.69.2 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/template v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.67.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/common v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/compression v0.69.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.69.2 // indirect

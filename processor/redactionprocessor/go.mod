@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redac
 go 1.24
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.68.3
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.2
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.1-0.20250821131138-2ed38f571b7d
 	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250821131138-2ed38f571b7d
@@ -21,9 +21,9 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/util/log v0.68.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.68.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.68.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.69.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.69.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.69.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.6 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -71,7 +71,7 @@ require (
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
-	golang.org/x/time v0.11.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
