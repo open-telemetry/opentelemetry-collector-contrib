@@ -70,7 +70,7 @@ type AuthConfig struct {
 	// Password is the plaintext password used for username/password auth.
 	Password string `mapstructure:"password"`
 
-	// NKey is the public key used for NKey auth.
+	// NKey is the public key used for basic NKey auth.
 	//
 	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth
 	NKey string `mapstructure:"nkey"`
@@ -78,11 +78,11 @@ type AuthConfig struct {
 	//
 	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth
 	Seed string `mapstructure:"seed"`
-	// JWT is the JWT used for decentralized NKey auth.
+	// JWT is the JWT used for decentralized NKey auth via JWT.
 	//
 	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt
 	JWT string `mapstructure:"jwt"`
-	// Creds is the path to the credentials file used for decentralized NKey auth.
+	// Creds is the path to the credentials file used for decentralized NKey auth via credentials file.
 	//
 	// See: https://docs.nats.io/using-nats/developer/connecting/creds
 	Creds string `mapstructure:"creds"`
