@@ -15,7 +15,7 @@
 
 NATS Core exporter exports logs, metrics and traces to [NATS Core](https://docs.nats.io/).
 
-# Configuration
+## Configuration
 
 The following configuration options are supported:
 
@@ -24,24 +24,25 @@ The following configuration options are supported:
 - `logs`
   - `subject` (default = otel_logs): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for logs.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal logs. See [Supported Marshalers](#supported-marshalers).
-  - `encoder`: The name of the encoding extension used to marshal logs. This configuration option is mutually exclusive with the `marshaler` configuration option. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
+  - `encoder`: The name of the encoding extension used to marshal logs. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `metrics`
   - `subject` (default = otel_metrics): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for metrics.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal metrics. See [Supported Marshalers](#supported-marshalers).
-  - `encoder`: The name of the encoding extension used to marshal metrics. This configuration option is mutually exclusive with the `marshaler` configuration option. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
+  - `encoder`: The name of the encoding extension used to marshal metrics. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `traces`
   - `subject` (default = otel_traces): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for traces.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal traces. See [Supported Marshalers](#supported-marshalers).
-  - `encoder`: The name of the encoding extension used to marshal traces. This configuration option is mutually exclusive with the `marshaler` configuration option. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
+  - `encoder`: The name of the encoding extension used to marshal traces. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `auth`
   - `token`: The plaintext token used for [token auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/tokens).
   - `username`: The username used for [username/password auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/username_password).
   - `password`: The password used for [username/password auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/username_password).
-  - `nkey`: The public key used for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
-  - `seed`: The seed used for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
-  - `jwt`: The JWT used for [decentralized NKey auth (JWT auth)](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt).
+  - `nkey`: The public key used for [basic NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
+  - `seed`: The private key used for [NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth).
+  - `jwt`: The JWT used for [decentralized NKey auth via JWT](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt).
+  - `creds`: The path to the credentials file used for [decentralized NKey auth via credentials file](https://docs.nats.io/using-nats/developer/connecting/creds).
 
-## Supported marshalers
+### Supported marshalers
 
 NATS Core exporter supports marshalers for the following built-in encodings:
 
@@ -49,15 +50,13 @@ NATS Core exporter supports marshalers for the following built-in encodings:
 - `otlp_json`: Signals are encoded as OTLP JSON.
 - `log_body`: Log bodies are extracted from logs and plaintext encoded. **This marshaler is only supported for logs.**
 
-# Example Configurations
+## Example Configurations
 
-Example configurations showcasing notable configuration options.
+### Dynamic subjects
 
-## Dynamic subjects
+Messages in NATS are selectively consumed using [subject-based filtering](https://docs.nats.io/nats-concepts/subjects#subject-based-filtering-and-security). To support this model, NATS Core exporter constructs dynamic subjects using [text/template](https://pkg.go.dev/text/template) template strings.
 
-Messages in NATS are routed using [subject-based filtering](https://docs.nats.io/nats-concepts/subjects#subject-based-filtering-and-security). To support this model, NATS Core exporter constructs dynamic subjects using [text/template](https://pkg.go.dev/text/template) template strings.
-
-Below is an example of dynamic subjects for traces, where the configured template is executed on a [`Span`](https://pkg.go.dev/go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1#Span):
+Below is an example of dynamic subjects for traces, where the configured template will be executed on a [`Span`](https://pkg.go.dev/go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1#Span):
 
 ```yaml
 natscoreexporter:
@@ -65,28 +64,45 @@ natscoreexporter:
     subject: "otel.traces.{{ .TraceID }}.spans.{{ .SpanID }}"
 ```
 
-## NKey auth
+### Basic NKey auth
 
-[NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth) can be used by NATS servers to authenticate clients without ever storing or seeing private keys.
+[NKey auth](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth) can be used by NATS servers to authenticate clients over NATS without exposing private credentials.
 
-Below is an example of NKey auth based on the [NATS Docs Client Configuration example](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/nkey_auth#client-configuration):
+Below is an example of basic NKey auth:
 
 ```yaml
 natscoreexporter:
   auth:
-    nkey: "UDXU4RCSJNZOIQHZNWXHXORDPRTGNJAHAHFRGZNEEJCPQTT2M7NLCNF4"
-    seed: "SUACSSL3UAHUDXKFSNVUZRF5UHPMWZ6BFDTJ7M6USDXIEDNPPQYYYCU3VY"
+    # Public key
+    nkey: "UD4I6ZZ7R6ROFQOKL4AYXWJ6TBVWWXY4OVKGL4PZ37HVQ3V4RPPSTPXL"
+    # Private key
+    seed: "SUACFIJ5FF6K35NHC43M66HRFAD46YRZZ3FEEVFVFNKKAJMGOMCLKYEPUQ"
 ```
 
-## Decentralized NKey auth (JWT auth)
+### Decentralized NKey auth via JWT
 
-Basic NKey auth requires a public key to be centrally stored in the NATS server configuration. NATS supports [using JWTs](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt) for decentralized NKey auth.
+Basic NKey auth requires a public key to be centrally stored in the NATS server configuration. To provide more scalable alternative, NATS supports [using JWTs as signed public keys](https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt) for decentralized NKey auth.
 
-Below is an example of NKey auth using JWTs:
+Below is an example of NKey auth via JWT:
 
 ```yaml
 natscoreexporter:
   auth:
-    nkey: "eyJ0eXAiOiJKV1QiLCJhbGciOiJlZDI1NTE5LW5rZXkifQ.eyJqdGkiOiJWR0c3TUZFRFRCSkYzQkhGQ0tTNUdCWkpRMlNBVFFPTVNYM1hQU00ySTROV0FJNkpLNE1BIiwiaWF0IjoxNzU1ODI1NDIxLCJpc3MiOiJBQUZBU0lZV1dQSVFSQ1pPMk9YVVIyMlpKRE5SQlpEUjU2Nk5BR09LTUQ2RkNHU1RQWVRJU1VJSCIsIm5hbWUiOiJkdW1teSIsInN1YiI6IlVENEk2Wlo3UjZST0ZRT0tMNEFZWFdKNlRCVldXWFk0T1ZLR0w0UFozN0hWUTNWNFJQUFNUUFhMIiwibmF0cyI6eyJwdWIiOnt9LCJzdWIiOnt9LCJzdWJzIjotMSwiZGF0YSI6LTEsInBheWxvYWQiOi0xLCJ0eXBlIjoidXNlciIsInZlcnNpb24iOjJ9fQ.oiNbwJUDSA8ue65iSAuzlohw4qKlVWU9mhdyZhmvCbweEL5Q1jVesoB2BZ5a76M37iJA5GDWHHaGKfbObmeJCQ"
-    seed: "SUACSSL3UAHUDXKFSNVUZRF5UHPMWZ6BFDTJ7M6USDXIEDNPPQYYYCU3VY"
+    # Signed public key
+    jwt: "eyJ0eXAiOiJKV1QiLCJhbGciOiJlZDI1NTE5LW5rZXkifQ.eyJqdGkiOiJWR0c3TUZFRFRCSkYzQkhGQ0tTNUdCWkpRMlNBVFFPTVNYM1hQU00ySTROV0FJNkpLNE1BIiwiaWF0IjoxNzU1ODI1NDIxLCJpc3MiOiJBQUZBU0lZV1dQSVFSQ1pPMk9YVVIyMlpKRE5SQlpEUjU2Nk5BR09LTUQ2RkNHU1RQWVRJU1VJSCIsIm5hbWUiOiJkdW1teSIsInN1YiI6IlVENEk2Wlo3UjZST0ZRT0tMNEFZWFdKNlRCVldXWFk0T1ZLR0w0UFozN0hWUTNWNFJQUFNUUFhMIiwibmF0cyI6eyJwdWIiOnt9LCJzdWIiOnt9LCJzdWJzIjotMSwiZGF0YSI6LTEsInBheWxvYWQiOi0xLCJ0eXBlIjoidXNlciIsInZlcnNpb24iOjJ9fQ.oiNbwJUDSA8ue65iSAuzlohw4qKlVWU9mhdyZhmvCbweEL5Q1jVesoB2BZ5a76M37iJA5GDWHHaGKfbObmeJCQ"
+    # Private key
+    seed: "SUACFIJ5FF6K35NHC43M66HRFAD46YRZZ3FEEVFVFNKKAJMGOMCLKYEPUQ"
+```
+
+### Decentralized NKey auth via credentials file
+
+For convenience, NATS clients also support decentralized NKey auth using a [credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) containing the JWT and private key.
+
+Below is an example of NKey auth via credentials file:
+
+```yaml
+natscoreexporter:
+  auth:
+    # Path to credentials file
+    creds: "~/.nkeys/creds/MyOperator/MyAccount/MyUser.creds"
 ```

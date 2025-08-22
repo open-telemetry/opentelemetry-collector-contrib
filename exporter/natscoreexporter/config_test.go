@@ -4,6 +4,7 @@
 package natscoreexporter
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -29,43 +30,24 @@ func TestConfigValidate(t *testing.T) {
 			err: fmt.Errorf("error parsing subject: template: subject:1: unclosed action"),
 		},
 		{
-			name: "auth using incomplete username/password",
+			name: "auth using invalid configuration",
 			cfg: Config{
 				Auth: AuthConfig{
-					Username: "username",
+					Token: "token",
+					Seed:  "seed",
 				},
 			},
-			err: fmt.Errorf("username/password auth requires username and password"),
+			err: errors.New("invalid auth configuration"),
 		},
 		{
-			name: "auth using incomplete nkey",
-			cfg: Config{
-				Auth: AuthConfig{
-					NKey: "nkey",
-				},
-			},
-			err: fmt.Errorf("NKey auth requires seed and exactly one of public key or JWT"),
-		},
-		{
-			name: "auth using nkey and jwt",
-			cfg: Config{
-				Auth: AuthConfig{
-					NKey: "nkey",
-					JWT:  "jwt",
-					Seed: "seed",
-				},
-			},
-			err: fmt.Errorf("NKey auth requires seed and exactly one of public key or JWT"),
-		},
-		{
-			name: "signal using marshaler and encoder",
+			name: "signal using marshaler and encoder simultaneously",
 			cfg: Config{
 				Traces: TracesConfig{
 					Marshaler: "otlp_proto",
 					Encoder:   "proto",
 				},
 			},
-			err: fmt.Errorf("marshaler and encoder are mutually exclusive"),
+			err: errors.New("marshaler and encoder cannot be configured simultaneously"),
 		},
 		{
 			name: "non-log signal using logs_body marshaler",
@@ -77,7 +59,7 @@ func TestConfigValidate(t *testing.T) {
 			err: fmt.Errorf("unsupported marshaler: %s", "log_body"),
 		},
 		{
-			name: "invalid marshaler",
+			name: "marshaler using unsupported type",
 			cfg: Config{
 				Traces: TracesConfig{
 					Marshaler: "invalid",

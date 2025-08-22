@@ -4,7 +4,9 @@
 package natscoreexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter"
 
 import (
+	"errors"
 	"fmt"
+	"slices"
 	"text/template"
 
 	"go.opentelemetry.io/collector/config/configtls"
@@ -80,6 +82,10 @@ type AuthConfig struct {
 	//
 	// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro/jwt
 	JWT string `mapstructure:"jwt"`
+	// Creds is the path to the credentials file used for decentralized NKey auth.
+	//
+	// See: https://docs.nats.io/using-nats/developer/connecting/creds
+	Creds string `mapstructure:"creds"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
@@ -117,7 +123,7 @@ func (c SignalConfig) Validate() error {
 	}
 
 	if c.Marshaler != "" && c.Encoder != "" {
-		errs = multierr.Append(errs, fmt.Errorf("marshaler and encoder are mutually exclusive"))
+		errs = multierr.Append(errs, errors.New("marshaler and encoder cannot be configured simultaneously"))
 	}
 	if c.Marshaler != "" {
 		if c.Marshaler != OtlpProtoMarshaler && c.Marshaler != OtlpJsonMarshaler && c.Marshaler != LogBodyMarshaler {
@@ -153,21 +159,45 @@ func (c TracesConfig) Validate() error {
 }
 
 func (c AuthConfig) Validate() error {
-	var errs error
+	const (
+		hasNone     = 0
+		hasToken    = 1 << 0
+		hasUsername = 1 << 1
+		hasPassword = 1 << 2
+		hasSeed     = 1 << 3
+		hasNKey     = 1 << 4
+		hasJWT      = 1 << 5
+		hasCreds    = 1 << 6
+	)
 
-	if c.Username != "" || c.Password != "" {
-		if !(c.Username != "" && c.Password != "") {
-			errs = multierr.Append(errs, fmt.Errorf("username/password auth requires username and password"))
+	bitmask := 0
+	for bit, isSet := range map[int]bool{
+		hasToken:    c.Token != "",
+		hasUsername: c.Username != "",
+		hasPassword: c.Password != "",
+		hasSeed:     c.Seed != "",
+		hasNKey:     c.NKey != "",
+		hasJWT:      c.JWT != "",
+		hasCreds:    c.Creds != "",
+	} {
+		if isSet {
+			bitmask |= bit
 		}
 	}
 
-	if c.Seed != "" || c.NKey != "" || c.JWT != "" {
-		if !(c.Seed != "" && (c.NKey != "" || c.JWT != "") && (c.NKey == "" || c.JWT == "")) {
-			errs = multierr.Append(errs, fmt.Errorf("NKey auth requires seed and exactly one of public key or JWT"))
-		}
+	validBitmasks := []int{
+		hasNone,
+		hasToken,
+		hasUsername | hasPassword,
+		hasNKey | hasSeed,
+		hasJWT | hasSeed,
+		hasCreds,
+	}
+	if !slices.Contains(validBitmasks, bitmask) {
+		return errors.New("invalid auth configuration")
 	}
 
-	return errs
+	return nil
 }
 
 func (c Config) Validate() error {
