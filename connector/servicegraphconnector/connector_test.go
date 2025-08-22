@@ -533,7 +533,6 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		// Shutdown the connector
 		assert.NoError(t, p.Shutdown(t.Context()))
 	})
-
 }
 
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
