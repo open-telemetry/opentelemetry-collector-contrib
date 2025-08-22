@@ -293,38 +293,6 @@ func TestActualPanicScenario(t *testing.T) {
 		t.Log("Testing old code with 8-byte TraceID...")
 		oldTraceIDHandler("1234567890abcdef") // 8 bytes - would panic
 	})
-
-	t.Run("Simulate old SpanID code that would panic", func(t *testing.T) {
-		// Simulate the old problematic SpanID code
-		oldSpanIDHandler := func(hexString string) {
-			// This is exactly what the old code was doing:
-			sidByteArray, err := hex.DecodeString(hexString)
-			if err == nil {
-				// Old code had this logic which created slices of wrong size
-				if len(sidByteArray) == 32 {
-					sidByteArray = sidByteArray[8:24] // Creates 16-byte slice!
-				} else if len(sidByteArray) >= 16 {
-					sidByteArray = sidByteArray[0:16] // Creates 16-byte slice!
-				}
-				// This would panic: pcommon.SpanID expects [8]byte, not []byte of length 16
-
-				defer func() {
-					if r := recover(); r != nil {
-						assert.Contains(t, fmt.Sprint(r), "cannot convert slice")
-						t.Logf("CAUGHT EXPECTED PANIC: %v", r)
-					}
-				}()
-
-				// This will panic because sidByteArray is a 16-byte slice, not 8-byte array
-				_ = pcommon.SpanID(sidByteArray) // PANIC HERE
-				t.Error("Should have panicked but didn't")
-			}
-		}
-
-		// Test with 16-byte hex string (would cause panic when sliced)
-		t.Log("Testing old code with 16-byte SpanID...")
-		oldSpanIDHandler("1234567890abcdef1234567890abcdef") // 16 bytes - would panic when sliced to 16
-	})
 }
 
 // TestReproduceProductionError reproduces the exact error from the deployment
@@ -409,61 +377,6 @@ func TestReproduceProductionError(t *testing.T) {
 			t.Logf("  Input SpanID:  %s (%d bytes when decoded)", event.spanIDHex, len(event.spanIDHex)/2)
 			t.Logf("  Final TraceID: %s", span.TraceID().String())
 			t.Logf("  Final SpanID:  %s", span.SpanID().String())
-		})
-	}
-}
-
-// TestOldCodePanicSimulation shows exactly what would have panicked
-func TestOldCodePanicSimulation(t *testing.T) {
-	// This test demonstrates the exact line of code that would panic
-	// We don't actually execute the old code (to avoid panics), but show what it would do
-
-	testCases := []struct {
-		name          string
-		hexString     string
-		targetType    string
-		expectedBytes int
-		actualBytes   int
-		panicMessage  string
-	}{
-		{
-			name:          "Short TraceID",
-			hexString:     "1234567890abcdef",
-			targetType:    "TraceID",
-			expectedBytes: 16,
-			actualBytes:   8,
-			panicMessage:  "cannot convert slice with length 8 to array or pointer to array with length 16",
-		},
-		{
-			name:          "Long SpanID",
-			hexString:     "1234567890abcdef1234567890abcdef",
-			targetType:    "SpanID",
-			expectedBytes: 8,
-			actualBytes:   16,
-			panicMessage:  "cannot convert slice with length 16 to array or pointer to array with length 8",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			decoded, err := hex.DecodeString(tc.hexString)
-			require.NoError(t, err)
-
-			assert.Equal(t, tc.actualBytes, len(decoded), "Decoded byte length should match expected")
-
-			t.Logf("OLD CODE would have done:")
-			t.Logf("  byteArray := hex.DecodeString(%q) // returns %d bytes", tc.hexString, len(decoded))
-			t.Logf("  pcommon.%s(byteArray) // expects [%d]byte", tc.targetType, tc.expectedBytes)
-			t.Logf("  PANIC: %s", tc.panicMessage)
-			t.Logf("")
-			t.Logf("NEW CODE does:")
-			t.Logf("  if len(byteArray) == %d {", tc.expectedBytes)
-			t.Logf("    var arr [%d]byte", tc.expectedBytes)
-			t.Logf("    copy(arr[:], byteArray)")
-			t.Logf("    return pcommon.%s(arr)", tc.targetType)
-			t.Logf("  } else {")
-			t.Logf("    // Fall back to hash generation")
-			t.Logf("  }")
 		})
 	}
 }
