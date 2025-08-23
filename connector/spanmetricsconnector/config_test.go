@@ -122,14 +122,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "exemplars_enabled_with_max_per_datapoint",
-			id:   component.NewIDWithName(metadata.Type, "exemplars_enabled_with_max_per_datapoint"),
+			name: "exemplars_enabled_with_all_options",
+			id:   component.NewIDWithName(metadata.Type, "exemplars_enabled_with_all_options"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
-				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: 10},
+				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: 10, MarkSpans: true},
 				Namespace:                DefaultNamespace,
 			},
 		},

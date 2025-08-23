@@ -8,6 +8,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.132.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.38.1-0.20250822050819-711177175dd4
@@ -84,3 +85,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
