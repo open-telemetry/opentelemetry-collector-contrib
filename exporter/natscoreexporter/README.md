@@ -7,8 +7,6 @@ NATS Core exporter exports logs, metrics and traces to [NATS Core](https://docs.
 
 ## Configuration
 
-**TODO: With regards to subjects, `text/template` can only call methods with no arguments. This won't work for `Resource`s, for example, since `Resource` attributes are only accessible using the `Get(string)` method. I need to find or design an alternative that supports this.**
-
 The following configuration options are supported:
 
 - `endpoint` (default = nats://localhost:4222): The NATS server URL.
