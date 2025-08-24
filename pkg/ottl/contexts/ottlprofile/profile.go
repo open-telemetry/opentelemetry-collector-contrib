@@ -83,6 +83,10 @@ func (tCtx TransformContext) GetProfilesDictionary() pprofile.ProfilesDictionary
 	return tCtx.dictionary
 }
 
+func (tCtx TransformContext) AttributeIndices() pcommon.Int32Slice {
+	return tCtx.profile.AttributeIndices()
+}
+
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.
 func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return tCtx.instrumentationScope
