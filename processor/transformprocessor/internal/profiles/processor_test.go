@@ -1346,7 +1346,7 @@ func constructTestProfiles() pprofiletest.Profiles {
 
 func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, key string, value any) {
 	t.Helper()
-	dic := td.ProfilesDictionary()
+	dic := td.Dictionary()
 	profile := td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(profileIndex)
 	switch v := value.(type) {
 	case string:
@@ -1367,7 +1367,7 @@ func clearProfileAttributes(pp pprofile.Profiles, idx int) {
 
 // deleteProfileAttribute works as deleteKey() in func_delete_key.go.
 func deleteProfileAttribute(pp pprofile.Profiles, idx int, key string) {
-	dic := pp.ProfilesDictionary()
+	dic := pp.Dictionary()
 	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
 	indices := profile.AttributeIndices().AsRaw()
 	for i := range indices {
@@ -1381,7 +1381,7 @@ func deleteProfileAttribute(pp pprofile.Profiles, idx int, key string) {
 
 // deleteProfileAttributeSequential works as deleteMatchingKeys() in func_delete_matching_keys.go.
 func deleteProfileAttributeSequential(pp pprofile.Profiles, idx int, key string) { //nolint:unparam
-	dic := pp.ProfilesDictionary()
+	dic := pp.Dictionary()
 	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
 	indices := profile.AttributeIndices().AsRaw()
 	j := 0
