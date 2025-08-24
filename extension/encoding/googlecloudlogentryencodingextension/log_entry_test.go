@@ -158,35 +158,40 @@ func TestHandleLogNameField(t *testing.T) {
 		name              string
 		logName           string
 		expectsAttributes map[string]any
+		expectsLogType    string
 		expectsErr        string
 	}{
 		{
-			name:    "projects",
-			logName: "projects/my-project/logs/log-id",
+			name:           "projects",
+			logName:        "projects/my-project/logs/log-id",
+			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
 				gcpProjectField:                    "my-project",
 				string(semconv.CloudResourceIDKey): "log-id",
 			},
 		},
 		{
-			name:    "organizations",
-			logName: "organizations/123456/logs/log-id",
+			name:           "organizations",
+			logName:        "organizations/123456/logs/log-id",
+			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
 				gcpOrganizationField:               "123456",
 				string(semconv.CloudResourceIDKey): "log-id",
 			},
 		},
 		{
-			name:    "billingAccounts",
-			logName: "billingAccounts/BA123/logs/log-id",
+			name:           "billingAccounts",
+			logName:        "billingAccounts/BA123/logs/log-id",
+			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
 				gcpBillingAccountField:             "BA123",
 				string(semconv.CloudResourceIDKey): "log-id",
 			},
 		},
 		{
-			name:    "folders",
-			logName: "folders/456789/logs/log-id",
+			name:           "folders",
+			logName:        "folders/456789/logs/log-id",
+			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
 				gcpFolderField:                     "456789",
 				string(semconv.CloudResourceIDKey): "log-id",
@@ -214,7 +219,7 @@ func TestHandleLogNameField(t *testing.T) {
 			t.Parallel()
 
 			attr := pcommon.NewMap()
-			err := handleLogNameField(tt.logName, attr)
+			logType, err := handleLogNameField(tt.logName, attr)
 
 			if tt.expectsErr != "" {
 				require.ErrorContains(t, err, tt.expectsErr)
@@ -223,6 +228,7 @@ func TestHandleLogNameField(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, tt.expectsAttributes, attr.AsRaw())
+			require.Equal(t, tt.expectsLogType, logType)
 		})
 	}
 }

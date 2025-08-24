@@ -31,15 +31,15 @@ jobs:
       - name: Prepare to update dependencies
         run: |
           exec > >(tee log.out) 2>&1
-          LAST_COMMIT=$(git -C ./opentelemetry-collector/ rev-parse HEAD)
+          LAST_COMMIT="$(git -C ./opentelemetry-collector/ rev-parse HEAD)"
           cd opentelemetry-collector-contrib
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
           branch="otelbot/update-otel-$(date +%s)"
-          git checkout -b $branch
+          git checkout -b "$branch"
           make genotelcontribcol
-          echo "LAST_COMMIT=$LAST_COMMIT" >> $GITHUB_ENV
-          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
+          echo "LAST_COMMIT=$LAST_COMMIT" >> "$GITHUB_ENV"
+          echo "BRANCH_NAME=$branch" >> "$GITHUB_ENV"
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: Gets packages from links with retries
@@ -56,14 +56,14 @@ jobs:
         run: |  
           cd opentelemetry-collector-contrib
           git push --set-upstream origin ${{ env.BRANCH_NAME }}
-          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release"
+          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release" --draft
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: File an issue if the workflow failed
         if: failure()
         run: |
-          template=$(cat <<'END'
-          [Link to job log](%s)
+          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
+          body="$(printf '[Link to job log](%s)
           
           <details>
           <summary>Last 100 lines of log</summary>
@@ -71,11 +71,7 @@ jobs:
           ```
           %s
           ```
-          </details>
-          END
-          )
-          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
-          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
+          </details>' "$job_url" "$(tail -n100 log.out | tail -c63K)")"
           gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd'
         env:
           GH_TOKEN: ${{ github.token }}
