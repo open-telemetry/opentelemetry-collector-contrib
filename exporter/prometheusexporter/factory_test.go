@@ -54,13 +54,11 @@ func TestTelemetryInitialization(t *testing.T) {
 	settings := exportertest.NewNopSettings(metadata.Type)
 
 	// Test successful telemetry creation
-	tel, err := newTelemetry(settings)
-	require.NoError(t, err)
+	tel := newTelemetry(settings)
 	require.NotNil(t, tel)
 
 	// Verify the counter was created
 	assert.NotNil(t, tel.refusedMetricPoints)
-	assert.NotNil(t, tel.meter)
 
 	// Test that we can add to the counter without errors (using the OTel metric API)
 	tel.refusedMetricPoints.Add(t.Context(), 1,

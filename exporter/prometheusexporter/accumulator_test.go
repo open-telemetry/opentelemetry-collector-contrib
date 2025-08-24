@@ -9,11 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
@@ -233,7 +235,7 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			tt.metric(ts1, 13, ilm2.Metrics())
 
-			a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 
 			// 2 metric arrived
 			n := a.Accumulate(resourceMetrics2)
@@ -337,7 +339,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			resourceMetrics := pmetric.NewResourceMetrics()
 			ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName("test")
-			a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 
 			dataPointValue1 := float64(11)
 			dataPointValue2 := float64(32)
@@ -412,7 +414,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		m2 := ilm.Metrics().At(1).Histogram().DataPoints().At(0)
 		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
 
-		a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+		a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 		n := a.Accumulate(resourceMetrics)
 		require.Equal(t, 2, n)
 
@@ -446,7 +448,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
 
 		// should ignore metric with different buckets from the past
-		a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+		a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 		n := a.Accumulate(resourceMetrics)
 		require.Equal(t, 1, n)
 
@@ -480,7 +482,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
 
 		// should ignore metric with different buckets from the past
-		a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+		a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 		n := a.Accumulate(resourceMetrics)
 		require.Equal(t, 2, n)
 
@@ -514,7 +516,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		m1 := ilm.Metrics().At(0).Histogram().DataPoints().At(0)
 		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m1.Attributes(), pcommon.NewMap())
 
-		a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+		a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 		n := a.Accumulate(resourceMetrics)
 		require.Equal(t, 1, n)
 
@@ -548,7 +550,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		m2 := ilm.Metrics().At(1).Histogram().DataPoints().At(0)
 		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
 
-		a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+		a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 		n := a.Accumulate(resourceMetrics)
 		require.Equal(t, 2, n)
 
@@ -633,7 +635,7 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 			ilm.Scope().SetName("test")
 			tt.fillMetric(time.Now(), ilm.Metrics().AppendEmpty())
 
-			a := newAccumulator(zap.NewNop(), 1*time.Hour, nil).(*lastValueAccumulator)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour, newNoopTelemetry()).(*lastValueAccumulator)
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
@@ -705,9 +707,13 @@ func getMetricProperties(metric pmetric.Metric) (
 }
 
 func TestAccumulateSum_RefusedNonMonotonicDelta(t *testing.T) {
+	// Setup telemetry with test meter provider
+	reader := sdkmetric.NewManualReader()
+	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+
 	settings := exportertest.NewNopSettings(metadata.Type)
-	tel, err := newTelemetry(settings)
-	require.NoError(t, err)
+	settings.MeterProvider = meterProvider
+	tel := newTelemetry(settings)
 
 	accumulator := &lastValueAccumulator{
 		logger:           zap.NewNop(),
@@ -715,28 +721,52 @@ func TestAccumulateSum_RefusedNonMonotonicDelta(t *testing.T) {
 		telemetry:        tel,
 	}
 
-	// Create a non-monotonic delta sum metric with data points
+	// Create non-monotonic delta sum (will be refused)
 	metric := pmetric.NewMetric()
-	metric.SetName("refused_metric")
+	metric.SetName("test_refused_metric")
 	sum := metric.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	sum.SetIsMonotonic(false)
 
-	// Add a data point
-	for i := 0; i < 3; i++ {
+	// Add 2 data points to test the counter increments correctly
+	for i := 0; i < 2; i++ {
 		dp := sum.DataPoints().AppendEmpty()
+		dp.SetDoubleValue(42.0)
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dp.SetDoubleValue(float64(10 + i))
 	}
 
-	scopeName := "test_scope"
-	scopeVersion := "1.0.0"
-	scopeSchemaURL := ""
-	scopeAttributes := pcommon.NewMap()
-	resourceAttrs := pcommon.NewMap()
-	now := time.Now()
+	// Call accumulateSum - should refuse and increment counter
+	result := accumulator.accumulateSum(metric, "test", "", "", pcommon.NewMap(), pcommon.NewMap(), time.Now())
+	require.Equal(t, 0, result)
 
-	// Call accumulateSum directly - should return 0 and increment refused counter
-	result := accumulator.accumulateSum(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
-	assert.Equal(t, 0, result, "accumulateSum should return 0 for refused non-monotonic delta metrics")
+	// Verify telemetry counter was incremented
+	var metricData metricdata.ResourceMetrics
+	err := reader.Collect(t.Context(), &metricData)
+	require.NoError(t, err)
+
+	// Find and verify the refused metric points counter
+	found := false
+	for _, scopeMetric := range metricData.ScopeMetrics {
+		for _, m := range scopeMetric.Metrics {
+			if m.Name != "otelcol_exporter_refused_metric_points" {
+				continue
+			}
+			found = true
+			sum := m.Data.(metricdata.Sum[int64])
+			dataPoint := sum.DataPoints[0]
+
+			// Verify count matches number of refused data points
+			require.Equal(t, int64(2), dataPoint.Value)
+
+			// Verify attributes
+			expectedAttrs := attribute.NewSet(
+				attribute.String("exporter", "prometheus"),
+				attribute.String("reason", "unsupported_delta_non_monotonic_sum"),
+				attribute.String("metric_name", "test_refused_metric"),
+			)
+			require.Equal(t, expectedAttrs, dataPoint.Attributes)
+			break
+		}
+	}
+	require.True(t, found, "refused metric points counter not found")
 }

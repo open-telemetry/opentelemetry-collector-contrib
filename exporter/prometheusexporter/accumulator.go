@@ -48,7 +48,7 @@ type accumulator interface {
 type lastValueAccumulator struct {
 	logger *zap.Logger
 
-	telemetry *telemetry
+	telemetry telemetry
 
 	registeredMetrics sync.Map
 
@@ -58,7 +58,7 @@ type lastValueAccumulator struct {
 }
 
 // NewAccumulator returns LastValueAccumulator
-func newAccumulator(logger *zap.Logger, metricExpiration time.Duration, tel *telemetry) accumulator {
+func newAccumulator(logger *zap.Logger, metricExpiration time.Duration, tel telemetry) accumulator {
 	return &lastValueAccumulator{
 		logger:           logger,
 		metricExpiration: metricExpiration,
@@ -102,15 +102,12 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 			zap.String("metric_name", metric.Name()),
 		).Error("failed to translate metric")
 
-		if a.telemetry != nil {
-			// For unknown types, we can't determine exact point count, so default to 1
-			a.telemetry.refusedMetricPoints.Add(context.Background(), 1,
-				ometric.WithAttributes(
-					attribute.String("exporter", "prometheus"),
-					attribute.String("reason", "unknown_metric_type"),
-					attribute.String("metric_name", metric.Name()),
-				))
-		}
+		a.telemetry.refusedMetricPoints.Add(context.Background(), 1,
+			ometric.WithAttributes(
+				attribute.String("exporter", "prometheus"),
+				attribute.String("reason", "unknown_metric_type"),
+				attribute.String("metric_name", metric.Name()),
+			))
 	}
 
 	return 0
@@ -193,15 +190,13 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 			zap.String("metric_name", metric.Name()),
 			zap.String("reason", "non-monotonic sum with delta aggregation temporality is not supported"))
 
-		if a.telemetry != nil {
-			pointCount := doubleSum.DataPoints().Len()
-			a.telemetry.refusedMetricPoints.Add(context.Background(), int64(pointCount),
-				ometric.WithAttributes(
-					attribute.String("exporter", "prometheus"),
-					attribute.String("reason", "unsupported_delta_non_monotonic_sum"),
-					attribute.String("metric_name", metric.Name()),
-				))
-		}
+		pointCount := doubleSum.DataPoints().Len()
+		a.telemetry.refusedMetricPoints.Add(context.Background(), int64(pointCount),
+			ometric.WithAttributes(
+				attribute.String("exporter", "prometheus"),
+				attribute.String("reason", "unsupported_delta_non_monotonic_sum"),
+				attribute.String("metric_name", metric.Name()),
+			))
 		return 0
 	}
 

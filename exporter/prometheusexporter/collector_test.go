@@ -58,7 +58,7 @@ func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, 
 
 func TestConvertInvalidDataType(t *testing.T) {
 	metric := pmetric.NewMetric()
-	c := newCollector(&Config{}, zap.NewNop(), nil)
+	c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
 	c.accumulator = &mockAccumulator{
 		[]pmetric.Metric{metric},
 		pcommon.NewMap(),
@@ -149,7 +149,7 @@ func TestConvertMetric(t *testing.T) {
 			case pmetric.MetricTypeHistogram:
 				metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 			}
-			c := newCollector(&Config{}, zap.NewNop(), nil)
+			c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
 			for k, v := range tt.mapVals {
 				c.metricFamilies.Store(k, v)
 			}
@@ -233,7 +233,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop(), nil)
+	c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -272,7 +272,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop(), nil)
+	c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -327,7 +327,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	c := newCollector(&Config{
 		Namespace:      "test_space",
 		SendTimestamps: false,
-	}, zap.New(&loggerCore), nil)
+	}, zap.New(&loggerCore), newNoopTelemetry())
 	// Replace accumulator with mock for test control
 	c.accumulator = &mockAccumulator{
 		[]pmetric.Metric{metric},
@@ -540,7 +540,7 @@ func TestCollectMetrics(t *testing.T) {
 				c := newCollector(&Config{
 					Namespace:      "test_space",
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop(), nil)
+				}, zap.NewNop(), newNoopTelemetry())
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -667,7 +667,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric := tt.metric(ts, sendTimestamp)
 				c := newCollector(&Config{
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop(), nil)
+				}, zap.NewNop(), newNoopTelemetry())
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -781,7 +781,7 @@ func TestAccumulateSummary(t *testing.T) {
 				metric := tt.metric(ts, sendTimestamp)
 				c := newCollector(&Config{
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop(), nil)
+				}, zap.NewNop(), newNoopTelemetry())
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -844,8 +844,7 @@ func TestAccumulateSummary(t *testing.T) {
 func TestNewCollector_WithTelemetry(t *testing.T) {
 	// Create telemetry
 	settings := exportertest.NewNopSettings(metadata.Type)
-	tel, err := newTelemetry(settings)
-	require.NoError(t, err)
+	tel := newTelemetry(settings)
 
 	// Create config
 	config := &Config{

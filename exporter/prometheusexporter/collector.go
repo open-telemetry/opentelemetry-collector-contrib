@@ -30,7 +30,7 @@ var separatorString = string([]byte{model.SeparatorByte})
 type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
-	telemetry   *telemetry
+	telemetry   telemetry
 
 	sendTimestamps   bool
 	namespace        string
@@ -47,7 +47,7 @@ type metricFamily struct {
 	mf       *dto.MetricFamily
 }
 
-func newCollector(config *Config, logger *zap.Logger, tel *telemetry) *collector {
+func newCollector(config *Config, logger *zap.Logger, tel telemetry) *collector {
 	labelNamer := configureLabelNamer(config)
 	return &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration, tel),
