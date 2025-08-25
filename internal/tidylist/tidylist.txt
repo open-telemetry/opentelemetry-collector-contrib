@@ -158,6 +158,9 @@ extension/datadogextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
+pkg/translator/azure
+pkg/translator/azurelogs
+extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -200,8 +203,6 @@ internal/collectd
 internal/kubelet
 internal/sqlquery
 internal/tools
-pkg/translator/azure
-pkg/translator/azurelogs
 pkg/translator/loki
 processor/attributesprocessor
 processor/coralogixprocessor
