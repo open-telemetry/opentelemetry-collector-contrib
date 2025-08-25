@@ -6,11 +6,11 @@ package data
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo/histotest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/datatest"
 )
 
 func TestHistoAdd(t *testing.T) {
@@ -41,9 +41,9 @@ func TestHistoAdd(t *testing.T) {
 		want: histotest.Bounds{34, 55}.Observe(8, 77, 142),
 	}, {
 		name: "no-counts",
-		dp:   histdp{Count: 42 /**/, Sum: ptr(777.12 /*   */), Min: ptr(12.3), Max: ptr(66.8)},
+		dp:   histdp{Count: 42 /**/, Sum: ptr(777.2 /*   */), Min: ptr(12.3), Max: ptr(66.8)},
 		in:   histdp{Count: /**/ 33, Sum: ptr( /*   */ 568.2), Min: ptr(8.21), Max: ptr(23.6)},
-		want: histdp{Count: 42 + 33, Sum: ptr(777.12 + 568.2), Min: ptr(8.21), Max: ptr(66.8)},
+		want: histdp{Count: 42 + 33, Sum: ptr(777.2 + 568.2), Min: ptr(8.21), Max: ptr(66.8)},
 	}, {
 		name: "optional-missing",
 		dp:   histdp{Count: 42 /**/, Sum: ptr(777.0) /*   */, Min: ptr(12.3), Max: ptr(66.8)},
@@ -63,7 +63,7 @@ func TestHistoAdd(t *testing.T) {
 
 			err := add.Histograms(dp, in)
 			require.NoError(t, err)
-			datatest.New(t).Equal(want, dp)
+			assert.Equal(t, want, dp)
 		})
 	}
 }
