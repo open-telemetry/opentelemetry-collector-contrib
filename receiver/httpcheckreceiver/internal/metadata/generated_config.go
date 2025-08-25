@@ -33,9 +33,12 @@ type MetricsConfig struct {
 	HttpcheckDuration                 MetricConfig `mapstructure:"httpcheck.duration"`
 	HttpcheckError                    MetricConfig `mapstructure:"httpcheck.error"`
 	HttpcheckResponseDuration         MetricConfig `mapstructure:"httpcheck.response.duration"`
+	HttpcheckResponseSize             MetricConfig `mapstructure:"httpcheck.response.size"`
 	HttpcheckStatus                   MetricConfig `mapstructure:"httpcheck.status"`
 	HttpcheckTLSCertRemaining         MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
 	HttpcheckTLSHandshakeDuration     MetricConfig `mapstructure:"httpcheck.tls.handshake.duration"`
+	HttpcheckValidationFailed         MetricConfig `mapstructure:"httpcheck.validation.failed"`
+	HttpcheckValidationPassed         MetricConfig `mapstructure:"httpcheck.validation.passed"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -58,6 +61,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		HttpcheckResponseDuration: MetricConfig{
 			Enabled: false,
 		},
+		HttpcheckResponseSize: MetricConfig{
+			Enabled: false,
+		},
 		HttpcheckStatus: MetricConfig{
 			Enabled: true,
 		},
@@ -65,6 +71,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		HttpcheckTLSHandshakeDuration: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckValidationFailed: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckValidationPassed: MetricConfig{
 			Enabled: false,
 		},
 	}
