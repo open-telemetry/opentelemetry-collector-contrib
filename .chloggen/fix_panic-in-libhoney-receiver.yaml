@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: libhoneyreceiver
-note: Parsing Span and Trace IDs no longer panic if there is a parsing issue.
-issues: [42200]
-subtext:
-change_logs: [user]

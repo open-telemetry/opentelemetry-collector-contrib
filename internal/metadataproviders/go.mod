@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.237.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.133.0
 	github.com/shirou/gopsutil/v4 v4.25.7
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/otel v1.37.0

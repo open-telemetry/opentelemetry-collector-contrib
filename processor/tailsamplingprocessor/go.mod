@@ -6,16 +6,16 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.132.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.133.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/confmap v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/consumer v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/pdata v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/processor v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/component v1.39.0
+	go.opentelemetry.io/collector/confmap v1.39.0
+	go.opentelemetry.io/collector/consumer v1.39.0
+	go.opentelemetry.io/collector/featuregate v1.39.0
+	go.opentelemetry.io/collector/pdata v1.39.0
+	go.opentelemetry.io/collector/processor v1.39.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
@@ -25,9 +25,9 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/processor/processortest v0.132.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/component/componenttest v0.133.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.133.0
+	go.opentelemetry.io/collector/processor/processortest v0.133.0
 )
 
 require (
@@ -59,13 +59,13 @@ require (
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/pipeline v1.38.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.132.1-0.20250822050819-711177175dd4 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.133.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.133.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.133.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.133.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.39.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.133.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
