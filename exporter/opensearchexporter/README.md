@@ -29,46 +29,46 @@ Index pattern will follow the next naming template `ss4o_{type}-{dataset}-{names
 - `dataset` (default=`default`) a user-provided label to classify source of telemetry. It is used to construct the name of the destination index or data stream.
 - `namespace` (default=`namespace`) a user-provided label to group telemetry. It is used to construct the name of the destination index or data stream.
 
-LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
+#### Dynamic Indexing
 
-- `logs_index` a user-provided label to specify name of the destination index or data stream.
-
-#### Dynamic Log Indexing
-
-The OpenSearch exporter supports dynamic log index names using placeholders in the `logs_index` config. You can use any attribute or context key as a placeholder to construct index names dynamically per log record.
+The OpenSearch exporter supports dynamic index names for both logs and traces using placeholders. You can use any attribute or context key as a placeholder to construct index names dynamically per record.
 
 > Caution: In practice, OpenSearch clusters can become unstable or even break down when index counts reach a very high level. Introducing attributes with high cardinality resulting in many separate indices can significantly impact the stability of your target cluster.
 
+**Configuration Options:**
+
+- `logs_index` - Custom index name pattern for logs
+- `logs_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)
+- `logs_index_time_format` - Time suffix format for logs
+- `traces_index` - Custom index name pattern for traces
+- `traces_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)  
+- `traces_index_time_format` - Time suffix format for traces
+
+**Placeholder Syntax:**
+
 - Placeholder: `%{key}`
+  - Example: `otel-logs-%{service.name}` or `otel-traces-%{custom.label}`
+  - The value is looked up from resource attributes, log/span attributes, and scope attributes
+  - If the key is missing, the fallback value is used
+  - Only one placeholder is supported per index name
+  - Generated index names must adhere to [OpenSearch index naming restrictions](https://docs.opensearch.org/docs/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
 
-  - Example: `otel-logs-%{service.name}` or `otel-logs-%{custom.label}`
-  - The value is looked up from a context map (resource attributes, log attributes, etc.).
-  - If the key is missing, the value from `logs_index_fallback` is used (or `unknown` if not set).
-  - Only one placeholder is supported in the index name.
-  - The index names generated from these placeholders should adhere to [index naming restrictions](https://docs.opensearch.org/docs/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
+**Time Suffix Format:**
 
-- **Optional logs_index**: If `logs_index` is not set, the exporter will use the default naming pattern: `ss4o_{type}-{dataset}-{namespace}` (e.g., `ss4o_logs-default-namespace`). This ensures backward compatibility and a predictable index naming scheme.
+Both logs and traces support time-formatted suffixes using `*_time_format` options. The time suffix only supports UTC.
 
-#### Time Suffix
-
-You can append a time-formatted suffix to the index name using the `logs_index_time_format` option.
-
-- `logs_index_time_format`: If set, appends a time suffix to the resolved index name using the specified format (default is no suffix).
 - **Valid tokens** (case-sensitive):
-  - `yyyy` (4-digit year)
-  - `yy` (2-digit year)
-  - `MM` (2-digit month)
-  - `dd` (2-digit day)
-  - `HH` (2-digit hour, 24h)
-  - `mm` (2-digit minute)
-  - `ss` (2-digit second)
+  - `yyyy` (4-digit year), `yy` (2-digit year)
+  - `MM` (2-digit month), `dd` (2-digit day) 
+  - `HH` (2-digit hour, 24h), `mm` (2-digit minute), `ss` (2-digit second)
 - **Allowed separators**: `-`, `.`, `_`, `+`
-- **Examples:**
-  - `yyyy.MM.dd` → `2024.06.07`
-  - `yyyy-MM` → `2024-06`
-  - `yyMMdd` → `240607`
-  - `yyyy_MM_dd+HH` → `2024_06_07+15`
-- Any other characters or tokens will result in a configuration error.
+- **Examples:** `yyyy.MM.dd` → `2024.06.07`, `yyyy-MM` → `2024-06`, `yyMMdd` → `240607`
+
+**Default Behavior:**
+
+If custom index names are not set, the exporter uses default patterns:
+- Logs: `ss4o_logs-{dataset}-{namespace}`
+- Traces: `ss4o_traces-{dataset}-{namespace}`
 
 ##### Example Configuration
 
@@ -77,14 +77,21 @@ exporters:
   opensearch:
     http:
       endpoint: http://opensearch.example.com:9200
+    # Logs configuration
     logs_index: "otel-logs-%{service.name}"
-    logs_index_fallback: "default-service" # optional, if not set default is `unknown`
-    logs_index_time_format: "yyyy.MM.dd" # optional, if set appends time suffix
+    logs_index_fallback: "default-service"
+    logs_index_time_format: "yyyy.MM.dd"
+    # Traces configuration  
+    traces_index: "otel-traces-%{service.name}"
+    traces_index_fallback: "default-service"
+    traces_index_time_format: "yyyy.MM.dd"
 ```
 
-This will create log indexes like `otel-logs-myservice-2024.06.07`. If `service.name` is missing, `otel-logs-default-service-2024.06.07` will be used.
+This configuration will create:
+- Log indexes like: `otel-logs-myservice-2024.06.07`
+- Trace indexes like: `otel-traces-myservice-2024.06.07`
 
-If `logs_index` is not set, the exporter will use the default pattern, e.g. `ss4o_logs-default-namespace-2024.06.07` if `logs_index_time_format` is set.
+If `service.name` is missing, the fallback value is used (e.g., `otel-logs-default-service-2024.06.07`).
 
 ### HTTP Connection Options
 
