@@ -76,6 +76,11 @@ type MappingsSettings struct {
 	//
 	//   flatten_attributes: uses the ECS mapping but flattens all resource and
 	//   log attributes in the record to the top-level.
+	//
+	// 	 bodymap: supports only logs and will take the "body" of a log record as the exact content
+	//	 of the Opensearch document any transformation.
+	//   This mapping mode is intended for use cases where the client wished to have complete control over the
+	//   Opensearch document structure.
 	Mode string `mapstructure:"mode"`
 
 	// Additional field mappings.
@@ -103,6 +108,7 @@ const (
 	MappingSS4O MappingMode = iota
 	MappingECS
 	MappingFlattenAttributes
+	MappingBodyMap
 )
 
 func (m MappingMode) String() string {
@@ -113,6 +119,8 @@ func (m MappingMode) String() string {
 		return "ecs"
 	case MappingFlattenAttributes:
 		return "flatten_attributes"
+	case MappingBodyMap:
+		return "bodymap"
 	default:
 		return "ss4o"
 	}
@@ -124,6 +132,7 @@ var mappingModes = func() map[string]MappingMode {
 		MappingECS,
 		MappingSS4O,
 		MappingFlattenAttributes,
+		MappingBodyMap,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
