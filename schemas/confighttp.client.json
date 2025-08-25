@@ -1,0 +1,79 @@
+{
+  "properties": {
+    "endpoint": {
+      "type": "string"
+    },
+    "proxy_url": {
+      "type": "string"
+    },
+    "tls": {
+      "$ref": "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/schemas/configtls.client.json"
+    },
+    "read_buffer_size": {
+      "type": "integer"
+    },
+    "write_buffer_size": {
+      "type": "integer"
+    },
+    "timeout": {
+      "type": "integer"
+    },
+    "headers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "auth": {
+      "$ref": "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/schemas/configauth.json"
+    },
+    "compression": {
+      "type": "string"
+    },
+    "compression_params": {
+      "type": "object",
+      "properties": {
+        "level": {"type":  "integer"}
+      }
+    },
+    "max_idle_conns": {
+      "type": "integer"
+    },
+    "max_idle_conns_per_host": {
+      "type": "integer"
+    },
+    "max_conns_per_host": {
+      "type": "integer"
+    },
+    "idle_conn_timeout": {
+      "type": "integer"
+    },
+    "disable_keep_alives": {
+      "type": "boolean"
+    },
+    "http2_read_idle_timeout": {
+      "type": "integer"
+    },
+    "http2_ping_timeout": {
+      "type": "integer"
+    },
+    "force_attempt_http2": {
+      "type": "boolean"
+    },
+    "cookies": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"}
+      }
+    },
+    "middlewares": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "properties": {
+    "collection_interval": {"type": "integer"},
+    "initial_delay": {"type": "integer"},
+    "timeout": {"type": "integer"}
+  }
+}

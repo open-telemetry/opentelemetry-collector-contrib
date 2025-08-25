@@ -1,0 +1,38 @@
+{
+  "properties": {
+    "insecure": {"type":  "boolean"},
+    "insecure_skip_verify": {"type":  "boolean"},
+    "server_name_override": {"type":  "string"},
+    "ca_file": {"type":  "string"},
+    "ca_pem": {"type":  "string"},
+    "include_system_ca_certs_pool": {"type":  "boolean"},
+    "cert_file": {"type":  "string"},
+    "cert_pem": {"type":  "string"},
+    "key_file": {"type":  "string"},
+    "key_pem": {"type":  "string"},
+    "min_version": {"type":  "string"},
+    "max_version": {"type":  "string"},
+    "cipher_suites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reload_interval": {"type":  "integer"},
+    "curve_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tpm": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "path": {"type": "string"},
+        "owner_auth": {"type": "string"},
+        "auth": {"type": "string"}
+      }
+    }
+  }
+}

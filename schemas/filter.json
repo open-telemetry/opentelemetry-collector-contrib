@@ -1,0 +1,6 @@
+{
+  "properties": {
+    "strict": {"type":"string"},
+    "regexp": {"type":"string"}
+  }
+}
