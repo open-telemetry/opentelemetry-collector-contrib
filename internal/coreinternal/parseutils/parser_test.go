@@ -91,9 +91,9 @@ func Test_SplitString(t *testing.T) {
 			delimiter: " ",
 			expected: []string{
 				"ab",
-				`c=this \"is \"`,
-				`d=a \'co ol\' value`,
-				`e=\"`,
+				`c=this "is "`,
+				`d=a 'co ol' value`,
+				`e="`,
 			},
 		},
 		{
@@ -168,6 +168,12 @@ h`,
 			input:       `a 'b c' "d '`,
 			delimiter:   " ",
 			expectedErr: errors.New("never reached the end of a quoted value"),
+		},
+		{
+			name:        "trailing backslash",
+			input:       `a \`,
+			delimiter:   " ",
+			expectedErr: errors.New("found a trailing escape character"),
 		},
 		{
 			name:      "tab delimiters",
