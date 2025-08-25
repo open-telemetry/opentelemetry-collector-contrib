@@ -7,9 +7,18 @@ package memoryscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"github.com/shirou/gopsutil/v4/mem"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
+)
+
+var useMemAvailable = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.134.0"),
+	featuregate.WithRegisterDescription("When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel’s MemAvailable statistic instead of MemFree, Buffers, and Cached."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221"),
 )
 
 func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
