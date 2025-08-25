@@ -56,8 +56,8 @@ type ExponentialHistogramInfo struct {
 	PreviousSum       float64
 	PreviousZeroCount uint64
 	Scale             int32
-	PreviousPositive  pmetric.ExponentialHistogramDataPointBuckets
-	PreviousNegative  pmetric.ExponentialHistogramDataPointBuckets
+	PreviousPositive  ExponentialHistogramBucketInfo
+	PreviousNegative  ExponentialHistogramBucketInfo
 
 	// These are the optional reference values for strategies that need to cache
 	// additional data from the initial points.
@@ -65,8 +65,20 @@ type ExponentialHistogramInfo struct {
 	RefCount     uint64
 	RefSum       float64
 	RefZeroCount uint64
-	RefPositive  pmetric.ExponentialHistogramDataPointBuckets
-	RefNegative  pmetric.ExponentialHistogramDataPointBuckets
+	RefPositive  ExponentialHistogramBucketInfo
+	RefNegative  ExponentialHistogramBucketInfo
+}
+
+type ExponentialHistogramBucketInfo struct {
+	Offset       int32
+	BucketCounts []uint64
+}
+
+func NewExponentialHistogramBucketInfo(ehdpb pmetric.ExponentialHistogramDataPointBuckets) ExponentialHistogramBucketInfo {
+	return ExponentialHistogramBucketInfo{
+		Offset:       ehdpb.Offset(),
+		BucketCounts: ehdpb.BucketCounts().AsRaw(),
+	}
 }
 
 type SummaryInfo struct {
@@ -203,19 +215,19 @@ func (ref *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHis
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if ref.ExponentialHistogram.PreviousPositive.BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
+	if len(ref.ExponentialHistogram.PreviousPositive.BucketCounts) != eh.Positive().BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.ExponentialHistogram.PreviousPositive.BucketCounts().Len() {
-		if eh.Positive().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousPositive.BucketCounts().At(i) {
+	for i := range len(ref.ExponentialHistogram.PreviousPositive.BucketCounts) {
+		if eh.Positive().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousPositive.BucketCounts[i] {
 			return true
 		}
 	}
-	if ref.ExponentialHistogram.PreviousNegative.BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
+	if len(ref.ExponentialHistogram.PreviousNegative.BucketCounts) != eh.Negative().BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.ExponentialHistogram.PreviousNegative.BucketCounts().Len() {
-		if eh.Negative().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousNegative.BucketCounts().At(i) {
+	for i := range len(ref.ExponentialHistogram.PreviousNegative.BucketCounts) {
+		if eh.Negative().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousNegative.BucketCounts[i] {
 			return true
 		}
 	}
