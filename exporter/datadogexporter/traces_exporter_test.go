@@ -341,6 +341,7 @@ func TestNewTracesExporter(t *testing.T) {
 }
 
 func TestNewTracesExporter_Zorkian(t *testing.T) {
+	resetZorkianWarningsForTesting()
 	require.NoError(t, enableZorkianMetricExport())
 	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
 	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })

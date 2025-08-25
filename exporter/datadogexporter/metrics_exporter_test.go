@@ -44,6 +44,7 @@ import (
 )
 
 func TestNewExporter(t *testing.T) {
+	resetZorkianWarningsForTesting()
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
 		defer require.NoError(t, enableMetricExportSerializer())
@@ -563,7 +564,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
 
-	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 2)
+	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
@@ -897,6 +898,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+			resetZorkianWarningsForTesting()
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV1Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -912,9 +914,14 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			acfg := traceconfig.New()
+
+			core, logs := observer.New(zap.WarnLevel)
+			params := exportertest.NewNopSettings(metadata.Type)
+			params.Logger = zap.New(core)
+
 			exp, err := newMetricsExporter(
 				t.Context(),
-				exportertest.NewNopSettings(metadata.Type),
+				params,
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -929,9 +936,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err, "unexpected error")
-
-			core, logs := observer.New(zap.WarnLevel)
-			exp.params.Logger = zap.New(core)
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
@@ -959,7 +963,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
-				assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 2)
+				assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 			}
 		})
 	}
