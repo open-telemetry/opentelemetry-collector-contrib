@@ -17,7 +17,7 @@ type legacyHubWrapper interface {
 	Close(ctx context.Context) error
 }
 
-func NewLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
+func newLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
 	hub, newHubErr := eventhub.NewHubFromConnectionString(
 		h.config.Connection,
 		eventhub.HubWithOffsetPersistence(

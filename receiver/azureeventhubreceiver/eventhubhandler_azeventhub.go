@@ -23,7 +23,7 @@ type azPartitionClient interface {
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
 }
 
-func NewAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
+func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
 	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
 		h.config.Connection,
 		"",
