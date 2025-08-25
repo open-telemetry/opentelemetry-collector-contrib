@@ -256,6 +256,9 @@ func TestTransform(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
+					HostMetadata: HostResourceData{
+						Data: map[string]string{},
+					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
@@ -265,6 +268,7 @@ func TestTransform(t *testing.T) {
 						Frequency:    20,
 						Count:        1,
 					},
+					HostMetadata: HostResourceData{},
 				},
 			},
 			wantErr: nil,
@@ -396,6 +400,9 @@ func TestStackPayloads(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
+					HostMetadata: HostResourceData{
+						Data: map[string]string{},
+					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
@@ -405,6 +412,7 @@ func TestStackPayloads(t *testing.T) {
 						Frequency:    20,
 						Count:        1,
 					},
+					HostMetadata: HostResourceData{},
 				},
 			},
 		},
@@ -502,6 +510,9 @@ func TestStackPayloads(t *testing.T) {
 							DocID:      buildID2Base64,
 							FileID:     []string{buildID2Base64},
 						},
+					},
+					HostMetadata: HostResourceData{
+						Data: map[string]string{},
 					},
 				},
 				{
@@ -623,6 +634,9 @@ func TestStackPayloads(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 						// Note: no unsymbolized executable for the mapping without build ID
+					},
+					HostMetadata: HostResourceData{
+						Data: map[string]string{},
 					},
 				},
 				{
