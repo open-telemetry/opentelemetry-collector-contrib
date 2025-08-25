@@ -11,6 +11,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
+	"go.uber.org/zap"
 )
 
 type checkpointSeqNumber struct {
@@ -20,6 +21,36 @@ type checkpointSeqNumber struct {
 type azPartitionClient interface {
 	Close(ctx context.Context) error
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
+}
+
+func NewAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
+	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
+		h.config.Connection,
+		"",
+		h.config.ConsumerGroup,
+		&azeventhubs.ConsumerClientOptions{},
+	)
+
+	if newHubErr != nil {
+		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
+		return nil, newHubErr
+	}
+
+	var storage *storageCheckpointPersister[checkpointSeqNumber]
+	if h.storageClient != nil {
+		storage = &storageCheckpointPersister[checkpointSeqNumber]{
+			storageClient: h.storageClient,
+			defaultValue: checkpointSeqNumber{
+				SeqNumber: -1,
+			},
+		}
+	}
+
+	return &hubWrapperAzeventhubImpl{
+		hub:     azEventHubWrapper{hub},
+		config:  h.config,
+		storage: storage,
+	}, nil
 }
 
 type azEventHubWrapper struct {

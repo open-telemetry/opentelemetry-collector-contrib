@@ -8,9 +8,6 @@ import (
 	"errors"
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
-	"github.com/Azure/azure-event-hubs-go/v3/persist"
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
@@ -64,51 +61,17 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 
 	if h.hub == nil { // set manually for testing.
 		if azEventHubFeatureGate.IsEnabled() {
-			hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
-				h.config.Connection,
-				"",
-				h.config.ConsumerGroup,
-				&azeventhubs.ConsumerClientOptions{},
-			)
-
-			if newHubErr != nil {
-				h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
-				return newHubErr
+			newHub, err := NewAzeventhubWrapper(h)
+			if err != nil {
+				return err
 			}
-
-			var storage *storageCheckpointPersister[checkpointSeqNumber]
-			if h.storageClient != nil {
-				storage = &storageCheckpointPersister[checkpointSeqNumber]{
-					storageClient: h.storageClient,
-					defaultValue: checkpointSeqNumber{
-						SeqNumber: -1,
-					},
-				}
-			}
-
-			h.hub = &hubWrapperAzeventhubImpl{
-				hub:     azEventHubWrapper{hub},
-				config:  h.config,
-				storage: storage,
-			}
+			h.hub = newHub
 		} else {
-			hub, newHubErr := eventhub.NewHubFromConnectionString(
-				h.config.Connection,
-				eventhub.HubWithOffsetPersistence(
-					&storageCheckpointPersister[persist.Checkpoint]{
-						storageClient: h.storageClient,
-						defaultValue:  persist.NewCheckpointFromStartOfStream(),
-					},
-				),
-			)
-			if newHubErr != nil {
-				h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
-				return newHubErr
+			newHub, err := NewLegacyHubWrapper(h)
+			if err != nil {
+				return err
 			}
-			h.hub = &hubWrapperLegacyImpl{
-				hub:    hub,
-				config: h.config,
-			}
+			h.hub = newHub
 		}
 	}
 

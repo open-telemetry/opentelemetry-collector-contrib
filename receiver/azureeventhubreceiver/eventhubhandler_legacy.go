@@ -7,12 +7,34 @@ import (
 	"context"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-event-hubs-go/v3/persist"
+	"go.uber.org/zap"
 )
 
 type legacyHubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
 	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (*eventhub.ListenerHandle, error)
 	Close(ctx context.Context) error
+}
+
+func NewLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
+	hub, newHubErr := eventhub.NewHubFromConnectionString(
+		h.config.Connection,
+		eventhub.HubWithOffsetPersistence(
+			&storageCheckpointPersister[persist.Checkpoint]{
+				storageClient: h.storageClient,
+				defaultValue:  persist.NewCheckpointFromStartOfStream(),
+			},
+		),
+	)
+	if newHubErr != nil {
+		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
+		return nil, newHubErr
+	}
+	return &hubWrapperLegacyImpl{
+		hub:    hub,
+		config: h.config,
+	}, nil
 }
 
 type hubWrapperLegacyImpl struct {
