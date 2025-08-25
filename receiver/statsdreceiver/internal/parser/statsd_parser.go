@@ -6,7 +6,10 @@ package parser // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -42,9 +45,10 @@ const (
 )
 
 type ObserverCategory struct {
-	method             protocol.ObserverType
-	histogramConfig    structure.Config
-	summaryPercentiles []float64
+	method                protocol.ObserverType
+	histogramConfig       structure.Config
+	explicitBucketConfigs []explicitBucketConfig
+	summaryPercentiles    []float64
 }
 
 var defaultObserverCategory = ObserverCategory{
@@ -96,8 +100,79 @@ type summaryMetric struct {
 
 type histogramStructure = structure.Histogram[float64]
 
+type explicitBucketConfig struct {
+	re      *regexp.Regexp
+	buckets []float64
+}
+
+type explicitBucket struct {
+	_             struct{}
+	buckets       map[float64]int
+	sortedBuckets []float64
+	count         uint64
+	infCount      uint64
+	sum           float64
+	min           float64
+	max           float64
+}
+
+func (e *explicitBucket) Init(buckets []float64) {
+	e.count = 0
+	e.sum = 0
+	e.min = math.Inf(-1)
+	e.max = math.Inf(+1)
+	sort.Float64s(buckets)
+	uniqueBuckets := make([]float64, 0, len(buckets))
+	if len(buckets) > 0 {
+		uniqueBuckets = append(uniqueBuckets, buckets[0])
+		for i := 1; i < len(buckets); i++ {
+			if buckets[i] > uniqueBuckets[len(uniqueBuckets)-1] {
+				uniqueBuckets = append(uniqueBuckets, buckets[i])
+			}
+		}
+	}
+	e.buckets = make(map[float64]int, len(uniqueBuckets))
+	for _, bucket := range uniqueBuckets {
+		e.buckets[bucket] = 0
+	}
+
+	e.sortedBuckets = uniqueBuckets
+}
+
+func (e *explicitBucket) UpdateByIncr(value float64, count uint64) {
+	if count == 0 {
+		return
+	}
+	e.sum += value * float64(count)
+	e.count += count
+
+	if e.count == count {
+		e.min = value
+		e.max = value
+	} else {
+		if value < e.min {
+			e.min = value
+		}
+		if value > e.max {
+			e.max = value
+		}
+	}
+	isBucketFound := false
+	for _, bucket := range e.sortedBuckets {
+		if value <= bucket {
+			e.buckets[bucket] += int(count)
+			isBucketFound = true
+			break
+		}
+	}
+	if !isBucketFound {
+		e.infCount += count
+	}
+}
+
 type histogramMetric struct {
-	agg *histogramStructure
+	agg            *histogramStructure
+	explicitBucket *explicitBucket
 }
 
 type statsDMetric struct {
@@ -151,16 +226,33 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		switch eachMap.StatsdType {
 		case protocol.HistogramTypeName, protocol.DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
-			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
+			}
+			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
+			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.CounterTypeName, protocol.GaugeTypeName:
 		}
 	}
 	return nil
+}
+
+func explicitBucketInitializeRegex(opts protocol.HistogramConfig) []explicitBucketConfig {
+	ebc := make([]explicitBucketConfig, len(opts.ExplicitBuckets))
+	for i := range opts.ExplicitBuckets {
+		ebc[i] = explicitBucketConfig{
+			re:      regexp.MustCompile(opts.ExplicitBuckets[i].MatcherPattern),
+			buckets: opts.ExplicitBuckets[i].Buckets,
+		}
+	}
+	return ebc
 }
 
 func expoHistogramConfig(opts protocol.HistogramConfig) structure.Config {
@@ -320,21 +412,47 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		case protocol.HistogramObserver:
 			raw := parsedMetric.sampleValue()
 			var agg *histogramStructure
+			var eb *explicitBucket
+
 			if existing, ok := instrument.histograms[parsedMetric.description]; ok {
-				agg = existing.agg
-			} else {
-				agg = new(histogramStructure)
-				agg.Init(category.histogramConfig)
-
-				instrument.histograms[parsedMetric.description] = histogramMetric{
-					agg: agg,
+				if existing.explicitBucket != nil {
+					eb = existing.explicitBucket
+				} else {
+					agg = existing.agg
 				}
-			}
-			agg.UpdateByIncr(
-				raw.value,
-				uint64(raw.count), // Note! Rounding float64 to uint64 here.
-			)
+			} else {
+				var matchedConfig *explicitBucketConfig
+				if category.explicitBucketConfigs != nil {
+					for _, config := range category.explicitBucketConfigs {
+						if config.re.MatchString(parsedMetric.description.name) {
+							matchedConfig = &config
+							break
+						}
+					}
+				}
 
+				hm := histogramMetric{}
+				if matchedConfig != nil {
+					eb = new(explicitBucket)
+					eb.Init(matchedConfig.buckets)
+					hm.explicitBucket = eb
+				} else {
+					agg = new(histogramStructure)
+					agg.Init(category.histogramConfig)
+					hm.agg = agg
+				}
+
+				instrument.histograms[parsedMetric.description] = hm
+			}
+
+			if eb != nil {
+				eb.UpdateByIncr(raw.value, uint64(raw.count))
+			} else {
+				agg.UpdateByIncr(
+					raw.value,
+					uint64(raw.count), // Note! Rounding float64 to uint64 here.
+				)
+			}
 		case protocol.DisableObserver:
 			// No action.
 		}

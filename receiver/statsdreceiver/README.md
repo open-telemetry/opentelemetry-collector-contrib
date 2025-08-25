@@ -46,7 +46,7 @@ The Following settings are optional:
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"`, `"histogram"` and `"distribution"`.
 
 `"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
-For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). By default, it will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
+For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). By default, it will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below unless it matches the configured explicit_buckets matcher pattern.
 TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
 
 Example:
@@ -66,6 +66,11 @@ receivers:
         observer_type: "histogram"
         histogram: 
           max_size: 100
+          explicit_buckets:
+            - matcher_pattern: "foo.*"
+              buckets: [1, 10, 100]
+            - matcher_pattern: "bar.*"
+              buckets: [0.1, 0.5, 1]
       - statsd_type: "distribution"
         observer_type: "summary"
         summary: 
@@ -147,6 +152,11 @@ receivers:
         observer_type: "histogram"
         histogram:
           max_size: 50
+          explicit_buckets:
+            - matcher_pattern: "foo.*"
+              buckets: [1, 10, 100]
+            - matcher_pattern: "bar.*"
+              buckets: [0.1, 0.5, 1]
       - statsd_type: "distribution"
         observer_type: "histogram"
         histogram: 
