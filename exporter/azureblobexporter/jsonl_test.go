@@ -31,7 +31,7 @@ func TestMetricsJSONLMarshaler(t *testing.T) {
 
 	// Verify each line is valid JSON
 	for i, line := range lines {
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		err := json.Unmarshal([]byte(line), &parsed)
 		assert.NoErrorf(t, err, "Line %d is not valid JSON: %s", i, line)
 
@@ -54,7 +54,7 @@ func TestTracesJSONLMarshaler(t *testing.T) {
 
 	// Verify each line is valid JSON
 	for i, line := range lines {
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		err := json.Unmarshal([]byte(line), &parsed)
 		assert.NoErrorf(t, err, "Line %d is not valid JSON: %s", i, line)
 
@@ -78,7 +78,7 @@ func TestLogsJSONLMarshalerCompatibility(t *testing.T) {
 
 	// Verify each line is valid JSON
 	for i, line := range lines {
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		err := json.Unmarshal([]byte(line), &parsed)
 		assert.NoErrorf(t, err, "Line %d is not valid JSON: %s", i, line)
 
@@ -109,9 +109,9 @@ func TestJSONLFormatComparison(t *testing.T) {
 	scanner := bufio.NewScanner(bytes.NewReader(jsonlResult))
 	lineCount := 0
 	for scanner.Scan() {
-		if len(strings.TrimSpace(scanner.Text())) > 0 {
+		if strings.TrimSpace(scanner.Text()) != "" {
 			lineCount++
 		}
 	}
-	assert.Greater(t, lineCount, 0, "Should have at least one line")
+	assert.Positive(t, lineCount, "Should have at least one line")
 }

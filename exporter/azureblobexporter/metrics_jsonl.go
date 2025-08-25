@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package azureblobexporter
 
 import (
@@ -8,7 +11,7 @@ import (
 
 type metricsJSONLMarshaler struct{}
 
-func (m *metricsJSONLMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
+func (*metricsJSONLMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	marshaler := &pmetric.JSONMarshaler{}
 	var buf bytes.Buffer
 
