@@ -1,671 +1,508 @@
-package alertsgenconnector
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package alertsgenconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/alertsgenconnector"
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"hash/fnv"
-	"regexp"
-	"sort"
-	"strings"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/alertsgenconnector/state"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/alertsgenconnector/telemetry"
 )
 
-type ruleSet struct {
-	cfg *Config
+// alertsConnector evaluates streaming telemetry against rules and forwards the
+// original data to the next consumer (Traces->Traces, Logs->Logs, Metrics->Metrics).
+type alertsConnector struct {
+	cfg    *Config
+	logger *zap.Logger
+	rs     *ruleSet
+	ing    *ingester
+	mx     *telemetry.Metrics
+	tsdb   *state.TSDBSyncer // optional; nil if HA/TSDB is not configured
 
-	traceRules  []*compiledRule
-	logRules    []*compiledRule
-	metricRules []*compiledRule
+	// downstreams (only one of these will be set depending on factory used)
+	nextTraces  consumer.Traces
+	nextLogs    consumer.Logs
+	nextMetrics consumer.Metrics
 
-	stateMu sync.Mutex
-	state   map[uint64]*alertState
+	// Batching for remote write
+	eventBatch   []state.AlertEvent
+	eventBatchMu sync.Mutex
+	batchTicker  *time.Ticker
+	flushChan    chan struct{}
 
-	// telemetry (may be nil; set by engine)
-	mx *telemetry.Metrics
+	evalMu   sync.Mutex
+	evalStop chan struct{}
+	wg       sync.WaitGroup
 }
 
-type compiledRule struct {
-	cfg      RuleCfg
-	sel      map[string]*regexp.Regexp
-	expr     evalExpr
-	window   time.Duration
-	step     time.Duration
-	forDur   time.Duration
-	groupBy  []string
-	severity string
-}
-
-type evalExpr interface {
-	kind() string
-	evaluateTrace(rows []traceRow) (float64, bool)
-	evaluateLog(rows []logRow) (float64, bool)
-	evaluateMetric(rows []metricRow) (float64, bool)
-	compare(val float64) bool
-}
-
-type alertState struct {
-	Rule        string
-	FP          uint64
-	Labels      map[string]string
-	Severity    string
-	LastValue   float64
-	FirstExceed time.Time
-	Active      bool
-}
-
-func compileRules(cfg *Config) (*ruleSet, error) {
-	rs := &ruleSet{cfg: cfg, state: map[uint64]*alertState{}}
-	for _, rc := range cfg.Rules {
-		cr, err := compileRule(rc, cfg)
-		if err != nil {
-			return nil, err
-		}
-		switch strings.ToLower(rc.Signal) {
-		case "traces":
-			rs.traceRules = append(rs.traceRules, cr)
-		case "logs":
-			rs.logRules = append(rs.logRules, cr)
-		case "metrics":
-			rs.metricRules = append(rs.metricRules, cr)
-		default:
-			return nil, fmt.Errorf("unknown signal %q", rc.Signal)
-		}
-	}
-	return rs, nil
-}
-
-func compileRule(rc RuleCfg, cfg *Config) (*compiledRule, error) {
-	if rc.Name == "" {
-		return nil, errors.New("rule.name required")
-	}
-	if rc.Window == 0 {
-		rc.Window = cfg.WindowSize
-	}
-	if rc.Step == 0 {
-		rc.Step = cfg.WindowSize
-	}
-	if rc.Expr.Type == "" {
-		return nil, fmt.Errorf("rule %s expr.type required", rc.Name)
-	}
-
-	sel := map[string]*regexp.Regexp{}
-	for k, v := range rc.Select {
-		re, err := regexp.Compile(v)
-		if err != nil {
-			return nil, fmt.Errorf("rule %s: bad select regex for %s: %v", rc.Name, k, err)
-		}
-		sel[k] = re
-	}
-
-	expr, err := buildExpr(rc.Expr)
-	if err != nil {
-		return nil, fmt.Errorf("rule %s: %v", rc.Name, err)
-	}
-
-	return &compiledRule{
-		cfg:      rc,
-		sel:      sel,
-		expr:     expr,
-		window:   rc.Window,
-		step:     rc.Step,
-		forDur:   rc.For,
-		groupBy:  rc.GroupBy,
-		severity: rc.Severity,
-	}, nil
-}
-
-func buildExpr(ec ExprCfg) (evalExpr, error) {
-	switch ec.Type {
-	case "avg_over_time":
-		return &exprAvg{Field: ec.Field, Op: ec.Op, Threshold: ec.Value}, nil
-	case "rate_over_time":
-		return &exprRate{Field: ec.Field, Op: ec.Op, Threshold: ec.Value}, nil
-	case "count_over_time":
-		return &exprCount{Field: ec.Field, Op: ec.Op, Threshold: ec.Value}, nil
-	case "latency_quantile_over_time":
-		return &exprQuantile{Field: ec.Field, Q: ec.Quantile, Op: ec.Op, Threshold: ec.Value}, nil
-	case "absent_over_time":
-		return &exprAbsent{}, nil
-	default:
-		return nil, fmt.Errorf("unsupported expr.type %q", ec.Type)
-	}
-}
-
-func cmp(op string, a, b float64) bool {
-	switch op {
-	case ">":
-		return a > b
-	case ">=":
-		return a >= b
-	case "<":
-		return a < b
-	case "<=":
-		return a <= b
-	case "==":
-		return a == b
-	case "!=":
-		return a != b
-	default:
-		return false
-	}
-}
-
-type exprAvg struct {
-	Field, Op string
-	Threshold float64
-}
-
-func (e *exprAvg) kind() string { return "avg" }
-func (e *exprAvg) evaluateTrace(rows []traceRow) (float64, bool) {
-	if len(rows) == 0 {
-		return 0, false
-	}
-	var sum float64
-	for _, r := range rows {
-		sum += r.durationNs
-	}
-	return sum / float64(len(rows)), true
-}
-func (e *exprAvg) evaluateLog(rows []logRow) (float64, bool) {
-	if len(rows) == 0 {
-		return 0, false
-	}
-	return float64(len(rows)), true
-}
-func (e *exprAvg) evaluateMetric(rows []metricRow) (float64, bool) {
-	if len(rows) == 0 {
-		return 0, false
-	}
-	var sum float64
-	for _, r := range rows {
-		sum += r.value
-	}
-	return sum / float64(len(rows)), true
-}
-func (e *exprAvg) compare(v float64) bool { return cmp(e.Op, v, e.Threshold) }
-
-type exprRate struct {
-	Field, Op string
-	Threshold float64
-}
-
-func (e *exprRate) kind() string { return "rate" }
-func (e *exprRate) evaluateTrace(rows []traceRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprRate) evaluateLog(rows []logRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprRate) evaluateMetric(rows []metricRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprRate) compare(v float64) bool { return cmp(e.Op, v, e.Threshold) }
-
-type exprCount struct {
-	Field, Op string
-	Threshold float64
-}
-
-func (e *exprCount) kind() string { return "count" }
-func (e *exprCount) evaluateTrace(rows []traceRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprCount) evaluateLog(rows []logRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprCount) evaluateMetric(rows []metricRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprCount) compare(v float64) bool { return cmp(e.Op, v, e.Threshold) }
-
-type exprQuantile struct {
-	Field     string
-	Q         float64
-	Op        string
-	Threshold float64
-}
-
-func (e *exprQuantile) kind() string { return "quantile" }
-func (e *exprQuantile) evaluateTrace(rows []traceRow) (float64, bool) {
-	if len(rows) == 0 {
-		return 0, false
-	}
-	vals := make([]float64, len(rows))
-	for i, r := range rows {
-		vals[i] = r.durationNs
-	}
-	sort.Float64s(vals)
-	idx := int(float64(len(vals)-1) * e.Q)
-	if idx < 0 {
-		idx = 0
-	}
-	if idx >= len(vals) {
-		idx = len(vals) - 1
-	}
-	return vals[idx], true
-}
-func (e *exprQuantile) evaluateLog(rows []logRow) (float64, bool) {
-	return float64(len(rows)), len(rows) > 0
-}
-func (e *exprQuantile) evaluateMetric(rows []metricRow) (float64, bool) {
-	if len(rows) == 0 {
-		return 0, false
-	}
-	vals := make([]float64, len(rows))
-	for i, r := range rows {
-		vals[i] = r.value
-	}
-	sort.Float64s(vals)
-	idx := int(float64(len(vals)-1) * e.Q)
-	if idx < 0 {
-		idx = 0
-	}
-	if idx >= len(vals) {
-		idx = len(vals) - 1
-	}
-	return vals[idx], true
-}
-func (e *exprQuantile) compare(v float64) bool { return cmp(e.Op, v, e.Threshold) }
-
-type exprAbsent struct{}
-
-func (e *exprAbsent) kind() string                                    { return "absent" }
-func (e *exprAbsent) evaluateTrace(rows []traceRow) (float64, bool)   { return 0, len(rows) == 0 }
-func (e *exprAbsent) evaluateLog(rows []logRow) (float64, bool)       { return 0, len(rows) == 0 }
-func (e *exprAbsent) evaluateMetric(rows []metricRow) (float64, bool) { return 0, len(rows) == 0 }
-func (e *exprAbsent) compare(v float64) bool                          { return true }
-
-// grouping containers (avoid using map[string]string as map keys)
-type trGroup struct {
-	Labels map[string]string
-	Rows   []traceRow
-}
-type lgGroup struct {
-	Labels map[string]string
-	Rows   []logRow
-}
-type mtGroup struct {
-	Labels map[string]string
-	Rows   []metricRow
-}
-
-// evaluation pass
-func (rs *ruleSet) evaluate(now time.Time, ing *ingester) ([]alertEvent, []stateMetric) {
-	tr, lg, mt := ing.drain()
-	var events []alertEvent
-	var metrics []stateMetric
-
-	handle := func(cr *compiledRule, fp uint64, labels map[string]string, value float64, ok bool) {
-		if cr.expr.kind() == "absent" && ok {
-			rs.transition(now, cr, fp, labels, 0, true, &events, &metrics)
-			return
-		}
-		if !ok {
-			return
-		}
-		fire := cr.expr.compare(value)
-		rs.transition(now, cr, fp, labels, value, fire, &events, &metrics)
-	}
-
-	ctx := context.Background()
-
-	// traces rules
-	for _, cr := range rs.traceRules {
-		evBefore := len(events)
-		start := time.Now()
-
-		spans := filterTraceRows(tr, cr.sel)
-		groups := groupTraceRows(spans, cr.groupBy)
-		for _, g := range groups {
-			rows := filterWindowTr(g.Rows, now, cr.window)
-			if len(rows) == 0 && cr.expr.kind() != "absent" {
-				continue
-			}
-			val, ok := cr.expr.evaluateTrace(rows)
-			handle(cr, fingerprint(cr.cfg.Name, g.Labels), g.Labels, val, ok)
-		}
-
-		dur := time.Since(start)
-		if rs.mx != nil {
-			rs.mx.RecordEvaluation(ctx, cr.cfg.Name, "success", dur)
-			if ev := len(events) - evBefore; ev > 0 {
-				rs.mx.RecordEvents(ctx, ev, cr.cfg.Name, cr.severity)
-			}
-		}
-	}
-
-	// logs rules
-	for _, cr := range rs.logRules {
-		evBefore := len(events)
-		start := time.Now()
-
-		rows0 := filterLogRows(lg, cr.sel)
-		groups := groupLogRows(rows0, cr.groupBy)
-		for _, g := range groups {
-			rows := filterWindowLg(g.Rows, now, cr.window)
-			if len(rows) == 0 && cr.expr.kind() != "absent" {
-				continue
-			}
-			val, ok := cr.expr.evaluateLog(rows)
-			handle(cr, fingerprint(cr.cfg.Name, g.Labels), g.Labels, val, ok)
-		}
-
-		dur := time.Since(start)
-		if rs.mx != nil {
-			rs.mx.RecordEvaluation(ctx, cr.cfg.Name, "success", dur)
-			if ev := len(events) - evBefore; ev > 0 {
-				rs.mx.RecordEvents(ctx, ev, cr.cfg.Name, cr.severity)
-			}
-		}
-	}
-
-	// metrics rules
-	for _, cr := range rs.metricRules {
-		evBefore := len(events)
-		start := time.Now()
-
-		rows0 := filterMetricRows(mt, cr.sel)
-		groups := groupMetricRows(rows0, cr.groupBy)
-		for _, g := range groups {
-			rows := filterWindowMt(g.Rows, now, cr.window)
-			if len(rows) == 0 && cr.expr.kind() != "absent" {
-				continue
-			}
-			val, ok := cr.expr.evaluateMetric(rows)
-			handle(cr, fingerprint(cr.cfg.Name, g.Labels), g.Labels, val, ok)
-		}
-
-		dur := time.Since(start)
-		if rs.mx != nil {
-			rs.mx.RecordEvaluation(ctx, cr.cfg.Name, "success", dur)
-			if ev := len(events) - evBefore; ev > 0 {
-				rs.mx.RecordEvents(ctx, ev, cr.cfg.Name, cr.severity)
-			}
-		}
-	}
-
-	return events, metrics
-}
-
-func filterWindowTr(rows []traceRow, now time.Time, w time.Duration) []traceRow {
-	if w <= 0 {
-		return rows
-	}
-	cutoff := now.Add(-w)
-	out := rows[:0]
-	for _, r := range rows {
-		if r.ts.After(cutoff) {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-func filterWindowLg(rows []logRow, now time.Time, w time.Duration) []logRow {
-	if w <= 0 {
-		return rows
-	}
-	cutoff := now.Add(-w)
-	out := rows[:0]
-	for _, r := range rows {
-		if r.ts.After(cutoff) {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-func filterWindowMt(rows []metricRow, now time.Time, w time.Duration) []metricRow {
-	if w <= 0 {
-		return rows
-	}
-	cutoff := now.Add(-w)
-	out := rows[:0]
-	for _, r := range rows {
-		if r.ts.After(cutoff) {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-
-func filterTraceRows(rows []traceRow, sel map[string]*regexp.Regexp) []traceRow {
-	if len(sel) == 0 {
-		return rows
-	}
-	out := make([]traceRow, 0, len(rows))
-	for _, r := range rows {
-		if matchSel(r.attrs, sel) {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-func filterLogRows(rows []logRow, sel map[string]*regexp.Regexp) []logRow {
-	if len(sel) == 0 {
-		return rows
-	}
-	out := make([]logRow, 0, len(rows))
-	for _, r := range rows {
-		if matchSel(r.attrs, sel) {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-func filterMetricRows(rows []metricRow, sel map[string]*regexp.Regexp) []metricRow {
-	if len(sel) == 0 {
-		return rows
-	}
-	out := make([]metricRow, 0, len(rows))
-	for _, r := range rows {
-		if matchSel(r.attrs, sel) {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-
-func matchSel(attrs map[string]string, sel map[string]*regexp.Regexp) bool {
-	for k, re := range sel {
-		if v, ok := attrs[k]; !ok || !re.MatchString(v) {
-			return false
-		}
-	}
-	return true
-}
-
-// ---- grouping helpers (using canonical string bucket keys) ----
-
-func groupTraceRows(rows []traceRow, keys []string) []trGroup {
-	buckets := map[string]*trGroup{}
-	for _, r := range rows {
-		lbls := pick(r.attrs, keys)
-		key := canonKey(lbls)
-		g := buckets[key]
-		if g == nil {
-			g = &trGroup{Labels: lbls}
-			buckets[key] = g
-		}
-		g.Rows = append(g.Rows, r)
-	}
-	out := make([]trGroup, 0, len(buckets))
-	for _, g := range buckets {
-		out = append(out, *g)
-	}
-	return out
-}
-
-func groupLogRows(rows []logRow, keys []string) []lgGroup {
-	buckets := map[string]*lgGroup{}
-	for _, r := range rows {
-		lbls := pick(r.attrs, keys)
-		key := canonKey(lbls)
-		g := buckets[key]
-		if g == nil {
-			g = &lgGroup{Labels: lbls}
-			buckets[key] = g
-		}
-		g.Rows = append(g.Rows, r)
-	}
-	out := make([]lgGroup, 0, len(buckets))
-	for _, g := range buckets {
-		out = append(out, *g)
-	}
-	return out
-}
-
-func groupMetricRows(rows []metricRow, keys []string) []mtGroup {
-	buckets := map[string]*mtGroup{}
-	for _, r := range rows {
-		lbls := pick(r.attrs, keys)
-		key := canonKey(lbls)
-		g := buckets[key]
-		if g == nil {
-			g = &mtGroup{Labels: lbls}
-			buckets[key] = g
-		}
-		g.Rows = append(g.Rows, r)
-	}
-	out := make([]mtGroup, 0, len(buckets))
-	for _, g := range buckets {
-		out = append(out, *g)
-	}
-	return out
-}
-
-func canonKey(lbls map[string]string) string {
-	ks := make([]string, 0, len(lbls))
-	for k := range lbls {
-		ks = append(ks, k)
-	}
-	sort.Strings(ks)
-	parts := make([]string, 0, len(ks))
-	for _, k := range ks {
-		parts = append(parts, k+"="+lbls[k])
-	}
-	return strings.Join(parts, "|")
-}
-
-func pick(attrs map[string]string, keys []string) map[string]string {
-	out := make(map[string]string, len(keys))
-	for _, k := range keys {
-		if v, ok := attrs[k]; ok {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-func fpMap(m map[string]string) []string {
-	ks := make([]string, 0, len(m))
-	for k := range m {
-		ks = append(ks, k)
-	}
-	sort.Strings(ks)
-	out := make([]string, 0, len(ks)*2)
-	for _, k := range ks {
-		out = append(out, k, m[k])
-	}
-	return out
-}
-func fingerprint(rule string, labels map[string]string) uint64 {
-	h := fnv.New64a()
-	h.Write([]byte(rule))
-	for _, s := range fpMap(labels) {
-		h.Write([]byte{0xff})
-		h.Write([]byte(s))
-	}
-	return h.Sum64()
-}
-
-type alertEvent struct {
-	Rule     string
-	State    string // firing|resolved|no_data
-	Severity string
-	Labels   map[string]string
-	Value    float64
-	Window   string
-	For      string
-}
-
-type stateMetric struct {
-	Rule      string
-	Labels    map[string]string
-	Severity  string
-	Active    int64
-	LastValue float64
-}
-
-func (rs *ruleSet) transition(now time.Time, cr *compiledRule, fp uint64, labels map[string]string, value float64, cond bool, events *[]alertEvent, metrics *[]stateMetric) {
-	rs.stateMu.Lock()
-	defer rs.stateMu.Unlock()
-	st, ok := rs.state[fp]
+func newAlertsConnector(ctx context.Context, set connector.Settings, cfg component.Config) (*alertsConnector, error) {
+	c, ok := cfg.(*Config)
 	if !ok {
-		st = &alertState{Rule: cr.cfg.Name, FP: fp, Labels: labels, Severity: cr.severity}
-		rs.state[fp] = st
+		return nil, fmt.Errorf("invalid config type %T", cfg)
 	}
-	st.LastValue = value
-	if cond {
-		if !st.Active {
-			if st.FirstExceed.IsZero() {
-				st.FirstExceed = now
-			}
-			if now.Sub(st.FirstExceed) >= cr.forDur {
-				st.Active = true
-				*events = append(*events, alertEvent{
-					Rule: cr.cfg.Name, State: "firing", Severity: cr.severity, Labels: labels,
-					Value: value, Window: cr.window.String(), For: cr.forDur.String(),
-				})
+
+	// compile rules
+	rs, err := compileRules(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// self telemetry
+	mx, err := telemetry.New(set.MeterProvider)
+	if err != nil {
+		set.Logger.Warn("Failed to create telemetry", zap.Error(err))
+	}
+	rs.mx = mx
+
+	// ingester holds sliding windows / buffers with adaptive memory management
+	ing := newIngesterWithLogger(c, set.Logger)
+
+	// OPTIONAL TSDB (only when enabled and URL set)
+	var ts *state.TSDBSyncer
+	if c.TSDB != nil && c.TSDB.Enabled && c.TSDB.QueryURL != "" {
+		tsdbCfg := state.TSDBConfig{
+			QueryURL:       c.TSDB.QueryURL,
+			RemoteWriteURL: c.TSDB.RemoteWriteURL,
+			QueryTimeout:   c.TSDB.QueryTimeout,
+			WriteTimeout:   c.TSDB.WriteTimeout,
+			DedupWindow:    c.TSDB.DedupWindow,
+			InstanceID:     c.InstanceID,
+		}
+		ts, err = state.NewTSDBSyncer(tsdbCfg)
+		if err != nil {
+			set.Logger.Warn("Failed to create TSDB syncer", zap.Error(err))
+		} else {
+			// Restore state from TSDB on startup
+			if err := rs.restoreFromTSDB(ts); err != nil {
+				set.Logger.Warn("Failed to restore state from TSDB", zap.Error(err))
+			} else {
+				set.Logger.Info("Successfully restored alert state from TSDB")
 			}
 		}
 	} else {
-		if st.Active {
-			st.Active = false
-			st.FirstExceed = time.Time{}
-			*events = append(*events, alertEvent{
-				Rule: cr.cfg.Name, State: "resolved", Severity: cr.severity, Labels: labels,
-				Value: value, Window: cr.window.String(), For: cr.forDur.String(),
-			})
-		} else {
-			st.FirstExceed = time.Time{}
+		set.Logger.Info("TSDB disabled or not configured; using in-memory state")
+	}
+
+	ac := &alertsConnector{
+		cfg:        c,
+		logger:     set.Logger,
+		rs:         rs,
+		ing:        ing,
+		mx:         mx,
+		tsdb:       ts,
+		eventBatch: make([]state.AlertEvent, 0, getBatchSize(c)),
+		flushChan:  make(chan struct{}, 1),
+		evalStop:   make(chan struct{}),
+	}
+
+	// remote write batching only when TSDB active AND enabled
+	if ts != nil && c.TSDB.EnableRemoteWrite {
+		ac.batchTicker = time.NewTicker(c.TSDB.RemoteWriteFlushInterval)
+	}
+
+	return ac, nil
+}
+
+func getBatchSize(c *Config) int {
+	if c.TSDB != nil && c.TSDB.RemoteWriteBatchSize > 0 {
+		return c.TSDB.RemoteWriteBatchSize
+	}
+	return 1000 // default
+}
+
+// ---- lifecycle --------------------------------------------------------------
+
+func (e *alertsConnector) Start(ctx context.Context, _ component.Host) error {
+	e.logger.Info("Starting alerts connector",
+		zap.String("instance_id", e.cfg.InstanceID),
+		zap.Duration("window_size", e.cfg.WindowSize),
+		zap.Int("num_rules", len(e.cfg.Rules)),
+		zap.Bool("adaptive_scaling_enabled", e.cfg.Memory.EnableAdaptiveScaling),
+		zap.Bool("memory_pressure_handling_enabled", e.cfg.Memory.EnableMemoryPressureHandling),
+		zap.Bool("use_ring_buffers", e.cfg.Memory.UseRingBuffers),
+	)
+
+	interval := e.cfg.Step
+	if interval <= 0 {
+		interval = e.cfg.WindowSize
+	}
+	if interval <= 0 {
+		interval = 5 * time.Second
+	}
+
+	// evaluation loop
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				e.evaluateOnce(time.Now())
+			case <-e.evalStop:
+				return
+			case <-ctx.Done():
+				return
+			}
 		}
+	}()
+
+	// batch flusher (only when enabled)
+	if e.batchTicker != nil {
+		e.wg.Add(1)
+		go func() {
+			defer e.wg.Done()
+			defer e.batchTicker.Stop()
+			for {
+				select {
+				case <-e.batchTicker.C:
+					e.flushEventBatch()
+				case <-e.flushChan:
+					e.flushEventBatch()
+				case <-e.evalStop:
+					e.flushEventBatch()
+					return
+				case <-ctx.Done():
+					e.flushEventBatch()
+					return
+				}
+			}
+		}()
 	}
-	*metrics = append(*metrics, stateMetric{
-		Rule: cr.cfg.Name, Labels: labels, Severity: cr.severity, Active: boolToInt(st.Active), LastValue: value,
-	})
+
+	// memory reporting
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				e.reportMemoryUsage()
+			case <-e.evalStop:
+				return
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return nil
 }
 
-func boolToInt(b bool) int64 {
-	if b {
-		return 1
+func (e *alertsConnector) Shutdown(ctx context.Context) error {
+	e.logger.Info("Shutting down alerts connector")
+	close(e.evalStop)
+
+	done := make(chan struct{})
+	go func() {
+		e.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		e.logger.Info("Alerts connector shutdown complete")
+	case <-ctx.Done():
+		e.logger.Warn("Alerts connector shutdown timed out")
 	}
-	return 0
+
+	e.reportMemoryUsage()
+	return nil
 }
 
-// TSDB state restore (best effort): consult active firing states and pre-populate 'Active' if takeover conditions are met
-func (rs *ruleSet) restoreFromTSDB(syncer *state.TSDBSyncer) error {
-	if syncer == nil {
-		return nil
+func (e *alertsConnector) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+// reportMemoryUsage logs detailed memory usage statistics
+func (e *alertsConnector) reportMemoryUsage() {
+	if e.ing == nil || e.ing.memMgr == nil {
+		return
 	}
-	for _, cr := range append(append([]*compiledRule{}, rs.traceRules...), append(rs.logRules, rs.metricRules...)...) {
-		actives, _ := syncer.QueryActive(cr.cfg.Name)
-		rs.stateMu.Lock()
-		for fp, entry := range actives {
-			if st, ok := rs.state[fp]; ok {
-				st.Active = entry.Active
-				st.FirstExceed = time.Now().Add(-entry.ForDuration)
-			} else {
-				rs.state[fp] = &alertState{
-					Rule: cr.cfg.Name, FP: fp, Labels: entry.Labels, Severity: cr.severity,
-					Active: entry.Active, FirstExceed: time.Now().Add(-entry.ForDuration),
+
+	current, max, percent := e.ing.memMgr.GetMemoryUsage()
+	stats := e.ing.memMgr.GetStats()
+	traceLimit, logLimit, metricLimit := e.ing.memMgr.GetCurrentLimits()
+
+	e.logger.Info("Connector memory usage report",
+		zap.String("instance_id", e.cfg.InstanceID),
+		zap.Int64("memory_current_bytes", current),
+		zap.Int64("memory_max_bytes", max),
+		zap.Float64("memory_usage_percent", percent),
+		zap.Int("traces_buffered", e.ing.traces.Len()),
+		zap.Int("logs_buffered", e.ing.logs.Len()),
+		zap.Int("metrics_buffered", e.ing.metrics.Len()),
+		zap.Int64("trace_limit", traceLimit),
+		zap.Int64("log_limit", logLimit),
+		zap.Int64("metric_limit", metricLimit),
+		zap.Int64("total_dropped_traces", stats.DroppedTraces),
+		zap.Int64("total_dropped_logs", stats.DroppedLogs),
+		zap.Int64("total_dropped_metrics", stats.DroppedMetrics),
+		zap.Int64("scale_up_events", stats.ScaleUpEvents),
+		zap.Int64("scale_down_events", stats.ScaleDownEvents),
+		zap.Int64("memory_pressure_events", stats.MemoryPressureEvents),
+	)
+
+	// Also emit telemetry metrics if available
+	if e.mx != nil {
+		ctx := context.Background()
+		e.mx.RecordMemoryUsage(ctx, float64(current), percent)
+		e.mx.RecordBufferSizes(ctx, e.ing.traces.Len(), e.ing.logs.Len(), e.ing.metrics.Len())
+		e.mx.RecordDroppedData(ctx, stats.DroppedTraces, stats.DroppedLogs, stats.DroppedMetrics)
+	}
+}
+
+// ---- evaluation -------------------------------------------------------------
+
+func (e *alertsConnector) evaluateOnce(now time.Time) {
+	e.evalMu.Lock()
+	defer e.evalMu.Unlock()
+
+	start := time.Now()
+	events, metrics := e.rs.evaluate(now, e.ing)
+	evalDuration := time.Since(start)
+
+	if len(events) > 0 {
+		e.logger.Debug("Generated alert events",
+			zap.Int("count", len(events)),
+			zap.Duration("eval_duration", evalDuration),
+		)
+
+		// Convert to TSDB events and add to batch
+		tsdbEvents := e.convertToTSDBEvents(events, now)
+		e.addEventsToBatch(tsdbEvents)
+
+		// NEW: Emit a metric per alert event (when enabled & metrics pipeline exists)
+		if e.cfg.EmitAlertMetrics && e.nextMetrics != nil {
+			md := e.buildAlertMetrics(events, now)
+			if md.MetricCount() > 0 {
+				if err := e.nextMetrics.ConsumeMetrics(context.Background(), md); err != nil {
+					e.logger.Warn("Failed to emit alert metrics", zap.Error(err))
 				}
 			}
 		}
-		rs.stateMu.Unlock()
+
+		// Self-telemetry
+		if e.mx != nil {
+			e.mx.RecordEvents(context.Background(), len(events))
+		}
+	}
+
+	// Update active alert metrics
+	if e.mx != nil && len(metrics) > 0 {
+		for _, metric := range metrics {
+			if metric.Active > 0 {
+				e.mx.AddActive(context.Background(), 1)
+			}
+		}
+	}
+
+	// Record evaluation metrics
+	if e.mx != nil {
+		e.mx.RecordEvaluation(context.Background(), evalDuration)
+	}
+
+	// Log slow evaluations
+	if evalDuration > 5*time.Second {
+		e.logger.Warn("Slow alert evaluation detected",
+			zap.Duration("duration", evalDuration),
+			zap.Int("events_generated", len(events)),
+			zap.Int("metrics_generated", len(metrics)),
+		)
+	}
+}
+
+// buildAlertMetrics converts alert events into a pmetric.Metrics payload.
+// It creates a counter "alertsgen_alerts_total" with one data point per event.
+func (e *alertsConnector) buildAlertMetrics(events []alertEvent, ts time.Time) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	if len(events) == 0 {
+		return md
+	}
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	sm := ilm.Metrics().AppendEmpty()
+	sm.SetName("alertsgen_alerts_total")
+	sm.SetEmptySum()
+	sum := sm.Sum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	dps := sum.DataPoints()
+	for _, ev := range events {
+		dp := dps.AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		dp.SetIntValue(1)
+
+		attrs := dp.Attributes()
+
+		// Core attributes mirroring the alert log event.
+		// Note: ev.Labels may already contain "alertname".
+		if an, ok := ev.Labels["alertname"]; ok && an != "" {
+			attrs.PutStr("alertname", an)
+		}
+		if ev.Rule != "" {
+			attrs.PutStr("rule_id", ev.Rule)
+		}
+		if ev.Severity != "" {
+			attrs.PutStr("severity", ev.Severity)
+		}
+		if ev.State != "" {
+			attrs.PutStr("state", string(ev.State))
+		}
+		if fmt.Sprint(ev.Window) != "" && fmt.Sprint(ev.Window) != "0" {
+			attrs.PutStr("window", fmt.Sprint(ev.Window))
+		}
+		if fmt.Sprint(ev.For) != "" && fmt.Sprint(ev.For) != "0" {
+			attrs.PutStr("for", fmt.Sprint(ev.For))
+		}
+
+		// Flatten all labels; skip alertname if we already set it above.
+		for k, v := range ev.Labels {
+			if k == "alertname" {
+				continue
+			}
+			attrs.PutStr(k, v)
+		}
+	}
+
+	return md
+}
+
+// convertToTSDBEvents converts internal alertEvent to state.AlertEvent
+func (e *alertsConnector) convertToTSDBEvents(events []alertEvent, timestamp time.Time) []state.AlertEvent {
+	tsdbEvents := make([]state.AlertEvent, 0, len(events))
+
+	for _, event := range events {
+		// Calculate fingerprint
+		fp := fingerprint(event.Rule, event.Labels)
+
+		tsdbEvent := state.AlertEvent{
+			Rule:        event.Rule,
+			State:       event.State,
+			Severity:    event.Severity,
+			Labels:      event.Labels,
+			Value:       event.Value,
+			Window:      event.Window,
+			For:         event.For,
+			Timestamp:   timestamp,
+			Fingerprint: fp,
+		}
+
+		tsdbEvents = append(tsdbEvents, tsdbEvent)
+	}
+
+	return tsdbEvents
+}
+
+// addEventsToBatch adds events to the batch and triggers flush if needed
+func (e *alertsConnector) addEventsToBatch(events []state.AlertEvent) {
+	if e.tsdb == nil || e.cfg.TSDB == nil || !e.cfg.TSDB.EnableRemoteWrite {
+		return
+	}
+	e.eventBatchMu.Lock()
+	e.eventBatch = append(e.eventBatch, events...)
+	shouldFlush := len(e.eventBatch) >= e.cfg.TSDB.RemoteWriteBatchSize
+	e.eventBatchMu.Unlock()
+
+	if shouldFlush {
+		select {
+		case e.flushChan <- struct{}{}:
+		default:
+		}
+	}
+}
+
+// flushEventBatch sends accumulated events to TSDB
+func (e *alertsConnector) flushEventBatch() {
+	if e.tsdb == nil || e.cfg.TSDB == nil || !e.cfg.TSDB.EnableRemoteWrite {
+		return
+	}
+
+	e.eventBatchMu.Lock()
+	if len(e.eventBatch) == 0 {
+		e.eventBatchMu.Unlock()
+		return
+	}
+	eventsToFlush := make([]state.AlertEvent, len(e.eventBatch))
+	copy(eventsToFlush, e.eventBatch)
+	e.eventBatch = e.eventBatch[:0]
+	e.eventBatchMu.Unlock()
+
+	interfaceEvents := make([]interface{}, len(eventsToFlush))
+	for i, ev := range eventsToFlush {
+		interfaceEvents[i] = ev
+	}
+
+	start := time.Now()
+	if err := e.tsdb.PublishEvents(interfaceEvents); err != nil {
+		e.logger.Warn("Failed to publish events to TSDB",
+			zap.Error(err),
+			zap.Int("event_count", len(eventsToFlush)),
+			zap.Duration("duration", time.Since(start)),
+		)
+		if e.mx != nil {
+			e.mx.RecordDroppedData(context.Background(), int64(len(eventsToFlush)), 0, 0)
+			e.mx.RecordDropped(context.Background(), "tsdb_publish_failed")
+		}
+	} else {
+		e.logger.Debug("Successfully published events to TSDB",
+			zap.Int("event_count", len(eventsToFlush)),
+			zap.Duration("duration", time.Since(start)),
+		)
+	}
+}
+
+// ---- Consume methods ---------------------------------------
+
+func (e *alertsConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// Ingest into sliding window
+	if err := e.ing.consumeTraces(td); err != nil {
+		e.logger.Error("Failed to ingest traces", zap.Error(err))
+		return err
+	}
+	// Forward downstream unchanged
+	if e.nextTraces != nil {
+		return e.nextTraces.ConsumeTraces(ctx, td)
+	}
+	return nil
+}
+
+func (e *alertsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	if err := e.ing.consumeLogs(ld); err != nil {
+		e.logger.Error("Failed to ingest logs", zap.Error(err))
+		return err
+	}
+	if e.nextLogs != nil {
+		return e.nextLogs.ConsumeLogs(ctx, ld)
+	}
+	return nil
+}
+
+func (e *alertsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if err := e.ing.consumeMetrics(md); err != nil {
+		e.logger.Error("Failed to ingest metrics", zap.Error(err))
+		return err
+	}
+	if e.nextMetrics != nil {
+		return e.nextMetrics.ConsumeMetrics(ctx, md)
 	}
 	return nil
 }

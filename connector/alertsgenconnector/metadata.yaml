@@ -1,7 +1,0 @@
-type: alertsgen
-status:
-  class: connector
-  stability:
-    development: [traces, logs, metrics]
-  codeowners:
-    active: [aarvee11]
