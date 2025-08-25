@@ -12,7 +12,7 @@ import (
 	sdk "go.opentelemetry.io/otel/sdk/metric"
 )
 
-// The output of [Test] and [Compare] is similar to the following:
+// The output of [Test] is similar to the following:
 //
 //	  []metricdata.Metrics{
 //	- 	{
