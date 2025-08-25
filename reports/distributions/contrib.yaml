@@ -239,6 +239,7 @@ components:
         - cpu
         - disk
         - filesystem
+        - hw
         - load
         - memory
         - network
