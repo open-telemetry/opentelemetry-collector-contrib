@@ -34,7 +34,7 @@ const franzGoConsumerFeatureGateName = "receiver.kafkareceiver.UseFranzGo"
 // the Kafka receiver will use the franz-go client, which is more performant and has
 // better support for modern Kafka features.
 var franzGoConsumerFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoConsumerFeatureGateName, featuregate.StageAlpha,
+	franzGoConsumerFeatureGateName, featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Kafka receiver will use the franz-go client to consume messages."),
 	featuregate.WithRegisterFromVersion("v0.129.0"),
 )
@@ -351,7 +351,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
 	if !c.triggerShutdown() {
-		return errors.New("kafka consumer: consumer isn't running")
+		return nil
 	}
 
 	select {
