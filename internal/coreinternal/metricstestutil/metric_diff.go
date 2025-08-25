@@ -199,8 +199,21 @@ func diffHistogramPt(
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
 	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
-	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
-	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
+	var mismatch bool
+	diffs, mismatch = diffValues(diffs, expected.BucketCounts().Len(), actual.BucketCounts().Len(), "HistogramDataPoint BucketCounts len")
+	if mismatch {
+		return diffs
+	}
+	for i := 0; i < expected.BucketCounts().Len(); i++ {
+		diffs = diff(diffs, expected.BucketCounts().At(i), actual.BucketCounts().At(i), "HistogramDataPoint BucketCounts")
+	}
+	diffs, mismatch = diffValues(diffs, expected.ExplicitBounds().Len(), actual.ExplicitBounds().Len(), "HistogramDataPoint ExplicitBounds len")
+	if mismatch {
+		return diffs
+	}
+	for i := 0; i < expected.ExplicitBounds().Len(); i++ {
+		diffs = diff(diffs, expected.ExplicitBounds().At(i), actual.ExplicitBounds().At(i), "HistogramDataPoint ExplicitBounds")
+	}
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
 
