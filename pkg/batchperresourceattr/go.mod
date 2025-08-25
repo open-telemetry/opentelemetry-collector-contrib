@@ -4,9 +4,9 @@ go 1.24
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/consumer v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/consumer v1.39.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/pdata v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/pdata v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -20,7 +20,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250822050819-711177175dd4 // indirect
+	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250822050819-711177175dd4 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect

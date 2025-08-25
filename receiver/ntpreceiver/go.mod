@@ -6,14 +6,14 @@ require (
 	github.com/beevik/ntp v1.4.3
 	github.com/google/go-cmp v0.7.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componenttest v0.132.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/confmap v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/consumer v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/confmap v1.39.0
+	go.opentelemetry.io/collector/consumer v1.39.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/filter v0.132.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/pdata v1.38.1-0.20250822050819-711177175dd4
-	go.opentelemetry.io/collector/receiver v1.38.1-0.20250822050819-711177175dd4
+	go.opentelemetry.io/collector/pdata v1.39.0
+	go.opentelemetry.io/collector/receiver v1.39.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.132.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/scraper v0.132.1-0.20250822050819-711177175dd4
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.132.1-0.20250822050819-711177175dd4
@@ -42,10 +42,10 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.1-0.20250822050819-711177175dd4 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.38.1-0.20250822050819-711177175dd4 // indirect
+	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.132.1-0.20250822050819-711177175dd4 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.132.1-0.20250822050819-711177175dd4 // indirect
-	go.opentelemetry.io/collector/pipeline v1.38.1-0.20250822050819-711177175dd4 // indirect
+	go.opentelemetry.io/collector/pipeline v1.39.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.132.1-0.20250822050819-711177175dd4 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.132.1-0.20250822050819-711177175dd4 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
