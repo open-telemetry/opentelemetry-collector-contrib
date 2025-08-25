@@ -507,15 +507,6 @@ func flushBulkIndexer(
 			outcome = "failed_client"
 		}
 
-		if resp.Error.Type == "version_conflict_engine_exception" &&
-			(strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
-				strings.HasPrefix(resp.Index, ".profiling-stacktraces-")) {
-			// For the Profiling indices .profiling-[stacktraces|stackframes]- the
-			// rejection of duplicates are expected from Elasticsearch. So we do not want
-			// to log these here.
-			continue
-		}
-
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			int64(1),
@@ -526,6 +517,15 @@ func flushBulkIndexer(
 				}, defaultMetaAttrs...)...,
 			)),
 		)
+
+		if resp.Error.Type == "version_conflict_engine_exception" &&
+			(strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
+				strings.HasPrefix(resp.Index, ".profiling-stacktraces-")) {
+			// For the Profiling indices .profiling-[stacktraces|stackframes]- the
+			// rejection of duplicates are expected from Elasticsearch. So we do not want
+			// to log these here.
+			continue
+		}
 
 		// Log failed docs
 		fields = append(fields,
