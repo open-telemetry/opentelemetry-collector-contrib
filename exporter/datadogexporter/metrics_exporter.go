@@ -105,6 +105,7 @@ func newMetricsExporter(
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
+		params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
@@ -141,6 +142,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	if isMetricExportV2Enabled() {
 		resp, err = exp.metricsAPI.Client.Cfg.HTTPClient.Do(req)
 	} else {
+		exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
 		resp, err = exp.client.HttpClient.Do(req)
 	}
 
@@ -188,6 +190,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	if isMetricExportV2Enabled() {
 		consumer = metrics.NewConsumer(exp.gatewayUsage)
 	} else {
+		exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
 		consumer = metrics.NewZorkianConsumer()
 	}
 	metadata, err := exp.tr.MapMetrics(ctx, md, consumer, exp.gatewayUsage)
@@ -218,6 +221,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			errs = append(errs, experr)
 		}
 	} else {
+		exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
 		var ms []zorkian.Metric
 		ms, sl = consumer.(*metrics.ZorkianConsumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
 		if len(ms) > 0 {
