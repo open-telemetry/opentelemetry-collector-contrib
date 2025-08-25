@@ -5,8 +5,8 @@ go 1.24
 require (
 	github.com/goccy/go-json v0.10.5
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.132.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.133.0
 	github.com/relvacode/iso8601 v1.6.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.39.0
@@ -26,7 +26,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.133.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect

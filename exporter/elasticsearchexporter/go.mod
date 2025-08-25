@@ -10,9 +10,9 @@ require (
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.0
 	github.com/lestrrat-go/strftime v1.1.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.133.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
 	go.opentelemetry.io/collector/client v1.39.0
@@ -74,7 +74,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.132.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.133.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.16.0 // indirect

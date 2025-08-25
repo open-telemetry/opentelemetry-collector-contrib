@@ -5,7 +5,7 @@ go 1.24
 require (
 	// https://github.com/go-sql-driver/mysql/issues/1602; https://github.com/apache/doris/pull/32177
 	github.com/go-sql-driver/mysql v1.9.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.132.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/config/configopaque v1.39.0
