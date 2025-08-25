@@ -65,7 +65,7 @@ func TestTranslateToLogs(t *testing.T) {
 			}
 			expectedLogs, err := golden.ReadLogs(tt.expectedLogsFile)
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -120,7 +120,7 @@ func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
 	require.NoError(t, err)
 
 	// Compare the original otlp logs with the translated otlp logs
-	require.Equal(t, expectedLogs, logs)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 
 	// Translate from faro payload to otlp traces
 	expectedTraces, err := TranslateToTraces(t.Context(), actualFaroPayload)

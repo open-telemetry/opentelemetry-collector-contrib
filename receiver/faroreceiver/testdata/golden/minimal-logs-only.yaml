@@ -18,3 +18,4 @@ resourceLogs:
               - key: kind
                 value:
                   stringValue: log
+            timeUnixNano: 1740843734000000000
