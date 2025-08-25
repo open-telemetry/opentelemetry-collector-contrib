@@ -13,6 +13,7 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
@@ -24,6 +25,14 @@ import (
 const metricsLen = 2
 
 var ErrInvalidTotalMem = errors.New("invalid total memory")
+
+var useMemAvailable = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.134.0"),
+	featuregate.WithRegisterDescription("When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel’s MemAvailable statistic instead of MemFree, Buffers, and Cached."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221"),
+)
 
 // scraper for Memory Metrics
 type memoryScraper struct {

@@ -13,7 +13,13 @@ import (
 )
 
 func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeStateUsed)
+	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
+	if useMemAvailable.IsEnabled() {
+		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total-memInfo.Available), metadata.AttributeStateUsed)
+	} else {
+		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
+		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached), metadata.AttributeStateUsed)
+	}
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeStateFree)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Buffers), metadata.AttributeStateBuffered)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Cached), metadata.AttributeStateCached)
@@ -22,7 +28,13 @@ func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *
 }
 
 func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Used)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
+	if useMemAvailable.IsEnabled() {
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Total-memInfo.Available)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	} else {
+		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	}
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Free)/float64(memInfo.Total), metadata.AttributeStateFree)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Buffers)/float64(memInfo.Total), metadata.AttributeStateBuffered)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Cached)/float64(memInfo.Total), metadata.AttributeStateCached)
