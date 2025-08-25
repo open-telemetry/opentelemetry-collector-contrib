@@ -287,7 +287,7 @@ func diffResource(diffs []*MetricDiff, expected, actual pcommon.Resource) []*Met
 }
 
 func diffResourceAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*MetricDiff {
-	if !reflect.DeepEqual(expected, actual) {
+	if !reflect.DeepEqual(expected.AsRaw(), actual.AsRaw()) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
 			ActualValue:   attrMapToString(actual),
@@ -298,7 +298,7 @@ func diffResourceAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*Met
 }
 
 func diffMetricAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*MetricDiff {
-	if !reflect.DeepEqual(expected, actual) {
+	if !reflect.DeepEqual(expected.AsRaw(), actual.AsRaw()) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
 			ActualValue:   attrMapToString(actual),
@@ -332,7 +332,7 @@ func diffValues(
 func attrMapToString(m pcommon.Map) string {
 	out := ""
 	for k, v := range m.All() {
-		out += "[" + k + "=" + v.Str() + "]"
+		out += "[" + k + "=" + v.AsString() + "]"
 	}
 	return out
 }

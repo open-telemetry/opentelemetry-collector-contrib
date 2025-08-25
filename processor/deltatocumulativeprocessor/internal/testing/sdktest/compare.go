@@ -13,8 +13,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	sdk "go.opentelemetry.io/otel/sdk/metric/metricdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/compare"
 )
 
 type Option = cmp.Option
@@ -25,15 +23,11 @@ func Test(spec Spec, mr *metric.ManualReader, opts ...Option) error {
 	if err := mr.Collect(context.Background(), &rm); err != nil {
 		return err
 	}
-	return Compare(spec, rm, opts...)
-}
 
-// Compare the [sdk.ResourceMetrics] against the [Spec]
-func Compare(spec Spec, rm sdk.ResourceMetrics, opts ...Option) error {
 	got := Flatten(rm)
 	want := Metrics(spec)
 
-	diff := compare.Diff(want, got,
+	diff := Diff(want, got,
 		IgnoreUnspec(spec),
 		IgnoreTime(),
 		IgnoreMetadata(),
