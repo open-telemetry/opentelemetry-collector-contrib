@@ -117,6 +117,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.133.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.133.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.133.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.133.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.39.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.133.0 // indirect
 	go.opentelemetry.io/collector/processor v1.39.0 // indirect
