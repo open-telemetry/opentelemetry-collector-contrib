@@ -58,6 +58,13 @@ attributes:
       - finishing
       - idle_cleanup
       - unknown
+  connection_state:
+    description: The asynchronous connection state reported by Apache's server-status.
+    type: string
+    enum:
+      - writing
+      - keepalive
+      - closing
 
 metrics:
   apache.uptime:
@@ -174,3 +181,11 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [scoreboard_state]
+  apache.connections.async:
+    enabled: true
+    description: The number connections in different asynchronous states reported by Apache's server-status.
+    unit: "{connections}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [connection_state]
