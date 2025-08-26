@@ -64,8 +64,10 @@ func createLogsReceiver(
 		return nil, errConfigNotSQLServer
 	}
 
-	// Disable logs receiver on Windows as the only supported logs query (Top Query) is not tested on Windows yet.
-	opts := []scraperhelper.ControllerOption{}
+	opts, err := setupLogsScrapers(params, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	return scraperhelper.NewLogsController(
 		&cfg.ControllerConfig,

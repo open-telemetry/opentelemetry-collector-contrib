@@ -4,7 +4,6 @@
 package awss3exporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +41,7 @@ func TestNewUploadManager(t *testing.T) {
 			t.Parallel()
 
 			sm, err := newUploadManager(
-				context.Background(),
+				t.Context(),
 				tc.conf,
 				"metrics",
 				"otlp",

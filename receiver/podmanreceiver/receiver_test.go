@@ -37,7 +37,7 @@ func TestNewReceiver(t *testing.T) {
 func TestErrorsInStart(t *testing.T) {
 	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), &Config{}, nil)
 	assert.NotNil(t, recv)
-	err := recv.start(context.Background(), componenttest.NewNopHost())
+	err := recv.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.Equal(t, `unable to create connection. "" is not a supported schema`, err.Error())
 }
@@ -48,7 +48,7 @@ func TestScraperLoop(t *testing.T) {
 
 	client := make(mockPodmanClient)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, client.factory)

@@ -4,10 +4,10 @@
 package splunk
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 )
 

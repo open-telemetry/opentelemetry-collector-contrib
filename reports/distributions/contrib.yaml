@@ -79,6 +79,7 @@ components:
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googleclientauth
         - googlecloudlogentry_encoding
         - headers_setter
         - health_check
@@ -97,6 +98,7 @@ components:
         - pprof
         - redis_storage
         - sigv4auth
+        - skywalking_encoding
         - text_encoding
         - zipkin_encoding
     processor:
@@ -110,6 +112,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
+        - isolationforest
         - k8sattributes
         - logdedup
         - metricsgeneration
@@ -120,7 +123,6 @@ components:
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
         - sumologic
         - tail_sampling
@@ -198,6 +200,7 @@ components:
         - postgresql
         - prometheus
         - prometheus_simple
+        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb

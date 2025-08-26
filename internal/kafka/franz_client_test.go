@@ -45,14 +45,14 @@ func TestNewFranzSyncProducer_SASL(t *testing.T) {
 			Version:   1, // kfake only supports version 1
 		}
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(context.Background(), clientConfig,
+		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, tl,
 		)
 		if err != nil {
 			return err
 		}
 		defer client.Close()
-		return client.Ping(context.Background())
+		return client.Ping(t.Context())
 	}
 
 	type testcase struct {
@@ -121,14 +121,14 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 		clientConfig := clientConfig // copy
 		clientConfig.TLS = &cfg
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(context.Background(), clientConfig,
+		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, tl,
 		)
 		if err != nil {
 			return err
 		}
 		defer client.Close()
-		return client.Ping(context.Background())
+		return client.Ping(t.Context())
 	}
 
 	t.Run("tls_valid_ca", func(t *testing.T) {
@@ -175,11 +175,11 @@ func TestNewFranzSyncProducerCompression(t *testing.T) {
 			prodCfg.Compression = compressionAlgo
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
-			client, err := NewFranzSyncProducer(context.Background(), clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(t.Context(), clientConfig, prodCfg, time.Second, tl)
 			require.NoError(t, err)
 			defer client.Close()
 
-			ctx, cancel := context.WithTimeoutCause(context.Background(), time.Second,
+			ctx, cancel := context.WithTimeoutCause(t.Context(), time.Second,
 				errors.New("Failed to connect to Kafka cluster"),
 			)
 			defer cancel()
@@ -242,11 +242,11 @@ func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 			prodCfg.RequiredAcks = ack
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-			client, err := NewFranzSyncProducer(context.Background(), clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(t.Context(), clientConfig, prodCfg, time.Second, tl)
 			require.NoError(t, err)
 			defer client.Close()
 
-			ctx, cancel := context.WithTimeoutCause(context.Background(), time.Second,
+			ctx, cancel := context.WithTimeoutCause(t.Context(), time.Second,
 				errors.New("Failed to connect to Kafka cluster"),
 			)
 			defer cancel()
@@ -351,7 +351,7 @@ func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 
 	client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, regexTopic)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 
 	recordChan := fetchRecords(ctx, client, topicCount)
@@ -399,7 +399,7 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 				})),
 			)
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 			defer cancel()
 
 			produce := func() {
@@ -474,10 +474,78 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	// up and avoid waiting for too long.
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
-	client, err := NewFranzConsumerGroup(context.Background(), clientConfig, consumerConfig,
+	client, err := NewFranzConsumerGroup(t.Context(), clientConfig, consumerConfig,
 		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 	return client
+}
+
+func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
+	topic := "test-topic"
+	metadataMaxAge := 25 * time.Millisecond
+	metadataMinAge := 10 * time.Millisecond
+
+	type setupClientFunc func(t *testing.T, clientConfig configkafka.ClientConfig, topic string, metadataMinAge time.Duration)
+	tests := []struct {
+		name        string
+		setupClient setupClientFunc
+	}{
+		{
+			name: "producer",
+			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, _ string, metadataMinAge time.Duration) {
+				tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+				client, err := NewFranzSyncProducer(t.Context(), clientConfig,
+					configkafka.NewDefaultProducerConfig(), time.Second, tl,
+					kgo.MetadataMinAge(metadataMinAge),
+				)
+				require.NoError(t, err)
+				t.Cleanup(client.Close)
+			},
+		},
+		{
+			name: "consumer",
+			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, topic string, metadataMinAge time.Duration) {
+				consumeConfig := configkafka.NewDefaultConsumerConfig()
+				mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{topic}, kgo.MetadataMinAge(metadataMinAge))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+			// Set the metadata refresh interval which is expected to be translated into the franz-go client's metadataMaxAge configuration
+			clientConfig.Metadata.RefreshInterval = metadataMaxAge
+
+			metadataReqCh := make(chan struct{}, 10)
+			cluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
+				if _, ok := req.(*kmsg.MetadataRequest); ok {
+					select {
+					case metadataReqCh <- struct{}{}:
+					default:
+					}
+				}
+				return nil, nil, false
+			})
+
+			tt.setupClient(t, clientConfig, topic, metadataMinAge)
+
+			// Wait for initial metadata request. Due to the configuration passed into franz-go client, the metadataMaxAge should be set to 25 milliseconds.
+			select {
+			case <-metadataReqCh:
+			case <-time.After(2 * time.Second):
+				t.Fatal("timed out waiting for initial metadata request")
+			}
+
+			// Check for second metadata request
+			select {
+			case <-metadataReqCh:
+			case <-time.After(2 * time.Second):
+				t.Fatal("timed out waiting for metadata refresh")
+			}
+		})
+	}
 }

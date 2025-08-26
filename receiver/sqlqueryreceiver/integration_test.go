@@ -6,7 +6,6 @@
 package sqlqueryreceiver
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"path/filepath"
@@ -280,7 +279,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 			engine := getDbEngine(driver)
 			engine.CheckCompatibility(t)
 			dbContainer, err := testcontainers.GenericContainer(
-				context.Background(),
+				t.Context(),
 				testcontainers.GenericContainerRequest{
 					ContainerRequest: engine.ContainerRequest,
 					Started:          true,
@@ -288,7 +287,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 			)
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, dbContainer.Terminate(context.Background()))
+				require.NoError(t, dbContainer.Terminate(t.Context()))
 			}()
 
 			for _, test := range dbEngineTests {
@@ -345,7 +344,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 	}
 
 	host := storagetest.NewStorageHost().WithExtension(storageExtension.ID, storageExtension)
-	err := receiver.Start(context.Background(), host)
+	err := receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -358,7 +357,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 		"failed to receive more than 0 logs",
 	)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	initialLogCount := 5
@@ -382,12 +381,12 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 			TrackingStartValue: trackingStartValue,
 		},
 	}
-	err = receiver.Start(context.Background(), host)
+	err = receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	time.Sleep(5 * time.Second)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, 0, consumer.LogRecordCount())
@@ -413,7 +412,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 			TrackingStartValue: trackingStartValue,
 		},
 	}
-	err = receiver.Start(context.Background(), host)
+	err = receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -426,7 +425,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 		"failed to receive more than 0 logs",
 	)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, newLogCount, consumer.LogRecordCount())
@@ -455,7 +454,7 @@ func runTestForLogTrackingWithoutStorage(t *testing.T, engine dbEngineUnderTest,
 		},
 	}
 	host := componenttest.NewNopHost()
-	err := receiver.Start(context.Background(), host)
+	err := receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -470,14 +469,14 @@ func runTestForLogTrackingWithoutStorage(t *testing.T, engine dbEngineUnderTest,
 	require.Equal(t, 5, consumer.LogRecordCount())
 	testAllSimpleLogs(t, consumer.AllLogs(), engine.ConvertColumnName("attribute"))
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
 func getContainerHostAndPort(t *testing.T, container testcontainers.Container, port string) (string, nat.Port) {
-	dbPort, err := container.MappedPort(context.Background(), nat.Port(port))
+	dbPort, err := container.MappedPort(t.Context(), nat.Port(port))
 	require.NoError(t, err)
-	dbHost, err := container.Host(context.Background())
+	dbHost, err := container.Host(t.Context())
 	require.NoError(t, err)
 	return dbHost, dbPort
 }
@@ -508,10 +507,10 @@ func cleanupSimpleLogs(t *testing.T, engine dbEngineUnderTest, container testcon
 }
 
 func openDatabase(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) *sql.DB {
-	externalPort, err := container.MappedPort(context.Background(), nat.Port(engine.Port))
+	externalPort, err := container.MappedPort(t.Context(), nat.Port(engine.Port))
 	require.NoError(t, err)
 
-	host, err := container.Host(context.Background())
+	host, err := container.Host(t.Context())
 	require.NoError(t, err)
 
 	db, err := sql.Open(engine.Driver, engine.ConnectionString(host, externalPort))
@@ -534,7 +533,7 @@ func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCre
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
 	receiver, err := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receiverCreateSettings,
 		config,
 		consumer,

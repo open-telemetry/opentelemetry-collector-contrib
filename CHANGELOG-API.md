@@ -7,6 +7,77 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `signaltometricsconnector`: Use configoptional for optional metric fields (#41922)
+- `azureauthextension`: Use configoptional for optional fields in azureauthextension config. (#41926)
+- `libhoneyreceiver`: Use configoptional for HTTP config in libhoneyreceiver (#41974)
+- `sumologicprocessor`: Remove unnecessary pointer for types in configuration struct. (#41928)
+- `receiver/prometheus`: Use configoptional for optional fields (#42140)
+- `prometheusremotewriteexporter`: Use configoptional for WAL configuration (#41980)
+- `jaegerreceiver`: Use configoptional for optional protocol sections. (#41982)
+- `pulsarreceiver`: Use configoptional for optional authentication fields. (#41920)
+- `awscloudwatchreceiver`: Remove pointer from type of config (#41975)
+- `mongodbatlasreceiver`: Use configoptional and remove pointer for Config fields (#41939)
+- `solacereceiver`: Use configoptional for optional types (#41977)
+- `spanmetricsconnector`: Use configoptional for optional fields (#41941)
+
+### 🚩 Deprecations 🚩
+
+- `opencensusreceiver, opencensusexporter`: Deprecate opencensusreceiver and opencensusexporter. (#36791)
+
+### 💡 Enhancements 💡
+
+- `filterprocessor`: Create `With*Functions` factory options to provide custom OTTL functions for logs, metrics or traces to the resulting filter processor. (#40948)
+- `oidcauthextension`: Add support for accessing custom JWT claims. (#41449)
+  Users can now access JWT claims from OIDC Auth context allowing dynamic processing based on received JWT token.
+  
+
+<!-- previous-version -->
+
+## v0.132.0
+
+### 🛑 Breaking changes 🛑
+
+- `journaldreceiver`: Unexport ReceiverType (#40666)
+- `pulsarexporter`: Use `configoptional.Optional` for authentication fields (#41723)
+- `exporter/loadbalancingexporter`: Use `configoptional` for optional config sections (#41697)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add OTTL support for sample submessage of OTel Profiling signal. (#40161)
+- `internal/common`: Add a priority queue implementation to the common package. (#41755)
+
+<!-- previous-version -->
+
+## v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `metricstransformprocessor`: Unexport Operation, ValueAction, FilterConfig (#40657)
+- `oidcauthextension`: Unexport ProviderContainer (#41633)
+- `pkg/ottl`: Remove experimental transform context option `WithCache` from OTTL Profile context. (#41277)
+- `tailsamplingprocessor`: Latency config name change from `UpperThresholdmsMs` to `UpperThresholdMs` (#41563)
+- `awskinesisexporter`: Unexport Exporter (#40645)
+- `deltatocumulativeprocessor`: Unexport Processor,CountingSink (#40656)
+- `datasetexporter`: Unexport DatasetExporter, ExporterConfig (#40649)
+
+### 💡 Enhancements 💡
+
+- `oidcauthextension`: Add support for multiple OIDC providers. (#40854)
+  Users can now configure multiple OIDC providers in the OIDC Auth extension. Tokens will
+  be matched to a provider based on the `iss` claim.
+  
+- `pkg/ottl`: Add support for combining `scope` with other OTTL contexts. (#39308)
+  Previously, OTTL paths could only use the `instrumentation_scope` context when combined with 
+  lower-level contexts like `log` or `metric`. This change allows the `scope` context to be 
+  used interchangeably with `instrumentation_scope`, improving flexibility and consistency.
+  
+
+<!-- previous-version -->
+
 ## v0.130.0
 
 ### 🛑 Breaking changes 🛑

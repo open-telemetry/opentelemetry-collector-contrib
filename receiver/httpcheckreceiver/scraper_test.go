@@ -4,9 +4,9 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -83,7 +84,7 @@ func TestScraperStart(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := tc.scraper.start(context.Background(), componenttest.NewNopHost())
+			err := tc.scraper.start(t.Context(), componenttest.NewNopHost())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -181,9 +182,9 @@ func TestScraperScrape(t *testing.T) {
 				}
 			}
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -259,9 +260,9 @@ func TestHTTPSWithTLS(t *testing.T) {
 	}
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Check that we have metrics
@@ -314,9 +315,9 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 	}
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Check that we have metrics but no TLS metric
@@ -333,7 +334,7 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 
 func TestNilClient(t *testing.T) {
 	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 }
@@ -465,9 +466,9 @@ func TestStatusCodeConditionalInclusion(t *testing.T) {
 			}
 
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
 			tc.expectedChecks(t, actualMetrics)
@@ -495,9 +496,9 @@ func TestScraperMultipleTargets(t *testing.T) {
 		})
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	goldenPath := filepath.Join("testdata", "expected_metrics", "multiple_targets.yaml")
@@ -511,4 +512,297 @@ func TestScraperMultipleTargets(t *testing.T) {
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
 	))
+}
+
+func TestTimingMetrics(t *testing.T) {
+	// Create a mock server
+	server := newMockServer(t, 200)
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Enable timing breakdown metrics
+	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
+
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Check that we have metrics
+	require.Positive(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	// Verify that timing metrics are present
+	foundMetrics := make(map[string]bool)
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		foundMetrics[metric.Name()] = true
+	}
+
+	// Check that base metrics are present
+	assert.True(t, foundMetrics["httpcheck.duration"])
+	assert.True(t, foundMetrics["httpcheck.status"])
+
+	// Check that timing breakdown metrics are present when enabled
+	assert.True(t, foundMetrics["httpcheck.dns.lookup.duration"])
+	assert.True(t, foundMetrics["httpcheck.client.connection.duration"])
+	assert.True(t, foundMetrics["httpcheck.client.request.duration"])
+	assert.True(t, foundMetrics["httpcheck.response.duration"])
+}
+
+func TestRequestBodySupport(t *testing.T) {
+	// Create a mock server that captures request details
+	var receivedBody []byte
+	var receivedMethod string
+	var receivedContentType string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedMethod = r.Method
+		receivedContentType = r.Header.Get("Content-Type")
+
+		body, err := io.ReadAll(r.Body)
+		if err == nil {
+			receivedBody = body
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, writeErr := w.Write([]byte(`{"result": "created"}`))
+		assert.NoError(t, writeErr)
+	}))
+	defer server.Close()
+
+	testCases := []struct {
+		name                string
+		method              string
+		body                string
+		expectedMethod      string
+		expectedBody        string
+		expectedContentType string
+	}{
+		{
+			name:                "POST with JSON body",
+			method:              "POST",
+			body:                `{"name": "test", "email": "test@example.com"}`,
+			expectedMethod:      "POST",
+			expectedBody:        `{"name": "test", "email": "test@example.com"}`,
+			expectedContentType: "application/json",
+		},
+		{
+			name:                "PUT with JSON array",
+			method:              "PUT",
+			body:                `[{"id": 1, "name": "test"}]`,
+			expectedMethod:      "PUT",
+			expectedBody:        `[{"id": 1, "name": "test"}]`,
+			expectedContentType: "application/json",
+		},
+		{
+			name:                "POST with form data",
+			method:              "POST",
+			body:                `name=test&email=test@example.com`,
+			expectedMethod:      "POST",
+			expectedBody:        `name=test&email=test@example.com`,
+			expectedContentType: "application/x-www-form-urlencoded",
+		},
+		{
+			name:                "POST with plain text",
+			method:              "POST",
+			body:                `plain text content`,
+			expectedMethod:      "POST",
+			expectedBody:        `plain text content`,
+			expectedContentType: "text/plain",
+		},
+		{
+			name:                "PATCH with JSON",
+			method:              "PATCH",
+			body:                `{"status": "updated"}`,
+			expectedMethod:      "PATCH",
+			expectedBody:        `{"status": "updated"}`,
+			expectedContentType: "application/json",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Reset captured values
+			receivedBody = nil
+			receivedMethod = ""
+			receivedContentType = ""
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Targets = []*targetConfig{
+				{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: server.URL,
+					},
+					Method:          tc.method,
+					Body:            tc.body,
+					AutoContentType: true,
+				},
+			}
+
+			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+			_, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			// Verify the request was made correctly
+			assert.Equal(t, tc.expectedMethod, receivedMethod)
+			assert.Equal(t, tc.expectedBody, string(receivedBody))
+			assert.Equal(t, tc.expectedContentType, receivedContentType)
+		})
+	}
+}
+
+func TestRequestBodyWithCustomHeaders(t *testing.T) {
+	// Create a mock server that captures request details
+	var receivedContentType string
+	var receivedCustomHeader string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedContentType = r.Header.Get("Content-Type")
+		receivedCustomHeader = r.Header.Get("X-Custom-Header")
+
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"result": "ok"}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+				Headers: map[string]configopaque.String{
+					"Content-Type":    configopaque.String("application/custom+json"),
+					"X-Custom-Header": configopaque.String("custom-value"),
+				},
+			},
+			Method: "POST",
+			Body:   `{"data": "test"}`,
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	_, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Verify custom Content-Type overrides auto-detection
+	assert.Equal(t, "application/custom+json", receivedContentType)
+	assert.Equal(t, "custom-value", receivedCustomHeader)
+}
+
+func TestAutoContentTypeConfiguration(t *testing.T) {
+	// Create a mock server that captures request details
+	var receivedContentType string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedContentType = r.Header.Get("Content-Type")
+
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"result": "ok"}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	testCases := []struct {
+		name                string
+		body                string
+		autoContentType     bool
+		expectedContentType string
+	}{
+		{
+			name:                "JSON body with auto_content_type enabled",
+			body:                `{"key": "value"}`,
+			autoContentType:     true,
+			expectedContentType: "application/json",
+		},
+		{
+			name:                "JSON body with auto_content_type disabled",
+			body:                `{"key": "value"}`,
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set
+		},
+		{
+			name:                "Form data with auto_content_type enabled",
+			body:                `name=test&email=test@example.com`,
+			autoContentType:     true,
+			expectedContentType: "application/x-www-form-urlencoded",
+		},
+		{
+			name:                "Form data with auto_content_type disabled",
+			body:                `name=test&email=test@example.com`,
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set
+		},
+		{
+			name:                "Plain text with auto_content_type enabled",
+			body:                `plain text content`,
+			autoContentType:     true,
+			expectedContentType: "text/plain",
+		},
+		{
+			name:                "Plain text with auto_content_type disabled",
+			body:                `plain text content`,
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set
+		},
+		{
+			name:                "Empty body with auto_content_type enabled",
+			body:                "",
+			autoContentType:     true,
+			expectedContentType: "", // No Content-Type should be set for empty body
+		},
+		{
+			name:                "Empty body with auto_content_type disabled",
+			body:                "",
+			autoContentType:     false,
+			expectedContentType: "", // No Content-Type should be set for empty body
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Reset captured values
+			receivedContentType = ""
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Targets = []*targetConfig{
+				{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: server.URL,
+					},
+					Method:          "POST",
+					Body:            tc.body,
+					AutoContentType: tc.autoContentType,
+				},
+			}
+
+			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+			_, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			// Verify the Content-Type header behavior
+			assert.Equal(t, tc.expectedContentType, receivedContentType)
+		})
+	}
 }

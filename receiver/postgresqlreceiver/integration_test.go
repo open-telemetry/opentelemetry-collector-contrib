@@ -6,7 +6,6 @@
 package postgresqlreceiver
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -156,7 +155,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 
 func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
-		context.Background(),
+		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
@@ -183,16 +182,17 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					"-c",
 					"shared_preload_libraries=pg_stat_statements",
 				},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
-					WithStartupTimeout(2 * time.Minute),
+				WaitingFor: wait.ForLog(".*port 5432").
+					AsRegexp().
+					WithOccurrence(1),
 			},
 		})
 	assert.NoError(t, err)
 
-	err = ci.Start(context.Background())
+	err = ci.Start(t.Context())
 	assert.NoError(t, err)
 	defer testcontainers.CleanupContainer(t, ci)
-	p, err := ci.MappedPort(context.Background(), postgresqlPort)
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
 	assert.NoError(t, err)
 	connStr := fmt.Sprintf("postgres://root:otel@localhost:%s/otel2?sslmode=disable", p.Port())
 	db, err := sql.Open("postgres", connStr)
@@ -215,12 +215,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: net.JoinHostPort("localhost", p.Port()),
 		},
-		QuerySampleCollection: QuerySampleCollection{
-			Enabled: true,
-		},
-		TopQueryCollection: TopQueryCollection{
-			Enabled: true,
-		},
 		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
@@ -230,7 +224,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 			Logger: zap.Must(zap.NewProduction()),
 		},
 	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
-	plogs, err := ns.scrapeQuerySamples(context.Background(), 30)
+	plogs, err := ns.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found := false
@@ -251,7 +245,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	assert.True(t, found, "Expected to find a log record with the query text")
 	assert.True(t, ns.newestQueryTimestamp > 0)
 
-	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
+	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30)
 	assert.NoError(t, err)
 	logRecords = firstTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false
@@ -278,7 +272,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
-	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
+	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30)
 	assert.NoError(t, err)
 	logRecords = secondTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false

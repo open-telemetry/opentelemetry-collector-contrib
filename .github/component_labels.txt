@@ -172,7 +172,9 @@ processor/dnslookupprocessor processor/dnslookup
 processor/filterprocessor processor/filter
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs
+processor/groupbytraceprocessor processor/groupbytrace
 processor/intervalprocessor processor/interval
+processor/isolationforestprocessor processor/isolationforest
 processor/k8sattributesprocessor processor/k8sattributes
 processor/logdedupprocessor processor/logdedup
 processor/logstransformprocessor processor/logstransform
@@ -318,8 +320,6 @@ exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
-processor/groupbytraceprocessor processor/groupbytrace
-processor/routingprocessor processor/routing
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon

@@ -4,7 +4,6 @@
 package header
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,9 +39,9 @@ func TestReader(t *testing.T) {
 	assert.NoError(t, err)
 
 	attrs := make(map[string]any)
-	assert.NoError(t, reader.Process(context.Background(), "# foo:bar\n", attrs))
-	assert.NoError(t, reader.Process(context.Background(), "# hello:world\n", attrs))
-	assert.ErrorIs(t, reader.Process(context.Background(), "First log line", attrs), ErrEndOfHeader)
+	assert.NoError(t, reader.Process(t.Context(), "# foo:bar\n", attrs))
+	assert.NoError(t, reader.Process(t.Context(), "# hello:world\n", attrs))
+	assert.ErrorIs(t, reader.Process(t.Context(), "First log line", attrs), ErrEndOfHeader)
 	assert.Len(t, attrs, 2)
 	assert.Equal(t, "bar", attrs["foo"])
 	assert.Equal(t, "world", attrs["hello"])
@@ -71,10 +70,10 @@ func TestSkipUnmatchedHeaderLine(t *testing.T) {
 	assert.NoError(t, err)
 
 	attrs := make(map[string]any)
-	assert.NoError(t, reader.Process(context.Background(), "# foo:bar\n", attrs))
-	assert.NoError(t, reader.Process(context.Background(), "# matches header regex but not metadata operator assumptions\n", attrs))
-	assert.NoError(t, reader.Process(context.Background(), "# hello:world\n", attrs))
-	assert.ErrorIs(t, reader.Process(context.Background(), "First log line", attrs), ErrEndOfHeader)
+	assert.NoError(t, reader.Process(t.Context(), "# foo:bar\n", attrs))
+	assert.NoError(t, reader.Process(t.Context(), "# matches header regex but not metadata operator assumptions\n", attrs))
+	assert.NoError(t, reader.Process(t.Context(), "# hello:world\n", attrs))
+	assert.ErrorIs(t, reader.Process(t.Context(), "First log line", attrs), ErrEndOfHeader)
 	assert.Len(t, attrs, 2)
 	assert.Equal(t, "bar", attrs["foo"])
 	assert.Equal(t, "world", attrs["hello"])
