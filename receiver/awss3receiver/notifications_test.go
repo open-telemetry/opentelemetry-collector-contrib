@@ -138,7 +138,7 @@ func Test_opampNotifier_Start(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			notifier := &opampNotifier{opampExtensionID: id}
-			err := notifier.Start(context.Background(), tt.host)
+			err := notifier.Start(t.Context(), tt.host)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -151,7 +151,7 @@ func Test_opampNotifier_Start(t *testing.T) {
 func Test_opampNotifier_Shutdown(t *testing.T) {
 	registry := mockCustomCapabilityRegistry{}
 	notifier := &opampNotifier{handler: &registry, logger: zap.NewNop()}
-	err := notifier.Shutdown(context.Background())
+	err := notifier.Shutdown(t.Context())
 	require.NoError(t, err)
 	require.True(t, registry.unregisterCalled)
 }
@@ -167,7 +167,7 @@ func Test_opampNotifier_SendStatus(t *testing.T) {
 		StartTime:     ingestTime,
 		EndTime:       ingestTime,
 	}
-	notifier.SendStatus(context.Background(), toSend)
+	notifier.SendStatus(t.Context(), toSend)
 	require.Len(t, registry.sentMessages, 1)
 	require.Equal(t, "TimeBasedIngestStatus", registry.sentMessages[0].messageType)
 
@@ -222,7 +222,7 @@ func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 
 	doneChan := make(chan struct{}, 1)
 	go func() {
-		notifier.SendStatus(context.Background(), toSend)
+		notifier.SendStatus(t.Context(), toSend)
 		doneChan <- struct{}{}
 	}()
 	require.Empty(t, registry.sentMessages)
@@ -245,7 +245,7 @@ func Test_opampNotifier_SendStatus_Error(t *testing.T) {
 		IngestTime:    time.Time{},
 	}
 
-	notifier.SendStatus(context.Background(), toSend)
+	notifier.SendStatus(t.Context(), toSend)
 	require.Empty(t, registry.sentMessages)
 	require.Equal(t, 1, registry.sendMessageCalls)
 }
@@ -263,7 +263,7 @@ func Test_opampNotifier_SendStatus_MaxRetries(t *testing.T) {
 	}
 	doneChan := make(chan struct{}, 1)
 	go func() {
-		notifier.SendStatus(context.Background(), toSend)
+		notifier.SendStatus(t.Context(), toSend)
 		doneChan <- struct{}{}
 	}()
 	require.Empty(t, doneChan)

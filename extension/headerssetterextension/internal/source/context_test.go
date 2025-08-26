@@ -4,7 +4,6 @@
 package source
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,9 +12,9 @@ import (
 
 func TestContextSourceSuccess(t *testing.T) {
 	ts := &ContextSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Metadata = client.NewMetadata(map[string][]string{"X-Scope-OrgID": {"acme"}})
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	header, err := ts.Get(ctx)
 
@@ -25,9 +24,9 @@ func TestContextSourceSuccess(t *testing.T) {
 
 func TestContextSourceNotFound(t *testing.T) {
 	ts := &ContextSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Metadata = client.NewMetadata(map[string][]string{"Not-Scope-OrgID": {"acme"}})
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	header, err := ts.Get(ctx)
 
@@ -37,9 +36,9 @@ func TestContextSourceNotFound(t *testing.T) {
 
 func TestContextSourceMultipleFound(t *testing.T) {
 	ts := &ContextSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Metadata = client.NewMetadata(map[string][]string{"X-Scope-OrgID": {"acme", "globex"}})
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	header, err := ts.Get(ctx)
 

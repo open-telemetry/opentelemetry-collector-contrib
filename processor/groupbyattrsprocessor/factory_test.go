@@ -4,7 +4,6 @@
 package groupbyattrsprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,17 +24,17 @@ func TestCreateTestProcessor(t *testing.T) {
 		GroupByKeys: []string{"foo"},
 	}
 
-	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)
 
-	lp, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	lp, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.True(t, lp.Capabilities().MutatesData)
 
-	mp, err := createMetricsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := createMetricsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	assert.True(t, mp.Capabilities().MutatesData)

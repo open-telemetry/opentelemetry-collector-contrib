@@ -8,7 +8,6 @@
 package dockerstatsreceiver
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -187,11 +186,11 @@ func TestErrorsInStart(t *testing.T) {
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
-	err := recv.start(context.Background(), componenttest.NewNopHost())
+	err := recv.start(t.Context(), componenttest.NewNopHost())
 	assert.ErrorContains(t, err, "unable to parse docker host")
 
 	cfg.Endpoint = unreachable
-	err = recv.start(context.Background(), componenttest.NewNopHost())
+	err = recv.start(t.Context(), componenttest.NewNopHost())
 	assert.ErrorContains(t, err, "context deadline exceeded")
 }
 
@@ -341,11 +340,11 @@ func TestScrapeV2(t *testing.T) {
 
 			receiver := newMetricsReceiver(
 				receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
-			err := receiver.start(context.Background(), componenttest.NewNopHost())
+			err := receiver.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
-			defer func() { require.NoError(t, receiver.shutdown(context.Background())) }()
+			defer func() { require.NoError(t, receiver.shutdown(t.Context())) }()
 
-			actualMetrics, err := receiver.scrapeV2(context.Background())
+			actualMetrics, err := receiver.scrapeV2(t.Context())
 			require.NoError(t, err)
 
 			// Uncomment to regenerate 'expected_metrics.yaml' files

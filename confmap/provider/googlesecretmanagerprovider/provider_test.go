@@ -60,7 +60,7 @@ func TestProvider_Retrieve_Success(t *testing.T) {
 			testProvider := &provider{
 				client: tc.testSecretManager,
 			}
-			gotSecret, err := testProvider.Retrieve(context.Background(), tc.uri, nil)
+			gotSecret, err := testProvider.Retrieve(t.Context(), tc.uri, nil)
 			require.NoError(t, err)
 
 			gotSecretString, err := gotSecret.AsString()
@@ -97,7 +97,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 					},
 				},
 			}
-			_, err := testProvider.Retrieve(context.Background(), tc.uri, nil)
+			_, err := testProvider.Retrieve(t.Context(), tc.uri, nil)
 			require.Error(t, err)
 			require.ErrorIs(t, err, tc.wantError)
 		})
@@ -116,7 +116,7 @@ func TestShutdown(t *testing.T) {
 		client: secretManager,
 	}
 	require.False(t, secretManager.clientClosed)
-	err := testProvider.Shutdown(context.Background())
+	err := testProvider.Shutdown(t.Context())
 	require.NoError(t, err)
 	require.True(t, secretManager.clientClosed)
 }
