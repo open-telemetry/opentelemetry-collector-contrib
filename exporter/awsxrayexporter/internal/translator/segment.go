@@ -458,8 +458,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if name == "" {
 		name = fixSegmentName(span.Name())
 	}
-
-	if namespace == "" && span.Kind() == ptrace.SpanKindClient {
+	if namespace == "" && (span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer) {
 		namespace = "remote"
 	}
 

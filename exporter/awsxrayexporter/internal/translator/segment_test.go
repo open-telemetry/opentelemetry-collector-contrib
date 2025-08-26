@@ -1166,6 +1166,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "ProducerService", *segment.Name)
 	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "remote", *segment.Namespace)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -1174,6 +1175,22 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.Contains(t, jsonStr, "ProducerService")
 	assert.NotContains(t, jsonStr, user)
 	assert.NotContains(t, jsonStr, "user")
+}
+
+func TestProducerSpanNonAwsRemoteServiceName(t *testing.T) {
+	spanName := "my-topic send"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[conventions.AttributePeerService] = "ProducerService"
+	resource := constructDefaultResource()
+	span := constructProducerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "ProducerService", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "remote", *segment.Namespace)
 }
 
 func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
