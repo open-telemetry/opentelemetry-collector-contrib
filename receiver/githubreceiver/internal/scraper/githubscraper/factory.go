@@ -24,7 +24,7 @@ const (
 
 type Factory struct{}
 
-func (f *Factory) CreateDefaultConfig() internal.Config {
+func (*Factory) CreateDefaultConfig() internal.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
 	return &Config{
@@ -33,7 +33,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 	}
 }
 
-func (f *Factory) CreateMetricsScraper(
+func (*Factory) CreateMetricsScraper(
 	_ context.Context,
 	params receiver.Settings,
 	cfg internal.Config,

@@ -4,241 +4,521 @@
 package googlecloudlogentryencodingextension
 
 import (
-	"context"
-	"fmt"
+	"os"
 	"testing"
-	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
+	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	ltype "google.golang.org/genproto/googleapis/logging/type"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-type log struct {
-	Timestamp          string
-	ObservedTimestamp  string
-	Body               any
-	SeverityText       string
-	SeverityNumber     plog.SeverityNumber
-	Attributes         map[string]any
-	ResourceAttributes map[string]any
-	SpanID             string
-	TraceID            string
-}
-
-func generateLog(t *testing.T, log log) (pcommon.Resource, plog.LogRecord, error) {
-	res := pcommon.NewResource()
-	assert.NoError(t, res.Attributes().FromRaw(log.ResourceAttributes))
-
-	lr := plog.NewLogRecord()
-	err := lr.Attributes().FromRaw(log.Attributes)
-	if err != nil {
-		return res, lr, err
-	}
-	if log.Timestamp != "" {
-		ts, err := time.Parse(time.RFC3339, log.Timestamp)
-		if err != nil {
-			return res, lr, err
-		}
-		lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-	}
-
-	if log.ObservedTimestamp != "" {
-		ots, err := time.Parse(time.RFC3339, log.ObservedTimestamp)
-		if err != nil {
-			return res, lr, err
-		}
-		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(ots))
-	}
-
-	assert.NoError(t, lr.Body().FromRaw(log.Body))
-	lr.SetSeverityText(log.SeverityText)
-	lr.SetSeverityNumber(log.SeverityNumber)
-
-	spanID, _ := spanIDStrToSpanIDBytes(log.SpanID)
-	lr.SetSpanID(spanID)
-	traceID, _ := traceIDStrToTraceIDBytes(log.TraceID)
-	lr.SetTraceID(traceID)
-
-	return res, lr, nil
-}
-
-func TestCloudLoggingTraceToTraceIDBytes(t *testing.T) {
-	for _, test := range []struct {
-		scenario,
-		in string
-		out [16]byte
-		err string
-	}{
-		// A valid trace
-		{
-			"ValidTrace",
-			"projects/my-gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e09",
-			[16]uint8{0x1d, 0xbe, 0x31, 0x7e, 0xb7, 0x3e, 0xb6, 0xe3, 0xbb, 0xb5, 0x1a, 0x2b, 0xc3, 0xa4, 0x1e, 0x9},
-			"",
-		},
-		// An invalid traces
-		{
-			"InvalidTrace",
-			"1dbe317eb73eb6e3bbb51a2bc3a41e09",
-			invalidTraceID,
-			errorParsingLogItem.Error(),
-		},
-		{
-			"InvalidHexTrace",
-			"projects/my-gcp-project/traces/xyze317eb73eb6e3bbb51a2bc3a41e09",
-			invalidTraceID,
-			"encoding/hex: invalid byte: U+0078 'x'",
-		},
-		{
-			"InvalidLengthTooLongTrace",
-			"projects/my-gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e09aa",
-			invalidTraceID,
-			errorParsingLogItem.Error(),
-		},
-		{
-			"InvalidLengthTooShortTrace",
-			"projects/my-gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e",
-			invalidTraceID,
-			errorParsingLogItem.Error(),
-		},
-	} {
-		t.Run(test.scenario, func(t *testing.T) {
-			out, err := cloudLoggingTraceToTraceIDBytes(test.in)
-			assert.Equal(t, test.out, out)
-			if err != nil {
-				assert.Equal(t, test.err, err.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestSpanIDStrToSpanIDBytes(t *testing.T) {
-	for _, test := range []struct {
-		scenario,
-		in string
-		out [8]byte
-		err string
-	}{
-		// A valid span
-		{
-			"ValidSpan",
-			"3e3a5741b18f0710",
-			[8]uint8{0x3e, 0x3a, 0x57, 0x41, 0xb1, 0x8f, 0x7, 0x10},
-			"",
-		},
-		// Cloud Run sends invalid span id's, make sure we're not crashing,
-		// see https://issuetracker.google.com/issues/338634230?pli=1
-		{
-			"InvalidNumberSpan",
-			"13210305202245662348",
-			invalidSpanID,
-			errorParsingLogItem.Error(),
-		},
-		// A invalid span
-		{
-			"ValidHexTooLongSpan",
-			"3e3a5741b18f0710ab",
-			invalidSpanID,
-			errorParsingLogItem.Error(),
-		},
-		{
-			"ValidHexTooShortSpan",
-			"3e3a5741b18f07",
-			invalidSpanID,
-			errorParsingLogItem.Error(),
-		},
-	} {
-		t.Run(test.scenario, func(t *testing.T) {
-			out, err := spanIDStrToSpanIDBytes(test.in)
-			assert.Equal(t, test.out, out)
-			if err != nil {
-				assert.Equal(t, test.err, err.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func compareResources(expected, actual pcommon.Resource) error {
-	return compare("Resource.Attributes", expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
-}
-
-func compareLogRecords(expected, actual plog.LogRecord) error {
-	return multierr.Combine(
-		compare("LogRecord.Timestamp", expected.Timestamp(), actual.Timestamp()),
-		compare("LogRecord.TraceID", expected.TraceID(), actual.TraceID()),
-		compare("LogRecord.SpanID", expected.SpanID(), actual.SpanID()),
-		compare("LogRecord.Attributes", expected.Attributes().AsRaw(), actual.Attributes().AsRaw()),
-		compare("LogRecord.Body", expected.Body().AsRaw(), actual.Body().AsRaw()),
-		compare("LogRecord.SeverityText", expected.SeverityText(), actual.SeverityText()),
-		compare("LogRecord.SeverityNumber", expected.SeverityNumber(), actual.SeverityNumber()),
-	)
-}
-
-func compare(ty string, expected, actual any) error {
-	if diff := cmp.Diff(expected, actual); diff != "" {
-		return fmt.Errorf("%s mismatch (-expected +actual):\n%s", ty, diff)
-	}
-	return nil
-}
-
-func TestJsonPayload(t *testing.T) {
+func TestHandleHTTPRequestField(t *testing.T) {
 	tests := []struct {
-		scenario string
-		input    string
-		config   Config
-		expected log
+		name              string
+		request           *httpRequest
+		expectsAttributes map[string]any
+		expectsErr        string
 	}{
 		{
-			"AsJSON",
-			"{\"jsonPayload\": { \"foo\": \"bar\", \"other\": 42} }",
-			Config{
-				HandleJSONPayloadAs:  HandleAsJSON,
-				HandleProtoPayloadAs: HandleAsJSON,
+			name: "valid",
+			request: &httpRequest{
+				RequestMethod: "POST",
+				RequestURL:    "https://www.googleapis.com/logging/v2",
+				RequestSize:   "100",
+				Status: func() *int64 {
+					v := int64(200)
+					return &v
+				}(),
+				ResponseSize: "300",
+				UserAgent:    "test",
+				RemoteIP:     "127.0.0.2",
+				ServerIP:     "127.0.0.3",
+				Referer:      "referer",
+				Latency:      "10s",
+				CacheLookup: func() *bool {
+					v := true
+					return &v
+				}(),
+				CacheHit: func() *bool {
+					v := true
+					return &v
+				}(),
+				CacheValidatedWithOriginServer: func() *bool {
+					v := false
+					return &v
+				}(),
+				CacheFillBytes: "12345",
+				Protocol:       "HTTP/1.1",
 			},
-			log{
-				Body: map[string]any{
-					"foo":   string("bar"),
-					"other": float64(42),
-				},
+			expectsAttributes: map[string]any{
+				string(semconv.HTTPResponseSizeKey):       int64(300),
+				string(semconv.HTTPResponseStatusCodeKey): int64(200),
+				string(semconv.HTTPRequestMethodKey):      "POST",
+				string(semconv.HTTPRequestSizeKey):        int64(100),
+				string(semconv.URLFullKey):                "https://www.googleapis.com/logging/v2",
+				string(semconv.URLDomainKey):              "www.googleapis.com",
+				string(semconv.URLPathKey):                "/logging/v2",
+				gcpCacheFillBytes:                         int64(12345),
+				gcpCacheHitField:                          true,
+				gcpCacheValidatedWithOriginSeverField:     false,
+				gcpCacheLookupField:                       true,
+				string(semconv.NetworkProtocolNameKey):    "http",
+				string(semconv.NetworkProtocolVersionKey): "1.1",
+				refererHeaderField:                        "referer",
+				requestServerDurationField:                float64(10),
+				string(semconv.UserAgentOriginalKey):      "test",
+				string(semconv.ClientAddressKey):          "127.0.0.2",
+				string(semconv.ServerAddressKey):          "127.0.0.3",
 			},
 		},
 		{
-			"AsText",
-			"{\"jsonPayload\": { \"foo\": \"bar\", \"other\": 42} }",
-			Config{
-				HandleJSONPayloadAs:  HandleAsText,
-				HandleProtoPayloadAs: HandleAsJSON,
+			name: "invalid request size",
+			request: &httpRequest{
+				RequestSize: "invalid",
 			},
-			log{
-				Body: "{ \"foo\": \"bar\", \"other\": 42}",
+			expectsErr: "failed to add request size",
+		},
+		{
+			name: "invalid response size",
+			request: &httpRequest{
+				ResponseSize: "invalid",
 			},
+			expectsErr: "failed to add response size",
+		},
+		{
+			name: "invalid cache fill bytes",
+			request: &httpRequest{
+				CacheFillBytes: "invalid",
+			},
+			expectsErr: "failed to add cache fill bytes",
+		},
+		{
+			name: "invalid url",
+			request: &httpRequest{
+				RequestURL: "http://::1]",
+			},
+			expectsErr: "failed to parse request url",
+		},
+		{
+			name: "invalid protocol",
+			request: &httpRequest{
+				Protocol: "invalid",
+			},
+			expectsErr: `expected exactly one "/"`,
+		},
+		{
+			name: "invalid protocol 2",
+			request: &httpRequest{
+				Protocol: "invalid/",
+			},
+			expectsErr: "name or version is missing",
+		},
+		{
+			name: "latency without suffix",
+			request: &httpRequest{
+				Latency: "12",
+			},
+			expectsErr: "invalid latency format",
+		},
+		{
+			name: "latency not a number",
+			request: &httpRequest{
+				Latency: "invalids",
+			},
+			expectsErr: "invalid latency value",
 		},
 	}
+
 	for _, tt := range tests {
-		fn := func(t *testing.T, cfg *Config, want log) {
-			extension := newConfiguredExtension(t, cfg)
-			defer assert.NoError(t, extension.Shutdown(context.Background()))
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-			var errs error
-			wantRes, wantLr, err := generateLog(t, want)
-			errs = multierr.Append(errs, err)
+			attr := pcommon.NewMap()
+			err := handleHTTPRequestField(attr, tt.request)
 
-			gotRes, gotLr, err := extension.translateLogEntry([]byte(tt.input))
-			errs = multierr.Append(errs, err)
-			errs = multierr.Combine(errs, compareResources(wantRes, gotRes), compareLogRecords(wantLr, gotLr))
+			if tt.expectsErr != "" {
+				require.ErrorContains(t, err, tt.expectsErr)
+				return
+			}
 
-			require.NoError(t, errs)
-		}
-		t.Run(tt.scenario, func(t *testing.T) {
-			fn(t, &tt.config, tt.expected)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectsAttributes, attr.AsRaw())
+		})
+	}
+}
+
+func TestHandleLogNameField(t *testing.T) {
+	tests := []struct {
+		name              string
+		logName           string
+		expectsAttributes map[string]any
+		expectsLogType    string
+		expectsErr        string
+	}{
+		{
+			name:           "projects",
+			logName:        "projects/my-project/logs/log-id",
+			expectsLogType: "log-id",
+			expectsAttributes: map[string]any{
+				gcpProjectField:                    "my-project",
+				string(semconv.CloudResourceIDKey): "log-id",
+			},
+		},
+		{
+			name:           "organizations",
+			logName:        "organizations/123456/logs/log-id",
+			expectsLogType: "log-id",
+			expectsAttributes: map[string]any{
+				gcpOrganizationField:               "123456",
+				string(semconv.CloudResourceIDKey): "log-id",
+			},
+		},
+		{
+			name:           "billingAccounts",
+			logName:        "billingAccounts/BA123/logs/log-id",
+			expectsLogType: "log-id",
+			expectsAttributes: map[string]any{
+				gcpBillingAccountField:             "BA123",
+				string(semconv.CloudResourceIDKey): "log-id",
+			},
+		},
+		{
+			name:           "folders",
+			logName:        "folders/456789/logs/log-id",
+			expectsLogType: "log-id",
+			expectsAttributes: map[string]any{
+				gcpFolderField:                     "456789",
+				string(semconv.CloudResourceIDKey): "log-id",
+			},
+		},
+		{
+			name:       "unknown prefix",
+			logName:    "unknown-prefix",
+			expectsErr: "unrecognized log name",
+		},
+		{
+			name:       "empty id",
+			logName:    "projects//logs/abc",
+			expectsErr: "to have format",
+		},
+		{
+			name:       "empty resource type",
+			logName:    "projects/p1/logs/",
+			expectsErr: "to have format",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			attr := pcommon.NewMap()
+			logType, err := handleLogNameField(tt.logName, attr)
+
+			if tt.expectsErr != "" {
+				require.ErrorContains(t, err, tt.expectsErr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expectsAttributes, attr.AsRaw())
+			require.Equal(t, tt.expectsLogType, logType)
+		})
+	}
+}
+
+func TestGetTraceID(t *testing.T) {
+	for _, test := range []struct {
+		scenario,
+		in string
+		out         [16]byte
+		expectedErr string
+	}{
+		{
+			scenario: "valid_trace",
+			in:       "projects/my-gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e09",
+			out:      [16]uint8{0x1d, 0xbe, 0x31, 0x7e, 0xb7, 0x3e, 0xb6, 0xe3, 0xbb, 0xb5, 0x1a, 0x2b, 0xc3, 0xa4, 0x1e, 0x9},
+		},
+		{
+			scenario:    "invalid_trace_format",
+			in:          "1dbe317eb73eb6e3bbb51a2bc3a41e09",
+			expectedErr: "expected trace format to be",
+		},
+		{
+			scenario:    "invalid_hex_trace",
+			in:          "projects/my-gcp-project/traces/xyze317eb73eb6e3bbb51a2bc3a41e09",
+			expectedErr: "failed to decode trace id to hexadecimal string",
+		},
+		{
+			scenario:    "invalid_trace_length",
+			in:          "projects/my-gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e",
+			expectedErr: "expected trace ID hex length to be 16",
+		},
+	} {
+		t.Run(test.scenario, func(t *testing.T) {
+			t.Parallel()
+
+			out, err := getTraceID(test.in)
+			if err != nil {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, test.out, out)
+			}
+		})
+	}
+}
+
+func TestGetSpanID(t *testing.T) {
+	for _, test := range []struct {
+		scenario,
+		in string
+		out        [8]byte
+		expectsErr string
+	}{
+		{
+			scenario: "valid_span",
+			in:       "3e3a5741b18f0710",
+			out:      [8]uint8{0x3e, 0x3a, 0x57, 0x41, 0xb1, 0x8f, 0x7, 0x10},
+		},
+		{
+			scenario:   "invalid_hex_span",
+			in:         "123/123",
+			expectsErr: "failed to decode span id to hexadecimal string",
+		},
+		{
+			scenario:   "invalid_span_length",
+			in:         "3e3a5741b18f0710ab",
+			expectsErr: "expected span ID hex length to be 8",
+		},
+	} {
+		t.Run(test.scenario, func(t *testing.T) {
+			t.Parallel()
+
+			out, err := getSpanID(test.in)
+
+			if err != nil {
+				require.ErrorContains(t, err, test.expectsErr)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, test.out, out)
+			}
+		})
+	}
+}
+
+func TestGetSeverityNumber(t *testing.T) {
+	tests := []struct {
+		severity string
+		expected plog.SeverityNumber
+	}{
+		{
+			severity: ltype.LogSeverity_DEBUG.String(),
+			expected: plog.SeverityNumberDebug,
+		},
+		{
+			severity: ltype.LogSeverity_INFO.String(),
+			expected: plog.SeverityNumberInfo,
+		},
+		{
+			severity: ltype.LogSeverity_NOTICE.String(),
+			expected: plog.SeverityNumberInfo2,
+		},
+		{
+			severity: ltype.LogSeverity_WARNING.String(),
+			expected: plog.SeverityNumberWarn,
+		},
+		{
+			severity: ltype.LogSeverity_ERROR.String(),
+			expected: plog.SeverityNumberError,
+		},
+		{
+			severity: ltype.LogSeverity_CRITICAL.String(),
+			expected: plog.SeverityNumberFatal,
+		},
+		{
+			severity: ltype.LogSeverity_ALERT.String(),
+			expected: plog.SeverityNumberFatal2,
+		},
+		{
+			severity: ltype.LogSeverity_EMERGENCY.String(),
+			expected: plog.SeverityNumberFatal4,
+		},
+		{
+			severity: ltype.LogSeverity_DEFAULT.String(),
+			expected: plog.SeverityNumberUnspecified,
+		},
+		{
+			severity: "unknown",
+			expected: plog.SeverityNumberUnspecified,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.severity, func(t *testing.T) {
+			t.Parallel()
+
+			res := getSeverityNumber(tt.severity)
+			require.Equal(t, tt.expected, res)
+		})
+	}
+}
+
+func TestHandleLogEntryFields(t *testing.T) {
+	// this test will test all common log fields at once
+	data, err := os.ReadFile("testdata/log_entry.json")
+	require.NoError(t, err)
+
+	var l logEntry
+	err = gojson.Unmarshal(data, &l)
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resource := resourceLogs.Resource()
+	logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	cfg := *createDefaultConfig().(*Config)
+
+	err = handleLogEntryFields(resource.Attributes(), logRecord, l, cfg)
+	require.NoError(t, err)
+
+	expected, err := golden.ReadLogs("testdata/log_entry_expected.yaml")
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expected, logs))
+}
+
+func TestHandleJSONPayload(t *testing.T) {
+	tests := []struct {
+		name        string
+		jsonPayload gojson.RawMessage
+		expectsBody any
+		cfg         Config
+		expectsErr  string
+	}{
+		{
+			name: "valid_json_payload_as_json",
+			cfg: Config{
+				HandleJSONPayloadAs: HandleAsJSON,
+			},
+			jsonPayload: []byte(`{"test": "test"}`),
+			expectsBody: map[string]any{
+				"test": "test",
+			},
+		},
+		{
+			name: "invalid_json_payload_as_json",
+			cfg: Config{
+				HandleJSONPayloadAs: HandleAsJSON,
+			},
+			jsonPayload: []byte("invalid"),
+			expectsErr:  "failed to unmarshal JSON payload",
+		},
+		{
+			name: "valid_json_payload_as_text",
+			cfg: Config{
+				HandleJSONPayloadAs: HandleAsText,
+			},
+			jsonPayload: []byte(`{"test": "test"}`),
+			expectsBody: `{"test": "test"}`,
+		},
+		{
+			name: "invalid_json_payload_unknown",
+			cfg: Config{
+				HandleJSONPayloadAs: "unknown",
+			},
+			jsonPayload: []byte("does-not-matter"),
+			expectsErr:  "unrecognized JSON payload type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			lr := plog.NewLogRecord()
+
+			err := handleJSONPayloadField(lr, tt.jsonPayload, tt.cfg)
+			if tt.expectsErr != "" {
+				require.ErrorContains(t, err, tt.expectsErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, lr.Body().AsRaw(), tt.expectsBody)
+		})
+	}
+}
+
+func TestHandleProtoPayload(t *testing.T) {
+	tests := []struct {
+		name         string
+		protoPayload gojson.RawMessage
+		expectsBody  any
+		cfg          Config
+		expectsErr   string
+	}{
+		{
+			name:         "valid_proto_payload_as_proto",
+			protoPayload: []byte(`{"@type":"test"}`),
+			cfg: Config{
+				HandleProtoPayloadAs: HandleAsProtobuf,
+			},
+			expectsBody: map[string]any{},
+		},
+		{
+			name:         "invalid_proto_payload_as_proto",
+			protoPayload: []byte("invalid"),
+			cfg: Config{
+				HandleProtoPayloadAs: HandleAsProtobuf,
+			},
+			expectsErr: "failed to set body from proto payload",
+		},
+		{
+			name:         "valid_proto_payload_as_json",
+			protoPayload: []byte(`{"@type":"test"}`),
+			cfg: Config{
+				HandleProtoPayloadAs: HandleAsJSON,
+			},
+			expectsBody: map[string]any{
+				"@type": "test",
+			},
+		},
+		{
+			name:         "invalid_proto_payload_as_json",
+			protoPayload: []byte("invalid"),
+			cfg: Config{
+				HandleProtoPayloadAs: HandleAsJSON,
+			},
+			expectsErr: "failed to unmarshal JSON payload",
+		},
+		{
+			name:         "valid_proto_payload_as_text",
+			protoPayload: []byte(`{"@type":"test"}`),
+			cfg: Config{
+				HandleProtoPayloadAs: HandleAsText,
+			},
+			expectsBody: `{"@type":"test"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			lr := plog.NewLogRecord()
+
+			err := handleProtoPayloadField(lr, tt.protoPayload, tt.cfg)
+			if tt.expectsErr != "" {
+				require.ErrorContains(t, err, tt.expectsErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, lr.Body().AsRaw(), tt.expectsBody)
 		})
 	}
 }

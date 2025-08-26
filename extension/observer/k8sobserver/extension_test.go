@@ -4,7 +4,6 @@
 package k8sobserver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +58,7 @@ func TestExtensionObserveServices(t *testing.T) {
 
 	serviceListerWatcher.Add(serviceWithClusterIP)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -127,7 +126,7 @@ func TestExtensionObserveServices(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
 }
 
@@ -148,7 +147,7 @@ func TestExtensionObservePods(t *testing.T) {
 
 	podListerWatcher.Add(pod1V1)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -210,7 +209,7 @@ func TestExtensionObservePods(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
 }
 
@@ -258,7 +257,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 
 	nodeListerWatcher.Add(node1V1)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -336,7 +335,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
 }
 
@@ -359,7 +358,7 @@ func TestExtensionObserveIngresses(t *testing.T) {
 
 	ingressListerWatcher.Add(ingress)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -422,6 +421,6 @@ func TestExtensionObserveIngresses(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
 }

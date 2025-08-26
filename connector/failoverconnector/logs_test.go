@@ -42,7 +42,7 @@ func TestLogsRegisterConsumers(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	wrappedConn := conn.(*WrappedLogsConnector)
@@ -80,7 +80,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 	failoverConnector := conn.(*logsFailover)
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	ld := sampleLog()
@@ -115,7 +115,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
@@ -125,12 +125,12 @@ func TestLogsWithFailoverError(t *testing.T) {
 	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
 	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errLogsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	ld := sampleLog()
 
-	assert.EqualError(t, conn.ConsumeLogs(context.Background(), ld), "All provided pipelines return errors")
+	assert.EqualError(t, conn.ConsumeLogs(t.Context(), ld), "All provided pipelines return errors")
 }
 
 func TestLogsWithQueue(t *testing.T) {

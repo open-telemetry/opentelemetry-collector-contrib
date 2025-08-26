@@ -73,7 +73,7 @@ func Wrap(err error, context string) AgentError {
 }
 
 // NewError will create a new agent error.
-func NewError(description string, suggestion string, keyValues ...string) AgentError {
+func NewError(description, suggestion string, keyValues ...string) AgentError {
 	return AgentError{
 		Description: description,
 		Suggestion:  suggestion,

@@ -4,7 +4,6 @@
 package datadogextension
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -50,13 +49,13 @@ func TestFactory_Create(t *testing.T) {
 	set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
 
 	t.Run("success", func(t *testing.T) {
-		ext, err := f.Create(context.Background(), set, cfg)
+		ext, err := f.Create(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, ext)
 	})
 
 	t.Run("invalid config type", func(t *testing.T) {
-		_, err := f.Create(context.Background(), set, &struct{}{})
+		_, err := f.Create(t.Context(), set, &struct{}{})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid config type")
 	})
@@ -106,7 +105,7 @@ func TestFactory_CreateErrorPaths(t *testing.T) {
 
 	t.Run("invalid config type", func(t *testing.T) {
 		set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
-		_, err := f.Create(context.Background(), set, &struct{}{})
+		_, err := f.Create(t.Context(), set, &struct{}{})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid config type")
 	})
@@ -123,7 +122,7 @@ func TestFactory_CreateErrorPaths(t *testing.T) {
 		}
 		set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
 
-		_, err := internalFactory.create(context.Background(), set, cfg)
+		_, err := internalFactory.create(t.Context(), set, cfg)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "source provider creation failed")
 	})
@@ -143,7 +142,7 @@ func TestFactory_CreateErrorPaths(t *testing.T) {
 		}
 		set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
 
-		_, err := internalFactory.create(context.Background(), set, cfg)
+		_, err := internalFactory.create(t.Context(), set, cfg)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "host provider error")
 	})

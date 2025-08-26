@@ -75,7 +75,7 @@ func (p *OtelCollectorPayload) MarshalJSON() ([]byte, error) {
 }
 
 // SplitPayload implements marshaler.AbstractMarshaler#SplitPayload.
-func (p *OtelCollectorPayload) SplitPayload(_ int) ([]marshaler.AbstractMarshaler, error) {
+func (*OtelCollectorPayload) SplitPayload(int) ([]marshaler.AbstractMarshaler, error) {
 	return nil, errors.New(payloadSplitErr)
 }
 

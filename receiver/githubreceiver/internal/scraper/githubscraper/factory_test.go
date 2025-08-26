@@ -4,7 +4,6 @@
 package githubscraper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestCreateMetricsScraper(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	mReceiver, err := factory.CreateMetricsScraper(context.Background(), creationSet, cfg)
+	mReceiver, err := factory.CreateMetricsScraper(t.Context(), creationSet, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
 }

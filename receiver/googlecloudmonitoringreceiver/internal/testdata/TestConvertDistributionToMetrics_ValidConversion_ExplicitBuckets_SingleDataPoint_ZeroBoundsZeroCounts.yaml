@@ -7,4 +7,5 @@ resourceMetrics:
               dataPoints:
                 - startTimeUnixNano: "13000000000"
                   timeUnixNano: "73000000000"
+                  count: 1234
         scope: {}

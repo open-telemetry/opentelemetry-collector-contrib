@@ -172,7 +172,7 @@ func prepareLogs() plog.Logs {
 	return logs
 }
 
-func prepareLogsNonDefaultParams(index string, source string, sourcetype string, event string) plog.Logs {
+func prepareLogsNonDefaultParams(index, source, sourcetype, event string) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -200,7 +200,7 @@ func prepareMetricsData(metricName string) pmetric.Metrics {
 	return metricData
 }
 
-func prepareTracesData(index string, source string, sourcetype string) ptrace.Traces {
+func prepareTracesData(index, source, sourcetype string) ptrace.Traces {
 	ts := pcommon.Timestamp(0)
 
 	traces := ptrace.NewTraces()
@@ -249,7 +249,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 	require.NoError(t, err, "Must not error while sending Logs data")
 	waitForEventToBeIndexed()
 
@@ -272,7 +272,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
-	err := c.pushMetricsData(context.Background(), metricData)
+	err := c.pushMetricsData(t.Context(), metricData)
 	require.NoError(t, err, "Must not error while sending Metrics data")
 	waitForEventToBeIndexed()
 
@@ -288,7 +288,7 @@ func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
-	err := c.pushTraceData(context.Background(), tracesData)
+	err := c.pushTraceData(t.Context(), tracesData)
 	require.NoError(t, err, "Must not error while sending Trace data")
 	waitForEventToBeIndexed()
 

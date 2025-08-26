@@ -11,14 +11,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
@@ -123,11 +122,12 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				DisableTargetInfo: false,
 				SendMetadata:      false,
 			}
-			converter := newPrometheusConverterV2()
+			converter := newPrometheusConverterV2(Settings{})
+			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
 				Type: otelMetricTypeToPromMetricTypeV2(metric),
 				Help: metric.Description(),
-				Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+				Unit: unitNamer.Build(metric.Unit()),
 			}
 			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name(), m)
 			w := tt.want()
@@ -138,8 +138,6 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 	}
 }
 
-// Right now we are not handling duplicates, the second one will just overwrite the first one as this test case shows
-// In follow-up PRs we plan to start handling conflicts and this test will be updated to reflect the new behavior.
 func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	metric1 := getIntGaugeMetric(
@@ -160,6 +158,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 			timeSeriesSignature(labels): {
 				LabelsRefs: []uint32{1, 2},
 				Samples: []writev2.Sample{
+					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 2},
 				},
 				Metadata: writev2.Metadata{
@@ -178,18 +177,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		SendMetadata:      false,
 	}
 
-	converter := newPrometheusConverterV2()
+	converter := newPrometheusConverterV2(Settings{})
+	unitNamer := otlptranslator.UnitNamer{}
 	m1 := metadata{
 		Type: otelMetricTypeToPromMetricTypeV2(metric1),
 		Help: metric1.Description(),
-		Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric1.Unit()),
+		Unit: unitNamer.Build(metric1.Unit()),
 	}
 	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name(), m1)
 
 	m2 := metadata{
 		Type: otelMetricTypeToPromMetricTypeV2(metric2),
 		Help: metric2.Description(),
-		Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric2.Unit()),
+		Unit: unitNamer.Build(metric2.Unit()),
 	}
 	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name(), m2)
 

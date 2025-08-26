@@ -102,9 +102,9 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	if e.config.ArrayMode {
 		// Default mode to handle arrays having backward compatibility
 		var jsonLogs []map[string]any
-		var err error
 
-		if err = json.Unmarshal(buf, &jsonLogs); err != nil {
+		err := json.Unmarshal(buf, &jsonLogs)
+		if err != nil {
 			return p, err
 		}
 
@@ -130,11 +130,11 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return p, nil
 }
 
-func (e *jsonLogExtension) Start(_ context.Context, _ component.Host) error {
+func (*jsonLogExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e *jsonLogExtension) Shutdown(_ context.Context) error {
+func (*jsonLogExtension) Shutdown(context.Context) error {
 	return nil
 }
 

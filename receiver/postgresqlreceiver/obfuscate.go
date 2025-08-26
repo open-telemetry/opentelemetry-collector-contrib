@@ -190,7 +190,7 @@ func obfuscateSQL(rawQuery string) (string, error) {
 		KeepSQLAlias: true,
 		KeepBoolean:  true,
 		KeepNull:     true,
-	})
+	}, "")
 	if err != nil {
 		return "", err
 	}

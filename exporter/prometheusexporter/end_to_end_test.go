@@ -51,7 +51,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	srvURL, err := url.Parse(dropWizardServer.URL)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.

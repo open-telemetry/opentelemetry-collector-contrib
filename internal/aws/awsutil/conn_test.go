@@ -4,7 +4,6 @@
 package awsutil
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -20,7 +19,7 @@ func TestRegionEnv(t *testing.T) {
 	region := "us-east-1"
 	t.Setenv("AWS_REGION", region)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, region, cfg.Region, "Region value should be fetched from environment")
@@ -32,7 +31,7 @@ func TestGetAWSConfigWithExplicitRegion(t *testing.T) {
 	sessionCfg := CreateDefaultSessionConfig()
 	sessionCfg.Region = "eu-west-1"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "eu-west-1", cfg.Region, "Region value should match the explicitly set region")
@@ -45,7 +44,7 @@ func TestGetAWSConfigWithCustomEndpoint(t *testing.T) {
 	sessionCfg.Region = "us-west-2"
 	sessionCfg.Endpoint = "https://custom.endpoint.com"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "us-west-2", cfg.Region)
@@ -60,7 +59,7 @@ func TestGetAWSConfigWithRetries(t *testing.T) {
 	sessionCfg.Region = "us-west-2"
 	sessionCfg.MaxRetries = 5
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, cfg.RetryMaxAttempts)

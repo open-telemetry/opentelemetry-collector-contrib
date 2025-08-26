@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
@@ -162,6 +163,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
+		p.collectFunctions(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -190,7 +192,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 	return p.lb.Emit(), nil
 }
 
-func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery int64, topNQuery int64, maxExplainEachInterval int64) (plog.Logs, error) {
+func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
 	var errs errsMux
 
 	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
@@ -228,7 +230,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit int64, topNQuery int64, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
@@ -268,7 +270,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		tempBlksWrittenColumnName:   {finalConverter: convertToInt},
 	}
 
-	pq := make(priorityQueue, 0)
+	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0)
 
 	for i, row := range rows {
 		queryID := row[dbAttributePrefix+queryidColumnName]
@@ -307,10 +309,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		if row[dbAttributePrefix+totalExecTimeColumnName] == 0.0 {
 			continue
 		}
-		item := item{
-			row:      row,
-			priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
-			index:    i,
+		item := priorityqueue.QueueItem[map[string]any, float64]{
+			Value:    row,
+			Priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
+			Index:    i,
 		}
 		pq.Push(&item)
 	}
@@ -319,12 +321,12 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	explained := int64(0)
 	count := 0
 	for pq.Len() > 0 && count < int(topNQuery) {
-		item := heap.Pop(&pq).(*item)
-		query := item.row[QueryTextAttributeName].(string)
-		queryID := item.row[dbAttributePrefix+queryidColumnName].(string)
+		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
+		query := item.Value[QueryTextAttributeName].(string)
+		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
-			database := item.row[DatabaseAttributeName].(string)
+			database := item.Value[DatabaseAttributeName].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(query, queryID, logger)
@@ -346,20 +348,20 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			context.Background(),
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			item.row[DatabaseAttributeName].(string),
+			item.Value[DatabaseAttributeName].(string),
 			query,
-			item.row[dbAttributePrefix+callsColumnName].(int64),
-			item.row[dbAttributePrefix+rowsColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksDirtiedColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksHitColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksReadColumnName].(int64),
-			item.row[dbAttributePrefix+sharedBlksWrittenColumnName].(int64),
-			item.row[dbAttributePrefix+tempBlksReadColumnName].(int64),
-			item.row[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
+			item.Value[dbAttributePrefix+callsColumnName].(int64),
+			item.Value[dbAttributePrefix+rowsColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksDirtiedColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksHitColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksReadColumnName].(int64),
+			item.Value[dbAttributePrefix+sharedBlksWrittenColumnName].(int64),
+			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
+			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
-			item.row[dbAttributePrefix+"rolname"].(string),
-			item.row[dbAttributePrefix+totalExecTimeColumnName].(float64),
-			item.row[dbAttributePrefix+totalPlanTimeColumnName].(float64),
+			item.Value[dbAttributePrefix+"rolname"].(string),
+			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
+			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
 		)
 		count++
@@ -404,6 +406,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
 		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
+		p.mb.RecordPostgresqlTempIoDataPoint(now, stats.tempIo)
 		p.mb.RecordPostgresqlTupUpdatedDataPoint(now, stats.tupUpdated)
 		p.mb.RecordPostgresqlTupReturnedDataPoint(now, stats.tupReturned)
 		p.mb.RecordPostgresqlTupFetchedDataPoint(now, stats.tupFetched)
@@ -488,6 +491,30 @@ func (p *postgreSQLScraper) collectIndexes(
 			rb.SetPostgresqlTableName(stat.table)
 		}
 		rb.SetPostgresqlIndexName(stat.index)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
+func (p *postgreSQLScraper) collectFunctions(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	funcStats, err := client.getFunctionStats(ctx, database)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+
+	for _, stat := range funcStats {
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function)
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(database)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(stat.schema)
+		}
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
@@ -652,7 +679,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) retrieveBackends(
+func (*postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
@@ -669,43 +696,4 @@ func (p *postgreSQLScraper) retrieveBackends(
 	r.Lock()
 	r.activityMap = activityByDB
 	r.Unlock()
-}
-
-// reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-
-type item struct {
-	row      map[string]any
-	priority float64
-	index    int
-}
-
-type priorityQueue []*item
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].priority > pq[j].priority
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *priorityQueue) Push(x any) {
-	n := len(*pq)
-	item := x.(*item)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // don't stop the GC from reclaiming the item eventually
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
 }

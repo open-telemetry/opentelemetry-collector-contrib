@@ -27,6 +27,8 @@ type Protocols struct {
 // Config defines configuration for skywalking receiver.
 type Config struct {
 	Protocols `mapstructure:"protocols"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (

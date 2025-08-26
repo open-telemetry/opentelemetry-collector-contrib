@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
+	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
@@ -75,6 +76,14 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
 			format:      formatCloudTrailLog,
 		}, nil
+	case formatELBAccessLog:
+		return &encodingExtension{
+			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
+				settings.BuildInfo,
+				settings.Logger,
+			),
+			format: formatELBAccessLog,
+		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid
@@ -114,6 +123,15 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 		reader, err := e.getGzipReader(buf)
 		return gzipEncoding, reader, err
 	case formatS3AccessLog:
+		return bytesEncoding, bytes.NewReader(buf), nil
+	case formatELBAccessLog:
+		// Check if the data is compressed
+		// NLB and ALB store compressed files.
+		// CLB stores plain text files.
+		if len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b {
+			reader, err := e.getGzipReader(buf)
+			return gzipEncoding, reader, err
+		}
 		return bytesEncoding, bytes.NewReader(buf), nil
 	case formatVPCFlowLog:
 		switch e.vpcFormat {

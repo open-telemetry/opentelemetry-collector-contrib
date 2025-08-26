@@ -155,13 +155,13 @@ func TestURLParser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			source := &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tc.Original, nil
 				},
 			}
 
 			exprFunc := url(source) //revive:disable-line:var-naming
-			res, err := exprFunc(context.Background(), nil)
+			res, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 
 			resMap, ok := res.(map[string]any)

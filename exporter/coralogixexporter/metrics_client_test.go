@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -87,14 +88,14 @@ func TestMetricsExporter_Start(t *testing.T) {
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.metricExporter)
 	assert.Contains(t, exp.config.Metrics.Headers, "Authorization")
 
 	// Test shutdown
-	err = exp.shutdown(context.Background())
+	err = exp.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -112,7 +113,7 @@ func TestMetricsExporter_EnhanceContext(t *testing.T) {
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	enhancedCtx := exp.enhanceContext(ctx)
 	assert.NotEqual(t, ctx, enhancedCtx)
 }
@@ -130,10 +131,10 @@ func TestMetricsExporter_PushMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize the exporter by calling start
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -155,7 +156,7 @@ func TestMetricsExporter_PushMetrics(t *testing.T) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(1.0)
 
-	err = exp.pushMetrics(context.Background(), metrics)
+	err = exp.pushMetrics(t.Context(), metrics)
 	assert.Error(t, err)
 }
 
@@ -192,10 +193,10 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 			exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 			require.NoError(t, err)
 
-			err = exp.start(context.Background(), componenttest.NewNopHost())
+			err = exp.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				err = exp.shutdown(context.Background())
+				err = exp.shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 
@@ -209,7 +210,7 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 			resource := rm.Resource()
 			resource.Attributes().PutStr("service.name", "test-service")
 
-			err = exp.pushMetrics(context.Background(), metrics)
+			err = exp.pushMetrics(t.Context(), metrics)
 			assert.Error(t, err)
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
@@ -290,11 +291,11 @@ func BenchmarkMetricsExporter_PushMetrics(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to create metrics exporter: %v", err)
 	}
-	if err := exp.start(context.Background(), componenttest.NewNopHost()); err != nil {
+	if err := exp.start(b.Context(), componenttest.NewNopHost()); err != nil {
 		b.Fatalf("failed to start metrics exporter: %v", err)
 	}
 	defer func() {
-		_ = exp.shutdown(context.Background())
+		_ = exp.shutdown(b.Context())
 	}()
 
 	testCases := []int{
@@ -321,7 +322,7 @@ func BenchmarkMetricsExporter_PushMetrics(b *testing.B) {
 					dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 					dp.SetDoubleValue(float64(j))
 				}
-				_ = exp.pushMetrics(context.Background(), metrics)
+				_ = exp.pushMetrics(b.Context(), metrics)
 			}
 		})
 	}
@@ -346,10 +347,10 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -377,39 +378,46 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	partialSuccess.SetRejectedDataPoints(1)
 	mockSrv.partialSuccess = &partialSuccess
 
-	core, observed := observer.New(zapcore.ErrorLevel)
+	core, observed := observer.New(zapcore.DebugLevel)
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 
-	err = exp.pushMetrics(context.Background(), metrics)
+	err = exp.pushMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 
 	entries := observed.All()
 	found := false
 	for _, entry := range entries {
-		if entry.Message == "Partial success response from Coralogix" &&
-			entry.Level == zapcore.ErrorLevel &&
-			entry.ContextMap()["message"] == "some metrics were rejected" &&
-			entry.ContextMap()["rejected_data_points"] == int64(1) {
-			fields := entry.ContextMap()
-			var names []string
-			if arr, ok := fields["metric_names"].([]string); ok {
-				names = arr
-			} else if arr, ok := fields["metric_names"].([]any); ok {
-				for _, v := range arr {
-					if s, ok := v.(string); ok {
-						names = append(names, s)
-					}
+		if entry.Message != "Partial success response from Coralogix" ||
+			entry.Level != zapcore.ErrorLevel ||
+			entry.ContextMap()["message"] != "some metrics were rejected" ||
+			entry.ContextMap()["rejected_data_points"] != int64(1) {
+			continue
+		}
+		fields := entry.ContextMap()
+		var names []string
+		switch arr := fields["metric_names"].(type) {
+		case []string:
+			names = arr
+		case []any:
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					names = append(names, s)
 				}
 			}
-			assert.Contains(t, names, "test-metric")
-			found = true
 		}
+		assert.Contains(t, names, "test-metric")
+		found = true
 	}
 	assert.True(t, found, "Expected partial success log with correct fields and metric names")
 }
 
 func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
+	isIntegrationTest := os.Getenv("INTEGRATION_TEST")
+	if isIntegrationTest != "true" {
+		t.Skip("Skipping E2E test: INTEGRATION_TEST not set")
+	}
+
 	endpoint, stopFn, mockSrv := startMockOtlpMetricsServer(t)
 	defer stopFn()
 
@@ -432,10 +440,10 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -458,7 +466,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -490,7 +498,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		duration := time.Since(start)
 
 		assert.Error(t, err)
@@ -515,7 +523,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 			testDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			testDp.SetDoubleValue(1.0)
 
-			errPush := exp.pushMetrics(context.Background(), testMetrics)
+			errPush := exp.pushMetrics(t.Context(), testMetrics)
 			return errPush == nil
 		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
 
@@ -540,7 +548,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -571,10 +579,10 @@ func TestMetricsExporter_RateLimitErrorCountReset(t *testing.T) {
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -598,13 +606,13 @@ func TestMetricsExporter_RateLimitErrorCountReset(t *testing.T) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(1.0)
 
-	err = exp.pushMetrics(context.Background(), metrics)
+	err = exp.pushMetrics(t.Context(), metrics)
 	assert.Error(t, err)
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 	assert.Equal(t, 0, srv.recvCount)
 
 	require.Eventually(t, func() bool {
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		return err == nil &&
 			exp.rateError.errorCount.Load() == 0 &&
 			srv.recvCount > 0
@@ -633,10 +641,10 @@ func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -658,7 +666,7 @@ func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Initial successful push", func(t *testing.T) {
 		metrics := createTestMetrics()
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 1, srv.recvCount)
@@ -674,7 +682,7 @@ func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Successful push after errors", func(t *testing.T) {
 		metrics := createTestMetrics()
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 2, srv.recvCount)
@@ -682,7 +690,7 @@ func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Verify error count stays at 0", func(t *testing.T) {
 		metrics := createTestMetrics()
-		err = exp.pushMetrics(context.Background(), metrics)
+		err = exp.pushMetrics(t.Context(), metrics)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 3, srv.recvCount)

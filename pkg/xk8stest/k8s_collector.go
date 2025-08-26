@@ -5,7 +5,6 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
+func CreateCollectorObjects(t *testing.T, client *K8sClient, testID, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
 	if manifestsDir == "" {
 		manifestsDir = filepath.Join(".", "testdata", "e2e", "collector")
 	}
@@ -66,7 +65,7 @@ func WaitForCollectorToStart(t *testing.T, client *K8sClient, podNamespace strin
 	podTimeoutMinutes := 3
 	t.Logf("waiting for collector pods to be ready")
 	require.Eventuallyf(t, func() bool {
-		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
+		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(t.Context(), listOptions)
 		require.NoError(t, err, "failed to list collector pods")
 		podsNotReady := len(list.Items)
 		if podsNotReady == 0 {

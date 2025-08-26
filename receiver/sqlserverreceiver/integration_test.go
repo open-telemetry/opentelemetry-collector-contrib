@@ -21,6 +21,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -85,10 +86,10 @@ func TestEventsScraper(t *testing.T) {
 
 	assert.NoError(t, initErr)
 
-	initErr = ci.Start(context.Background())
+	initErr = ci.Start(t.Context())
 	assert.NoError(t, initErr)
 	defer testcontainers.CleanupContainer(t, ci)
-	p, initErr := ci.MappedPort(context.Background(), "1433")
+	p, initErr := ci.MappedPort(t.Context(), "1433")
 	assert.NoError(t, initErr)
 
 	cases := []struct {
@@ -99,7 +100,7 @@ func TestEventsScraper(t *testing.T) {
 	}{
 		{
 			name:        "QuerySample",
-			clientQuery: "WAITFOR DELAY '00:00:20' SELECT * FROM dbo.test_table",
+			clientQuery: "WAITFOR DELAY '00:01:00' SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
 				cfg.Events.DbServerQuerySample.Enabled = true
 				return cfg
@@ -110,7 +111,7 @@ func TestEventsScraper(t *testing.T) {
 					return queryCount.Load() > 0
 				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
 
-				actualLog, err := scraper.ScrapeLogs(context.Background())
+				actualLog, err := scraper.ScrapeLogs(t.Context())
 				assert.NoError(t, err)
 				assert.NotNil(t, actualLog)
 				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
@@ -142,7 +143,7 @@ func TestEventsScraper(t *testing.T) {
 				assert.Eventually(t, func() bool {
 					return queryCount.Load() > 1
 				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
-				_, err := scraper.ScrapeLogs(context.Background())
+				_, err := scraper.ScrapeLogs(t.Context())
 				currentQueriesCount := queryCount.Load()
 				assert.NoError(t, err)
 				assert.Eventually(t, func() bool {
@@ -151,9 +152,13 @@ func TestEventsScraper(t *testing.T) {
 					// collection interval it will not be considered as a top query.
 					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
-				actualLog, err := scraper.ScrapeLogs(context.Background())
-				assert.NotNil(t, actualLog)
-				assert.NoError(t, err)
+				var actualLog plog.Logs
+				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+					actualLog, err = scraper.ScrapeLogs(t.Context())
+					assert.NotNil(tt, actualLog)
+					assert.NoError(tt, err)
+					assert.Positive(tt, actualLog.LogRecordCount())
+				}, 10*time.Second, 100*time.Millisecond)
 				found := false
 				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 				for i := 0; i < logRecords.Len(); i++ {
@@ -177,7 +182,7 @@ func TestEventsScraper(t *testing.T) {
 			db, err := sql.Open("sqlserver", connStr)
 			assert.NoError(t, err)
 
-			queryContext, cancel := context.WithCancel(context.Background())
+			queryContext, cancel := context.WithCancel(t.Context())
 			defer func() {
 				db.Close()
 				cancel()
@@ -195,7 +200,7 @@ func TestEventsScraper(t *testing.T) {
 					default:
 						queriesCount.Add(1)
 						// Simulate a long-running query
-						_, queryErr := db.Query(tc.clientQuery)
+						_, queryErr := db.Exec(tc.clientQuery)
 						if !finished.Load() {
 							// only check this condition if the test is not finished
 							assert.NoError(t, queryErr)
@@ -203,6 +208,8 @@ func TestEventsScraper(t *testing.T) {
 					}
 				}
 			}(queryContext)
+
+			time.Sleep(10 * time.Second)
 
 			portNumber, err := strconv.Atoi(p.Port())
 			assert.NoError(t, err)
@@ -217,9 +224,9 @@ func TestEventsScraper(t *testing.T) {
 			scrapers := setupSQLServerLogsScrapers(settings, cfg)
 			assert.Len(t, scrapers, 1)
 			scraper := scrapers[0]
-			assert.NoError(t, scraper.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, scraper.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, scraper.Shutdown(context.Background()))
+				assert.NoError(t, scraper.Shutdown(t.Context()))
 			}()
 
 			tc.validateFunc(t, scraper, &queriesCount, &finished)

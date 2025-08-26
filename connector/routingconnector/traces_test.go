@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -52,7 +51,7 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 		traces1:       &sink1,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
@@ -74,10 +73,8 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, conn.Shutdown(t.Context()))
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -119,7 +116,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
@@ -127,9 +124,9 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	t.Run("span matched by 0 expressions", func(t *testing.T) {
@@ -141,7 +138,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Empty(t, sink0.AllTraces())
@@ -157,7 +154,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -173,7 +170,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -224,7 +221,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
@@ -232,9 +229,9 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	t.Run("span matched by 0 expressions", func(t *testing.T) {
@@ -246,7 +243,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Empty(t, sink0.AllTraces())
@@ -262,7 +259,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -283,7 +280,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span1")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -301,7 +298,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -336,7 +333,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
@@ -344,9 +341,9 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	tr := ptrace.NewTraces()
@@ -354,7 +351,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rm.Resource().Attributes().PutStr("attr", "acme")
 
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+	assert.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 	traces := sink1.AllTraces()
 	require.Len(t, traces, 1,
 		"trace should be routed to non default pipeline",
@@ -389,7 +386,7 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
@@ -413,9 +410,9 @@ func TestTracesConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, common.Functions[ottlresource.TransformContext](), "IsString")
+	require.Contains(t, common.SpanFunctions(), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, common.Functions[ottlresource.TransformContext](), "IsMap")
+	require.Contains(t, common.SpanFunctions(), "IsMap")
 
 	isSpanE := `name == "spanE"`
 	isSpanF := `name == "spanF"`
@@ -442,7 +439,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         context.Background(),
+			ctx:         t.Context(),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptrace.Traces{},
 			expectSink1: ptrace.Traces{},
@@ -456,7 +453,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			),
 			ctx: withGRPCMetadata(
 				withHTTPMetadata(
-					context.Background(),
+					t.Context(),
 					map[string][]string{"X-Tenant": {"acme"}},
 				),
 				map[string]string{"X-Tenant": "notacme"},
@@ -472,7 +469,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink1: ptrace.Traces{},
@@ -484,7 +481,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "notacme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "notacme"}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptrace.Traces{},
 			expectSink1: ptrace.Traces{},
@@ -496,7 +493,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink1: ptrace.Traces{},
@@ -508,7 +505,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink1: ptrace.Traces{},
@@ -520,7 +517,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"notacme"}}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptrace.Traces{},
 			expectSink1: ptrace.Traces{},
@@ -819,7 +816,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
 			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
@@ -832,7 +829,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
 			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
@@ -845,7 +842,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
 			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
@@ -858,7 +855,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
 			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
@@ -876,14 +873,14 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			})
 
 			conn, err := NewFactory().CreateTracesToTraces(
-				context.Background(),
+				t.Context(),
 				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Traces),
 			)
 			require.NoError(t, err)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if tt.ctx != nil {
 				ctx = tt.ctx
 			}

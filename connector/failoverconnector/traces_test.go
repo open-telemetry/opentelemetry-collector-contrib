@@ -38,7 +38,7 @@ func TestTracesRegisterConsumers(t *testing.T) {
 		tracesThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	wrappedConn := conn.(*WrappedTracesConnector)
@@ -78,7 +78,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 		tracesThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 		tracesThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	tr := sampleTrace()

@@ -468,7 +468,7 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 	)
 
 	ctx := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(context.Background(), scrapeTarget),
+		scrape.ContextWithTarget(t.Context(), scrapeTarget),
 		testMetadataStore(testMetadata))
 
 	tr := newTransaction(ctx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, enableNativeHistograms)
@@ -2058,7 +2058,7 @@ func (ea *errorAdjuster) AdjustMetrics(pmetric.Metrics) error {
 
 type nopAdjuster struct{}
 
-func (n *nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
+func (*nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
 	return nil
 }
 
@@ -2118,9 +2118,7 @@ type testScrapedPage struct {
 func createDataPoint(mname string, value float64, es []exemplar.Exemplar, tagPairs ...string) *testDataPoint {
 	var lbls []string
 	lbls = append(lbls, tagPairs...)
-	lbls = append(lbls, model.MetricNameLabel, mname)
-	lbls = append(lbls, model.JobLabel, "job")
-	lbls = append(lbls, model.InstanceLabel, "instance")
+	lbls = append(lbls, model.MetricNameLabel, mname, model.JobLabel, "job", model.InstanceLabel, "instance")
 
 	return &testDataPoint{
 		lb:        labels.FromStrings(lbls...),

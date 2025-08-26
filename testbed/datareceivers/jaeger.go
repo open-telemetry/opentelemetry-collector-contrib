@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -33,9 +34,9 @@ func NewJaegerDataReceiver(port int) testbed.DataReceiver {
 func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
-	cfg.GRPC = &configgrpc.ServerConfig{
+	cfg.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: confignet.TransportTypeTCP},
-	}
+	})
 	var err error
 	set := receivertest.NewNopSettings(factory.Type())
 	jr.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
@@ -61,6 +62,6 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
       insecure: true`, jr.Port)
 }
 
-func (jr *jaegerDataReceiver) ProtocolName() string {
+func (*jaegerDataReceiver) ProtocolName() string {
 	return "otlp/jaeger"
 }

@@ -4,7 +4,6 @@
 package carbonreceiver
 
 import (
-	"context"
 	"errors"
 	"runtime"
 	"testing"
@@ -96,7 +95,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
-				assert.NoError(t, got.Shutdown(context.Background()))
+				assert.NoError(t, got.Shutdown(t.Context()))
 			} else {
 				assert.Nil(t, got)
 			}
@@ -136,9 +135,9 @@ func Test_carbonreceiver_Start(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
-			err = got.Start(context.Background(), componenttest.NewNopHost())
+			err = got.Start(t.Context(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
-			assert.NoError(t, got.Shutdown(context.Background()))
+			assert.NoError(t, got.Shutdown(t.Context()))
 		})
 	}
 }
@@ -209,10 +208,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				},
 			}
 
-			require.NoError(t, r.Start(context.Background(), host))
+			require.NoError(t, r.Start(t.Context(), host))
 			runtime.Gosched()
 			defer func() {
-				require.NoError(t, r.Shutdown(context.Background()))
+				require.NoError(t, r.Shutdown(t.Context()))
 			}()
 
 			snd := tt.clientFn(t)
@@ -248,7 +247,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

@@ -81,7 +81,6 @@ func (p *cloudwatchCheckpointPersister) GetCheckpoint(
 	if len(data) == 0 {
 		p.logger.Debug("No checkpoint found, starting from the beginning",
 			zap.String("logGroup", logGroupName))
-
 		return newCheckpointTimeFromStartOfStream(), nil
 	}
 
@@ -114,8 +113,15 @@ func (p *cloudwatchCheckpointPersister) DeleteCheckpoint(
 	return nil
 }
 
+func (p *cloudwatchCheckpointPersister) Shutdown(ctx context.Context) error {
+	if p.client == nil {
+		return nil
+	}
+	return p.client.Close(ctx)
+}
+
 // getCheckpointKey generates a unique storage key
-func (p *cloudwatchCheckpointPersister) getCheckpointKey(logGroupName string) string {
+func (*cloudwatchCheckpointPersister) getCheckpointKey(logGroupName string) string {
 	if logGroupName == "" {
 		return ""
 	}

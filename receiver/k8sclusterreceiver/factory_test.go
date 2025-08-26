@@ -4,7 +4,6 @@
 package k8sclusterreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -44,7 +43,7 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTraces(
-		context.Background(), receivertest.NewNopSettings(metadata.Type),
+		t.Context(), receivertest.NewNopSettings(metadata.Type),
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -53,13 +52,13 @@ func TestFactory(t *testing.T) {
 	r = newTestReceiver(t, rCfg)
 
 	// Test metadata exporters setup.
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHostWithExporters()))
 	require.NoError(t, r.Shutdown(ctx))
 
 	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	r = newTestReceiver(t, rCfg)
-	require.Error(t, r.Start(context.Background(), newNopHostWithExporters()))
+	require.Error(t, r.Start(t.Context(), newNopHostWithExporters()))
 }
 
 func TestFactoryDistributions(t *testing.T) {
@@ -72,20 +71,20 @@ func TestFactoryDistributions(t *testing.T) {
 
 	// default
 	r := newTestReceiver(t, rCfg)
-	err := r.Start(context.Background(), newNopHost())
+	err := r.Start(t.Context(), newNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
 
 	// openshift
 	rCfg.Distribution = "openshift"
 	r = newTestReceiver(t, rCfg)
-	err = r.Start(context.Background(), newNopHost())
+	err = r.Start(t.Context(), newNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
-	r, err := newReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg)
+	r, err := newReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	rcvr, ok := r.(*kubernetesReceiver)
@@ -108,7 +107,7 @@ func newNopHostWithExporters() component.Host {
 	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+func (*nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return map[pipeline.Signal]map[component.ID]component.Component{
 		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("nop", "withoutmetadata"): mockExporter{},
@@ -122,7 +121,7 @@ func TestNewSharedReceiver(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 
 	mc := consumertest.NewNop()
-	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mc)
+	mr, err := newMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mc)
 	require.NoError(t, err)
 
 	// Verify that the metric consumer is correctly set.
@@ -130,7 +129,7 @@ func TestNewSharedReceiver(t *testing.T) {
 	assert.Equal(t, mc, kr.metricsConsumer)
 
 	lc := consumertest.NewNop()
-	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, lc)
+	lr, err := newLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, lc)
 	require.NoError(t, err)
 
 	// Verify that the log consumer is correct set.

@@ -4,7 +4,6 @@
 package redisstorageextension
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -18,7 +17,7 @@ import (
 
 func TestExtensionIntegrity(t *testing.T) {
 	t.Skip("Requires a Redis cluster to be present at localhost:6379")
-	ctx := context.Background()
+	ctx := t.Context()
 	se := newTestExtension(t)
 
 	type mockComponent struct {
@@ -95,7 +94,7 @@ func TestExtensionIntegrity(t *testing.T) {
 
 func TestClientHandlesSimpleCases(t *testing.T) {
 	t.Skip("Requires a Redis cluster to be present at localhost:6379")
-	ctx := context.Background()
+	ctx := t.Context()
 	se := newTestExtension(t)
 
 	client, err := se.GetClient(
@@ -140,7 +139,7 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 
 func TestTwoClientsWithDifferentNames(t *testing.T) {
 	t.Skip("Requires a Redis cluster to be present at localhost:6379")
-	ctx := context.Background()
+	ctx := t.Context()
 	se := newTestExtension(t)
 
 	client1, err := se.GetClient(
@@ -188,7 +187,7 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 func TestRedisKey(t *testing.T) {
 	t.Run("batch operations", func(t *testing.T) {
 		mockedClient, mock := redismock.NewClientMock()
-		ctx := context.Background()
+		ctx := t.Context()
 		client := redisClient{
 			client: mockedClient,
 			prefix: "test_",
@@ -196,12 +195,10 @@ func TestRedisKey(t *testing.T) {
 
 		ops := []*storage.Operation{
 			{Type: storage.Set, Key: "key1", Value: []byte("val1")},
-			{Type: storage.Get, Key: "key1"},
 			{Type: storage.Delete, Key: "key1"},
 		}
 
 		mock.ExpectSet(client.prefix+"key1", []byte("val1"), 0).SetVal("OK")
-		mock.ExpectGet(client.prefix + "key1").SetVal("val1")
 		mock.ExpectDel(client.prefix + "key1").SetVal(1)
 
 		err := client.Batch(ctx, ops...)
@@ -211,7 +208,7 @@ func TestRedisKey(t *testing.T) {
 
 	t.Run("single operations", func(t *testing.T) {
 		mockedClient, mock := redismock.NewClientMock()
-		ctx := context.Background()
+		ctx := t.Context()
 		client := redisClient{
 			client: mockedClient,
 			prefix: "test_",
@@ -305,12 +302,12 @@ func newTestExtension(t *testing.T) storage.Extension {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
 	require.True(t, ok)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
 	return se
 }

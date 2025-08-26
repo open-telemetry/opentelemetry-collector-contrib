@@ -111,7 +111,7 @@ func (a *addToUserAgentHeader) HandleSerialize(ctx context.Context, in middlewar
 
 	val := a.val
 	curUA := req.Header.Get("User-Agent")
-	if len(curUA) > 0 {
+	if curUA != "" {
 		val = curUA + " " + val
 	}
 	req.Header.Set("User-Agent", val)

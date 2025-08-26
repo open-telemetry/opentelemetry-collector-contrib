@@ -5,7 +5,6 @@ package webhookeventreceiver
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -39,6 +38,6 @@ func FuzzHandleReq(f *testing.F) {
 		r := receiver.(*eventReceiver)
 
 		w := httptest.NewRecorder()
-		r.handleReq(w, req, httprouter.ParamsFromContext(context.Background()))
+		r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
 	})
 }

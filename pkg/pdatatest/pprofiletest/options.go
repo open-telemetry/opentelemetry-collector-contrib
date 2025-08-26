@@ -98,7 +98,7 @@ func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile
 }
 
 func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
-	dic := profiles.ProfilesDictionary()
+	dic := profiles.Dictionary()
 	for l := 0; l < dic.AttributeTable().Len(); l++ {
 		a := dic.AttributeTable().At(l)
 		if a.Key() == opt.attributeName {
@@ -120,7 +120,7 @@ func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofil
 	opt.maskProfileTimestampValues(actual)
 }
 
-func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
+func (ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		sls := rls.At(i).ScopeProfiles()

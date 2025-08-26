@@ -17,7 +17,7 @@ var _ component.Config = (*Config)(nil)
 // Config defines configuration for Kafka exporter.
 type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueBatchConfig          exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	configkafka.ClientConfig  `mapstructure:",squash"`
 	Producer                  configkafka.ProducerConfig `mapstructure:"producer"`
@@ -30,6 +30,9 @@ type Config struct {
 
 	// Traces holds configuration about how traces should be sent to Kafka.
 	Traces SignalConfig `mapstructure:"traces"`
+
+	// Profiles holds configuration about how profiles should be sent to Kafka.
+	Profiles SignalConfig `mapstructure:"profiles"`
 
 	// Topic holds the name of the Kafka topic to which data should be exported.
 	//
@@ -91,6 +94,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		if zeroConfig.Traces.Topic == "" {
 			c.Traces.Topic = c.Topic
 		}
+		if zeroConfig.Profiles.Topic == "" {
+			c.Profiles.Topic = c.Topic
+		}
 	}
 	if c.Encoding != "" {
 		if zeroConfig.Logs.Encoding == "" {
@@ -101,6 +107,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 		if zeroConfig.Traces.Encoding == "" {
 			c.Traces.Encoding = c.Encoding
+		}
+		if zeroConfig.Profiles.Encoding == "" {
+			c.Profiles.Encoding = c.Encoding
 		}
 	}
 	return conf.Unmarshal(c)
@@ -115,6 +124,7 @@ type SignalConfig struct {
 	//  - "otlp_spans" for traces
 	//  - "otlp_metrics" for metrics
 	//  - "otlp_logs" for logs
+	//  - "otlp_profiles" for profiles
 	Topic string `mapstructure:"topic"`
 
 	// TopicFromMetadataKey holds the name of the metadata key to use as the

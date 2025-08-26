@@ -41,7 +41,7 @@ func TestFailoverRecovery(t *testing.T) {
 		tracesFourth: &sinkFourth,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestFailoverRecovery(t *testing.T) {
 	tr := sampleTrace()
 
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	t.Run("single failover recovery to primary consumer: level 2 -> 1", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestFailoverRecovery(t *testing.T) {
 		}()
 		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 		idx := failoverConnector.failover.TestGetCurrentConsumerIndex()
 		require.Equal(t, 1, idx)
 
@@ -79,7 +79,7 @@ func TestFailoverRecovery(t *testing.T) {
 		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 		idx := failoverConnector.failover.TestGetCurrentConsumerIndex()
 		require.Equal(t, 2, idx)
 

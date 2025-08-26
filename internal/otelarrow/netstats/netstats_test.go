@@ -4,7 +4,6 @@
 package netstats
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -63,35 +62,34 @@ func viewsFromLevel(level configtelemetry.Level) []metric.View {
 	if level < configtelemetry.LevelDetailed {
 		scope := instrumentation.Scope{Name: scopeName}
 		// Compressed size metrics.
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_*_compressed_size",
-			Scope: scope,
-		}))
+		views = append(views,
+			dropView(metric.Instrument{
+				Name:  "otelcol_*_compressed_size",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "otelcol_*_compressed_size",
+				Scope: scope,
+			}),
+			// makeRecvMetrics for exporters.
+			dropView(metric.Instrument{
+				Name:  "otelcol_exporter_recv",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "otelcol_exporter_recv_wire",
+				Scope: scope,
+			}),
 
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_*_compressed_size",
-			Scope: scope,
-		}))
-
-		// makeRecvMetrics for exporters.
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_exporter_recv",
-			Scope: scope,
-		}))
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_exporter_recv_wire",
-			Scope: scope,
-		}))
-
-		// makeSentMetrics for receivers.
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_receiver_sent",
-			Scope: scope,
-		}))
-		views = append(views, dropView(metric.Instrument{
-			Name:  "otelcol_receiver_sent_wire",
-			Scope: scope,
-		}))
+			// makeSentMetrics for receivers.
+			dropView(metric.Instrument{
+				Name:  "otelcol_receiver_sent",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "otelcol_receiver_sent_wire",
+				Scope: scope,
+			}))
 	}
 	return views
 }
@@ -172,7 +170,7 @@ func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[
 			require.NoError(t, err)
 			handler := enr.Handler()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			for i := 0; i < 10; i++ {
 				if apiDirect {
 					// use the direct API
@@ -251,7 +249,7 @@ func TestNetStatsSetSpanAttrs(t *testing.T) {
 			}
 
 			tp := sdktrace.NewTracerProvider()
-			ctx, sp := tp.Tracer("test/span").Start(context.Background(), "test-op")
+			ctx, sp := tp.Tracer("test/span").Start(t.Context(), "test-op")
 
 			var sized SizesStruct
 			sized.Method = "test"
@@ -312,7 +310,7 @@ func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[
 			require.NoError(t, err)
 			handler := rer.Handler()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			for i := 0; i < 10; i++ {
 				if apiDirect {
 					// use the direct API
@@ -366,7 +364,7 @@ func TestUncompressedSizeBypass(t *testing.T) {
 	require.NoError(t, err)
 	handler := enr.Handler()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	for i := 0; i < 10; i++ {
 		// simulate the RPC path
 		handler.HandleRPC(handler.TagRPC(ctx, &stats.RPCTagInfo{

@@ -4,7 +4,6 @@
 package snowflakereceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,7 @@ func TestCreateMetrics(t *testing.T) {
 				cfg.Warehouse = "warehouse"
 
 				_, err := createMetricsReceiver(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),

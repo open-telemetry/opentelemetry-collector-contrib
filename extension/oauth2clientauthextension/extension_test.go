@@ -4,7 +4,6 @@
 package oauth2clientauthextension
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -100,7 +99,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(context.Background())
+			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -187,7 +186,7 @@ type testRoundTripper struct {
 	testString string
 }
 
-func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (*testRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 
@@ -297,12 +296,12 @@ func TestFailContactingOAuth(t *testing.T) {
 	credential, err := oauth2Authenticator.PerRPCCredentials()
 	require.NoError(t, err)
 
-	_, err = credential.GetRequestMetadata(context.Background())
+	_, err = credential.GetRequestMetadata(t.Context())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
 	assert.ErrorContains(t, err, serverURL.String())
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	baseRoundTripper := (http.RoundTripper)(transport)
+	baseRoundTripper := http.RoundTripper(transport)
 	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 	require.NoError(t, err)
 
@@ -310,7 +309,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		Transport: roundTripper,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", http.NoBody)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)

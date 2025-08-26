@@ -56,7 +56,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 		},
 	}
 	p.st = st
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -101,7 +101,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), mockProcessor, config)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -201,13 +201,13 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
 
-	err := p.ConsumeTraces(context.Background(), batch)
+	err := p.ConsumeTraces(t.Context(), batch)
 	require.NoError(t, err)
 
 	// test
@@ -239,13 +239,13 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
 
-	err := p.ConsumeTraces(context.Background(), batch)
+	err := p.ConsumeTraces(t.Context(), batch)
 	require.NoError(t, err)
 
 	// test
@@ -306,8 +306,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	next := &mockProcessor{
 		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			require.Equal(t, 2, traces.ResourceSpans().Len())
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0))
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(1))
+			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0), traces.ResourceSpans().At(1))
 			wg.Done()
 			return nil
 		},
@@ -318,7 +317,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -335,8 +334,8 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 	wg.Add(1)
 
-	assert.NoError(t, p.ConsumeTraces(context.Background(), first))
-	assert.NoError(t, p.ConsumeTraces(context.Background(), second))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), first))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), second))
 
 	wg.Wait()
 
@@ -464,7 +463,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	require.NotNil(t, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -571,7 +570,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	require.NotNil(b, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
-	ctx := context.Background()
+	ctx := b.Context()
 	require.NoError(b, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(b, p.Shutdown(ctx))
@@ -580,7 +579,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		traceID := pcommon.TraceID([16]byte{byte(1 + n), 2, 3, 4})
 		trace := simpleTracesWithID(traceID)
-		assert.NoError(b, p.ConsumeTraces(context.Background(), trace))
+		assert.NoError(b, p.ConsumeTraces(b.Context(), trace))
 	}
 }
 
@@ -600,15 +599,15 @@ func (m *mockProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (m *mockProcessor) Capabilities() consumer.Capabilities {
+func (*mockProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (m *mockProcessor) Shutdown(context.Context) error {
+func (*mockProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *mockProcessor) Start(_ context.Context, _ component.Host) error {
+func (*mockProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -663,7 +662,7 @@ type blockingConsumer struct {
 
 var _ consumer.Traces = (*blockingConsumer)(nil)
 
-func (b *blockingConsumer) Capabilities() consumer.Capabilities {
+func (*blockingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

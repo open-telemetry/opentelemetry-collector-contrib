@@ -23,7 +23,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "default delimiters with no nesting",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1": "value1",
 						"key2": "value2",
@@ -37,7 +37,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "custom delimiter with no nesting",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1": "value1",
 						"key2": "value2",
@@ -51,7 +51,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "custom pair delimiter with no nesting",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1": "value1",
 						"key2": "value2",
@@ -65,7 +65,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "delimiters present in keys and values",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key 1": "value 1",
 						"key2=": "value2=",
@@ -79,7 +79,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "long delimiters present in keys and values",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1":    "value1",
 						"key2,,,": "value2,,,,,,",
@@ -93,7 +93,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "delimiters and quotes present in keys and values",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key 1":   "value 1",
 						"key2\"=": "value2\"=",
@@ -108,7 +108,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "nested",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1": "value1",
 						"key2": map[string]any{
@@ -129,7 +129,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "nested with delimiter present",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1": "value1",
 						"key2": map[string]any{
@@ -150,7 +150,7 @@ func Test_toKeyValueString(t *testing.T) {
 		{
 			name: "nested with delimiter and quotes present",
 			target: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return map[string]any{
 						"key1": "value1\"",
 						"key2": map[string]any{
@@ -175,7 +175,7 @@ func Test_toKeyValueString(t *testing.T) {
 			exprFunc, err := toKeyValueString[any](tt.target, tt.delimiter, tt.pairDelimiter, ottl.NewTestingOptional[bool](true))
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			actual, ok := result.(string)
@@ -188,7 +188,7 @@ func Test_toKeyValueString(t *testing.T) {
 
 func Test_toKeyValueString_equal_delimiters(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return map[string]any{
 				"key1": "value1",
 				"key2": "value2",
@@ -207,7 +207,7 @@ func Test_toKeyValueString_equal_delimiters(t *testing.T) {
 
 func Test_toKeyValueString_bad_target(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return 1, nil
 		},
 	}
@@ -215,13 +215,13 @@ func Test_toKeyValueString_bad_target(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
 func Test_toKeyValueString_empty_target(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "", nil
 		},
 	}
@@ -229,13 +229,13 @@ func Test_toKeyValueString_empty_target(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
 func Test_toKeyValueString_empty_delimiters(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "a=b c=d", nil
 		},
 	}

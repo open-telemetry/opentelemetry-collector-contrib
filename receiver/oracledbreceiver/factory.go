@@ -11,11 +11,14 @@ import (
 	"strconv"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	go_ora "github.com/sijms/go-ora/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
@@ -27,7 +30,10 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("oracle", dataSourceName)
-		}, newDbClient), metadata.MetricsStability))
+		}, newDbClient), metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
+			return sql.Open("oracle", dataSourceName)
+		}, newDbClient), metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -37,6 +43,14 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+		QuerySample: QuerySample{
+			MaxRowsPerQuery: 100,
+		},
+		TopQueryCollection: TopQueryCollection{
+			MaxQuerySampleCount: 1000,
+			TopQueryCount:       200,
+		},
 	}
 }
 
@@ -56,10 +70,14 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		if err != nil {
 			return nil, err
 		}
+		hostName, hostNameErr := getHostName(getDataSource(*sqlCfg))
+		if hostNameErr != nil {
+			return nil, hostNameErr
+		}
 
 		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
-		}, clientProviderFunc, instanceName)
+		}, clientProviderFunc, instanceName, hostName)
 		if err != nil {
 			return nil, err
 		}
@@ -69,6 +87,57 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,
+			opt,
+		)
+	}
+}
+
+func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateLogsFunc {
+	return func(
+		_ context.Context,
+		settings receiver.Settings,
+		cfg component.Config,
+		logsConsumer consumer.Logs,
+	) (receiver.Logs, error) {
+		sqlCfg := cfg.(*Config)
+
+		logsBuilder := metadata.NewLogsBuilder(sqlCfg.LogsBuilderConfig, settings)
+
+		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
+		if err != nil {
+			return nil, err
+		}
+
+		hostName, hostNameErr := getHostName(getDataSource(*sqlCfg))
+		if hostNameErr != nil {
+			return nil, hostNameErr
+		}
+
+		// cacheSize is kept at 2 times MaxQuerySampleCount to keep queries of adjacent collections available for delta calculation.
+		cacheSize := sqlCfg.MaxQuerySampleCount * 2
+		metricCache, err := lru.New[string, map[string]int64](int(cacheSize))
+		if err != nil {
+			settings.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
+			return nil, err
+		}
+
+		mp, err := newLogsScraper(logsBuilder, sqlCfg.LogsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
+			return sqlOpenerFunc(getDataSource(*sqlCfg))
+		}, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, sqlCfg.QuerySample, hostName)
+		if err != nil {
+			return nil, err
+		}
+
+		f := scraper.NewFactory(metadata.Type, nil,
+			scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+				return mp, nil
+			}, component.StabilityLevelAlpha))
+		opt := scraperhelper.AddFactoryWithConfig(f, nil)
+
+		return scraperhelper.NewLogsController(
+			&sqlCfg.ControllerConfig,
+			settings,
+			logsConsumer,
 			opt,
 		)
 	}
@@ -94,4 +163,12 @@ func getInstanceName(datasource string) (string, error) {
 
 	instanceName := datasourceURL.Host + datasourceURL.Path
 	return instanceName, nil
+}
+
+func getHostName(datasource string) (string, error) {
+	datasourceURL, err := url.Parse(datasource)
+	if err != nil {
+		return "", err
+	}
+	return datasourceURL.Host, nil
 }

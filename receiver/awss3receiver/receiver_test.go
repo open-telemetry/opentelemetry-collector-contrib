@@ -75,11 +75,11 @@ func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component
 
 type nonEncodingExtension struct{}
 
-func (e nonEncodingExtension) Start(_ context.Context, _ component.Host) error {
+func (nonEncodingExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e nonEncodingExtension) Shutdown(_ context.Context) error {
+func (nonEncodingExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -89,11 +89,11 @@ type unmarshalExtension struct {
 	log    plog.Logs
 }
 
-func (e unmarshalExtension) Start(_ context.Context, _ component.Host) error {
+func (unmarshalExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e unmarshalExtension) Shutdown(_ context.Context) error {
+func (unmarshalExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -236,7 +236,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -370,7 +370,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -504,7 +504,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

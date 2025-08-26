@@ -85,7 +85,7 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 }
 
 func sliceHash(h hash.Hash, s pcommon.Slice) {
-	for i := 0; i < s.Len(); i++ {
-		valueHash(h, s.At(i))
+	for _, item := range s.All() {
+		valueHash(h, item)
 	}
 }

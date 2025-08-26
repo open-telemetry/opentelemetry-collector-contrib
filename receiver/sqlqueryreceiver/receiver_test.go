@@ -4,7 +4,6 @@
 package sqlqueryreceiver
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ import (
 
 func TestCreateLogs(t *testing.T) {
 	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
-	ctx := context.Background()
+	ctx := t.Context()
 	receiver, err := createReceiver(
 		ctx,
 		receivertest.NewNopSettings(metadata.Type),
@@ -51,7 +50,7 @@ func TestCreateLogs(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
-	ctx := context.Background()
+	ctx := t.Context()
 	receiver, err := createReceiver(
 		ctx,
 		receivertest.NewNopSettings(metadata.Type),
@@ -82,7 +81,7 @@ func TestCreateMetrics(t *testing.T) {
 
 func TestCreateLogsDatasourceFields(t *testing.T) {
 	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
-	ctx := context.Background()
+	ctx := t.Context()
 	receiver, err := createReceiver(
 		ctx,
 		receivertest.NewNopSettings(metadata.Type),
@@ -115,7 +114,7 @@ func TestCreateLogsDatasourceFields(t *testing.T) {
 
 func TestCreateMetricsDatasourceFields(t *testing.T) {
 	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
-	ctx := context.Background()
+	ctx := t.Context()
 	receiver, err := createReceiver(
 		ctx,
 		receivertest.NewNopSettings(metadata.Type),
@@ -150,7 +149,7 @@ func TestCreateMetricsDatasourceFields(t *testing.T) {
 
 func TestCreateMetricsBothDatasourceFields(t *testing.T) {
 	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
-	ctx := context.Background()
+	ctx := t.Context()
 	receiver, err := createReceiver(
 		ctx,
 		receivertest.NewNopSettings(metadata.Type),

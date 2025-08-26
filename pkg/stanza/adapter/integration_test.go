@@ -4,7 +4,6 @@
 package adapter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -73,7 +72,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 	logsReceiver, err := createNoopReceiver(cl)
 	require.NoError(b, err)
 
-	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(b.Context(), componenttest.NewNopHost())
 	require.NoError(b, err)
 
 	b.ResetTimer()
@@ -82,7 +81,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 		cl.Reset()
 
 		go func() {
-			ctx := context.Background()
+			ctx := b.Context()
 			for _, e := range entries {
 				_ = logsReceiver.emitter.Process(ctx, e)
 			}
@@ -110,7 +109,7 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 	logsReceiver, err := createNoopReceiver(cl)
 	require.NoError(b, err)
 
-	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(b.Context(), componenttest.NewNopHost())
 	require.NoError(b, err)
 
 	b.ResetTimer()
@@ -119,7 +118,7 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 		cl.Reset()
 
 		go func() {
-			ctx := context.Background()
+			ctx := b.Context()
 			for _, e := range entries {
 				_ = logsReceiver.emitter.Process(ctx, e)
 			}
@@ -146,15 +145,15 @@ func TestEmitterToConsumer(t *testing.T) {
 	logsReceiver, err := createNoopReceiver(cl)
 	require.NoError(t, err)
 
-	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, logsReceiver.emitter.Stop())
-		require.NoError(t, logsReceiver.Shutdown(context.Background()))
+		require.NoError(t, logsReceiver.Shutdown(t.Context()))
 	}()
 
 	go func() {
-		ctx := context.Background()
+		ctx := t.Context()
 		for _, e := range entries {
 			assert.NoError(t, logsReceiver.emitter.Process(ctx, e))
 		}

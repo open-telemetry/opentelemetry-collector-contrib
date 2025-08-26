@@ -106,7 +106,7 @@ func TestScrape(t *testing.T) {
 				common.HostDevEnvKey:     "/dev",
 				common.HostProcMountinfo: "",
 			}
-			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+			ctx := context.WithValue(t.Context(), common.EnvKey, envMap)
 			ctx = clock.Context(ctx, clock.NewMock(time.Unix(200, 0)))
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), cfg)
 			if test.mutateScraper != nil {
@@ -406,10 +406,10 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 
 	scraper.getProcessHandles = func(context.Context) (processHandles, error) { return nil, errors.New("err1") }
 
-	err = scraper.start(context.Background(), componenttest.NewNopHost())
+	err = scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	md, err := scraper.scrape(context.Background())
+	md, err := scraper.scrape(t.Context())
 	assert.EqualError(t, err, "err1")
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 	assert.False(t, scrapererror.IsPartialScrapeError(err))
@@ -419,7 +419,7 @@ type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(int) int32 {
+func (*processHandlesMock) Pid(int) int32 {
 	return 1
 }
 
@@ -681,7 +681,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handles := make([]*processHandleMock, 0, len(test.names))
@@ -699,7 +699,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				return &processHandlesMock{handles: handles}, nil
 			}
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
@@ -920,7 +920,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			username := "username"
@@ -957,7 +957,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 
 			// In darwin we get the exe path with Cmdline()
 			executableError := test.exeError
@@ -1035,7 +1035,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, handleCountError, rlimitError, cgroupError, uptimeError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, cgroupError, uptimeError error) int {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 2
 	}
@@ -1202,7 +1202,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			}
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handleMock := &processHandleMock{}
@@ -1224,7 +1224,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 
 			assert.Equal(t, test.expectedCount, md.MetricCount())
 
@@ -1239,7 +1239,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 type ProcessReadError struct{}
 
-func (m *ProcessReadError) Error() string {
+func (*ProcessReadError) Error() string {
 	return "unable to read data"
 }
 
@@ -1273,7 +1273,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 
 		scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 		require.NoError(t, err, "Failed to create process scraper: %v", err)
-		err = scraper.start(context.Background(), componenttest.NewNopHost())
+		err = scraper.start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 		handleMock := newErroringHandleMock()
@@ -1286,7 +1286,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 			return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 		}
-		md, err := scraper.scrape(context.Background())
+		md, err := scraper.scrape(t.Context())
 
 		assert.Zero(t, md.MetricCount())
 		assert.NoError(t, err)
@@ -1343,7 +1343,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handleMock := &processHandleMock{}
@@ -1357,11 +1357,11 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 
 			// scrape the first time
-			_, err = scraper.scrape(context.Background())
+			_, err = scraper.scrape(t.Context())
 			assert.NoError(t, err)
 
 			// scrape second time to get utilization
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			assert.NoError(t, err)
 
 			for k := 0; k < md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); k++ {

@@ -5,7 +5,6 @@ package prometheusreceiver
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -448,7 +447,7 @@ func assertExpectedAttributes(t *testing.T, want pcommon.Map, got pmetric.Resour
 	}
 }
 
-func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames bool, existsOnly bool) {
+func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames, existsOnly bool) {
 	var defaultExpectations []metricExpectation
 	switch {
 	case existsOnly:
@@ -769,7 +768,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*PromConfig)) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
 		cfgMut(cfg)
@@ -795,7 +794,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	t.Cleanup(func() {
 		// verify state after shutdown is called
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(context.Background()))
+		require.NoError(t, receiver.Shutdown(t.Context()))
 		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
 	})
 

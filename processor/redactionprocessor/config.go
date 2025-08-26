@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 )
 
 var _ encoding.TextUnmarshaler = (*HashFunction)(nil)
@@ -46,6 +48,10 @@ type Config struct {
 	// without being changed or removed.
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
+	// RedactAllTypes of attributes, including those that are not string, by converting to a string representation.
+	// By default only string values are redacted.
+	RedactAllTypes bool `mapstructure:"redact_all_types"`
+
 	// BlockedValues is a list of regular expressions for blocking values of
 	// allowed span attributes. Values that match are masked.
 	BlockedValues []string `mapstructure:"blocked_values"`
@@ -53,6 +59,9 @@ type Config struct {
 	// AllowedValues is a list of regular expressions for allowing values of
 	// blocked span attributes. Values that match are not masked.
 	AllowedValues []string `mapstructure:"allowed_values"`
+
+	// DBSanitizer is a flag to enable database query sanitization.
+	DBSanitizer db.DBSanitizerConfig `mapstructure:"db_sanitizer"`
 
 	// Summary controls the verbosity level of the diagnostic attributes that
 	// the processor adds to the spans when it redacts or masks other

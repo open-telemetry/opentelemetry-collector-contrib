@@ -169,10 +169,10 @@ func (lm *LabelMatcher) init() (err error) {
 	if len(lm.LabelNames) == 0 {
 		return errors.New("label matcher must have at least one label name specified")
 	}
-	if len(lm.Regex) == 0 {
+	if lm.Regex == "" {
 		return errors.New("regex not specified for label matcher")
 	}
-	if len(lm.Separator) == 0 {
+	if lm.Separator == "" {
 		lm.Separator = ";"
 	}
 

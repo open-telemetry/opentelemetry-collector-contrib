@@ -28,7 +28,7 @@ type mockCompositeReader struct {
 	mock.Mock
 }
 
-func (r *mockCompositeReader) Name() string {
+func (*mockCompositeReader) Name() string {
 	return "mockCompositeReader"
 }
 
@@ -37,7 +37,7 @@ func (r *mockCompositeReader) Read(ctx context.Context) ([]*metadata.MetricsData
 	return args.Get(0).([]*metadata.MetricsDataPoint), args.Error(1)
 }
 
-func (r *mockCompositeReader) Shutdown() {
+func (*mockCompositeReader) Shutdown() {
 	// Do nothing
 }
 
@@ -51,7 +51,7 @@ func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
 	}
 }
 
-func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
+func (*metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
 	return pmetric.NewMetrics(), nil
 }
 
@@ -112,7 +112,7 @@ func TestStart(t *testing.T) {
 
 			require.NotNil(t, receiver)
 
-			err := receiver.Start(context.Background(), host)
+			err := receiver.Start(t.Context(), host)
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -151,7 +151,7 @@ func TestInitialize(t *testing.T) {
 				metadataYaml = []byte{1}
 			}
 
-			err := receiver.initialize(context.Background())
+			err := receiver.initialize(t.Context())
 
 			if testCase.replaceMetadataConfig {
 				metadataYaml = yaml
@@ -185,7 +185,7 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 			require.NotNil(t, receiver)
 
-			err := receiver.initializeProjectReaders(context.Background(), []*metadata.MetricsMetadata{})
+			err := receiver.initializeProjectReaders(t.Context(), []*metadata.MetricsMetadata{})
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -243,7 +243,7 @@ func TestNewProjectReader(t *testing.T) {
 			cfg := createConfig(testCase.serviceAccountPath)
 			var parsedMetadata []*metadata.MetricsMetadata
 
-			reader, err := newProjectReader(context.Background(), logger, cfg.Projects[0], parsedMetadata,
+			reader, err := newProjectReader(t.Context(), logger, cfg.Projects[0], parsedMetadata,
 				statsreader.ReaderConfig{})
 
 			if testCase.expectError {
@@ -277,7 +277,7 @@ func TestScrape(t *testing.T) {
 
 			receiver.projectReaders = []statsreader.CompositeReader{mcr}
 			receiver.metricsBuilder = testCase.metricsBuilder
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mcr.On("Read", ctx).Return([]*metadata.MetricsDataPoint{}, testCase.expectedError)
 
@@ -307,7 +307,7 @@ func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
 				projectReaders: []statsreader.CompositeReader{projectReader},
 				metricsBuilder: testCase.metricsBuilder,
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 			ctx, receiver.cancel = context.WithCancel(ctx)
 
 			err := receiver.Shutdown(ctx)

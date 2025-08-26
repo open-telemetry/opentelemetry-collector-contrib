@@ -37,7 +37,7 @@ func TestBatchingLogEmitter(t *testing.T) {
 
 	in := entry.New()
 
-	assert.NoError(t, emitter.Process(context.Background(), in))
+	assert.NoError(t, emitter.Process(t.Context(), in))
 
 	require.Eventually(t, func() bool {
 		rwMtx.RLock()
@@ -70,7 +70,7 @@ func TestBatchingLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 
 	entries := complexEntries(maxBatchSize)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, e := range entries {
 		assert.NoError(t, emitter.Process(ctx, e))
 	}
@@ -107,7 +107,7 @@ func TestBatchingLogEmitterEmitsOnFlushInterval(t *testing.T) {
 
 	entry := complexEntry()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, emitter.Process(ctx, entry))
 
 	require.Eventually(t, func() bool {
@@ -139,7 +139,7 @@ func TestSynchronousLogEmitter(t *testing.T) {
 
 	in := entry.New()
 
-	assert.NoError(t, emitter.Process(context.Background(), in))
+	assert.NoError(t, emitter.Process(t.Context(), in))
 
 	require.Eventually(t, func() bool {
 		rwMtx.RLock()
@@ -204,7 +204,7 @@ func complexEntry() *entry.Entry {
 	return e
 }
 
-func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
+func complexEntriesForNDifferentHosts(count, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
 	for i := 0; i < count; i++ {
 		e := entry.New()

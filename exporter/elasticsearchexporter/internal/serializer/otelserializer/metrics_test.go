@@ -52,7 +52,7 @@ func TestSerializeMetricsConflict(t *testing.T) {
 	assert.EqualError(t, validationErrors[0], "metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z")
 
 	assert.Equal(t, map[string]any{
-		"@timestamp": "0.0",
+		"@timestamp": json.Number("0"),
 		"resource":   map[string]any{},
 		"scope":      map[string]any{},
 		"metrics": map[string]any{

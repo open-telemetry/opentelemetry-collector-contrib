@@ -67,12 +67,12 @@ func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
 }
 
 // Capabilities returns the consumer's capabilities.
-func (p *logDedupProcessor) Capabilities() consumer.Capabilities {
+func (*logDedupProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
 // Shutdown stops the processor.
-func (p *logDedupProcessor) Shutdown(_ context.Context) error {
+func (p *logDedupProcessor) Shutdown(context.Context) error {
 	if p.cancel != nil {
 		// Call cancel to stop the export interval goroutine and wait for it to finish.
 		p.cancel()
@@ -86,12 +86,10 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
-	for i := 0; i < pl.ResourceLogs().Len(); i++ {
-		rl := pl.ResourceLogs().At(i)
+	pl.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		resource := rl.Resource()
 
-		for j := 0; j < rl.ScopeLogs().Len(); j++ {
-			sl := rl.ScopeLogs().At(j)
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
 			scope := sl.Scope()
 			logs := sl.LogRecords()
 
@@ -107,13 +105,16 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 					p.logger.Error("error matching conditions", zap.Error(err))
 					return false
 				}
-				if logMatch {
-					p.aggregateLog(logRecord, scope, resource)
+				if !logMatch {
+					return false
 				}
-				return logMatch
+				p.aggregateLog(logRecord, scope, resource)
+				return true
 			})
-		}
-	}
+			return sl.LogRecords().Len() == 0
+		})
+		return rl.ScopeLogs().Len() == 0
+	})
 
 	// immediately consume any logs that didn't match any conditions
 	if pl.LogRecordCount() > 0 {

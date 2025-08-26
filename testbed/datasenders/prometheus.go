@@ -63,6 +63,6 @@ func (pds *prometheusDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, pds.GetEndpoint())
 }
 
-func (pds *prometheusDataSender) ProtocolName() string {
+func (*prometheusDataSender) ProtocolName() string {
 	return "prometheus"
 }

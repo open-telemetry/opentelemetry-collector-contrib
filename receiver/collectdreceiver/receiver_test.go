@@ -5,7 +5,6 @@ package collectdreceiver
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -151,9 +150,9 @@ func TestCollectDServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	require.NoError(t, cdr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, cdr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		err := cdr.Shutdown(context.Background())
+		err := cdr.Shutdown(t.Context())
 		if err != nil {
 			t.Fatalf("Error stopping metrics reception: %v", err)
 		}
@@ -212,7 +211,7 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	return testMetrics
 }
 
-func assertMetricsAreEqual(t *testing.T, expectedData []pmetric.Metrics, actualData []pmetric.Metrics) {
+func assertMetricsAreEqual(t *testing.T, expectedData, actualData []pmetric.Metrics) {
 	for i := 0; i < len(expectedData); i++ {
 		err := pmetrictest.CompareMetrics(expectedData[i], actualData[i])
 		require.NoError(t, err)

@@ -16,10 +16,10 @@ type fileSystem interface {
 
 type ebFileSystem struct{}
 
-func (fs ebFileSystem) Open(name string) (io.ReadCloser, error) {
+func (ebFileSystem) Open(name string) (io.ReadCloser, error) {
 	return os.Open(name)
 }
 
-func (fs ebFileSystem) IsWindows() bool {
+func (ebFileSystem) IsWindows() bool {
 	return runtime.GOOS == "windows"
 }

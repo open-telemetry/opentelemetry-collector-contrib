@@ -27,6 +27,18 @@ attributes:
   error.message:
     description: Error message recorded during check
     type: string
+  http.tls.issuer:
+    description: The entity that issued the certificate.
+    type: string
+  http.tls.cn:
+    description: The commonName in the subject of the certificate.
+    type: string
+  http.tls.san:
+    description: The Subject Alternative Name of the certificate.
+    type: slice
+  network.transport:
+    description: OSI transport layer or inter-process communication method.
+    type: string
 
 metrics:
   httpcheck.status:
@@ -54,3 +66,45 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [http.url, error.message]
+  httpcheck.tls.cert_remaining:
+    description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: "s"
+    attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]
+  httpcheck.dns.lookup.duration:
+    description: Time spent performing DNS lookup for the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.client.connection.duration:
+    description: Time spent establishing TCP connection to the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url, network.transport]
+  httpcheck.tls.handshake.duration:
+    description: Time spent performing TLS handshake with the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.client.request.duration:
+    description: Time spent sending the HTTP request to the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.response.duration:
+    description: Time spent receiving the HTTP response from the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]

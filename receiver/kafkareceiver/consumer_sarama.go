@@ -268,7 +268,14 @@ func (c *consumerGroupHandler) handleMessage(
 		claim.HighWaterMarkOffset()-message.Offset-1,
 		metric.WithAttributeSet(attrs),
 	)
+	// KafkaReceiverMessages is deprecated in favor of KafkaReceiverRecords.
 	c.telemetryBuilder.KafkaReceiverMessages.Add(
+		context.Background(),
+		1,
+		metric.WithAttributeSet(attrs),
+		metric.WithAttributes(attribute.String("outcome", "success")),
+	)
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
 		context.Background(),
 		1,
 		metric.WithAttributeSet(attrs),
@@ -306,8 +313,13 @@ func (c *consumerGroupHandler) handleMessage(
 				zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime),
 			)
 		}
-		if c.messageMarking.After && !c.messageMarking.OnError {
-			// Only return an error if messages are marked after successful processing.
+
+		isPermanent := consumererror.IsPermanent(err)
+		shouldMark := (!isPermanent && c.messageMarking.OnError) || (isPermanent && c.messageMarking.OnPermanentError)
+
+		if c.messageMarking.After && !shouldMark {
+			// Only return an error if messages are marked after successful processing
+			// and the error type is not configured to be marked.
 			return err
 		}
 		// We're either marking messages as consumed ahead of time (disregarding outcome),

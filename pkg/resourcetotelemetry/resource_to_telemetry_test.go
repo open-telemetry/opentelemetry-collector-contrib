@@ -112,7 +112,7 @@ func BenchmarkJoinAttributes(b *testing.B) {
 	}
 }
 
-func initMetricAttributes(capacity int, idx int) pcommon.Map {
+func initMetricAttributes(capacity, idx int) pcommon.Map {
 	dest := pcommon.NewMap()
 	dest.EnsureCapacity(capacity)
 	for i := 0; i < capacity; i++ {

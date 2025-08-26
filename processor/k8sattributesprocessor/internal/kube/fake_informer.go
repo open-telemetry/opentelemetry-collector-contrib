@@ -43,19 +43,19 @@ func (f *FakeInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHand
 	return f, nil
 }
 
-func (f *FakeInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
+func (*FakeInformer) RemoveEventHandler(cache.ResourceEventHandlerRegistration) error {
 	return nil
 }
 
-func (f *FakeInformer) IsStopped() bool {
+func (*FakeInformer) IsStopped() bool {
 	return false
 }
 
-func (f *FakeInformer) SetTransform(_ cache.TransformFunc) error {
+func (*FakeInformer) SetTransform(cache.TransformFunc) error {
 	return nil
 }
 
-func (f *FakeInformer) GetStore() cache.Store {
+func (*FakeInformer) GetStore() cache.Store {
 	return cache.NewStore(func(_ any) (string, error) { return "", nil })
 }
 
@@ -75,13 +75,13 @@ func NewFakeNamespaceInformer(
 	}
 }
 
-func (f *FakeNamespaceInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
+func (*FakeNamespaceInformer) AddEventHandler(cache.ResourceEventHandler) {}
 
-func (f *FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {
+func (*FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(cache.ResourceEventHandler, time.Duration) {
 }
 
-func (f *FakeNamespaceInformer) GetStore() cache.Store {
-	return cache.NewStore(func(_ any) (string, error) { return "", nil })
+func (*FakeNamespaceInformer) GetStore() cache.Store {
+	return cache.NewStore(func(any) (string, error) { return "", nil })
 }
 
 func (f *FakeNamespaceInformer) GetController() cache.Controller {
@@ -101,17 +101,17 @@ func NewFakeReplicaSetInformer(
 	}
 }
 
-func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
+func (*FakeReplicaSetInformer) AddEventHandler(cache.ResourceEventHandler) {}
 
-func (f *FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {
+func (*FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(cache.ResourceEventHandler, time.Duration) {
 }
 
-func (f *FakeReplicaSetInformer) SetTransform(_ cache.TransformFunc) error {
+func (*FakeReplicaSetInformer) SetTransform(cache.TransformFunc) error {
 	return nil
 }
 
-func (f *FakeReplicaSetInformer) GetStore() cache.Store {
-	return cache.NewStore(func(_ any) (string, error) { return "", nil })
+func (*FakeReplicaSetInformer) GetStore() cache.Store {
+	return cache.NewStore(func(any) (string, error) { return "", nil })
 }
 
 func (f *FakeReplicaSetInformer) GetController() cache.Controller {
@@ -123,7 +123,7 @@ type FakeController struct {
 	stopped bool
 }
 
-func (c *FakeController) HasSynced() bool {
+func (*FakeController) HasSynced() bool {
 	return true
 }
 
@@ -140,11 +140,11 @@ func (c *FakeController) HasStopped() bool {
 	return c.stopped
 }
 
-func (c *FakeController) LastSyncResourceVersion() string {
+func (*FakeController) LastSyncResourceVersion() string {
 	return ""
 }
 
-func (f *FakeInformer) SetWatchErrorHandler(cache.WatchErrorHandler) error {
+func (*FakeInformer) SetWatchErrorHandler(cache.WatchErrorHandler) error {
 	return nil
 }
 
@@ -173,20 +173,20 @@ func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
 
-func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(cache.ResourceEventHandler, time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	return f, nil
 }
 
-func (f *NoOpInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
+func (*NoOpInformer) RemoveEventHandler(cache.ResourceEventHandlerRegistration) error {
 	return nil
 }
 
-func (f *NoOpInformer) SetTransform(_ cache.TransformFunc) error {
+func (*NoOpInformer) SetTransform(cache.TransformFunc) error {
 	return nil
 }
 
-func (f *NoOpInformer) GetStore() cache.Store {
-	return cache.NewStore(func(_ any) (string, error) { return "", nil })
+func (*NoOpInformer) GetStore() cache.Store {
+	return cache.NewStore(func(any) (string, error) { return "", nil })
 }
 
 func (f *NoOpInformer) GetController() cache.Controller {
@@ -208,14 +208,14 @@ func (c *NoOpController) IsStopped() bool {
 	return c.hasStopped
 }
 
-func (c *NoOpController) HasSynced() bool {
+func (*NoOpController) HasSynced() bool {
 	return true
 }
 
-func (c *NoOpController) LastSyncResourceVersion() string {
+func (*NoOpController) LastSyncResourceVersion() string {
 	return ""
 }
 
-func (c *NoOpController) SetWatchErrorHandler(cache.WatchErrorHandler) error {
+func (*NoOpController) SetWatchErrorHandler(cache.WatchErrorHandler) error {
 	return nil
 }

@@ -46,6 +46,8 @@ const (
 
 	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
 	overflowKey = "otel.metric.overflow"
+
+	defaultMaxPerDatapoint = 5
 )
 
 type connectorImp struct {
@@ -160,17 +162,19 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Disable {
 		return nil
 	}
-	if cfg.Histogram.Exponential != nil {
+	if cfg.Histogram.Exponential.HasValue() {
 		maxSize := structure.DefaultMaxSize
-		if cfg.Histogram.Exponential.MaxSize != 0 {
-			maxSize = cfg.Histogram.Exponential.MaxSize
+		if expConfig := cfg.Histogram.Exponential.Get(); expConfig != nil && expConfig.MaxSize != 0 {
+			maxSize = expConfig.MaxSize
 		}
 		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 	}
 
 	var bounds []float64
-	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	if cfg.Histogram.Explicit.HasValue() {
+		if expConfig := cfg.Histogram.Explicit.Get(); expConfig != nil && expConfig.Buckets != nil {
+			bounds = durationsToUnits(expConfig.Buckets, unitDivider(cfg.Histogram.Unit))
+		}
 	} else {
 		switch cfg.Histogram.Unit {
 		case metrics.Milliseconds:
@@ -236,7 +240,7 @@ func (p *connectorImp) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
-func (p *connectorImp) Capabilities() consumer.Capabilities {
+func (*connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -597,7 +601,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
-func buildMetricName(namespace string, name string) string {
+func buildMetricName(namespace, name string) string {
 	if namespace != "" {
 		return namespace + "." + name
 	}

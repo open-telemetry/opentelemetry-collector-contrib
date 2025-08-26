@@ -5,6 +5,8 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -25,21 +27,17 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	headers http.Header,
 	query url.Values,
 ) (plog.Logs, int) {
-	if er.cfg.SplitLogsAtNewLine {
-		sc.Split(bufio.ScanLines)
-	} else {
-		// we simply dont split the data passed into scan (i.e. scan the whole thing)
-		// the downside to this approach is that only 1 log per request can be handled.
-		// NOTE: logs will contain these newline characters which could have formatting
-		// consequences downstream.
-		split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			if !atEOF {
-				return 0, nil, nil
-			}
-			return 0, data, bufio.ErrFinalToken
+	// we simply dont split the data passed into scan (i.e. scan the whole thing)
+	// the downside to this approach is that only 1 log per request can be handled.
+	// NOTE: logs will contain these newline characters which could have formatting
+	// consequences downstream.
+	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if !atEOF {
+			return 0, nil, nil
 		}
-		sc.Split(split)
+		return 0, data, bufio.ErrFinalToken
 	}
+	sc.Split(split)
 
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
@@ -52,12 +50,20 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	scopeLog.Scope().Attributes().PutStr("receiver", metadata.Type.String())
 
 	for sc.Scan() {
-		logRecord := scopeLog.LogRecords().AppendEmpty()
-		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		line := sc.Text()
-		logRecord.Body().SetStr(line)
-		if er.includeHeadersRegex != nil {
-			appendHeaders(headers, logRecord, er.includeHeadersRegex)
+		lines := []string{sc.Text()}
+		if er.cfg.SplitLogsAtNewLine {
+			lines = strings.Split(sc.Text(), "\n")
+		} else if er.cfg.ShouldSplitLogsAtJSONBoundary() {
+			lines = splitJSONObjects(sc.Text())
+		}
+
+		for _, line := range lines {
+			logRecord := scopeLog.LogRecords().AppendEmpty()
+			logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			logRecord.Body().SetStr(line)
+			if er.includeHeadersRegex != nil {
+				appendHeaders(headers, logRecord, er.includeHeadersRegex)
+			}
 		}
 	}
 
@@ -88,5 +94,27 @@ func appendHeaders(h http.Header, l plog.LogRecord, r *regexp.Regexp) {
 
 // prepend the header key with the "header." namespace
 func headerAttributeKey(header string) string {
-	return strings.Join([]string{headerNamespace, header}, ".")
+	return headerNamespace + "." + header
+}
+
+func splitJSONObjects(data string) []string {
+	var result []string
+	decoder := json.NewDecoder(bytes.NewReader([]byte(data)))
+
+	for {
+		var obj json.RawMessage
+		err := decoder.Decode(&obj)
+		if err != nil {
+			// If we hit EOF or any other error, we're done
+			break
+		}
+		result = append(result, string(obj))
+	}
+
+	// If no valid JSON objects were found, return the original data
+	if len(result) == 0 {
+		return []string{data}
+	}
+
+	return result
 }

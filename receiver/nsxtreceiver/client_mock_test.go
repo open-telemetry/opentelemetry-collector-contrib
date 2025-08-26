@@ -49,7 +49,7 @@ func (m *mockClient) ClusterNodes(ctx context.Context) ([]model.ClusterNode, err
 }
 
 // InterfaceStatus provides a mock function with given fields: ctx, nodeID, interfaceID, class
-func (m *mockClient) InterfaceStatus(ctx context.Context, nodeID string, interfaceID string, class nodeClass) (*model.NetworkInterfaceStats, error) {
+func (m *mockClient) InterfaceStatus(ctx context.Context, nodeID, interfaceID string, class nodeClass) (*model.NetworkInterfaceStats, error) {
 	ret := m.Called(ctx, nodeID, interfaceID, class)
 
 	var r0 *model.NetworkInterfaceStats

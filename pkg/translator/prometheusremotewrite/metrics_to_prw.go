@@ -9,12 +9,12 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
@@ -27,7 +27,7 @@ type Settings struct {
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
-	c := newPrometheusConverter()
+	c := newPrometheusConverter(settings)
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*prompb.TimeSeries, len(tss))
@@ -42,12 +42,19 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.Time
 type prometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
 	conflicts map[uint64][]*prompb.TimeSeries
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
+	unitNamer   otlptranslator.UnitNamer
 }
 
-func newPrometheusConverter() *prometheusConverter {
+func newPrometheusConverter(settings Settings) *prometheusConverter {
 	return &prometheusConverter{
-		unique:    map[uint64]*prompb.TimeSeries{},
-		conflicts: map[uint64][]*prompb.TimeSeries{},
+		unique:      map[uint64]*prompb.TimeSeries{},
+		conflicts:   map[uint64][]*prompb.TimeSeries{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
+		labelNamer:  otlptranslator.LabelNamer{},
+		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
 
@@ -74,7 +81,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 
 				// handle individual metrics based on type
 				//exhaustive:enforce
@@ -163,7 +170,7 @@ func isSameMetric(ts *prompb.TimeSeries, lbls []prompb.Label) bool {
 
 // addExemplars adds exemplars for the dataPoint. For each exemplar, if it can find a bucket bound corresponding to its value,
 // the exemplar is added to the bucket bound's time series, provided that the time series' has samples.
-func (c *prometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
+func (*prometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
 	if len(bucketBounds) == 0 {
 		return
 	}

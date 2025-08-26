@@ -121,7 +121,8 @@ func (cr LocalFsStore) Get(key string) (CollectorCredentials, error) {
 		}
 
 		var credentialsInfo CollectorCredentials
-		if err = json.Unmarshal(collectorCreds, &credentialsInfo); err != nil {
+		err = json.Unmarshal(collectorCreds, &credentialsInfo)
+		if err != nil {
 			return CollectorCredentials{}, err
 		}
 

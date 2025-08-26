@@ -6,7 +6,6 @@
 package loadscraper
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -25,7 +24,7 @@ func TestStopSamplingWithoutStart(t *testing.T) {
 	// When the collector fails to start it is possible that stopSampling is called
 	// before startSampling. This test ensures that stopSampling does not panic in
 	// this scenario.
-	require.NoError(t, stopSampling(context.Background()))
+	require.NoError(t, stopSampling(t.Context()))
 }
 
 func Benchmark_SampleLoad(b *testing.B) {
@@ -43,12 +42,12 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 		perfCounterFactory = originalPerfCounterFactory
 	}()
 
-	perfCounterFactory = func(_ string, _ string, _ string) (winperfcounters.PerfCounterWatcher, error) {
+	perfCounterFactory = func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 		return nil, errors.New("error creating perf counter watcher")
 	}
 
 	scraper := newLoadScraper(
-		context.Background(),
+		t.Context(),
 		scrapertest.NewNopSettings(metadata.Type),
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -56,13 +55,13 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 	)
 	require.NotNil(t, scraper)
 
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, scraper.shutdown(context.Background()))
+		assert.NoError(t, scraper.shutdown(t.Context()))
 	}()
 
 	assert.True(t, scraper.skipScrape)
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	assert.NoError(t, err)
 	assert.Zero(t, metrics.MetricCount())
 }
@@ -71,15 +70,15 @@ func TestLoadScrapeWithRealData(t *testing.T) {
 	config := Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+	scraper := newLoadScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start the load scraper")
 	defer func() {
-		assert.NoError(t, scraper.shutdown(context.Background()), "Failed to shutdown the load scraper")
+		assert.NoError(t, scraper.shutdown(t.Context()), "Failed to shutdown the load scraper")
 	}()
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err, "Failed to scrape metrics")
 	require.NotNil(t, metrics, "Metrics cannot be nil")
 

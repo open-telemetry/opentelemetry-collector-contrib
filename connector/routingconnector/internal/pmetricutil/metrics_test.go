@@ -92,7 +92,7 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 	}{
 		{
 			name: "move_none",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool {
 				return false
 			},
 			from:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
@@ -102,7 +102,7 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "move_all",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
@@ -275,7 +275,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		// gauge
 		{
 			name: "gauge/move_none",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return false
 			},
 			from:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
@@ -285,7 +285,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "gauge/move_all",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
@@ -520,7 +520,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		// sum
 		{
 			name: "sum/move_none",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return false
 			},
 			from:       pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
@@ -530,7 +530,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "sum/move_all",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
@@ -540,7 +540,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "sum/move_all_aggregation_temporality_and_is_monotonic_are_preserved",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewSums("AB", "CD", "EF", "GH", true, pmetric.AggregationTemporalityCumulative),
@@ -775,7 +775,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		// histogram
 		{
 			name: "histogram/move_none",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return false
 			},
 			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
@@ -785,7 +785,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "histogram/move_all",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
@@ -795,7 +795,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "histogram/move_all_aggregation_temporality_preserved",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
@@ -1030,7 +1030,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		// exponential_histogram
 		{
 			name: "exponential_histogram/move_none",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return false
 			},
 			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
@@ -1040,7 +1040,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "exponential_histogram/move_all",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
@@ -1050,7 +1050,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "exponential_histogram/move_all_aggregation_temporality_preserved",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
@@ -1285,7 +1285,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		// summary
 		{
 			name: "summary/move_none",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return false
 			},
 			from:       pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),
@@ -1295,7 +1295,7 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		},
 		{
 			name: "summary/move_all",
-			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+			moveIf: func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool {
 				return true
 			},
 			from:       pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),

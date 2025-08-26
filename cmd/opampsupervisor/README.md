@@ -111,6 +111,24 @@ By default, the supervisor will use `/var/lib/otelcol/supervisor` on posix syste
 
 This directory will be created on supervisor startup if it does not exist.
 
+## Healthcheck
+
+The Supervisor can be configured to expose a healthcheck endpoint that can be used to determine whether the Supervisor is running and healthy. This can be configured in the Supervisor configuration file:
+
+```yaml
+healthcheck:
+  endpoint: localhost:13133
+```
+
+At the moment this healtcheck checks that the following conditions are met:
+
+- The Supervisor is able to persist state to disk.
+- The Supervisor is able to generate the agent's configuration.
+
+For more details on the healthcheck configuration, see the see the [full list of `ServerConfig` options](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
+
+Note that the healthceck endpoint is not enabled by default. To enable it, you must explicitly set at least the `endpoint` field in the configuration.
+
 ## Status
 
 The OpenTelemetry OpAMP Supervisor is intended to be the reference

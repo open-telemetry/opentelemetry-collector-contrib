@@ -41,12 +41,12 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	failoverConnector := conn.(*metricsFailover)
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	failoverConnector := conn.(*metricsFailover)
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	md := sampleMetric()
@@ -113,7 +113,7 @@ func TestMetricsWithFailoverError(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
@@ -123,12 +123,12 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
 	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	md := sampleMetric()
 
-	assert.EqualError(t, conn.ConsumeMetrics(context.Background(), md), "All provided pipelines return errors")
+	assert.EqualError(t, conn.ConsumeMetrics(t.Context(), md), "All provided pipelines return errors")
 }
 
 func TestMetricsWithQueue(t *testing.T) {

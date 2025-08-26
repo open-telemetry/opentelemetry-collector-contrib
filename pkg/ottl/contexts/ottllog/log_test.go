@@ -4,7 +4,6 @@
 package ottllog
 
 import (
-	"context"
 	"encoding/hex"
 	"slices"
 	"testing"
@@ -620,12 +619,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			log, il, resource := createTelemetry(tt.bodyType)
 
 			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
-			got, err := accessor.Get(context.Background(), tCtx)
+			got, err := accessor.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
-			err = accessor.Set(context.Background(), tCtx, tt.newVal)
+			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
 			exLog, exIl, exRes := createTelemetry(tt.bodyType)
@@ -680,6 +679,16 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
 			expected: instrumentationScope.Name(),
 		},
+		{
+			name:     "scope",
+			path:     &pathtest.Path[TransformContext]{N: "scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "scope with context",
+			path:     &pathtest.Path[TransformContext]{C: "scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -687,7 +696,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -742,8 +751,6 @@ func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationSc
 		log.Body().SetEmptySlice().AppendEmpty().SetStr("body")
 	case "int":
 		log.Body().SetInt(1)
-	case "string":
-		fallthrough
 	default:
 		log.Body().SetStr("body")
 	}
@@ -781,11 +788,11 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 	log, il, resource := createTelemetry("string")
 
 	tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
-	_, err = accessor.Get(context.Background(), tCtx)
+	_, err = accessor.Get(t.Context(), tCtx)
 	assert.Error(t, err)
 
 	tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
-	err = accessor.Set(context.Background(), tCtx, nil)
+	err = accessor.Set(t.Context(), tCtx, nil)
 	assert.Error(t, err)
 }
 

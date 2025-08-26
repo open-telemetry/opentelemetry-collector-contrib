@@ -4,7 +4,6 @@
 package memcachedreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -25,7 +24,7 @@ func TestScraper(t *testing.T) {
 		return &fakeClient{}, nil
 	}
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")

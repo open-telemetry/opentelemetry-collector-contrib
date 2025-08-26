@@ -78,7 +78,7 @@ type metricsFailover struct {
 	logger   *zap.Logger
 }
 
-func (f *metricsFailover) Capabilities() consumer.Capabilities {
+func (*metricsFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -87,7 +87,7 @@ func (f *metricsFailover) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 	return f.failover.Consume(ctx, md)
 }
 
-func (f *metricsFailover) Shutdown(_ context.Context) error {
+func (f *metricsFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}

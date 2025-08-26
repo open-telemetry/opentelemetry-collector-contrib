@@ -35,7 +35,7 @@ type FromTranslator struct{}
 
 // FromTraces translates internal trace data into Zipkin v2 spans.
 // Returns a slice of Zipkin SpanModel's.
-func (t FromTranslator) FromTraces(td ptrace.Traces) ([]*zipkinmodel.SpanModel, error) {
+func (FromTranslator) FromTraces(td ptrace.Traces) ([]*zipkinmodel.SpanModel, error) {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil
@@ -84,6 +84,11 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 }
 
 func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) {
+	attrs := il.Attributes()
+	for k, v := range attrs.All() {
+		zTags[k] = v.AsString()
+	}
+
 	if ilName := il.Name(); ilName != "" {
 		zTags[string(conventions.OtelLibraryNameKey)] = ilName
 	}

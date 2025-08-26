@@ -281,7 +281,7 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	// Get related VM compute info
 	crRef = vmRefToComputeRef[vm.Reference().Value]
 	if crRef == nil {
-		return crRef, groupInfo, fmt.Errorf("no ComputeResource ref found for VM: %s", vm.Name)
+		return nil, groupInfo, fmt.Errorf("no ComputeResource ref found for VM: %s", vm.Name)
 	}
 	cr := v.scrapeData.computesByRef[crRef.Value]
 	if cr == nil {
@@ -307,7 +307,7 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	}
 
 	groupInfo = &vmGroupInfo{poweredOff: 0, poweredOn: 0, suspended: 0, templates: 0}
-	if vm.Config.Template {
+	if vm.Config != nil && vm.Config.Template {
 		groupInfo.templates++
 	} else {
 		switch vm.Runtime.PowerState {

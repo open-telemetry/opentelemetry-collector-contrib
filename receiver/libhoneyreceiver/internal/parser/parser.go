@@ -183,10 +183,16 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 					zap.String("span link contents", spl.DebugString()))
 				continue
 			}
-			if len(tidByteArray) >= 32 {
-				tidByteArray = tidByteArray[0:32]
+			if len(tidByteArray) != 16 {
+				logger.Debug("span link trace ID wrong length",
+					zap.Int("length", len(tidByteArray)),
+					zap.String("span link contents", spl.DebugString()))
+				continue
 			}
-			newLink.SetTraceID(pcommon.TraceID(tidByteArray))
+			// Convert slice to [16]byte array
+			var traceIDArray [16]byte
+			copy(traceIDArray[:], tidByteArray)
+			newLink.SetTraceID(pcommon.TraceID(traceIDArray))
 		} else {
 			logger.Debug("span link missing attributes",
 				zap.String("missing.attribute", "trace.link.trace_id"),
@@ -202,10 +208,16 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 					zap.String("span link contents", spl.DebugString()))
 				continue
 			}
-			if len(sidByteArray) >= 16 {
-				sidByteArray = sidByteArray[0:16]
+			if len(sidByteArray) != 8 {
+				logger.Debug("span link span ID wrong length",
+					zap.Int("length", len(sidByteArray)),
+					zap.String("span link contents", spl.DebugString()))
+				continue
 			}
-			newLink.SetSpanID(pcommon.SpanID(sidByteArray))
+			// Convert slice to [8]byte array
+			var spanIDArray [8]byte
+			copy(spanIDArray[:], sidByteArray)
+			newLink.SetSpanID(pcommon.SpanID(spanIDArray))
 		} else {
 			logger.Debug("span link missing attributes",
 				zap.String("missing.attribute", "trace.link.span_id"),

@@ -81,7 +81,7 @@ func Test_ConvertTextToElementsXML(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			args := &ConvertTextToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.document, nil
 					},
 				},
@@ -91,7 +91,7 @@ func Test_ConvertTextToElementsXML(t *testing.T) {
 			exprFunc, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -122,6 +122,6 @@ func TestCreateConvertTextToElementsXMLFunc(t *testing.T) {
 		})
 	assert.NoError(t, err)
 	assert.NotNil(t, exprFunc)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

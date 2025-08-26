@@ -4,6 +4,7 @@
 package servicegraphconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 
 import (
+	"errors"
 	"time"
 )
 
@@ -16,7 +17,11 @@ type Config struct {
 
 	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.
 	// See defaultLatencyHistogramBucketsMs in processor.go for the default value.
+	// make sure use either `LatencyHistogramBuckets` or `ExponentialHistogramMaxSize`
 	LatencyHistogramBuckets []time.Duration `mapstructure:"latency_histogram_buckets"`
+
+	// ExponentialHistogramMaxSize is the setting of exponential histogram
+	ExponentialHistogramMaxSize int32 `mapstructure:"exponential_histogram_max_size"`
 
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - client
@@ -50,6 +55,12 @@ type Config struct {
 	// DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
 	// The default value is {"db.name"}.
 	DatabaseNameAttributes []string `mapstructure:"database_name_attributes"`
+
+	// MetricsTimestampOffset is the offset to subtract from metric timestamps.
+	// If set to a positive duration, metric timestamps will be set to (current time - offset),
+	// effectively shifting metrics to appear as if they were generated in the past.
+	// Default is 0, which means no offset is applied.
+	MetricsTimestampOffset time.Duration `mapstructure:"metrics_timestamp_offset"`
 }
 
 type StoreConfig struct {
@@ -60,4 +71,17 @@ type StoreConfig struct {
 
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// Validate checks if the connector configuration is valid.
+func (c *Config) Validate() error {
+	if c.LatencyHistogramBuckets == nil && c.ExponentialHistogramMaxSize < 0 {
+		return errors.New("`exponential_histogram_max_size` can not be negative")
+	}
+
+	if c.LatencyHistogramBuckets != nil && c.ExponentialHistogramMaxSize > 0 {
+		return errors.New("use either `latency_histogram_buckets` or `exponential_histogram_max_size`")
+	}
+
+	return nil
 }

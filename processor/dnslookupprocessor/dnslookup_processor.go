@@ -17,14 +17,14 @@ func newDNSLookupProcessor() *dnsLookupProcessor {
 	return &dnsLookupProcessor{}
 }
 
-func (g *dnsLookupProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
+func (*dnsLookupProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	return ms, nil
 }
 
-func (g *dnsLookupProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
+func (*dnsLookupProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
 	return ts, nil
 }
 
-func (g *dnsLookupProcessor) processLogs(_ context.Context, ls plog.Logs) (plog.Logs, error) {
+func (*dnsLookupProcessor) processLogs(_ context.Context, ls plog.Logs) (plog.Logs, error) {
 	return ls, nil
 }

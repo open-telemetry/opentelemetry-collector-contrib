@@ -138,7 +138,7 @@ func Test_MergeMaps(t *testing.T) {
 			exprFunc, err := mergeMaps[pcommon.Map](target, tt.source, tt.strategy)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), scenarioMap)
+			result, err := exprFunc(t.Context(), scenarioMap)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
 			assert.True(t, setterWasCalled)
@@ -174,7 +174,7 @@ func Test_MergeMaps_bad_target(t *testing.T) {
 
 func Test_MergeMaps_bad_input(t *testing.T) {
 	input := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return 1, nil
 		},
 	}

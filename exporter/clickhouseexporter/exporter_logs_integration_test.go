@@ -6,7 +6,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -25,18 +24,18 @@ func testLogsExporter(t *testing.T, endpoint string, mapBody bool) {
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
-	require.NoError(t, exporter.start(context.Background(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.Background()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
 func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody bool) {
-	err := exporter.db.Exec(context.Background(), "TRUNCATE otel_int_test.otel_logs")
+	err := exporter.db.Exec(t.Context(), "TRUNCATE otel_int_test.otel_logs")
 	require.NoError(t, err)
 
 	pushConcurrentlyNoError(t, func() error {
-		return exporter.pushLogsData(context.Background(), simpleLogs(5000, mapBody))
+		return exporter.pushLogsData(t.Context(), simpleLogs(5000, mapBody))
 	})
 
 	type log struct {
@@ -85,7 +84,7 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody bool) {
 		expectedLog.Body = `{"error":"message"}`
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_logs")
+	row := exporter.db.QueryRow(t.Context(), "SELECT * FROM otel_int_test.otel_logs")
 	require.NoError(t, row.Err())
 
 	var actualLog log

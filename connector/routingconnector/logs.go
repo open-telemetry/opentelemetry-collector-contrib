@@ -55,7 +55,7 @@ func newLogsConnector(
 	}, nil
 }
 
-func (c *logsConnector) Capabilities() consumer.Capabilities {
+func (*logsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

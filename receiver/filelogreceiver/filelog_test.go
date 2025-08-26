@@ -4,7 +4,6 @@
 package filelogreceiver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -68,7 +67,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 	cfg.InputConfig.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		new(consumertest.LogsSink),
@@ -85,9 +84,9 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	expectedLogs := []plog.Logs{}
 	// Build the expected set by using adapter.Converter to translate entries
@@ -129,7 +128,7 @@ func TestReadStaticFile(t *testing.T) {
 			),
 		)
 	}
-	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.NoError(t, rcvr.Shutdown(t.Context()))
 }
 
 func TestReadRotatingFiles(t *testing.T) {
@@ -176,9 +175,9 @@ func (rt *rotationTest) Run(t *testing.T) {
 	fileName := filepath.Join(tempDir, "test.log")
 	backupFileName := filepath.Join(tempDir, "test-backup.log")
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 	defer func() {
@@ -236,7 +235,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
-	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.NoError(t, rcvr.Shutdown(t.Context()))
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
@@ -368,7 +367,7 @@ func (g *fileLogGenerator) Stop() {
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
 	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
-	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
+	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")
 	require.NoError(g.t, err)

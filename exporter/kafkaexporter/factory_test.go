@@ -4,14 +4,17 @@
 package kafkaexporter
 
 import (
-	"context"
 	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/pdata/testdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -70,6 +73,18 @@ func TestCreateMetricExporter(t *testing.T) {
 			}),
 			err: nil,
 		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
+			}),
+			err: nil,
+		},
 	}
 
 	for _, tc := range tests {
@@ -78,20 +93,21 @@ func TestCreateMetricExporter(t *testing.T) {
 
 			f := NewFactory()
 			exporter, err := f.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeMetrics(t.Context(), testdata.GenerateMetrics(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -132,6 +148,18 @@ func TestCreateLogExporter(t *testing.T) {
 			}),
 			err: nil,
 		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
+			}),
+			err: nil,
+		},
 	}
 
 	for _, tc := range tests {
@@ -140,20 +168,21 @@ func TestCreateLogExporter(t *testing.T) {
 
 			f := NewFactory()
 			exporter, err := f.CreateLogs(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeLogs(t.Context(), testdata.GenerateLogs(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }
@@ -192,6 +221,18 @@ func TestCreateTraceExporter(t *testing.T) {
 			}),
 			err: nil,
 		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
+			}),
+			err: nil,
+		},
 	}
 
 	for _, tc := range tests {
@@ -200,20 +241,96 @@ func TestCreateTraceExporter(t *testing.T) {
 
 			f := NewFactory()
 			exporter, err := f.CreateTraces(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.NoError(t, exporter.ConsumeTraces(t.Context(), testdata.GenerateTraces(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
+		})
+	}
+}
+
+func TestCreateProfileExporter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		conf *Config
+		err  *net.DNSError
+	}{
+		{
+			name: "valid config (no validating broker)",
+			conf: applyConfigOption(func(conf *Config) {
+				// this disables contacting the broker so
+				// we can successfully create the exporter
+				conf.Metadata.Full = false
+				conf.Brokers = []string{"invalid:9092"}
+				conf.ProtocolVersion = "2.0.0"
+			}),
+			err: nil,
+		},
+		{
+			name: "invalid config (validating broker)",
+			conf: applyConfigOption(func(conf *Config) {
+				conf.Brokers = []string{"invalid:9092"}
+				conf.ProtocolVersion = "2.0.0"
+			}),
+			err: &net.DNSError{},
+		},
+		{
+			name: "default_encoding",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check to ensure encoding work
+				conf.Metadata.Full = false
+				conf.Encoding = "otlp_proto"
+			}),
+			err: nil,
+		},
+		{
+			name: "with include metadata keys and partitioner",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+					Sizer: exporterhelper.RequestSizerTypeBytes,
+				})
+			}),
+			err: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			f := NewFactory().(xexporter.Factory)
+			exporter, err := f.CreateProfiles(
+				t.Context(),
+				exportertest.NewNopSettings(metadata.Type),
+				tc.conf,
+			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
+			if tc.err != nil {
+				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
+				return
+			}
+			assert.NoError(t, err, "Must not error")
+			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.ConsumeProfiles(t.Context(), testdata.GenerateProfiles(2)))
+			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
 }

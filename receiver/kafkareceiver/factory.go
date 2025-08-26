@@ -53,8 +53,9 @@ func createDefaultConfig() component.Config {
 			Encoding: defaultTracesEncoding,
 		},
 		MessageMarking: MessageMarking{
-			After:   false,
-			OnError: false,
+			After:            false,
+			OnError:          false,
+			OnPermanentError: false,
 		},
 		HeaderExtraction: HeaderExtraction{
 			ExtractHeaders: false,

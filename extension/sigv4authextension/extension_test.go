@@ -28,7 +28,7 @@ func TestNewSigv4Extension(t *testing.T) {
 func TestRoundTripper(t *testing.T) {
 	awsCredsProvider := mockCredentials()
 
-	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	base := http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
 	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 
@@ -85,7 +85,7 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, credsProvider)
 
-			creds, err := (*credsProvider).Retrieve(context.Background())
+			creds, err := (*credsProvider).Retrieve(t.Context())
 			require.NoError(t, err)
 			require.NotNil(t, creds)
 		})
@@ -124,17 +124,17 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 			require.NotNil(t, credsProvider)
 
 			// Should always error out as we are not providing a real token.
-			_, err = (*credsProvider).Retrieve(context.Background())
+			_, err = (*credsProvider).Retrieve(t.Context())
 			assert.Error(t, err)
 		})
 	}
 }
 
 func TestCloneRequest(t *testing.T) {
-	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req1, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 
-	req2, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req2, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 	req2.Header.Add("Header1", "val1")
 

@@ -4,7 +4,6 @@
 package octrace
 
 import (
-	"context"
 	"runtime"
 	"testing"
 	"time"
@@ -41,7 +40,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -64,7 +63,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
@@ -86,7 +85,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	tel := tt.NewTelemetrySettings()

@@ -44,6 +44,7 @@ func createDefaultConfig() component.Config {
 		WriteTimeout:               defaultWriteTimeout,
 		ConvertHeadersToAttributes: false, // optional, off by default
 		SplitLogsAtNewLine:         false,
+		SplitLogsAtJSONBoundary:    false,
 	}
 }
 

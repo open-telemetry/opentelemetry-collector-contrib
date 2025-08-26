@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 )
 
 const attrValuesSeparator = ","
@@ -42,6 +44,8 @@ type redaction struct {
 	config *Config
 	// Logger
 	logger *zap.Logger
+	// Database obfuscator
+	dbObfuscator *db.Obfuscator
 }
 
 // newRedaction creates a new instance of the redaction processor
@@ -65,6 +69,8 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		return nil, fmt.Errorf("failed to process allow list: %w", err)
 	}
 
+	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
+
 	return &redaction{
 		allowList:         allowList,
 		ignoreList:        ignoreList,
@@ -74,6 +80,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		hashFunction:      config.HashFunction,
 		config:            config,
 		logger:            logger,
+		dbObfuscator:      dbObfuscator,
 	}, nil
 }
 
@@ -186,7 +193,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			allowedKeys = append(allowedKeys, "body")
 			return
 		}
-		processedValue := s.processStringValue(strVal)
+		processedValue := s.processStringValueForLogBody(strVal)
 		if strVal != processedValue {
 			maskedKeys = append(maskedKeys, "body")
 			body.SetStr(processedValue)
@@ -237,7 +244,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			*allowedKeys = append(*allowedKeys, key)
 			return
 		}
-		processedValue := s.processStringValue(strVal)
+		processedValue := s.processStringValueForLogBody(strVal)
 		if strVal != processedValue {
 			*maskedKeys = append(*maskedKeys, key)
 			value.SetStr(processedValue)
@@ -299,28 +306,31 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// This sequence satisfies these performance constraints:
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
-AttributeLoop:
 	for k, value := range attributes.All() {
 		if s.shouldIgnoreKey(k) {
 			ignoredKeys = append(ignoredKeys, k)
-			continue AttributeLoop
+			continue
 		}
 		if s.shouldRedactKey(k) {
 			redactedKeys = append(redactedKeys, k)
-			continue AttributeLoop
+			continue
 		}
 		strVal := value.Str()
+		if s.config.RedactAllTypes {
+			strVal = value.AsString()
+		}
+
 		if s.shouldAllowValue(strVal) {
 			allowedKeys = append(allowedKeys, k)
-			continue AttributeLoop
+			continue
 		}
 		if s.shouldMaskKey(k) {
 			maskedKeys = append(maskedKeys, k)
 			maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
 			value.SetStr(maskedValue)
-			continue AttributeLoop
+			continue
 		}
-		processedString := s.processStringValue(strVal)
+		processedString := s.processStringValueForAttribute(strVal, k)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -368,7 +378,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 
 	// Record summary as span attributes, empty string for ignored items
-	if s.config.Summary == debug && len(valuesAttr) > 0 {
+	if s.config.Summary == debug && valuesAttr != "" {
 		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
 			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
 		}
@@ -383,7 +393,26 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
-func (s *redaction) processStringValue(strVal string) string {
+func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) string {
+	for _, compiledRE := range s.blockRegexList {
+		match := compiledRE.MatchString(strVal)
+		if match {
+			strVal = s.maskValue(strVal, compiledRE)
+		}
+	}
+
+	if s.dbObfuscator != nil {
+		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
+		if err != nil {
+			return strVal
+		}
+		strVal = obfuscatedQuery
+	}
+
+	return strVal
+}
+
+func (s *redaction) processStringValueForLogBody(strVal string) string {
 	// Mask any blocked values for the other attributes
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
@@ -391,6 +420,15 @@ func (s *redaction) processStringValue(strVal string) string {
 			strVal = s.maskValue(strVal, compiledRE)
 		}
 	}
+
+	if s.dbObfuscator != nil {
+		obfuscatedQuery, err := s.dbObfuscator.Obfuscate(strVal)
+		if err != nil {
+			return strVal
+		}
+		strVal = obfuscatedQuery
+	}
+
 	return strVal
 }
 

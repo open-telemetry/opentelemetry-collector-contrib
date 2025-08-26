@@ -4,7 +4,6 @@
 package zipkinv1
 
 import (
-	"context"
 	"encoding/binary"
 	"encoding/json"
 	"math"
@@ -23,7 +22,7 @@ import (
 )
 
 // compareTraces compares got to want while ignoring order. Both are modified in place.
-func compareTraces(t *testing.T, want ptrace.Traces, got ptrace.Traces) {
+func compareTraces(t *testing.T, want, got ptrace.Traces) {
 	require.Equal(t, mapperTraces(t, want), mapperTraces(t, got))
 }
 
@@ -52,7 +51,7 @@ func TestV1ThriftToTraces(t *testing.T) {
 
 	var zSpans []*zipkincore.Span
 	require.NoError(t, json.Unmarshal(blob, &zSpans), "failed to unmarshal json test file")
-	thriftBytes, err := zipkin.SerializeThrift(context.TODO(), zSpans)
+	thriftBytes, err := zipkin.SerializeThrift(t.Context(), zSpans)
 	require.NoError(t, err)
 	td, err := thriftUnmarshaler{}.UnmarshalTraces(thriftBytes)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")

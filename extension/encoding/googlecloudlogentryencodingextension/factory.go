@@ -27,7 +27,7 @@ func createExtension(_ context.Context, _ extension.Settings, config component.C
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HandleJSONPayloadAs:  "json",
-		HandleProtoPayloadAs: "json",
+		HandleJSONPayloadAs:  HandleAsJSON,
+		HandleProtoPayloadAs: HandleAsJSON,
 	}
 }

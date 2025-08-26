@@ -5,7 +5,6 @@ package fileexporter
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -134,11 +133,11 @@ func TestFileTracesExporter(t *testing.T) {
 			fe := feI.(*fileExporter)
 
 			td := testdata.GenerateTracesTwoSpansSameResource()
-			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.consumeTraces(context.Background(), td))
-			assert.NoError(t, fe.consumeTraces(context.Background(), td))
+			assert.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.consumeTraces(t.Context(), td))
+			assert.NoError(t, fe.consumeTraces(t.Context(), td))
 			defer func() {
-				assert.NoError(t, fe.Shutdown(context.Background()))
+				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
 			fi, err := os.Open(fe.writer.path)
@@ -184,8 +183,8 @@ func TestFileTracesExporterError(t *testing.T) {
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.consumeTraces(context.Background(), td))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+	assert.Error(t, fe.consumeTraces(t.Context(), td))
+	assert.NoError(t, fe.Shutdown(t.Context()))
 }
 
 func TestFileMetricsExporter(t *testing.T) {
@@ -266,11 +265,11 @@ func TestFileMetricsExporter(t *testing.T) {
 			require.NotNil(t, fe)
 
 			md := testdata.GenerateMetricsTwoMetrics()
-			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
-			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
+			assert.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.consumeMetrics(t.Context(), md))
+			assert.NoError(t, fe.consumeMetrics(t.Context(), md))
 			defer func() {
-				assert.NoError(t, fe.Shutdown(context.Background()))
+				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
 			fi, err := os.Open(fe.writer.path)
@@ -317,8 +316,8 @@ func TestFileMetricsExporterError(t *testing.T) {
 
 	md := testdata.GenerateMetricsTwoMetrics()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.consumeMetrics(context.Background(), md))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+	assert.Error(t, fe.consumeMetrics(t.Context(), md))
+	assert.NoError(t, fe.Shutdown(t.Context()))
 }
 
 func TestFileLogsExporter(t *testing.T) {
@@ -399,11 +398,11 @@ func TestFileLogsExporter(t *testing.T) {
 			require.NotNil(t, fe)
 
 			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
-			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
-			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
+			assert.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.consumeLogs(t.Context(), ld))
+			assert.NoError(t, fe.consumeLogs(t.Context(), ld))
 			defer func() {
-				assert.NoError(t, fe.Shutdown(context.Background()))
+				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
 			fi, err := os.Open(fe.writer.path)
@@ -449,8 +448,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.consumeLogs(context.Background(), ld))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+	assert.Error(t, fe.consumeLogs(t.Context(), ld))
+	assert.NoError(t, fe.Shutdown(t.Context()))
 }
 
 func TestFileProfilesExporter(t *testing.T) {
@@ -531,11 +530,11 @@ func TestFileProfilesExporter(t *testing.T) {
 			require.NotNil(t, fe)
 
 			pd := testdata.GenerateProfilesTwoProfilesSameResource()
-			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.consumeProfiles(context.Background(), pd))
-			assert.NoError(t, fe.consumeProfiles(context.Background(), pd))
+			assert.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.consumeProfiles(t.Context(), pd))
+			assert.NoError(t, fe.consumeProfiles(t.Context(), pd))
 			defer func() {
-				assert.NoError(t, fe.Shutdown(context.Background()))
+				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
 			fi, err := os.Open(fe.writer.path)
@@ -581,8 +580,8 @@ func TestFileProfilesExporterErrors(t *testing.T) {
 
 	pd := testdata.GenerateProfilesTwoProfilesSameResource()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.consumeProfiles(context.Background(), pd))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+	assert.Error(t, fe.consumeProfiles(t.Context(), pd))
+	assert.NoError(t, fe.Shutdown(t.Context()))
 }
 
 func TestExportMessageAsBuffer(t *testing.T) {
@@ -608,7 +607,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
 	assert.Error(t, exportMessageAsBuffer(fe.writer, buf))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+	assert.NoError(t, fe.Shutdown(t.Context()))
 }
 
 // tempFileName provides a temporary file name for testing.
@@ -619,11 +618,11 @@ func tempFileName(tb testing.TB) string {
 // errorWriter is an io.Writer that will return an error all ways
 type errorWriter struct{}
 
-func (e errorWriter) Write([]byte) (n int, err error) {
+func (errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
 }
 
-func (e *errorWriter) Close() error {
+func (*errorWriter) Close() error {
 	return nil
 }
 
@@ -787,7 +786,7 @@ func TestFlushing(t *testing.T) {
 	fe := feI.(*fileExporter)
 
 	// Start the flusher.
-	ctx := context.Background()
+	ctx := t.Context()
 	fe.marshaller = &marshaller{
 		formatType:       fe.conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],
@@ -842,7 +841,7 @@ func TestAppend(t *testing.T) {
 	fe := feI.(*fileExporter)
 
 	// Start the flusher.
-	ctx := context.Background()
+	ctx := t.Context()
 	fe.marshaller = &marshaller{
 		formatType:       fe.conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],

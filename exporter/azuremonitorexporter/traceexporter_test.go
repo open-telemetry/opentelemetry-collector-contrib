@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 )
 
 var defaultConfig = createDefaultConfig().(*Config)
@@ -25,7 +24,7 @@ func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 
 	traces := ptrace.NewTraces()
 
-	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
 	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
@@ -49,7 +48,7 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
 	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
@@ -76,7 +75,7 @@ func TestExporterTraceDataCallbackCallFlushOnce(t *testing.T) {
 	ilss.CopyTo(rs.ScopeSpans().AppendEmpty())
 	rs.CopyTo(traces.ResourceSpans().AppendEmpty())
 
-	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 8)
 	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
@@ -109,7 +108,7 @@ func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
 	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
@@ -137,7 +136,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	err := exporter.consumeTraces(context.Background(), traces)
+	err := exporter.consumeTraces(t.Context(), traces)
 	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
 

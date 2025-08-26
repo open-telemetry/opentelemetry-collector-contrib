@@ -26,7 +26,7 @@ func TestIntegration(t *testing.T) {
 	t.Run("3.5.10-standalone", integrationTest("3.5.10-standalone", "docker.io/library/zookeeper:3.5.10", true))
 }
 
-func integrationTest(name string, image string, standalone bool) func(*testing.T) {
+func integrationTest(name, image string, standalone bool) func(*testing.T) {
 	return scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(

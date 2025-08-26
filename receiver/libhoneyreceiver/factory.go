@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -38,12 +39,12 @@ func createDefaultConfig() component.Config {
 	durationFieldsArr := []string{"duration_ms"}
 	endpointStr := fmt.Sprintf("localhost:%d", httpPort)
 	return &Config{
-		HTTP: &HTTPConfig{
-			ServerConfig: &confighttp.ServerConfig{
+		HTTP: configoptional.Default(HTTPConfig{
+			ServerConfig: confighttp.ServerConfig{
 				Endpoint: endpointStr,
 			},
 			TracesURLPaths: defaultTracesURLPaths,
-		},
+		}),
 		AuthAPI: "",
 		FieldMapConfig: libhoneyevent.FieldMapConfig{
 			Resources: libhoneyevent.ResourcesConfig{

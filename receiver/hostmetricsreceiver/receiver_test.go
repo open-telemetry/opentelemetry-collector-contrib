@@ -4,7 +4,6 @@
 package hostmetricsreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,10 +21,10 @@ func TestReceiver(t *testing.T) {
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 	sink := new(consumertest.LogsSink)
-	logs, err := factory.CreateLogs(context.Background(), settings, cfg, sink)
+	logs, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
 	require.NoError(t, err)
-	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, logs.Shutdown(context.Background()))
+	assert.NoError(t, logs.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, logs.Shutdown(t.Context()))
 
 	allLogs := sink.AllLogs()
 	require.Len(t, allLogs, 1)

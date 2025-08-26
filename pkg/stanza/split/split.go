@@ -57,7 +57,7 @@ func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bu
 
 // LineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that start with a match to the regex pattern provided
-func LineStartSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool) bufio.SplitFunc {
+func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
@@ -112,7 +112,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool) bu
 
 // LineEndSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that end with a match to the regex pattern provided
-func LineEndSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool) bufio.SplitFunc {
+func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		loc := re.FindIndex(data)
 		if loc == nil {
