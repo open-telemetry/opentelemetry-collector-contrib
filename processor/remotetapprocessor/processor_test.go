@@ -4,7 +4,6 @@
 package remotetapprocessor
 
 import (
-	"context"
 	"runtime"
 	"sync"
 	"testing"
@@ -58,7 +57,7 @@ func TestConsumeMetrics(t *testing.T) {
 
 			for i := 0; i < c.limit*2; i++ {
 				// send metric to chan c.limit*2 per sec.
-				metric2, err := processor.ConsumeMetrics(context.Background(), metric)
+				metric2, err := processor.ConsumeMetrics(t.Context(), metric)
 				assert.NoError(t, err)
 				assert.Equal(t, metric, metric2)
 			}
@@ -109,7 +108,7 @@ func TestConsumeLogs(t *testing.T) {
 
 			// send log to chan c.limit*2 per sec.
 			for i := 0; i < c.limit*2; i++ {
-				log2, err := processor.ConsumeLogs(context.Background(), log)
+				log2, err := processor.ConsumeLogs(t.Context(), log)
 				assert.NoError(t, err)
 				assert.Equal(t, log, log2)
 			}
@@ -162,7 +161,7 @@ func TestConsumeTraces(t *testing.T) {
 
 			for i := 0; i < c.limit*2; i++ {
 				// send trace to chan c.limit*2 per sec.
-				trace2, err := processor.ConsumeTraces(context.Background(), trace)
+				trace2, err := processor.ConsumeTraces(t.Context(), trace)
 				assert.NoError(t, err)
 				assert.Equal(t, trace, trace2)
 			}
