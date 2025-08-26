@@ -310,6 +310,8 @@ github.com/tidwall/tinylru v1.1.0 h1:XY6IUfzVTU9rpwdhKUF6nQdChgCdGjkMfLzbWyiau6I
 github.com/tidwall/tinylru v1.1.0/go.mod h1:3+bX+TJ2baOLMWTnlyNWHh4QMnFyARg2TLTQ6OFbzw8=
 github.com/tidwall/wal v1.1.8 h1:2qDSGdAdjaY3PEvHRva+9UFqgk+ef7cOiW1Qn5JH1y0=
 github.com/tidwall/wal v1.1.8/go.mod h1:r6lR1j27W9EPalgHiB7zLJDYu3mzW5BQP5KrzBpYY/E=
+github.com/tidwall/wal v1.2.0 h1:dJuMz/MDQp9CjmmJZOK+yZWFfoYCmyFyDyP25rPb8yg=
+github.com/tidwall/wal v1.2.0/go.mod h1:r6lR1j27W9EPalgHiB7zLJDYu3mzW5BQP5KrzBpYY/E=
 github.com/vultr/govultr/v2 v2.17.2 h1:gej/rwr91Puc/tgh+j33p/BLR16UrIPnSr+AIwYWZQs=
 github.com/vultr/govultr/v2 v2.17.2/go.mod h1:ZFOKGWmgjytfyjeyAdhQlSWwTjh2ig+X49cAp50dzXI=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
