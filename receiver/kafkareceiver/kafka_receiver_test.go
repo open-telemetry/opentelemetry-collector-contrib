@@ -457,8 +457,9 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 func TestReceiver_MessageMarking(t *testing.T) {
 	for name, testcase := range map[string]struct {
-		markAfter  bool
-		markErrors bool
+		markAfter           bool
+		markErrors          bool
+		markPermanentErrors bool
 
 		errorShouldRestart bool
 	}{
@@ -469,9 +470,21 @@ func TestReceiver_MessageMarking(t *testing.T) {
 			markAfter:          true,
 			errorShouldRestart: true,
 		},
-		"mark_after_all": {
-			markAfter:  true,
-			markErrors: true,
+		"mark_after_errors": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: true,
+		},
+		"mark_after_non_permanent_only": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: false,
+			errorShouldRestart:  true, // error is permanent, so it isn't marked and will cause a restart
+		},
+		"mark_after_permanent_only": {
+			markAfter:           true,
+			markErrors:          false,
+			markPermanentErrors: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -499,6 +512,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				// Only mark messages after consuming, including for errors.
 				receiverConfig.MessageMarking.After = testcase.markAfter
 				receiverConfig.MessageMarking.OnError = testcase.markErrors
+				receiverConfig.MessageMarking.OnPermanentError = testcase.markPermanentErrors
 				set, tel, observedLogs := mustNewSettings(t)
 				f := NewFactory()
 				r, err := f.CreateTraces(t.Context(), set, receiverConfig, consumer)
@@ -518,13 +532,13 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}
 
 					// Verify that the consumer restarts at least once.
-					assert.Eventually(t, func() bool {
+					assert.EventuallyWithT(t, func(t *assert.CollectT) {
 						m, err := tel.GetMetric("otelcol_kafka_receiver_partition_start")
 						require.NoError(t, err)
 
 						dataPoints := m.Data.(metricdata.Sum[int64]).DataPoints
 						assert.Len(t, dataPoints, 1)
-						return dataPoints[0].Value >= value
+						assert.GreaterOrEqual(t, dataPoints[0].Value, value)
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message
