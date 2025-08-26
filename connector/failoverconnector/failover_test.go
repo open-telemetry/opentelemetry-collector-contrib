@@ -6,6 +6,9 @@ package failoverconnector
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,8 +18,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
-	"testing"
-	"time"
 )
 
 var errTracesConsumer = errors.New("Error from ConsumeTraces")

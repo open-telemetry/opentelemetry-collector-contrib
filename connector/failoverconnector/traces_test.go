@@ -82,7 +82,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
-	
+
 	wrappedConn := conn.(*WrappedTracesConnector)
 	failoverRouter := wrappedConn.GetFailoverRouter()
 	failoverRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))

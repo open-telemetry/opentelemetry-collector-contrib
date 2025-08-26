@@ -5,9 +5,10 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

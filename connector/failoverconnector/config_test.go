@@ -4,10 +4,11 @@
 package failoverconnector
 
 import (
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
