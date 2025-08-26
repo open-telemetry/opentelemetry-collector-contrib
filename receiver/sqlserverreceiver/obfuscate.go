@@ -19,17 +19,20 @@ var (
 		"ScalarString",
 		"ParameterCompiledValue",
 	}
-	obfuscateSQLConfig = obfuscate.SQLConfig{DBMS: "mssql"}
 )
 
 type obfuscator obfuscate.Obfuscator
 
 func newObfuscator() *obfuscator {
-	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{}))
+	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{
+		SQL: obfuscate.SQLConfig{
+			DBMS: "mssql",
+		},
+	}))
 }
 
 func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
-	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLStringWithOptions(sql, &obfuscateSQLConfig, "")
+	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLString(sql)
 	if err != nil {
 		return "", err
 	}
