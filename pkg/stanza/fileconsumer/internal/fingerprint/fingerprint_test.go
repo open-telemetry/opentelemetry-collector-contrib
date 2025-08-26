@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 )
@@ -316,7 +315,6 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 // Test compressed and uncompressed file with same content have equal fingerprint
 func TestCompressionFingerprint(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(DecompressedFingerprintFeatureGate.ID(), true))
 	tmp := t.TempDir()
 	compressedFile := filetest.OpenTempWithPattern(t, tmp, "*.gz")
 	gzipWriter := gzip.NewWriter(compressedFile)
