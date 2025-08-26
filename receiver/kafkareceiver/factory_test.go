@@ -15,8 +15,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-func encodingFromReceiver(t *testing.T, r any, section string) string {
-	t.Helper()
+func encodingFromReceiver(tb testing.TB, r any, section string) string {
+	tb.Helper()
+
 	switch rc := r.(type) {
 	case *saramaConsumer:
 		switch section {
@@ -37,7 +38,8 @@ func encodingFromReceiver(t *testing.T, r any, section string) string {
 			return rc.config.Logs.Encoding
 		}
 	}
-	t.Fatalf("unsupported receiver type %T or section %q", r, section)
+
+	tb.Fatalf("unsupported receiver type %T or section %q", r, section)
 	return ""
 }
 

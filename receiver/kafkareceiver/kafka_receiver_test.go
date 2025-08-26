@@ -425,7 +425,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		}
 
 		// Shut down and check that the partition close metric is updated.
-		err = r.Shutdown(context.Background()) //nolint:usetesting
+		err = r.Shutdown(t.Context())
 		require.NoError(t, err)
 		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
@@ -707,8 +707,6 @@ func TestNewMetricsReceiver(t *testing.T) {
 }
 
 func TestComponentStatus(t *testing.T) {
-	t.Parallel()
-
 	runTestForClients(t, func(t *testing.T) {
 		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
 
@@ -812,7 +810,7 @@ func TestComponentStatus(t *testing.T) {
 			assertNoStatusEvent(t)
 		}
 
-		assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+		assert.NoError(t, r.Shutdown(t.Context()))
 
 		// Shut down and check that the partition close metric is updated.
 		if franzGoConsumerFeatureGate.IsEnabled() {
