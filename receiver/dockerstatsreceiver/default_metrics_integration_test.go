@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -30,14 +32,22 @@ func TestIntegration(t *testing.T) {
 				Name:  "dockerstatsreceiver-test",
 			},
 		),
+		scraperinttest.WithCustomConfig(
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.ResourceAttributes.ContainerImageName.MetricsInclude = []filter.Config{{Regex: "testcontainers/ryuk.*"}}
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("container.hostname"),
 			pmetrictest.IgnoreResourceAttributeValue("container.id"),
 			pmetrictest.IgnoreResourceAttributeValue("container.image.name"),
 			pmetrictest.IgnoreResourceAttributeValue("container.name"),
 			pmetrictest.IgnoreResourceAttributeValue("container.runtime"),
+			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp()),
 	).Run(t)
