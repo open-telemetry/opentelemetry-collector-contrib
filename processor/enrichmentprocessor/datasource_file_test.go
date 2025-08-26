@@ -24,7 +24,7 @@ func TestFileDataSource_JSON(t *testing.T) {
 		{"service_name": "payment-service", "team": "payments", "environment": "stage"}
 	]`
 
-	err := os.WriteFile(jsonFile, []byte(jsonData), 0600)
+	err := os.WriteFile(jsonFile, []byte(jsonData), 0o600)
 	require.NoError(t, err)
 
 	config := FileDataSourceConfig{
@@ -64,7 +64,7 @@ func TestFileDataSource_CSV(t *testing.T) {
 user-service,platform,prod
 payment-service,payments,stage`
 
-	err := os.WriteFile(csvFile, []byte(csvData), 0600)
+	err := os.WriteFile(csvFile, []byte(csvData), 0o600)
 	require.NoError(t, err)
 
 	config := FileDataSourceConfig{
@@ -100,7 +100,7 @@ func TestFileDataSource_FileModificationDetection(t *testing.T) {
 		{"service_name": "initial-service", "team": "initial-team"}
 	]`
 
-	err := os.WriteFile(jsonFile, []byte(initialData), 0600)
+	err := os.WriteFile(jsonFile, []byte(initialData), 0o600)
 	require.NoError(t, err)
 
 	config := FileDataSourceConfig{
@@ -131,7 +131,7 @@ func TestFileDataSource_FileModificationDetection(t *testing.T) {
 		{"service_name": "updated-service", "team": "updated-team"}
 	]`
 
-	err = os.WriteFile(jsonFile, []byte(updatedData), 0600)
+	err = os.WriteFile(jsonFile, []byte(updatedData), 0o600)
 	require.NoError(t, err)
 
 	// Refresh should detect the change
@@ -169,7 +169,7 @@ func TestFileDataSource_ErrorHandling(t *testing.T) {
 		tempDir := t.TempDir()
 		jsonFile := filepath.Join(tempDir, "invalid.json")
 
-		err := os.WriteFile(jsonFile, []byte("{invalid json}"), 0600)
+		err := os.WriteFile(jsonFile, []byte("{invalid json}"), 0o600)
 		require.NoError(t, err)
 
 		config := FileDataSourceConfig{
@@ -189,7 +189,7 @@ func TestFileDataSource_ErrorHandling(t *testing.T) {
 		csvFile := filepath.Join(tempDir, "invalid.csv")
 
 		// CSV with unclosed quotes
-		err := os.WriteFile(csvFile, []byte("name,team\n\"unclosed,quote"), 0600)
+		err := os.WriteFile(csvFile, []byte("name,team\n\"unclosed,quote"), 0o600)
 		require.NoError(t, err)
 
 		config := FileDataSourceConfig{
@@ -208,7 +208,7 @@ func TestFileDataSource_ErrorHandling(t *testing.T) {
 		tempDir := t.TempDir()
 		xmlFile := filepath.Join(tempDir, "test.xml")
 
-		err := os.WriteFile(xmlFile, []byte("<data></data>"), 0600)
+		err := os.WriteFile(xmlFile, []byte("<data></data>"), 0o600)
 		require.NoError(t, err)
 
 		config := FileDataSourceConfig{
@@ -229,7 +229,7 @@ func TestFileDataSource_StartStop(t *testing.T) {
 	jsonFile := filepath.Join(tempDir, "test.json")
 
 	jsonData := `[{"service_name": "test-service"}]`
-	err := os.WriteFile(jsonFile, []byte(jsonData), 0600)
+	err := os.WriteFile(jsonFile, []byte(jsonData), 0o600)
 	require.NoError(t, err)
 
 	config := FileDataSourceConfig{

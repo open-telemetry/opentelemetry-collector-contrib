@@ -381,11 +381,11 @@ func TestJSONParser_ParseDataConsistency(t *testing.T) {
 	// Row 1: environment missing
 	assert.Equal(t, "service2", data[1][serviceNameIndex])
 	assert.Equal(t, "team2", data[1][teamIndex])
-	assert.Equal(t, "", data[1][envIndex]) // Missing field should be empty string
+	assert.Empty(t, data[1][envIndex]) // Missing field should be empty string
 
 	// Row 2: team missing
 	assert.Equal(t, "service3", data[2][serviceNameIndex])
-	assert.Equal(t, "", data[2][teamIndex]) // Missing field should be empty string
+	assert.Empty(t, data[2][teamIndex]) // Missing field should be empty string
 	assert.Equal(t, "dev", data[2][envIndex])
 }
 

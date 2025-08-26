@@ -27,7 +27,7 @@ func NewJSONParser() DataParser {
 
 // Parse parses JSON data and creates a lookup structure
 // Expected format: Array of objects where each object represents a row
-func (p *JSONParser) Parse(data []byte) ([][]string, map[string]int, error) {
+func (*JSONParser) Parse(data []byte) ([][]string, map[string]int, error) {
 	var jsonData any
 	if err := json.Unmarshal(data, &jsonData); err != nil {
 		return nil, nil, fmt.Errorf("invalid JSON: %w", err)
@@ -92,7 +92,7 @@ func NewCSVParser() DataParser {
 
 // Parse parses CSV data and creates a lookup structure
 // Requires header row and consistent column count
-func (p *CSVParser) Parse(data []byte) ([][]string, map[string]int, error) {
+func (*CSVParser) Parse(data []byte) ([][]string, map[string]int, error) {
 	csvReader := csv.NewReader(strings.NewReader(string(data)))
 	records, err := csvReader.ReadAll()
 	if err != nil {

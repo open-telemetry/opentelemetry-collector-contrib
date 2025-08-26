@@ -118,7 +118,6 @@ func (h *HTTPDataSource) refresh(ctx context.Context) error {
 	var index map[string]int
 
 	processedData, index, err = ParseData(body, format)
-
 	if err != nil {
 		return fmt.Errorf("failed to parse %s data: %w", format, err)
 	}
