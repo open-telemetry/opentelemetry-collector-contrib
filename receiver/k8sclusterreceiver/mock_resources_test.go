@@ -33,7 +33,11 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int, distinctNames
 			},
 		}
 
-    createdPod, err := client.CoreV1().Pods(p.Namespace).Create(t.Context(), p, v1.CreateOptions{})
+		if distinctNamespaces {
+			p.Namespace = fmt.Sprintf("test-%d", i)
+		}
+
+		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(t.Context(), p, v1.CreateOptions{})
 
 		require.NoError(t, err, "error creating node")
 		out = append(out, createdPod)

@@ -184,7 +184,7 @@ func TestNamespacedReceiver(t *testing.T) {
 func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	client := newFakeClientWithAllResources()
@@ -203,7 +203,7 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 	createNodes(t, client, numNodes)
 	createClusterQuota(t, osQuotaClient, numQuotas)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHost()))
 
 	require.Eventually(t, func() bool {
