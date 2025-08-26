@@ -53,7 +53,7 @@ func createMetricsProcessor(
 				return nil, err
 			}
 		}
-		adjuster := starttimemetric.NewAdjuster(set.TelemetrySettings, startTimeMetricRegex)
+		adjuster := starttimemetric.NewAdjuster(set.TelemetrySettings, startTimeMetricRegex, rCfg.GCInterval)
 		adjustMetrics = adjuster.AdjustMetrics
 	}
 

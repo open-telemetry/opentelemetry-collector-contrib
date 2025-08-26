@@ -80,9 +80,9 @@ func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
 	config := Protocols{
-		ThriftHTTP: &confighttp.ServerConfig{
+		ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
 			Endpoint: addr,
-		},
+		}),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -91,7 +91,12 @@ func TestReception(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
+	defer func() {
+		// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
+		// and the context shouldn't be already cancelled during a graceful shutdown
+		// if the server still can have any live connections. See issue #42072.
+		require.NoError(t, jr.Shutdown(t.Context()))
+	}()
 
 	// 2. Then send spans to the Jaeger receiver.
 	_, port, _ := net.SplitHostPort(addr)
@@ -142,12 +147,12 @@ func TestPortsNotOpen(t *testing.T) {
 func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := Protocols{
-		GRPC: &configgrpc.ServerConfig{
+		GRPC: configoptional.Some(configgrpc.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  testutil.GetAvailableLocalAddress(t),
 				Transport: confignet.TransportTypeTCP,
 			},
-		},
+		}),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -158,7 +163,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -196,7 +201,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		},
 	}
 
-	grpcServerSettings := &configgrpc.ServerConfig{
+	grpcServerSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
@@ -205,7 +210,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 
 	config := Protocols{
-		GRPC: grpcServerSettings,
+		GRPC: configoptional.Some(grpcServerSettings),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -338,10 +343,10 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 
 func TestSampling(t *testing.T) {
 	config := Protocols{
-		GRPC: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
+		GRPC: configoptional.Some(configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
-		}},
+		}}),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -352,7 +357,7 @@ func TestSampling(t *testing.T) {
 	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer conn.Close()
 
