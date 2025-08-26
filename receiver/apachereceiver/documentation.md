@@ -14,7 +14,7 @@ metrics:
 
 ### apache.connections.async
 
-The number connections in different asynchronous states reported by Apache's server-status.
+The number of connections in different asynchronous states reported by Apache's server-status.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

@@ -183,7 +183,7 @@ metrics:
     attributes: [scoreboard_state]
   apache.connections.async:
     enabled: true
-    description: The number connections in different asynchronous states reported by Apache's server-status.
+    description: The number of connections in different asynchronous states reported by Apache's server-status.
     unit: "{connections}"
     gauge:
       value_type: int

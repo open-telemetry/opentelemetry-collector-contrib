@@ -259,7 +259,7 @@ type metricApacheConnectionsAsync struct {
 // init fills apache.connections.async metric with initial data.
 func (m *metricApacheConnectionsAsync) init() {
 	m.data.SetName("apache.connections.async")
-	m.data.SetDescription("The number connections in different asynchronous states reported by Apache's server-status.")
+	m.data.SetDescription("The number of connections in different asynchronous states reported by Apache's server-status.")
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

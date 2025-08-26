@@ -150,7 +150,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["apache.connections.async"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number connections in different asynchronous states reported by Apache's server-status.", ms.At(i).Description())
+					assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", ms.At(i).Description())
 					assert.Equal(t, "{connections}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

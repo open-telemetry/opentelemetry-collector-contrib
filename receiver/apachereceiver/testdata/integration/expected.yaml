@@ -9,7 +9,7 @@ resourceMetrics:
             stringValue: "8081"
     scopeMetrics:
       - metrics:
-          - description: The number connections in different asynchronous states reported by Apache's server-status.
+          - description: The number of connections in different asynchronous states reported by Apache's server-status.
             gauge:
               dataPoints:
               - asInt: "2"
