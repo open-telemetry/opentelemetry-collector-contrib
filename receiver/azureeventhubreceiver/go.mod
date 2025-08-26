@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.39.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.133.0
 	go.opentelemetry.io/collector/extension/xextension v0.133.0
+	go.opentelemetry.io/collector/featuregate v1.39.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.133.0
 	go.opentelemetry.io/collector/pdata v1.39.0
 	go.opentelemetry.io/collector/pipeline v1.39.0
@@ -111,7 +112,6 @@ require (
 	go.opentelemetry.io/collector/extension v1.39.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.133.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.133.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.133.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
 	go.opentelemetry.io/collector/otelcol v0.133.0 // indirect
