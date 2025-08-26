@@ -40,7 +40,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.69.3 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.69.2 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.69.3 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/fips v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.69.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.69.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.69.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.69.3 // indirect
