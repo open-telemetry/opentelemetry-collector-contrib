@@ -30,7 +30,7 @@ func (profileStatements) Context() ContextID {
 }
 
 func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
-	dic := ld.ProfilesDictionary()
+	dic := ld.Dictionary()
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
 			for _, profile := range sprofiles.Profiles().All() {
