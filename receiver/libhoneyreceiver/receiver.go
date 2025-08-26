@@ -191,10 +191,14 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
+		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
 		errorutil.HTTPError(resp, err)
+		return
 	}
 	if err = req.Body.Close(); err != nil {
+		r.settings.Logger.Error("Failed to close request body", zap.Error(err))
 		errorutil.HTTPError(resp, err)
+		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
 	switch req.Header.Get("Content-Type") {
@@ -228,9 +232,14 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
 			errorutil.HTTPError(resp, err)
+			return
 		}
 		if len(libhoneyevents) > 0 {
-			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			if libhoneyevents[0].MsgPackTimestamp != nil {
+				r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			} else {
+				r.settings.Logger.Debug("Decoding with json worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			}
 		}
 	default:
 		r.settings.Logger.Info("unsupported content type", zap.String("content-type", req.Header.Get("Content-Type")))
@@ -243,16 +252,24 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
-		ctx = r.obsreport.StartLogsOp(ctx)
-		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
-		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		if r.nextLogs != nil {
+			ctx = r.obsreport.StartLogsOp(ctx)
+			err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		} else {
+			r.settings.Logger.Debug("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+		}
 	}
 
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
-		ctx = r.obsreport.StartTracesOp(ctx)
-		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
-		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		if r.nextTraces != nil {
+			ctx = r.obsreport.StartTracesOp(ctx)
+			err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		} else {
+			r.settings.Logger.Debug("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+		}
 	}
 
 	if err != nil {

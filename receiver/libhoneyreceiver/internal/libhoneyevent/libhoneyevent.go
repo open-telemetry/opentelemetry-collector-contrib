@@ -72,13 +72,13 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	if err != nil {
 		return err
 	}
-	if tmp.MsgPackTimestamp.IsZero() && tmp.Time == "none" {
+	if (tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero()) && tmp.Time == "none" {
 		// neither timestamp was set. give it right now.
 		tmp.Time = tstr
 		tnow := time.Now()
 		tmp.MsgPackTimestamp = &tnow
 	}
-	if tmp.MsgPackTimestamp.IsZero() {
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
 		propertime := eventtime.GetEventTime(tmp.Time)
 		tmp.MsgPackTimestamp = &propertime
 	}
