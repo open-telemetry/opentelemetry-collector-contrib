@@ -175,7 +175,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		closeChan:           make(chan struct{}),
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
-		concurrency:         cfg.RemoteWriteQueue.NumConsumers,
+		concurrency:         concurrency,
 		clientSettings:      &cfg.ClientConfig,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
