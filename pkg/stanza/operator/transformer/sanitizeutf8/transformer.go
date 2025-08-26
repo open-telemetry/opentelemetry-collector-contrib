@@ -78,7 +78,7 @@ func (t *Transformer) ProcessWith(e *entry.Entry) error {
 	}
 	s, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("field %s is not a string, got %T", t.field.String(), v)
+		return fmt.Errorf("field '%s' is not a string, got %T", t.field.String(), v)
 	}
 	if utf8.ValidString(s) {
 		return nil
