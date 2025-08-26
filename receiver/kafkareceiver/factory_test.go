@@ -4,7 +4,6 @@
 package kafkareceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -131,10 +130,10 @@ func TestCreateProfiles(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	r, err := createProfilesReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	r, err := createProfilesReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestWithProfilesUnmarshalers(t *testing.T) {
@@ -143,7 +142,7 @@ func TestWithProfilesUnmarshalers(t *testing.T) {
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Profiles.Encoding = "custom"
-		receiver, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		profilesConsumer, ok := receiver.(*saramaConsumer)
 		require.True(t, ok)
 		require.Equal(t, "custom", profilesConsumer.config.Profiles.Encoding)
@@ -152,7 +151,7 @@ func TestWithProfilesUnmarshalers(t *testing.T) {
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg := createDefaultConfig()
-		receiver, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		profilesConsumer, ok := receiver.(*saramaConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultProfilesEncoding, profilesConsumer.config.Profiles.Encoding)

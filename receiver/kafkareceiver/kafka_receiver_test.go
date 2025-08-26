@@ -722,7 +722,7 @@ func TestNewProfilesReceiver(t *testing.T) {
 		profiles := testdata.GenerateProfiles(1)
 		data, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(profiles)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(context.Background(),
+		results := kafkaClient.ProduceSync(t.Context(),
 			&kgo.Record{
 				Topic: "otlp_profiles",
 				Value: data,
@@ -734,10 +734,10 @@ func TestNewProfilesReceiver(t *testing.T) {
 		)
 		require.NoError(t, results.FirstErr())
 
-		err = r.Start(context.Background(), componenttest.NewNopHost())
+		err = r.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(context.Background()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 
 		// There should be one failed message due to the invalid message payload.
