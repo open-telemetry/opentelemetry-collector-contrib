@@ -26,7 +26,7 @@ cmd/oteltestbedcol/                                              @open-telemetry
 cmd/telemetrygen/                                                @open-telemetry/collector-contrib-approvers @mx-psi @codeboten @Erog38
 confmap/provider/aesprovider/                                    @open-telemetry/collector-contrib-approvers @kuiperda
 confmap/provider/googlesecretmanagerprovider/                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @psx95 @braydonk @ridwanmsharif
-confmap/provider/k8scfgprovider/                                 @open-telemetry/collector-contrib-approvers @peterzandbergen
+confmap/provider/k8scfgprovider/                                 @open-telemetry/collector-contrib-approvers
 confmap/provider/s3provider/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
 confmap/provider/secretsmanagerprovider/                         @open-telemetry/collector-contrib-approvers @atoulme
 connector/countconnector/                                        @open-telemetry/collector-contrib-approvers @akats7
