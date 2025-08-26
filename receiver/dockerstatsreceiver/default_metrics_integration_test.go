@@ -45,6 +45,8 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreResourceAttributeValue("container.id"),
 			pmetrictest.IgnoreResourceAttributeValue("container.image.name"),
 			pmetrictest.IgnoreResourceAttributeValue("container.runtime"),
+			pmetrictest.IgnoreMetricAttributeValue("device_major", "container.blockio.io_service_bytes_recursive"),
+			pmetrictest.IgnoreMetricAttributeValue("device_minor", "container.blockio.io_service_bytes_recursive"),
 			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
