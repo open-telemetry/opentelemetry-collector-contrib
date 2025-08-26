@@ -3,7 +3,7 @@ type: k8scfg
 status:
   class: provider
   stability:
-    alpha: [provider]
+    development: [provider]
   distributions: [contrib]
   codeowners:
     active: [peterzandbergen]
