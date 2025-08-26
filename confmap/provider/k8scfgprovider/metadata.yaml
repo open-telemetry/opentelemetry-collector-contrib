@@ -6,4 +6,4 @@ status:
     development: [provider]
   distributions: [contrib]
   codeowners:
-    active: [peterzandbergen]
+    active: []
