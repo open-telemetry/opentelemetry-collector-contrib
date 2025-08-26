@@ -59,7 +59,7 @@ func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/metrics"
 	c.Rate = 1
-	c.TotalDuration = types.MustDurationWithInf("inf")
+	c.TotalDuration = types.DurationWithInf(0)
 
 	c.MetricName = "gen"
 	// Use Gauge as default metric type.

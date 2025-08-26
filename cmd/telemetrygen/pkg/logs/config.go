@@ -50,7 +50,7 @@ func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/logs"
 	c.Rate = 1
-	c.TotalDuration = types.MustDurationWithInf("inf")
+	c.TotalDuration = types.DurationWithInf(0)
 	c.Body = "the message"
 	c.SeverityText = "Info"
 	c.SeverityNumber = 9
