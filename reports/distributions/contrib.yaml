@@ -130,6 +130,7 @@ components:
     provider:
         - aes
         - googlesecretmanager
+        - k8scfg
         - s3
         - secretsmanager
     receiver:
