@@ -231,6 +231,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "otlp_spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
 				MessageMarking: MessageMarking{
 					After:            true,
 					OnError:          true,
@@ -258,6 +262,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "otlp_spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
 				MessageMarking: MessageMarking{
 					After:            false,
 					OnError:          false,
@@ -283,6 +291,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: TopicEncodingConfig{
 					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
 					Encoding: "otlp_proto",
 				},
 				MessageMarking: MessageMarking{
