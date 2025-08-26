@@ -130,7 +130,6 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, string(exp.cfg.API.Key))
 	clientutil.SetExtraHeaders(req.Header, clientutil.ProtobufHeaders)
 	resp, err := exp.metricsAPI.Client.Cfg.HTTPClient.Do(req)
-
 	if err != nil {
 		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err), resp)
 	}
