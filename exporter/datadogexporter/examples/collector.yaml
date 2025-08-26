@@ -461,6 +461,12 @@ exporters:
     ## Logs exporter specific configuration.
     #
     # logs:
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send logs to.
+      ## If unset, the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://trace.agent.datadoghq.com
+
       ## @param dump_payloads - bool - optional
       ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
       ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
