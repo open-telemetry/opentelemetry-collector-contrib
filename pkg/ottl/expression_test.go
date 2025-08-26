@@ -733,7 +733,6 @@ func Test_newGetter(t *testing.T) {
 			val, err := reader.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
 
-			var val any
 			if tt.wantLiteral {
 				require.True(t, litGetter.isLiteral())
 				val, err = litGetter.getLiteral()
