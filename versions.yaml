@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.132.0
+    version: v0.133.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -205,7 +205,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
