@@ -51,8 +51,6 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.129.0"),
 )
 
-
-
 // noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
 var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAPMStats",
@@ -70,22 +68,14 @@ func init() {
 	log.SetupLogger(log.Disabled(), "off")
 }
 
-
-
 func isMetricExportSerializerEnabled() bool {
 	return metricExportSerializerClientFeatureGate.IsEnabled()
 }
-
-
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
 	if err := metadataReporter.ConsumeResource(res); err != nil {
 		logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
 	}
-}
-
-func enableMetricExportSerializer() error {
-	return featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), true)
 }
 
 type factory struct {
