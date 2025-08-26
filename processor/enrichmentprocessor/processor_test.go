@@ -17,22 +17,22 @@ import (
 type mockDataSource struct {
 	data        [][]string
 	headerIndex map[string]int
-	lookup      *lookup
+	store       *EnrichmentStore
 }
 
 func newMockDataSource(data [][]string, headerIndex map[string]int, indexFields []string) *mockDataSource {
-	lookup := newLookup()
-	lookup.SetAll(data, headerIndex, indexFields)
+	store := newEnrichmentStore()
+	store.SetAll(data, headerIndex, indexFields)
 
 	return &mockDataSource{
 		data:        data,
 		headerIndex: headerIndex,
-		lookup:      lookup,
+		store:       store,
 	}
 }
 
 func (m *mockDataSource) Lookup(lookupField, key string) (enrichmentRow []string, index map[string]int, err error) {
-	return m.lookup.Lookup(lookupField, key)
+	return m.store.Get(lookupField, key)
 }
 
 func (*mockDataSource) Start(context.Context) error {
