@@ -4,7 +4,6 @@
 package awscontainerinsightreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +21,7 @@ func TestNewFactory(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	metricsReceiver, _ := createMetricsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),

@@ -4,7 +4,6 @@
 package routingconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 	})
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(),
+	conn, err := factory.CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	assert.NoError(t, err)
@@ -55,7 +54,7 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 	consumer := &consumertest.TracesSink{}
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(),
+	conn, err := factory.CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, consumer)
 
 	assert.ErrorIs(t, err, errUnexpectedConsumer)

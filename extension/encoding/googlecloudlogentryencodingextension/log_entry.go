@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,50 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	ltype "google.golang.org/genproto/googleapis/logging/type"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
+)
+
+const (
+	gcpProjectField        = "gcp.project"
+	gcpOrganizationField   = "gcp.organization"
+	gcpBillingAccountField = "gcp.billing_account"
+	gcpFolderField         = "gcp.folder"
+	gcpResourceTypeField   = "gcp.resource_type"
+
+	gcpOperationIDField       = "gcp.operation.id"
+	gcpOperationProducerField = "gcp.operation.producer"
+	gcpOperationFirstField    = "gcp.operation.first"
+	gcpOperationLast          = "gcp.operation.last"
+
+	gcpCacheLookupField                   = "gcp.cache.lookup"
+	gcpCacheHitField                      = "gcp.cache.hit"
+	gcpCacheValidatedWithOriginSeverField = "gcp.cache.validated_with_origin_server"
+	gcpCacheFillBytes                     = "gcp.cache.fill_bytes"
+
+	refererHeaderField         = "http.request.header.referer"
+	requestServerDurationField = "http.request.server.duration"
+
+	gcpSplitUIDField   = "gcp.split.uid"
+	gcpSplitIndexField = "gcp.split.index"
+	gcpSplitTotalField = "gcp.split.total"
+
+	gcpErrorGroupField = "gcp.error_group"
+
+	gcpAppHubPrefix                       = "gcp.apphub"
+	gcpAppHubDestinationPrefix            = "gcp.apphub_destination"
+	gcpAppHubApplicationContainerField    = "application.container"
+	gcpAppHubApplicationLocationField     = "application.location"
+	gcpAppHubApplicationIDField           = "application.id"
+	gcpAppHubServiceIDField               = "service.id"
+	gcpAppHubServiceEnvironmentTypeField  = "service.environment_type"
+	gcpAppHubServiceCriticalityTypeField  = "service.criticality_type"
+	gcpAppHubWorkloadIDField              = "workload.id"
+	gcpAppHubWorkloadEnvironmentTypeField = "workload.environment_type"
+	gcpAppHubWorkloadCriticalityTypeField = "workload.criticality_type"
 )
 
 // See: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
@@ -104,158 +149,176 @@ type appHub struct {
 		EnvironmentType string `json:"environmentType"`
 		CriticalityType string `json:"criticalityType"`
 	} `json:"service"`
-	Workflow *struct {
+	Workload *struct {
 		ID              string `json:"id"`
 		EnvironmentType string `json:"environmentType"`
 		CriticalityType string `json:"criticalityType"`
 	} `json:"workload"`
 }
 
-func strToInt(numberStr string) (*int64, error) {
-	num, err := strconv.ParseInt(numberStr, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert string %q to int64", numberStr)
-	}
-	return &num, nil
-}
-
-func putStr(attr pcommon.Map, field, value string) {
-	if value != "" {
-		attr.PutStr(field, value)
-	}
-}
-
-func putInt(attr pcommon.Map, field string, value *int64) {
-	if value != nil {
-		attr.PutInt(field, *value)
-	}
-}
-
-func putBool(attr pcommon.Map, field string, value *bool) {
-	if value != nil {
-		attr.PutBool(field, *value)
-	}
-}
-
-func handleHTTPRequestField(logRecord plog.LogRecord, req *httpRequest) {
+// handleHTTPRequestField will place the HTTP attributes in the log record
+func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	if req == nil {
-		return
+		return nil
 	}
 
-	requestMap := logRecord.Attributes().PutEmptyMap("gcp.http_request")
-	if n, err := strToInt(req.ResponseSize); err == nil {
-		putInt(requestMap, "response_size", n)
+	if err := shared.AddStrAsInt(string(semconv.HTTPResponseSizeKey), req.ResponseSize, attributes); err != nil {
+		return fmt.Errorf("failed to add response size: %w", err)
 	}
-	if n, err := strToInt(req.RequestSize); err == nil {
-		putInt(requestMap, "request_size", n)
+
+	if err := shared.AddStrAsInt(string(semconv.HTTPRequestSizeKey), req.RequestSize, attributes); err != nil {
+		return fmt.Errorf("failed to add request size: %w", err)
 	}
-	putStr(requestMap, "request_method", req.RequestMethod)
-	putStr(requestMap, "request_url", req.RequestURL)
-	putInt(requestMap, "status", req.Status)
-	putStr(requestMap, "user_agent", req.UserAgent)
-	putStr(requestMap, "remote_ip", req.RemoteIP)
-	putStr(requestMap, "server_ip", req.ServerIP)
-	putStr(requestMap, "referer", req.Referer)
-	putStr(requestMap, "latency", req.Latency)
-	putStr(requestMap, "protocol", req.Protocol)
-	putStr(requestMap, "cache_fill_bytes", req.CacheFillBytes)
-	putBool(requestMap, "cache_lookup", req.CacheLookup)
-	putBool(requestMap, "cache_hit", req.CacheHit)
-	putBool(requestMap, "cache_validated_with_origin_server", req.CacheValidatedWithOriginServer)
+
+	if err := shared.AddStrAsInt(gcpCacheFillBytes, req.CacheFillBytes, attributes); err != nil {
+		return fmt.Errorf("failed to add cache fill bytes: %w", err)
+	}
+
+	if req.Latency != "" {
+		sec, after, found := strings.Cut(req.Latency, "s")
+		if after != "" || !found {
+			return fmt.Errorf(`invalid latency format: %q must end with "s" (e.g., "0.5s")`, req.Latency)
+		}
+		latency, err := strconv.ParseFloat(sec, 64)
+		if err != nil {
+			return fmt.Errorf(
+				`invalid latency value: %q must be a number followed by "s" (e.g., "200s"), parsing error: %w`,
+				req.Latency, err,
+			)
+		}
+		attributes.PutDouble(requestServerDurationField, latency)
+	}
+
+	if req.RequestURL != "" {
+		attributes.PutStr(string(semconv.URLFullKey), req.RequestURL)
+		u, err := url.Parse(req.RequestURL)
+		if err != nil {
+			return fmt.Errorf("failed to parse request url %q: %w", req.RequestURL, err)
+		}
+		shared.PutStr(string(semconv.URLPathKey), u.Path, attributes)
+		shared.PutStr(string(semconv.URLQueryKey), u.RawQuery, attributes)
+		shared.PutStr(string(semconv.URLDomainKey), u.Host, attributes)
+	}
+
+	if req.Protocol != "" {
+		if strings.Count(req.Protocol, "/") != 1 {
+			return fmt.Errorf(
+				`invalid protocol %q: expected exactly one "/" (format "<name>/<version>", e.g. "HTTP/1.1")`,
+				req.Protocol,
+			)
+		}
+		name, version, found := strings.Cut(req.Protocol, "/")
+		if !found || name == "" || version == "" {
+			return fmt.Errorf(
+				`invalid protocol %q: name or version is missing (expected format "<name>/<version>", e.g. "HTTP/1.1")`,
+				req.Protocol,
+			)
+		}
+		attributes.PutStr(string(semconv.NetworkProtocolNameKey), strings.ToLower(name))
+		attributes.PutStr(string(semconv.NetworkProtocolVersionKey), version)
+	}
+
+	shared.PutInt(string(semconv.HTTPResponseStatusCodeKey), req.Status, attributes)
+	shared.PutStr(string(semconv.HTTPRequestMethodKey), req.RequestMethod, attributes)
+	shared.PutStr(string(semconv.UserAgentOriginalKey), req.UserAgent, attributes)
+	shared.PutStr(string(semconv.ClientAddressKey), req.RemoteIP, attributes)
+	shared.PutStr(string(semconv.ServerAddressKey), req.ServerIP, attributes)
+	shared.PutStr(refererHeaderField, req.Referer, attributes)
+	shared.PutBool(gcpCacheLookupField, req.CacheLookup, attributes)
+	shared.PutBool(gcpCacheHitField, req.CacheHit, attributes)
+	shared.PutBool(gcpCacheValidatedWithOriginSeverField, req.CacheValidatedWithOriginServer, attributes)
+	return nil
 }
 
-func handleOperationField(logRecord plog.LogRecord, op *operation) {
+// handleOperationField will place the operation attributes in the log record
+func handleOperationField(attributes pcommon.Map, op *operation) {
 	if op == nil {
 		return
 	}
 
-	operationMap := logRecord.Attributes().PutEmptyMap("gcp.origin")
-	putStr(operationMap, "id", op.ID)
-	putStr(operationMap, "producer", op.Producer)
-	putBool(operationMap, "first", op.First)
-	putBool(operationMap, "last", op.Last)
+	shared.PutStr(gcpOperationIDField, op.ID, attributes)
+	shared.PutStr(gcpOperationProducerField, op.Producer, attributes)
+	shared.PutBool(gcpOperationFirstField, op.First, attributes)
+	shared.PutBool(gcpOperationLast, op.Last, attributes)
 }
 
-func handleSourceLocationField(logRecord plog.LogRecord, sourceLoc *sourceLocation) {
+// handleSourceLocationField will place the source location attributes in the log record
+func handleSourceLocationField(attributes pcommon.Map, sourceLoc *sourceLocation) error {
 	if sourceLoc == nil {
-		return
+		return nil
 	}
 
-	sourceLocMap := logRecord.Attributes().PutEmptyMap("gcp.source_location")
-	putStr(sourceLocMap, "file", sourceLoc.File)
-	putStr(sourceLocMap, "line", sourceLoc.Line)
-	putStr(sourceLocMap, "function", sourceLoc.Function)
+	if err := shared.AddStrAsInt(string(semconv.CodeLineNumberKey), sourceLoc.Line, attributes); err != nil {
+		return fmt.Errorf("expected source location line %q to be a number: %w", sourceLoc.Line, err)
+	}
+	shared.PutStr(string(semconv.CodeFilePathKey), sourceLoc.File, attributes)
+	shared.PutStr(string(semconv.CodeFunctionNameKey), sourceLoc.Function, attributes)
+	return nil
 }
 
-func handleSplitField(logRecord plog.LogRecord, s *split) {
+// handleSplitField will place the split attributes in the log record
+func handleSplitField(attributes pcommon.Map, s *split) {
 	if s == nil {
 		return
 	}
 
-	splitMap := logRecord.Attributes().PutEmptyMap("gcp.split")
-	putStr(splitMap, "uid", s.UID)
-	putInt(splitMap, "index", s.Index)
-	putInt(splitMap, "total_splits", s.TotalSplits)
+	shared.PutStr(gcpSplitUIDField, s.UID, attributes)
+	shared.PutInt(gcpSplitIndexField, s.Index, attributes)
+	shared.PutInt(gcpSplitTotalField, s.TotalSplits, attributes)
 }
 
-func handleErrorGroupField(logRecord plog.LogRecord, errGroup []errorGroup) {
+// handleErrorGroupField will place all ids of the error group in a new log record attribute
+func handleErrorGroupField(attributes pcommon.Map, errGroup []errorGroup) {
 	if len(errGroup) == 0 {
 		return
 	}
-	errorGroupSlice := logRecord.Attributes().PutEmptySlice("gcp.error_group")
+
+	errorGroupSlice := attributes.PutEmptySlice(gcpErrorGroupField)
 	for _, err := range errGroup {
-		errorGroupSlice.AppendEmpty().SetStr(err.ID)
+		obj := errorGroupSlice.AppendEmpty()
+		m := obj.SetEmptyMap()
+		m.PutStr("id", err.ID)
 	}
 }
 
-func handleAppHubField(logRecord plog.LogRecord, appHub *appHub, mapName string) {
+func handleAppHubField(attributes pcommon.Map, appHub *appHub, prefix string) {
 	if appHub == nil {
 		return
 	}
 
-	m := pcommon.NewMap()
+	addAppHubAttr := func(field, value string) {
+		field = prefix + "." + field
+		shared.PutStr(field, value, attributes)
+	}
 
 	if application := appHub.Application; application != nil {
-		mApplication := m.PutEmptyMap("application")
-		putStr(mApplication, "container", application.Container)
-		putStr(mApplication, "location", application.Location)
-		putStr(mApplication, "id", application.ID)
+		addAppHubAttr(gcpAppHubApplicationContainerField, application.Container)
+		addAppHubAttr(gcpAppHubApplicationLocationField, application.Location)
+		addAppHubAttr(gcpAppHubApplicationIDField, application.ID)
 	}
 
 	if service := appHub.Service; service != nil {
-		mService := m.PutEmptyMap("service")
-		putStr(mService, "environment_type", service.EnvironmentType)
-		putStr(mService, "criticality_type", service.CriticalityType)
-		putStr(mService, "id", service.ID)
+		addAppHubAttr(gcpAppHubServiceEnvironmentTypeField, service.EnvironmentType)
+		addAppHubAttr(gcpAppHubServiceCriticalityTypeField, service.CriticalityType)
+		addAppHubAttr(gcpAppHubServiceIDField, service.ID)
 	}
 
-	if workflow := appHub.Workflow; workflow != nil {
-		mWorkflow := m.PutEmptyMap("workflow")
-		putStr(mWorkflow, "environment_type", workflow.EnvironmentType)
-		putStr(mWorkflow, "criticality_type", workflow.CriticalityType)
-		putStr(mWorkflow, "id", workflow.ID)
-	}
-
-	if m.Len() > 0 {
-		m.CopyTo(logRecord.Attributes().PutEmptyMap(mapName))
+	if workload := appHub.Workload; workload != nil {
+		addAppHubAttr(gcpAppHubWorkloadEnvironmentTypeField, workload.EnvironmentType)
+		addAppHubAttr(gcpAppHubWorkloadCriticalityTypeField, workload.CriticalityType)
+		addAppHubAttr(gcpAppHubWorkloadIDField, workload.ID)
 	}
 }
 
-func cloudLoggingTraceToTraceIDBytes(trace string) ([16]byte, error) {
+// getTraceID will parse the given trace and return the decoding id
+func getTraceID(trace string) ([16]byte, error) {
 	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095
-	lastSlashIdx := strings.LastIndex(trace, "/")
-	if lastSlashIdx == -1 {
-		return [16]byte{}, fmt.Errorf(
-			"invalid trace format: expected 'projects/{project}/traces/{trace_id}' but got %q", trace,
-		)
+	_, trace, found := strings.Cut(trace, "/traces/")
+	if !found || trace == "" {
+		return [16]byte{}, fmt.Errorf(`expected trace format to be "projects/<id>/traces/<id>" but got %q`, trace)
 	}
-	traceIDStr := trace[lastSlashIdx+1:]
 
-	return traceIDStrToTraceIDBytes(traceIDStr)
-}
-
-func traceIDStrToTraceIDBytes(traceIDStr string) ([16]byte, error) {
-	decoded, err := hex.DecodeString(traceIDStr)
+	decoded, err := hex.DecodeString(trace)
 	if err != nil {
 		return [16]byte{}, fmt.Errorf("failed to decode trace id to hexadecimal string: %w", err)
 	}
@@ -265,10 +328,10 @@ func traceIDStrToTraceIDBytes(traceIDStr string) ([16]byte, error) {
 	return [16]byte(decoded), nil
 }
 
-func spanIDStrToSpanIDBytes(spanIDStr string) ([8]byte, error) {
+// getTraceID will return the decoded span id
+func getSpanID(spanIDStr string) ([8]byte, error) {
 	// TODO cloud Run sends invalid span id's, make sure we're not crashing,
 	// see https://issuetracker.google.com/issues/338634230?pli=1
-
 	decoded, err := hex.DecodeString(spanIDStr)
 	if err != nil {
 		return [8]byte{}, fmt.Errorf("failed to decode span id to hexadecimal string: %w", err)
@@ -279,26 +342,27 @@ func spanIDStrToSpanIDBytes(spanIDStr string) ([8]byte, error) {
 	return [8]byte(decoded), nil
 }
 
-func cloudLoggingSeverityToNumber(severity string) plog.SeverityNumber {
+// getSeverityNumber will map the severity to the plog.SeverityNumber
+func getSeverityNumber(severity string) plog.SeverityNumber {
 	// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
 	switch severity {
-	case "DEBUG":
+	case ltype.LogSeverity_DEBUG.String():
 		return plog.SeverityNumberDebug
-	case "INFO":
+	case ltype.LogSeverity_INFO.String():
 		return plog.SeverityNumberInfo
-	case "NOTICE":
+	case ltype.LogSeverity_NOTICE.String():
 		return plog.SeverityNumberInfo2
-	case "WARNING":
+	case ltype.LogSeverity_WARNING.String():
 		return plog.SeverityNumberWarn
-	case "ERROR":
+	case ltype.LogSeverity_ERROR.String():
 		return plog.SeverityNumberError
-	case "CRITICAL":
+	case ltype.LogSeverity_CRITICAL.String():
 		return plog.SeverityNumberFatal
-	case "ALERT":
+	case ltype.LogSeverity_ALERT.String():
 		return plog.SeverityNumberFatal2
-	case "EMERGENCY":
+	case ltype.LogSeverity_EMERGENCY.String():
 		return plog.SeverityNumberFatal4
-	case "DEFAULT":
+	case ltype.LogSeverity_DEFAULT.String():
 	}
 	return plog.SeverityNumberUnspecified
 }
@@ -351,64 +415,61 @@ func handleProtoPayloadField(logRecord plog.LogRecord, value gojson.RawMessage, 
 	}
 }
 
-// handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
-// or as part of the log body, in case of payload.
-func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, cfg Config) error {
-	if ts := log.Timestamp; ts != nil {
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(*ts))
-	}
-	if ts := log.ReceiveTimestamp; ts != nil {
-		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(*ts))
+// handleLogNameField parses a GCP logName string and extracts resource identifiers and log type.
+// The logName must follow one of these formats:
+//   - "projects/[PROJECT_ID]/logs/[LOG_ID]"
+//   - "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
+//   - "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
+//   - "folders/[FOLDER_ID]/logs/[LOG_ID]"
+//
+// The function populates the provided resourceAttr map with the extracted ID and log type
+// under the appropriate attribute keys. Returns the log type and any error encountered.
+func handleLogNameField(logName string, resourceAttr pcommon.Map) (string, error) {
+	if logName == "" {
+		return "", nil
 	}
 
-	putStr(logRecord.Attributes(), "log.record.uid", log.InsertID)
-	putStr(logRecord.Attributes(), "gcp.log_name", log.LogName)
-
-	if log.Resource != nil {
-		resourceAttributes.PutStr("gcp.resource_type", log.Resource.Type)
-		for k, v := range log.Resource.Labels {
-			resourceAttributes.PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.%v", k), "."), v)
+	addIDsAttributes := func(prefix, format, field string) (string, error) {
+		_, rest, _ := strings.Cut(logName, prefix)
+		id, logType, _ := strings.Cut(rest, "/logs/")
+		if logType == "" || id == "" {
+			return "", fmt.Errorf(
+				`expected log name %q to have format "%s/%s/logs/[LOG_ID]"`, logName, prefix, format,
+			)
 		}
+		resourceAttr.PutStr(field, id)
+		resourceAttr.PutStr(string(semconv.CloudResourceIDKey), logType)
+		return logType, nil
 	}
 
-	if log.Severity != "" {
-		logRecord.SetSeverityText(log.Severity)
-		logRecord.SetSeverityNumber(cloudLoggingSeverityToNumber(log.Severity))
+	switch {
+	case strings.HasPrefix(logName, "projects/"):
+		return addIDsAttributes("projects/", "[PROJECT_ID]", gcpProjectField)
+	case strings.HasPrefix(logName, "organizations/"):
+		return addIDsAttributes("organizations/", "[ORGANIZATION_ID]", gcpOrganizationField)
+	case strings.HasPrefix(logName, "billingAccounts/"):
+		return addIDsAttributes("billingAccounts/", "[BILLING_ACCOUNT_ID]", gcpBillingAccountField)
+	case strings.HasPrefix(logName, "folders/"):
+		return addIDsAttributes("folders/", "[FOLDER_ID]/", gcpFolderField)
+	default:
+		return "", fmt.Errorf("unrecognized log name %q", logName)
 	}
+}
 
-	if log.Trace != "" {
-		traceIDBytes, err := cloudLoggingTraceToTraceIDBytes(log.Trace)
-		if err != nil {
-			return err
+func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg Config) error {
+	switch logType {
+	case auditlog.ActivityLogNameSuffix,
+		auditlog.DataAccessLogNameSuffix,
+		auditlog.SystemEventLogNameSuffix,
+		auditlog.PolicyLogNameSuffix:
+		if err := auditlog.ParsePayloadIntoAttributes(log.ProtoPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
 		}
-		logRecord.SetTraceID(traceIDBytes)
+		return nil
+		// TODO Add support for more log types
 	}
 
-	if log.SpanID != "" {
-		spanIDBytes, err := spanIDStrToSpanIDBytes(log.SpanID)
-		if err != nil {
-			return err
-		}
-		logRecord.SetSpanID(spanIDBytes)
-	}
-
-	if log.TraceSampled != nil {
-		var flags plog.LogRecordFlags
-		logRecord.SetFlags(flags.WithIsSampled(*log.TraceSampled))
-	}
-
-	for k, v := range log.Labels {
-		logRecord.Attributes().PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.%v", k), "."), v)
-	}
-
-	handleHTTPRequestField(logRecord, log.HTTPRequest)
-	handleOperationField(logRecord, log.Operation)
-	handleSourceLocationField(logRecord, log.SourceLocation)
-	handleSplitField(logRecord, log.Split)
-	handleErrorGroupField(logRecord, log.ErrorGroups)
-
-	handleAppHubField(logRecord, log.AppHub, "apphub")
-	handleAppHubField(logRecord, log.AppHubDestination, "apphub_destination")
+	// if the log type was not recognized, add the payload to the log record body
 
 	if len(log.ProtoPayload) > 0 {
 		if err := handleProtoPayloadField(logRecord, log.ProtoPayload, cfg); err != nil {
@@ -423,6 +484,83 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 	if log.TextPayload != "" {
 		handleTextPayloadField(logRecord, log.TextPayload)
 	}
+	return nil
+}
+
+// handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
+// or as part of the log body, in case of payload.
+func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, cfg Config) error {
+	ts := log.Timestamp
+	if ts == nil {
+		return errors.New("missing timestamp")
+	}
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(*ts))
+
+	if receivedTs := log.ReceiveTimestamp; receivedTs != nil {
+		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(*receivedTs))
+	}
+
+	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
+
+	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
+	if errLogName != nil {
+		return fmt.Errorf("failed to handle log name field: %w", errLogName)
+	}
+	if err := handlePayload(logType, log, logRecord, cfg); err != nil {
+		return fmt.Errorf("failed to handle payload field: %w", err)
+	}
+
+	if err := handleHTTPRequestField(logRecord.Attributes(), log.HTTPRequest); err != nil {
+		return fmt.Errorf("failed to handle HTTP request entry field: %w", err)
+	}
+
+	if err := handleSourceLocationField(logRecord.Attributes(), log.SourceLocation); err != nil {
+		return fmt.Errorf("failed to handle source location entry field: %w", err)
+	}
+
+	if log.Resource != nil {
+		resourceAttributes.PutStr(gcpResourceTypeField, log.Resource.Type)
+		for k, v := range log.Resource.Labels {
+			resourceAttributes.PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.label.%v", k), "."), v)
+		}
+	}
+
+	if log.Severity != "" {
+		logRecord.SetSeverityText(log.Severity)
+		logRecord.SetSeverityNumber(getSeverityNumber(log.Severity))
+	}
+
+	if log.Trace != "" {
+		traceIDBytes, err := getTraceID(log.Trace)
+		if err != nil {
+			return err
+		}
+		logRecord.SetTraceID(traceIDBytes)
+	}
+
+	if log.SpanID != "" {
+		spanIDBytes, err := getSpanID(log.SpanID)
+		if err != nil {
+			return err
+		}
+		logRecord.SetSpanID(spanIDBytes)
+	}
+
+	if log.TraceSampled != nil {
+		var flags plog.LogRecordFlags
+		logRecord.SetFlags(flags.WithIsSampled(*log.TraceSampled))
+	}
+
+	for k, v := range log.Labels {
+		logRecord.Attributes().PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.label.%v", k), "."), v)
+	}
+
+	handleOperationField(logRecord.Attributes(), log.Operation)
+	handleSplitField(logRecord.Attributes(), log.Split)
+	handleErrorGroupField(logRecord.Attributes(), log.ErrorGroups)
+
+	handleAppHubField(logRecord.Attributes(), log.AppHub, gcpAppHubPrefix)
+	handleAppHubField(logRecord.Attributes(), log.AppHubDestination, gcpAppHubDestinationPrefix)
 
 	return nil
 }

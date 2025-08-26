@@ -19,10 +19,78 @@ type AttributeHash [16]byte
 type TimeseriesInfo struct {
 	Mark bool
 
-	Number               pmetric.NumberDataPoint
-	Histogram            pmetric.HistogramDataPoint
-	ExponentialHistogram pmetric.ExponentialHistogramDataPoint
-	Summary              pmetric.SummaryDataPoint
+	Number               NumberInfo
+	Histogram            HistogramInfo
+	ExponentialHistogram ExponentialHistogramInfo
+	Summary              SummaryInfo
+}
+
+type NumberInfo struct {
+	StartTime     pcommon.Timestamp
+	PreviousValue float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefValue float64
+}
+
+type HistogramInfo struct {
+	StartTime            pcommon.Timestamp
+	PreviousCount        uint64
+	PreviousSum          float64
+	PreviousBucketCounts []uint64
+	ExplicitBounds       []float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount        uint64
+	RefSum          float64
+	RefBucketCounts []uint64
+}
+
+type ExponentialHistogramInfo struct {
+	StartTime         pcommon.Timestamp
+	PreviousCount     uint64
+	PreviousSum       float64
+	PreviousZeroCount uint64
+	Scale             int32
+	PreviousPositive  ExponentialHistogramBucketInfo
+	PreviousNegative  ExponentialHistogramBucketInfo
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount     uint64
+	RefSum       float64
+	RefZeroCount uint64
+	RefPositive  ExponentialHistogramBucketInfo
+	RefNegative  ExponentialHistogramBucketInfo
+}
+
+type ExponentialHistogramBucketInfo struct {
+	Offset       int32
+	BucketCounts []uint64
+}
+
+func NewExponentialHistogramBucketInfo(ehdpb pmetric.ExponentialHistogramDataPointBuckets) ExponentialHistogramBucketInfo {
+	return ExponentialHistogramBucketInfo{
+		Offset:       ehdpb.Offset(),
+		BucketCounts: ehdpb.BucketCounts().AsRaw(),
+	}
+}
+
+type SummaryInfo struct {
+	StartTime     pcommon.Timestamp
+	PreviousCount uint64
+	PreviousSum   float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount uint64
+	RefSum   float64
 }
 
 type TimeseriesKey struct {
@@ -92,16 +160,16 @@ func (tsm *TimeseriesMap) GC() {
 // and determines whether the metric has been reset based on the values.  It is
 // a reset if any of the bucket boundaries have changed, if any of the bucket
 // counts have decreased or if the total sum or count have decreased.
-func IsResetHistogram(h, ref pmetric.HistogramDataPoint) bool {
-	if h.Count() < ref.Count() {
+func (ref *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
+	if h.Count() < ref.Histogram.PreviousCount {
 		return true
 	}
-	if h.Sum() < ref.Sum() {
+	if h.Sum() < ref.Histogram.PreviousSum {
 		return true
 	}
 
 	// Guard against bucket boundaries changes.
-	refBounds := ref.ExplicitBounds().AsRaw()
+	refBounds := ref.Histogram.ExplicitBounds
 	hBounds := h.ExplicitBounds().AsRaw()
 	if len(refBounds) != len(hBounds) {
 		return true
@@ -113,11 +181,11 @@ func IsResetHistogram(h, ref pmetric.HistogramDataPoint) bool {
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if ref.BucketCounts().Len() != h.BucketCounts().Len() {
+	if len(ref.Histogram.PreviousBucketCounts) != h.BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.BucketCounts().Len() {
-		if h.BucketCounts().At(i) < ref.BucketCounts().At(i) {
+	for i := range len(ref.Histogram.PreviousBucketCounts) {
+		if h.BucketCounts().At(i) < ref.Histogram.PreviousBucketCounts[i] {
 			return true
 		}
 	}
@@ -129,34 +197,37 @@ func IsResetHistogram(h, ref pmetric.HistogramDataPoint) bool {
 // has been reset based on the values.  It is a reset if any of the bucket
 // boundaries have changed, if any of the bucket counts have decreased or if the
 // total sum or count have decreased.
-func IsResetExponentialHistogram(eh, ref pmetric.ExponentialHistogramDataPoint) bool {
+func (ref *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHistogramDataPoint) bool {
 	// Same as the histogram implementation
-	if eh.Count() < ref.Count() {
+	if eh.Count() < ref.ExponentialHistogram.PreviousCount {
 		return true
 	}
-	if eh.Sum() < ref.Sum() {
+	if eh.Sum() < ref.ExponentialHistogram.PreviousSum {
+		return true
+	}
+	if eh.ZeroCount() < ref.ExponentialHistogram.PreviousZeroCount {
 		return true
 	}
 
 	// Guard against bucket boundaries changes.
-	if ref.Scale() != eh.Scale() {
+	if ref.ExponentialHistogram.Scale != eh.Scale() {
 		return true
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if ref.Positive().BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
+	if len(ref.ExponentialHistogram.PreviousPositive.BucketCounts) != eh.Positive().BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.Positive().BucketCounts().Len() {
-		if eh.Positive().BucketCounts().At(i) < ref.Positive().BucketCounts().At(i) {
+	for i := range len(ref.ExponentialHistogram.PreviousPositive.BucketCounts) {
+		if eh.Positive().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousPositive.BucketCounts[i] {
 			return true
 		}
 	}
-	if ref.Negative().BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
+	if len(ref.ExponentialHistogram.PreviousNegative.BucketCounts) != eh.Negative().BucketCounts().Len() {
 		return true
 	}
-	for i := range ref.Negative().BucketCounts().Len() {
-		if eh.Negative().BucketCounts().At(i) < ref.Negative().BucketCounts().At(i) {
+	for i := range len(ref.ExponentialHistogram.PreviousNegative.BucketCounts) {
+		if eh.Negative().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousNegative.BucketCounts[i] {
 			return true
 		}
 	}
@@ -167,15 +238,15 @@ func IsResetExponentialHistogram(eh, ref pmetric.ExponentialHistogramDataPoint) 
 // IsResetSummary compares the given summary datapoint s to ref and
 // determines whether the metric has been reset based on the values.  It is a
 // reset if the count or sum has decreased.
-func IsResetSummary(s, ref pmetric.SummaryDataPoint) bool {
-	return s.Count() < ref.Count() || s.Sum() < ref.Sum()
+func (ref *TimeseriesInfo) IsResetSummary(s pmetric.SummaryDataPoint) bool {
+	return s.Count() < ref.Summary.PreviousCount || s.Sum() < ref.Summary.PreviousSum
 }
 
 // IsResetSum compares the given number datapoint s to ref and determines
 // whether the metric has been reset based on the values.  It is a reset if the
 // value has decreased.
-func IsResetSum(s, ref pmetric.NumberDataPoint) bool {
-	return s.DoubleValue() < ref.DoubleValue()
+func (ref *TimeseriesInfo) IsResetSum(s pmetric.NumberDataPoint) bool {
+	return s.DoubleValue() < ref.Number.PreviousValue
 }
 
 func newTimeseriesMap() *TimeseriesMap {

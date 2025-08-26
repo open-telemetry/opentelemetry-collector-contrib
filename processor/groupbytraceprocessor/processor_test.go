@@ -56,7 +56,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 		},
 	}
 	p.st = st
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -101,7 +101,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), mockProcessor, config)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -201,13 +201,13 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
 
-	err := p.ConsumeTraces(context.Background(), batch)
+	err := p.ConsumeTraces(t.Context(), batch)
 	require.NoError(t, err)
 
 	// test
@@ -239,13 +239,13 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
 
-	err := p.ConsumeTraces(context.Background(), batch)
+	err := p.ConsumeTraces(t.Context(), batch)
 	require.NoError(t, err)
 
 	// test
@@ -317,7 +317,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -334,8 +334,8 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 	wg.Add(1)
 
-	assert.NoError(t, p.ConsumeTraces(context.Background(), first))
-	assert.NoError(t, p.ConsumeTraces(context.Background(), second))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), first))
+	assert.NoError(t, p.ConsumeTraces(t.Context(), second))
 
 	wg.Wait()
 
@@ -463,7 +463,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	require.NotNil(t, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
@@ -570,7 +570,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	require.NotNil(b, p)
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
-	ctx := context.Background()
+	ctx := b.Context()
 	require.NoError(b, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(b, p.Shutdown(ctx))
@@ -579,7 +579,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		traceID := pcommon.TraceID([16]byte{byte(1 + n), 2, 3, 4})
 		trace := simpleTracesWithID(traceID)
-		assert.NoError(b, p.ConsumeTraces(context.Background(), trace))
+		assert.NoError(b, p.ConsumeTraces(b.Context(), trace))
 	}
 }
 

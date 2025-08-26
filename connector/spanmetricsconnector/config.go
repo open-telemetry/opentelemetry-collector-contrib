@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -95,18 +96,18 @@ type Config struct {
 }
 
 type HistogramConfig struct {
-	Disable     bool                        `mapstructure:"disable"`
-	Unit        metrics.Unit                `mapstructure:"unit"`
-	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
-	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
-	Dimensions  []Dimension                 `mapstructure:"dimensions"`
+	Disable     bool                                                `mapstructure:"disable"`
+	Unit        metrics.Unit                                        `mapstructure:"unit"`
+	Exponential configoptional.Optional[ExponentialHistogramConfig] `mapstructure:"exponential"`
+	Explicit    configoptional.Optional[ExplicitHistogramConfig]    `mapstructure:"explicit"`
+	Dimensions  []Dimension                                         `mapstructure:"dimensions"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 type ExemplarsConfig struct {
 	Enabled         bool `mapstructure:"enabled"`
-	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
+	MaxPerDataPoint int  `mapstructure:"max_per_data_point"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -144,7 +145,7 @@ func (c Config) Validate() error {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
-	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
+	if c.Histogram.Explicit.HasValue() && c.Histogram.Exponential.HasValue() {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
@@ -165,6 +166,10 @@ func (c Config) Validate() error {
 
 	if c.AggregationCardinalityLimit < 0 {
 		return fmt.Errorf("invalid aggregation_cardinality_limit: %v, the limit should be positive", c.AggregationCardinalityLimit)
+	}
+
+	if c.Exemplars.Enabled && c.Exemplars.MaxPerDataPoint < 0 {
+		return fmt.Errorf("invalid max_per_data_point: %v, the value should be positive", c.Exemplars.MaxPerDataPoint)
 	}
 
 	return nil

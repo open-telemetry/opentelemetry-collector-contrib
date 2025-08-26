@@ -121,7 +121,7 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 		t.Fatal(fmt.Errorf("failed to create ClickHouse container \"%s\": %w", clickhouseImage, err))
 	}
 	defer func(c testcontainers.Container) {
-		err := c.Terminate(context.Background())
+		err := c.Terminate(t.Context())
 		if err != nil {
 			fmt.Println(fmt.Errorf("failed to terminate ClickHouse container \"%s\": %w", clickhouseImage, err))
 		}

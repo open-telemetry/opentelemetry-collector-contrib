@@ -434,7 +434,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, s.Shutdown(context.Background()))
+		require.NoError(t, s.Shutdown(t.Context()))
 	})
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.newTelemetrySettings())
 	require.NoError(t, err)
@@ -536,7 +536,7 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 
 func getGaugeValue(t *testing.T, name string, tt testTelemetry) int64 {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.reader.Collect(t.Context(), &md))
 	m := tt.getMetric(name, md).Data
 	g := m.(metricdata.Gauge[int64])
 	assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
@@ -545,7 +545,7 @@ func getGaugeValue(t *testing.T, name string, tt testTelemetry) int64 {
 
 func assertGaugeNotCreated(t *testing.T, name string, tt testTelemetry) {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.reader.Collect(t.Context(), &md))
 	got := tt.getMetric(name, md)
 	assert.Equal(t, metricdata.Metrics{}, got, "gauge exists already but shouldn't")
 }
