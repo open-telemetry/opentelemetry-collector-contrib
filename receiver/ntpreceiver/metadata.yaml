@@ -18,9 +18,7 @@ resource_attributes:
 metrics:
   ntp.offset:
     description: Time difference between local and NTP server clocks
-    unit: "ns"
+    enabled: true
     gauge:
       value_type: int
-    enabled: true
-
-tests:
+    unit: "ns"

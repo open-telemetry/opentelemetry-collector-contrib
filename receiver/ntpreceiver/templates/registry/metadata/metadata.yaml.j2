@@ -1,0 +1,31 @@
+type: ntp
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]
+    seeking_new: true
+
+resource_attributes:
+{% for attr in (ctx.groups | selectattr("id", "equalto", "resource.attributes") | first).attributes %}  {{ attr.name | safe }}:
+    description: {{ attr.brief | safe }}
+    enabled: {% if attr.requirement_level == "opt_in" %}false{% else %}true{% endif %}
+    type: {{ attr.type | safe }}
+{% endfor %}
+metrics:
+{% for m in ctx.groups | selectattr("type", "equalto", "metric") %}  {{ m.id | safe }}:
+    description: {{ m.brief | safe }}
+    enabled: {{ m.annotations.scraper.enabled | safe }}
+    {% if m.instrument == "updowncounter" %}sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    {% else %}gauge:
+      value_type: int
+    {% endif %}unit: {{ m.unit }}
+{% if m.attributes %}    attributes:{% for attr in m.attributes %}
+      - {{ attr.name | safe }}{% endfor %}
+{% endif %}{% endfor %}
