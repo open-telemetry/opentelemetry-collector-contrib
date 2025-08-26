@@ -31,7 +31,6 @@ func TestIntegration(t *testing.T) {
 			testcontainers.ContainerRequest{
 				Image: "docker.io/library/nginx:1.17",
 				Name:  "dockerstatsreceiver-test",
-				Cmd:   []string{"sh", "-c", "while true; do dd if=/dev/zero of=/tmp/testfile bs=1K count=10; cp -f /tmp/testfile /tmp/testfile.bak; sleep 10; done"},
 			},
 		),
 		scraperinttest.WithCustomConfig(
