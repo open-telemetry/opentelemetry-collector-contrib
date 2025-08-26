@@ -14,6 +14,10 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -24,6 +28,7 @@ type Statement[K any] struct {
 	condition         BoolExpr[K]
 	origText          string
 	telemetrySettings component.TelemetrySettings
+	tracer            trace.Tracer
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -31,22 +36,43 @@ type Statement[K any] struct {
 // If the statement contains no condition, the function will run and true will be returned.
 // In addition, the functions return value is always returned.
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
+	ctx, span := s.tracer.Start(ctx, "ottl.Statement.Execute")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "statement",
+			Value: attribute.StringValue(s.origText),
+		},
+	)
 	condition, err := s.condition.Eval(ctx, tCtx)
 	defer func() {
 		if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
 		}
 	}()
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "condition.matched",
+			Value: attribute.BoolValue(condition),
+		},
+	)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.End()
 		return nil, false, err
 	}
 	var result any
 	if condition {
 		result, err = s.function.Eval(ctx, tCtx)
 		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
 			return nil, true, err
 		}
 	}
+	span.SetStatus(codes.Ok, "statement executed successfully")
+	span.End()
 	return result, condition, nil
 }
 
@@ -148,6 +174,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 // Returns a Statement and a nil error on successful parsing.
 // If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
+	var tracer trace.Tracer = &noop.Tracer{}
 	parsed, err := parseStatement(statement)
 	if err != nil {
 		return nil, err
@@ -160,11 +187,15 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	if err != nil {
 		return nil, err
 	}
+	if p.telemetrySettings.TracerProvider != nil {
+		tracer = p.telemetrySettings.TracerProvider.Tracer("ottl")
+	}
 	return &Statement[K]{
 		function:          function,
 		condition:         expression,
 		origText:          statement,
 		telemetrySettings: p.telemetrySettings,
+		tracer:            tracer,
 	}, nil
 }
 
