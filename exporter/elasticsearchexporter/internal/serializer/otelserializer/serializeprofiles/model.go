@@ -97,7 +97,7 @@ func (h HostResourceData) MarshalJSON() ([]byte, error) {
 	combinedData[string(semconv.HostIDKey)] = h.HostID
 	combinedData["ecs.version"] = h.V
 	// The ES index profiling-hosts expects a second-precise timestamp
-	combinedData["@timestamp"] = time.Now().Local().UTC().Unix()
+	combinedData["@timestamp"] = time.Now().UTC().Unix()
 
 	// Iterate over the Data map and add the key-value pairs with lowercase keys and values
 	for key, value := range h.Data {
