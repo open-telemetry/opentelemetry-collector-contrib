@@ -384,3 +384,8 @@ func TestStopExporters(t *testing.T) {
 		t.Fatal("Timed out")
 	}
 }
+
+func resetZorkianWarningsForTesting() {
+	onceZorkianMetricsWarning = sync.Once{}
+	onceZorkianTracesWarning = sync.Once{}
+}
