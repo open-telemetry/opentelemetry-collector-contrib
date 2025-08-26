@@ -263,8 +263,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
 			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+				fmt.Println("capturing from existing rm")
 				rm = existingRM
 			} else {
+				fmt.Println("not capturing from existing rm")
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			}
 
@@ -307,8 +309,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		existingRM, ok := prw.rmCache.Get(hashedLabels)
 		var rm pmetric.ResourceMetrics
 		if ok {
+			fmt.Println("capturing from existing rm")
 			rm = existingRM
 		} else {
+			fmt.Println("not capturing from existing rm")
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 			prw.rmCache.Add(hashedLabels, rm)
@@ -429,8 +433,10 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			hashedLabels = xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 			existingRM, ok := prw.rmCache.Get(hashedLabels)
 			if ok {
+				fmt.Println("capturing from existing rm")
 				rm = existingRM
 			} else {
+				fmt.Println("not capturing from existing rm")
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 				prw.rmCache.Add(hashedLabels, rm)
