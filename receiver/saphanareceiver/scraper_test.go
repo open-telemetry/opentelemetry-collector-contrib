@@ -4,7 +4,6 @@
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -36,7 +35,7 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.ScrapeMetrics(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
@@ -103,7 +102,7 @@ func TestDisabledMetrics(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.ScrapeMetrics(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,

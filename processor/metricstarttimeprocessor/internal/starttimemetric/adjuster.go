@@ -13,6 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/datapointstorage"
 )
 
 const (
@@ -36,13 +39,15 @@ func init() {
 }
 
 type Adjuster struct {
+	referenceValueCache  *datapointstorage.Cache
 	startTimeMetricRegex *regexp.Regexp
 	set                  component.TelemetrySettings
 }
 
 // NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
-func NewAdjuster(set component.TelemetrySettings, startTimeMetricRegex *regexp.Regexp) *Adjuster {
+func NewAdjuster(set component.TelemetrySettings, startTimeMetricRegex *regexp.Regexp, gcInterval time.Duration) *Adjuster {
 	return &Adjuster{
+		referenceValueCache:  datapointstorage.NewCache(gcInterval),
 		set:                  set,
 		startTimeMetricRegex: startTimeMetricRegex,
 	}
@@ -59,6 +64,12 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	startTimeTs := timestampFromFloat64(startTime)
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
+		attrHash := pdatautil.MapHash(rm.Resource().Attributes())
+		tsm, _ := a.referenceValueCache.Get(attrHash)
+
+		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
+		// nothing else can modify the data used for adjustment.
+		tsm.Lock()
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
@@ -71,28 +82,59 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 					dataPoints := metric.Sum().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
+						refTsi, found := tsm.Get(metric, dp.Attributes())
+						if !found {
+							refTsi.Number = datapointstorage.NumberInfo{StartTime: startTimeTs}
+						} else if refTsi.IsResetSum(dp) {
+							refTsi.Number.StartTime = pcommon.NewTimestampFromTime(dp.Timestamp().AsTime().Add(-1 * time.Millisecond))
+						}
+						refTsi.Number.PreviousValue = dp.DoubleValue()
+						dp.SetStartTimestamp(refTsi.Number.StartTime)
 					}
 
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
+						refTsi, found := tsm.Get(metric, dp.Attributes())
+						if !found {
+							refTsi.Summary = datapointstorage.SummaryInfo{StartTime: startTimeTs}
+						} else if refTsi.IsResetSummary(dp) {
+							refTsi.Summary.StartTime = pcommon.NewTimestampFromTime(dp.Timestamp().AsTime().Add(-1 * time.Millisecond))
+						}
+						refTsi.Summary.PreviousCount, refTsi.Summary.PreviousSum = dp.Count(), dp.Sum()
+						dp.SetStartTimestamp(refTsi.Summary.StartTime)
 					}
 
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
+						refTsi, found := tsm.Get(metric, dp.Attributes())
+						if !found {
+							refTsi.Histogram = datapointstorage.HistogramInfo{StartTime: startTimeTs, ExplicitBounds: dp.ExplicitBounds().AsRaw()}
+						} else if refTsi.IsResetHistogram(dp) {
+							refTsi.Histogram.StartTime = pcommon.NewTimestampFromTime(dp.Timestamp().AsTime().Add(-1 * time.Millisecond))
+						}
+						refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = dp.Count(), dp.Sum()
+						refTsi.Histogram.PreviousBucketCounts = dp.BucketCounts().AsRaw()
+						dp.SetStartTimestamp(refTsi.Histogram.StartTime)
 					}
 
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
+						refTsi, found := tsm.Get(metric, dp.Attributes())
+						if !found {
+							refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{StartTime: startTimeTs, Scale: dp.Scale()}
+						} else if refTsi.IsResetExponentialHistogram(dp) {
+							refTsi.ExponentialHistogram.StartTime = pcommon.NewTimestampFromTime(dp.Timestamp().AsTime().Add(-1 * time.Millisecond))
+						}
+						refTsi.ExponentialHistogram.PreviousPositive = datapointstorage.NewExponentialHistogramBucketInfo(dp.Positive())
+						refTsi.ExponentialHistogram.PreviousNegative = datapointstorage.NewExponentialHistogramBucketInfo(dp.Negative())
+						refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = dp.Count(), dp.Sum(), dp.ZeroCount()
+						dp.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 					}
 
 				default:
@@ -100,8 +142,8 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 				}
 			}
 		}
+		tsm.Unlock()
 	}
-	// TODO: handle resets by factoring reset handling out of other strategies
 	return metrics, nil
 }
 

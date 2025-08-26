@@ -73,6 +73,21 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "validscraperjmxconfigs"),
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				Endpoint:           "myendpoint:55555",
+				CollectionInterval: 10 * time.Second,
+				JmxConfigs:         "testdata/rules.yaml",
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutConfig{
+						Timeout: 5 * time.Second,
+					},
+				},
+			},
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "missingendpoint"),
 			expectedErr: "missing required field(s): `endpoint`",
 			expected: &Config{

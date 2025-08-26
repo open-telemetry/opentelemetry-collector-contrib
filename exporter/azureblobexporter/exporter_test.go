@@ -30,16 +30,16 @@ import (
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &TelemetryConfig{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -47,20 +47,20 @@ func TestNewExporter(t *testing.T) {
 			Params:         map[string]string{},
 		},
 		FormatType: "json",
-		Encodings:  &Encodings{},
+		Encodings:  Encodings{},
 	}
 
 	me := newAzureBlobExporter(c, logger, pipeline.SignalMetrics)
 	assert.NotNil(t, me)
-	assert.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
 
 	le := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
 	assert.NotNil(t, le)
-	assert.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
 
 	te := newAzureBlobExporter(c, logger, pipeline.SignalTraces)
 	assert.NotNil(t, te)
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestExporterConsumeTelemetry(t *testing.T) {
@@ -97,11 +97,11 @@ func TestExporterConsumeTelemetry(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
-			assert.NoError(t, azureBlobExporter.start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, azureBlobExporter.start(t.Context(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
 			metrics := testdata.GenerateMetricsTwoMetrics()
-			assert.NoError(t, azureBlobExporter.ConsumeMetrics(context.Background(), metrics))
+			assert.NoError(t, azureBlobExporter.ConsumeMetrics(t.Context(), metrics))
 		})
 		t.Run(tt.id.String()+"-logs", func(t *testing.T) {
 			factory := NewFactory()
@@ -111,11 +111,11 @@ func TestExporterConsumeTelemetry(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
-			assert.NoError(t, azureBlobExporter.start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, azureBlobExporter.start(t.Context(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
 			logs := testdata.GenerateLogsTwoLogRecordsSameResource()
-			assert.NoError(t, azureBlobExporter.ConsumeLogs(context.Background(), logs))
+			assert.NoError(t, azureBlobExporter.ConsumeLogs(t.Context(), logs))
 		})
 		t.Run(tt.id.String()+"-traces", func(t *testing.T) {
 			factory := NewFactory()
@@ -125,11 +125,11 @@ func TestExporterConsumeTelemetry(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
-			assert.NoError(t, azureBlobExporter.start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, azureBlobExporter.start(t.Context(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
 			traces := testdata.GenerateTracesTwoSpansSameResource()
-			assert.NoError(t, azureBlobExporter.ConsumeTraces(context.Background(), traces))
+			assert.NoError(t, azureBlobExporter.ConsumeTraces(t.Context(), traces))
 		})
 	}
 }
@@ -138,7 +138,7 @@ func TestGenerateBlobName(t *testing.T) {
 	t.Parallel()
 
 	c := &Config{
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -167,7 +167,7 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 	t.Parallel()
 
 	c := &Config{
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:            "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:               "2006/01/02/logs_15_04_05.json",
 			TracesFormat:             "2006/01/02/traces_15_04_05", // no extension
@@ -231,50 +231,50 @@ func (_m *mockAzBlobClient) AppendBlock(ctx context.Context, containerName, blob
 func TestExporterAppendBlob(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &TelemetryConfig{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 		},
 		FormatType: formatTypeJSON,
-		AppendBlob: &AppendBlob{
+		AppendBlob: AppendBlob{
 			Enabled:   true,
 			Separator: "\n",
 		},
-		Encodings: &Encodings{},
+		Encodings: Encodings{},
 	}
 
 	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
-	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ae.client = mockClient
 
 	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
-	err := ae.ConsumeLogs(context.Background(), logs)
+	err := ae.ConsumeLogs(t.Context(), logs)
 	assert.NoError(t, err)
 	mockClient.AssertExpectations(t)
 
 	// Test append blob disabled
 	c.AppendBlob.Enabled = false
 	ae = newAzureBlobExporter(c, logger, pipeline.SignalLogs)
-	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 	mockClient = &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("UploadStream", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(azblob.UploadStreamResponse{}, nil)
 	ae.client = mockClient
 
-	err = ae.ConsumeLogs(context.Background(), logs)
+	err = ae.ConsumeLogs(t.Context(), logs)
 	assert.NoError(t, err)
 	mockClient.AssertExpectations(t)
 }
@@ -282,38 +282,38 @@ func TestExporterAppendBlob(t *testing.T) {
 func TestExporterAppendBlobError(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type:             ConnectionString,
 			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 		},
-		Container: &TelemetryConfig{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
+		BlobNameFormat: BlobNameFormat{
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 		},
 		FormatType: formatTypeJSON,
-		AppendBlob: &AppendBlob{
+		AppendBlob: AppendBlob{
 			Enabled:   true,
 			Separator: "\n",
 		},
-		Encodings: &Encodings{},
+		Encodings: Encodings{},
 	}
 
 	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
-	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("append error"))
 	ae.client = mockClient
 
 	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
-	err := ae.ConsumeLogs(context.Background(), logs)
+	err := ae.ConsumeLogs(t.Context(), logs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to upload data: append error")
 	mockClient.AssertExpectations(t)

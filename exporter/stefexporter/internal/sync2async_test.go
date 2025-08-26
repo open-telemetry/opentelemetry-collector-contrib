@@ -65,7 +65,7 @@ func TestSync2Async(t *testing.T) {
 	const syncProducers = 100
 	s2a := NewSync2Async(logger, syncProducers, async)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var wg sync.WaitGroup
 	const countPerProducer = 100
 	const totalCount = syncProducers * countPerProducer

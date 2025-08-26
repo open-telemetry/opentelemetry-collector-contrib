@@ -4,7 +4,6 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,7 @@ func TestBearerToken(t *testing.T) {
 	baCfg := baFactory.CreateDefaultConfig().(*bearertokenauthextension.Config)
 	baCfg.BearerToken = "the-token"
 
-	baExt, err := baFactory.Create(context.Background(), extensiontest.NewNopSettings(baFactory.Type()), baCfg)
+	baExt, err := baFactory.Create(t.Context(), extensiontest.NewNopSettings(baFactory.Type()), baCfg)
 	require.NoError(t, err)
 
 	baComponentName := component.MustNewIDWithName("bearertokenauth", "array01")

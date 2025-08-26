@@ -47,6 +47,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newAggregateOnAttributesFactory(),
 		newconvertExponentialHistToExplicitHistFactory(),
 		newAggregateOnAttributeValueFactory(),
+		newConvertSummaryQuantileValToGaugeFactory(),
 	)
 
 	for k, v := range metricFunctions {
