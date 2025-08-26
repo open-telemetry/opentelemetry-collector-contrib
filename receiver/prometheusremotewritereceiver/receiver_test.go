@@ -1759,14 +1759,12 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 func TestCacheHit(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
 
-	// Set a small cache size to make eviction more likely
 	prwReceiver.rmCache.Resize(4)
 
 	t.Cleanup(func() {
 		prwReceiver.rmCache.Purge()
 	})
 
-	// Create a metric that will be cached
 	metricRequest := &writev2.Request{
 		Symbols: []string{
 			"",
@@ -1784,7 +1782,6 @@ func TestCacheHit(t *testing.T) {
 		},
 	}
 
-	// Create a different metric to potentially evict the first one from cache
 	evictorMetric := &writev2.Request{
 		Symbols: []string{
 			"",
@@ -1802,7 +1799,6 @@ func TestCacheHit(t *testing.T) {
 		},
 	}
 
-	// Create another evictor to fill the cache
 	metricRequest2 := &writev2.Request{
 		Symbols: []string{
 			"",
