@@ -13,6 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// GlobalCatalog stores catalog data for use by other chunk parsers
+var GlobalCatalog *CatalogChunk
+
 // TraceV3Header represents the complete header of a tracev3 file
 // Based on the Rust implementation from mandiant/macos-UnifiedLogs
 type TraceV3Header struct {
@@ -345,7 +348,8 @@ func parseDataEntries(data []byte, header *TraceV3Header) []*TraceV3Entry {
 			entry.ChunkType = "catalog"
 			entry.Subsystem = "com.apple.catalog"
 			entry.Category = "catalog_data"
-			ParseCatalogChunk(data[offset:offset+int(chunkDataSize)], entry)
+			// Pass data starting from the complete chunk including header
+			ParseCatalogChunk(data[offset:offset+totalChunkSize], entry)
 		case 0x600d:
 			// ChunkSet chunk - can contain many compressed individual log entries
 			entry.ChunkType = "chunkset"
