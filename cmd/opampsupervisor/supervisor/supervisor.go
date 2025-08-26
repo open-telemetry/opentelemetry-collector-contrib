@@ -678,7 +678,10 @@ func (s *Supervisor) startOpAMPClient() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		Capabilities: s.config.Capabilities.SupportedCapabilities(),
+	}
+	supportedCapabilities := s.config.Capabilities.SupportedCapabilities()
+	if err := s.opampClient.SetCapabilities(&supportedCapabilities); err != nil {
+		return err
 	}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	if err := s.opampClient.SetAgentDescription(ad); err != nil {
