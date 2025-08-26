@@ -87,7 +87,7 @@ For more information about the maintainer role, see the [community repository](h
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
-- [Christos Markou](https://github.com/ChrsMark), Elastic (On leave)
+- [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep
