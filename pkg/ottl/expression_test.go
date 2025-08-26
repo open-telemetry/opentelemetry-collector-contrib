@@ -730,9 +730,8 @@ func Test_newGetter(t *testing.T) {
 
 			valueComparator := NewValueComparator()
 			litGetter, isLiteralGetter := reader.(literalGetter)
-			val, err := reader.Get(t.Context(), tCtx)
-			assert.NoError(t, err)
 
+			var val any
 			if tt.wantLiteral {
 				require.True(t, litGetter.isLiteral())
 				val, err = litGetter.getLiteral()
@@ -741,7 +740,7 @@ func Test_newGetter(t *testing.T) {
 				if isLiteralGetter {
 					require.False(t, litGetter.isLiteral())
 				}
-				val, err = reader.Get(context.Background(), tCtx)
+				val, err = reader.Get(t.Context(), tCtx)
 				require.NoError(t, err)
 			}
 			assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
