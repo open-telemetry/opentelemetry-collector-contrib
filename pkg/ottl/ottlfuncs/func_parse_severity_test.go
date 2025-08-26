@@ -294,7 +294,7 @@ func Test_parseSeverity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := parseSeverity[any](tt.target, tt.mapping)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			if tt.expectErrorMsg != "" {
 				assert.ErrorContains(t, err, tt.expectErrorMsg)
 				return
