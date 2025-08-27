@@ -107,7 +107,7 @@ func TestFaroReceiver_Start(t *testing.T) {
 				require.Len(t, logs, 1)
 				expected, err := golden.ReadLogs(tc.expectedLogs)
 				require.NoError(t, err)
-				require.NoError(t, plogtest.CompareLogs(expected, logs[0]))
+				require.NoError(t, plogtest.CompareLogs(expected, logs[0], plogtest.IgnoreObservedTimestamp()))
 			}
 		})
 	}
