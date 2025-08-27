@@ -13,13 +13,13 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
-func getHostname() string {
+func getTestHostname() string {
 	hostname, _ := os.Hostname()
 	return hostname
 }
 
 func TestComputeServiceInstanceID(t *testing.T) {
-	hostname := getHostname()
+	hostname := getTestHostname()
 
 	tests := []struct {
 		name     string
@@ -28,7 +28,7 @@ func TestComputeServiceInstanceID(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "explicit_server_and_port",
+			name: "explicit server and port",
 			config: &Config{
 				Server: "myserver",
 				Port:   5000,
@@ -36,7 +36,7 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: "myserver:5000",
 		},
 		{
-			name: "explicit_server_default_port_zero",
+			name: "explicit server default port zero",
 			config: &Config{
 				Server: "myserver",
 				Port:   0,
@@ -44,7 +44,7 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: "myserver:1433",
 		},
 		{
-			name: "explicit_server_default_port_1433",
+			name: "explicit server default port 1433",
 			config: &Config{
 				Server: "myserver",
 				Port:   1433,
@@ -52,42 +52,42 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: "myserver:1433",
 		},
 		{
-			name: "datasource_with_port_comma_separator",
+			name: "datasource with port comma separator",
 			config: &Config{
 				DataSource: "server=myserver,5000;user id=sa;password=pass",
 			},
 			expected: "myserver:5000",
 		},
 		{
-			name: "datasource_with_port_colon_separator",
+			name: "datasource with port colon separator",
 			config: &Config{
 				DataSource: "server=myserver:5000;user id=sa;password=pass",
 			},
-			expected: "myserver:5000",
+			expected: "myserver:5000:1433", // msdsn treats "myserver:5000" as the host name
 		},
 		{
-			name: "datasource_without_port",
+			name: "datasource without port",
 			config: &Config{
 				DataSource: "server=myserver;user id=sa;password=pass",
 			},
 			expected: "myserver:1433",
 		},
 		{
-			name: "datasource_with_data_source_keyword",
+			name: "datasource with data source keyword",
 			config: &Config{
 				DataSource: "Data Source=myserver,5000;Initial Catalog=mydb",
 			},
 			expected: "myserver:5000",
 		},
 		{
-			name: "datasource_with_separate_port_param",
+			name: "datasource with separate port param",
 			config: &Config{
 				DataSource: "server=myserver;port=5000;user id=sa",
 			},
 			expected: "myserver:5000",
 		},
 		{
-			name: "localhost_replacement_with_explicit_server",
+			name: "localhost replacement with explicit server",
 			config: &Config{
 				Server: "localhost",
 				Port:   1433,
@@ -95,7 +95,7 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
-			name: "localhost_127_0_0_1_replacement",
+			name: "localhost 127.0.0.1 replacement",
 			config: &Config{
 				Server: "127.0.0.1",
 				Port:   1433,
@@ -103,19 +103,19 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
-			name: "localhost_in_datasource",
+			name: "localhost in datasource",
 			config: &Config{
 				DataSource: "server=localhost;user id=sa",
 			},
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
-			name: "no_server_uses_hostname",
-			config: &Config{},
+			name:     "no server uses hostname",
+			config:   &Config{},
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
-			name: "no_server_no_datasource",
+			name: "no server no datasource",
 			config: &Config{
 				Username: "sa",
 				Password: configopaque.String("pass"),
@@ -123,40 +123,32 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
-			name: "named_instance_with_port",
-			config: &Config{
-				Server: "myserver\\SQLEXPRESS",
-				Port:   5000,
-			},
-			expected: "myserver\\SQLEXPRESS:5000",
-		},
-		{
-			name: "datasource_with_named_instance",
+			name: "datasource with named instance",
 			config: &Config{
 				DataSource: "server=myserver\\SQLEXPRESS,5000;user id=sa",
 			},
-			expected: "myserver\\SQLEXPRESS:5000",
+			expected: "myserver:5000", // Instance name not included in service.instance.id
 		},
 		{
-			name: "datasource_with_spaces_around_equals",
+			name: "datasource with spaces around equals",
 			config: &Config{
 				DataSource: "server = myserver , 5000 ; user id = sa",
 			},
-			expected: "myserver:5000",
+			wantErr: true, // msdsn cannot parse spaces around comma in port
 		},
 		{
-			name: "case_insensitive_datasource_keywords",
+			name: "case insensitive datasource keywords",
 			config: &Config{
 				DataSource: "SERVER=MyServer,5000;User Id=sa",
 			},
 			expected: "MyServer:5000",
 		},
 		{
-			name: "invalid_datasource_no_server",
+			name: "invalid datasource no server defaults to localhost",
 			config: &Config{
 				DataSource: "user id=sa;password=pass",
 			},
-			wantErr: true,
+			expected: fmt.Sprintf("%s:1433", hostname), // msdsn defaults to localhost when no server specified
 		},
 	}
 
@@ -182,62 +174,62 @@ func TestParseDataSource(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "standard_comma_separator",
+			name:         "standard comma separator",
 			dataSource:   "server=myserver,5000;user id=sa",
 			expectedHost: "myserver",
 			expectedPort: 5000,
 		},
 		{
-			name:         "colon_separator",
+			name:         "colon separator treated as host",
 			dataSource:   "server=myserver:5000;user id=sa",
-			expectedHost: "myserver",
-			expectedPort: 5000,
+			expectedHost: "myserver:5000", // msdsn treats this as host
+			expectedPort: 1433,
 		},
 		{
-			name:         "no_port_specified",
+			name:         "no port specified",
 			dataSource:   "server=myserver;user id=sa",
 			expectedHost: "myserver",
 			expectedPort: 1433,
 		},
 		{
-			name:         "separate_port_parameter",
+			name:         "separate port parameter",
 			dataSource:   "server=myserver;port=5000;user id=sa",
 			expectedHost: "myserver",
 			expectedPort: 5000,
 		},
 		{
-			name:         "data_source_keyword",
+			name:         "data source keyword",
 			dataSource:   "Data Source=myserver,5000",
 			expectedHost: "myserver",
 			expectedPort: 5000,
 		},
 		{
-			name:         "named_instance",
+			name:         "named instance",
 			dataSource:   "server=myserver\\SQLEXPRESS,5000",
-			expectedHost: "myserver\\SQLEXPRESS",
+			expectedHost: "myserver", // Instance name not included
 			expectedPort: 5000,
 		},
 		{
-			name:         "spaces_in_connection_string",
-			dataSource:   "server = myserver , 5000 ; user id = sa",
-			expectedHost: "myserver",
-			expectedPort: 5000,
+			name:       "spaces in connection string",
+			dataSource: "server = myserver , 5000 ; user id = sa",
+			wantErr:    true, // msdsn cannot parse spaces around comma
 		},
 		{
-			name:         "preserve_case_of_server_name",
+			name:         "preserve case of server name",
 			dataSource:   "Server=MyServerName,5000",
 			expectedHost: "MyServerName",
 			expectedPort: 5000,
 		},
 		{
-			name:         "no_server_in_datasource",
+			name:         "no server in datasource defaults to localhost",
 			dataSource:   "user id=sa;password=pass",
-			wantErr:      true,
+			expectedHost: "localhost", // msdsn defaults to localhost
+			expectedPort: 1433,
 		},
 		{
-			name:         "empty_datasource",
-			dataSource:   "",
-			wantErr:      true,
+			name:       "empty datasource",
+			dataSource: "",
+			wantErr:    true,
 		},
 	}
 

@@ -6,12 +6,16 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
+
+	"github.com/microsoft/go-mssqldb/msdsn"
 )
 
 const defaultSQLServerPort = 1433
+
+// isLocalhost checks if the given host is a local address
+func isLocalhost(host string) bool {
+	return host == "localhost" || host == "127.0.0.1"
+}
 
 // computeServiceInstanceID computes the service.instance.id based on the configuration
 // Format: <host>:<port>
@@ -23,38 +27,34 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	var host string
 	var port int
 
-	// Priority 1: Parse from DataSource if present
+	// Parse connection details based on configuration priority
 	if cfg.DataSource != "" {
 		h, p, err := parseDataSource(cfg.DataSource)
 		if err != nil {
 			return "", fmt.Errorf("failed to parse datasource: %w", err)
 		}
-		host = h
-		port = p
+		host, port = h, p
 	} else if cfg.Server != "" {
-		// Priority 2: Use explicit server and port
-		host = cfg.Server
-		port = int(cfg.Port)
+		host, port = cfg.Server, int(cfg.Port)
 	} else {
-		// Priority 3: No server specified, use os.Hostname()
+		// No server specified, use hostname with default port
 		hostname, err := os.Hostname()
 		if err != nil {
-			return "", fmt.Errorf("failed to get hostname: %w", err)
+			return "", err
 		}
-		host = hostname
-		port = defaultSQLServerPort
+		host, port = hostname, defaultSQLServerPort
 	}
 
-	// Handle localhost special case
-	if host == "localhost" || host == "127.0.0.1" {
+	// Replace localhost with actual hostname
+	if isLocalhost(host) {
 		hostname, err := os.Hostname()
 		if err != nil {
-			return "", fmt.Errorf("failed to get hostname for localhost replacement: %w", err)
+			return "", err
 		}
 		host = hostname
 	}
 
-	// Ensure default port when not specified
+	// Apply default port if not specified
 	if port == 0 {
 		port = defaultSQLServerPort
 	}
@@ -63,62 +63,23 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 }
 
 // parseDataSource extracts server and port from SQL Server connection string
-// Supports various formats:
-// - server=myserver,1433;...
-// - server=myserver:1433;...
-// - server=myserver;port=1433;...
-// - Data Source=myserver,1433;...
-// - server=myserver\instance,1433;... (named instances)
+// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing
 func parseDataSource(dataSource string) (string, int, error) {
 	if dataSource == "" {
 		return "", 0, fmt.Errorf("datasource is empty")
 	}
 
-	var server string
-	port := defaultSQLServerPort
-
-	// Normalize spaces around separators for consistent parsing
-	normalizedDS := strings.ReplaceAll(dataSource, " =", "=")
-	normalizedDS = strings.ReplaceAll(normalizedDS, "= ", "=")
-	normalizedDS = strings.ReplaceAll(normalizedDS, " ,", ",")
-	normalizedDS = strings.ReplaceAll(normalizedDS, ", ", ",")
-	normalizedDS = strings.ReplaceAll(normalizedDS, " :", ":")
-	normalizedDS = strings.ReplaceAll(normalizedDS, ": ", ":")
-	normalizedDS = strings.ReplaceAll(normalizedDS, " ;", ";")
-	normalizedDS = strings.ReplaceAll(normalizedDS, "; ", ";")
-
-	// Create lowercase version for case-insensitive keyword matching
-	lowerDS := strings.ToLower(normalizedDS)
-
-	// Try to extract server parameter using regex
-	// Matches: server=<value> or data source=<value>
-	// Value can optionally be followed by :<port> or ,<port>
-	serverPattern := regexp.MustCompile(`(?i)(?:server|data\s+source)=([^;,:\s]+(?:\\[^;,:\s]+)?)(?:[,:](\d+))?`)
-	matches := serverPattern.FindStringSubmatch(normalizedDS)
-
-	if len(matches) > 1 && matches[1] != "" {
-		server = matches[1]
-
-		// Check if port is included with server (matches[2])
-		if len(matches) > 2 && matches[2] != "" {
-			if p, err := strconv.Atoi(matches[2]); err == nil {
-				port = p
-			}
-		}
+	// Parse the connection string using the go-mssqldb library
+	config, err := msdsn.Parse(dataSource)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to parse datasource: %w", err)
 	}
 
-	// Check for separate port parameter
-	// This takes precedence over port extracted from server string
-	portPattern := regexp.MustCompile(`(?i)port=(\d+)`)
-	if portMatches := portPattern.FindStringSubmatch(lowerDS); len(portMatches) > 1 {
-		if p, err := strconv.Atoi(portMatches[1]); err == nil {
-			port = p
-		}
+	// Apply default port if not specified
+	port := int(config.Port)
+	if port == 0 {
+		port = defaultSQLServerPort
 	}
 
-	if server == "" {
-		return "", 0, fmt.Errorf("could not extract server from datasource")
-	}
-
-	return server, port, nil
+	return config.Host, port, nil
 }

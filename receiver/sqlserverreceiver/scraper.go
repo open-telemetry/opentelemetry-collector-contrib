@@ -168,6 +168,26 @@ func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
 	return nil
 }
 
+// setupResourceBuilder configures common resource attributes for metrics
+func (s *sqlServerScraperHelper) setupResourceBuilder(row sqlquery.StringMap, includeDatabaseName bool) *metadata.ResourceBuilder {
+	rb := s.mb.NewResourceBuilder()
+	rb.SetSqlserverComputerName(row[computerNameKey])
+	rb.SetSqlserverInstanceName(row[instanceNameKey])
+	rb.SetHostName(s.config.Server)
+	rb.SetServiceInstanceID(s.serviceInstanceID)
+
+	if includeDatabaseName {
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
+	}
+
+	if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
+	}
+
+	return rb
+}
+
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
@@ -191,17 +211,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var val any
 	for i, row := range rows {
-		rb := s.mb.NewResourceBuilder()
-		rb.SetSqlserverComputerName(row[computerNameKey])
-		rb.SetSqlserverDatabaseName(row[databaseNameKey])
-		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetHostName(s.config.Server)
-		rb.SetServiceInstanceID(s.serviceInstanceID)
-
-		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
-			rb.SetServerAddress(s.config.Server)
-			rb.SetServerPort(int64(s.config.Port))
-		}
+		rb := s.setupResourceBuilder(row, true)
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -284,16 +294,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for i, row := range rows {
-		rb := s.mb.NewResourceBuilder()
-		rb.SetSqlserverComputerName(row[computerNameKey])
-		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetHostName(s.config.Server)
-		rb.SetServiceInstanceID(s.serviceInstanceID)
-
-		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
-			rb.SetServerAddress(s.config.Server)
-			rb.SetServerPort(int64(s.config.Port))
-		}
+		rb := s.setupResourceBuilder(row, false)
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -564,16 +565,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	var errs []error
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, row := range rows {
-		rb := s.mb.NewResourceBuilder()
-		rb.SetSqlserverComputerName(row[computerNameKey])
-		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetHostName(s.config.Server)
-		rb.SetServiceInstanceID(s.serviceInstanceID)
-
-		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
-			rb.SetServerAddress(s.config.Server)
-			rb.SetServerPort(int64(s.config.Port))
-		}
+		rb := s.setupResourceBuilder(row, false)
 
 		errs = append(errs,
 			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
@@ -612,16 +604,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var val any
 	for i, row := range rows {
-		rb := s.mb.NewResourceBuilder()
-		rb.SetSqlserverDatabaseName(row[databaseNameKey])
-		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetHostName(s.config.Server)
-		rb.SetServiceInstanceID(s.serviceInstanceID)
-
-		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
-			rb.SetServerAddress(s.config.Server)
-			rb.SetServerPort(int64(s.config.Port))
-		}
+		rb := s.setupResourceBuilder(row, true)
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {
