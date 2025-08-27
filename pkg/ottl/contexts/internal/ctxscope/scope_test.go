@@ -4,7 +4,6 @@
 package ctxscope_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -368,11 +367,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			is := createInstrumentationScope()
 
-			got, err := accessor.Get(context.Background(), newTestContext(is))
+			got, err := accessor.Get(t.Context(), newTestContext(is))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newTestContext(is), tt.newVal)
+			err = accessor.Set(t.Context(), newTestContext(is), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedIS := createInstrumentationScope()

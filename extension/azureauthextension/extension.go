@@ -25,6 +25,7 @@ import (
 type authenticator struct {
 	credential azcore.TokenCredential
 	logger     *zap.Logger
+	scopes     []string
 }
 
 var (
@@ -45,18 +46,20 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		}
 	}
 
-	if cfg.Workload != nil {
+	if cfg.Workload.HasValue() {
+		workload := cfg.Workload.Get()
 		if credential, err = azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
-			ClientID:      cfg.Workload.ClientID,
-			TenantID:      cfg.Workload.TenantID,
-			TokenFilePath: cfg.Workload.FederatedTokenFile,
+			ClientID:      workload.ClientID,
+			TenantID:      workload.TenantID,
+			TokenFilePath: workload.FederatedTokenFile,
 		}); err != nil {
 			return nil, fmt.Errorf("%s workload identity: %w", failMsg, err)
 		}
 	}
 
-	if cfg.Managed != nil {
-		clientID := cfg.Managed.ClientID
+	if cfg.Managed.HasValue() {
+		managed := cfg.Managed.Get()
+		clientID := managed.ClientID
 		var options *azidentity.ManagedIdentityCredentialOptions
 		if clientID != "" {
 			options = &azidentity.ManagedIdentityCredentialOptions{
@@ -68,16 +71,17 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		}
 	}
 
-	if cfg.ServicePrincipal != nil {
-		if cfg.ServicePrincipal.ClientCertificatePath != "" {
-			cert, privateKey, errParse := getCertificateAndKey(cfg.ServicePrincipal.ClientCertificatePath)
+	if cfg.ServicePrincipal.HasValue() {
+		servicePrincipal := cfg.ServicePrincipal.Get()
+		if servicePrincipal.ClientCertificatePath != "" {
+			cert, privateKey, errParse := getCertificateAndKey(servicePrincipal.ClientCertificatePath)
 			if errParse != nil {
 				return nil, fmt.Errorf("%s service principal with certificate: %w", failMsg, errParse)
 			}
 
 			if credential, err = azidentity.NewClientCertificateCredential(
-				cfg.ServicePrincipal.TenantID,
-				cfg.ServicePrincipal.ClientID,
+				servicePrincipal.TenantID,
+				servicePrincipal.ClientID,
 				[]*x509.Certificate{cert},
 				privateKey,
 				nil,
@@ -85,11 +89,11 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 				return nil, fmt.Errorf("%s service principal with certificate: %w", failMsg, err)
 			}
 		}
-		if cfg.ServicePrincipal.ClientSecret != "" {
+		if servicePrincipal.ClientSecret != "" {
 			if credential, err = azidentity.NewClientSecretCredential(
-				cfg.ServicePrincipal.TenantID,
-				cfg.ServicePrincipal.ClientID,
-				cfg.ServicePrincipal.ClientSecret,
+				servicePrincipal.TenantID,
+				servicePrincipal.ClientID,
+				servicePrincipal.ClientSecret,
 				nil,
 			); err != nil {
 				return nil, fmt.Errorf("%s service principal with secret: %w", failMsg, err)
@@ -100,6 +104,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 	return &authenticator{
 		credential: credential,
 		logger:     logger,
+		scopes:     cfg.Scopes,
 	}, nil
 }
 
@@ -157,15 +162,20 @@ func getHeaderValue(header string, headers map[string][]string) (string, error) 
 // computed from the host value. It will return the token value
 // or an error if request failed.
 func (a *authenticator) getTokenForHost(ctx context.Context, host string) (string, error) {
-	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
-		// TODO Cache the tokens
+	options := policy.TokenRequestOptions{
 		Scopes: []string{
 			// Example: if host is "management.azure.com", then the scope to get the
 			// token will be "https://management.azure.com/.default".
 			// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
 			fmt.Sprintf("https://%s/.default", host),
 		},
-	})
+	}
+
+	if len(a.scopes) > 0 {
+		options.Scopes = a.scopes
+	}
+
+	token, err := a.credential.GetToken(ctx, options)
 	if err != nil {
 		return "", err
 	}

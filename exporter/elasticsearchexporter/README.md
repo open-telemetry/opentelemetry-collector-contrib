@@ -17,7 +17,7 @@
 
 This exporter supports sending logs, metrics, traces and profiles to [Elasticsearch](https://www.elastic.co/elasticsearch).
 
-The Exporter is API-compatible with Elasticsearch 7.17.x and 8.x. Certain features of the exporter,
+The Exporter is API-compatible with Elasticsearch 7.17.x, 8.x, and 9.x. Certain features of the exporter,
 such as the `otel` mapping mode, may require newer versions of Elasticsearch. Limited effort will
 be made to support EOL versions of Elasticsearch -- see https://www.elastic.co/support/eol.
 

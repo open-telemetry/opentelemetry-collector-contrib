@@ -4,7 +4,7 @@
 package prometheusreceiver
 
 import (
-	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,9 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/discovery/file"
+	"github.com/prometheus/prometheus/discovery/http"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -52,14 +57,15 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
-	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
-	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)
-	assert.Equal(t, "collector-1", r1.TargetAllocator.CollectorID)
-	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HTTPSDConfig.RefreshInterval)
-	assert.Equal(t, "prometheus", r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
-	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
-	assert.Equal(t, "scrape_prometheus", r1.TargetAllocator.HTTPScrapeConfig.BasicAuth.Username)
-	assert.Equal(t, promConfig.Secret("scrape_changeme"), r1.TargetAllocator.HTTPScrapeConfig.BasicAuth.Password)
+	ta := r1.TargetAllocator.Get()
+	assert.Equal(t, "http://my-targetallocator-service", ta.Endpoint)
+	assert.Equal(t, 30*time.Second, ta.Interval)
+	assert.Equal(t, "collector-1", ta.CollectorID)
+	assert.Equal(t, promModel.Duration(60*time.Second), ta.HTTPSDConfig.RefreshInterval)
+	assert.Equal(t, "prometheus", ta.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("changeme"), ta.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
+	assert.Equal(t, "scrape_prometheus", ta.HTTPScrapeConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("scrape_changeme"), ta.HTTPScrapeConfig.BasicAuth.Password)
 }
 
 func TestLoadTargetAllocatorConfig(t *testing.T) {
@@ -75,12 +81,13 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
-	assert.Equal(t, 5*time.Second, r0.TargetAllocator.Timeout)
-	assert.Equal(t, "client.crt", r0.TargetAllocator.TLS.CertFile)
-	assert.Equal(t, "client.key", r0.TargetAllocator.TLS.KeyFile)
-	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
-	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+	ta0 := r0.TargetAllocator.Get()
+	assert.Equal(t, "http://localhost:8080", ta0.Endpoint)
+	assert.Equal(t, 5*time.Second, ta0.Timeout)
+	assert.Equal(t, "client.crt", ta0.TLS.CertFile)
+	assert.Equal(t, "client.key", ta0.TLS.KeyFile)
+	assert.Equal(t, 30*time.Second, ta0.Interval)
+	assert.Equal(t, "collector-1", ta0.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withScrape").String())
@@ -91,9 +98,10 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
-	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
-	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+	ta1 := r0.TargetAllocator.Get()
+	assert.Equal(t, "http://localhost:8080", ta1.Endpoint)
+	assert.Equal(t, 30*time.Second, ta1.Interval)
+	assert.Equal(t, "collector-1", ta1.CollectorID)
 
 	assert.Len(t, r1.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
@@ -194,7 +202,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
-	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	_, err = createMetricsReceiver(t.Context(), creationSet, cfg, nil)
 	require.NoError(t, err)
 	// We should have received a warning
 	assert.Equal(t, 1, observedLogs.Len())
@@ -384,7 +392,6 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(cfg))
 
 	r1 := cfg.(*Config)
-	assert.NotNil(t, r1.APIServer)
 	assert.False(t, r1.APIServer.Enabled)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
@@ -395,7 +402,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 
 	r2 := cfg.(*Config)
 	assert.NotNil(t, r2.PrometheusConfig)
-	assert.Nil(t, r2.APIServer)
+	assert.False(t, r2.APIServer.Enabled)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
 	require.NoError(t, err)
@@ -478,4 +485,87 @@ scrape_configs:
 			tt.checkFn(t, dst)
 		})
 	}
+}
+
+func TestReloadPromConfigStaticConfigsWithLabels(t *testing.T) {
+	createGroup := func(idxArr ...int) *targetgroup.Group {
+		g := &targetgroup.Group{}
+		g.Labels = promModel.LabelSet{}
+		for _, idx := range idxArr {
+			g.Targets = append(g.Targets, promModel.LabelSet{
+				promModel.AddressLabel:                    promModel.LabelValue(fmt.Sprint("localhost:", 8080+idx)),
+				promModel.LabelName(fmt.Sprint("k", idx)): promModel.LabelValue(fmt.Sprint("v", idx)),
+			})
+			g.Labels[promModel.LabelName(fmt.Sprint("label", idx))] = promModel.LabelValue(fmt.Sprint("value", idx))
+		}
+		return g
+	}
+	create := func() *PromConfig {
+		return &PromConfig{
+			ScrapeConfigs: []*promconfig.ScrapeConfig{
+				{
+					JobName: "test_job",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						&http.SDConfig{
+							URL:             "http://localhost:8080",
+							RefreshInterval: promModel.Duration(time.Second) * 5,
+							HTTPClientConfig: promConfig.HTTPClientConfig{
+								TLSConfig: promConfig.TLSConfig{
+									InsecureSkipVerify: true,
+								},
+							},
+						},
+						discovery.StaticConfig{
+							createGroup(1),
+						},
+						&file.SDConfig{
+							Files: []string{"targets.json"},
+						},
+						discovery.StaticConfig{
+							createGroup(2),
+						},
+						discovery.StaticConfig{
+							createGroup(3, 4),
+							createGroup(5, 6),
+						},
+					},
+				},
+				{
+					JobName: "another_job",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						discovery.StaticConfig{
+							createGroup(10),
+						},
+						&file.SDConfig{
+							Files: []string{"another_targets.json"},
+						},
+					},
+				},
+			},
+		}
+	}
+	promConfig := create()
+	assert.NoError(t, promConfig.Reload())
+
+	for _, sc := range promConfig.ScrapeConfigs {
+		for _, sd := range sc.ServiceDiscoveryConfigs {
+			sc, ok := sd.(discovery.StaticConfig)
+			if !ok {
+				continue
+			}
+			for _, tg := range sc {
+				for _, target := range tg.Targets {
+					// Ensure that the targets have the expected labels.
+					assert.NotEmpty(t, target[promModel.AddressLabel])
+					assert.Greater(t, len(target), 1, "target should have more than just address label")
+				}
+				assert.NotEmpty(t, tg.Labels, "target group should have labels")
+			}
+		}
+	}
+
+	data1, _ := yaml.Marshal(promConfig)
+	assert.NoError(t, promConfig.Reload())
+	data2, _ := yaml.Marshal(promConfig)
+	assert.Equal(t, string(data1), string(data2), "Reload should not change the config")
 }

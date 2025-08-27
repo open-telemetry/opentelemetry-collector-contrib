@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -20,6 +19,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/go-jose/go-jose/v4"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -153,6 +153,7 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	cl := client.FromContext(ctx)
 	cl.Auth = &authData{
 		raw:        raw,
+		claims:     claims,
 		subject:    subject,
 		membership: membership,
 	}
@@ -290,6 +291,8 @@ func getIssuerCACertFromPath(path string) (*x509.Certificate, error) {
 	return x509.ParseCertificate(block.Bytes)
 }
 
+// This struct is kept minimal to avoid unnecessary allocations, especially
+// if the JWT is malicious and contains too many claims.
 type idToken struct {
 	Issuer string `json:"iss"`
 }
@@ -299,26 +302,14 @@ type idToken struct {
 // It should only be used to determine which verifier to use for the token.
 func getIssuerFromUnverifiedJWT(rawIDToken string) (string, error) {
 	// TODO: it would be nice if we didn't have to parse the JWT here and then again in the verifier...
-	payload, err := parseJWT(rawIDToken)
+	supportedSigAlgs := []jose.SignatureAlgorithm{jose.RS256, "none"}
+	jws, err := jose.ParseSigned(rawIDToken, supportedSigAlgs)
 	if err != nil {
-		return "", fmt.Errorf("oidc: malformed jwt: %w", err)
+		return "", fmt.Errorf("oidc: malformed jws: %w", err)
 	}
 	var token idToken
-	if err := json.Unmarshal(payload, &token); err != nil {
+	if err := json.Unmarshal(jws.UnsafePayloadWithoutVerification(), &token); err != nil {
 		return "", fmt.Errorf("oidc: failed to unmarshal claims: %w", err)
 	}
 	return token.Issuer, nil
-}
-
-// https://github.com/coreos/go-oidc/blob/a7c457eacb849c163a496b29274242474a8f44ab/oidc/verify.go#L148
-func parseJWT(p string) ([]byte, error) {
-	parts := strings.Split(p, ".")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("oidc: malformed jwt, expected 3 parts got %d", len(parts))
-	}
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("oidc: malformed jwt payload: %w", err)
-	}
-	return payload, nil
 }

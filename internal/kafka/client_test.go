@@ -4,7 +4,6 @@
 package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
-	"context"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -152,7 +151,7 @@ func TestNewSaramaClientConfig(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			output, err := newSaramaClientConfig(context.Background(), tt.input)
+			output, err := newSaramaClientConfig(t.Context(), tt.input)
 			if tt.expectedErr != "" {
 				require.Error(t, err)
 				require.ErrorContains(t, err, tt.expectedErr)
@@ -167,7 +166,7 @@ func TestNewSaramaClientConfig(t *testing.T) {
 
 func TestNewSaramaClient(t *testing.T) {
 	_, clientConfig := kafkatest.NewCluster(t)
-	client, err := NewSaramaClient(context.Background(), clientConfig)
+	client, err := NewSaramaClient(t.Context(), clientConfig)
 	require.NoError(t, err)
 	assert.NoError(t, client.Close())
 }
@@ -188,7 +187,7 @@ func TestNewSaramaClient_SASL(t *testing.T) {
 			Password:  password,
 			Version:   1, // kfake only supports version 1
 		}
-		client, err := NewSaramaClient(context.Background(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig)
 		if err != nil {
 			return err
 		}
@@ -260,7 +259,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 	tryConnect := func(cfg configtls.ClientConfig) error {
 		clientConfig := clientConfig // copy
 		clientConfig.TLS = &cfg
-		client, err := NewSaramaClient(context.Background(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig)
 		if err != nil {
 			return err
 		}
@@ -291,7 +290,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		clientConfig := clientConfig // copy
 		clientConfig.Authentication.TLS = &tlsConfig
 
-		client, err := NewSaramaClient(context.Background(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig)
 		require.NoError(t, err)
 		assert.NoError(t, client.Close())
 
@@ -299,7 +298,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		// top-level TLS config is specified.
 		invalidTLSConfig := configtls.NewDefaultClientConfig()
 		clientConfig.TLS = &invalidTLSConfig
-		_, err = NewSaramaClient(context.Background(), clientConfig)
+		_, err = NewSaramaClient(t.Context(), clientConfig)
 		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
 	})
 
@@ -370,7 +369,7 @@ func TestNewSaramaConsumerGroup_RebalanceAndInstanceId(t *testing.T) {
 			consumerConfig.GroupInstanceID = tt.groupInstanceID
 			consumerConfig.GroupRebalanceStrategy = tt.groupRebalanceStrategy
 
-			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig)
 			require.NoError(t, err)
 			rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
 			if rebalanceStrategy != nil {
@@ -378,7 +377,7 @@ func TestNewSaramaConsumerGroup_RebalanceAndInstanceId(t *testing.T) {
 			}
 			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
 
-			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+			consumerGroup, err := NewSaramaConsumerGroup(t.Context(), clientConfig, consumerConfig)
 			require.NoError(t, err)
 			assert.NotNil(t, consumerGroup)
 
@@ -419,12 +418,12 @@ func TestNewSaramaConsumerGroup_GroupInstanceID(t *testing.T) {
 			consumerConfig.GroupID = "test-group"
 			consumerConfig.GroupInstanceID = tt.groupInstanceID
 
-			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig)
 			require.NoError(t, err)
 
 			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
 
-			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+			consumerGroup, err := NewSaramaConsumerGroup(t.Context(), clientConfig, consumerConfig)
 			require.NoError(t, err)
 			assert.NotNil(t, consumerGroup)
 
@@ -471,10 +470,10 @@ func TestNewSaramaConsumerGroup_GroupInstanceID_InvalidProtocolVersion(t *testin
 			consumerConfig.GroupInstanceID = tt.groupInstanceID
 			clientConfig.ProtocolVersion = tt.protocolVersion
 
-			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig)
 			require.NoError(t, err)
 			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
-			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+			consumerGroup, err := NewSaramaConsumerGroup(t.Context(), clientConfig, consumerConfig)
 
 			if tt.expectedErr != "" {
 				require.Error(t, err)
@@ -561,7 +560,7 @@ func TestNewSaramaClientConfigWithAWSMSKIAM(t *testing.T) {
 		},
 	}
 
-	saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+	saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig)
 	assert.NoError(t, err)
 
 	// Verify that TLS is enabled, not just SASL

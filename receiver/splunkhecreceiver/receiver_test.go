@@ -335,9 +335,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			metricsSink := new(consumertest.MetricsSink)
 			f := NewFactory()
 
-			_, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), config, sink)
+			_, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), config, sink)
 			assert.NoError(t, err)
-			rcv, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), config, metricsSink)
+			rcv, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, metricsSink)
 			assert.NoError(t, err)
 
 			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
@@ -435,21 +435,21 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	require.NoError(t, err)
 	r.logsConsumer = sink
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()))
+		require.NoError(t, r.Shutdown(t.Context()))
 	}()
 
-	require.NoError(t, r.Start(context.Background(), &nopHost{
+	require.NoError(t, r.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			assert.NoError(t, event.Err())
 		},
 	}), "should not have failed to start log reception")
-	require.NoError(t, r.Start(context.Background(), &nopHost{
+	require.NoError(t, r.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			assert.NoError(t, event.Err())
 		},
 	}), "should not fail to start log on second Start call")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()))
+		require.NoError(t, r.Shutdown(t.Context()))
 	}()
 
 	// If there are errors reported through ReportStatus this will retrieve it.
@@ -478,7 +478,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	url := "https://" + addr
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 
 	tlscs := configtls.ClientConfig{
@@ -489,7 +489,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, errTLS := tlscs.LoadTLSConfig(context.Background())
+	tls, errTLS := tlscs.LoadTLSConfig(t.Context())
 	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -615,10 +615,10 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}()
 
 			if tt.metric {
-				exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-				assert.NoError(t, exporter.Start(context.Background(), nil))
+				exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
+				assert.NoError(t, exporter.Start(t.Context(), nil))
 				defer func() {
-					require.NoError(t, exporter.Shutdown(context.Background()))
+					require.NoError(t, exporter.Shutdown(t.Context()))
 				}()
 				assert.NoError(t, err)
 				rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
@@ -631,10 +631,10 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
-				exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-				assert.NoError(t, exporter.Start(context.Background(), nil))
+				exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
+				assert.NoError(t, exporter.Start(t.Context(), nil))
 				defer func() {
-					require.NoError(t, exporter.Shutdown(context.Background()))
+					require.NoError(t, exporter.Shutdown(t.Context()))
 				}()
 				assert.NoError(t, err)
 				rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
@@ -699,11 +699,11 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
-			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-			assert.NoError(t, exporter.Start(context.Background(), nil))
+			exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
+			assert.NoError(t, exporter.Start(t.Context(), nil))
 			assert.NoError(t, err)
 			defer func() {
-				require.NoError(t, exporter.Shutdown(context.Background()))
+				require.NoError(t, exporter.Shutdown(t.Context()))
 			}()
 			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 			assert.NoError(t, err)
@@ -815,10 +815,10 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 
-			exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-			assert.NoError(t, exporter.Start(context.Background(), nil))
+			exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
+			assert.NoError(t, exporter.Start(t.Context(), nil))
 			defer func() {
-				require.NoError(t, exporter.Shutdown(context.Background()))
+				require.NoError(t, exporter.Shutdown(t.Context()))
 			}()
 			assert.NoError(t, err)
 			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
@@ -1091,9 +1091,9 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
-			assert.NoError(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 			w := httptest.NewRecorder()
 			rcv.handleRawReq(w, tt.req)
@@ -1145,11 +1145,11 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 			rcv.logsConsumer = sink
 
 			if tt.errorExpected {
-				assert.Error(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 			} else {
-				assert.NoError(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 			}
-			assert.NoError(t, rcv.Shutdown(context.Background()))
+			assert.NoError(t, rcv.Shutdown(t.Context()))
 		})
 	}
 }
@@ -1363,9 +1363,9 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				id: tt.setupMockAckExtension(),
 			}}
 
-			assert.NoError(t, rcv.Start(context.Background(), mockHost))
+			assert.NoError(t, rcv.Start(t.Context(), mockHost))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 			w := httptest.NewRecorder()
 			rcv.handleAck(w, tt.req)
@@ -1530,9 +1530,9 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				id: tt.setupMockAckExtension(),
 			}}
 
-			assert.NoError(t, rcv.Start(context.Background(), mh))
+			assert.NoError(t, rcv.Start(t.Context(), mh))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 			w := httptest.NewRecorder()
 			rcv.handleRawReq(w, tt.req)
@@ -1716,9 +1716,9 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				id: tt.setupMockAckExtension(),
 			}}
 
-			assert.NoError(t, rcv.Start(context.Background(), mh))
+			assert.NoError(t, rcv.Start(t.Context(), mh))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 			rcv.handleReq(w, tt.req)
 
@@ -1746,9 +1746,9 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	assert.NoError(t, err)
 	rcv.logsConsumer = sink
 
-	assert.NoError(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, rcv.Shutdown(context.Background()))
+		assert.NoError(t, rcv.Shutdown(t.Context()))
 	}()
 	w := httptest.NewRecorder()
 	rcv.handleHealthReq(w, httptest.NewRequest(http.MethodGet, "http://localhost/services/collector/health", http.NoBody))
@@ -1807,9 +1807,9 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
-			assert.NoError(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			event := buildSplunkHecMsg(currentTime, 3)
@@ -1933,9 +1933,9 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
-			assert.NoError(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 			w := httptest.NewRecorder()
 			rcv.handleRawReq(w, tt.req)
@@ -1970,6 +1970,9 @@ func BenchmarkHandleReq(b *testing.B) {
 			totalMessage[offset+bi] = b
 		}
 	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(totalMessage))
@@ -2034,9 +2037,9 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
-			assert.NoError(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, rcv.Shutdown(context.Background()))
+				assert.NoError(t, rcv.Shutdown(t.Context()))
 			}()
 
 			w := httptest.NewRecorder()

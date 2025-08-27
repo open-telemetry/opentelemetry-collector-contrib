@@ -6,7 +6,6 @@
 package podmanreceiver
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -42,7 +41,7 @@ func TestNewPodmanConnectionUnix(t *testing.T) {
 	tr, ok := c.Transport.(*http.Transport)
 	assert.True(t, ok)
 	assert.True(t, tr.DisableCompression)
-	conn, err := tr.DialContext(context.Background(), "", "")
+	conn, err := tr.DialContext(t.Context(), "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, socketPath, conn.RemoteAddr().String())
 }
