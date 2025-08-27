@@ -7,7 +7,7 @@ change_type: bug_fix
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:  Map monotonic delta sum metric as gauge in dynamic templates
+note:  Fix the warning on Kibana when using `sum` operation on delta temporality sum metric mapped as a counter
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40804]
