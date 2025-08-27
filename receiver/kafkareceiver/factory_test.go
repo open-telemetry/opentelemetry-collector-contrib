@@ -28,6 +28,8 @@ func encodingFromReceiver(tb testing.TB, r any, section string) string {
 			return rc.config.Metrics.Encoding
 		case "Logs":
 			return rc.config.Logs.Encoding
+		case "Profiles":
+			return rc.config.Profiles.Encoding
 		}
 	case *franzConsumer:
 		switch section {
@@ -37,6 +39,8 @@ func encodingFromReceiver(tb testing.TB, r any, section string) string {
 			return rc.config.Metrics.Encoding
 		case "Logs":
 			return rc.config.Logs.Encoding
+		case "Profiles":
+			return rc.config.Profiles.Encoding
 		}
 	}
 
@@ -221,23 +225,41 @@ func TestCreateProfiles(t *testing.T) {
 func TestWithProfilesUnmarshalers(t *testing.T) {
 	f := NewFactory()
 
-	t.Run("custom_encoding", func(t *testing.T) {
+	t.Run("custom_encoding/sarama", func(t *testing.T) {
+		setFranzGo(t, false)
 		cfg := createDefaultConfig().(*Config)
 		cfg.Profiles.Encoding = "custom"
 		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		profilesConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, "custom", profilesConsumer.config.Profiles.Encoding)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
+		assert.Equal(t, "custom", encodingFromReceiver(t, receiver, "Profiles"))
 	})
-	t.Run("default_encoding", func(t *testing.T) {
+
+	t.Run("custom_encoding/franzgo", func(t *testing.T) {
+		setFranzGo(t, true)
+		cfg := createDefaultConfig().(*Config)
+		cfg.Profiles.Encoding = "custom"
+		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+		require.NoError(t, err)
+		require.NotNil(t, receiver)
+		assert.Equal(t, "custom", encodingFromReceiver(t, receiver, "Profiles"))
+	})
+
+	t.Run("default_encoding/sarama", func(t *testing.T) {
+		setFranzGo(t, false)
 		cfg := createDefaultConfig()
 		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		profilesConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, defaultProfilesEncoding, profilesConsumer.config.Profiles.Encoding)
 		require.NoError(t, err)
-		assert.NotNil(t, receiver)
+		require.NotNil(t, receiver)
+		assert.Equal(t, defaultProfilesEncoding, encodingFromReceiver(t, receiver, "Profiles"))
+	})
+
+	t.Run("default_encoding/franzgo", func(t *testing.T) {
+		setFranzGo(t, true)
+		cfg := createDefaultConfig()
+		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+		require.NoError(t, err)
+		require.NotNil(t, receiver)
+		assert.Equal(t, defaultProfilesEncoding, encodingFromReceiver(t, receiver, "Profiles"))
 	})
 }
