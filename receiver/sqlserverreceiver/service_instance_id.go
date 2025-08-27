@@ -29,15 +29,16 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	var port int
 
 	// Parse connection details based on configuration priority
-	if cfg.DataSource != "" {
+	switch {
+	case cfg.DataSource != "":
 		h, p, err := parseDataSource(cfg.DataSource)
 		if err != nil {
 			return "", fmt.Errorf("failed to parse datasource: %w", err)
 		}
 		host, port = h, p
-	} else if cfg.Server != "" {
+	case cfg.Server != "":
 		host, port = cfg.Server, int(cfg.Port)
-	} else {
+	default:
 		// No server specified, use hostname with default port
 		hostname, err := os.Hostname()
 		if err != nil {
