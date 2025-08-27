@@ -56,5 +56,5 @@ Below is an example of dynamic subjects for traces:
 ```yaml
 natscoreexporter:
   traces:
-    subject: 'Format("traces.%s.spans.%s", span.trace_id, span.span_id)'
+    subject: 'Format("traces.%s.spans.%s", [span.trace_id, span.span_id])'
 ```
