@@ -10,12 +10,13 @@ status:
     emeritus: [Hemansh31]
   unsupported_platforms: [darwin, windows]
 
-attributes:
+resource_attributes:
   systemd.unit.name:
     description: Name of the systemd unit
     type: string
     enabled: true
 
+attributes:
   systemd.unit.active_state:
     description: The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units)
     type: string
@@ -38,6 +39,6 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "1"
-    attributes: [systemd.unit.name, systemd.unit.active_state]
+    attributes: [systemd.unit.active_state]
 
 tests:

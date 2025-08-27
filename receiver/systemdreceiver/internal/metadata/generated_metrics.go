@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -92,7 +93,7 @@ func (m *metricSystemdUnitState) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemdUnitState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemdUnitNameAttributeValue string, systemdUnitActiveStateAttributeValue string) {
+func (m *metricSystemdUnitState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemdUnitActiveStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -100,7 +101,6 @@ func (m *metricSystemdUnitState) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("systemd.unit.name", systemdUnitNameAttributeValue)
 	dp.Attributes().PutStr("systemd.unit.active_state", systemdUnitActiveStateAttributeValue)
 }
 
@@ -132,12 +132,14 @@ func newMetricSystemdUnitState(cfg MetricConfig) metricSystemdUnitState {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                 MetricsBuilderConfig // config of the metrics builder.
-	startTime              pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity        int                  // maximum observed number of metrics per resource.
-	metricsBuffer          pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo              component.BuildInfo  // contains version information.
-	metricSystemdUnitState metricSystemdUnitState
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricSystemdUnitState         metricSystemdUnitState
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -159,17 +161,30 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                 mbc,
-		startTime:              pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:          pmetric.NewMetrics(),
-		buildInfo:              settings.BuildInfo,
-		metricSystemdUnitState: newMetricSystemdUnitState(mbc.Metrics.SystemdUnitState),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricSystemdUnitState:         newMetricSystemdUnitState(mbc.Metrics.SystemdUnitState),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.SystemdUnitName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["systemd.unit.name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemdUnitName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SystemdUnitName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["systemd.unit.name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemdUnitName.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -234,6 +249,16 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	for _, op := range options {
 		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -252,8 +277,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSystemdUnitStateDataPoint adds a data point to systemd.unit.state metric.
-func (mb *MetricsBuilder) RecordSystemdUnitStateDataPoint(ts pcommon.Timestamp, val int64, systemdUnitNameAttributeValue string, systemdUnitActiveStateAttributeValue AttributeSystemdUnitActiveState) {
-	mb.metricSystemdUnitState.recordDataPoint(mb.startTime, ts, val, systemdUnitNameAttributeValue, systemdUnitActiveStateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemdUnitStateDataPoint(ts pcommon.Timestamp, val int64, systemdUnitActiveStateAttributeValue AttributeSystemdUnitActiveState) {
+	mb.metricSystemdUnitState.recordDataPoint(mb.startTime, ts, val, systemdUnitActiveStateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

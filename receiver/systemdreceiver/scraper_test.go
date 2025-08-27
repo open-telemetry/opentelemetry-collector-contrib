@@ -121,7 +121,7 @@ func TestScraperScrape(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "Active service",
+			desc: "Basic scrape",
 			units: []unitTuple{
 				{
 					Name:        "nginx.service",
@@ -135,28 +135,20 @@ func TestScraperScrape(t *testing.T) {
 					JobType:     "",
 					JobPath:     "/",
 				},
-			},
-			goldenName:  "nginx-active",
-			expectedErr: nil,
-		},
-
-		{
-			desc: "Failed service",
-			units: []unitTuple{
 				{
-					Name:        "nginx.service",
-					Description: "A high performance web server and a reverse proxy server",
+					Name:        "rsyslog.service",
+					Description: "Advanced key-value store",
 					LoadState:   "loaded",
 					ActiveState: "failed",
 					SubState:    "failed",
 					Following:   "",
-					Path:        "/org/freedesktop/systemd1/unit/nginx_2eservice",
+					Path:        "/org/freedesktop/systemd1/unit/rsyslog_2eservice",
 					JobID:       uint32(0),
 					JobType:     "",
 					JobPath:     "/",
 				},
 			},
-			goldenName:  "nginx-failed",
+			goldenName:  "basic-scrape",
 			expectedErr: nil,
 		},
 	}

@@ -83,11 +83,15 @@ func (s *systemdScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	for _, unit := range units {
 		for stateName, state := range metadata.MapAttributeSystemdUnitActiveState {
 			if unit.ActiveState == stateName {
-				s.mb.RecordSystemdUnitStateDataPoint(now, int64(1), unit.Name, state)
+				s.mb.RecordSystemdUnitStateDataPoint(now, int64(1), state)
 			} else {
-				s.mb.RecordSystemdUnitStateDataPoint(now, int64(0), unit.Name, state)
+				s.mb.RecordSystemdUnitStateDataPoint(now, int64(0), state)
 			}
 		}
+
+		resource := s.mb.NewResourceBuilder()
+		resource.SetSystemdUnitName(unit.Name)
+		s.mb.EmitForResource(metadata.WithResource(resource.Emit()))
 	}
 
 	metrics := s.mb.Emit()

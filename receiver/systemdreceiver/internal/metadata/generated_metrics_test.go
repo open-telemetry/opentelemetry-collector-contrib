@@ -42,6 +42,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -61,9 +70,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemdUnitStateDataPoint(ts, 1, "systemd.unit.name-val", AttributeSystemdUnitActiveStateActive)
+			mb.RecordSystemdUnitStateDataPoint(ts, 1, AttributeSystemdUnitActiveStateActive)
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetSystemdUnitName("systemd.unit.name-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if tt.expectEmpty {
@@ -99,10 +110,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("systemd.unit.name")
-					assert.True(t, ok)
-					assert.Equal(t, "systemd.unit.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("systemd.unit.active_state")
+					attrVal, ok := dp.Attributes().Get("systemd.unit.active_state")
 					assert.True(t, ok)
 					assert.Equal(t, "active", attrVal.Str())
 				}

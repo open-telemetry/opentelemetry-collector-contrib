@@ -24,5 +24,10 @@ metrics:
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| systemd.unit.name | Name of the systemd unit | Any Str | false |
 | systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | false |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| systemd.unit.name | Name of the systemd unit | Any Str | true |

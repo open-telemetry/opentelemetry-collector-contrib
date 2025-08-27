@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.39.0
 	go.opentelemetry.io/collector/consumer v1.39.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.133.0
+	go.opentelemetry.io/collector/filter v0.133.0
 	go.opentelemetry.io/collector/pdata v1.39.0
 	go.opentelemetry.io/collector/receiver v1.39.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.133.0
@@ -47,7 +48,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.133.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.133.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
-	go.opentelemetry.io/collector/filter v0.133.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.133.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.39.0 // indirect
