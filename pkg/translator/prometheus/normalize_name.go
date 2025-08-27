@@ -61,7 +61,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 
 	// Append unit if it exists
 	promUnit, promUnitRate := buildCompliantMainUnit(metric.Unit()), buildCompliantPerUnit(metric.Unit())
-	if promUnit != "" && !contains(nameTokens, promUnit) {
+	if promUnit != "" && !contains(nameTokens, promUnit) && promUnit != "records" && promUnit != "datapoints" && promUnit != "spans" {
 		nameTokens = append(nameTokens, promUnit)
 	}
 	if promUnitRate != "" && !contains(nameTokens, promUnitRate) {
