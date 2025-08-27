@@ -1,0 +1,7 @@
+change_type: enhancement
+component: httpcheckreceiver
+note: Fix race for timing of request steps
+issues: [42042]
+subtext: |
+  The httpcheckreceiver uses atomic operations to track the timing of request steps to avoid race conditions.
+change_logs: [user]

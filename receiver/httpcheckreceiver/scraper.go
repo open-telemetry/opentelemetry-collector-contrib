@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tidwall/gjson"
@@ -33,41 +34,52 @@ var (
 
 // timingInfo holds timing information for different phases of HTTP request
 type timingInfo struct {
-	mu            sync.Mutex
-	dnsStart      time.Time
-	dnsEnd        time.Time
-	connectStart  time.Time
-	connectEnd    time.Time
-	tlsStart      time.Time
-	tlsEnd        time.Time
-	writeStart    time.Time
-	writeEnd      time.Time
-	readStart     time.Time
-	readEnd       time.Time
-	requestStart  time.Time
-	responseStart time.Time
+	dnsStart      atomic.Int64
+	dnsEnd        atomic.Int64
+	connectStart  atomic.Int64
+	connectEnd    atomic.Int64
+	tlsStart      atomic.Int64
+	tlsEnd        atomic.Int64
+	writeStart    atomic.Int64
+	writeEnd      atomic.Int64
+	readStart     atomic.Int64
+	readEnd       atomic.Int64
+	requestStart  atomic.Int64
+	responseStart atomic.Int64
 }
 
 // getDurations calculates the duration for each phase in milliseconds
 func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	dnsStartNs := t.dnsStart.Load()
+	dnsEndNs := t.dnsEnd.Load()
+	if dnsStartNs != 0 && dnsEndNs != 0 {
+		dnsMs = (dnsEndNs - dnsStartNs) / int64(time.Millisecond)
+	}
 
-	if !t.dnsStart.IsZero() && !t.dnsEnd.IsZero() {
-		dnsMs = t.dnsEnd.Sub(t.dnsStart).Milliseconds()
+	connectStartNs := t.connectStart.Load()
+	connectEndNs := t.connectEnd.Load()
+	if connectStartNs != 0 && connectEndNs != 0 {
+		tcpMs = (connectEndNs - connectStartNs) / int64(time.Millisecond)
 	}
-	if !t.connectStart.IsZero() && !t.connectEnd.IsZero() {
-		tcpMs = t.connectEnd.Sub(t.connectStart).Milliseconds()
+
+	tlsStartNs := t.tlsStart.Load()
+	tlsEndNs := t.tlsEnd.Load()
+	if tlsStartNs != 0 && tlsEndNs != 0 {
+		tlsMs = (tlsEndNs - tlsStartNs) / int64(time.Millisecond)
 	}
-	if !t.tlsStart.IsZero() && !t.tlsEnd.IsZero() {
-		tlsMs = t.tlsEnd.Sub(t.tlsStart).Milliseconds()
+
+	writeStartNs := t.writeStart.Load()
+	writeEndNs := t.writeEnd.Load()
+	if writeStartNs != 0 && writeEndNs != 0 {
+		requestMs = (writeEndNs - writeStartNs) / int64(time.Millisecond)
 	}
-	if !t.writeStart.IsZero() && !t.writeEnd.IsZero() {
-		requestMs = t.writeEnd.Sub(t.writeStart).Milliseconds()
+
+	readStartNs := t.readStart.Load()
+	readEndNs := t.readEnd.Load()
+	if readStartNs != 0 && readEndNs != 0 {
+		responseMs = (readEndNs - readStartNs) / int64(time.Millisecond)
 	}
-	if !t.readStart.IsZero() && !t.readEnd.IsZero() {
-		responseMs = t.readEnd.Sub(t.readStart).Milliseconds()
-	}
+
 	return
 }
 
@@ -248,45 +260,30 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Create trace context for timing collection
 			trace := &httptrace.ClientTrace{
 				DNSStart: func(_ httptrace.DNSStartInfo) {
-					timing.mu.Lock()
-					timing.dnsStart = time.Now()
-					timing.mu.Unlock()
+					timing.dnsStart.Store(time.Now().UnixNano())
 				},
 				DNSDone: func(_ httptrace.DNSDoneInfo) {
-					timing.mu.Lock()
-					timing.dnsEnd = time.Now()
-					timing.mu.Unlock()
+					timing.dnsEnd.Store(time.Now().UnixNano())
 				},
 				ConnectStart: func(_, _ string) {
-					timing.mu.Lock()
-					timing.connectStart = time.Now()
-					timing.mu.Unlock()
+					timing.connectStart.Store(time.Now().UnixNano())
 				},
 				ConnectDone: func(_, _ string, _ error) {
-					timing.mu.Lock()
-					timing.connectEnd = time.Now()
-					timing.mu.Unlock()
+					timing.connectEnd.Store(time.Now().UnixNano())
 				},
 				TLSHandshakeStart: func() {
-					timing.mu.Lock()
-					timing.tlsStart = time.Now()
-					timing.mu.Unlock()
+					timing.tlsStart.Store(time.Now().UnixNano())
 				},
 				TLSHandshakeDone: func(_ tls.ConnectionState, _ error) {
-					timing.mu.Lock()
-					timing.tlsEnd = time.Now()
-					timing.mu.Unlock()
+					timing.tlsEnd.Store(time.Now().UnixNano())
 				},
 				WroteRequest: func(_ httptrace.WroteRequestInfo) {
-					timing.mu.Lock()
-					timing.writeEnd = time.Now()
-					timing.mu.Unlock()
+					timing.writeEnd.Store(time.Now().UnixNano())
 				},
 				GotFirstResponseByte: func() {
-					timing.mu.Lock()
-					timing.responseStart = time.Now()
-					timing.readStart = time.Now()
-					timing.mu.Unlock()
+					now := time.Now().UnixNano()
+					timing.responseStart.Store(now)
+					timing.readStart.Store(now)
 				},
 			}
 
@@ -327,14 +324,11 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Send the request and measure response time
 			start := time.Now()
-			timing.mu.Lock()
-			timing.requestStart = start
-			timing.writeStart = start
-			timing.mu.Unlock()
+			startNs := start.UnixNano()
+			timing.requestStart.Store(startNs)
+			timing.writeStart.Store(startNs)
 			resp, err := targetClient.Do(req)
-			timing.mu.Lock()
-			timing.readEnd = time.Now()
-			timing.mu.Unlock()
+			timing.readEnd.Store(time.Now().UnixNano())
 
 			// Read response body for validation and metrics
 			var responseBody []byte
