@@ -54,9 +54,13 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 			return nil, err
 		}
 	}
+	endpoint := docker.DefaultDockerHost
+	if config.Endpoint != "" {
+		endpoint = config.Endpoint
+	}
 	client, err := docker.NewClientWithOpts(
 		append([]docker.Opt{
-			docker.WithHost(config.Endpoint),
+			docker.WithHost(endpoint),
 			docker.WithVersion(version),
 			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
 		}, opts...)...,
