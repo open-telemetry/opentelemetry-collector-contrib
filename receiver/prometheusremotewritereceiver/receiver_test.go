@@ -256,21 +256,42 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "help ref 3 is out of bounds of symbolsTable",
 		},
 		{
-			name: "unsupported metric type UNSPECIFIED",
+			name: "accept unspecified metric type as gauge",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
 				Timeseries: []writev2.TimeSeries{
 					{
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
-						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
-						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6},
+						Samples:          []writev2.Sample{{Value: 1, Timestamp: 1}},
+						CreatedTimestamp: 1,
 					},
 				},
 			},
-			expectError: `unsupported metric type "METRIC_TYPE_UNSPECIFIED" for metric "test_metric"`,
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test_job")
+				attrs.PutStr("service.instance.id", "test_instance")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetUnit("")
+				metric.SetDescription("")
+
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
 			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
+				Confirmed:  true,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
