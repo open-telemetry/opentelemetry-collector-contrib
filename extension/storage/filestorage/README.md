@@ -31,7 +31,7 @@ The default timeout is `1s`.
 By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
 Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
-`recreate` when set, enables automatic panic recovery for corrupted databases. When enabled, if the database fails to open due to corruption (resulting in a panic), the corrupted file will be automatically renamed to `{filename}.backup` and a new data file will be created from scratch. This allows the collector to continue operating even when encountering corrupted database files. If no corruption is detected, the existing database continues to be used normally. See (#36840)[https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36840] for more details.
+`recreate` when set, enables automatic panic recovery for corrupted databases. When enabled, if the database fails to open due to corruption (resulting in a panic), the corrupted file will be automatically renamed to `{filename}.{ISO 8601 timestamp}.backup` and a new data file will be created from scratch. This allows the collector to continue operating even when encountering corrupted database files. If no corruption is detected, the existing database continues to be used normally. See (#36840)[https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36840] for more details.
 
 > [!Note]
 > When database corruption is detected and automatic recovery is triggered, the corrupted data will be moved to a `.backup` file. While this prevents complete data loss, the collector will start with a fresh database, which may lead to data duplication or loss of component state. 
