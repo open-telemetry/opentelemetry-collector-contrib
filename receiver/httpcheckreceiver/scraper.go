@@ -33,6 +33,7 @@ var (
 
 // timingInfo holds timing information for different phases of HTTP request
 type timingInfo struct {
+	mu            sync.Mutex
 	dnsStart      time.Time
 	dnsEnd        time.Time
 	connectStart  time.Time
@@ -49,6 +50,9 @@ type timingInfo struct {
 
 // getDurations calculates the duration for each phase in milliseconds
 func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	if !t.dnsStart.IsZero() && !t.dnsEnd.IsZero() {
 		dnsMs = t.dnsEnd.Sub(t.dnsStart).Milliseconds()
 	}
@@ -244,29 +248,45 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Create trace context for timing collection
 			trace := &httptrace.ClientTrace{
 				DNSStart: func(_ httptrace.DNSStartInfo) {
+					timing.mu.Lock()
 					timing.dnsStart = time.Now()
+					timing.mu.Unlock()
 				},
 				DNSDone: func(_ httptrace.DNSDoneInfo) {
+					timing.mu.Lock()
 					timing.dnsEnd = time.Now()
+					timing.mu.Unlock()
 				},
 				ConnectStart: func(_, _ string) {
+					timing.mu.Lock()
 					timing.connectStart = time.Now()
+					timing.mu.Unlock()
 				},
 				ConnectDone: func(_, _ string, _ error) {
+					timing.mu.Lock()
 					timing.connectEnd = time.Now()
+					timing.mu.Unlock()
 				},
 				TLSHandshakeStart: func() {
+					timing.mu.Lock()
 					timing.tlsStart = time.Now()
+					timing.mu.Unlock()
 				},
 				TLSHandshakeDone: func(_ tls.ConnectionState, _ error) {
+					timing.mu.Lock()
 					timing.tlsEnd = time.Now()
+					timing.mu.Unlock()
 				},
 				WroteRequest: func(_ httptrace.WroteRequestInfo) {
+					timing.mu.Lock()
 					timing.writeEnd = time.Now()
+					timing.mu.Unlock()
 				},
 				GotFirstResponseByte: func() {
+					timing.mu.Lock()
 					timing.responseStart = time.Now()
 					timing.readStart = time.Now()
+					timing.mu.Unlock()
 				},
 			}
 
@@ -307,10 +327,14 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Send the request and measure response time
 			start := time.Now()
+			timing.mu.Lock()
 			timing.requestStart = start
 			timing.writeStart = start
+			timing.mu.Unlock()
 			resp, err := targetClient.Do(req)
+			timing.mu.Lock()
 			timing.readEnd = time.Now()
+			timing.mu.Unlock()
 
 			// Read response body for validation and metrics
 			var responseBody []byte
