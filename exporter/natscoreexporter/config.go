@@ -157,16 +157,12 @@ func (c *SignalConfig) Validate() error {
 	var errs error
 
 	if c.Marshaler != "" && c.Encoder != "" {
-		errs = multierr.Append(errs,
-			errors.New("marshaler and encoder configured simultaneously"),
-		)
+		errs = multierr.Append(errs, errors.New("marshaler and encoder configured simultaneously"))
 	}
 	if c.Marshaler != "" {
 		if c.Marshaler != OtlpProtoMarshalerName &&
 			c.Marshaler != OtlpJsonMarshalerName {
-			errs = multierr.Append(errs,
-				fmt.Errorf("unsupported marshaler: %s", c.Marshaler),
-			)
+			errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler: %s", c.Marshaler))
 		}
 	}
 
@@ -182,13 +178,11 @@ func (c *LogsConfig) Validate() error {
 			componenttest.NewNopTelemetrySettings(),
 		)
 		if err != nil {
-			panic("failed to create logs parser: " + err.Error())
+			panic(fmt.Errorf("failed to create logs parser: %w", err))
 		}
 
 		if _, err = parser.ParseValueExpression(c.Subject); err != nil {
-			errs = multierr.Append(errs,
-				fmt.Errorf("failed to parse logs subject: %w", err),
-			)
+			errs = multierr.Append(errs, fmt.Errorf("failed to parse logs subject: %w", err))
 		}
 	}
 
@@ -204,13 +198,11 @@ func (c *MetricsConfig) Validate() error {
 			componenttest.NewNopTelemetrySettings(),
 		)
 		if err != nil {
-			panic("failed to create metrics parser: " + err.Error())
+			panic(fmt.Errorf("failed to create metrics parser: %w", err))
 		}
 
 		if _, err = parser.ParseValueExpression(c.Subject); err != nil {
-			errs = multierr.Append(errs,
-				fmt.Errorf("failed to parse metrics subject: %w", err),
-			)
+			errs = multierr.Append(errs, fmt.Errorf("failed to parse metrics subject: %w", err))
 		}
 	}
 
@@ -226,13 +218,11 @@ func (c *TracesConfig) Validate() error {
 			componenttest.NewNopTelemetrySettings(),
 		)
 		if err != nil {
-			panic("failed to create traces parser: " + err.Error())
+			panic(fmt.Errorf("failed to create traces parser: %w", err))
 		}
 
 		if _, err = parser.ParseValueExpression(c.Subject); err != nil {
-			errs = multierr.Append(errs,
-				fmt.Errorf("failed to parse traces subject: %w", err),
-			)
+			errs = multierr.Append(errs, fmt.Errorf("failed to parse traces subject: %w", err))
 		}
 	}
 
@@ -284,28 +274,24 @@ func (c *AuthConfig) Validate() error {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.UserInfo != nil {
 		numAuthMethods++
 		if err := c.UserInfo.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.NKey != nil {
 		numAuthMethods++
 		if err := c.NKey.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.UserJWT != nil {
 		numAuthMethods++
 		if err := c.UserJWT.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.UserCredentials != nil {
 		numAuthMethods++
 		if err := c.UserCredentials.Validate(); err != nil {
@@ -314,9 +300,7 @@ func (c *AuthConfig) Validate() error {
 	}
 
 	if numAuthMethods > 1 {
-		errs = multierr.Append(errs,
-			errors.New("multiple auth methods configured simultaneously"),
-		)
+		errs = multierr.Append(errs, errors.New("multiple auth methods configured simultaneously"))
 	}
 
 	return errs
