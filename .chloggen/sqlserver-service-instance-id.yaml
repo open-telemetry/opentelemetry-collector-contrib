@@ -7,7 +7,7 @@ change_type: enhancement
 component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add service.instance.id resource attribute to all metrics and logs
+note: Add `service.instance.id` resource attribute to all metrics and logs
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [41894]
@@ -16,9 +16,8 @@ issues: [41894]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The service.instance.id attribute is added in the format <host>:<port> to uniquely identify 
-  SQL Server instances. The attribute is computed once during initialization and added to all 
-  emitted metrics and logs.
+  The `service.instance.id` attribute is added in the format `<host>:<port>` to uniquely identify 
+  SQL Server hosts.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -27,4 +26,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user]
+change_logs: []
