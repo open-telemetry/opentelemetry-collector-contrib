@@ -12,14 +12,12 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 )
 
-var (
-	xmlPlanObfuscationAttrs = []string{
-		"StatementText",
-		"ConstValue",
-		"ScalarString",
-		"ParameterCompiledValue",
-	}
-)
+var xmlPlanObfuscationAttrs = []string{
+	"StatementText",
+	"ConstValue",
+	"ScalarString",
+	"ParameterCompiledValue",
+}
 
 type obfuscator obfuscate.Obfuscator
 
