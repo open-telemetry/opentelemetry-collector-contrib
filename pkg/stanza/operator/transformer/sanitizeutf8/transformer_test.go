@@ -23,7 +23,7 @@ type processTestCase struct {
 	output func() *entry.Entry
 }
 
-func TestSanitize(t *testing.T) {
+func TestSanitizeUTF8(t *testing.T) {
 	now := time.Now()
 	cases := []processTestCase{
 		{
@@ -139,11 +139,11 @@ func TestSanitize(t *testing.T) {
 			op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
-			sanitize := op.(*Transformer)
+			sanitizeUTF8 := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, sanitize.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, sanitizeUTF8.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = sanitize.Process(t.Context(), val)
+			err = sanitizeUTF8.Process(t.Context(), val)
 			require.NoError(t, err)
 			fake.ExpectEntry(t, tc.output())
 		})
@@ -155,7 +155,7 @@ func newCfgWithField(field string) *Config {
 	if err != nil {
 		panic(fmt.Sprintf("failed to create field %s: %v", field, err))
 	}
-	config := NewConfigWithID("sanitize/test")
+	config := NewConfigWithID("sanitize_utf8/test")
 	config.Field = entryField
 	return config
 }

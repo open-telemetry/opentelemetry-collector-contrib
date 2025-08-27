@@ -1,6 +1,6 @@
-## `sanitize` Operator
+## `sanitize_utf8` Operator
 
-The `sanitize` operator is used to replace invalid UTF-8 characters in a specified field of a log entry. This is useful
+The `sanitize_utf8` operator is used to replace invalid UTF-8 characters in a specified field of a log entry. This is useful
 for ensuring that log data is properly encoded and can be processed by downstream systems.
 
 Invalid UTF-8 byte sequences will be replaced with `\uFFFD` (`�`).
@@ -20,6 +20,6 @@ Invalid UTF-8 byte sequences will be replaced with `\uFFFD` (`�`).
 #### Simple Configuration for String Body
 
 ```yaml
-- type: sanitize
+- type: sanitize_utf8
   field: body
 ```
