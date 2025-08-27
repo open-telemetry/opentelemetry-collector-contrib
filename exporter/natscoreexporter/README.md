@@ -12,15 +12,15 @@ The following configuration options are supported:
 - `endpoint` (default = nats://localhost:4222): The NATS server URL.
 - `tls`: See [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `logs`
-  - `subject` (default = otel_logs): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for logs.
+  - `subject` (default = "otel_logs"): The [OTTL value expression](https://pkg.go.dev/text/template) used to construct NATS subjects for logs.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal logs. See [Supported Marshalers](#supported-marshalers).
   - `encoder`: The name of the encoding extension used to marshal logs. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `metrics`
-  - `subject` (default = otel_metrics): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for metrics.
+  - `subject` (default = "otel_metrics"): The [OTTL value expression](https://pkg.go.dev/text/template) used to construct NATS subjects for metrics.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal metrics. See [Supported Marshalers](#supported-marshalers).
   - `encoder`: The name of the encoding extension used to marshal metrics. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `traces`
-  - `subject` (default = otel_traces): The [text/template](https://pkg.go.dev/text/template) template string used to construct NATS subjects for traces.
+  - `subject` (default = "otel_traces"): The [OTTL value expression](https://pkg.go.dev/text/template) used to construct NATS subjects for traces.
   - `marshaler` (default = otlp_proto): The name of the marshaler used to marshal traces. See [Supported Marshalers](#supported-marshalers).
   - `encoder`: The name of the encoding extension used to marshal traces. This configuration option is mutually exclusive with `marshaler`. See [Encoding extensions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/encoding/README.md).
 - `auth`
@@ -44,18 +44,17 @@ NATS Core exporter supports marshalers for the following built-in encodings:
 
 - `otlp_proto`: Signals are encoded as OTLP Protobuf.
 - `otlp_json`: Signals are encoded as OTLP JSON.
-- `log_body`: Log bodies are extracted from logs and plaintext encoded. **This marshaler is only supported for logs.**
 
 ## Example Configurations
 
 ### Dynamic subjects
 
-Messages in NATS are selectively consumed using [subject-based filtering](https://docs.nats.io/nats-concepts/subjects#subject-based-filtering-and-security). To support this model, NATS Core exporter constructs dynamic subjects using [text/template](https://pkg.go.dev/text/template) template strings.
+To support [subject-based filtering](https://docs.nats.io/nats-concepts/subjects#subject-based-filtering-and-security), NATS Core exporter constructs dynamic subjects using [OTTL value expressions](https://pkg.go.dev/text/template).
 
-Below is an example of dynamic subjects for traces, where the configured template will be executed on a [`Span`](https://pkg.go.dev/go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1#Span):
+Below is an example of dynamic subjects for traces:
 
 ```yaml
 natscoreexporter:
   traces:
-    subject: "otel.traces.{{ .TraceID }}.spans.{{ .SpanID }}"
+    subject: 'Format("traces.%s.spans.%s", span.trace_id, span.span_id)'
 ```

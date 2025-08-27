@@ -20,12 +20,12 @@ import (
 )
 
 const (
-	defaultLogsSubject      = "otel_logs"
-	defaultLogsMarshaler    = OtlpProtoMarshaler
-	defaultMetricsSubject   = "otel_metrics"
-	defaultMetricsMarshaler = OtlpProtoMarshaler
-	defaultTracesSubject    = "otel_spans"
-	defaultTracesMarshaler  = OtlpProtoMarshaler
+	defaultLogsSubject      = "\"otel_logs\""
+	defaultLogsMarshaler    = OtlpProtoMarshalerName
+	defaultMetricsSubject   = "\"otel_metrics\""
+	defaultMetricsMarshaler = OtlpProtoMarshalerName
+	defaultTracesSubject    = "\"otel_spans\""
+	defaultTracesMarshaler  = OtlpProtoMarshalerName
 )
 
 func NewFactory() exporter.Factory {

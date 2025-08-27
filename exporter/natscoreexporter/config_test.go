@@ -5,7 +5,6 @@ package natscoreexporter
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -16,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.uber.org/multierr"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -29,14 +27,23 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{name: "empty config", cfg: Config{}, err: nil},
 		{
-			name: "marshaler and encoder",
+			name: "invalid logs subject",
+			cfg: Config{
+				Logs: LogsConfig{
+					Subject: "invalid",
+				},
+			},
+			err: errors.New("failed to parse logs subject:"),
+		},
+		{
+			name: "marshaler and encoder configured simultaneously",
 			cfg: Config{
 				Logs: LogsConfig{
 					Marshaler: "otlp_json",
 					Encoder:   "otlp",
 				},
 			},
-			err: errors.New("marshaler and encoder cannot be configured simultaneously"),
+			err: errors.New("marshaler and encoder configured simultaneously"),
 		},
 		{
 			name: "unsupported marshaler",
@@ -45,43 +52,32 @@ func TestConfigValidate(t *testing.T) {
 					Marshaler: "unsupported",
 				},
 			},
-			err: fmt.Errorf("unsupported marshaler: %s", "unsupported"),
+			err: errors.New("unsupported marshaler:"),
 		},
 		{
-			name: "logs using log_body marshaler",
+			name: "complete token configuration",
 			cfg: Config{
-				Logs: LogsConfig{
-					Marshaler: "log_body",
+				Auth: AuthConfig{
+					Token: &TokenConfig{
+						Token: "token",
+					},
 				},
 			},
 			err: nil,
 		},
 		{
-			name: "non-logs using log_body marshaler",
-			cfg: Config{
-				Metrics: MetricsConfig{
-					Marshaler: "log_body",
-				},
-				Traces: TracesConfig{
-					Marshaler: "log_body",
-				},
-			},
-			err: multierr.Append(
-				fmt.Errorf("unsupported marshaler for metrics: %s", "log_body"),
-				fmt.Errorf("unsupported marshaler for traces: %s", "log_body"),
-			),
-		},
-		{
-			name: "incomplete token configuration",
+			name: "incomplete username/password configuration",
 			cfg: Config{
 				Auth: AuthConfig{
-					Token: &TokenConfig{},
+					UserInfo: &UserInfoConfig{
+						User: "user",
+					},
 				},
 			},
-			err: errors.New("incomplete token configuration"),
+			err: errors.New("incomplete user_info configuration"),
 		},
 		{
-			name: "token and nkey",
+			name: "multiple auth methods configured simultaneously",
 			cfg: Config{
 				Auth: AuthConfig{
 					Token: &TokenConfig{
@@ -93,23 +89,7 @@ func TestConfigValidate(t *testing.T) {
 					},
 				},
 			},
-			err: nil,
-		},
-		{
-			name: "nkey and user_jwt/user_credentials",
-			cfg: Config{
-				Auth: AuthConfig{
-					NKey: &NKeyConfig{
-						PubKey: "pub_key",
-						SigKey: "sig_key",
-					},
-					UserJWT: &UserJWTConfig{
-						JWT:    "jwt",
-						SigKey: "sig_key",
-					},
-				},
-			},
-			err: errors.New("nkey and user_jwt/user_credentials cannot be configured simultaneously"),
+			err: errors.New("multiple auth methods configured simultaneously"),
 		},
 	}
 
@@ -119,7 +99,7 @@ func TestConfigValidate(t *testing.T) {
 			if tt.err == nil {
 				assert.NoError(t, err, tt.name)
 			} else {
-				assert.Equal(t, tt.err, err, tt.name)
+				assert.ErrorContains(t, err, tt.err.Error())
 			}
 		})
 	}
@@ -141,15 +121,15 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "nats://localhost:1234",
 				TLS:      configtls.NewDefaultClientConfig(),
 				Logs: LogsConfig{
-					Subject:   "logs",
+					Subject:   "\"logs\"",
 					Marshaler: "otlp_json",
 				},
 				Metrics: MetricsConfig{
-					Subject:   "metrics",
+					Subject:   "\"metrics\"",
 					Marshaler: "otlp_json",
 				},
 				Traces: TracesConfig{
-					Subject:   "traces",
+					Subject:   "\"traces\"",
 					Marshaler: "otlp_json",
 				},
 				Auth: AuthConfig{

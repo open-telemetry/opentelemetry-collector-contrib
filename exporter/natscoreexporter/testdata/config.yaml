@@ -1,13 +1,13 @@
 natscore:
   endpoint: nats://localhost:1234
   logs:
-    subject: "logs"
+    subject: "\"logs\""
     marshaler: "otlp_json"
   metrics:
-    subject: "metrics"
+    subject: "\"metrics\""
     marshaler: "otlp_json"
   traces:
-    subject: "traces"
+    subject: "\"traces\""
     marshaler: "otlp_json"
   token:
     token: "token"

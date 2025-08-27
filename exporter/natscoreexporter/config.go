@@ -6,26 +6,28 @@ package natscoreexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
-	"text/template"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
 )
 
-type MarshalerType string
+type MarshalerName string
 
 const (
-	OtlpProtoMarshaler MarshalerType = "otlp_proto"
-	OtlpJsonMarshaler  MarshalerType = "otlp_json"
-	LogBodyMarshaler   MarshalerType = "log_body"
+	OtlpProtoMarshalerName MarshalerName = "otlp_proto"
+	OtlpJsonMarshalerName  MarshalerName = "otlp_json"
 )
 
 // SignalConfig defines the configuration for a signal type.
 type SignalConfig struct {
-	// Subject is the `http/template` template string used to construct the NATS
-	// subject.
+	// Subject is the OTTL value expression used to construct the NATS subject.
 	//
-	// See: https://pkg.go.dev/text/template
+	// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md
 	//
 	// See: https://docs.nats.io/nats-concepts/subjects#subject-based-filtering-and-security
 	Subject string `mapstructure:"subject"`
@@ -36,8 +38,7 @@ type SignalConfig struct {
 	// Supported marshalers:
 	//  - otlp_proto
 	//  - otlp_json
-	//  - log_body (only supported for logs)
-	Marshaler MarshalerType `mapstructure:"marshaler"`
+	Marshaler MarshalerName `mapstructure:"marshaler"`
 	// Encoder is the name of the encoding extension to use when marshaling the
 	// signal type.
 	//
@@ -155,18 +156,17 @@ type Config struct {
 func (c *SignalConfig) Validate() error {
 	var errs error
 
-	if c.Subject != "" {
-		if _, err := template.New("subject").Parse(c.Subject); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("error parsing subject: %v", err))
-		}
-	}
-
 	if c.Marshaler != "" && c.Encoder != "" {
-		errs = multierr.Append(errs, errors.New("marshaler and encoder cannot be configured simultaneously"))
+		errs = multierr.Append(errs,
+			errors.New("marshaler and encoder configured simultaneously"),
+		)
 	}
 	if c.Marshaler != "" {
-		if c.Marshaler != OtlpProtoMarshaler && c.Marshaler != OtlpJsonMarshaler && c.Marshaler != LogBodyMarshaler {
-			errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler: %s", c.Marshaler))
+		if c.Marshaler != OtlpProtoMarshalerName &&
+			c.Marshaler != OtlpJsonMarshalerName {
+			errs = multierr.Append(errs,
+				fmt.Errorf("unsupported marshaler: %s", c.Marshaler),
+			)
 		}
 	}
 
@@ -174,14 +174,44 @@ func (c *SignalConfig) Validate() error {
 }
 
 func (c *LogsConfig) Validate() error {
-	return (*SignalConfig)(c).Validate()
+	errs := (*SignalConfig)(c).Validate()
+
+	if c.Subject != "" {
+		parser, err := ottllog.NewParser(
+			ottlfuncs.StandardConverters[ottllog.TransformContext](),
+			componenttest.NewNopTelemetrySettings(),
+		)
+		if err != nil {
+			panic("failed to create logs parser: " + err.Error())
+		}
+
+		if _, err = parser.ParseValueExpression(c.Subject); err != nil {
+			errs = multierr.Append(errs,
+				fmt.Errorf("failed to parse logs subject: %w", err),
+			)
+		}
+	}
+
+	return errs
 }
 
 func (c *MetricsConfig) Validate() error {
 	errs := (*SignalConfig)(c).Validate()
 
-	if c.Marshaler == LogBodyMarshaler {
-		errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler for metrics: %s", c.Marshaler))
+	if c.Subject != "" {
+		parser, err := ottlmetric.NewParser(
+			ottlfuncs.StandardConverters[ottlmetric.TransformContext](),
+			componenttest.NewNopTelemetrySettings(),
+		)
+		if err != nil {
+			panic("failed to create metrics parser: " + err.Error())
+		}
+
+		if _, err = parser.ParseValueExpression(c.Subject); err != nil {
+			errs = multierr.Append(errs,
+				fmt.Errorf("failed to parse metrics subject: %w", err),
+			)
+		}
 	}
 
 	return errs
@@ -190,78 +220,103 @@ func (c *MetricsConfig) Validate() error {
 func (c *TracesConfig) Validate() error {
 	errs := (*SignalConfig)(c).Validate()
 
-	if c.Marshaler == LogBodyMarshaler {
-		errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler for traces: %s", c.Marshaler))
+	if c.Subject != "" {
+		parser, err := ottlspan.NewParser(
+			ottlfuncs.StandardConverters[ottlspan.TransformContext](),
+			componenttest.NewNopTelemetrySettings(),
+		)
+		if err != nil {
+			panic("failed to create traces parser: " + err.Error())
+		}
+
+		if _, err = parser.ParseValueExpression(c.Subject); err != nil {
+			errs = multierr.Append(errs,
+				fmt.Errorf("failed to parse traces subject: %w", err),
+			)
+		}
 	}
 
 	return errs
 }
 
 func (c *TokenConfig) Validate() error {
-	if c == nil || c.Token != "" {
+	if c.Token != "" {
 		return nil
 	}
-
 	return errors.New("incomplete token configuration")
 }
 
 func (c *UserInfoConfig) Validate() error {
-	if c == nil || (c.User != "" && c.Password != "") {
+	if c.User != "" && c.Password != "" {
 		return nil
 	}
-
 	return errors.New("incomplete user_info configuration")
 }
 
 func (c *NKeyConfig) Validate() error {
-	if c == nil || (c.PubKey != "" && c.SigKey != "") {
+	if c.PubKey != "" && c.SigKey != "" {
 		return nil
 	}
-
 	return errors.New("incomplete nkey configuration")
 }
 
 func (c *UserJWTConfig) Validate() error {
-	if c == nil || (c.JWT != "" && c.SigKey != "") {
+	if c.JWT != "" && c.SigKey != "" {
 		return nil
 	}
-
 	return errors.New("incomplete user_jwt configuration")
 }
 
 func (c *UserCredentialsConfig) Validate() error {
-	if c == nil || c.UserFile != "" {
+	if c.UserFile != "" {
 		return nil
 	}
-
 	return errors.New("incomplete user_credentials configuration")
 }
 
 func (c *AuthConfig) Validate() error {
 	var errs error
+	numAuthMethods := 0
 
-	if err := c.Token.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+	if c.Token != nil {
+		numAuthMethods++
+		if err := c.Token.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
-	if err := c.UserInfo.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+	if c.UserInfo != nil {
+		numAuthMethods++
+		if err := c.UserInfo.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
-	if err := c.NKey.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+	if c.NKey != nil {
+		numAuthMethods++
+		if err := c.NKey.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
-	if err := c.UserJWT.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+	if c.UserJWT != nil {
+		numAuthMethods++
+		if err := c.UserJWT.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
-	if err := c.UserCredentials.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+	if c.UserCredentials != nil {
+		numAuthMethods++
+		if err := c.UserCredentials.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
-	if c.NKey != nil && (c.UserJWT != nil || c.UserCredentials != nil) {
-		errs = multierr.Append(errs, errors.New("nkey and user_jwt/user_credentials cannot be configured simultaneously"))
+	if numAuthMethods > 1 {
+		errs = multierr.Append(errs,
+			errors.New("multiple auth methods configured simultaneously"),
+		)
 	}
 
 	return errs
