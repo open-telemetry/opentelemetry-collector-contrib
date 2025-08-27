@@ -39,6 +39,9 @@ attributes:
   network.transport:
     description: OSI transport layer or inter-process communication method.
     type: string
+  validation.type:
+    description: Type of validation performed (contains, json_path, size, regex)
+    type: string
 
 metrics:
   httpcheck.status:
@@ -108,3 +111,28 @@ metrics:
       value_type: int
     unit: ms
     attributes: [http.url]
+  httpcheck.response.size:
+    description: Size of response body in bytes.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes: [http.url]
+  httpcheck.validation.passed:
+    description: Number of response validations that passed.
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "{validation}"
+    attributes: [http.url, validation.type]
+  httpcheck.validation.failed:
+    description: Number of response validations that failed.
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "{validation}"
+    attributes: [http.url, validation.type]

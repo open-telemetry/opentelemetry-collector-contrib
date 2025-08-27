@@ -79,6 +79,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHttpcheckResponseDurationDataPoint(ts, 1, "http.url-val")
 
+			allMetricsCount++
+			mb.RecordHttpcheckResponseSizeDataPoint(ts, 1, "http.url-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
@@ -88,6 +91,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHttpcheckTLSHandshakeDurationDataPoint(ts, 1, "http.url-val")
+
+			allMetricsCount++
+			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val")
+
+			allMetricsCount++
+			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -209,6 +218,21 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("http.url")
 					assert.True(t, ok)
 					assert.Equal(t, "http.url-val", attrVal.Str())
+				case "httpcheck.response.size":
+					assert.False(t, validatedMetrics["httpcheck.response.size"], "Found a duplicate in the metrics slice: httpcheck.response.size")
+					validatedMetrics["httpcheck.response.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Size of response body in bytes.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("http.url")
+					assert.True(t, ok)
+					assert.Equal(t, "http.url-val", attrVal.Str())
 				case "httpcheck.status":
 					assert.False(t, validatedMetrics["httpcheck.status"], "Found a duplicate in the metrics slice: httpcheck.status")
 					validatedMetrics["httpcheck.status"] = true
@@ -274,6 +298,46 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("http.url")
 					assert.True(t, ok)
 					assert.Equal(t, "http.url-val", attrVal.Str())
+				case "httpcheck.validation.failed":
+					assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
+					validatedMetrics["httpcheck.validation.failed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of response validations that failed.", ms.At(i).Description())
+					assert.Equal(t, "{validation}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("http.url")
+					assert.True(t, ok)
+					assert.Equal(t, "http.url-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("validation.type")
+					assert.True(t, ok)
+					assert.Equal(t, "validation.type-val", attrVal.Str())
+				case "httpcheck.validation.passed":
+					assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
+					validatedMetrics["httpcheck.validation.passed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of response validations that passed.", ms.At(i).Description())
+					assert.Equal(t, "{validation}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("http.url")
+					assert.True(t, ok)
+					assert.Equal(t, "http.url-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("validation.type")
+					assert.True(t, ok)
+					assert.Equal(t, "validation.type-val", attrVal.Str())
 				}
 			}
 		})
