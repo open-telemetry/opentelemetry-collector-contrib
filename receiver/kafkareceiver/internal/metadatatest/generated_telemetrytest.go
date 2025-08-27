@@ -284,6 +284,22 @@ func AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t *testing.T, tt *compo
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualKafkaReceiverUnmarshalFailedProfiles(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_unmarshal_failed_profiles",
+		Description: "Number of profiles failed to be unmarshaled",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_kafka_receiver_unmarshal_failed_profiles")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualKafkaReceiverUnmarshalFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_unmarshal_failed_spans",
