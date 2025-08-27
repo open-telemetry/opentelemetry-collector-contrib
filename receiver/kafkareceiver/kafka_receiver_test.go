@@ -751,18 +751,9 @@ func TestComponentStatus(t *testing.T) {
 
 		// Connection to the Kafka cluster is asynchronous; the receiver
 		// will report that it is starting before the connection is established.
-		if franzGoConsumerFeatureGate.IsEnabled() {
-			// franz-go may not emit an explicit "Starting" here — accept absence.
-			if e := waitStatusEvent(500 * time.Millisecond); e != nil {
-				assert.Equal(t, componentstatus.StatusStarting, e.Status())
-			}
-		} else {
-			// Sarama path keeps the strict assertion.
-			e := waitStatusEvent(10 * time.Second)
-			require.NotNil(t, e, "timed out waiting for status event")
-			assert.Equal(t, componentstatus.StatusStarting, e.Status())
-		}
-
+		e := waitStatusEvent(10 * time.Second)
+		require.NotNil(t, e, "timed out waiting for StatusStarting")
+		assert.Equal(t, componentstatus.StatusStarting, e.Status())
 		// The StatusOK event should not be reported yet, as the connection to the
 		// fake Kafka cluster is not established yet.
 		assertNoStatusEvent(t)
@@ -782,57 +773,28 @@ func TestComponentStatus(t *testing.T) {
 			defer wg.Done()
 			_, _ = io.Copy(kfakeConn, conn)
 		}()
-		defer wg.Wait()
-		defer conn.Close()
-		defer kfakeConn.Close()
+		t.Cleanup(func() {
+			_ = conn.Close()
+			_ = kfakeConn.Close()
+			wg.Wait()
+		})
 
-		if franzGoConsumerFeatureGate.IsEnabled() {
-			// franz-go: Try to see OK within a small window; absence is acceptable.
-			deadline := time.After(2 * time.Second)
-		TRY_OK:
-			for {
-				select {
-				case e := <-statusEventCh:
-					if e.Status() == componentstatus.StatusOK {
-						break TRY_OK
-					}
-					// ignore other events here
-				case <-deadline:
-					break TRY_OK
-				}
-			}
-			assertNoStatusEvent(t)
-		} else {
-			// Sarama: keep strict "OK" expectation after the proxy connects.
-			e := waitStatusEvent(10 * time.Second)
-			require.NotNil(t, e, "timed out waiting for StatusOK")
-			assert.Equal(t, componentstatus.StatusOK, e.Status())
-			assertNoStatusEvent(t)
-		}
+		// Now we expect StatusOK after the proxy connects through to the fake cluster.
+		e = waitStatusEvent(10 * time.Second)
+		require.NotNil(t, e, "timed out waiting for StatusOK")
+		assert.Equal(t, componentstatus.StatusOK, e.Status())
+		assertNoStatusEvent(t)
 
-		assert.NoError(t, r.Shutdown(t.Context()))
+		// Shut down and check we see Stopping then Stopped.
+		require.NoError(t, r.Shutdown(t.Context()))
 
-		// Shut down and check that the partition close metric is updated.
-		if franzGoConsumerFeatureGate.IsEnabled() {
-			// franz-go: tolerate missing shutdown status events in this proxy setup.
-			deadline := time.Now().Add(3 * time.Second)
-			for time.Now().Before(deadline) {
-				select {
-				case <-statusEventCh:
-					// drain whatever arrives; no assertions for franz-go here
-				case <-time.After(100 * time.Millisecond):
-				}
-			}
-		} else {
-			// Sarama: strict order Stopping -> Stopped.
-			e := waitStatusEvent(2 * time.Second)
-			require.NotNil(t, e, "expected StatusStopping")
-			assert.Equal(t, componentstatus.StatusStopping, e.Status())
+		e = waitStatusEvent(2 * time.Second)
+		require.NotNil(t, e, "expected StatusStopping")
+		assert.Equal(t, componentstatus.StatusStopping, e.Status())
 
-			e = waitStatusEvent(2 * time.Second)
-			require.NotNil(t, e, "expected StatusStopped")
-			assert.Equal(t, componentstatus.StatusStopped, e.Status())
-		}
+		e = waitStatusEvent(2 * time.Second)
+		require.NotNil(t, e, "expected StatusStopped")
+		assert.Equal(t, componentstatus.StatusStopped, e.Status())
 
 		assertNoStatusEvent(t)
 	})

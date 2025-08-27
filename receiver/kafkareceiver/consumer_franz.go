@@ -396,10 +396,9 @@ func (c *franzConsumer) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	// Wait for the consume loop to end; never propagate ctx cancellation outward.
 	select {
 	case <-ctx.Done():
-		// ignore cancellation
+		return context.Cause(ctx)
 	case <-c.consumerClosed:
 	}
 
