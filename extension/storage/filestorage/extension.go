@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -102,12 +103,13 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	// If recreate is enabled, handle potential panics during database opening
 	defer func() {
 		if r := recover(); r != nil {
-			lfs.logger.Warn("Database corruption detected, recreating database file", 
+			lfs.logger.Warn("Database corruption detected, recreating database file",
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
 			
-			// Rename the corrupted file
-			backupName := absoluteName + ".backup"
+			// Rename the corrupted file with ISO 8601 timestamp
+			timestamp := time.Now().Format("2006-01-02T15:04:05")
+			backupName := absoluteName + "." + timestamp + ".backup"
 			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
 				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
 				return
