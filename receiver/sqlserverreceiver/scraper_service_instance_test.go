@@ -136,11 +136,11 @@ func TestScraperWithServiceInstanceID(t *testing.T) {
 				assert.Equal(t, tc.expectedInstanceID, scraper.serviceInstanceID)
 
 				// Start the scraper
-				err := scraper.Start(context.Background(), componenttest.NewNopHost())
+				err := scraper.Start(t.Context(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
 				// Scrape metrics
-				metrics, err := scraper.ScrapeMetrics(context.Background())
+				metrics, err := scraper.ScrapeMetrics(t.Context())
 				require.NoError(t, err)
 
 				// Verify service.instance.id is present in resource attributes
@@ -153,7 +153,7 @@ func TestScraperWithServiceInstanceID(t *testing.T) {
 				assert.Equal(t, tc.expectedInstanceID, serviceInstanceID.Str())
 
 				// Shutdown the scraper
-				err = scraper.Shutdown(context.Background())
+				err = scraper.Shutdown(t.Context())
 				require.NoError(t, err)
 			})
 
@@ -229,15 +229,15 @@ func TestScraperWithServiceInstanceID(t *testing.T) {
 				assert.Equal(t, tc.expectedInstanceID, scraper.serviceInstanceID)
 
 				// Start the scraper
-				err := scraper.Start(context.Background(), componenttest.NewNopHost())
+				err := scraper.Start(t.Context(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
 				// Scrape logs
-				logs, err := scraper.ScrapeLogs(context.Background())
+				logs, err := scraper.ScrapeLogs(t.Context())
 				require.NoError(t, err)
 
 				// Verify service.instance.id is present in resource attributes
-				assert.Greater(t, logs.ResourceLogs().Len(), 0, "Should have at least one resource log")
+				assert.Positive(t, logs.ResourceLogs().Len(), "Should have at least one resource log")
 				resourceLogs := logs.ResourceLogs().At(0)
 				logAttrs := resourceLogs.Resource().Attributes()
 
@@ -246,7 +246,7 @@ func TestScraperWithServiceInstanceID(t *testing.T) {
 				assert.Equal(t, tc.expectedInstanceID, logServiceInstanceID.Str())
 
 				// Shutdown the scraper
-				err = scraper.Shutdown(context.Background())
+				err = scraper.Shutdown(t.Context())
 				require.NoError(t, err)
 			})
 		})

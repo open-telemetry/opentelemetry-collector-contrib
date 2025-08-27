@@ -4,6 +4,7 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -66,7 +67,7 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 // Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing
 func parseDataSource(dataSource string) (string, int, error) {
 	if dataSource == "" {
-		return "", 0, fmt.Errorf("datasource is empty")
+		return "", 0, errors.New("datasource is empty")
 	}
 
 	// Parse the connection string using the go-mssqldb library
