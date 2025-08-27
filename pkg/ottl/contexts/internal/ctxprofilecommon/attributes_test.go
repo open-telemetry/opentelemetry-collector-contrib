@@ -6,6 +6,9 @@ package ctxprofilecommon // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -114,4 +117,114 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 	// Pass a value that is not a ctxutil.Map
 	err := getSetter.Setter(t.Context(), ctx, "not_a_map")
 	assert.Error(t, err)
+}
+func TestAccessAttributesKey_Getter(t *testing.T) {
+	dict := pprofile.NewProfilesDictionary()
+	attrTable := dict.AttributeTable()
+	attr := attrTable.AppendEmpty()
+	attr.SetKey("foo")
+	attr.Value().SetStr("bar")
+	indices := pcommon.NewInt32Slice()
+	indices.Append(0)
+
+	ctx := &mockAttributeContext{
+		indices:    indices,
+		dictionary: dict,
+	}
+
+	t.Run("non-existing-key", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: ottltest.Strp("key1"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		got, err := getSetter.Getter(t.Context(), ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, nil, got)
+	})
+
+	t.Run("existing-key", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: ottltest.Strp("foo"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		got, err := getSetter.Getter(t.Context(), ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, "bar", got)
+	})
+
+}
+
+func TestAccessAttributesKey_Setter(t *testing.T) {
+	dict := pprofile.NewProfilesDictionary()
+	attrTable := dict.AttributeTable()
+	attr := attrTable.AppendEmpty()
+	attr.SetKey("foo")
+	attr.Value().SetStr("bar")
+	indices := pcommon.NewInt32Slice()
+	indices.Append(0)
+
+	ctx := &mockAttributeContext{
+		indices:    indices,
+		dictionary: dict,
+	}
+
+	t.Run("non-existing-key", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: ottltest.Strp("key1"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		err := getSetter.Setter(t.Context(), ctx, "value1")
+		assert.NoError(t, err)
+	})
+
+	t.Run("update-existing-key", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: ottltest.Strp("foo"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		err := getSetter.Setter(t.Context(), ctx, "bazinga")
+		assert.NoError(t, err)
+	})
+
+	t.Run("insert-new-key", func(t *testing.T) {
+		lenAttrsBefore := ctx.AttributeIndices().Len()
+		lenIndicesBefore := ctx.indices.Len()
+
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: ottltest.Strp("bazinga"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		err := getSetter.Setter(t.Context(), ctx, 42)
+		assert.NoError(t, err)
+		lenAttrsAfter := ctx.AttributeIndices().Len()
+		lenIndicesAfter := ctx.indices.Len()
+
+		if lenAttrsBefore+1 != lenAttrsAfter {
+			t.Fatal("expected additional attribute after inserting it")
+		}
+
+		if lenIndicesBefore+1 != lenIndicesAfter {
+			t.Fatal("expected additional index after inserting it")
+		}
+	})
 }
