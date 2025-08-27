@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    systemd.unit.state:
+      enabled: true
+none_set:
+  metrics:
+    systemd.unit.state:
+      enabled: false
