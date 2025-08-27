@@ -320,6 +320,5 @@ exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
-receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
