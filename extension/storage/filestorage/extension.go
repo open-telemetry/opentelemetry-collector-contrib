@@ -72,7 +72,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
-	
+
 	// Try to create client, handling panics if recreate is enabled
 	client, err := lfs.createClientWithPanicRecovery(absoluteName)
 	if err != nil {
@@ -106,7 +106,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 			lfs.logger.Warn("Database corruption detected, recreating database file",
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
-			
+
 			// Rename the corrupted file with ISO 8601 timestamp
 			timestamp := time.Now().Format("2006-01-02T15:04:05.000")
 			backupName := absoluteName + "." + timestamp + ".backup"
@@ -114,11 +114,11 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
 				return
 			}
-			
-			lfs.logger.Info("Corrupted database file renamed", 
+
+			lfs.logger.Info("Corrupted database file renamed",
 				zap.String("original", absoluteName),
 				zap.String("backup", backupName))
-			
+
 			// Try to create client again with fresh database
 			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 		}
