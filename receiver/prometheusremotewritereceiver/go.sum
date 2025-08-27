@@ -256,6 +256,10 @@ github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRW
 github.com/oklog/ulid v1.3.1 h1:EGfNDEx6MqHz8B3uNV6QAib1UR2Lm97sHi3ocA6ESJ4=
 github.com/oklog/ulid/v2 v2.1.1 h1:suPZ4ARWLOJLegGFiZZ1dFAkqzhMjL3J1TzI+5wHz8s=
 github.com/oklog/ulid/v2 v2.1.1/go.mod h1:rcEKHmBBKfef9DhnvX7y1HZBYxjXb0cP5ExxNsTT1QQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0 h1:MBGhsjWU/jtDgUqblFEBoeSw/TtQHp9xSCSO/iZ0OkE=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.132.0/go.mod h1:unPwed5hcfsE8wwev7+Jiflxr8ZtAxQ5H9RuwOoRV6A=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.132.0 h1:xwpoUi57vQtWgymJ2mje76r27Paqq3weLNlwcu/aQAU=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.132.0/go.mod h1:cRkSkWzpoy7Q+eSQ9Yrv5sF1EFcLZACEYHHwm2wF+k8=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.2 h1:9yCKha/T5XdGtO0q9Q9a6T5NUCsTn/DrBg0D7ufOcFM=
