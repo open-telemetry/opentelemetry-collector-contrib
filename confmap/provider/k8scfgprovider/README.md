@@ -16,5 +16,35 @@ Provider that retrieves values from keys in kubernetes configmaps and secrets.
 
 ## Summary
 
+This provider enables you to use items from Kubernetes ConfigMap and Secret resources in your OpenTelemetry config file.
+Normally you would need to make the items available using volumes or environment variables, but this is not possible if you cannot change the Deployment yaml for the otel collector.
+This can be the case when the collector is provided as a service and the Deployment resource is managed with GitOps outside of our control.
+
+You can use the provider like this:
+
+```yaml
+exporters:
+  some-exporter:
+    some-parameter: ${k8scfg:secret/my-namespace/my-secret/data/my-key}
+```
+
 ## Usage
+
+The format of the parameter is an opaque URI.
+
+The scheme fo the URI is **k8scfg**.
+
+The 5 parts are separated by forward slashes and have the following meaning.
+
+
+| Part # | Element | Description | Valid values |
+|--------|---------|-------------|--------------|
+| #1  | resource type | The Kubernetes resource type | secret or configMap (case insensitive) |
+| #2 | namespace | The namespace of the resource | valid namespace name, or '.' for the namespace of the otel collector | 
+| #3 | resource name | The name of the resource | valid Kubernetes resource name |
+| #4 | data type | Secrets have data or stringData, config maps have data or binaryData | data, stringData, binaryData
+| #5 | the key | The name of the key | valid key name |
+
+
+
 
