@@ -1,4 +1,4 @@
-change_type: bug
+change_type: bug_fix
 component: sqlserverreceiver
 note: Fix memory leak
 issues: [42302]
