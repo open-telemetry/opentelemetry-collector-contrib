@@ -164,7 +164,9 @@ func TestLogs(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				gotLogs := sink.AllLogs()
-
+				if len(gotLogs) <= i {
+					return false
+				}
 				err := plogtest.CompareLogs(tt.expected, gotLogs[i], plogtest.IgnoreObservedTimestamp())
 				if err == nil {
 					return true
