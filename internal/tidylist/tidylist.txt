@@ -214,6 +214,7 @@ processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/intervalprocessor
+processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
 processor/metricsgenerationprocessor
@@ -222,7 +223,6 @@ processor/metricstransformprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
-processor/routingprocessor
 processor/schemaprocessor
 processor/spanprocessor
 processor/sumologicprocessor
@@ -230,7 +230,6 @@ receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
-receiver/awscloudwatchmetricsreceiver
 receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver

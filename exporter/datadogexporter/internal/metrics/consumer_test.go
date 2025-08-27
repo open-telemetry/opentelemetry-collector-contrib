@@ -66,7 +66,7 @@ func TestRunningMetrics(t *testing.T) {
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	consumer := NewConsumer(nil)
 	metadata, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
@@ -113,7 +113,7 @@ func TestTagsMetrics(t *testing.T) {
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	consumer := NewConsumer(nil)
 	metadata, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)

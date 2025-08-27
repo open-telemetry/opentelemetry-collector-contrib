@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -44,10 +45,12 @@ type Config struct {
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
-	WAL                         *WALConfig                   `mapstructure:"wal"`
+
+	// WAL enables persisting metrics to a write-ahead-log before sending to the remote storage.
+	WAL configoptional.Optional[WALConfig] `mapstructure:"wal"`
 
 	// TargetInfo allows customizing the target_info metric
-	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
+	TargetInfo TargetInfo `mapstructure:"target_info,omitempty"`
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
@@ -107,11 +110,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("remote write consumer number can't be negative")
 	}
 
-	if cfg.TargetInfo == nil {
-		cfg.TargetInfo = &TargetInfo{
-			Enabled: true,
-		}
-	}
 	if cfg.MaxBatchSizeBytes < 0 {
 		return errors.New("max_batch_byte_size must be greater than 0")
 	}
