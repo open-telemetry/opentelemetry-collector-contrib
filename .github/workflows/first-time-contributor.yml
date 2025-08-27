@@ -1,7 +1,9 @@
 name: 'First time contributor'
 on:
-  pull_request:
-    types: [opened, labeled]
+  pull_request_target:
+    types:
+      - opened
+      - labeled
 
 permissions: read-all
 

@@ -231,7 +231,6 @@ receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
-receiver/awscloudwatchmetricsreceiver
 receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
