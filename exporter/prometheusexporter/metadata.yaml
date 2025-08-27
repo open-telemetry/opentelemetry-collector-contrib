@@ -18,13 +18,3 @@ tests:
       top:
         # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
         - "go.opencensus.io/stats/view.(*worker).start"
-
-telemetry:
-  metrics:
-    otelcol_exporter_refused_metric_points:
-      enabled: true
-      description: Number of metric points refused by the prometheus exporter.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true

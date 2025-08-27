@@ -13,7 +13,6 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -22,7 +21,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -58,7 +56,7 @@ func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, 
 
 func TestConvertInvalidDataType(t *testing.T) {
 	metric := pmetric.NewMetric()
-	c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
+	c := newCollector(&Config{}, zap.NewNop())
 	c.accumulator = &mockAccumulator{
 		[]pmetric.Metric{metric},
 		pcommon.NewMap(),
@@ -149,7 +147,7 @@ func TestConvertMetric(t *testing.T) {
 			case pmetric.MetricTypeHistogram:
 				metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 			}
-			c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
+			c := newCollector(&Config{}, zap.NewNop())
 			for k, v := range tt.mapVals {
 				c.metricFamilies.Store(k, v)
 			}
@@ -233,7 +231,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
+	c := newCollector(&Config{}, zap.NewNop())
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -272,7 +270,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop(), newNoopTelemetry())
+	c := newCollector(&Config{}, zap.NewNop())
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -327,7 +325,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	c := newCollector(&Config{
 		Namespace:      "test_space",
 		SendTimestamps: false,
-	}, zap.New(&loggerCore), newNoopTelemetry())
+	}, zap.New(&loggerCore))
 	// Replace accumulator with mock for test control
 	c.accumulator = &mockAccumulator{
 		[]pmetric.Metric{metric},
@@ -540,7 +538,7 @@ func TestCollectMetrics(t *testing.T) {
 				c := newCollector(&Config{
 					Namespace:      "test_space",
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop(), newNoopTelemetry())
+				}, zap.NewNop())
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -667,7 +665,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric := tt.metric(ts, sendTimestamp)
 				c := newCollector(&Config{
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop(), newNoopTelemetry())
+				}, zap.NewNop())
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -781,7 +779,7 @@ func TestAccumulateSummary(t *testing.T) {
 				metric := tt.metric(ts, sendTimestamp)
 				c := newCollector(&Config{
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop(), newNoopTelemetry())
+				}, zap.NewNop())
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -841,11 +839,7 @@ func TestAccumulateSummary(t *testing.T) {
 	}
 }
 
-func TestNewCollector_WithTelemetry(t *testing.T) {
-	// Create telemetry
-	settings := exportertest.NewNopSettings(metadata.Type)
-	tel := newTelemetry(settings)
-
+func TestNewCollector_WithConfig(t *testing.T) {
 	// Create config
 	config := &Config{
 		Namespace:         "test",
@@ -856,14 +850,12 @@ func TestNewCollector_WithTelemetry(t *testing.T) {
 	}
 
 	// Create collector with telemetry
-	collector := newCollector(config, zap.NewNop(), tel)
+	collector := newCollector(config, zap.NewNop())
 
 	// Verify collector was created correctly
 	require.NotNil(t, collector)
 	assert.NotNil(t, collector.accumulator)
 	assert.NotNil(t, collector.logger)
-	assert.NotNil(t, collector.telemetry)
-	assert.Equal(t, tel, collector.telemetry)
 
 	// Verify config values were set
 	assert.True(t, collector.sendTimestamps)

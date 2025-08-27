@@ -11,43 +11,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
-
-type telemetry struct {
-	refusedMetricPoints metric.Int64Counter
-}
-
-func newTelemetry(set exporter.Settings) telemetry {
-	meter := set.MeterProvider.Meter(
-		"otelcol/prometheusexporter",
-		metric.WithInstrumentationVersion(metadata.Type.String()),
-	)
-
-	refusedMetricPoints, err := meter.Int64Counter(
-		"otelcol_exporter_refused_metric_points",
-		metric.WithDescription("Number of metric points refused by the prometheus exporter. [alpha]"),
-	)
-	if err != nil {
-		refusedMetricPoints = noop.Int64Counter{}
-	}
-
-	return telemetry{
-		refusedMetricPoints: refusedMetricPoints,
-	}
-}
-
-// newNoopTelemetry creates a no-operation telemetry instance that safely
-// discards all metric operations. Used when metric creation fails.
-func newNoopTelemetry() telemetry {
-	return telemetry{
-		refusedMetricPoints: noop.Int64Counter{},
-	}
-}
 
 // NewFactory creates a new Prometheus exporter factory.
 func NewFactory() exporter.Factory {
@@ -74,9 +41,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
 
-	tel := newTelemetry(set)
-
-	prometheus, err := newPrometheusExporter(pcfg, set, tel)
+	prometheus, err := newPrometheusExporter(pcfg, set)
 	if err != nil {
 		return nil, err
 	}
