@@ -533,13 +533,13 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}
 
 					// Verify that the consumer restarts at least once.
-					assert.Eventually(t, func() bool {
+					assert.EventuallyWithT(t, func(t *assert.CollectT) {
 						m, err := tel.GetMetric("otelcol_kafka_receiver_partition_start")
 						require.NoError(t, err)
 
 						dataPoints := m.Data.(metricdata.Sum[int64]).DataPoints
 						assert.Len(t, dataPoints, 1)
-						return dataPoints[0].Value >= value
+						assert.GreaterOrEqual(t, dataPoints[0].Value, value)
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message

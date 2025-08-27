@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlser
 go 1.24
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.2
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.3
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/microsoft/go-mssqldb v1.9.2
+	github.com/microsoft/go-mssqldb v1.9.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.133.0
@@ -39,9 +39,9 @@ require (
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.69.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.69.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.69.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.69.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.69.3 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.6 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
