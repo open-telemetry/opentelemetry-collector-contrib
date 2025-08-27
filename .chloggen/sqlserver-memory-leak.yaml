@@ -1,0 +1,7 @@
+change_type: bug_fix
+component: sqlserverreceiver
+note: Fix memory leak from top queries and query samples features
+issues: [42302]
+subtext: |
+  The issue was caused by the misuse of the obfuscate library.
+change_logs: [user]
