@@ -63,6 +63,7 @@ type sqlServerScraperHelper struct {
 	cache                  *lru.Cache[string, int64]
 	lastExecutionTimestamp time.Time
 	obfuscator             *obfuscator
+	serviceInstanceID      string
 }
 
 var (
@@ -79,6 +80,13 @@ func newSQLServerScraper(id component.ID,
 	cfg *Config,
 	cache *lru.Cache[string, int64],
 ) *sqlServerScraperHelper {
+	// Compute service instance ID
+	serviceInstanceID, err := computeServiceInstanceID(cfg)
+	if err != nil {
+		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
+		serviceInstanceID = "unknown:1433"
+	}
+
 	return &sqlServerScraperHelper{
 		id:                     id,
 		config:                 cfg,
@@ -92,6 +100,7 @@ func newSQLServerScraper(id component.ID,
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
 		obfuscator:             newObfuscator(),
+		serviceInstanceID:      serviceInstanceID,
 	}
 }
 
@@ -187,6 +196,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
+		rb.SetServiceInstanceID(s.serviceInstanceID)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -278,6 +288,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
+		rb.SetServiceInstanceID(s.serviceInstanceID)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -557,6 +568,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
+		rb.SetServiceInstanceID(s.serviceInstanceID)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -604,6 +616,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
+		rb.SetServiceInstanceID(s.serviceInstanceID)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -767,6 +780,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			resourceAttributes.PutStr("host.name", s.config.Server)
 			resourceAttributes.PutStr("sqlserver.computer.name", row[computerNameKey])
 			resourceAttributes.PutStr("sqlserver.instance.name", row[instanceNameKey])
+			resourceAttributes.PutStr("service.instance.id", s.serviceInstanceID)
 
 			resourcesAdded = true
 		}
@@ -1051,6 +1065,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			resourceAttributes.PutStr("host.name", s.config.Server)
 			resourceAttributes.PutStr("sqlserver.computer.name", row[computerNameKey])
 			resourceAttributes.PutStr("sqlserver.instance.name", row[instanceNameKey])
+			resourceAttributes.PutStr("service.instance.id", s.serviceInstanceID)
 
 			resourcesAdded = true
 		}
