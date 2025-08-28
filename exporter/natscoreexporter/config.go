@@ -7,20 +7,21 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/multierr"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/multierr"
 )
 
 type MarshalerName string
 
 const (
 	OtlpProtoMarshalerName MarshalerName = "otlp_proto"
-	OtlpJsonMarshalerName  MarshalerName = "otlp_json"
+	OtlpJSONMarshalerName  MarshalerName = "otlp_json"
 )
 
 // SignalConfig defines the configuration for a signal type.
@@ -161,7 +162,7 @@ func (c *SignalConfig) Validate() error {
 	}
 	if c.Marshaler != "" {
 		if c.Marshaler != OtlpProtoMarshalerName &&
-			c.Marshaler != OtlpJsonMarshalerName {
+			c.Marshaler != OtlpJSONMarshalerName {
 			errs = multierr.Append(errs, fmt.Errorf("unsupported marshaler: %s", c.Marshaler))
 		}
 	}

@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/metadata"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -33,7 +34,7 @@ func TestConfigValidate(t *testing.T) {
 					Subject: "invalid",
 				},
 			},
-			err: errors.New("failed to parse logs subject:"),
+			err: errors.New("failed to parse logs subject"),
 		},
 		{
 			name: "marshaler and encoder configured simultaneously",
@@ -52,7 +53,7 @@ func TestConfigValidate(t *testing.T) {
 					Marshaler: "unsupported",
 				},
 			},
-			err: errors.New("unsupported marshaler:"),
+			err: errors.New("unsupported marshaler"),
 		},
 		{
 			name: "complete token configuration",

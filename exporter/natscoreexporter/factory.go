@@ -6,6 +6,7 @@ package natscoreexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
+	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
@@ -13,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/nats-io/nats.go"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/metadata"
 )

@@ -5,23 +5,24 @@ package grouper
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func generateMetrics(t *testing.T) pmetric.Metrics {
@@ -37,7 +38,7 @@ func generateMetrics(t *testing.T) pmetric.Metrics {
 			for range 10 {
 				metric := scopeMetrics.Metrics().AppendEmpty()
 				metric.Metadata().PutStr("id", uuid.New().String())
-				metric.Metadata().PutStr("subject", strconv.Itoa(rand.Intn(10)))
+				metric.Metadata().PutStr("subject", strconv.Itoa(rand.IntN(10)))
 			}
 		}
 	}
@@ -151,7 +152,6 @@ func TestMetricsGrouper(t *testing.T) {
 	t.Run("matches naive implementation", func(t *testing.T) {
 		subject := "metric.metadata[\"subject\"]"
 		telemetrySettings := componenttest.NewNopTelemetrySettings()
-		ctx := context.Background()
 		srcMetrics := generateMetrics(t)
 
 		naiveMetricsGrouper, err := newNaiveMetricsGrouper(subject, telemetrySettings)
@@ -159,9 +159,9 @@ func TestMetricsGrouper(t *testing.T) {
 		metricsGrouper, err := NewMetricsGrouper(subject, telemetrySettings)
 		assert.NoError(t, err)
 
-		wantGroups, err := naiveMetricsGrouper.Group(ctx, srcMetrics)
+		wantGroups, err := naiveMetricsGrouper.Group(t.Context(), srcMetrics)
 		require.NoError(t, err)
-		haveGroups, err := metricsGrouper.Group(ctx, srcMetrics)
+		haveGroups, err := metricsGrouper.Group(t.Context(), srcMetrics)
 		assert.NoError(t, err)
 
 		compareGroups := func(a, b Group[pmetric.Metrics]) int {
@@ -169,7 +169,7 @@ func TestMetricsGrouper(t *testing.T) {
 		}
 		slices.SortFunc(wantGroups, compareGroups)
 		slices.SortFunc(haveGroups, compareGroups)
-		assert.Equal(t, len(wantGroups), len(haveGroups))
+		assert.Len(t, wantGroups, len(haveGroups))
 		for i := range len(wantGroups) {
 			assert.NoError(t, pmetrictest.CompareMetrics(
 				wantGroups[i].Data,

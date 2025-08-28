@@ -27,13 +27,13 @@ func NewOtlpProtoLogsMarshaler() (Marshaler[plog.Logs], error) {
 
 var _ NewMarshalerFunc[plog.Logs] = NewOtlpProtoLogsMarshaler
 
-func NewOtlpJsonLogsMarshaler() (Marshaler[plog.Logs], error) {
+func NewOtlpJSONLogsMarshaler() (Marshaler[plog.Logs], error) {
 	return &pdataLogsMarshaler{
 		marshaler: &plog.JSONMarshaler{},
 	}, nil
 }
 
-var _ NewMarshalerFunc[plog.Logs] = NewOtlpJsonLogsMarshaler
+var _ NewMarshalerFunc[plog.Logs] = NewOtlpJSONLogsMarshaler
 
 type pdataMetricsMarshaler struct {
 	marshaler pmetric.Marshaler
@@ -53,13 +53,13 @@ func NewOtlpProtoMetricsMarshaler() (Marshaler[pmetric.Metrics], error) {
 
 var _ NewMarshalerFunc[pmetric.Metrics] = NewOtlpProtoMetricsMarshaler
 
-func NewOtlpJsonMetricsMarshaler() (Marshaler[pmetric.Metrics], error) {
+func NewOtlpJSONMetricsMarshaler() (Marshaler[pmetric.Metrics], error) {
 	return &pdataMetricsMarshaler{
 		marshaler: &pmetric.JSONMarshaler{},
 	}, nil
 }
 
-var _ NewMarshalerFunc[pmetric.Metrics] = NewOtlpJsonMetricsMarshaler
+var _ NewMarshalerFunc[pmetric.Metrics] = NewOtlpJSONMetricsMarshaler
 
 type pdataTracesMarshaler struct {
 	marshaler ptrace.Marshaler
@@ -79,10 +79,10 @@ func NewOtlpProtoTracesMarshaler() (Marshaler[ptrace.Traces], error) {
 
 var _ NewMarshalerFunc[ptrace.Traces] = NewOtlpProtoTracesMarshaler
 
-func NewOtlpJsonTracesMarshaler() (Marshaler[ptrace.Traces], error) {
+func NewOtlpJSONTracesMarshaler() (Marshaler[ptrace.Traces], error) {
 	return &pdataTracesMarshaler{
 		marshaler: &ptrace.JSONMarshaler{},
 	}, nil
 }
 
-var _ NewMarshalerFunc[ptrace.Traces] = NewOtlpJsonTracesMarshaler
+var _ NewMarshalerFunc[ptrace.Traces] = NewOtlpJSONTracesMarshaler

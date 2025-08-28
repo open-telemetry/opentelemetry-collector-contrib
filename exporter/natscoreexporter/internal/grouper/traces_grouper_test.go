@@ -5,23 +5,24 @@ package grouper // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 func generateTraces(t *testing.T) ptrace.Traces {
@@ -37,7 +38,7 @@ func generateTraces(t *testing.T) ptrace.Traces {
 			for range 10 {
 				span := scopeSpans.Spans().AppendEmpty()
 				span.Attributes().PutStr("id", uuid.New().String())
-				span.Attributes().PutStr("subject", strconv.Itoa(rand.Intn(10)))
+				span.Attributes().PutStr("subject", strconv.Itoa(rand.IntN(10)))
 			}
 		}
 	}
@@ -150,7 +151,6 @@ func TestTracesGrouper(t *testing.T) {
 	t.Run("matches naive implementation", func(t *testing.T) {
 		subject := "span.attributes[\"subject\"]"
 		telemetrySettings := componenttest.NewNopTelemetrySettings()
-		ctx := context.Background()
 		srcTraces := generateTraces(t)
 
 		naiveTracesGrouper, err := newNaiveTracesGrouper(subject, telemetrySettings)
@@ -158,9 +158,9 @@ func TestTracesGrouper(t *testing.T) {
 		tracesGrouper, err := NewTracesGrouper(subject, telemetrySettings)
 		assert.NoError(t, err)
 
-		wantGroups, err := naiveTracesGrouper.Group(ctx, srcTraces)
+		wantGroups, err := naiveTracesGrouper.Group(t.Context(), srcTraces)
 		require.NoError(t, err)
-		haveGroups, err := tracesGrouper.Group(ctx, srcTraces)
+		haveGroups, err := tracesGrouper.Group(t.Context(), srcTraces)
 		assert.NoError(t, err)
 
 		compareGroups := func(a, b Group[ptrace.Traces]) int {
@@ -168,7 +168,7 @@ func TestTracesGrouper(t *testing.T) {
 		}
 		slices.SortFunc(wantGroups, compareGroups)
 		slices.SortFunc(haveGroups, compareGroups)
-		assert.Equal(t, len(wantGroups), len(haveGroups))
+		assert.Len(t, wantGroups, len(haveGroups))
 		for i := range len(wantGroups) {
 			assert.NoError(t, ptracetest.CompareTraces(
 				wantGroups[i].Data,
