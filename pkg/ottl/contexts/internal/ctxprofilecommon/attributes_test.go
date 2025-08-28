@@ -145,7 +145,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
 		got, err := getSetter.Getter(t.Context(), ctx)
 		assert.NoError(t, err)
-		assert.Equal(t, nil, got)
+		assert.Nil(t, got)
 	})
 
 	t.Run("existing-key", func(t *testing.T) {
