@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.3
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/microsoft/go-mssqldb v1.9.2
+	github.com/microsoft/go-mssqldb v1.9.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.133.0

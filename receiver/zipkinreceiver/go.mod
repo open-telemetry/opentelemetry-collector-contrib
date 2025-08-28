@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.133.0
 	go.opentelemetry.io/otel v1.37.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.36.7
+	google.golang.org/protobuf v1.36.8
 )
 
 require (

@@ -90,6 +90,24 @@ These metrics provide detailed timing information for different phases of the HT
 - `client.request.duration`: Time spent sending the HTTP request
 - `response.duration`: Time spent receiving the HTTP response
 
+#### Response Validation Metrics
+
+For API monitoring and health checks, response validation metrics are available:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.validation.passed:
+        enabled: true
+      httpcheck.validation.failed:
+        enabled: true
+      httpcheck.response.size:
+        enabled: true
+```
+
+These metrics track validation results with `validation.type` attribute indicating the validation type (contains, json_path, size, regex).
+
 ### Request Body Support
 
 The receiver supports sending request bodies for POST, PUT, PATCH, and other HTTP methods:
@@ -123,6 +141,41 @@ receivers:
 - Other content: `text/plain`
 - Custom headers override auto-detection
 
+### Response Validation
+
+The receiver supports response body validation for API monitoring:
+
+```yaml
+receivers:
+  httpcheck:
+    targets:
+      - endpoint: "https://api.example.com/health"
+        validations:
+          # String matching
+          - contains: "healthy"
+          - not_contains: "error"
+          
+          # JSON path validation using gjson syntax
+          - json_path: "$.status"
+            equals: "ok"
+          - json_path: "$.services[*].status"
+            equals: "up"
+          
+          # Response size validation (bytes)
+          - max_size: 1024
+          - min_size: 10
+          
+          # Regex validation
+          - regex: "^HTTP/[0-9.]+ 200"
+```
+
+**Validation Types:**
+- `contains` / `not_contains`: String matching
+- `json_path` + `equals`: JSON path queries using [gjson syntax](https://github.com/tidwall/gjson)
+- `max_size` / `min_size`: Response body size limits
+- `regex`: Regular expression matching
+
+
 ### Example Configuration
 
 ```yaml
@@ -143,6 +196,12 @@ receivers:
         enabled: true
       httpcheck.tls.cert_remaining:
         enabled: true
+      httpcheck.validation.passed:
+        enabled: true
+      httpcheck.validation.failed:
+        enabled: true
+      httpcheck.response.size:
+        enabled: true
     targets:
       - method: "GET"
         endpoints:
@@ -157,11 +216,16 @@ receivers:
         endpoint: "http://localhost:8080/hello"
         headers:
           Authorization: "Bearer <your_bearer_token>"
-      - method: "GET"
-        endpoint: "https://api.example.com/health"
       - method: "POST"
         endpoint: "https://api.example.com/users"
         body: '{"name": "Test User", "email": "test@example.com"}'
+      - method: "GET"
+        endpoint: "https://api.example.com/health"
+        validations:
+          - contains: "healthy"
+          - json_path: "$.status"
+            equals: "ok"
+          - max_size: 1024
 processors:
   batch:
     send_batch_max_size: 1000
