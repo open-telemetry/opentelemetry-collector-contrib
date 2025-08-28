@@ -101,7 +101,10 @@ func (g *tracesGrouper) Group(ctx context.Context, srcTraces ptrace.Traces) ([]G
 
 var _ Grouper[ptrace.Traces] = &tracesGrouper{}
 
-func NewTracesGrouper(subject string, telemetrySettings component.TelemetrySettings) (Grouper[ptrace.Traces], error) {
+func NewTracesGrouper(
+	subject string,
+	telemetrySettings component.TelemetrySettings,
+) (Grouper[ptrace.Traces], error) {
 	parser, err := ottlspan.NewParser(
 		ottlfuncs.StandardConverters[ottlspan.TransformContext](),
 		telemetrySettings,
