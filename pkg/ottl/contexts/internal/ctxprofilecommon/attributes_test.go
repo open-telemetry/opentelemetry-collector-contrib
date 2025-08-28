@@ -6,12 +6,13 @@ package ctxprofilecommon // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // Mock implementations for AttributeContext and dependencies
@@ -118,6 +119,7 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 	err := getSetter.Setter(t.Context(), ctx, "not_a_map")
 	assert.Error(t, err)
 }
+
 func TestAccessAttributesKey_Getter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
@@ -159,7 +161,6 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "bar", got)
 	})
-
 }
 
 func TestAccessAttributesKey_Setter(t *testing.T) {
