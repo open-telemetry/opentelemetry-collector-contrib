@@ -171,6 +171,34 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
+// writeLibhoneyError writes an error response in the appropriate format for libhoney clients
+func (r *libhoneyReceiver) writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, errorMsg string) {
+	errorResponse := []response.ResponseInBatch{{
+		ErrorStr: errorMsg,
+		Status:   statusCode,
+	}}
+
+	var responseBody []byte
+	var err error
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		responseBody, err = msgpack.Marshal(errorResponse)
+		contentType = encoder.MsgpackContentType
+	default:
+		responseBody, err = json.Marshal(errorResponse)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		// Fallback to generic error if we can't marshal the response
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, statusCode, responseBody)
+}
+
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
@@ -192,12 +220,12 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
-		errorutil.HTTPError(resp, err)
+		r.writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to read request body")
 		return
 	}
 	if err = req.Body.Close(); err != nil {
 		r.settings.Logger.Error("Failed to close request body", zap.Error(err))
-		errorutil.HTTPError(resp, err)
+		r.writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to close request body")
 		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
@@ -231,7 +259,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	case encoder.JSONContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
-			errorutil.HTTPError(resp, err)
+			r.writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to unmarshal JSON")
 			return
 		}
 		if len(libhoneyevents) > 0 {
@@ -252,28 +280,32 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
+		ctx = r.obsreport.StartLogsOp(ctx)
 		if r.nextLogs != nil {
-			ctx = r.obsreport.StartLogsOp(ctx)
 			err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
 			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
 		} else {
-			r.settings.Logger.Debug("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+			dropErr := errors.New("no log consumer configured")
+			r.settings.Logger.Warn("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, dropErr)
 		}
 	}
 
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
+		ctx = r.obsreport.StartTracesOp(ctx)
 		if r.nextTraces != nil {
-			ctx = r.obsreport.StartTracesOp(ctx)
 			err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
 			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
 		} else {
-			r.settings.Logger.Debug("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+			dropErr := errors.New("no trace consumer configured")
+			r.settings.Logger.Warn("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, dropErr)
 		}
 	}
 
 	if err != nil {
-		errorutil.HTTPError(resp, err)
+		r.writeLibhoneyError(resp, enc, http.StatusBadRequest, "consumer error")
 		return
 	}
 
@@ -295,7 +327,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	}
 
 	if err != nil {
-		errorutil.HTTPError(resp, err)
+		r.writeLibhoneyError(resp, enc, http.StatusInternalServerError, "failed to marshal response")
 		return
 	}
 	writeResponse(resp, contentType, http.StatusOK, responseBody)

@@ -588,8 +588,8 @@ func TestLibhoneyReceiver_NilConsumerHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a custom logger to capture debug messages
-			core, logs := observer.New(zap.DebugLevel)
+			// Create a custom logger to capture warn messages
+			core, logs := observer.New(zap.WarnLevel)
 			logger := zap.New(core)
 
 			cfg := createDefaultConfig()
@@ -628,17 +628,17 @@ func TestLibhoneyReceiver_NilConsumerHandling(t *testing.T) {
 			resp := w.Result()
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			// Check that debug log messages were generated for dropped data
+			// Check that warn log messages were generated for dropped data
 			logEntries := logs.All()
 			var foundExpectedLog bool
 			for _, entry := range logEntries {
 				if strings.Contains(entry.Message, tt.expectedLogs) {
 					foundExpectedLog = true
-					assert.Equal(t, zap.DebugLevel, entry.Level)
+					assert.Equal(t, zap.WarnLevel, entry.Level)
 					break
 				}
 			}
-			assert.True(t, foundExpectedLog, "Expected debug log message containing '%s' was not found", tt.expectedLogs)
+			assert.True(t, foundExpectedLog, "Expected warn log message containing '%s' was not found", tt.expectedLogs)
 		})
 	}
 }
@@ -694,4 +694,63 @@ func TestLibhoneyReceiver_NilMsgPackTimestampHandling(t *testing.T) {
 		}
 	}
 	assert.True(t, foundDecodingLog, "Expected debug log for JSON decoding was not found")
+}
+
+func TestLibhoneyReceiver_ErrorResponseFormat(t *testing.T) {
+	tests := []struct {
+		name        string
+		contentType string
+		invalidBody string
+	}{
+		{
+			name:        "json_invalid_request",
+			contentType: "application/json",
+			invalidBody: "invalid json",
+		},
+		{
+			name:        "msgpack_invalid_request",
+			contentType: "application/msgpack",
+			invalidBody: "invalid msgpack",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig()
+			getOrInsertDefault(t, &cfg.(*Config).HTTP)
+			set := receivertest.NewNopSettings(metadata.Type)
+			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
+			require.NoError(t, err)
+
+			r.registerLogConsumer(&consumertest.LogsSink{})
+
+			req := httptest.NewRequest(http.MethodPost, "/1/events/test_dataset", bytes.NewReader([]byte(tt.invalidBody)))
+			req.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+
+			r.handleEvent(w, req)
+
+			resp := w.Result()
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Equal(t, tt.contentType, resp.Header.Get("Content-Type"))
+
+			// Parse response to verify it's in libhoney format
+			var actualResponse []response.ResponseInBatch
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			switch tt.contentType {
+			case "application/json":
+				err = json.Unmarshal(body, &actualResponse)
+			case "application/msgpack":
+				err = msgpack.Unmarshal(body, &actualResponse)
+			}
+			require.NoError(t, err)
+
+			// Verify libhoney error response format
+			require.Len(t, actualResponse, 1)
+			assert.NotEmpty(t, actualResponse[0].ErrorStr)
+			assert.Equal(t, http.StatusBadRequest, actualResponse[0].Status)
+		})
+	}
 }
