@@ -3,21 +3,12 @@
 package iisreceiver
 
 import (
-	"os"
-	"os/exec"
-	"runtime"
 	"testing"
 
 	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	if runtime.GOOS == "windows" && runtime.GOARCH != "arm64" && os.Getenv("GITHUB_ACTIONS") == "true" {
-		// In this case it is necessary to install IIS for CI tests
-		if err := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Web-Server -IncludeManagementTools").Run(); err != nil {
-			panic(err)
-		}
-	}
-
+	setupTestMain(m)
 	goleak.VerifyTestMain(m)
 }
