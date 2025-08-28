@@ -5,17 +5,20 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
@@ -56,7 +59,7 @@ func newReceiver(
 	}, nil
 }
 
-func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
+func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
 	k8sInterface, err := kr.config.getK8sClient()
@@ -64,12 +67,44 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error 
 		return err
 	}
 
-	kr.settings.Logger.Info("starting to watch namespaces for the events.")
-	if len(kr.config.Namespaces) == 0 {
-		kr.startWatch(corev1.NamespaceAll, k8sInterface)
+	if kr.config.K8sLeaderElector != nil {
+		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
+		if k8sLeaderElector == nil {
+			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
+		}
+
+		kr.settings.Logger.Info("registering the receiver in leader election")
+		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
+		if !ok {
+			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
+		}
+
+		elector.SetCallBackFuncs(
+			func(_ context.Context) {
+				if len(kr.config.Namespaces) == 0 {
+					kr.startWatch(corev1.NamespaceAll, k8sInterface)
+				} else {
+					for _, ns := range kr.config.Namespaces {
+						kr.startWatch(ns, k8sInterface)
+					}
+				}
+				kr.settings.Logger.Info("Events Receiver started as leader")
+			},
+			func() {
+				kr.settings.Logger.Info("no longer leader, stopping")
+				err = kr.Shutdown(context.Background())
+				if err != nil {
+					kr.settings.Logger.Error("shutdown receiver error:", zap.Error(err))
+				}
+			})
 	} else {
-		for _, ns := range kr.config.Namespaces {
-			kr.startWatch(ns, k8sInterface)
+		kr.settings.Logger.Info("starting to watch namespaces for the events.")
+		if len(kr.config.Namespaces) == 0 {
+			kr.startWatch(corev1.NamespaceAll, k8sInterface)
+		} else {
+			for _, ns := range kr.config.Namespaces {
+				kr.startWatch(ns, k8sInterface)
+			}
 		}
 	}
 
