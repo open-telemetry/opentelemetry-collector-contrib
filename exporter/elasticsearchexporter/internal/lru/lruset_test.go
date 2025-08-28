@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build goexperiment.synctest
+
 package lru
 
 import (
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -31,41 +34,43 @@ func TestLRUSet(t *testing.T) {
 }
 
 func TestLRUSetLifeTime(t *testing.T) {
-	const lifetime = 100 * time.Millisecond
-	cache, err := NewLRUSet(5, lifetime)
-	require.NoError(t, err)
+	synctest.Run(func() {
+		const lifetime = 100 * time.Millisecond
+		cache, err := NewLRUSet(5, lifetime)
+		require.NoError(t, err)
 
-	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
-		assert.True(t, lock.CheckAndAdd("a"))
-		return nil
-	})
-	require.NoError(t, err)
+		err = cache.WithLock(func(lock LockedLRUSet) error {
+			assert.False(t, lock.CheckAndAdd("a"))
+			assert.True(t, lock.CheckAndAdd("a"))
+			return nil
+		})
+		require.NoError(t, err)
 
-	// Wait until cache item is expired.
-	time.Sleep(lifetime)
-	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
-		assert.True(t, lock.CheckAndAdd("a"))
-		return nil
-	})
-	require.NoError(t, err)
+		// Wait until cache item is expired.
+		time.Sleep(lifetime)
+		err = cache.WithLock(func(lock LockedLRUSet) error {
+			assert.False(t, lock.CheckAndAdd("a"))
+			assert.True(t, lock.CheckAndAdd("a"))
+			return nil
+		})
+		require.NoError(t, err)
 
-	// Wait 50% of the lifetime, so the item is not expired.
-	time.Sleep(lifetime / 2)
-	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.True(t, lock.CheckAndAdd("a"))
-		return nil
-	})
-	require.NoError(t, err)
+		// Wait 50% of the lifetime, so the item is not expired.
+		time.Sleep(lifetime / 2)
+		err = cache.WithLock(func(lock LockedLRUSet) error {
+			assert.True(t, lock.CheckAndAdd("a"))
+			return nil
+		})
+		require.NoError(t, err)
 
-	// Wait another 50% of the lifetime, so the item should be expired.
-	time.Sleep(lifetime / 2)
-	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
-		return nil
+		// Wait another 50% of the lifetime, so the item should be expired.
+		time.Sleep(lifetime / 2)
+		err = cache.WithLock(func(lock LockedLRUSet) error {
+			assert.False(t, lock.CheckAndAdd("a"))
+			return nil
+		})
+		require.NoError(t, err)
 	})
-	require.NoError(t, err)
 }
 
 func BenchmarkLRUSetCheck(b *testing.B) {
