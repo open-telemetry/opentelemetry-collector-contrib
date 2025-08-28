@@ -297,30 +297,64 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		r.settings.Logger.Info("unsupported content type", zap.String("content-type", req.Header.Get("Content-Type")))
 	}
 
-	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
+	// Parse events and track which original indices contributed to each OTLP entity
+	otlpLogs, otlpTraces, indexMapping, parsingResults := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
 	// Use the request context which already contains client metadata when IncludeMetadata is enabled
 	ctx := req.Context()
 
+	// Start with parsing results, then apply batch processing results for span events/links
+	results := parsingResults
+	hasFailures := false
+
+	// Check if any parsing failures occurred
+	for _, result := range results {
+		if result.Status != 0 && result.Status != http.StatusAccepted {
+			hasFailures = true
+		}
+	}
+
+	// Process logs - only override parsing results if consumer fails
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
 		if r.nextLogs != nil {
 			ctx = r.obsreport.StartLogsOp(ctx)
 			err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
 			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+			// Only override parsing results if consumer failed
+			if err != nil {
+				r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, http.StatusServiceUnavailable, err)
+				hasFailures = true
+			}
 		} else {
-			r.settings.Logger.Debug("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+			dropErr := errors.New("no log consumer configured")
+			r.settings.Logger.Warn("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, dropErr)
+			// Override even successful parsing results since consumer is not configured
+			r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, http.StatusServiceUnavailable, dropErr)
+			hasFailures = true
 		}
 	}
 
+	// Process traces - only override parsing results if consumer fails
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
 		if r.nextTraces != nil {
 			ctx = r.obsreport.StartTracesOp(ctx)
 			err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
 			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+			// Only override parsing results if consumer failed
+			if err != nil {
+				r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, http.StatusServiceUnavailable, err)
+				hasFailures = true
+			}
 		} else {
-			r.settings.Logger.Debug("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+			dropErr := errors.New("no trace consumer configured")
+			r.settings.Logger.Warn("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, dropErr)
+			// Override even successful parsing results since consumer is not configured
+			r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, http.StatusServiceUnavailable, dropErr)
+			hasFailures = true
 		}
 	}
 
@@ -329,28 +363,12 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	// return clean response if no errors above
-	noErrors := response.MakeResponse([]int{})
-
-	var responseBody []byte
-	var contentType string
-
-	switch enc.ContentType() {
-	case encoder.MsgpackContentType:
-		// For msgpack requests, return msgpack response
-		responseBody, err = msgpack.Marshal(noErrors)
-		contentType = encoder.MsgpackContentType
-	default:
-		// For JSON requests, return JSON response
-		responseBody, err = json.Marshal(noErrors)
-		contentType = encoder.JSONContentType
+	// Write response
+	if hasFailures {
+		r.writePartialResponse(resp, enc, results)
+	} else {
+		r.writeSuccessResponse(resp, enc, len(libhoneyevents))
 	}
-
-	if err != nil {
-		errorutil.HTTPError(resp, err)
-		return
-	}
-	writeResponse(resp, contentType, http.StatusOK, responseBody)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {
@@ -392,4 +410,70 @@ func handleUnmatchedMethod(resp http.ResponseWriter) {
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
 	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType)))
+}
+
+// applyConsumerResultsToSuccessfulEvents applies consumer results only to events that succeeded parsing
+func (r *libhoneyReceiver) applyConsumerResultsToSuccessfulEvents(results []response.ResponseInBatch, indices []int, status int, err error) {
+	for _, idx := range indices {
+		// Only override if the event was successfully parsed (status == 202)
+		if results[idx].Status == http.StatusAccepted {
+			if err != nil {
+				results[idx] = response.ResponseInBatch{
+					Status:   status,
+					ErrorStr: err.Error(),
+				}
+			}
+			// If consumer succeeded, keep the existing success status
+		}
+	}
+}
+
+// applyResultsToIndices applies batch processing results to specific original event indices
+func (r *libhoneyReceiver) applyResultsToIndices(results []response.ResponseInBatch, indices []int, status int, err error) {
+	for _, idx := range indices {
+		if err != nil {
+			results[idx] = response.ResponseInBatch{
+				Status:   status,
+				ErrorStr: err.Error(),
+			}
+		} else {
+			results[idx] = response.ResponseInBatch{
+				Status: status,
+			}
+		}
+	}
+}
+
+// writeSuccessResponse writes a success response for all events in the batch
+func (r *libhoneyReceiver) writeSuccessResponse(resp http.ResponseWriter, enc encoder.Encoder, numEvents int) {
+	successResponse := response.MakeSuccessResponse(numEvents)
+	r.writeLibhoneyResponse(resp, enc, http.StatusOK, successResponse)
+}
+
+// writePartialResponse writes a response for mixed success/failure results
+func (r *libhoneyReceiver) writePartialResponse(resp http.ResponseWriter, enc encoder.Encoder, results []response.ResponseInBatch) {
+	r.writeLibhoneyResponse(resp, enc, http.StatusOK, results)
+}
+
+// writeLibhoneyResponse marshals and writes a libhoney-format response
+func (r *libhoneyReceiver) writeLibhoneyResponse(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, batchResponse []response.ResponseInBatch) {
+	var responseBody []byte
+	var err error
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		responseBody, err = msgpack.Marshal(batchResponse)
+		contentType = encoder.MsgpackContentType
+	default:
+		responseBody, err = json.Marshal(batchResponse)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		// Fallback to generic error if we can't marshal the response
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, statusCode, responseBody)
 }
