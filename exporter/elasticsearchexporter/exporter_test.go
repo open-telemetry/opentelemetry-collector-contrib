@@ -1291,13 +1291,45 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
 		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
 
-		sumMetric := metricSlice.AppendEmpty()
-		sumMetric.SetName("metric.sum")
-		sumDps := sumMetric.SetEmptySum().DataPoints()
-		sumDp := sumDps.AppendEmpty()
-		sumDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
-		sumDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
-		sumDp.SetDoubleValue(1.5)
+		sumMonotonicCumulative := metricSlice.AppendEmpty()
+		sumMonotonicCumulative.SetName("metric.sum.monotonic.cumulative")
+		sumMonotonicCumulative.SetEmptySum()
+		sumMonotonicCumulative.Sum().SetIsMonotonic(true)
+		sumMonotonicCumulative.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := sumMonotonicCumulative.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(1.5)
+
+		sumMonotonicDelta := metricSlice.AppendEmpty()
+		sumMonotonicDelta.SetName("metric.sum.monotonic.delta")
+		sumMonotonicDelta.SetEmptySum()
+		sumMonotonicDelta.Sum().SetIsMonotonic(true)
+		sumMonotonicDelta.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp = sumMonotonicDelta.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(2.5)
+
+		sumCumulative := metricSlice.AppendEmpty()
+		sumCumulative.SetName("metric.sum.nonmonotonic.cumulative")
+		sumCumulative.SetEmptySum()
+		sumCumulative.Sum().SetIsMonotonic(false)
+		sumCumulative.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp = sumCumulative.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(3.5)
+
+		sumDelta := metricSlice.AppendEmpty()
+		sumDelta.SetName("metric.sum.nonmonotonic.delta")
+		sumDelta.SetEmptySum()
+		sumDelta.Sum().SetIsMonotonic(false)
+		sumDelta.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp = sumDelta.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(4.5)
 
 		summaryMetric := metricSlice.AppendEmpty()
 		summaryMetric.SetName("metric.summary")
@@ -1320,8 +1352,8 @@ func TestExporterMetrics(t *testing.T) {
 				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":7200000,"_metric_names_hash":"f4a8ac5e1b330ad6"}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"}}}`),
+				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.cumulative":1.5,"metric.sum.monotonic.delta":2.5,"metric.sum.nonmonotonic.cumulative":3.5,"metric.sum.nonmonotonic.delta":4.5},"_metric_names_hash":"4c23ec9ba381ab20"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
