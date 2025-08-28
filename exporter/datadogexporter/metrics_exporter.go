@@ -33,8 +33,6 @@ import (
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
-var onceZorkianMetricsWarning sync.Once
-
 type metricsExporter struct {
 	params           exporter.Settings
 	cfg              *datadogconfig.Config
