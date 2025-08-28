@@ -13,9 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// GlobalCatalog stores catalog data for use by other chunk parsers
-var GlobalCatalog *CatalogChunk
-
 // TraceV3Header represents the complete header of a tracev3 file
 // Based on the Rust implementation from mandiant/macos-UnifiedLogs
 type TraceV3Header struct {

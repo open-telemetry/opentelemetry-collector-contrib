@@ -155,16 +155,35 @@ func ParseSimpledumpChunk(data []byte, entry *TraceV3Entry) {
 		offset += int(chunk.UnknownSizeMessageString)
 	}
 
-	// Update entry with parsed data
-	entry.ProcessID = uint32(chunk.FirstProcID)
+	// Use catalog to enhance process information if available
+	actualPID := uint32(chunk.FirstProcID)
+	subsystemName := chunk.Subsystem
+
+	if GlobalCatalog != nil {
+		// Try to resolve using the chunk's process IDs for validation
+		if resolvedPID := GlobalCatalog.GetPID(chunk.FirstProcID, uint32(chunk.SecondProcID)); resolvedPID != 0 {
+			actualPID = resolvedPID
+		}
+
+		// Cross-validate subsystem information from catalog
+		if subsysInfo := GlobalCatalog.GetSubsystem(0, chunk.FirstProcID, uint32(chunk.SecondProcID)); subsysInfo.Subsystem != "Unknown subsystem" && subsysInfo.Subsystem != "" {
+			// If we have a good catalog match and no subsystem from simpledump, use catalog
+			if strings.TrimSpace(chunk.Subsystem) == "" {
+				subsystemName = subsysInfo.Subsystem
+			}
+		}
+	}
+
+	// Update entry with parsed data (enhanced with catalog information)
+	entry.ProcessID = actualPID
 	entry.ThreadID = chunk.ThreadID
 	entry.Level = "Default"
 	entry.MessageType = "Default"
 	entry.EventType = "Simpledump"
 
 	// Set subsystem - clean up the format to match expected output
-	if chunk.Subsystem != "" {
-		entry.Subsystem = strings.TrimSpace(chunk.Subsystem)
+	if strings.TrimSpace(subsystemName) != "" {
+		entry.Subsystem = strings.TrimSpace(subsystemName)
 	} else {
 		entry.Subsystem = "com.apple.simpledump"
 	}

@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// GlobalCatalog stores catalog data for use by other chunk parsers
+var GlobalCatalog *CatalogChunk
+
 // CatalogChunk represents a parsed Catalog chunk (0x600b)
 type CatalogChunk struct {
 	// Header fields (16 bytes)
@@ -45,10 +48,29 @@ type ProcessInfoEntry struct {
 	Unknown2             uint32
 	NumberUUIDsEntries   uint32
 	Unknown3             uint32
+	UUIDInfoEntries      []ProcessUUIDEntry
 	NumberSubsystems     uint32
 	Unknown4             uint32
+	SubsystemEntries     []ProcessInfoSubsystem
 	MainUUID             string
 	DSCUUID              string
+}
+
+// ProcessUUIDEntry represents UUID information in the catalog
+type ProcessUUIDEntry struct {
+	Size             uint32
+	Unknown          uint32
+	CatalogUUIDIndex uint16
+	LoadAddress      uint64
+	UUID             string
+}
+
+// ProcessInfoSubsystem represents subsystem metadata in the catalog
+// This helps get the subsystem (App Bundle ID) and the log entry category
+type ProcessInfoSubsystem struct {
+	Identifier      uint16 // Subsystem identifier to match against log entries
+	SubsystemOffset uint16 // Offset to subsystem string in catalog_subsystem_strings
+	CategoryOffset  uint16 // Offset to category string in catalog_subsystem_strings
 }
 
 // CatalogSubchunk represents metadata for compressed log data
@@ -58,7 +80,9 @@ type CatalogSubchunk struct {
 	UncompressedSize     uint32
 	CompressionAlgorithm uint32
 	NumberIndex          uint32
+	Indexes              []uint16
 	NumberStringOffsets  uint32
+	StringOffsets        []uint16
 }
 
 // ParseCatalogChunk parses a Catalog chunk (0x600b) containing catalog metadata
@@ -142,14 +166,18 @@ func ParseCatalogChunk(data []byte, entry *TraceV3Entry) {
 		offset += subsystemStringsLength
 	}
 
-	// Parse a few process info entries (simplified for now)
+	// Parse process info entries with complete subsystem parsing
 	catalog.ProcessInfoEntries = make([]ProcessInfoEntry, 0, catalog.NumberProcessInformationEntries)
-	for i := 0; i < int(catalog.NumberProcessInformationEntries) && i < 5; i++ { // Limit to first 5 for performance
+
+	// Parse all process entries to build complete subsystem mapping
+	for i := 0; i < int(catalog.NumberProcessInformationEntries); i++ {
 		if len(data) < offset+44 { // Minimum entry size
 			break
 		}
 
 		var procEntry ProcessInfoEntry
+
+		// Parse basic process info fields (44 bytes)
 		procEntry.Index = binary.LittleEndian.Uint16(data[offset : offset+2])
 		offset += 2
 		procEntry.Unknown = binary.LittleEndian.Uint16(data[offset : offset+2])
@@ -173,6 +201,58 @@ func ParseCatalogChunk(data []byte, entry *TraceV3Entry) {
 		procEntry.Unknown3 = binary.LittleEndian.Uint32(data[offset : offset+4])
 		offset += 4
 
+		// Parse UUID info entries
+		procEntry.UUIDInfoEntries = make([]ProcessUUIDEntry, procEntry.NumberUUIDsEntries)
+		for j := 0; j < int(procEntry.NumberUUIDsEntries); j++ {
+			if len(data) < offset+20 { // UUID entry size: 4+4+2+8+2=20 bytes
+				break
+			}
+
+			var uuidEntry ProcessUUIDEntry
+			uuidEntry.Size = binary.LittleEndian.Uint32(data[offset : offset+4])
+			offset += 4
+			uuidEntry.Unknown = binary.LittleEndian.Uint32(data[offset : offset+4])
+			offset += 4
+			uuidEntry.CatalogUUIDIndex = binary.LittleEndian.Uint16(data[offset : offset+2])
+			offset += 2
+			uuidEntry.LoadAddress = binary.LittleEndian.Uint64(data[offset : offset+8])
+			offset += 8
+
+			// Get UUID from catalog array
+			if int(uuidEntry.CatalogUUIDIndex) < len(catalog.CatalogUUIDs) {
+				uuidEntry.UUID = catalog.CatalogUUIDs[uuidEntry.CatalogUUIDIndex]
+			}
+
+			procEntry.UUIDInfoEntries[j] = uuidEntry
+		}
+
+		// Parse subsystem count and unknown field
+		if len(data) < offset+8 {
+			break
+		}
+		procEntry.NumberSubsystems = binary.LittleEndian.Uint32(data[offset : offset+4])
+		offset += 4
+		procEntry.Unknown4 = binary.LittleEndian.Uint32(data[offset : offset+4])
+		offset += 4
+
+		// Parse subsystem entries - this is critical for proper subsystem/category mapping
+		procEntry.SubsystemEntries = make([]ProcessInfoSubsystem, procEntry.NumberSubsystems)
+		for j := 0; j < int(procEntry.NumberSubsystems); j++ {
+			if len(data) < offset+6 { // Subsystem entry size: 2+2+2=6 bytes
+				break
+			}
+
+			var subsysEntry ProcessInfoSubsystem
+			subsysEntry.Identifier = binary.LittleEndian.Uint16(data[offset : offset+2])
+			offset += 2
+			subsysEntry.SubsystemOffset = binary.LittleEndian.Uint16(data[offset : offset+2])
+			offset += 2
+			subsysEntry.CategoryOffset = binary.LittleEndian.Uint16(data[offset : offset+2])
+			offset += 2
+
+			procEntry.SubsystemEntries[j] = subsysEntry
+		}
+
 		// Get UUIDs from catalog array
 		if int(procEntry.CatalogMainUUIDIndex) < len(catalog.CatalogUUIDs) {
 			procEntry.MainUUID = catalog.CatalogUUIDs[procEntry.CatalogMainUUIDIndex]
@@ -183,10 +263,10 @@ func ParseCatalogChunk(data []byte, entry *TraceV3Entry) {
 
 		catalog.ProcessInfoEntries = append(catalog.ProcessInfoEntries, procEntry)
 
-		// Skip the rest of this entry for now (UUID entries, subsystem entries, etc.)
-		// This is a simplified parser - full implementation would parse all fields
-		// For now, just parse the first entry to avoid complex offset calculations
-		break
+		// Limit to reasonable number for performance and to avoid excessive parsing
+		if i >= 50 {
+			break
+		}
 	}
 
 	// Extract some subsystem strings for display
@@ -228,8 +308,84 @@ func ParseCatalogChunk(data []byte, entry *TraceV3Entry) {
 
 	entry.Message = message
 
+	// Parse catalog subchunks if we have offset information
+	if catalog.CatalogOffsetSubChunks > 0 && len(data) > int(56+catalog.CatalogOffsetSubChunks) {
+		subchunksOffset := int(56 + catalog.CatalogOffsetSubChunks)
+		subchunksData := data[subchunksOffset:]
+		catalog.CatalogSubchunks = parseCatalogSubchunks(subchunksData, catalog.NumberSubChunks)
+	}
+
 	// Store this catalog globally for use by other parsers
 	GlobalCatalog = &catalog
+}
+
+// parseCatalogSubchunks parses the subchunk metadata used for decompression
+// Based on the rust implementation's parse_catalog_subchunk method
+func parseCatalogSubchunks(data []byte, numberSubChunks uint16) []CatalogSubchunk {
+	subchunks := make([]CatalogSubchunk, 0, numberSubChunks)
+	offset := 0
+
+	for i := 0; i < int(numberSubChunks) && i < 10; i++ { // Limit for performance
+		if len(data) < offset+32 { // Minimum subchunk size
+			break
+		}
+
+		var subchunk CatalogSubchunk
+
+		// Parse basic subchunk fields (32 bytes)
+		subchunk.Start = binary.LittleEndian.Uint64(data[offset : offset+8])
+		offset += 8
+		subchunk.End = binary.LittleEndian.Uint64(data[offset : offset+8])
+		offset += 8
+		subchunk.UncompressedSize = binary.LittleEndian.Uint32(data[offset : offset+4])
+		offset += 4
+		subchunk.CompressionAlgorithm = binary.LittleEndian.Uint32(data[offset : offset+4])
+		offset += 4
+		subchunk.NumberIndex = binary.LittleEndian.Uint32(data[offset : offset+4])
+		offset += 4
+
+		// Validate compression algorithm (should be LZ4 = 0x100)
+		const LZ4_COMPRESSION = 0x100
+		if subchunk.CompressionAlgorithm != LZ4_COMPRESSION {
+			// Skip invalid subchunk
+			offset += 4 // Skip remaining field
+			continue
+		}
+
+		// Parse indexes
+		if len(data) >= offset+int(subchunk.NumberIndex)*2 {
+			subchunk.Indexes = make([]uint16, subchunk.NumberIndex)
+			for j := 0; j < int(subchunk.NumberIndex); j++ {
+				subchunk.Indexes[j] = binary.LittleEndian.Uint16(data[offset : offset+2])
+				offset += 2
+			}
+		}
+
+		// Parse number of string offsets
+		if len(data) >= offset+4 {
+			subchunk.NumberStringOffsets = binary.LittleEndian.Uint32(data[offset : offset+4])
+			offset += 4
+
+			// Parse string offsets
+			if len(data) >= offset+int(subchunk.NumberStringOffsets)*2 {
+				subchunk.StringOffsets = make([]uint16, subchunk.NumberStringOffsets)
+				for j := 0; j < int(subchunk.NumberStringOffsets); j++ {
+					subchunk.StringOffsets[j] = binary.LittleEndian.Uint16(data[offset : offset+2])
+					offset += 2
+				}
+			}
+		}
+
+		// Calculate 8-byte alignment padding (matching rust implementation)
+		totalItems := subchunk.NumberIndex + subchunk.NumberStringOffsets
+		const offsetSize = 2 // Each offset is 2 bytes
+		padding := (8 - ((totalItems * offsetSize) & 7)) & 7
+		offset += int(padding)
+
+		subchunks = append(subchunks, subchunk)
+	}
+
+	return subchunks
 }
 
 // SubsystemInfo holds resolved subsystem and category information
@@ -245,20 +401,21 @@ func (c *CatalogChunk) GetSubsystem(subsystemValue uint16, firstProcID uint64, s
 		return SubsystemInfo{Subsystem: "Unknown subsystem", Category: ""}
 	}
 
-	// Look for the process entry
+	// Look for the process entry that matches the proc IDs
 	for _, procEntry := range c.ProcessInfoEntries {
 		if procEntry.FirstNumberProcID == firstProcID && procEntry.SecondNumberProcID == secondProcID {
-			// This is a simplified version - full implementation would parse subsystem entries
-			// For now, extract some subsystem info from the subsystem strings
-			if len(c.CatalogSubsystemStrings) > 0 {
-				// Extract first available subsystem string as an approximation
-				parts := strings.Split(string(c.CatalogSubsystemStrings), "\x00")
-				for _, part := range parts {
-					if strings.TrimSpace(part) != "" {
-						return SubsystemInfo{
-							Subsystem: strings.TrimSpace(part),
-							Category:  "", // Would need full parsing for category
-						}
+			// Search through the subsystem entries for this process
+			for _, subsysEntry := range procEntry.SubsystemEntries {
+				if subsystemValue == subsysEntry.Identifier {
+					// Extract subsystem string using offset
+					subsystemString := extractStringAtOffset(c.CatalogSubsystemStrings, int(subsysEntry.SubsystemOffset))
+
+					// Extract category string using offset
+					categoryString := extractStringAtOffset(c.CatalogSubsystemStrings, int(subsysEntry.CategoryOffset))
+
+					return SubsystemInfo{
+						Subsystem: subsystemString,
+						Category:  categoryString,
 					}
 				}
 			}
@@ -301,4 +458,28 @@ func (c *CatalogChunk) GetEUID(firstProcID uint64, secondProcID uint32) uint32 {
 	}
 
 	return 0
+}
+
+// extractStringAtOffset extracts a null-terminated string from a byte array at a specific offset
+// This matches the rust implementation's approach for extracting subsystem and category strings
+func extractStringAtOffset(data []byte, offset int) string {
+	if offset >= len(data) {
+		return ""
+	}
+
+	// Find null terminator starting from offset
+	start := offset
+	end := len(data)
+	for i := start; i < len(data); i++ {
+		if data[i] == 0 {
+			end = i
+			break
+		}
+	}
+
+	if start >= end {
+		return ""
+	}
+
+	return strings.TrimSpace(string(data[start:end]))
 }
