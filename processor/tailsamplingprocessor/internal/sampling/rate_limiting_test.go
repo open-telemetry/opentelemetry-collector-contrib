@@ -14,14 +14,14 @@ import (
 
 func TestRateLimiter(t *testing.T) {
 	trace := newTraceStringAttrs(nil, "example", "value")
-	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	rateLimiter := NewRateLimiting(componenttest.NewNopTelemetrySettings(), 3)
 
 	// Trace span count greater than spans per second
 	traceSpanCount := &atomic.Int64{}
 	traceSpanCount.Store(10)
 	trace.SpanCount = traceSpanCount
-	decision, err := rateLimiter.Evaluate(t.Context(), traceID, trace)
+	decision, err := rateLimiter.Evaluate(t.Context(), testTraceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, NotSampled, decision)
 
@@ -29,7 +29,7 @@ func TestRateLimiter(t *testing.T) {
 	traceSpanCount = &atomic.Int64{}
 	traceSpanCount.Store(3)
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
+	decision, err = rateLimiter.Evaluate(t.Context(), testTraceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, NotSampled, decision)
 
@@ -37,14 +37,14 @@ func TestRateLimiter(t *testing.T) {
 	traceSpanCount = &atomic.Int64{}
 	traceSpanCount.Store(2)
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
+	decision, err = rateLimiter.Evaluate(t.Context(), testTraceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, Sampled, decision)
 
 	// Trace span count less than spans per second
 	traceSpanCount = &atomic.Int64{}
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
+	decision, err = rateLimiter.Evaluate(t.Context(), testTraceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, Sampled, decision)
 }

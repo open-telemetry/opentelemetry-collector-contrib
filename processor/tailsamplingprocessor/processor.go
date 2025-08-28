@@ -86,12 +86,16 @@ var (
 	attrDecisionSampled    = metric.WithAttributes(attribute.String("sampled", "true"), attribute.String("decision", "sampled"))
 	attrDecisionNotSampled = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "not_sampled"))
 	attrDecisionDropped    = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "dropped"))
+	attrDecisionSkipped    = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "skipped"))
+	attrDecisionContinued  = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "continued"))
 	decisionToAttributes   = map[sampling.Decision]metric.MeasurementOption{
 		sampling.Sampled:          attrDecisionSampled,
 		sampling.NotSampled:       attrDecisionNotSampled,
 		sampling.InvertNotSampled: attrDecisionNotSampled,
 		sampling.InvertSampled:    attrDecisionSampled,
 		sampling.Dropped:          attrDecisionDropped,
+		sampling.Skipped:          attrDecisionSkipped,
+		sampling.Continued:        attrDecisionContinued,
 	}
 
 	attrSampledTrue  = metric.WithAttributes(attribute.String("sampled", "true"))
@@ -224,6 +228,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 		return getNewAndPolicy(settings, &cfg.AndCfg)
 	case Drop:
 		return getNewDropPolicy(settings, &cfg.DropCfg)
+	case Skip:
+		return getNewSkipPolicy(settings, &cfg.SkipCfg)
 	default:
 		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
 	}
@@ -284,8 +290,8 @@ type policyDecisionMetrics struct {
 }
 
 type policyMetrics struct {
-	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped int64
-	tracesSampledByPolicyDecision                                                                  []map[sampling.Decision]policyDecisionMetrics
+	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped, decisionSkipped, decisionContinued int64
+	tracesSampledByPolicyDecision                                                                                                      []map[sampling.Decision]policyDecisionMetrics
 }
 
 func newPolicyMetrics(numPolicies int) *policyMetrics {
@@ -312,6 +318,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	cLen := len(cfgs)
 	policies := make([]*policy, 0, cLen)
 	dropPolicies := make([]*policy, 0, cLen)
+	skipPolicies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
 
 	for _, cfg := range cfgs {
@@ -340,14 +347,17 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
 		}
 
-		if cfg.Type == Drop {
+		switch cfg.Type {
+		case Drop:
 			dropPolicies = append(dropPolicies, p)
-		} else {
+		case Skip:
+			skipPolicies = append(skipPolicies, p)
+		default:
 			policies = append(policies, p)
 		}
 	}
 	// Dropped decision takes precedence over all others, therefore we evaluate them first.
-	tsp.policies = slices.Concat(dropPolicies, policies)
+	tsp.policies = slices.Concat(dropPolicies, skipPolicies, policies)
 
 	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
 
@@ -445,13 +455,15 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		zap.Int64("sampled", metrics.decisionSampled),
 		zap.Int64("notSampled", metrics.decisionNotSampled),
 		zap.Int64("dropped", metrics.decisionDropped),
+		zap.Int64("skipped", metrics.decisionSkipped),
+		zap.Int64("continued", metrics.decisionContinued),
 		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) sampling.Decision {
-	finalDecision := sampling.NotSampled
+	var finalDecision sampling.Decision
 	samplingDecisions := map[sampling.Decision]*policy{
 		sampling.Error:            nil,
 		sampling.Sampled:          nil,
@@ -459,6 +471,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		sampling.InvertSampled:    nil,
 		sampling.InvertNotSampled: nil,
 		sampling.Dropped:          nil,
+		sampling.Skipped:          nil,
+		sampling.Continued:        nil,
 	}
 
 	ctx := context.Background()
@@ -490,6 +504,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		if decision == sampling.Dropped {
 			break
 		}
+		// Skip taking decision if span is skipped.
+		if decision == sampling.Skipped {
+			continue
+		}
 		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
 		if tsp.sampleOnFirstMatch && decision == sampling.Sampled {
 			break
@@ -509,6 +527,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	case samplingDecisions[sampling.InvertSampled] != nil && samplingDecisions[sampling.NotSampled] == nil:
 		finalDecision = sampling.Sampled
 		sampledPolicy = samplingDecisions[sampling.InvertSampled]
+	// Case if all decisions were Continued or Skipped
+	default:
+		finalDecision = sampling.NotSampled
 	}
 
 	if tsp.recordPolicy && sampledPolicy != nil {
@@ -522,6 +543,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		metrics.decisionNotSampled++
 	case sampling.Dropped:
 		metrics.decisionDropped++
+	case sampling.Skipped:
+		metrics.decisionSkipped++
+	case sampling.Continued:
+		metrics.decisionContinued++
 	}
 
 	return finalDecision
