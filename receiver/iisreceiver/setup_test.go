@@ -17,4 +17,6 @@ func setupTestMain(m *testing.M) {
 			panic(err)
 		}
 	}
+
+	os.Exit(m.Run())
 }
