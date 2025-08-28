@@ -27,23 +27,23 @@ import (
 )
 
 func TestDefaultConfigEnablesAllNodeMetrics(t *testing.T) {
-    t.Run("Default config has all node metrics enabled", func(t *testing.T) {
-        cfg := createDefaultConfig().(*Config)
-        
-        // Verify key node metrics are enabled by default
-        require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeSocketsUsed.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeProcUsed.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeUptime.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeContextSwitches.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeGcNum.Enabled)
-        
-        // Verify queue metrics still enabled  
-        require.True(t, cfg.Metrics.RabbitmqConsumerCount.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqMessageAcknowledged.Enabled)
-    })
+	t.Run("Default config has all node metrics enabled", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+
+		// Verify key node metrics are enabled by default
+		require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeSocketsUsed.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeProcUsed.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeUptime.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeContextSwitches.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeGcNum.Enabled)
+
+		// Verify queue metrics still enabled
+		require.True(t, cfg.Metrics.RabbitmqConsumerCount.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqMessageAcknowledged.Enabled)
+	})
 }
 
 func TestScraperStart(t *testing.T) {
@@ -213,56 +213,56 @@ func TestScraperScrape(t *testing.T) {
 }
 
 func TestScraperCollectsAllNodeMetricsByDefault(t *testing.T) {
-    t.Run("Default config collects all node metrics", func(t *testing.T) {
-        cfg := createDefaultConfig().(*Config)
-        
-        // Verify that default config enables node metrics
-        require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
-        require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
+	t.Run("Default config collects all node metrics", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
 
-        // Setup mock client with node data
-        mockClient := mocks.MockClient{}
-        nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
-        var nodes []*models.Node
-        err := json.Unmarshal(nodeData, &nodes)
-        require.NoError(t, err)
-        
-        mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{}, nil)
-        mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
-        
-        scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
-        scraper.client = &mockClient
-        
-        actualMetrics, err := scraper.scrape(t.Context())
-        require.NoError(t, err)
-        
-        // Verify node metrics are present in output
-        resourceMetrics := actualMetrics.ResourceMetrics()
-        foundNodeMetrics := false
-        
-        for i := 0; i < resourceMetrics.Len(); i++ {
-            resource := resourceMetrics.At(i).Resource()
-            if attr, ok := resource.Attributes().Get("rabbitmq.node.name"); ok && attr.Str() == "rabbit@66a063ecff83" {
-                foundNodeMetrics = true
-                metrics := resourceMetrics.At(i).ScopeMetrics().At(0).Metrics()
-                
-                // Verify presence of key node metrics
-                metricNames := make(map[string]bool)
-                for j := 0; j < metrics.Len(); j++ {
-                    metricNames[metrics.At(j).Name()] = true
-                }
-                
-                // Should have node metrics by default
-                require.True(t, metricNames["rabbitmq.node.disk_free"])
-                require.True(t, metricNames["rabbitmq.node.mem_used"])
-                require.True(t, metricNames["rabbitmq.node.fd_used"])
-                
-                // Should have significantly more metrics now (60+ node metrics)
-                require.GreaterOrEqual(t, len(metricNames), 60)
-                break
-            }
-        }
-        require.True(t, foundNodeMetrics, "Node metrics resource not found")
-    })
+		// Verify that default config enables node metrics
+		require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
+		require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
+
+		// Setup mock client with node data
+		mockClient := mocks.MockClient{}
+		nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
+		var nodes []*models.Node
+		err := json.Unmarshal(nodeData, &nodes)
+		require.NoError(t, err)
+
+		mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{}, nil)
+		mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+
+		scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+		scraper.client = &mockClient
+
+		actualMetrics, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+
+		// Verify node metrics are present in output
+		resourceMetrics := actualMetrics.ResourceMetrics()
+		foundNodeMetrics := false
+
+		for i := 0; i < resourceMetrics.Len(); i++ {
+			resource := resourceMetrics.At(i).Resource()
+			if attr, ok := resource.Attributes().Get("rabbitmq.node.name"); ok && attr.Str() == "rabbit@66a063ecff83" {
+				foundNodeMetrics = true
+				metrics := resourceMetrics.At(i).ScopeMetrics().At(0).Metrics()
+
+				// Verify presence of key node metrics
+				metricNames := make(map[string]bool)
+				for j := 0; j < metrics.Len(); j++ {
+					metricNames[metrics.At(j).Name()] = true
+				}
+
+				// Should have node metrics by default
+				require.True(t, metricNames["rabbitmq.node.disk_free"])
+				require.True(t, metricNames["rabbitmq.node.mem_used"])
+				require.True(t, metricNames["rabbitmq.node.fd_used"])
+
+				// Should have significantly more metrics now (60+ node metrics)
+				require.GreaterOrEqual(t, len(metricNames), 60)
+				break
+			}
+		}
+		require.True(t, foundNodeMetrics, "Node metrics resource not found")
+	})
 }

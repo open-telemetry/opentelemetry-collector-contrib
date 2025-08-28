@@ -654,7 +654,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
   Note that due to the nature of the timing issue this is extremely unlikely to affect a real user,
   and really only likely to occur in unit tests.
   
-- `datadogconnector`: Use proper syncronization to fix a collector panic when an error occurs (#40845)
+- `datadogconnector`: Use proper synchronization to fix a collector panic when an error occurs (#40845)
 - `sqlserverreceiver`: export `host.name` as resource attributes for metrics (#40576)
   in the metadata file, the `host.name` resource attribute is defined for metrics, but it is not exported in reality. this fixed 
   the issue and export it as a resource attribute.
@@ -753,7 +753,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 
 - `elasticsearchexporter`: Fix a bug where unset span status code was being serialized as 'Unset' instead of being ignored (#39498)
 - `coralogixexporter`: Fix Authorization header not being set in metadata. (#40330)
-- `datadogexporter`: Fix automatic intial point dropping when converting cumulative monotonic sum metrics (#40426)
+- `datadogexporter`: Fix automatic initial point dropping when converting cumulative monotonic sum metrics (#40426)
   The exporter turns OpenTelemetry's cumulative monotonic sum metrics into Datadog's (delta) count
   metrics by computing the difference between successive points. The logic to determine whether the
   first received value should be ignored or passed through as a delta was faulty, leading to large
@@ -1058,7 +1058,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 
 - `awscloudwatchreceiver`: Adds option to set storage for AWS CloudWatch receiver (#32231)
   - The default value of the `start_from` field in the logs config changed to Unix epoch (`1970-01-01T00:00:00Z`) when not explicitly configured. This may alter the behavior of existing configurations relying on the previous default.
-  - To maintain previous behavior, explicitly configure `start_from` in the logs configuraiton.  
+  - To maintain previous behavior, explicitly configure `start_from` in the logs configuration.  
   
 - `k8sobjectsreceiver`: Check for K8s API objects existence on receiver startup and not during config validation. (#38803)
 - `receiver/kubeletstats`: Move receiver.kubeletstats.enableCPUUsageMetrics feature gate to beta (#39487)
