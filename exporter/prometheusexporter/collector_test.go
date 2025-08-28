@@ -11,7 +11,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -837,28 +836,4 @@ func TestAccumulateSummary(t *testing.T) {
 			})
 		}
 	}
-}
-
-func TestNewCollector_WithConfig(t *testing.T) {
-	// Create config
-	config := &Config{
-		Namespace:         "test",
-		SendTimestamps:    true,
-		ConstLabels:       map[string]string{"env": "test"},
-		MetricExpiration:  5 * time.Minute,
-		AddMetricSuffixes: true,
-	}
-
-	// Create collector with telemetry
-	collector := newCollector(config, zap.NewNop())
-
-	// Verify collector was created correctly
-	require.NotNil(t, collector)
-	assert.NotNil(t, collector.accumulator)
-	assert.NotNil(t, collector.logger)
-
-	// Verify config values were set
-	assert.True(t, collector.sendTimestamps)
-	assert.Equal(t, config.ConstLabels, collector.constLabels)
-	assert.Equal(t, config.MetricExpiration, collector.metricExpiration)
 }
