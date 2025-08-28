@@ -222,7 +222,7 @@ receiver/awsfirehosereceiver/                                    @open-telemetry
 receiver/awss3receiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @adcharre
 receiver/awsxrayreceiver/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
-receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins
+receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins @dyl10s
 receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @nslaughter @celian-garcia @ishleenk17
 receiver/chronyreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
 receiver/cloudflarereceiver/                                     @open-telemetry/collector-contrib-approvers @dehaansa
@@ -361,8 +361,6 @@ exporter/awscloudwatchlogsexporter/                              @open-telemetry
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers
 extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
-processor/routingprocessor/                                      @open-telemetry/collector-contrib-approvers
-receiver/awscloudwatchmetricsreceiver/                           @open-telemetry/collector-contrib-approvers
 receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
 

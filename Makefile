@@ -655,6 +655,10 @@ crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
+.PHONY: actionlint
+actionlint: $(ACTIONLINT)
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
+
 .PHONY: clean
 clean:
 	@echo "Removing coverage files"

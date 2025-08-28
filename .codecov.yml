@@ -528,10 +528,6 @@ component_management:
     name: processor_resource
     paths:
     - processor/resourceprocessor/**
-  - component_id: processor_routing
-    name: processor_routing
-    paths:
-    - processor/routingprocessor/**
   - component_id: processor_schema
     name: processor_schema
     paths:
@@ -568,10 +564,6 @@ component_management:
     name: receiver_apachespark
     paths:
     - receiver/apachesparkreceiver/**
-  - component_id: receiver_awscloudwatchmetrics
-    name: receiver_awscloudwatchmetrics
-    paths:
-    - receiver/awscloudwatchmetricsreceiver/**
   - component_id: receiver_awscloudwatch
     name: receiver_awscloudwatch
     paths:
