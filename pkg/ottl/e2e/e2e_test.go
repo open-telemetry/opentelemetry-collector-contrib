@@ -1261,6 +1261,31 @@ func Test_e2e_converters(t *testing.T) {
 				attributes.AppendEmpty().SetStr("foo")
 			},
 		},
+		{
+			statement: `set(attributes["indexof"], Index("opentelemetry", "telemetry"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", 4)
+			},
+		},
+		{
+			statement: `set(attributes["indexof"], Index(attributes["slices"], "name"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", -1)
+			},
+		},
+		{
+			statement: `set(attributes["indexof"], Index(attributes["slices"], "slice2"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", 1)
+			},
+		},
+		{
+			// slice contains a map
+			statement: `set(attributes["indexof"], Index(attributes["slices"], attributes["slices"][2]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", 2)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1788,6 +1813,12 @@ func constructLogTransformContext() ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 	thing2.PutInt("value", 5)
+
+	s3 := logRecord.Attributes().PutEmptySlice("slices")
+	s3.AppendEmpty().SetStr("slice1")
+	s3.AppendEmpty().SetStr("slice2")
+	s3m1 := s3.AppendEmpty().SetEmptyMap()
+	s3m1.PutStr("name", "foo")
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
