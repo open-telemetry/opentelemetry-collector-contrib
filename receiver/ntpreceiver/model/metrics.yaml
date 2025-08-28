@@ -1,0 +1,12 @@
+groups:
+  - id: ntp.offset
+    type: metric
+    metric_name: ntp.offset
+    stability: beta
+    brief: "Time difference between local and NTP server clocks"
+    unit: "ns"
+    instrument: "gauge"
+    value_type: int
+    annotations:
+      scraper:
+        enabled: true

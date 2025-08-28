@@ -6,7 +6,7 @@ status:
     alpha: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, cparkins]
+    active: [atoulme, cparkins, dyl10s]
     emeritus: [djaglowski]
     seeking_new: true
 
