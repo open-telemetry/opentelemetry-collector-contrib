@@ -51,6 +51,8 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 	for i := 0; i < concurrencyLimit; i++ {
 		go func() {
 			defer wg.Done()
+			buf := bufferPool.Get().(*buffer)
+			defer bufferPool.Put(buf)
 			for {
 				select {
 				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
@@ -61,10 +63,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 						return
 					}
 
-					buf := bufferPool.Get().(*buffer)
-					buf.protobuf.Reset()
-
-					errMarshal := buf.protobuf.Marshal(request)
+					reqBuf, errMarshal := buf.MarshalAndEncode(request)
 					if errMarshal != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, errMarshal)
@@ -73,7 +72,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 						return
 					}
 
-					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
+					if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, errExecute)
 						mu.Unlock()
