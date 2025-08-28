@@ -153,7 +153,7 @@ jobs:
         run: cd cmd/opampsupervisor; go build
       - name: Install supervisor as a service
         run: |
-          New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "${PWD}\cmd\opampsupervisor" --config "${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml" \
+          New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "`"${PWD}\cmd\opampsupervisor`" --config `"${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml`"" \
           eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'opampsupervisor'" /so opampsupervisor
       - name: Test supervisor service
         working-directory: ${{ github.workspace }}/cmd/opampsupervisor
