@@ -1770,7 +1770,7 @@ func TestCacheHit(t *testing.T) {
 			"",
 			"job", "production/service_a", // 1, 2
 			"instance", "host1", // 3, 4
-			"__name__", "test_metric", // 5, 6
+			"__name__", "target_info", // 5, 6
 			"label1", "value1", // 7, 8
 		},
 		Timeseries: []writev2.TimeSeries{
@@ -1787,8 +1787,8 @@ func TestCacheHit(t *testing.T) {
 			"",
 			"job", "production/service_b", // 1, 2
 			"instance", "host2", // 3, 4
-			"__name__", "evictor_metric", // 5, 6
-			"label2", "value2", // 7, 8
+			"label1", "value2", // 5, 6
+			"__name__", "target_info", // 7, 8
 		},
 		Timeseries: []writev2.TimeSeries{
 			{
@@ -1804,8 +1804,8 @@ func TestCacheHit(t *testing.T) {
 			"",
 			"job", "production/service_a", // 1, 2
 			"instance", "host1", // 3, 4
-			"__name__", "test_metric2", // 5, 6
-			"label1", "value1", // 7, 8
+			"label1", "value3", // 7, 8
+			"__name__", "target_info", // 9, 10
 		},
 		Timeseries: []writev2.TimeSeries{
 			{
@@ -1816,18 +1816,53 @@ func TestCacheHit(t *testing.T) {
 		},
 	}
 
-	metricsRequest3 := &writev2.Request{
+	metricRequest3 := &writev2.Request{
 		Symbols: []string{
 			"",
 			"job", "production/service_a", // 1, 2
 			"instance", "host1", // 3, 4
-			"__name__", "test_metric3", // 5, 6
+			"label1", "value4", // 7, 8
+			"__name__", "target_info", // 9, 10
 		},
 		Timeseries: []writev2.TimeSeries{
 			{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
-				Samples:    []writev2.Sample{{Value: 4.0, Timestamp: 4}},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 3}},
+			},
+		},
+	}
+
+	metricRequest4 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"label1", "value4", // 7, 8
+			"__name__", "target_info", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 3}},
+			},
+		},
+	}
+
+	metricRequest5 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_c", // 1, 2
+			"instance", "host3", // 3, 4
+			"label1", "value5", // 7, 8
+			"__name__", "target_info", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 3}},
 			},
 		},
 	}
@@ -1838,7 +1873,148 @@ func TestCacheHit(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
 	defer ts.Close()
 
-	for _, req := range []*writev2.Request{metricRequest, evictorMetric, metricRequest2, metricsRequest3} {
+	for _, req := range []*writev2.Request{metricRequest, evictorMetric, metricRequest2, metricRequest3, metricRequest4, metricRequest5} {
+		pBuf := proto.NewBuffer(nil)
+		err := pBuf.Marshal(req)
+		assert.NoError(t, err)
+
+		resp, err := http.Post(
+			ts.URL,
+			fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+			bytes.NewBuffer(pBuf.Bytes()),
+		)
+		assert.NoError(t, err)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+	}
+}
+
+func TestCacheHit2(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+
+	prwReceiver.rmCache.Resize(4)
+
+	t.Cleanup(func() {
+		prwReceiver.rmCache.Purge()
+	})
+
+	metricRequest := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"label1", "value1", // 7, 8
+			"__name__", "metric1", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1}},
+			},
+		},
+	}
+
+	metricRequest2 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"label1", "value1", // 5, 6
+			"__name__", "metric2", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1}},
+			},
+		},
+	}
+
+	metricRequest3 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_b", // 1, 2
+			"instance", "host2", // 3, 4
+			"label1", "value2", // 7, 8
+			"__name__", "metric3", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1}},
+			},
+		},
+	}
+
+	metricRequest4 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_c", // 1, 2
+			"instance", "host3", // 3, 4
+			"label1", "value3", // 5, 6
+			"__name__", "metric4", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1}},
+			},
+		},
+	}
+
+	metricRequest5 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"label1", "value1", // 7, 8
+			"__name__", "metric5", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1}},
+			},
+		},
+	}
+
+	metricRequest6 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_b", // 1, 2
+			"instance", "host2", // 3, 4
+			"label1", "value2", // 5, 6
+			"__name__", "metric6", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1}},
+			},
+		},
+	}
+
+	mockConsumer := new(mockConsumer)
+	prwReceiver.nextConsumer = mockConsumer
+
+	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+	defer ts.Close()
+
+	for _, req := range []*writev2.Request{metricRequest,
+		metricRequest2,
+		metricRequest3,
+		metricRequest4,
+		metricRequest5,
+		metricRequest6,
+	} {
 		pBuf := proto.NewBuffer(nil)
 		err := pBuf.Marshal(req)
 		assert.NoError(t, err)

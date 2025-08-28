@@ -147,6 +147,7 @@ func (prw *prometheusRemoteWriteReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("handlePRW")
 	contentType := req.Header.Get("Content-Type")
 	if contentType == "" {
 		prw.settings.Logger.Warn("message received without Content-Type header, rejecting")
@@ -255,7 +256,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
 			continue
 		}
-
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if ls.Get(labels.MetricName) == "target_info" {
@@ -263,10 +263,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
 			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
-				fmt.Println("capturing from existing rm")
+				fmt.Println("capturing from existing rm 1 target_info")
 				rm = existingRM
 			} else {
-				fmt.Println("not capturing from existing rm")
+				fmt.Println("not capturing from existing rm 1 target_info")
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			}
 
@@ -309,10 +309,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		existingRM, ok := prw.rmCache.Get(hashedLabels)
 		var rm pmetric.ResourceMetrics
 		if ok {
-			fmt.Println("capturing from existing rm")
+			fmt.Println("capturing from existing rm 2. Regular metrics ")
 			rm = existingRM
 		} else {
-			fmt.Println("not capturing from existing rm")
+			fmt.Println("not capturing from existing rm 2. Regular metrics. Adding to rm cache 2")
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 			prw.rmCache.Add(hashedLabels, rm)
@@ -433,10 +433,10 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			hashedLabels = xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 			existingRM, ok := prw.rmCache.Get(hashedLabels)
 			if ok {
-				fmt.Println("capturing from existing rm")
+				fmt.Println("capturing from existing rm 3")
 				rm = existingRM
 			} else {
-				fmt.Println("not capturing from existing rm")
+				fmt.Println("not capturing from existing rm 3")
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 				prw.rmCache.Add(hashedLabels, rm)
