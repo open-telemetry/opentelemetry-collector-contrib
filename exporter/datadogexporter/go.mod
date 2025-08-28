@@ -187,11 +187,7 @@ require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
-<<<<<<< HEAD
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-=======
-	github.com/briandowns/spinner v1.23.0 // indirect
->>>>>>> f1eb4b21b9 (Remove zorkian instances)
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
