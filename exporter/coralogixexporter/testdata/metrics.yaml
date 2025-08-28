@@ -1,5 +1,4 @@
 coralogix/metrics:
-  endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   metrics:
     endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
