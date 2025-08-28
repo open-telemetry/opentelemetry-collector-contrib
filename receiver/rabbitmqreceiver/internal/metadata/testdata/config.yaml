@@ -1,6 +1,17 @@
 default:
+  # Default test scenario - should test the new defaults where all metrics are enabled
+  resource_attributes:
+    rabbitmq.node.name:
+      enabled: true
+    rabbitmq.queue.name:
+      enabled: true
+    rabbitmq.vhost.name:
+      enabled: true
+
 all_set:
+  # Test scenario with all metrics explicitly enabled (should match new defaults)
   metrics:
+    # Queue metrics (already enabled by default)
     rabbitmq.consumer.count:
       enabled: true
     rabbitmq.message.acknowledged:
@@ -13,6 +24,8 @@ all_set:
       enabled: true
     rabbitmq.message.published:
       enabled: true
+    
+    # Node metrics (now enabled by default)
     rabbitmq.node.channel_closed:
       enabled: true
     rabbitmq.node.channel_closed_details.rate:
@@ -168,8 +181,11 @@ all_set:
       enabled: true
     rabbitmq.vhost.name:
       enabled: true
+
 none_set:
+  # Test scenario with all metrics explicitly disabled (overrides new defaults)
   metrics:
+    # Queue metrics
     rabbitmq.consumer.count:
       enabled: false
     rabbitmq.message.acknowledged:
@@ -182,6 +198,8 @@ none_set:
       enabled: false
     rabbitmq.message.published:
       enabled: false
+    
+    # Node metrics
     rabbitmq.node.channel_closed:
       enabled: false
     rabbitmq.node.channel_closed_details.rate:
@@ -337,6 +355,37 @@ none_set:
       enabled: false
     rabbitmq.vhost.name:
       enabled: false
+
+# Test scenario demonstrating new default behavior - no explicit metric configuration needed
+new_defaults:
+  # With the new defaults, users don't need to specify metrics anymore
+  # All node metrics are enabled automatically
+  resource_attributes:
+    rabbitmq.node.name:
+      enabled: true
+    rabbitmq.queue.name:
+      enabled: true
+    rabbitmq.vhost.name:
+      enabled: true
+
+# Test selective disabling of metrics (users can still override defaults)
+selective_disable:
+  metrics:
+    # Keep most metrics enabled by default, but disable specific ones
+    rabbitmq.node.io_read_avg_time:
+      enabled: false
+    rabbitmq.node.io_write_avg_time:
+      enabled: false
+    rabbitmq.node.gc_bytes_reclaimed_details.rate:
+      enabled: false
+  resource_attributes:
+    rabbitmq.node.name:
+      enabled: true
+    rabbitmq.queue.name:
+      enabled: true
+    rabbitmq.vhost.name:
+      enabled: true
+
 filter_set_include:
   resource_attributes:
     rabbitmq.node.name:
@@ -351,6 +400,7 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+
 filter_set_exclude:
   resource_attributes:
     rabbitmq.node.name:

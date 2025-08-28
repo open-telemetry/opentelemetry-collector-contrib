@@ -46,46 +46,16 @@ receivers:
     username: otelu
     password: ${env:RABBITMQ_PASSWORD}
     collection_interval: 10s
-    metrics:  # Enable node metrics by explicitly setting them to true
-      rabbitmq.node.disk_free:
-        enabled: true
-      rabbitmq.node.disk_free_limit:
-        enabled: true
-      rabbitmq.node.disk_free_alarm:
-        enabled: true
-      rabbitmq.node.mem_used:
-        enabled: true
-      rabbitmq.node.mem_limit:
-        enabled: true
-      rabbitmq.node.mem_alarm:
-        enabled: true
-      rabbitmq.node.fd_used:
-        enabled: true
-      rabbitmq.node.fd_total:
-        enabled: true
-      rabbitmq.node.sockets_used:
-        enabled: true
-      rabbitmq.node.sockets_total:
-        enabled: true
-      rabbitmq.node.proc_used:
-        enabled: true
-      rabbitmq.node.proc_total:
-        enabled: true
-      rabbitmq.node.disk_free_details.rate:
-        enabled: true
-      rabbitmq.node.fd_used_details.rate:
-        enabled: true
-      rabbitmq.node.mem_used_details.rate:
-        enabled: true
-      rabbitmq.node.proc_used_details.rate:
-        enabled: true
-      rabbitmq.node.sockets_used_details.rate:
-        enabled: true
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
 ## Metrics
+
+This receiver collects RabbitMQ metrics:
+
+- **Queue metrics** (6 metrics): Enabled by default
+- **Node metrics** (68 metrics): Enabled by default
 
 This receiver collects RabbitMQ node-level metrics from the `/api/nodes` endpoint. Metrics are categorized into the following groups:
 

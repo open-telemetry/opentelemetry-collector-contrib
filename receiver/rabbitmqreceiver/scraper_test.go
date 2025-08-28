@@ -26,6 +26,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
+func TestDefaultConfigEnablesAllNodeMetrics(t *testing.T) {
+    t.Run("Default config has all node metrics enabled", func(t *testing.T) {
+        cfg := createDefaultConfig().(*Config)
+        
+        // Verify key node metrics are enabled by default
+        require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeSocketsUsed.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeProcUsed.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeUptime.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeContextSwitches.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeGcNum.Enabled)
+        
+        // Verify queue metrics still enabled  
+        require.True(t, cfg.Metrics.RabbitmqConsumerCount.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqMessageAcknowledged.Enabled)
+    })
+}
+
 func TestScraperStart(t *testing.T) {
 	clientConfigNonexistentCA := confighttp.NewDefaultClientConfig()
 	clientConfigNonexistentCA.Endpoint = defaultEndpoint
@@ -170,99 +190,6 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 
-			// Enable all 74 node metrics
-			cfg.Metrics.RabbitmqNodeDiskFree.Enabled = true
-			cfg.Metrics.RabbitmqNodeDiskFreeLimit.Enabled = true
-			cfg.Metrics.RabbitmqNodeDiskFreeAlarm.Enabled = true
-			cfg.Metrics.RabbitmqNodeDiskFreeDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeMemUsed.Enabled = true
-			cfg.Metrics.RabbitmqNodeMemUsedDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeMemLimit.Enabled = true
-			cfg.Metrics.RabbitmqNodeMemAlarm.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeFdUsed.Enabled = true
-			cfg.Metrics.RabbitmqNodeFdTotal.Enabled = true
-			cfg.Metrics.RabbitmqNodeFdUsedDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeSocketsUsed.Enabled = true
-			cfg.Metrics.RabbitmqNodeSocketsTotal.Enabled = true
-			cfg.Metrics.RabbitmqNodeSocketsUsedDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeProcUsed.Enabled = true
-			cfg.Metrics.RabbitmqNodeProcTotal.Enabled = true
-			cfg.Metrics.RabbitmqNodeProcUsedDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeUptime.Enabled = true
-			cfg.Metrics.RabbitmqNodeRunQueue.Enabled = true
-			cfg.Metrics.RabbitmqNodeProcessors.Enabled = true
-			cfg.Metrics.RabbitmqNodeContextSwitches.Enabled = true
-			cfg.Metrics.RabbitmqNodeContextSwitchesDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeGcNum.Enabled = true
-			cfg.Metrics.RabbitmqNodeGcNumDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeGcBytesReclaimed.Enabled = true
-			cfg.Metrics.RabbitmqNodeGcBytesReclaimedDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeIoReadCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoReadCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoReadBytes.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoReadBytesDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoReadAvgTime.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoReadAvgTimeDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeIoWriteCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoWriteCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoWriteBytes.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoWriteBytesDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoWriteAvgTime.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoWriteAvgTimeDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeIoSyncCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoSyncCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoSyncAvgTime.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoSyncAvgTimeDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeIoSeekCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoSeekCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoSeekAvgTime.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoSeekAvgTimeDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeIoReopenCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeIoReopenCountDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeMnesiaRAMTxCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeMnesiaRAMTxCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeMnesiaDiskTxCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeMnesiaDiskTxCountDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeMsgStoreReadCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeMsgStoreReadCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeMsgStoreWriteCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeMsgStoreWriteCountDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeQueueIndexWriteCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueIndexWriteCountDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueIndexReadCount.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueIndexReadCountDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeConnectionCreated.Enabled = true
-			cfg.Metrics.RabbitmqNodeConnectionCreatedDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeConnectionClosed.Enabled = true
-			cfg.Metrics.RabbitmqNodeConnectionClosedDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeChannelCreated.Enabled = true
-			cfg.Metrics.RabbitmqNodeChannelCreatedDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeChannelClosed.Enabled = true
-			cfg.Metrics.RabbitmqNodeChannelClosedDetailsRate.Enabled = true
-
-			cfg.Metrics.RabbitmqNodeQueueDeclared.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueDeclaredDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueCreated.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueCreatedDetailsRate.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueDeleted.Enabled = true
-			cfg.Metrics.RabbitmqNodeQueueDeletedDetailsRate.Enabled = true
-
 			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
@@ -283,4 +210,59 @@ func TestScraperScrape(t *testing.T) {
 			))
 		})
 	}
+}
+
+func TestScraperCollectsAllNodeMetricsByDefault(t *testing.T) {
+    t.Run("Default config collects all node metrics", func(t *testing.T) {
+        cfg := createDefaultConfig().(*Config)
+        
+        // Verify that default config enables node metrics
+        require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
+        require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
+
+        // Setup mock client with node data
+        mockClient := mocks.MockClient{}
+        nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
+        var nodes []*models.Node
+        err := json.Unmarshal(nodeData, &nodes)
+        require.NoError(t, err)
+        
+        mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{}, nil)
+        mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+        
+        scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+        scraper.client = &mockClient
+        
+        actualMetrics, err := scraper.scrape(t.Context())
+        require.NoError(t, err)
+        
+        // Verify node metrics are present in output
+        resourceMetrics := actualMetrics.ResourceMetrics()
+        foundNodeMetrics := false
+        
+        for i := 0; i < resourceMetrics.Len(); i++ {
+            resource := resourceMetrics.At(i).Resource()
+            if attr, ok := resource.Attributes().Get("rabbitmq.node.name"); ok && attr.Str() == "rabbit@66a063ecff83" {
+                foundNodeMetrics = true
+                metrics := resourceMetrics.At(i).ScopeMetrics().At(0).Metrics()
+                
+                // Verify presence of key node metrics
+                metricNames := make(map[string]bool)
+                for j := 0; j < metrics.Len(); j++ {
+                    metricNames[metrics.At(j).Name()] = true
+                }
+                
+                // Should have node metrics by default
+                require.True(t, metricNames["rabbitmq.node.disk_free"])
+                require.True(t, metricNames["rabbitmq.node.mem_used"])
+                require.True(t, metricNames["rabbitmq.node.fd_used"])
+                
+                // Should have significantly more metrics now (60+ node metrics)
+                require.GreaterOrEqual(t, len(metricNames), 60)
+                break
+            }
+        }
+        require.True(t, foundNodeMetrics, "Node metrics resource not found")
+    })
 }

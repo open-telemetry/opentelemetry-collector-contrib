@@ -77,6 +77,27 @@ func TestNewFactory(t *testing.T) {
 				require.ErrorIs(t, err, errConfigNotRabbit)
 			},
 		},
+		{
+            desc: "default config enables all node metrics",
+            testFunc: func(t *testing.T) {
+                factory := NewFactory()
+                cfg := factory.CreateDefaultConfig().(*Config)
+                
+                // Verify key node metrics are enabled by default
+                require.True(t, cfg.Metrics.RabbitmqNodeDiskFree.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeMemUsed.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeFdUsed.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeSocketsUsed.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeProcUsed.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeUptime.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeContextSwitches.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqNodeGcNum.Enabled)
+                
+                // Verify queue metrics still enabled
+                require.True(t, cfg.Metrics.RabbitmqConsumerCount.Enabled)
+                require.True(t, cfg.Metrics.RabbitmqMessageAcknowledged.Enabled)
+            },
+        },
 	}
 
 	for _, tc := range testCases {
