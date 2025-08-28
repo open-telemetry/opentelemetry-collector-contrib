@@ -49,7 +49,7 @@ func TestNewExtension(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		require.NotNil(t, ext)
 		assert.Equal(t, "test-host", ext.info.host.Identifier)
@@ -60,7 +60,7 @@ func TestNewExtension(t *testing.T) {
 	t.Run("host provider error", func(t *testing.T) {
 		hostProvider := &mockSourceProvider{err: errors.New("host error")}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
-		_, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		_, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.Error(t, err)
 		assert.Equal(t, "host error", err.Error())
 	})
@@ -78,7 +78,7 @@ func TestExtensionLifecycle(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		mockSerializer := &mockSerializer{}
@@ -90,18 +90,18 @@ func TestExtensionLifecycle(t *testing.T) {
 				component.MustNewType("mockreceiver"): {BuilderRef: "gomod.example/receiver v1.0.0"},
 			}},
 		}
-		err = ext.Start(context.Background(), host)
+		err = ext.Start(t.Context(), host)
 		require.NoError(t, err)
 		assert.True(t, mockSerializer.startCalled, "serializer.Start should be called")
 		assert.NotEmpty(t, ext.info.modules.Receiver, "module infos should be populated")
 
 		// NotifyConfig will create and start the http server
-		err = ext.NotifyConfig(context.Background(), confmap.New())
+		err = ext.NotifyConfig(t.Context(), confmap.New())
 		require.NoError(t, err)
 		require.NotNil(t, ext.httpServer, "httpServer should be created")
 
 		// Shutdown
-		err = ext.Shutdown(context.Background())
+		err = ext.Shutdown(t.Context())
 		require.NoError(t, err)
 		assert.True(t, mockSerializer.stopCalled, "serializer.Stop should be called")
 	})
@@ -111,13 +111,13 @@ func TestExtensionLifecycle(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		ext.serializer = nil // Test with no serializer
 
-		err = ext.Start(context.Background(), componenttest.NewNopHost())
+		err = ext.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
-		err = ext.Shutdown(context.Background())
+		err = ext.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
 
@@ -126,11 +126,11 @@ func TestExtensionLifecycle(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		// NopHost does not implement hostcapabilities.ModuleInfo
-		err = ext.Start(context.Background(), componenttest.NewNopHost())
+		err = ext.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		assert.Empty(t, ext.info.modules, "module infos should be empty")
 	})
@@ -151,10 +151,10 @@ func TestNotifyConfig(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		ext.serializer = &mockSerializer{}
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
@@ -164,7 +164,7 @@ func TestNotifyConfig(t *testing.T) {
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 		}}
 
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.NoError(t, err)
 		assert.NotNil(t, ext.configs.collector)
 		assert.NotNil(t, ext.otelCollectorMetadata)
@@ -174,7 +174,7 @@ func TestNotifyConfig(t *testing.T) {
 		assert.NotNil(t, ext.httpServer, "http server should be created and started")
 
 		// Ensure shutdown works cleanly
-		assert.NoError(t, ext.Shutdown(context.Background()))
+		assert.NoError(t, ext.Shutdown(t.Context()))
 	})
 }
 
@@ -207,14 +207,14 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		// Create a mock serializer that will cause SendPayload to fail
 		mockSerializer := &mockFailingSerializer{}
 		ext.serializer = mockSerializer
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
@@ -222,12 +222,12 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		})
 
 		// This should trigger the error path when SendPayload fails
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "payload send failed")
 
 		// Cleanup
-		assert.NoError(t, ext.Shutdown(context.Background()))
+		assert.NoError(t, ext.Shutdown(t.Context()))
 	})
 
 	t.Run("PopulateFullComponentsJSON error", func(t *testing.T) {
@@ -244,25 +244,25 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		ext.serializer = &mockSerializer{}
 
 		// Set moduleInfos to empty to trigger error path in PopulateFullComponentsJSON
 		ext.info.modules = service.ModuleInfos{}
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
 		})
 
 		// This should trigger warning but not fail
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.NoError(t, err) // Should not fail, just log warning
 
 		// Cleanup
-		assert.NoError(t, ext.Shutdown(context.Background()))
+		assert.NoError(t, ext.Shutdown(t.Context()))
 	})
 
 	t.Run("PopulateActiveComponents error", func(t *testing.T) {
@@ -279,11 +279,11 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		ext.serializer = &mockSerializer{}
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		// Create an invalid configuration that will cause PopulateActiveComponents to fail
 		conf := confmap.NewFromStringMap(map[string]any{
@@ -302,11 +302,11 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 
 		// This should trigger warning but not fail
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.NoError(t, err) // Should not fail, just log warning
 
 		// Cleanup
-		assert.NoError(t, ext.Shutdown(context.Background()))
+		assert.NoError(t, ext.Shutdown(t.Context()))
 	})
 }
 
@@ -339,13 +339,13 @@ func TestPeriodicPayloadSending(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		mockSerializer := &mockSerializer{}
 		ext.serializer = mockSerializer
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
@@ -356,7 +356,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}}
 
 		// NotifyConfig should start the periodic payload sending
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.NoError(t, err)
 
 		// Verify periodic sending components are initialized
@@ -366,7 +366,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		assert.NotNil(t, ext.payloadSender.channel, "payload send channel should be initialized")
 
 		// Shutdown should stop periodic sending
-		err = ext.Shutdown(context.Background())
+		err = ext.Shutdown(t.Context())
 		require.NoError(t, err)
 
 		// Verify context is cancelled
@@ -392,14 +392,14 @@ func TestPeriodicPayloadSending(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		// Use a counting mock serializer to track payload sends
 		mockSerializer := &countingMockSerializer{}
 		ext.serializer = mockSerializer
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
@@ -410,7 +410,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}}
 
 		// NotifyConfig will send the initial payload
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.NoError(t, err)
 
 		initialCount := mockSerializer.GetSendCount()
@@ -429,7 +429,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}, time.Second, 10*time.Millisecond, "manual payload should be sent")
 
 		// Cleanup
-		err = ext.Shutdown(context.Background())
+		err = ext.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
 
@@ -447,14 +447,14 @@ func TestPeriodicPayloadSending(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		// Mock serializer that fails after the first call
 		mockSerializer := &failAfterFirstCallSerializer{}
 		ext.serializer = mockSerializer
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
@@ -465,7 +465,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}}
 
 		// NotifyConfig will succeed with the first payload
-		err = ext.NotifyConfig(context.Background(), conf)
+		err = ext.NotifyConfig(t.Context(), conf)
 		require.NoError(t, err)
 
 		// Trigger manual payload send which should fail but not crash
@@ -480,7 +480,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		// Verify the extension is still functional by shutting down cleanly
-		err = ext.Shutdown(context.Background())
+		err = ext.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
 
@@ -509,13 +509,13 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 				Path:         "/test-path",
 			},
 		}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 
 		mockSerializer := &mockSerializer{}
 		ext.serializer = mockSerializer
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
@@ -547,7 +547,7 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 			go func(confIndex int) {
 				defer wg.Done()
 				conf := confs[confIndex%len(confs)]
-				if err := ext.NotifyConfig(context.Background(), conf); err != nil {
+				if err := ext.NotifyConfig(t.Context(), conf); err != nil {
 					// First call might succeed, subsequent calls will fail due to HTTP server already running
 					// But they should not race condition or panic
 					errors <- err
@@ -565,7 +565,7 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		ext.configs.mutex.RUnlock()
 
 		// Cleanup
-		assert.NoError(t, ext.Shutdown(context.Background()))
+		assert.NoError(t, ext.Shutdown(t.Context()))
 	})
 }
 
@@ -624,21 +624,21 @@ func (m *mockSerializer) State() uint32 {
 	return m.state
 }
 
-func (m *mockSerializer) SendMetadata(marshaler.JSONMarshaler) error            { return nil }
-func (m *mockSerializer) SendEvents(event.Events) error                         { return nil }
-func (m *mockSerializer) SendServiceChecks(servicecheck.ServiceChecks) error    { return nil }
-func (m *mockSerializer) SendIterableSeries(metrics.SerieSource) error          { return nil }
-func (m *mockSerializer) AreSeriesEnabled() bool                                { return false }
-func (m *mockSerializer) SendSketch(metrics.SketchesSource) error               { return nil }
-func (m *mockSerializer) AreSketchesEnabled() bool                              { return false }
-func (m *mockSerializer) SendHostMetadata(marshaler.JSONMarshaler) error        { return nil }
-func (m *mockSerializer) SendProcessesMetadata(any) error                       { return nil }
-func (m *mockSerializer) SendAgentchecksMetadata(marshaler.JSONMarshaler) error { return nil }
-func (m *mockSerializer) SendOrchestratorMetadata([]types.ProcessMessageBody, string, string, int) error {
+func (*mockSerializer) SendMetadata(marshaler.JSONMarshaler) error            { return nil }
+func (*mockSerializer) SendEvents(event.Events) error                         { return nil }
+func (*mockSerializer) SendServiceChecks(servicecheck.ServiceChecks) error    { return nil }
+func (*mockSerializer) SendIterableSeries(metrics.SerieSource) error          { return nil }
+func (*mockSerializer) AreSeriesEnabled() bool                                { return false }
+func (*mockSerializer) SendSketch(metrics.SketchesSource) error               { return nil }
+func (*mockSerializer) AreSketchesEnabled() bool                              { return false }
+func (*mockSerializer) SendHostMetadata(marshaler.JSONMarshaler) error        { return nil }
+func (*mockSerializer) SendProcessesMetadata(any) error                       { return nil }
+func (*mockSerializer) SendAgentchecksMetadata(marshaler.JSONMarshaler) error { return nil }
+func (*mockSerializer) SendOrchestratorMetadata([]types.ProcessMessageBody, string, string, int) error {
 	return nil
 }
 
-func (m *mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, string, string) error {
+func (*mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, string, string) error {
 	return nil
 }
 
@@ -647,7 +647,7 @@ type mockFailingSerializer struct {
 	mockSerializer
 }
 
-func (m *mockFailingSerializer) SendMetadata(marshaler.JSONMarshaler) error {
+func (*mockFailingSerializer) SendMetadata(marshaler.JSONMarshaler) error {
 	return errors.New("payload send failed")
 }
 

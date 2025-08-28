@@ -6,7 +6,6 @@
 package diskscraper
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -27,13 +26,13 @@ func TestDiskScrapeWithRealData(t *testing.T) {
 	config := Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+	scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 	require.NoError(t, err, "Failed to create disk scraper")
 
-	err = scraper.start(context.Background(), componenttest.NewNopHost())
+	err = scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start the disk scraper")
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err, "Failed to scrape metrics")
 	require.NotNil(t, metrics, "Metrics cannot be nil")
 
@@ -67,19 +66,19 @@ func TestScrape_Error(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{})
+			scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			scraper.perfCounterFactory = func(_, _, _ string) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 				return &testmocks.PerfCounterWatcherMock{
 					ScrapeErr: test.scrapeErr,
 				}, nil
 			}
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
-			_, err = scraper.scrape(context.Background())
+			_, err = scraper.scrape(t.Context())
 			assert.EqualError(t, err, test.expectedErr)
 
 			isPartial := scrapererror.IsPartialScrapeError(err)
@@ -113,14 +112,14 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{})
+			scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			if tc.newPerfCounterFactory != nil {
 				scraper.perfCounterFactory = tc.newPerfCounterFactory
 			}
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
 			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)

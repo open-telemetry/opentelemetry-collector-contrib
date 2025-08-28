@@ -10,5 +10,5 @@ import (
 )
 
 // Noop on windows because we close files immediately after reading.
-func (m *Manager) readLostFiles(_ context.Context) {
+func (*Manager) readLostFiles(context.Context) {
 }

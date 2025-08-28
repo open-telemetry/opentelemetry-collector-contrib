@@ -42,9 +42,6 @@ func createDefaultConfig() component.Config {
 		DomainSettings: configgrpc.ClientConfig{
 			Compression: configcompression.TypeGzip,
 		},
-		ClientConfig: configgrpc.ClientConfig{
-			Endpoint: "https://",
-		},
 		// Traces GRPC client
 		Traces: configgrpc.ClientConfig{
 			Endpoint:    "https://",
@@ -160,7 +157,7 @@ func createProfilesExporter(
 		return nil, err
 	}
 
-	return xexporterhelper.NewProfilesExporter(
+	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,

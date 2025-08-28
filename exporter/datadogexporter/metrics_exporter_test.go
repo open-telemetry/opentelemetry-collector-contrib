@@ -6,10 +6,14 @@ package datadogexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -24,19 +28,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestNewExporter(t *testing.T) {
+	resetZorkianWarningsForTesting()
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
 		defer require.NoError(t, enableMetricExportSerializer())
@@ -72,18 +80,18 @@ func TestNewExporter(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -124,18 +132,18 @@ func TestNewExporter_Serializer(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -424,6 +432,14 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				},
 			},
 		},
+		{
+			metrics: loadOTLPMetrics(t, "metrics_stats.json"),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: datadogconfig.HistogramModeDistributions,
+		},
 	}
 	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
@@ -444,7 +460,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			require.NoError(t, err)
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
@@ -461,7 +477,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			}
 			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
-			err = exp.PushMetricsData(context.Background(), tt.metrics)
+			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
@@ -498,10 +514,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 }
 
 func TestNewExporter_Zorkian(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableMetricExportSerializer())
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
@@ -529,30 +544,34 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	}
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
+	core, logs := observer.New(zap.WarnLevel)
+	params.Logger = zap.New(core)
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
+
+	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
+
 	attrs := map[string]string{
 		string(conventions.DeploymentEnvironmentKey): "dev",
 		"custom_attribute":                           "custom_value",
@@ -867,10 +886,19 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				},
 			},
 		},
+		{
+			metrics: loadOTLPMetrics(t, "metrics_stats.json"),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: datadogconfig.HistogramModeDistributions,
+		},
 	}
 	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+			resetZorkianWarningsForTesting()
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV1Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -886,9 +914,14 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			acfg := traceconfig.New()
+
+			core, logs := observer.New(zap.WarnLevel)
+			params := exportertest.NewNopSettings(metadata.Type)
+			params.Logger = zap.New(core)
+
 			exp, err := newMetricsExporter(
-				context.Background(),
-				exportertest.NewNopSettings(metadata.Type),
+				t.Context(),
+				params,
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -904,7 +937,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			}
 			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
-			err = exp.PushMetricsData(context.Background(), tt.metrics)
+			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
@@ -930,8 +963,132 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
+				assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 			}
 		})
+	}
+}
+
+func TestNewExporterWithProxy(t *testing.T) {
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	type requestInfo struct {
+		Path    string
+		Headers map[string]string
+	}
+	var proxyRequests []requestInfo
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	expectedRequests := 7
+
+	wg.Add(expectedRequests)
+
+	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.Header.Set("X-Proxy-Test", "test-proxy-123")
+			req.URL.Scheme = "http"
+			req.URL.Host = server.Listener.Addr().String()
+
+			// Copy request data to avoid race conditions
+			headers := make(map[string]string)
+			for key, values := range req.Header {
+				if len(values) > 0 {
+					headers[key] = values[0]
+				}
+			}
+
+			mu.Lock()
+			proxyRequests = append(proxyRequests, requestInfo{
+				Path:    req.URL.Path,
+				Headers: headers,
+			})
+			mu.Unlock()
+
+			wg.Done()
+		},
+	})
+	defer proxyServer.Close()
+
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		Metrics: datadogconfig.MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: proxyServer.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: datadogconfig.HistogramConfig{
+				Mode:             datadogconfig.HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeToDelta,
+			},
+		},
+		HostMetadata: datadogconfig.HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
+
+		ClientConfig: confighttp.ClientConfig{
+			ProxyURL: proxyServer.URL,
+		},
+	}
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	f := NewFactory()
+
+	// The client should have been created correctly
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+
+	// Create & send test metrics (no metadata)
+	testMetrics := pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
+	require.NoError(t, err)
+	assert.Empty(t, server.MetadataChan)
+
+	// Send another with metadata
+	testMetrics = pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
+	require.NoError(t, err)
+
+	recvMetadata := <-server.MetadataChan
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
+
+	// Wait for all requests to be processed
+	wg.Wait()
+	mu.Lock()
+	defer mu.Unlock()
+
+	assert.GreaterOrEqual(t, len(proxyRequests), 3, "Expected at least 3 requests to go through the proxy")
+
+	// Verify got metrics & sketches requests
+	hasMetricsRequest := false
+	hasSketchesRequest := false
+	for _, req := range proxyRequests {
+		if req.Path == "/api/v2/series" {
+			hasMetricsRequest = true
+		}
+		if req.Path == "/api/beta/sketches" || req.Path == "/api/v1/sketches" {
+			hasSketchesRequest = true
+		}
+	}
+	assert.True(t, hasMetricsRequest, "Expected to capture metrics request to /api/v2/series")
+	assert.True(t, hasSketchesRequest, "Expected to capture sketches request")
+
+	for _, req := range proxyRequests {
+		assert.Equal(t, "test-proxy-123", req.Headers["X-Proxy-Test"],
+			"Request should have gone through our proxy")
+
+		assert.Equal(t, "gzip", req.Headers["Accept-Encoding"])
 	}
 }
 
@@ -995,25 +1152,39 @@ func seconds(i int) pcommon.Timestamp {
 
 func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode datadogconfig.HistogramMode) *datadogconfig.Config {
 	t.Helper()
-	return &datadogconfig.Config{
-		HostMetadata: datadogconfig.HostMetadataConfig{
-			Tags: hostTags,
+	cfg := datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
+	cfg.HostMetadata = datadogconfig.HostMetadataConfig{
+		Tags: hostTags,
+	}
+	cfg.TagsConfig = datadogconfig.TagsConfig{
+		Hostname: "test-host",
+	}
+
+	cfg.Metrics = datadogconfig.MetricsConfig{
+		TCPAddrConfig: confignet.TCPAddrConfig{
+			Endpoint: endpoint,
 		},
-		TagsConfig: datadogconfig.TagsConfig{
-			Hostname: "test-host",
+		HistConfig: datadogconfig.HistogramConfig{
+			Mode: histogramMode,
 		},
-		Metrics: datadogconfig.MetricsConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: endpoint,
-			},
-			HistConfig: datadogconfig.HistogramConfig{
-				Mode: histogramMode,
-			},
-			// Set values to avoid errors. No particular intention in value selection.
-			DeltaTTL: 3600,
-			SumConfig: datadogconfig.SumConfig{
-				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeRawValue,
-			},
+		// Set values to avoid errors. No particular intention in value selection.
+		DeltaTTL: 3600,
+		SumConfig: datadogconfig.SumConfig{
+			CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeRawValue,
 		},
 	}
+
+	return cfg
+}
+
+func loadOTLPMetrics(t *testing.T, filename string) pmetric.Metrics {
+	t.Helper()
+	otlpbytes, err := os.ReadFile(filepath.Join("testdata", filename))
+	require.NoError(t, err)
+
+	var unmarshaler pmetric.JSONUnmarshaler
+	otlpmetrics, err := unmarshaler.UnmarshalMetrics(otlpbytes)
+	require.NoError(t, err)
+
+	return otlpmetrics
 }

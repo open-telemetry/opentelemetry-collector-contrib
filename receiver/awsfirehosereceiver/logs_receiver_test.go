@@ -36,7 +36,7 @@ func (rc *logsRecordConsumer) ConsumeLogs(_ context.Context, logs plog.Logs) err
 	return nil
 }
 
-func (rc *logsRecordConsumer) Capabilities() consumer.Capabilities {
+func (*logsRecordConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -89,7 +89,7 @@ func TestLogsReceiver_Start(t *testing.T) {
 			require.NotNil(t, got)
 			require.IsType(t, &firehoseReceiver{}, got)
 			t.Cleanup(func() {
-				require.NoError(t, got.Shutdown(context.Background()))
+				require.NoError(t, got.Shutdown(t.Context()))
 			})
 
 			host := hostWithExtensions{
@@ -100,7 +100,7 @@ func TestLogsReceiver_Start(t *testing.T) {
 				},
 			}
 
-			err = got.Start(context.Background(), host)
+			err = got.Start(t.Context(), host)
 			if testCase.wantErr != "" {
 				require.EqualError(t, err, testCase.wantErr)
 			} else {
@@ -148,7 +148,7 @@ func TestLogsConsumer_Errors(t *testing.T) {
 				unmarshaler: unmarshalertest.NewErrLogs(testCase.unmarshalerErr),
 				consumer:    consumertest.NewErr(testCase.consumerErr),
 			}
-			gotStatus, gotErr := lc.Consume(context.TODO(), newNextRecordFunc([][]byte{{}}), nil)
+			gotStatus, gotErr := lc.Consume(t.Context(), newNextRecordFunc([][]byte{{}}), nil)
 			require.Equal(t, testCase.wantStatus, gotStatus)
 			require.Equal(t, testCase.wantErr, gotErr)
 		})
@@ -164,7 +164,7 @@ func TestLogsConsumer(t *testing.T) {
 			unmarshaler: unmarshalertest.NewWithLogs(base),
 			consumer:    &rc,
 		}
-		gotStatus, gotErr := lc.Consume(context.TODO(), newNextRecordFunc([][]byte{{}}), map[string]string{
+		gotStatus, gotErr := lc.Consume(t.Context(), newNextRecordFunc([][]byte{{}}), map[string]string{
 			"CommonAttributes": "Test",
 		})
 		require.Equal(t, http.StatusOK, gotStatus)
@@ -194,7 +194,7 @@ func TestLogsConsumer(t *testing.T) {
 		rc := logsRecordConsumer{}
 		lc := &logsConsumer{unmarshaler: unmarshaler, consumer: &rc}
 		nextRecord := newNextRecordFunc(make([][]byte, len(logsRemaining)))
-		gotStatus, gotErr := lc.Consume(context.Background(), nextRecord, nil)
+		gotStatus, gotErr := lc.Consume(t.Context(), nextRecord, nil)
 		require.Equal(t, http.StatusOK, gotStatus)
 		require.NoError(t, gotErr)
 		require.Len(t, rc.results, 2)

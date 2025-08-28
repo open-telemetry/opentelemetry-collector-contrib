@@ -20,7 +20,7 @@ type logPacker struct {
 	config *Config
 }
 
-func (packer *logPacker) initEnvelope(logRecord plog.LogRecord) (*contracts.Envelope, *contracts.Data) {
+func (*logPacker) initEnvelope(logRecord plog.LogRecord) (*contracts.Envelope, *contracts.Data) {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(timestampFromLogRecord(logRecord)).Format(time.RFC3339Nano)
@@ -132,7 +132,7 @@ func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
 	}
 }
 
-func (packer *logPacker) toAiSeverityLevel(sn plog.SeverityNumber) contracts.SeverityLevel {
+func (*logPacker) toAiSeverityLevel(sn plog.SeverityNumber) contracts.SeverityLevel {
 	switch {
 	case sn >= plog.SeverityNumberTrace && sn <= plog.SeverityNumberDebug4:
 		return contracts.Verbose

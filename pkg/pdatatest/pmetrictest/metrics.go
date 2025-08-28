@@ -144,7 +144,7 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 	}
 
 	for i := 0; i < esms.Len(); i++ {
-		errPrefix := fmt.Sprintf(`scope "%s"`, esms.At(i).Scope().Name())
+		errPrefix := fmt.Sprintf(`scope %q`, esms.At(i).Scope().Name())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareScopeMetrics(esms.At(i), asms.At(i))))
 	}
 
@@ -213,13 +213,13 @@ func CompareScopeMetrics(expected, actual pmetric.ScopeMetrics) error {
 	}
 
 	for i := 0; i < numMetrics; i++ {
-		errPrefix := fmt.Sprintf(`metric "%s"`, ems.At(i).Name())
+		errPrefix := fmt.Sprintf(`metric %q`, ems.At(i).Name())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareMetric(ems.At(i), ams.At(i))))
 	}
 	return errs
 }
 
-func CompareMetric(expected pmetric.Metric, actual pmetric.Metric) error {
+func CompareMetric(expected, actual pmetric.Metric) error {
 	var errs error
 
 	if actual.Name() != expected.Name() {

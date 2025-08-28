@@ -61,11 +61,9 @@ body:
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
-      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
@@ -193,6 +191,7 @@ body:
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
+      - processor/isolationforest
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
@@ -205,7 +204,6 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/dynatrace
-      - processor/routing
       - processor/schema
       - processor/span
       - processor/sumologic
@@ -216,7 +214,6 @@ body:
       - receiver/apache
       - receiver/apachespark
       - receiver/awscloudwatch
-      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose

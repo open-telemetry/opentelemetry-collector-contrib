@@ -4,7 +4,6 @@
 package spanprocessor
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -39,7 +38,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
@@ -76,7 +75,7 @@ func TestFactory_CreateTraces_InvalidConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Rename = test.cfg
 
-			tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			require.Nil(t, tp)
 			assert.Equal(t, err, test.err)
 		})
@@ -87,7 +86,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	require.Nil(t, mp)
 	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
 }

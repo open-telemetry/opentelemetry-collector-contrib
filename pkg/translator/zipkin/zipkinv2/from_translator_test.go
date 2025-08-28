@@ -87,6 +87,45 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	}
 }
 
+func TestExtractScopeTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		scopeCfg func(pcommon.InstrumentationScope)
+		res      map[string]string
+	}{
+		{
+			name:     "empty scope",
+			scopeCfg: func(_ pcommon.InstrumentationScope) {},
+			res:      map[string]string{},
+		},
+		{
+			name: "with attributes and name/version",
+			scopeCfg: func(il pcommon.InstrumentationScope) {
+				il.SetName("otel-lib")
+				il.SetVersion("v1.2.3")
+				il.Attributes().PutStr("custom.key", "custom.val")
+			},
+			res: map[string]string{
+				"custom.key":           "custom.val",
+				"otel.library.name":    "otel-lib",
+				"otel.library.version": "v1.2.3",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			il := pcommon.NewInstrumentationScope()
+			tt.scopeCfg(il)
+
+			zTags := map[string]string{}
+			extractScopeTags(il, zTags)
+
+			assert.Equal(t, tt.res, zTags)
+		})
+	}
+}
+
 func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
 		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",

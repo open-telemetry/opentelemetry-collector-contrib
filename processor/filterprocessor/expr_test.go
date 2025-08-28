@@ -4,7 +4,6 @@
 package filterprocessor
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -41,7 +40,7 @@ func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.Numb
 	t.Run(mdType.String(), func(t *testing.T) {
 		// the "foo" expr expression will cause expr Run() to return an error
 		proc, next := testProcessor(t, nil, []string{"foo"})
-		err := proc.ConsumeMetrics(context.Background(), testData("", 1, mdType, mvType))
+		err := proc.ConsumeMetrics(t.Context(), testData("", 1, mdType, mvType))
 		assert.Error(t, err)
 		// assert that metrics not be filtered as a result
 		assert.Empty(t, next.AllMetrics())
@@ -114,19 +113,19 @@ func assertFiltered(t *testing.T, lm pcommon.Map) {
 	}
 }
 
-func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
+func filterMetrics(t *testing.T, include, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
 	proc, next := testProcessor(t, include, exclude)
 	for _, md := range mds {
-		err := proc.ConsumeMetrics(context.Background(), md)
+		err := proc.ConsumeMetrics(t.Context(), md)
 		require.NoError(t, err)
 	}
 	return next.AllMetrics()
 }
 
-func testProcessor(t *testing.T, include []string, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
+func testProcessor(t *testing.T, include, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
 	factory := NewFactory()
 	cfg := exprConfig(factory, include, exclude)
-	ctx := context.Background()
+	ctx := t.Context()
 	next := &consumertest.MetricsSink{}
 	proc, err := factory.CreateMetrics(
 		ctx,
@@ -139,7 +138,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	return proc, next
 }
 
-func exprConfig(factory processor.Factory, include []string, exclude []string) component.Config {
+func exprConfig(factory processor.Factory, include, exclude []string) component.Config {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

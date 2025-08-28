@@ -1,0 +1,42 @@
+receivers:
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      cpu:
+      memory:
+      load:
+      disk:
+      filesystem:
+      network:
+
+processors:
+  isolationforest:
+    num_trees: 50
+    subsample_size: 128
+    window_size: 500
+    anomaly_threshold: 0.7
+    training_interval: 1m
+    add_anomaly_score: true
+    drop_anomalous_metrics: false
+
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  debug:
+    verbosity: detailed
+
+  file:
+    path: ./metrics_output.json
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      processors: [isolationforest, batch]
+      exporters: [debug, file]
+
+  telemetry:
+    logs:
+      level: debug

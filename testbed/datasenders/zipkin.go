@@ -59,6 +59,6 @@ func (zs *zipkinDataSender) GenConfigYAMLStr() string {
     endpoint: %s`, zs.GetEndpoint())
 }
 
-func (zs *zipkinDataSender) ProtocolName() string {
+func (*zipkinDataSender) ProtocolName() string {
 	return "zipkin"
 }

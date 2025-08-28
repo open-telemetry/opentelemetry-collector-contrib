@@ -30,7 +30,15 @@ type Config struct {
 	confignet.AddrConfig           `mapstructure:",squash"`
 	TLS                            configtls.ClientConfig        `mapstructure:"tls,omitempty"`
 	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig              metadata.LogsBuilderConfig    `mapstructure:",squash"`
 	StatementEvents                StatementEventsConfig         `mapstructure:"statement_events"`
+	QuerySampleCollection          QuerySampleCollection         `mapstructure:"query_sample_collection"`
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	_ struct{}
 }
 
 type StatementEventsConfig struct {

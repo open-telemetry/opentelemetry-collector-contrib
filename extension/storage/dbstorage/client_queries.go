@@ -115,7 +115,7 @@ func (d *dbDialect) Close() error {
 }
 
 // newDBDialect creates a new DB dialect which is just a set of DB-specific queries/prepared statements
-func newDBDialect(driverName string, tableName string) *dbDialect {
+func newDBDialect(driverName, tableName string) *dbDialect {
 	queries := getDialectQueries(driverName)
 
 	var aggSize int

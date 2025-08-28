@@ -4,7 +4,6 @@
 package loadbalancingexporter
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -29,12 +29,12 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	creationParams := exportertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
 	}
 
 	// test
-	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTraces(t.Context(), creationParams, cfg)
 
 	// verify
 	assert.NoError(t, err)
@@ -47,12 +47,12 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	creationParams := exportertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
 	}
 
 	// test
-	exp, err := factory.CreateLogs(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateLogs(t.Context(), creationParams, cfg)
 
 	// verify
 	assert.NoError(t, err)

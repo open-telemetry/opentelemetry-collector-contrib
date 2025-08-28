@@ -33,15 +33,14 @@
   "logs": [
     {
       "message": "opened pricing page",
-      "level": "info",
       "context": {
         "component": "AppRoot",
         "page": "Pricing"
       },
       "timestamp": "2021-09-30T10:46:17.680Z",
       "trace": {
-        "trace_id": "abcd",
-        "span_id": "def"
+        "trace_id": "46d38efbe623342af29992782992000a",
+        "span_id": "562474ddde25561b"
       }
     },
     {
@@ -53,8 +52,8 @@
       },
       "timestamp": "2021-09-30T10:46:17.680Z",
       "trace": {
-        "trace_id": "abcd",
-        "span_id": "ghj"
+        "trace_id": "46d38efbe623342af29992782992000a",
+        "span_id": "562474ddde25561b"
       }
     }
   ],
@@ -234,8 +233,8 @@
       },
       "timestamp": "2021-09-30T10:46:17.680Z",
       "trace": {
-        "trace_id": "abcd",
-        "span_id": "def"
+        "trace_id": "46d38efbe623342af29992782992000a",
+        "span_id": "562474ddde25561b"
       },
       "context": {
         "component": "ReactErrorBoundary",
@@ -253,8 +252,8 @@
       "type": "page load",
       "timestamp": "2021-09-30T10:46:17.680Z",
       "trace": {
-        "trace_id": "abcd",
-        "span_id": "def"
+        "trace_id": "46d38efbe623342af29992782992000a",
+        "span_id": "562474ddde25561b"
       },
       "context": {
         "hello": "world"

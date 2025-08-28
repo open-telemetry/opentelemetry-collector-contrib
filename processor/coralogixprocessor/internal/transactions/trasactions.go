@@ -16,14 +16,14 @@ const (
 
 func ApplyTransactionsAttributes(td ptrace.Traces, logger *zap.Logger) (ptrace.Traces, error) {
 	if td.SpanCount() == 0 {
-		logger.Info("no spans found in the trace")
+		logger.Debug("no spans found in the trace")
 		return td, nil
 	}
 
 	spansByTraceID := groupSpansByTraceID(td)
 
 	for _, spans := range spansByTraceID {
-		logger.Info("processing trace", zap.String("traceID", spans[0].TraceID().String()), zap.Int("spans", len(spans)))
+		logger.Debug("processing trace", zap.String("traceID", spans[0].TraceID().String()), zap.Int("spans", len(spans)))
 		root := buildSpanTree(spans, logger)
 		if root != nil {
 			markSpanAsRoot(root.span)

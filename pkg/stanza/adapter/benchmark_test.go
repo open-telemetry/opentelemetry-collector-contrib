@@ -26,7 +26,7 @@ func TestEndToEnd(t *testing.T) {
 	numEntries := 123_456
 	numHosts := 4
 
-	ctx := context.Background()
+	ctx := t.Context()
 	f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 	cfg := f.CreateDefaultConfig().(*BenchConfig)
 	cfg.NumEntries = numEntries
@@ -36,9 +36,9 @@ func TestEndToEnd(t *testing.T) {
 	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(f.Type()), cfg, sink)
 	require.NoError(t, err)
 
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+		require.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == numEntries
@@ -60,14 +60,14 @@ func (bc benchCase) run(b *testing.B) {
 		cfg.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
-		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, sink)
+		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(f.Type()), cfg, sink)
 		require.NoError(b, err)
 
 		b.ReportAllocs()
 
-		require.NoError(b, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
 		defer func() {
-			require.NoError(b, rcvr.Shutdown(context.Background()))
+			require.NoError(b, rcvr.Shutdown(b.Context()))
 		}()
 		require.Eventually(b, func() bool {
 			return sink.LogRecordCount() == numEntries
@@ -111,11 +111,11 @@ type BenchConfig struct {
 }
 type BenchReceiverType struct{}
 
-func (f BenchReceiverType) Type() component.Type {
+func (BenchReceiverType) Type() component.Type {
 	return benchType
 }
 
-func (f BenchReceiverType) CreateDefaultConfig() component.Config {
+func (BenchReceiverType) CreateDefaultConfig() component.Config {
 	return &BenchConfig{
 		BaseConfig: BaseConfig{
 			Operators: []operator.Config{},
@@ -124,11 +124,11 @@ func (f BenchReceiverType) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (f BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
+func (BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*BenchConfig).BaseConfig
 }
 
-func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(cfg.(*BenchConfig))
 }
 

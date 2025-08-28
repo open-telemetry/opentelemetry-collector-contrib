@@ -140,7 +140,7 @@ func (t *tcpServer) handleConnection(
 		// Notice that it is possible for the function to return with error at
 		// the same time that it returns data (typically the error is io.EOF in
 		// this case).
-		bytes, err := reader.ReadBytes((byte)('\n'))
+		bytes, err := reader.ReadBytes(byte('\n'))
 
 		var numReceivedMetricPoints int
 		line := strings.TrimSpace(string(bytes))

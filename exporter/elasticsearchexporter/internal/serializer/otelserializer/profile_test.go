@@ -86,6 +86,9 @@ func TestSerializeProfile(t *testing.T) {
 				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("host.id")
 				a.Value().SetStr("localhost")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.name")
+				a.Value().SetStr("libc.so.6")
 
 				m := dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(0)
@@ -107,10 +110,12 @@ func TestSerializeProfile(t *testing.T) {
 				profile.SetPeriod(1e9 / 20)
 
 				profile.AttributeIndices().Append(2)
+				profile.LocationIndices().Append(0)
 
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
 				sample.SetLocationsLength(1)
+				sample.AttributeIndices().Append(3)
 			},
 			wantErr: false,
 			expected: []map[string]any{
@@ -126,6 +131,7 @@ func TestSerializeProfile(t *testing.T) {
 					"Stacktrace.id":                 "02VzuClbpt_P3xxwox83Ng",
 					"ecs.version":                   "1.12.0",
 					"host.id":                       "localhost",
+					"process.executable.name":       "libc.so.6",
 					"process.thread.name":           "",
 				},
 				{
@@ -171,7 +177,7 @@ func TestSerializeProfile(t *testing.T) {
 			buf := []*bytes.Buffer{}
 			ser, err := New()
 			require.NoError(t, err)
-			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
+			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _, _ string) error {
 				buf = append(buf, b)
 				return nil
 			})
@@ -216,7 +222,7 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	resource := profiles.ResourceProfiles().At(0)
 	scope := resource.ScopeProfiles().At(0)
 	profile := scope.Profiles().At(0)
-	pushData := func(_ *bytes.Buffer, _ string, _ string) error {
+	pushData := func(_ *bytes.Buffer, _, _ string) error {
 		return nil
 	}
 
@@ -224,6 +230,6 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = ser.SerializeProfile(profiles.ProfilesDictionary(), resource.Resource(), scope.Scope(), profile, pushData)
+		_ = ser.SerializeProfile(profiles.Dictionary(), resource.Resource(), scope.Scope(), profile, pushData)
 	}
 }

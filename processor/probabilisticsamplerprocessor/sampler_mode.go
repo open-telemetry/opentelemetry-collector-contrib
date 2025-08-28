@@ -93,7 +93,7 @@ type (
 
 type missingRandomnessMethod struct{}
 
-func (rm missingRandomnessMethod) randomness() sampling.Randomness {
+func (missingRandomnessMethod) randomness() sampling.Randomness {
 	return sampling.AllProbabilitiesRandomness
 }
 

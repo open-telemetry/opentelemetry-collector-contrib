@@ -189,7 +189,7 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.PollInterval = time.Microsecond
 
 			doneChan := make(chan bool, len(files))
-			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				if len(tokens) > 0 && len(tokens[len(tokens)-1]) == 0 {
 					doneChan <- true
 				}
@@ -311,7 +311,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 
 			doneChan := make(chan bool, len(files))
 			numTokens := &atomic.Int64{}
-			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				if numTokens.Add(int64(len(tokens))) == int64(len(files)*(b.N*uniqueLines+1)) {
 					close(doneChan)
 				}
@@ -329,10 +329,10 @@ func BenchmarkConsumeFiles(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for len(consumePaths) > op.maxBatchFiles {
-				op.consume(context.Background(), consumePaths[:op.maxBatchFiles])
+				op.consume(b.Context(), consumePaths[:op.maxBatchFiles])
 				consumePaths = consumePaths[op.maxBatchFiles:]
 			}
-			op.consume(context.Background(), consumePaths)
+			op.consume(b.Context(), consumePaths)
 			<-doneChan
 		})
 	}

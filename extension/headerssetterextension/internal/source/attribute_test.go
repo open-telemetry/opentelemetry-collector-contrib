@@ -4,7 +4,6 @@
 package source
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,9 +28,9 @@ func (a authData) GetAttributeNames() []string {
 
 func TestAttributeSourceSuccessString(t *testing.T) {
 	ts := &AttributeSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Auth = authData{attrs: map[string]any{"X-Scope-OrgID": "acme"}}
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	val, err := ts.Get(ctx)
 
@@ -41,13 +40,13 @@ func TestAttributeSourceSuccessString(t *testing.T) {
 
 func TestAttributeSourceSuccessStruct(t *testing.T) {
 	ts := &AttributeSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Auth = authData{attrs: map[string]any{"X-Scope-OrgID": struct {
 		Foo string
 	}{
 		Foo: "bar",
 	}}}
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	val, err := ts.Get(ctx)
 
@@ -57,9 +56,9 @@ func TestAttributeSourceSuccessStruct(t *testing.T) {
 
 func TestAttributeSourceNotFound(t *testing.T) {
 	ts := &AttributeSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Auth = authData{attrs: map[string]any{"Not-Scope-OrgID": "acme"}}
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	val, err := ts.Get(ctx)
 

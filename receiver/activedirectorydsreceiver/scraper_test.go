@@ -6,7 +6,6 @@
 package activedirectorydsreceiver
 
 import (
-	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -40,7 +39,7 @@ func TestScrape(t *testing.T) {
 			w:  mockWatchers,
 		}
 
-		scrapeData, err := scraper.scrape(context.Background())
+		scrapeData, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
@@ -49,7 +48,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
-		err = scraper.shutdown(context.Background())
+		err = scraper.shutdown(t.Context())
 		require.NoError(t, err)
 	})
 
@@ -72,7 +71,7 @@ func TestScrape(t *testing.T) {
 			w:  mockWatchers,
 		}
 
-		scrapeData, err := scraper.scrape(context.Background())
+		scrapeData, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		require.True(t, scrapererror.IsPartialScrapeError(err))
 		require.ErrorContains(t, err, fullSyncObjectsRemainingErr.Error())
@@ -84,7 +83,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
-		err = scraper.shutdown(context.Background())
+		err = scraper.shutdown(t.Context())
 		require.NoError(t, err)
 	})
 
@@ -107,7 +106,7 @@ func TestScrape(t *testing.T) {
 			w:  mockWatchers,
 		}
 
-		err = scraper.shutdown(context.Background())
+		err = scraper.shutdown(t.Context())
 		require.ErrorContains(t, err, fullSyncObjectsRemainingErr.Error())
 		require.ErrorContains(t, err, draInboundValuesDNErr.Error())
 	})
@@ -125,10 +124,10 @@ func TestScrape(t *testing.T) {
 			w:  mockWatchers,
 		}
 
-		err = scraper.shutdown(context.Background())
+		err = scraper.shutdown(t.Context())
 		require.NoError(t, err)
 
-		err = scraper.shutdown(context.Background())
+		err = scraper.shutdown(t.Context())
 		require.NoError(t, err)
 	})
 }
@@ -141,12 +140,12 @@ type mockPerfCounterWatcher struct {
 }
 
 // ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
-func (w *mockPerfCounterWatcher) ScrapeRawValue(_ *int64) (bool, error) {
+func (*mockPerfCounterWatcher) ScrapeRawValue(*int64) (bool, error) {
 	panic("unimplemented")
 }
 
 // ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
-func (w *mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+func (*mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
 	panic("unimplemented")
 }
 

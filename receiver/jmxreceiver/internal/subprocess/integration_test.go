@@ -45,7 +45,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 	scriptFile, err := os.CreateTemp(t.TempDir(), "subproc")
 	require.NoError(t, err)
 
-	_, err = scriptFile.Write([]byte(scriptContents))
+	_, err = scriptFile.WriteString(scriptContents)
 	require.NoError(t, err)
 	require.NoError(t, scriptFile.Chmod(0o700))
 	scriptFile.Close()
@@ -298,5 +298,5 @@ func (suite *SubprocessIntegrationSuite) TestSubprocessSuccessfullyReturns() {
 func TestShutdownBeforeStartIntegration(t *testing.T) {
 	t.Parallel()
 	subprocess := NewSubprocess(&Config{ExecutablePath: "sh", Args: []string{}}, zap.NewNop())
-	require.EqualError(t, subprocess.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+	require.EqualError(t, subprocess.Shutdown(t.Context()), "no subprocess.cancel().  Has it been started properly?")
 }

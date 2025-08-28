@@ -58,9 +58,20 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
 				Topic: "spans",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
+				},
+				Telemetry: TelemetryConfig{
+					Metrics: MetricsConfig{
+						KafkaReceiverRecordsDelay: MetricConfig{
+							Enabled: true,
+						},
+					},
 				},
 			},
 		},
@@ -78,6 +89,10 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
 					Topic:    "legacy_topic",
 					Encoding: "otlp_proto",
 				},
@@ -102,6 +117,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: TopicEncodingConfig{
 					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
 					Encoding: "legacy_encoding",
 				},
 				Encoding: "legacy_encoding",
@@ -151,6 +170,10 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "otlp_spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,
@@ -181,6 +204,103 @@ func TestLoadConfig(t *testing.T) {
 				Traces: TopicEncodingConfig{
 					Topic:    "otlp_spans",
 					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "message_marking"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+				MessageMarking: MessageMarking{
+					After:            true,
+					OnError:          true,
+					OnPermanentError: false,
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "message_marking_not_specified"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+				MessageMarking: MessageMarking{
+					After:            false,
+					OnError:          false,
+					OnPermanentError: false,
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "message_marking_on_permanent_error_inherited"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+				MessageMarking: MessageMarking{
+					After:            true,
+					OnError:          true,
+					OnPermanentError: true,
 				},
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,

@@ -327,7 +327,7 @@ func TestCompareProfiles(t *testing.T) {
 				}
 				return p.Transform()
 			}(),
-			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": start timestamp doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": time doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": startTime doesn't match expected: 1577836800000000000, actual: 1577836805000000000`),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": time doesn't match expected: 1577836800000000000, actual: 1577836805000000000`),
 			compareOptions: []CompareProfilesOption{
 				IgnoreProfileTimestampValues(),
 			},
@@ -399,11 +399,11 @@ func TestCompareResourceProfiles(t *testing.T) {
 			name: "equal",
 			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
 				prof := basicProfiles().Transform()
-				return prof.ProfilesDictionary(), prof.ResourceProfiles().At(0)
+				return prof.Dictionary(), prof.ResourceProfiles().At(0)
 			},
 			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
 				prof := basicProfiles().Transform()
-				return prof.ProfilesDictionary(), prof.ResourceProfiles().At(0)
+				return prof.Dictionary(), prof.ResourceProfiles().At(0)
 			},
 		},
 		{
@@ -480,13 +480,13 @@ func TestCompareScopeProfiles(t *testing.T) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
 			},
 			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
 			},
 		},
 		{
@@ -591,7 +591,7 @@ func TestCompareScopeProfiles(t *testing.T) {
 					},
 				}
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
 			},
 			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
@@ -606,7 +606,7 @@ func TestCompareScopeProfiles(t *testing.T) {
 					},
 				}
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
 			},
 			err: multierr.Combine(
 				errors.New(`profiles are out of order: profile "map[scope-attr1:value1]" expected at index 0, found at index 1`),
@@ -670,7 +670,7 @@ func TestCompareProfile(t *testing.T) {
 					},
 				}
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 			},
 			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
@@ -696,7 +696,7 @@ func TestCompareProfile(t *testing.T) {
 					},
 				}
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 			},
 		},
 		{
@@ -725,7 +725,7 @@ func TestCompareProfile(t *testing.T) {
 					},
 				}
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 			},
 			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
@@ -751,7 +751,7 @@ func TestCompareProfile(t *testing.T) {
 					},
 				}
 				tr := p.Transform()
-				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 			},
 			err: multierr.Combine(
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),

@@ -43,7 +43,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	defer reader.Close()
 
 	filetest.WriteString(t, temp, "testlog1\n")
-	reader.ReadToEnd(context.Background())
+	reader.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
 	require.Equal(t, fingerprint.New([]byte("testlog1\n")), reader.Fingerprint)
 }
@@ -99,7 +99,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 				fileContent = append(fileContent, []byte(line)...)
 
 				filetest.WriteString(t, temp, line)
-				reader.ReadToEnd(context.Background())
+				reader.ReadToEnd(t.Context())
 				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.Fingerprint)
 			}
 		})
@@ -158,7 +158,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 				fileContent = append(fileContent, []byte(line)...)
 
 				filetest.WriteString(t, temp, line)
-				reader.ReadToEnd(context.Background())
+				reader.ReadToEnd(t.Context())
 				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.Fingerprint)
 			}
 
@@ -174,7 +174,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			fileContent = append(fileContent, []byte(line)...)
 
 			filetest.WriteString(t, temp, line)
-			reader.ReadToEnd(context.Background())
+			reader.ReadToEnd(t.Context())
 			require.Equal(t, fingerprint.New(fileContent[:fpSizeUp]), reader.Fingerprint)
 
 			// Recreate the factory with a smaller fingerprint size
@@ -189,7 +189,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			fileContent = append(fileContent, []byte(line)...)
 
 			filetest.WriteString(t, temp, line)
-			reader.ReadToEnd(context.Background())
+			reader.ReadToEnd(t.Context())
 			require.Equal(t, fingerprint.New(fileContent[:fpSizeDown]), reader.Fingerprint)
 		})
 	}
@@ -223,14 +223,14 @@ func TestFlushPeriodEOF(t *testing.T) {
 	}()
 
 	// First ReadToEnd should not emit only the terminated token
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectToken(t, content[0:aContentLength])
 
 	// Advance time past the flush period
 	clock.Advance(2 * flushPeriod)
 
 	// Second ReadToEnd should emit the unterminated token because of flush timeout
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte{'b'})
 }
 
@@ -264,14 +264,14 @@ func TestUntermintedLongLogEntry(t *testing.T) {
 	assert.Equal(t, int64(0), r.Offset)
 
 	// First ReadToEnd should not emit anything as flush period hasn't expired
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectNoCalls(t)
 
 	// Advance time past the flush period to test behavior after timer is expired
 	clock.Advance(2 * flushPeriod)
 
 	// Second ReadToEnd should emit the full untruncated token
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectToken(t, content)
 
 	sink.ExpectNoCalls(t)
@@ -307,7 +307,7 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	assert.Equal(t, int64(0), r.Offset)
 
 	// First ReadToEnd should not emit anything as flush period hasn't expired
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectNoCalls(t)
 
 	// Advance time past the flush period to test behavior after timer is expired
@@ -319,14 +319,14 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	_, err = temp.WriteString(string(additionalContext)) // no newline
 	require.NoError(t, err)
 
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectNoCalls(t)
 
 	// Advance time past the flush period to test behavior after timer is expired
 	clock.Advance(2 * flushPeriod)
 
 	// Finally, since we haven't seen new data, flusher should emit the token
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	sink.ExpectToken(t, append(content, additionalContext...))
 
 	sink.ExpectNoCalls(t)
@@ -347,7 +347,7 @@ func BenchmarkFileRead(b *testing.B) {
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
 	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 		counter.Add(int64(len(tokens)))
 		return nil
 	})
@@ -360,7 +360,7 @@ func BenchmarkFileRead(b *testing.B) {
 		require.NoError(b, err)
 		reader, err := f.NewReader(file, fp)
 		require.NoError(b, err)
-		reader.ReadToEnd(context.Background())
+		reader.ReadToEnd(b.Context())
 		assert.EqualValues(b, (i+1)*101, counter.Load())
 		reader.Close()
 	}

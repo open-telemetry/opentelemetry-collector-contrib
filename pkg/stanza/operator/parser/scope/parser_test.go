@@ -4,7 +4,6 @@
 package scope
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -96,7 +95,7 @@ func TestScopeNameParser(t *testing.T) {
 			parser, err := tc.config.Build(set)
 			require.NoError(t, err)
 
-			err = parser.Process(context.Background(), tc.input)
+			err = parser.Process(t.Context(), tc.input)
 			if tc.expectErr {
 				require.Error(t, err)
 			}

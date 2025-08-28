@@ -5,7 +5,6 @@ package datadogreceiver
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -34,13 +33,13 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
-	err = ddr.Start(context.Background(), componenttest.NewNopHost())
+	err = ddr.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Server should start")
 
-	err = ddr.Shutdown(context.Background())
+	err = ddr.Shutdown(t.Context())
 	assert.NoError(t, err, "Server should stop")
 }
 
@@ -48,13 +47,13 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
-	err = ddr.Start(context.Background(), componenttest.NewNopHost())
+	err = ddr.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Server should start")
 
-	err = ddr.Shutdown(context.Background())
+	err = ddr.Shutdown(t.Context())
 	assert.NoError(t, err, "Server should stop")
 }
 
@@ -62,8 +61,7 @@ func TestDatadogServer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -75,6 +73,11 @@ func TestDatadogServer(t *testing.T) {
 
 	require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
 	t.Cleanup(func() {
+		// The test uses t.Parallel and the server should only be shutdown after all
+		// tests, so perform the shutdown inside t.Cleanup. Beware that this requires
+		// all connections to the server to be already closed when Shutdown(ctx) is called
+		// so it never checks the status of the context, since a t.Context
+		// is already canceled when functions in the t.Cleanup list are called.
 		require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
 	})
 
@@ -125,6 +128,11 @@ func TestDatadogServer(t *testing.T) {
 			)
 			require.NoError(t, err, "Must not error when creating request")
 
+			// Because tests are parallel, and the call to shutdown is happening on a t.Cleanup,
+			// we need to ensure the request does not use keep-alives so Shutdown(ctx) never
+			// checks the status of the context. See issue #42005.
+			req.Close = true
+
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Must not error performing request")
 
@@ -159,8 +167,7 @@ func TestDatadogResponse(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
-			ctx, cancel := context.WithCancel(context.Background())
-			t.Cleanup(cancel)
+			ctx := t.Context()
 
 			dd, err := newDataDogReceiver(
 				ctx,
@@ -171,9 +178,9 @@ func TestDatadogResponse(t *testing.T) {
 			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
 
 			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
-			t.Cleanup(func() {
+			defer func() {
 				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
-			})
+			}()
 
 			apiPayload := pb.TracerPayload{}
 			var reqBytes []byte
@@ -288,8 +295,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
-			ctx, cancel := context.WithCancel(context.Background())
-			t.Cleanup(cancel)
+			ctx := t.Context()
 
 			dd, err := newDataDogReceiver(
 				ctx,
@@ -302,14 +308,14 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 			dd.(*datadogReceiver).nextMetricsConsumer = tc.metricsConsumer
 
 			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
-			t.Cleanup(func() {
+			defer func() {
 				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
-			})
+			}()
 
 			req, err := http.NewRequest(
 				http.MethodPost,
 				fmt.Sprintf("http://%s/info", dd.(*datadogReceiver).address),
-				nil,
+				http.NoBody,
 			)
 			require.NoError(t, err, "Must not error when creating request")
 
@@ -329,8 +335,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -340,9 +345,9 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	metricsPayloadV1 := []byte(`{
@@ -395,8 +400,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -406,9 +410,9 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	metricsPayloadV2 := gogen.MetricPayload{
@@ -479,8 +483,7 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -490,9 +493,9 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	metricsPayloadV2 := []byte(`{
@@ -562,8 +565,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -573,9 +575,9 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	sketchPayload := gogen.SketchPayload{
@@ -653,8 +655,7 @@ func TestStats_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -664,9 +665,9 @@ func TestStats_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	clientStatsPayload := pb.ClientStatsPayload{
@@ -748,8 +749,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 
 	dd, err := newDataDogReceiver(
 		ctx,
@@ -759,9 +759,9 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	servicesPayload := []byte(`[

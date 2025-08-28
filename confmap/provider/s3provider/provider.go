@@ -52,7 +52,7 @@ func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newWithSettings)
 }
 
-func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
+func newWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{client: nil}
 }
 
