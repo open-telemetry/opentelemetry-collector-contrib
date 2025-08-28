@@ -169,6 +169,7 @@ extension/googleclientauthextension
 extension/headerssetterextension
 extension/healthcheckextension
 pkg/status
+internal/healthcheck
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling

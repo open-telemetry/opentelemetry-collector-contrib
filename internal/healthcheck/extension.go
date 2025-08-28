@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package healthcheckv2extension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
+package healthcheck // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck"
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/grpc"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/http"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -24,7 +24,7 @@ type eventSourcePair struct {
 	event  *componentstatus.Event
 }
 
-type healthCheckExtension struct {
+type HealthCheckExtension struct {
 	config        Config
 	telemetry     component.TelemetrySettings
 	aggregator    *status.Aggregator
@@ -35,16 +35,16 @@ type healthCheckExtension struct {
 }
 
 var (
-	_ component.Component                   = (*healthCheckExtension)(nil)
-	_ extensioncapabilities.ConfigWatcher   = (*healthCheckExtension)(nil)
-	_ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
+	_ component.Component                   = (*HealthCheckExtension)(nil)
+	_ extensioncapabilities.ConfigWatcher   = (*HealthCheckExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher = (*HealthCheckExtension)(nil)
 )
 
-func newExtension(
+func NewHealthCheckExtension(
 	ctx context.Context,
 	config Config,
 	set extension.Settings,
-) *healthCheckExtension {
+) *HealthCheckExtension {
 	var comps []component.Component
 
 	errPriority := status.PriorityPermanent
@@ -77,7 +77,7 @@ func newExtension(
 		comps = append(comps, httpServer)
 	}
 
-	hc := &healthCheckExtension{
+	hc := &HealthCheckExtension{
 		config:        config,
 		subcomponents: comps,
 		telemetry:     set.TelemetrySettings,
@@ -94,7 +94,7 @@ func newExtension(
 }
 
 // Start implements the component.Component interface.
-func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
+func (hc *HealthCheckExtension) Start(ctx context.Context, host component.Host) error {
 	hc.telemetry.Logger.Debug("Starting health check extension V2", zap.Any("config", hc.config))
 
 	hc.host = host
@@ -109,7 +109,7 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 }
 
 // Shutdown implements the component.Component interface.
-func (hc *healthCheckExtension) Shutdown(ctx context.Context) error {
+func (hc *HealthCheckExtension) Shutdown(ctx context.Context) error {
 	// Preemptively send the stopped event, so it can be exported before shutdown
 	componentstatus.ReportStatus(hc.host, componentstatus.NewEvent(componentstatus.StatusStopped))
 
@@ -125,7 +125,7 @@ func (hc *healthCheckExtension) Shutdown(ctx context.Context) error {
 }
 
 // ComponentStatusChanged implements the extension.StatusWatcher interface.
-func (hc *healthCheckExtension) ComponentStatusChanged(
+func (hc *HealthCheckExtension) ComponentStatusChanged(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
@@ -146,7 +146,7 @@ func (hc *healthCheckExtension) ComponentStatusChanged(
 }
 
 // NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
-func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
+func (hc *HealthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	var err error
 	for _, comp := range hc.subcomponents {
 		if cw, ok := comp.(extensioncapabilities.ConfigWatcher); ok {
@@ -157,17 +157,17 @@ func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.
 }
 
 // Ready implements the extension.PipelineWatcher interface.
-func (hc *healthCheckExtension) Ready() error {
+func (hc *HealthCheckExtension) Ready() error {
 	close(hc.readyCh)
 	return nil
 }
 
 // NotReady implements the extension.PipelineWatcher interface.
-func (*healthCheckExtension) NotReady() error {
+func (*HealthCheckExtension) NotReady() error {
 	return nil
 }
 
-func (hc *healthCheckExtension) eventLoop(ctx context.Context) {
+func (hc *HealthCheckExtension) eventLoop(ctx context.Context) {
 	// Record events with component.StatusStarting, but queue other events until
 	// PipelineWatcher.Ready is called. This prevents aggregate statuses from
 	// flapping between StatusStarting and StatusOK as components are started

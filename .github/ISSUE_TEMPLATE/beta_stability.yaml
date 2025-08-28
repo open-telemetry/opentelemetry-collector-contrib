@@ -142,6 +142,7 @@ body:
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
+      - internal/healthcheck
       - internal/k8sconfig
       - internal/kafka
       - internal/kubelet
