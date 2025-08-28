@@ -13,79 +13,79 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type WrappedTracesConnector struct {
+type wrappedTracesConnector struct {
 	consumer     consumer.Traces
 	failoverCore *tracesFailover
 }
 
-type WrappedMetricsConnector struct {
+type wrappedMetricsConnector struct {
 	consumer     consumer.Metrics
 	failoverCore *metricsFailover
 }
 
-type WrappedLogsConnector struct {
+type wrappedLogsConnector struct {
 	consumer     consumer.Logs
 	failoverCore *logsFailover
 }
 
-func (w *WrappedTracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (w *wrappedTracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return w.consumer.ConsumeTraces(ctx, td)
 }
 
-func (w *WrappedTracesConnector) Capabilities() consumer.Capabilities {
+func (w *wrappedTracesConnector) Capabilities() consumer.Capabilities {
 	return w.consumer.Capabilities()
 }
 
-func (w *WrappedTracesConnector) Start(ctx context.Context, host component.Host) error {
+func (w *wrappedTracesConnector) Start(ctx context.Context, host component.Host) error {
 	if starter, ok := w.consumer.(component.Component); ok {
 		return starter.Start(ctx, host)
 	}
 	return nil
 }
 
-func (w *WrappedMetricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (w *wrappedMetricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return w.consumer.ConsumeMetrics(ctx, md)
 }
 
-func (w *WrappedMetricsConnector) Capabilities() consumer.Capabilities {
+func (w *wrappedMetricsConnector) Capabilities() consumer.Capabilities {
 	return w.consumer.Capabilities()
 }
 
-func (w *WrappedMetricsConnector) Start(ctx context.Context, host component.Host) error {
+func (w *wrappedMetricsConnector) Start(ctx context.Context, host component.Host) error {
 	if starter, ok := w.consumer.(component.Component); ok {
 		return starter.Start(ctx, host)
 	}
 	return nil
 }
 
-func (w *WrappedLogsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (w *wrappedLogsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return w.consumer.ConsumeLogs(ctx, ld)
 }
 
-func (w *WrappedLogsConnector) Capabilities() consumer.Capabilities {
+func (w *wrappedLogsConnector) Capabilities() consumer.Capabilities {
 	return w.consumer.Capabilities()
 }
 
-func (w *WrappedLogsConnector) Start(ctx context.Context, host component.Host) error {
+func (w *wrappedLogsConnector) Start(ctx context.Context, host component.Host) error {
 	if starter, ok := w.consumer.(component.Component); ok {
 		return starter.Start(ctx, host)
 	}
 	return nil
 }
 
-func (w *WrappedTracesConnector) GetFailoverRouter() *tracesRouter {
+func (w *wrappedTracesConnector) GetFailoverRouter() *tracesRouter {
 	return w.failoverCore.failover
 }
 
-func (w *WrappedMetricsConnector) GetFailoverRouter() *metricsRouter {
+func (w *wrappedMetricsConnector) GetFailoverRouter() *metricsRouter {
 	return w.failoverCore.failover
 }
 
-func (w *WrappedLogsConnector) GetFailoverRouter() *logsRouter {
+func (w *wrappedLogsConnector) GetFailoverRouter() *logsRouter {
 	return w.failoverCore.failover
 }
 
-func (w *WrappedTracesConnector) Shutdown(ctx context.Context) error {
+func (w *wrappedTracesConnector) Shutdown(ctx context.Context) error {
 	var err error
 	if shutdowner, ok := w.consumer.(interface{ Shutdown(context.Context) error }); ok {
 		err = shutdowner.Shutdown(ctx)
@@ -94,7 +94,7 @@ func (w *WrappedTracesConnector) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (w *WrappedMetricsConnector) Shutdown(ctx context.Context) error {
+func (w *wrappedMetricsConnector) Shutdown(ctx context.Context) error {
 	var err error
 	if shutdowner, ok := w.consumer.(interface{ Shutdown(context.Context) error }); ok {
 		err = shutdowner.Shutdown(ctx)
@@ -103,7 +103,7 @@ func (w *WrappedMetricsConnector) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (w *WrappedLogsConnector) Shutdown(ctx context.Context) error {
+func (w *wrappedLogsConnector) Shutdown(ctx context.Context) error {
 	var err error
 	if shutdowner, ok := w.consumer.(interface{ Shutdown(context.Context) error }); ok {
 		err = shutdowner.Shutdown(ctx)
@@ -112,22 +112,22 @@ func (w *WrappedLogsConnector) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func NewWrappedTracesConnector(consumer consumer.Traces, failoverCore *tracesFailover) *WrappedTracesConnector {
-	return &WrappedTracesConnector{
+func NewWrappedTracesConnector(consumer consumer.Traces, failoverCore *tracesFailover) *wrappedTracesConnector {
+	return &wrappedTracesConnector{
 		consumer:     consumer,
 		failoverCore: failoverCore,
 	}
 }
 
-func NewWrappedMetricsConnector(consumer consumer.Metrics, failoverCore *metricsFailover) *WrappedMetricsConnector {
-	return &WrappedMetricsConnector{
+func NewWrappedMetricsConnector(consumer consumer.Metrics, failoverCore *metricsFailover) *wrappedMetricsConnector {
+	return &wrappedMetricsConnector{
 		consumer:     consumer,
 		failoverCore: failoverCore,
 	}
 }
 
-func NewWrappedLogsConnector(consumer consumer.Logs, failoverCore *logsFailover) *WrappedLogsConnector {
-	return &WrappedLogsConnector{
+func NewWrappedLogsConnector(consumer consumer.Logs, failoverCore *logsFailover) *wrappedLogsConnector {
+	return &wrappedLogsConnector{
 		consumer:     consumer,
 		failoverCore: failoverCore,
 	}
