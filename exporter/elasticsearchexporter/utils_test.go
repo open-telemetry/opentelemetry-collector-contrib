@@ -59,8 +59,8 @@ func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrde
 	require.Len(t, actualItems, len(expectedItems), "want %d items, got %d", len(expectedItems), len(actualItems))
 	for i, want := range expectedItems {
 		got := actualItems[i]
-		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
-		assert.JSONEq(t, string(want.Document), string(got.Document), "item %d document", i)
+		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action got %s", i, got.Action)
+		assert.JSONEq(t, string(want.Document), string(got.Document), "item %d document got %s", i, got.Document)
 	}
 }
 
