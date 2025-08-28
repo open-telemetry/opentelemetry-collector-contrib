@@ -109,7 +109,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 		)
 		if ferr != nil {
-			return err
+			return ferr
 		}
 		e.producer = kafkaclient.NewFranzSyncProducer(producer,
 			e.cfg.IncludeMetadataKeys,
