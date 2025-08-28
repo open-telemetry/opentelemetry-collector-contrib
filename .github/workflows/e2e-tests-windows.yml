@@ -11,6 +11,7 @@ on:
   pull_request:
     paths-ignore:
       - "**/README.md"
+    types: [opened, synchronize, reopened, labeled]
   merge_group:
 
 permissions:
