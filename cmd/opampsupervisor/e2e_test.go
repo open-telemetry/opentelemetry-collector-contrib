@@ -177,7 +177,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		if !didShutdown.Load() {
 			waitForSupervisorConnection(connectedChan, false)
 			t.Log("Shutting down")
-			err := s.Stop(context.Background())
+			err := s.Stop(t.Context())
 			assert.NoError(t, err)
 			httpSrv.Close()
 			// Ensure that the connectedChan is drained and closed.
@@ -194,7 +194,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			require.Fail(t, "Agent connection has not been established")
 		}
 
-		err = agentConn.Load().(types.Connection).Send(context.Background(), msg)
+		err = agentConn.Load().(types.Connection).Send(t.Context(), msg)
 		require.NoError(t, err)
 	}
 	t.Cleanup(func() {
