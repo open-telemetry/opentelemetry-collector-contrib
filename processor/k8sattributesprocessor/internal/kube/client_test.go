@@ -986,7 +986,8 @@ func TestExtractionRules(t *testing.T) {
 			name:  "service-name",
 			rules: serviceRules,
 			attributes: map[string]string{
-				"service.name": "pi-statefulset",
+				"service.name":      "pi-statefulset",
+				"service.namespace": "ns1",
 			},
 		},
 		{
@@ -997,8 +998,9 @@ func TestExtractionRules(t *testing.T) {
 				"app.kubernetes.io/version": "label-version",
 			},
 			attributes: map[string]string{
-				"service.name":    "label-service",
-				"service.version": "label-version",
+				"service.name":      "label-service",
+				"service.version":   "label-version",
+				"service.namespace": "ns1",
 			},
 		},
 		{
@@ -1010,8 +1012,9 @@ func TestExtractionRules(t *testing.T) {
 				"app.kubernetes.io/version":  "label-version",
 			},
 			attributes: map[string]string{
-				"service.name":    "instance-service",
-				"service.version": "label-version",
+				"service.name":      "instance-service",
+				"service.version":   "label-version",
+				"service.namespace": "ns1",
 			},
 		},
 		{
