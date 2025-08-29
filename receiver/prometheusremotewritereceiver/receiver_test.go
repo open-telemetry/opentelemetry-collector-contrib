@@ -30,7 +30,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
 
@@ -282,6 +284,7 @@ func TestTranslateV2(t *testing.T) {
 				metric.SetName("test_metric")
 				metric.SetUnit("")
 				metric.SetDescription("")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
 
 				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -315,6 +318,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics1.SetName("test_metric1")
 				metrics1.SetUnit("")
 				metrics1.SetDescription("")
+				metrics1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -342,6 +346,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics2.SetName("test_metric1")
 				metrics2.SetUnit("")
 				metrics2.SetDescription("")
+				metrics2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
@@ -443,6 +448,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics1.SetName("test_metric")
 				metrics1.SetUnit("")
 				metrics1.SetDescription("")
+				metrics1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -459,6 +465,7 @@ func TestTranslateV2(t *testing.T) {
 				cbneMetric.SetName("test_metric")
 				cbneMetric.SetUnit("")
 				cbneMetric.SetDescription("")
+				// cbneMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				hist := cbneMetric.SetEmptyHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -476,7 +483,8 @@ func TestTranslateV2(t *testing.T) {
 				metrics2 := sm2.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric")
 				metrics2.SetUnit("")
-				metrics1.SetDescription("")
+				metrics2.SetDescription("")
+				metrics2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
@@ -488,6 +496,7 @@ func TestTranslateV2(t *testing.T) {
 				expMetric.SetName("test_metric")
 				expMetric.SetUnit("")
 				expMetric.SetDescription("")
+				// expMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				expHist := expMetric.SetEmptyExponentialHistogram()
 				expHist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -571,6 +580,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics1.SetName("test_metric")
 				metrics1.SetUnit("seconds")
 				metrics1.SetDescription("longer description")
+				metrics1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -586,6 +596,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics2.SetName("test_metric")
 				metrics2.SetUnit("milliseconds")
 				metrics2.SetDescription("small desc")
+				metrics2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
@@ -654,6 +665,7 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("normal_metric")
 				m.SetUnit("")
 				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
 				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(1.0)
@@ -731,6 +743,7 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("test_metric")
 				m.SetUnit("")
 				m.SetDescription("")
+				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -814,6 +827,7 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("test_metric")
 				m.SetUnit("")
 				m.SetDescription("")
+				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -876,6 +890,7 @@ func TestTranslateV2(t *testing.T) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("test_metric")
 				m.SetUnit("")
+				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -965,6 +980,7 @@ func TestTranslateV2(t *testing.T) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("test_metric")
 				m.SetUnit("")
+				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1378,6 +1394,7 @@ func TestTranslateV2(t *testing.T) {
 				m2.SetName("test_mixed_histogram")
 				m2.SetUnit("")
 				m2.SetDescription("")
+				// m2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				hist2 := m2.SetEmptyExponentialHistogram()
 				hist2.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -1408,6 +1425,7 @@ func TestTranslateV2(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
 			assert.Equal(t, tc.expectedStats, stats)
+			assert.Equal(t, buildMetaDataMapByID(tc.expectedMetrics), buildMetaDataMapByID(metrics))
 		})
 	}
 }
@@ -1775,4 +1793,29 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+}
+
+func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
+	result := make(map[string]map[string]any)
+	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
+		rm := ms.ResourceMetrics().At(i)
+		resourceID := identity.OfResource(rm.Resource()).String()
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			scopeName := sm.Scope().Name()
+			scopeVersion := sm.Scope().Version()
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				metricID := fmt.Sprintf("%s:%s:%s:%s:%s",
+					resourceID,
+					scopeName,
+					scopeVersion,
+					m.Name(),
+					m.Unit(),
+				)
+				result[metricID] = m.Metadata().AsRaw()
+			}
+		}
+	}
+	return result
 }
