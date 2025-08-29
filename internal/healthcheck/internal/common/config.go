@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
 
 import "time"
 
