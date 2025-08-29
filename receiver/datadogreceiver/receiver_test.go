@@ -128,6 +128,10 @@ func TestDatadogServer(t *testing.T) {
 			)
 			require.NoError(t, err, "Must not error when creating request")
 
+			// Because tests are parallel, and the call to shutdown is happening on a t.Cleanup,
+			// minimize the duration of connections to speed up the shutdown in the test cleanup.
+			req.Close = true
+
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Must not error performing request")
 
