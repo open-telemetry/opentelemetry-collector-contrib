@@ -3,8 +3,5 @@
     "mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"],
     "runArgs": [
         "--privileged"
-      ],
-      "features": {
-        "docker-in-docker": "latest"
-    }
+      ]
 }
