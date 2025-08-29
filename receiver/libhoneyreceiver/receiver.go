@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/component"
@@ -27,7 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
@@ -253,6 +251,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
+		// The custom UnmarshalMsgpack will handle timestamp normalization
 		decoder := msgpack.NewDecoder(bytes.NewReader(body))
 		decoder.UseLooseInterfaceDecoding(true)
 		err = decoder.Decode(&libhoneyevents)
@@ -261,27 +260,9 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
 			return
 		}
-		// Post-process msgpack events to ensure timestamps are set
-		for i := range libhoneyevents {
-			if libhoneyevents[i].MsgPackTimestamp == nil {
-				if libhoneyevents[i].Time != "" {
-					// Parse the time string and set MsgPackTimestamp
-					propertime := eventtime.GetEventTime(libhoneyevents[i].Time)
-					libhoneyevents[i].MsgPackTimestamp = &propertime
-				} else {
-					// No time field, use current time
-					tnow := time.Now()
-					libhoneyevents[i].MsgPackTimestamp = &tnow
-					libhoneyevents[i].Time = eventtime.GetEventTimeDefaultString()
-				}
-			}
-		}
 		if len(libhoneyevents) > 0 {
-			if libhoneyevents[0].MsgPackTimestamp != nil {
-				r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
-			} else {
-				r.settings.Logger.Debug("Decoding with msgpack worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
-			}
+			// MsgPackTimestamp is guaranteed to be non-nil after UnmarshalMsgpack
+			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case encoder.JSONContentType:
