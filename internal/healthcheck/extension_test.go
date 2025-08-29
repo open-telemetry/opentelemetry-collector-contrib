@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package healthcheckv2extension
+package healthcheck
 
 import (
 	"fmt"
@@ -27,11 +27,11 @@ import (
 )
 
 func TestComponentStatus(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
+	cfg := NewDefaultConfig().(*Config)
 	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
-	ext := newExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
@@ -104,13 +104,13 @@ func TestNotifyConfig(t *testing.T) {
 
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
-	cfg := createDefaultConfig().(*Config)
+	cfg := NewDefaultConfig().(*Config)
 	cfg.UseV2 = true
 	cfg.HTTPConfig.Endpoint = endpoint
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
-	ext := newExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ext.Shutdown(t.Context())) })
@@ -143,11 +143,11 @@ func TestShutdown(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, l.Close()) })
 
-		cfg := createDefaultConfig().(*Config)
+		cfg := NewDefaultConfig().(*Config)
 		cfg.UseV2 = true
 		cfg.HTTPConfig.Endpoint = endpoint
 
-		ext := newExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+		ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 		// Get address already in use here
 		require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
