@@ -64,7 +64,7 @@ func TestLRUSetLifeTime(t *testing.T) {
 		require.NoError(t, err)
 		return !val
 	}, lifetime*2, lifetime/10)
-	assert.GreaterOrEqual(t, time.Now().Sub(timeSet), lifetime)
+	assert.GreaterOrEqual(t, time.Since(timeSet), lifetime)
 }
 
 func BenchmarkLRUSetCheck(b *testing.B) {
