@@ -401,15 +401,15 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	settings := processortest.NewNopSettings(metadata.Type)
 	reader := sdkmetric.NewManualReader()
 	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	tsp, err := newTracesProcessor(context.Background(), settings, msp, cfg)
+	tsp, err := newTracesProcessor(t.Context(), settings, msp, cfg)
 	require.NoError(t, err)
 
 	// speed up the test a bit
 	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 5 * time.Millisecond
 
-	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, tsp.Shutdown(context.Background()))
+		require.NoError(t, tsp.Shutdown(t.Context()))
 	}()
 
 	var expectedSpans atomic.Int64
@@ -436,7 +436,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// until the time must have passed.
 			for time.Since(start) < 2*cfg.DecisionWait {
 				expectedSpans.Add(int64(batch.SpanCount()))
-				err := tsp.ConsumeTraces(context.Background(), batch)
+				err := tsp.ConsumeTraces(t.Context(), batch)
 				if err != nil {
 					errCh <- err
 				}
