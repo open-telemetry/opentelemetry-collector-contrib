@@ -43,6 +43,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/goleak"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -260,6 +261,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -337,6 +339,7 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 }
 
 func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -398,6 +401,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 }
 
 func TestSupervisorStartsCollectorWithNoPipelineConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -448,6 +452,7 @@ func TestSupervisorStartsCollectorWithNoPipelineConfig(t *testing.T) {
 }
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -512,6 +517,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 }
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -584,6 +590,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	storageDir := t.TempDir()
 
 	// create remote config to check agent's health
@@ -675,6 +682,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 }
 
 func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
 
 	configuredChan := make(chan struct{})
@@ -759,6 +767,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 }
 
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -860,6 +869,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 }
 
 func TestSupervisorConfiguresCapabilities(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	var capabilities atomic.Uint64
 	server := newOpAMPServer(
 		t,
@@ -887,6 +897,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	t.Skip("broken test: http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42108")
 	tests := []struct {
 		name     string
@@ -997,6 +1008,7 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 }
 
 func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	agentDescription := atomic.Value{}
 	availableComponents := atomic.Value{}
 
@@ -1095,6 +1107,7 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 }
 
 func TestSupervisorReportsEffectiveConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	var agentConfig atomic.Value
 	server := newOpAMPServer(
 		t,
@@ -1175,6 +1188,7 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 }
 
 func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	// Load the Supervisor config so we can get the location of
 	// the Collector that will be run.
 	var cfg config.Supervisor
@@ -1382,6 +1396,7 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 }
 
 func TestSupervisorRestartCommand(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -1490,6 +1505,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 }
 
 func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	var connectedToNewServer atomic.Bool
 	initialServer := newOpAMPServer(
 		t,
@@ -1538,6 +1554,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 }
 
 func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	connected := atomic.Bool{}
 	initialServer := newOpAMPServer(
 		t,
@@ -1558,6 +1575,7 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 }
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -1667,6 +1685,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 }
 
 func TestSupervisorPersistsInstanceID(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	// Tests shutting down and starting up a new supervisor will
 	// persist and re-use the same instance ID.
 	storageDir := t.TempDir()
@@ -1741,6 +1760,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 }
 
 func TestSupervisorPersistsNewInstanceID(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	// Tests that an agent ID that is given from the server to the agent in an AgentIdentification message
 	// is properly persisted.
 	storageDir := t.TempDir()
@@ -1824,6 +1844,7 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 }
 
 func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	// Tests that the agent logs and effective.yaml are written under the storage directory.
 	storageDir := t.TempDir()
 
@@ -1854,6 +1875,7 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 }
 
 func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	agentCfgChan := make(chan string, 1)
 	var healthReport atomic.Value
 	var remoteConfigStatus atomic.Value
@@ -1970,6 +1992,7 @@ type logEntry struct {
 }
 
 func TestSupervisorLogging(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	// Tests that supervisor only logs at Info level and above && that collector logs passthrough and are present in supervisor log file
 	if runtime.GOOS == "windows" {
 		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
@@ -2049,6 +2072,7 @@ func TestSupervisorLogging(t *testing.T) {
 }
 
 func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	modes := getTestModes()
 
 	for _, mode := range modes {
@@ -2227,6 +2251,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 }
 
 func TestSupervisorOpAmpServerPort(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	var agentConfig atomic.Value
 	server := newOpAMPServer(
 		t,
@@ -2292,6 +2317,7 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 }
 
 func TestSupervisorHealthCheckServer(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -2334,6 +2360,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 }
 
 func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	healthcheckPort, err := findRandomPort()
 	require.NoError(t, err)
 
@@ -2385,6 +2412,7 @@ func findRandomPort() (int, error) {
 }
 
 func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	if runtime.GOOS == "windows" {
 		t.Skip("Leaks a goroutine on Windows: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42352")
 	}
