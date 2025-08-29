@@ -25,7 +25,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 6, res.Attributes().Len())
 			case "none_set":
@@ -51,7 +51,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, 11, val.Int())
 			}
 			val, ok = res.Attributes().Get("sqlserver.computer.name")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "sqlserver.computer.name-val", val.Str())
 			}
@@ -61,7 +61,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "sqlserver.database.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("sqlserver.instance.name")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "sqlserver.instance.name-val", val.Str())
 			}
