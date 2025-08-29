@@ -50,7 +50,6 @@ exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
 exporter/mezmoexporter exporter/mezmo
-exporter/opencensusexporter exporter/opencensus
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
@@ -263,7 +262,6 @@ receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
 receiver/ntpreceiver receiver/ntp
-receiver/opencensusreceiver receiver/opencensus
 receiver/oracledbreceiver receiver/oracledb
 receiver/osqueryreceiver receiver/osquery
 receiver/otelarrowreceiver receiver/otelarrow

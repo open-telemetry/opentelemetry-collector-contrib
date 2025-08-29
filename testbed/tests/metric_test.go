@@ -38,15 +38,6 @@ func TestMetric10kDPS(t *testing.T) {
 			},
 		},
 		{
-			name:     "OpenCensus",
-			sender:   datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 85,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
 			name:     "OTLP",
 			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),

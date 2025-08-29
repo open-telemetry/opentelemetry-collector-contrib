@@ -39,23 +39,6 @@ func TestMain(m *testing.M) {
 	testbed.DoTestMain(m, contribPerfResultsSummary)
 }
 
-func TestStabilityTracesOpenCensus(t *testing.T) {
-	scenarios.Scenario10kItemsPerSecond(
-		t,
-		datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-		testbed.ResourceSpec{
-			ExpectedMaxCPU:      39,
-			ExpectedMaxRAM:      90,
-			ResourceCheckPeriod: resourceCheckPeriod,
-		},
-		contribPerfResultsSummary,
-		processorsConfig,
-		nil,
-		nil,
-	)
-}
-
 func TestStabilityTracesOTLP(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
