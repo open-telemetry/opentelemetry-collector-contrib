@@ -47,8 +47,6 @@ with a metric name of `redis.cpu.time` and a units value of `s` (seconds).
 
 ## Configuration
 
-> :information_source: This receiver is in beta and configuration fields are subject to change.
-
 The following settings are required:
 
 - `endpoint` (no default): The hostname and port of the Redis instance,

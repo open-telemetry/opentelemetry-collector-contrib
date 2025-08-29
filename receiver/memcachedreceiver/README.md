@@ -23,8 +23,6 @@ https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
 ## Configuration
 
-> :information_source: This receiver is in beta and configuration fields are subject to change.
-
 The following settings are required:
 
 - `endpoint` (default: `localhost:11211`): The hostname/IP address and port or, unix socket file path of the memcached instance

@@ -18,8 +18,6 @@
 
 This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
-
 ## Prerequisites
 
 See PostgreSQL documentation for [supported versions](https://www.postgresql.org/support/versioning).

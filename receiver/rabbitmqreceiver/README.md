@@ -16,7 +16,6 @@
 
 This receiver fetches stats from a RabbitMQ node using the [RabbitMQ Management Plugin](https://www.rabbitmq.com/management.html).
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 ## Prerequisites
 
 This receiver supports RabbitMQ versions `3.8` and `3.9`.
