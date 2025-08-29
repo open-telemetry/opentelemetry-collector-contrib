@@ -85,6 +85,7 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
+- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Christos Markou](https://github.com/ChrsMark), Elastic
@@ -98,7 +99,6 @@ For more information about the approver role, see the [community repository](htt
 
 ### Triagers
 
-- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
