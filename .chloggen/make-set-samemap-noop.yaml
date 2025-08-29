@@ -4,10 +4,10 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: Fix performance regression caused by copying pcommon.Map in a few OTTL functions
+component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: Fix performance regression by making `ctxutil.SetMap` noop when maps are equals.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42350]
