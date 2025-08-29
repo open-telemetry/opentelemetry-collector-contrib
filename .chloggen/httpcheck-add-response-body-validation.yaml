@@ -1,0 +1,8 @@
+change_type: enhancement
+component: httpcheckreceiver
+note: Add response body validation
+issues: [41325]
+subtext: |
+  The httpcheckreceiver now supports validating the response body using a few approaches.
+  String matching, JSON path matching, size ranges, and regex matching are supported.
+change_logs: [user]
