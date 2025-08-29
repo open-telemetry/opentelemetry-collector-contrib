@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.237.0
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.61.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/component v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componentstatus v0.133.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componenttest v0.133.1-0.20250828135334-2b4ab2db4b08
@@ -69,7 +69,7 @@ require (
 	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 )
 
 retract (

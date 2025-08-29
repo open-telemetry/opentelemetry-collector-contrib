@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.133.0
 	github.com/prometheus/common v0.65.0
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/component v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componenttest v0.133.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/config/configauth v0.133.1-0.20250828135334-2b4ab2db4b08

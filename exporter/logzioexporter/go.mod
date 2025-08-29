@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/component v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componenttest v0.133.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/config/configcompression v1.39.1-0.20250828135334-2b4ab2db4b08

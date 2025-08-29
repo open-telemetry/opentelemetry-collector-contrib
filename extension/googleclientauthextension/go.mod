@@ -6,7 +6,7 @@ exclude github.com/knadh/koanf v1.5.0
 
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.53.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/component v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componenttest v0.133.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/confmap v1.39.1-0.20250828135334-2b4ab2db4b08
@@ -63,6 +63,6 @@ require (
 	google.golang.org/api v0.234.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/common v0.65.0
 	github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/component v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componenttest v0.133.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/config/confighttp v0.133.1-0.20250828135334-2b4ab2db4b08

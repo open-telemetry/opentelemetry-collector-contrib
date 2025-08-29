@@ -7,7 +7,7 @@ require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/gobwas/glob v0.2.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/confmap v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

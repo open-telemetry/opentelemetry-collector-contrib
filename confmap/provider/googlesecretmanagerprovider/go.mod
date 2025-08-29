@@ -5,7 +5,7 @@ go 1.24
 require (
 	cloud.google.com/go/secretmanager v1.15.0
 	github.com/googleapis/gax-go/v2 v2.15.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/confmap v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.75.0
