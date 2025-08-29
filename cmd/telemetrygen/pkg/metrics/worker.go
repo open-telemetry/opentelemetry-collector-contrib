@@ -33,6 +33,9 @@ type worker struct {
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
 	clock                  Clock                        // clock
+	batchSize              int                          // number of metrics to batch before flushing
+	metricBuffer           []metricdata.ResourceMetrics // buffer for batching metrics
+	bufferMutex            sync.Mutex                   // mutex for buffer access
 }
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
@@ -85,7 +88,7 @@ var histogramBucketSamples = []struct {
 	},
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *timeBox) {
+func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *timeBox) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	startTime := w.clock.Now()
@@ -172,9 +175,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
 		}
 
-		if err := exporter.Export(context.Background(), &rm); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
-		}
+		// Always use batching (if batch size is 1, it's effectively direct export)
+		w.addToBuffer(rm, exporter)
 
 		i++
 		if w.numMetrics != 0 && i >= int64(w.numMetrics) {
@@ -182,6 +184,40 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		}
 	}
 
+	w.flushBuffer(exporter)
+
 	w.logger.Info("metrics generated", zap.Int64("metrics", i))
 	w.wg.Done()
+}
+
+func (w *worker) addToBuffer(rm metricdata.ResourceMetrics, exporter sdkmetric.Exporter) {
+	w.bufferMutex.Lock()
+	defer w.bufferMutex.Unlock()
+
+	w.metricBuffer = append(w.metricBuffer, rm)
+
+	if len(w.metricBuffer) >= w.batchSize {
+		w.flushBuffer(exporter)
+	}
+}
+
+func (w *worker) flushBuffer(exporter sdkmetric.Exporter) {
+	if len(w.metricBuffer) == 0 {
+		return
+	}
+
+	merged := w.metricBuffer[0]
+	for i := 1; i < len(w.metricBuffer); i++ {
+		for j := 0; j < len(w.metricBuffer[i].ScopeMetrics); j++ {
+			merged.ScopeMetrics = append(merged.ScopeMetrics, w.metricBuffer[i].ScopeMetrics[j])
+		}
+	}
+
+	if err := exporter.Export(context.Background(), &merged); err != nil {
+		w.logger.Error("failed to export batch", zap.Error(err), zap.Int("count", len(w.metricBuffer)))
+	} else {
+		w.logger.Debug("exported batch", zap.Int("count", len(w.metricBuffer)))
+	}
+
+	w.metricBuffer = w.metricBuffer[:0]
 }

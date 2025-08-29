@@ -82,6 +82,9 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
 			clock:                  &realClock{},
+			batchSize:              c.BatchSize,
+			metricBuffer:           make([]metricdata.ResourceMetrics, 0),
+			bufferMutex:            sync.Mutex{},
 		}
 		exp, err := expF()
 		if err != nil {

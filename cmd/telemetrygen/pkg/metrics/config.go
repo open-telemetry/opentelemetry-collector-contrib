@@ -25,6 +25,8 @@ type Config struct {
 	TraceID                 string
 	EnforceUniqueTimeseries bool
 	UniqueTimelimit         time.Duration
+	BatchSize               int
+	Batch                   bool
 }
 
 // NewConfig creates a new Config with default values.
@@ -50,6 +52,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
 	fs.BoolVar(&c.EnforceUniqueTimeseries, "unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
 	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation, timeseries generated within this time will be unique")
+	fs.IntVar(&c.BatchSize, "batch-size", c.BatchSize, "Number of metrics to batch before flushing")
+	fs.BoolVar(&c.Batch, "batch", c.Batch, "Enable batching of metrics")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -72,6 +76,8 @@ func (c *Config) SetDefaults() {
 
 	c.TraceID = ""
 	c.SpanID = ""
+	c.BatchSize = 1
+	c.Batch = false
 }
 
 // Validate validates the test scenario parameters.
@@ -90,6 +96,11 @@ func (c *Config) Validate() error {
 		if err := common.ValidateSpanID(c.SpanID); err != nil {
 			return err
 		}
+	}
+
+	// If batching is enabled but no batch size specified, use default 100
+	if c.Batch && c.BatchSize == 1 {
+		c.BatchSize = 100
 	}
 
 	return nil
