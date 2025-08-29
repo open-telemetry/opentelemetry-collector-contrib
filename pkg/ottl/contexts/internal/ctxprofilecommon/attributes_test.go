@@ -30,6 +30,10 @@ func (m *mockAttributeContext) GetProfilesDictionary() pprofile.ProfilesDictiona
 	return m.dictionary
 }
 
+func mockAttributeSource(ctx *mockAttributeContext) (pprofile.ProfilesDictionary, ProfileAttributable) {
+	return ctx.dictionary, ctx
+}
+
 func TestAccessAttributes_Getter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
@@ -49,7 +53,7 @@ func TestAccessAttributes_Getter(t *testing.T) {
 		dictionary: dict,
 	}
 
-	getSetter := AccessAttributes[*mockAttributeContext]()
+	getSetter := AccessAttributes[*mockAttributeContext](mockAttributeSource)
 
 	got, err := getSetter.Getter(t.Context(), ctx)
 	assert.NoError(t, err)
@@ -76,7 +80,7 @@ func TestAccessAttributes_Setter(t *testing.T) {
 		dictionary: dict,
 	}
 
-	getSetter := AccessAttributes[*mockAttributeContext]()
+	getSetter := AccessAttributes[*mockAttributeContext](mockAttributeSource)
 
 	// Prepare map to set
 	m := pcommon.NewMap()
@@ -113,7 +117,7 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 		dictionary: dict,
 	}
 
-	getSetter := AccessAttributes[*mockAttributeContext]()
+	getSetter := AccessAttributes[*mockAttributeContext](mockAttributeSource)
 
 	// Pass a value that is not a ctxutil.Map
 	err := getSetter.Setter(t.Context(), ctx, "not_a_map")
@@ -142,7 +146,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 				},
 			},
 		}
-		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		got, err := getSetter.Getter(t.Context(), ctx)
 		assert.NoError(t, err)
 		assert.Nil(t, got)
@@ -156,7 +160,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 				},
 			},
 		}
-		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		got, err := getSetter.Getter(t.Context(), ctx)
 		assert.NoError(t, err)
 		assert.Equal(t, "bar", got)
@@ -185,7 +189,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 				},
 			},
 		}
-		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, "value1")
 		assert.NoError(t, err)
 	})
@@ -198,7 +202,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 				},
 			},
 		}
-		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, "bazinga")
 		assert.NoError(t, err)
 	})
@@ -214,7 +218,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 				},
 			},
 		}
-		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys())
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, 42)
 		assert.NoError(t, err)
 		lenAttrsAfter := ctx.AttributeIndices().Len()
