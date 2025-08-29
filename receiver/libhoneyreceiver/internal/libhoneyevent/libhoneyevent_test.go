@@ -681,11 +681,11 @@ func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			
+
 			// The key assertion: MsgPackTimestamp should never be nil after unmarshalling
 			if tt.expectNonNilTimestamp {
 				assert.NotNil(t, event.MsgPackTimestamp, "MsgPackTimestamp should never be nil after UnmarshalMsgpack")
-				
+
 				// Additional checks
 				if event.MsgPackTimestamp != nil && !event.MsgPackTimestamp.IsZero() {
 					// If we have a valid timestamp, Time string should also be set

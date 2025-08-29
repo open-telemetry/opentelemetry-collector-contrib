@@ -103,7 +103,7 @@ func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
 		Time             string         `msgpack:"-"` // Ignore during msgpack unmarshal
 		Data             map[string]any `msgpack:"data"`
 	}
-	
+
 	var tmpEvent tempEvent
 	// First unmarshal into the temp struct
 	decoder := msgpack.NewDecoder(bytes.NewReader(data))
@@ -117,7 +117,7 @@ func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
 	tmp.Samplerate = tmpEvent.Samplerate
 	tmp.MsgPackTimestamp = tmpEvent.MsgPackTimestamp
 	tmp.Data = tmpEvent.Data
-	
+
 	// Check if Time field exists in Data and extract it
 	if timeStr, ok := tmpEvent.Data["time"].(string); ok {
 		tmp.Time = timeStr
