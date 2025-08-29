@@ -66,7 +66,6 @@ body:
       - exporter/logicmonitor
       - exporter/logzio
       - exporter/mezmo
-      - exporter/opencensus
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -140,6 +139,7 @@ body:
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
+      - internal/healthcheck
       - internal/k8sconfig
       - internal/kafka
       - internal/kubelet
@@ -283,7 +283,6 @@ body:
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
-      - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
       - receiver/otelarrow
