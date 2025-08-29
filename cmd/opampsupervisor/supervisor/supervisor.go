@@ -679,7 +679,6 @@ func (s *Supervisor) startOpAMPClient() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		Capabilities: s.config.Capabilities.SupportedCapabilities(),
 	}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	if err := s.opampClient.SetAgentDescription(ad); err != nil {
@@ -694,6 +693,11 @@ func (s *Supervisor) startOpAMPClient() error {
 		if err := s.opampClient.SetAvailableComponents(ac); err != nil {
 			return err
 		}
+	}
+
+	supportedCapabilities := s.config.Capabilities.SupportedCapabilities()
+	if err := s.opampClient.SetCapabilities(&supportedCapabilities); err != nil {
+		return err
 	}
 
 	s.telemetrySettings.Logger.Debug("Starting OpAMP client...")

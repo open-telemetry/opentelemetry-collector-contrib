@@ -44,8 +44,10 @@ type Config struct {
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
-	ResourceToTelemetrySettings resourcetotelemetry.Settings       `mapstructure:"resource_to_telemetry_conversion"`
-	WAL                         configoptional.Optional[WALConfig] `mapstructure:"wal"`
+	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+
+	// WAL enables persisting metrics to a write-ahead-log before sending to the remote storage.
+	WAL configoptional.Optional[WALConfig] `mapstructure:"wal"`
 
 	// TargetInfo allows customizing the target_info metric
 	TargetInfo TargetInfo `mapstructure:"target_info,omitempty"`
