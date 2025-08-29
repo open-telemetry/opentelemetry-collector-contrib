@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
+	"fmt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -53,7 +53,7 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	e.marshaler = m
-
+	fmt.Println("e.config.Connection.Endpoint", e.config)
 	dialConfig := publisher.DialConfig{
 		DialConfig: mqtt.DialConfig{
 			BrokerURLs:                 []string{e.config.Connection.Endpoint},
@@ -73,7 +73,7 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 		Retain:                     e.config.Retain,
 		PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
 	}
-
+	
 	tlsConfig, err := e.tlsFactory(ctx)
 	if err != nil {
 		return err
@@ -81,9 +81,12 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	if tlsConfig != nil {
 		dialConfig.TLS = tlsConfig
 	}
-
+	
 	e.settings.Logger.Info("Establishing initial connection to MQTT broker")
+	
+
 	p, err := e.publisherFactory(dialConfig)
+	fmt.Println("e.tlsFactorysdfsadf sdf", e.tlsFactory)
 	e.publisher = p
 
 	if err != nil {

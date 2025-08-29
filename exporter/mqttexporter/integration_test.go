@@ -32,7 +32,15 @@ func TestIntegration(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image:        "eclipse-mosquitto:2.0",
 		ExposedPorts: []string{"1883/tcp"},
-		WaitingFor:   wait.ForLog("mosquitto version 2.0 running"),
+		SkipReaper:   false,
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      "testdata/mosquitto.conf",
+				ContainerFilePath: "/mosquitto/config/mosquitto.conf",
+				FileMode:          0644,
+			},
+		},
+		WaitingFor: wait.ForLog("mosquitto version 2.0.22 running"),
 	}
 
 	mqttContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -41,27 +49,24 @@ func TestIntegration(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer func() {
-		assert.NoError(t, mqttContainer.Terminate(ctx))
+		if mqttContainer != nil {
+			assert.NoError(t, mqttContainer.Terminate(ctx))
+		}
 	}()
 
-	// Get the host and port
-	host, err := mqttContainer.Host(ctx)
+	ip, err := mqttContainer.ContainerIP(ctx)
 	require.NoError(t, err)
 	port, err := mqttContainer.MappedPort(ctx, "1883")
 	require.NoError(t, err)
+	t.Logf("MQTT broker running at %s:%s", ip, port.Port())
 
 	// Create exporter configuration
 	cfg := &Config{
 		Connection: ConnectionConfig{
-			Endpoint: "tcp://" + host + ":" + port.Port(),
-			Auth: AuthConfig{
-				Plain: PlainAuth{
-					Username: "test",
-					Password: "test",
-				},
-			},
+			Endpoint: "tcp://" + ip + ":" + "1883",
 			ConnectionTimeout: 10 * time.Second,
 			KeepAlive:         30 * time.Second,
+			PublishConfirmationTimeout: 5 * time.Second,
 		},
 		Topic: TopicConfig{
 			Topic: "test/telemetry",
@@ -69,13 +74,11 @@ func TestIntegration(t *testing.T) {
 		QoS:    1,
 		Retain: false,
 	}
-
 	// Create exporter
 	set := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := createTracesExporter(ctx, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
-
 	// Start exporter
 	hostComponent := componenttest.NewNopHost()
 	err = exporter.Start(ctx, hostComponent)
@@ -83,7 +86,7 @@ func TestIntegration(t *testing.T) {
 	defer func() {
 		assert.NoError(t, exporter.Shutdown(ctx))
 	}()
-
+	t.Log("Testing publishing traces...")
 	// Test publishing traces
 	traces := testdata.GenerateTracesOneSpan()
 	err = exporter.ConsumeTraces(ctx, traces)
