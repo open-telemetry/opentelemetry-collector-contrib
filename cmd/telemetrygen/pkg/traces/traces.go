@@ -142,7 +142,7 @@ func run(c *Config, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
-			numChildSpans:    int(math.Max(1, float64(c.NumChildSpans))),
+			numChildSpans:    int(math.Max(0, float64(c.NumChildSpans))),
 			propagateContext: c.PropagateContext,
 			statusCode:       statusCode,
 			limitPerSecond:   limit,
