@@ -4,6 +4,7 @@
 package libhoneyevent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -79,6 +81,56 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 		tmp.MsgPackTimestamp = &tnow
 	}
 	if tmp.MsgPackTimestamp.IsZero() {
+		propertime := eventtime.GetEventTime(tmp.Time)
+		tmp.MsgPackTimestamp = &propertime
+	}
+
+	*l = LibhoneyEvent(tmp)
+	return nil
+}
+
+// UnmarshalMsgpack overrides the unmarshall to make sure the MsgPackTimestamp is set
+func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
+	type _libhoneyEvent LibhoneyEvent
+	tstr := eventtime.GetEventTimeDefaultString()
+	tzero := time.Time{}
+	tmp := _libhoneyEvent{Time: "none", MsgPackTimestamp: &tzero, Samplerate: 1}
+
+	// Use a temporary struct to avoid recursion
+	type tempEvent struct {
+		Samplerate       int            `msgpack:"samplerate"`
+		MsgPackTimestamp *time.Time     `msgpack:"time"`
+		Time             string         `msgpack:"-"` // Ignore during msgpack unmarshal
+		Data             map[string]any `msgpack:"data"`
+	}
+
+	var tmpEvent tempEvent
+	// First unmarshal into the temp struct
+	decoder := msgpack.NewDecoder(bytes.NewReader(data))
+	decoder.UseLooseInterfaceDecoding(true)
+	err := decoder.Decode(&tmpEvent)
+	if err != nil {
+		return err
+	}
+
+	// Copy fields to our tmp struct
+	tmp.Samplerate = tmpEvent.Samplerate
+	tmp.MsgPackTimestamp = tmpEvent.MsgPackTimestamp
+	tmp.Data = tmpEvent.Data
+
+	// Check if Time field exists in Data and extract it
+	if timeStr, ok := tmpEvent.Data["time"].(string); ok {
+		tmp.Time = timeStr
+	}
+
+	// Apply the same timestamp logic as JSON
+	if (tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero()) && tmp.Time == "none" {
+		// neither timestamp was set. give it right now.
+		tmp.Time = tstr
+		tnow := time.Now()
+		tmp.MsgPackTimestamp = &tnow
+	}
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
 		propertime := eventtime.GetEventTime(tmp.Time)
 		tmp.MsgPackTimestamp = &propertime
 	}
