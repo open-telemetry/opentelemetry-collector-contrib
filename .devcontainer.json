@@ -2,6 +2,7 @@
     "image":"golang:1.21",
     "mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"],
     "runArgs": [
-        "--privileged"
+        "--privileged",
+        "--network=host"
       ]
 }
