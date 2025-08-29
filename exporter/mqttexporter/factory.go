@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/publisher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/mqtt"
 )
 
 const (
@@ -147,7 +148,8 @@ func getTopicOrDefault(config *Config, fallback string) string {
 
 func newPublisherFactory(set exporter.Settings) publisherFactory {
 	return func(dialConfig publisher.DialConfig) (publisher.Publisher, error) {
-		return publisher.NewConnection(set.Logger, dialConfig)
+		client := mqtt.NewMqttClient(set.Logger)
+		return publisher.NewConnection(set.Logger, client, dialConfig)
 	}
 }
 

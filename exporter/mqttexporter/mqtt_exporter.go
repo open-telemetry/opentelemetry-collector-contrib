@@ -6,17 +6,17 @@ package mqttexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"crypto/tls"
-	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/publisher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/mqtt"
 )
 
 type mqttExporter struct {
@@ -54,19 +54,20 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	}
 	e.marshaler = m
 
-	brokerURL, err := url.Parse(e.config.Connection.Endpoint)
-	if err != nil {
-		return err
-	}
-
 	dialConfig := publisher.DialConfig{
-		ClientOptions: mqtt.ClientOptions{
-			Servers:        []*url.URL{brokerURL},
-			ClientID:       e.clientID,
-			Username:       e.config.Connection.Auth.Plain.Username,
-			Password:       e.config.Connection.Auth.Plain.Password,
-			ConnectTimeout: e.config.Connection.ConnectionTimeout,
-			KeepAlive:      int64(e.config.Connection.KeepAlive.Seconds()),
+		DialConfig: mqtt.DialConfig{
+			BrokerURLs:                 []string{e.config.Connection.Endpoint},
+			ClientID:                   e.clientID,
+			Username:                   e.config.Connection.Auth.Plain.Username,
+			Password:                   e.config.Connection.Auth.Plain.Password,
+			ConnectTimeout:             e.config.Connection.ConnectionTimeout,
+			KeepAlive:                  e.config.Connection.KeepAlive,
+			AutoReconnect:              true,
+			ConnectRetry:               true,
+			ConnectRetryInterval:       2 * time.Second,
+			MaxReconnectInterval:       30 * time.Second,
+			PingTimeout:                10 * time.Second,
+			PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
 		},
 		QoS:                        e.config.QoS,
 		Retain:                     e.config.Retain,
