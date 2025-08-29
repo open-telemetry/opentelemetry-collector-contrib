@@ -217,6 +217,10 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	if clientCfg.ClientID != "" {
 		opts = append(opts, kgo.ClientID(clientCfg.ClientID))
 	}
+	// Configure client rack if provided
+	if clientCfg.Rack != "" {
+		opts = append(opts, kgo.Rack(clientCfg.Rack))
+	}
 	// Reuse existing metadata refresh interval for franz-go metadataMaxAge
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
