@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -45,12 +46,12 @@ func TestSocketConnectionLogs(t *testing.T) {
 	err = processor.ConsumeLogs(t.Context(), log)
 	require.NoError(t, err)
 	buf := make([]byte, 1024)
-	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeLogs(t.Context(), log)
-		require.NoError(t, err)
+	err = processor.ConsumeLogs(t.Context(), log)
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
-		return n == 107
-	}, 1*time.Second, 100*time.Millisecond, "received message")
+		assert.Equal(tt, 107, n)
+	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"}}]}]}]}`, string(buf[0:107]))
 
 	err = processor.Shutdown(t.Context())
@@ -81,12 +82,12 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	metric := pmetric.NewMetrics()
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
-	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeMetrics(t.Context(), metric)
-		require.NoError(t, err)
+	err = processor.ConsumeMetrics(t.Context(), metric)
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
-		return n == 94
-	}, 1*time.Second, 100*time.Millisecond, "received message")
+		assert.Equal(tt, 94, n)
+	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
 
 	err = processor.Shutdown(t.Context())
@@ -117,12 +118,12 @@ func TestSocketConnectionTraces(t *testing.T) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
-	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeTraces(t.Context(), trace)
-		require.NoError(t, err)
+	err = processor.ConsumeTraces(t.Context(), trace)
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
-		return n == 100
-	}, 1*time.Second, 100*time.Millisecond, "received message")
+		assert.Equal(tt, 100, n)
+	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
 
 	err = processor.Shutdown(t.Context())

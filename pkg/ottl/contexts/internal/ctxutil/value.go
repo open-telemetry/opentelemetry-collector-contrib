@@ -106,13 +106,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 }
 
 func SetIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
-	var newValue pcommon.Value
-	switch val.(type) {
-	case []string, []bool, []int64, []float64, [][]byte, []any:
-		newValue = pcommon.NewValueSlice()
-	default:
-		newValue = pcommon.NewValueEmpty()
-	}
+	newValue := pcommon.NewValueEmpty()
 	err := SetValue(newValue, val)
 	if err != nil {
 		return err
