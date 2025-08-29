@@ -468,7 +468,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	go em.periodicMetrics()
 
 	// ensure our gauge is showing 1 item in the queue
-	assert.EventuallyWithT(t, func(tt *assert.CollectT)  {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
 		assert.Equal(tt, int64(1), val)
 	}, 1*time.Second, 10*time.Millisecond)
@@ -476,7 +476,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	wg.Done() // release all events
 
 	// ensure our gauge is now showing no items in the queue
-	assert.EventuallyWithT(t, func(tt *assert.CollectT)  {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
 		assert.Equal(tt, int64(0), val)
 	}, 1*time.Second, 10*time.Millisecond)
