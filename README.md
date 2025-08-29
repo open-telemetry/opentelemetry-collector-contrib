@@ -100,6 +100,7 @@ For more information about the approver role, see the [community repository](htt
 
 - [Andrew Wilkins](https://github.com/axw), Elastic
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
+- [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
