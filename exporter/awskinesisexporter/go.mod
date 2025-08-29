@@ -14,7 +14,7 @@ require (
 	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.133.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componenttest v0.133.0
 	go.opentelemetry.io/collector/config/configretry v1.39.0

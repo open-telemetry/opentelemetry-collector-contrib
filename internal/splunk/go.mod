@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/goccy/go-json v0.10.5
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/consumer/consumererror v0.133.0
 	go.opentelemetry.io/collector/exporter v0.133.0
 	go.opentelemetry.io/collector/pdata v1.39.0

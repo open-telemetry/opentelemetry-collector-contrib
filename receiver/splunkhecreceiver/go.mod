@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.133.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componentstatus v0.133.0
 	go.opentelemetry.io/collector/component/componenttest v0.133.0
