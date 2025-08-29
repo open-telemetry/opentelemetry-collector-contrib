@@ -73,3 +73,6 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+// Remove when github.com/stretchr/testify is fixed.
+replace github.com/stretchr/testify => github.com/stretchr/testify v1.10.0
