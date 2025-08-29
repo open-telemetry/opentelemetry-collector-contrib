@@ -172,10 +172,10 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 }
 
 // writeLibhoneyError writes a bad request error response in the appropriate format for libhoney clients
-func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, errorMsg string) {
+func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, errorMsg string) {
 	errorResponse := []response.ResponseInBatch{{
 		ErrorStr: errorMsg,
-		Status:   statusCode,
+		Status:   http.StatusBadRequest,
 	}}
 
 	var responseBody []byte
@@ -196,7 +196,7 @@ func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, statusCod
 		errorutil.HTTPError(resp, err)
 		return
 	}
-	writeResponse(resp, contentType, statusCode, responseBody)
+	writeResponse(resp, contentType, http.StatusBadRequest, responseBody)
 }
 
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
@@ -220,12 +220,12 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
-		writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to read request body")
+		writeLibhoneyError(resp, enc, "failed to read request body")
 		return
 	}
 	if err = req.Body.Close(); err != nil {
 		r.settings.Logger.Error("Failed to close request body", zap.Error(err))
-		writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to close request body")
+		writeLibhoneyError(resp, enc, "failed to close request body")
 		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
@@ -236,7 +236,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		err = decoder.Decode(&libhoneyevents)
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
-			writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to unmarshal msgpack")
+			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
 			return
 		}
 		// Post-process msgpack events to ensure timestamps are set
@@ -261,7 +261,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	case encoder.JSONContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
-			writeLibhoneyError(resp, enc, http.StatusBadRequest, "failed to unmarshal JSON")
+			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
 			return
 		}
 		if len(libhoneyevents) > 0 {

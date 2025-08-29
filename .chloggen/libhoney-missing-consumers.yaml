@@ -1,8 +1,0 @@
-change_type: bug_fix
-component: libhoneyreceiver
-note: Inform user of missing consumers rather than panicking
-issues: [42272]
-subtext:
-  Since the libhoney receiver can be used without a trace or log consumer, it now logs a message if a signal 
-  arrives that does not have a registered consumer.
-change_logs: [user]
