@@ -1,0 +1,9 @@
+type: natscore
+
+status:
+  class: exporter
+  stability:
+    development: [metrics, logs, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [EthanKim8683]
