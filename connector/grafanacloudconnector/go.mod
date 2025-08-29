@@ -4,16 +4,16 @@ go 1.24
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.39.0
+	go.opentelemetry.io/collector/component v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/component/componenttest v0.133.0
-	go.opentelemetry.io/collector/confmap v1.39.0
+	go.opentelemetry.io/collector/confmap v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/confmap/xconfmap v0.133.0
 	go.opentelemetry.io/collector/connector v0.133.0
 	go.opentelemetry.io/collector/connector/connectortest v0.133.0
-	go.opentelemetry.io/collector/consumer v1.39.0
+	go.opentelemetry.io/collector/consumer v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/collector/consumer/consumertest v0.133.0
-	go.opentelemetry.io/collector/pdata v1.39.0
-	go.opentelemetry.io/collector/pipeline v1.39.0
+	go.opentelemetry.io/collector/pdata v1.39.1-0.20250828135334-2b4ab2db4b08
+	go.opentelemetry.io/collector/pipeline v1.39.1-0.20250828135334-2b4ab2db4b08
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
@@ -45,7 +45,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.133.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.133.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.39.1-0.20250828135334-2b4ab2db4b08 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.133.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.133.0 // indirect
