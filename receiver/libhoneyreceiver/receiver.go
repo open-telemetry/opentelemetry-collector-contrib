@@ -323,7 +323,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
 			// Only override parsing results if consumer failed
 			if err != nil {
-				r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, http.StatusServiceUnavailable, err)
+				applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, err)
 				hasFailures = true
 			}
 		} else {
@@ -331,7 +331,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.settings.Logger.Warn("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
 			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, dropErr)
 			// Override even successful parsing results since consumer is not configured
-			r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, http.StatusServiceUnavailable, dropErr)
+			applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, dropErr)
 			hasFailures = true
 		}
 	}
@@ -345,7 +345,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
 			// Only override parsing results if consumer failed
 			if err != nil {
-				r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, http.StatusServiceUnavailable, err)
+				applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, err)
 				hasFailures = true
 			}
 		} else {
@@ -353,7 +353,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.settings.Logger.Warn("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
 			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, dropErr)
 			// Override even successful parsing results since consumer is not configured
-			r.applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, http.StatusServiceUnavailable, dropErr)
+			applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, dropErr)
 			hasFailures = true
 		}
 	}
@@ -365,9 +365,9 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	// Write response
 	if hasFailures {
-		r.writePartialResponse(resp, enc, results)
+		writePartialResponse(resp, enc, results)
 	} else {
-		r.writeSuccessResponse(resp, enc, len(libhoneyevents))
+		writeSuccessResponse(resp, enc, len(libhoneyevents))
 	}
 }
 
@@ -413,13 +413,13 @@ func handleUnmatchedContentType(resp http.ResponseWriter) {
 }
 
 // applyConsumerResultsToSuccessfulEvents applies consumer results only to events that succeeded parsing
-func (r *libhoneyReceiver) applyConsumerResultsToSuccessfulEvents(results []response.ResponseInBatch, indices []int, status int, err error) {
+func applyConsumerResultsToSuccessfulEvents(results []response.ResponseInBatch, indices []int, err error) {
 	for _, idx := range indices {
 		// Only override if the event was successfully parsed (status == 202)
 		if results[idx].Status == http.StatusAccepted {
 			if err != nil {
 				results[idx] = response.ResponseInBatch{
-					Status:   status,
+					Status:   http.StatusServiceUnavailable,
 					ErrorStr: err.Error(),
 				}
 			}
@@ -428,35 +428,19 @@ func (r *libhoneyReceiver) applyConsumerResultsToSuccessfulEvents(results []resp
 	}
 }
 
-// applyResultsToIndices applies batch processing results to specific original event indices
-func (r *libhoneyReceiver) applyResultsToIndices(results []response.ResponseInBatch, indices []int, status int, err error) {
-	for _, idx := range indices {
-		if err != nil {
-			results[idx] = response.ResponseInBatch{
-				Status:   status,
-				ErrorStr: err.Error(),
-			}
-		} else {
-			results[idx] = response.ResponseInBatch{
-				Status: status,
-			}
-		}
-	}
-}
-
 // writeSuccessResponse writes a success response for all events in the batch
-func (r *libhoneyReceiver) writeSuccessResponse(resp http.ResponseWriter, enc encoder.Encoder, numEvents int) {
+func writeSuccessResponse(resp http.ResponseWriter, enc encoder.Encoder, numEvents int) {
 	successResponse := response.MakeSuccessResponse(numEvents)
-	r.writeLibhoneyResponse(resp, enc, http.StatusOK, successResponse)
+	writeLibhoneyResponse(resp, enc, http.StatusOK, successResponse)
 }
 
 // writePartialResponse writes a response for mixed success/failure results
-func (r *libhoneyReceiver) writePartialResponse(resp http.ResponseWriter, enc encoder.Encoder, results []response.ResponseInBatch) {
-	r.writeLibhoneyResponse(resp, enc, http.StatusOK, results)
+func writePartialResponse(resp http.ResponseWriter, enc encoder.Encoder, results []response.ResponseInBatch) {
+	writeLibhoneyResponse(resp, enc, http.StatusOK, results)
 }
 
 // writeLibhoneyResponse marshals and writes a libhoney-format response
-func (r *libhoneyReceiver) writeLibhoneyResponse(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, batchResponse []response.ResponseInBatch) {
+func writeLibhoneyResponse(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, batchResponse []response.ResponseInBatch) {
 	var responseBody []byte
 	var err error
 	var contentType string
