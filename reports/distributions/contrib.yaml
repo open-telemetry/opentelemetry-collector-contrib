@@ -134,6 +134,7 @@ components:
     receiver:
         - active_directory_ds
         - aerospike
+        - akamaisecurityevents
         - apache
         - apachespark
         - awscloudwatch
