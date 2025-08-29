@@ -11,7 +11,7 @@ require (
 	github.com/knadh/koanf/v2 v2.2.2
 	github.com/open-telemetry/opamp-go v0.21.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.133.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/config/confighttp v0.134.0
 	go.opentelemetry.io/collector/config/configopaque v1.40.0
@@ -153,6 +153,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter/debugexporter v0.134.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.134.0 // indirect

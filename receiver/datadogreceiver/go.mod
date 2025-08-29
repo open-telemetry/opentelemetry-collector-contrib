@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.133.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/tinylib/msgp v1.4.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v1.40.0
@@ -115,6 +115,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.134.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.134.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0 // indirect
 	go.opentelemetry.io/collector/extension v1.40.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.40.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.134.0 // indirect

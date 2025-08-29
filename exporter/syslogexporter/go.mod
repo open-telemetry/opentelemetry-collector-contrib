@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/config/confignet v1.40.0
@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.40.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.134.0
 	go.opentelemetry.io/collector/exporter v0.134.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0
 	go.opentelemetry.io/collector/pdata v1.40.0
 	go.uber.org/goleak v1.3.0
@@ -77,6 +78,6 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

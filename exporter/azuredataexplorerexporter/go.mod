@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/config/configopaque v1.40.0
@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.40.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.134.0
 	go.opentelemetry.io/collector/exporter v0.134.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0
 	go.opentelemetry.io/collector/pdata v1.40.0
 	go.uber.org/goleak v1.3.0
@@ -86,7 +87,7 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
