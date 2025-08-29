@@ -468,6 +468,8 @@ func TestPeriodicMetrics(t *testing.T) {
 	go em.periodicMetrics()
 
 	// ensure our gauge is showing 1 item in the queue
+	// Eventually checks immediately since testify v1.11.0 thus we sleep for one period before checking
+	time.Sleep(10 * time.Millisecond)
 	assert.Eventually(t, func() bool {
 		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 1
 	}, 1*time.Second, 10*time.Millisecond)

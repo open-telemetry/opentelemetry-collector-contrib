@@ -110,6 +110,8 @@ func (it *IntegrationTest) Run(t *testing.T) {
 		}
 	}()
 
+	// Eventually checks immediately since testify v1.11.0 thus we sleep for one period before checking
+	time.Sleep(it.compareTimeout / 20)
 	require.Eventually(t,
 		func() bool {
 			allMetrics := sink.AllMetrics()
