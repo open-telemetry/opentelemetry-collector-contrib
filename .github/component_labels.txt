@@ -230,6 +230,7 @@ receiver/hostmetricsreceiver receiver/hostmetrics
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper receiver/hostmetrics/internal/scraper/cpuscraper
 receiver/hostmetricsreceiver/internal/scraper/diskscraper receiver/hostmetrics/internal/scraper/diskscraper
 receiver/hostmetricsreceiver/internal/scraper/filesystemscraper receiver/hostmetrics/internal/scraper/filesystem
+receiver/hostmetricsreceiver/internal/scraper/hwscraper receiver/hostmetrics/internal/scraper/hwscraper
 receiver/hostmetricsreceiver/internal/scraper/loadscraper receiver/hostmetrics/internal/scraper/loadscraper
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper receiver/hostmetrics/internal/scraper/memory
 receiver/hostmetricsreceiver/internal/scraper/networkscraper receiver/hostmetrics/internal/scraper/network
