@@ -905,6 +905,8 @@ func TestConsumeTraces(t *testing.T) {
 
 				// Trigger flush.
 				mockClock.Advance(time.Nanosecond)
+				// Eventually checks immediately since testify v1.11.0 thus we sleep for one period before checking
+				time.Sleep(10 * time.Millisecond)
 				require.Eventually(t, func() bool {
 					return len(mcon.AllMetrics()) > 0
 				}, 1*time.Second, 10*time.Millisecond)
