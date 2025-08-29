@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Small behavior change in that when an error occurs will continue to the next values.
+note: Keep the original map and continue processing keys if an error is encountered when calling an optional replacement function in `replace_all_patterns`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42359]
