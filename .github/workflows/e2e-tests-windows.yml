@@ -83,9 +83,7 @@ jobs:
       - name: Run opampsupervisor e2e tests
         run: |
           cd cmd/opampsupervisor
-          go test -c -o tests
-          for test in $(go test -tags=e2e -list . | grep -E "^(Test|Example)"); do ./tests -test.run "^$test\$" &>/dev/null && echo -n "." || echo -e "\n$test failed"; done
-          rm ./tests
+          go test -v --tags=e2e
 
   windows-supervisor-service-test:
     strategy:
