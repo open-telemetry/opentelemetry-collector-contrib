@@ -1,0 +1,33 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+exporters:
+  mqtt:
+    connection:
+      endpoint: tcp://localhost:1883
+      auth:
+        plain:
+          username: test
+          password: test
+      connection_timeout: 10s
+      keep_alive: 30s
+      publish_confirmation_timeout: 5s
+    topic:
+      topic: telemetry/data
+    qos: 1
+    retain: false
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [mqtt]
+    metrics:
+      receivers: [otlp]
+      exporters: [mqtt]
+    logs:
+      receivers: [otlp]
+      exporters: [mqtt]

@@ -32,6 +32,7 @@ func TestIntegration(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image:        "eclipse-mosquitto:2.0",
 		ExposedPorts: []string{"1883/tcp"},
+<<<<<<< HEAD
 		SkipReaper:   false,
 		Files: []testcontainers.ContainerFile{
 			{
@@ -41,6 +42,9 @@ func TestIntegration(t *testing.T) {
 			},
 		},
 		WaitingFor: wait.ForLog("mosquitto version 2.0.22 running"),
+=======
+		WaitingFor:   wait.ForLog("mosquitto version 2.0 running"),
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	}
 
 	mqttContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -49,6 +53,7 @@ func TestIntegration(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer func() {
+<<<<<<< HEAD
 		if mqttContainer != nil {
 			assert.NoError(t, mqttContainer.Terminate(ctx))
 		}
@@ -59,14 +64,36 @@ func TestIntegration(t *testing.T) {
 	port, err := mqttContainer.MappedPort(ctx, "1883")
 	require.NoError(t, err)
 	t.Logf("MQTT broker running at %s:%s", ip, port.Port())
+=======
+		assert.NoError(t, mqttContainer.Terminate(ctx))
+	}()
+
+	// Get the host and port
+	host, err := mqttContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := mqttContainer.MappedPort(ctx, "1883")
+	require.NoError(t, err)
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 
 	// Create exporter configuration
 	cfg := &Config{
 		Connection: ConnectionConfig{
+<<<<<<< HEAD
 			Endpoint: "tcp://" + ip + ":" + "1883",
 			ConnectionTimeout: 10 * time.Second,
 			KeepAlive:         30 * time.Second,
 			PublishConfirmationTimeout: 5 * time.Second,
+=======
+			Endpoint: "tcp://" + host + ":" + port.Port(),
+			Auth: AuthConfig{
+				Plain: PlainAuth{
+					Username: "test",
+					Password: "test",
+				},
+			},
+			ConnectionTimeout: 10 * time.Second,
+			KeepAlive:         30 * time.Second,
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 		},
 		Topic: TopicConfig{
 			Topic: "test/telemetry",
@@ -74,11 +101,19 @@ func TestIntegration(t *testing.T) {
 		QoS:    1,
 		Retain: false,
 	}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	// Create exporter
 	set := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := createTracesExporter(ctx, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	// Start exporter
 	hostComponent := componenttest.NewNopHost()
 	err = exporter.Start(ctx, hostComponent)
@@ -86,7 +121,11 @@ func TestIntegration(t *testing.T) {
 	defer func() {
 		assert.NoError(t, exporter.Shutdown(ctx))
 	}()
+<<<<<<< HEAD
 	t.Log("Testing publishing traces...")
+=======
+
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	// Test publishing traces
 	traces := testdata.GenerateTracesOneSpan()
 	err = exporter.ConsumeTraces(ctx, traces)

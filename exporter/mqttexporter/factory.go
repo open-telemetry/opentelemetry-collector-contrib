@@ -16,7 +16,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/publisher"
+<<<<<<< HEAD
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/mqtt"
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 )
 
 const (
@@ -148,8 +151,12 @@ func getTopicOrDefault(config *Config, fallback string) string {
 
 func newPublisherFactory(set exporter.Settings) publisherFactory {
 	return func(dialConfig publisher.DialConfig) (publisher.Publisher, error) {
+<<<<<<< HEAD
 		client := mqtt.NewMqttClient(set.Logger)
 		return publisher.NewConnection(set.Logger, client, dialConfig)
+=======
+		return publisher.NewConnection(set.Logger, dialConfig)
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	}
 }
 

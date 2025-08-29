@@ -6,17 +6,26 @@ package mqttexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"crypto/tls"
+<<<<<<< HEAD
 	"regexp"
 	"strings"
 	"time"
 	"fmt"
+=======
+	"net/url"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/publisher"
+<<<<<<< HEAD
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/mqtt"
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 )
 
 type mqttExporter struct {
@@ -54,6 +63,7 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	}
 	e.marshaler = m
 
+<<<<<<< HEAD
 	dialConfig := publisher.DialConfig{
 		DialConfig: mqtt.DialConfig{
 			BrokerURLs:                 []string{e.config.Connection.Endpoint},
@@ -68,12 +78,31 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 			MaxReconnectInterval:       30 * time.Second,
 			PingTimeout:                10 * time.Second,
 			PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
+=======
+	brokerURL, err := url.Parse(e.config.Connection.Endpoint)
+	if err != nil {
+		return err
+	}
+
+	dialConfig := publisher.DialConfig{
+		ClientOptions: mqtt.ClientOptions{
+			Servers:        []*url.URL{brokerURL},
+			ClientID:       e.clientID,
+			Username:       e.config.Connection.Auth.Plain.Username,
+			Password:       e.config.Connection.Auth.Plain.Password,
+			ConnectTimeout: e.config.Connection.ConnectionTimeout,
+			KeepAlive:      int64(e.config.Connection.KeepAlive.Seconds()),
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 		},
 		QoS:                        e.config.QoS,
 		Retain:                     e.config.Retain,
 		PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
 	}
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	tlsConfig, err := e.tlsFactory(ctx)
 	if err != nil {
 		return err
@@ -81,12 +110,18 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	if tlsConfig != nil {
 		dialConfig.TLS = tlsConfig
 	}
+<<<<<<< HEAD
 	
 	e.settings.Logger.Info("Establishing initial connection to MQTT broker")
 	
 
 	p, err := e.publisherFactory(dialConfig)
 
+=======
+
+	e.settings.Logger.Info("Establishing initial connection to MQTT broker")
+	p, err := e.publisherFactory(dialConfig)
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	e.publisher = p
 
 	if err != nil {
@@ -96,12 +131,17 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+<<<<<<< HEAD
 func (e *mqttExporter) publishTraces(ctx context.Context, traces ptrace.Traces) error {
+=======
+func (e *mqttExporter) publishTraces(context context.Context, traces ptrace.Traces) error {
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	body, err := e.tracesMarshaler.MarshalTraces(traces)
 	if err != nil {
 		return err
 	}
 
+<<<<<<< HEAD
 	topic := renderTopicFromTraces(e.topic, traces)
 	if topic == "" {
 		topic = e.topic
@@ -114,11 +154,22 @@ func (e *mqttExporter) publishTraces(ctx context.Context, traces ptrace.Traces) 
 }
 
 func (e *mqttExporter) publishMetrics(ctx context.Context, metrics pmetric.Metrics) error {
+=======
+	message := publisher.Message{
+		Topic: e.topic,
+		Body:  body,
+	}
+	return e.publisher.Publish(context, message)
+}
+
+func (e *mqttExporter) publishMetrics(context context.Context, metrics pmetric.Metrics) error {
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	body, err := e.metricsMarshaler.MarshalMetrics(metrics)
 	if err != nil {
 		return err
 	}
 
+<<<<<<< HEAD
 	topic := renderTopicFromMetrics(e.topic, metrics)
 	if topic == "" {
 		topic = e.topic
@@ -131,11 +182,22 @@ func (e *mqttExporter) publishMetrics(ctx context.Context, metrics pmetric.Metri
 }
 
 func (e *mqttExporter) publishLogs(ctx context.Context, logs plog.Logs) error {
+=======
+	message := publisher.Message{
+		Topic: e.topic,
+		Body:  body,
+	}
+	return e.publisher.Publish(context, message)
+}
+
+func (e *mqttExporter) publishLogs(context context.Context, logs plog.Logs) error {
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	body, err := e.logsMarshaler.MarshalLogs(logs)
 	if err != nil {
 		return err
 	}
 
+<<<<<<< HEAD
 	topic := renderTopicFromLogs(e.topic, logs)
 	if topic == "" {
 		topic = e.topic
@@ -145,6 +207,13 @@ func (e *mqttExporter) publishLogs(ctx context.Context, logs plog.Logs) error {
 		Body:  body,
 	}
 	return e.publisher.Publish(ctx, message)
+=======
+	message := publisher.Message{
+		Topic: e.topic,
+		Body:  body,
+	}
+	return e.publisher.Publish(context, message)
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 }
 
 func (e *mqttExporter) shutdown(_ context.Context) error {
@@ -153,6 +222,7 @@ func (e *mqttExporter) shutdown(_ context.Context) error {
 	}
 	return nil
 }
+<<<<<<< HEAD
 
 // Template rendering helpers
 // Supports placeholders like %{resource.attributes.host.name}
@@ -226,3 +296,5 @@ func sanitizeTopicFragment(s string) string {
 	s = strings.ReplaceAll(s, "\u0000", "-")
 	return s
 }
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
