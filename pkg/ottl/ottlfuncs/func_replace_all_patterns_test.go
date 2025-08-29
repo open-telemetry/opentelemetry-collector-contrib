@@ -167,8 +167,13 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacementFormat: ottl.NewTestingOptional[ottl.StringGetter[pcommon.Map]](invalidPrefix),
 			function:          optionalArg,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutEmpty("test")
-				expectedMap.Remove("test")
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
+				expectedMap.PutInt("test4", 1234)
+				expectedMap.PutDouble("test5", 1234)
+				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
