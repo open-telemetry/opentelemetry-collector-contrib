@@ -41,6 +41,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -324,7 +325,6 @@ func (s *Supervisor) Start() error {
 	if err != nil {
 		return err
 	}
-
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
@@ -439,6 +439,7 @@ func (s *Supervisor) createTemplates() error {
 func (s *Supervisor) getBootstrapInfo() (err error) {
 	_, span := s.getTracer().Start(context.Background(), "GetBootstrapInfo")
 	defer span.End()
+
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
@@ -817,6 +818,9 @@ func (s *Supervisor) startOpAMPServer() error {
 }
 
 func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+	ctx, span := s.getTracer().Start(context.Background(), "handleAgentOpAMPMessage")
+	defer span.End()
+
 	s.agentConn.Store(conn)
 
 	s.telemetrySettings.Logger.Debug("Received OpAMP message from the agent")
@@ -825,22 +829,28 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.EffectiveConfig != nil {
+		span.AddEvent("Received effectiveConfig")
 		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
 			s.telemetrySettings.Logger.Debug("Received effective config from agent")
 			s.effectiveConfig.Store(string(cfg.Body))
-			err := s.opampClient.UpdateEffectiveConfig(context.Background())
+			err := s.opampClient.UpdateEffectiveConfig(ctx)
 			if err != nil {
+				span.SetStatus(codes.Error, fmt.Sprintf("Could not update effective config: %s", err.Error()))
 				s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 			}
 		} else {
-			s.telemetrySettings.Logger.Error("Got effective config message, but the instance config was not present. Ignoring effective config.")
+			msg := "Got effective config message, but the instance config was not present. Ignoring effective config."
+			span.SetStatus(codes.Error, msg)
+			s.telemetrySettings.Logger.Error(msg)
 		}
 	}
 
 	// Proxy client capabilities to server
 	if message.CustomCapabilities != nil {
+		span.AddEvent("Received customCapabilities")
 		err := s.opampClient.SetCustomCapabilities(message.CustomCapabilities)
 		if err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Failed to send custom capabilities to OpAMP server: %s", err.Error()))
 			s.telemetrySettings.Logger.Error("Failed to send custom capabilities to OpAMP server")
 		}
 	}
@@ -859,6 +869,10 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.Health != nil {
+		span.AddEvent("Received health", trace.WithAttributes(attribute.KeyValue{
+			Key:   "health",
+			Value: attribute.BoolValue(message.Health.Healthy),
+		}))
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient.Store(message.Health)
 		err := s.SetHealth(message.Health)
@@ -1847,6 +1861,8 @@ func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
+	ctx, span := s.getTracer().Start(ctx, "onMessage")
+	defer span.End()
 	configChanged := false
 
 	if msg.AgentIdentification != nil {
@@ -1854,7 +1870,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.RemoteConfig != nil {
-		configChanged = s.processRemoteConfigMessage(msg.RemoteConfig) || configChanged
+		configChanged = s.processRemoteConfigMessage(ctx, msg.RemoteConfig) || configChanged
 	}
 
 	if msg.OwnMetricsConnSettings != nil || msg.OwnTracesConnSettings != nil || msg.OwnLogsConnSettings != nil {
@@ -1867,6 +1883,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
+		span.AddEvent("Config changed")
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
@@ -1906,16 +1923,21 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			}
 		}
 	}
+
+	span.SetStatus(codes.Ok, "")
 }
 
 // processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
-func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig) bool {
+func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protobufs.AgentRemoteConfig) bool {
+	_, span := s.getTracer().Start(ctx, "processRemoteConfigMessage")
+	defer span.End()
 	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Warn("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
 		return false
 	}
 
 	if err := s.saveLastReceivedConfig(msg); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received remote config: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Could not save last received remote config", zap.Error(err))
 	}
 
@@ -1925,6 +1947,7 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	var err error
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config. Reporting failed remote config status: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 	}
@@ -1933,6 +1956,7 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return configChanged
 }
 

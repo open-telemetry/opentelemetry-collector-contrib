@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -137,7 +138,8 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 func newNopTelemetrySettings() telemetrySettings {
 	return telemetrySettings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
+			Logger:         zap.NewNop(),
+			TracerProvider: noop.NewTracerProvider(),
 		},
 	}
 }
@@ -1587,8 +1589,9 @@ service:
 func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	t.Run("empty config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 		got := s.createEffectiveConfigMsg()
 
@@ -1596,8 +1599,9 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	})
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.effectiveConfig.Store("effective")
@@ -1609,8 +1613,9 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	})
 	t.Run("only merged config set", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.cfgState.Store(&configState{mergedConfig: "merged"})
