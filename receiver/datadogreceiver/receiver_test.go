@@ -5,6 +5,7 @@ package datadogreceiver
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -74,11 +75,10 @@ func TestDatadogServer(t *testing.T) {
 	require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		// The test uses t.Parallel and the server should only be shutdown after all
-		// tests, so perform the shutdown inside t.Cleanup. Beware that this requires
-		// all connections to the server to be already closed when Shutdown(ctx) is called
-		// so it never checks the status of the context, since a t.Context
-		// is already canceled when functions in the t.Cleanup list are called.
-		require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
+		// tests, so perform the shutdown inside t.Cleanup. Use a non-cancellable context,
+		// since the server may have to wait for some connections to be closed and the
+		// t.Context is already canceled when functions in the t.Cleanup list are called.
+		require.NoError(t, dd.Shutdown(context.WithoutCancel(ctx)), "Must not error shutting down")
 	})
 
 	for _, tc := range []struct {
@@ -127,11 +127,6 @@ func TestDatadogServer(t *testing.T) {
 				tc.op,
 			)
 			require.NoError(t, err, "Must not error when creating request")
-
-			// Because tests are parallel, and the call to shutdown is happening on a t.Cleanup,
-			// we need to ensure the request does not use keep-alives so Shutdown(ctx) never
-			// checks the status of the context. See issue #42005.
-			req.Close = true
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Must not error performing request")
