@@ -2385,6 +2385,10 @@ func findRandomPort() (int, error) {
 }
 
 func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Leaks a goroutine on Windows: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42352")
+	}
+
 	agentDescription := atomic.Value{}
 
 	// Load the Supervisor config so we can get the location of
