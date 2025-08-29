@@ -1,0 +1,12 @@
+type: macos_unified_log
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [open-telemetry/collector-contrib-maintainers]
+
+tests:
+  config: 
