@@ -84,3 +84,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
+
+// Remove when github.com/stretchr/testify is fixed.
+replace github.com/stretchr/testify => github.com/stretchr/testify v1.10.0
