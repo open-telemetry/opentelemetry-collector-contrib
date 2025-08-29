@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -26,6 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				PipelinePriority: [][]pipeline.ID{
 					{
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
@@ -37,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				PipelinePriority: [][]pipeline.ID{
 					{
 						pipeline.NewIDWithName(pipeline.SignalTraces, "first"),
