@@ -1,0 +1,137 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package mqttexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter"
+
+import (
+	"context"
+	"crypto/tls"
+	"net/url"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter/internal/publisher"
+)
+
+type mqttExporter struct {
+	config *Config
+	tlsFactory
+	settings component.TelemetrySettings
+	topic    string
+	clientID string
+	*marshaler
+	publisherFactory
+	publisher publisher.Publisher
+}
+
+type (
+	publisherFactory = func(publisher.DialConfig) (publisher.Publisher, error)
+	tlsFactory       = func(context.Context) (*tls.Config, error)
+)
+
+func newMqttExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, topic, clientID string) *mqttExporter {
+	exporter := &mqttExporter{
+		config:           cfg,
+		settings:         set,
+		topic:            topic,
+		clientID:         clientID,
+		publisherFactory: publisherFactory,
+		tlsFactory:       tlsFactory,
+	}
+	return exporter
+}
+
+func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
+	m, err := newMarshaler(e.config.EncodingExtensionID, host)
+	if err != nil {
+		return err
+	}
+	e.marshaler = m
+
+	brokerURL, err := url.Parse(e.config.Connection.Endpoint)
+	if err != nil {
+		return err
+	}
+
+	dialConfig := publisher.DialConfig{
+		ClientOptions: mqtt.ClientOptions{
+			Servers:        []*url.URL{brokerURL},
+			ClientID:       e.clientID,
+			Username:       e.config.Connection.Auth.Plain.Username,
+			Password:       e.config.Connection.Auth.Plain.Password,
+			ConnectTimeout: e.config.Connection.ConnectionTimeout,
+			KeepAlive:      int64(e.config.Connection.KeepAlive.Seconds()),
+		},
+		QoS:                        e.config.QoS,
+		Retain:                     e.config.Retain,
+		PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
+	}
+
+	tlsConfig, err := e.tlsFactory(ctx)
+	if err != nil {
+		return err
+	}
+	if tlsConfig != nil {
+		dialConfig.TLS = tlsConfig
+	}
+
+	e.settings.Logger.Info("Establishing initial connection to MQTT broker")
+	p, err := e.publisherFactory(dialConfig)
+	e.publisher = p
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *mqttExporter) publishTraces(context context.Context, traces ptrace.Traces) error {
+	body, err := e.tracesMarshaler.MarshalTraces(traces)
+	if err != nil {
+		return err
+	}
+
+	message := publisher.Message{
+		Topic: e.topic,
+		Body:  body,
+	}
+	return e.publisher.Publish(context, message)
+}
+
+func (e *mqttExporter) publishMetrics(context context.Context, metrics pmetric.Metrics) error {
+	body, err := e.metricsMarshaler.MarshalMetrics(metrics)
+	if err != nil {
+		return err
+	}
+
+	message := publisher.Message{
+		Topic: e.topic,
+		Body:  body,
+	}
+	return e.publisher.Publish(context, message)
+}
+
+func (e *mqttExporter) publishLogs(context context.Context, logs plog.Logs) error {
+	body, err := e.logsMarshaler.MarshalLogs(logs)
+	if err != nil {
+		return err
+	}
+
+	message := publisher.Message{
+		Topic: e.topic,
+		Body:  body,
+	}
+	return e.publisher.Publish(context, message)
+}
+
+func (e *mqttExporter) shutdown(_ context.Context) error {
+	if e.publisher != nil {
+		return e.publisher.Close()
+	}
+	return nil
+}

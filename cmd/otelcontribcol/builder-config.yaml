@@ -111,6 +111,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.133.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter v0.133.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.133.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttexporter v0.133.0
 
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.133.0
