@@ -255,7 +255,11 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			}
 		}
 		if len(libhoneyevents) > 0 {
-			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			if libhoneyevents[0].MsgPackTimestamp != nil {
+				r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			} else {
+				r.settings.Logger.Debug("Decoding with msgpack worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			}
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case encoder.JSONContentType:
