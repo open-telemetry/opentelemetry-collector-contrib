@@ -12,6 +12,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 const targetExternalLabels = `
@@ -822,7 +825,7 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 	})
 }
 
-const targetInstrumentationScopes = `
+const targetInstrumentationScopeInfoMetric = `
 # HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
 # TYPE jvm_memory_bytes_used gauge
 jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0"} 100
@@ -832,21 +835,68 @@ jvm_memory_bytes_used{area="heap"} 100
 otel_scope_info{animal="bear", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 1
 `
 
-func TestScopeInfoScopeAttributes(t *testing.T) {
-	targets := []*testData{
-		{
-			name: "target1",
-			pages: []mockPrometheusResponse{
-				{code: 200, data: targetInstrumentationScopes},
-			},
-			validateFunc: verifyMultipleScopes,
-		},
-	}
+const targetInstrumentationScopeLabels = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0"} 100
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0", otel_scope_animal="bear", otel_scope_color="blue"} 200
+jvm_memory_bytes_used{area="heap"} 100
+`
 
-	testComponent(t, targets, nil)
+func TestScopeAttributes(t *testing.T) {
+	t.Run("ScopeInfoMetric", func(t *testing.T) {
+		// Test parsing otel_scope_info metric (feature gate disabled)
+		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, false)()
+
+		targets := []*testData{
+			{
+				name: "target1",
+				pages: []mockPrometheusResponse{
+					{code: 200, data: targetInstrumentationScopeInfoMetric},
+				},
+				validateFunc: verifyTargetWithScopeInfoMetric,
+			},
+		}
+
+		testComponent(t, targets, nil)
+	})
+
+	t.Run("ScopeLabels/feature_enabled", func(t *testing.T) {
+		// Test parsing otel_scope_ labels (feature gate enabled)
+		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, true)()
+
+		targets := []*testData{
+			{
+				name: "target1",
+				pages: []mockPrometheusResponse{
+					{code: 200, data: targetInstrumentationScopeLabels},
+				},
+				validateFunc: verifyTargetWithScopeLabels,
+			},
+		}
+
+		testComponent(t, targets, nil)
+	})
+
+	t.Run("ScopeLabels/feature_disabled", func(t *testing.T) {
+		// Test new-style data (otel_scope_ labels) with feature gate disabled (legacy mode)
+		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, false)()
+
+		targets := []*testData{
+			{
+				name: "target1",
+				pages: []mockPrometheusResponse{
+					{code: 200, data: targetInstrumentationScopeLabels},
+				},
+				validateFunc: verifyScopeLabelsLegacyMode,
+			},
+		}
+
+		testComponent(t, targets, nil)
+	})
 }
 
-func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+func verifyTargetWithScopeInfoMetric(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
@@ -878,4 +928,112 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	require.Equal(t, 1, dp.Attributes().Len(), "Should only have 'area' attribute")
 	_, found = dp.Attributes().Get("area")
 	require.True(t, found, "Should only have 'area' attribute")
+}
+
+func verifyTargetWithScopeLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present in new mode")
+	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+		return a.Scope().Name() < b.Scope().Name()
+	})
+
+	// Verify first scope: fake.scope.name (no attributes)
+	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
+	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+	require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sms.At(0).SchemaUrl())
+	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+
+	// Verify second scope: default receiver scope (no attributes)
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+	require.Empty(t, sms.At(1).SchemaUrl())
+	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+
+	// Verify third scope: scope.with.attributes with attributes from otel_scope_ labels
+	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
+	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+	require.Empty(t, sms.At(2).SchemaUrl())
+	require.Equal(t, 2, sms.At(2).Scope().Attributes().Len())
+	animalVal, found := sms.At(2).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "bear", animalVal.Str())
+	colorVal, found := sms.At(2).Scope().Attributes().Get("color")
+	require.True(t, found)
+	require.Equal(t, "blue", colorVal.Str())
+
+	// Check that otel_scope_ labels are filtered from metric data point attributes
+	require.Equal(t, 1, sms.At(2).Metrics().Len())
+	metric := sms.At(2).Metrics().At(0)
+	dp := metric.Gauge().DataPoints().At(0)
+	require.Equal(t, 1, dp.Attributes().Len(), "Should only have 'area' attribute, otel_scope_ labels should be filtered")
+	_, found = dp.Attributes().Get("area")
+	require.True(t, found, "Should have 'area' attribute")
+	_, found = dp.Attributes().Get("otel_scope_animal")
+	require.False(t, found, "Should not have otel_scope_animal attribute in datapoint")
+	_, found = dp.Attributes().Get("otel_scope_color")
+	require.False(t, found, "Should not have otel_scope_color attribute in datapoint")
+
+	// Verify scope grouping: Test that scope attributes are correctly extracted and grouped
+	// scope.with.attributes should have 1 metric with 2 attributes (animal=bear, color=blue)
+	scopeWithAttrs := sms.At(2).Scope()
+	require.Equal(t, "scope.with.attributes", scopeWithAttrs.Name())
+	require.Equal(t, 1, sms.At(2).Metrics().Len(), "scope.with.attributes should have 1 metric")
+	require.Equal(t, 2, scopeWithAttrs.Attributes().Len(), "scope.with.attributes should have 2 attributes")
+
+	// Verify that the default receiver scope has multiple metrics (including the one without otel_scope_ labels)
+	defaultScope := sms.At(1)
+	require.GreaterOrEqual(t, defaultScope.Metrics().Len(), 1, "default scope should have at least 1 metric")
+	require.Equal(t, 0, defaultScope.Scope().Attributes().Len(), "default scope should have no attributes")
+}
+
+func verifyScopeLabelsLegacyMode(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present when processing otel_scope_ labels in legacy mode")
+	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+		return a.Scope().Name() < b.Scope().Name()
+	})
+
+	// Verify first scope: fake.scope.name (no attributes)
+	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
+	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+	require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sms.At(0).SchemaUrl())
+	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+
+	// Verify second scope: default receiver scope (no attributes)
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+	require.Empty(t, sms.At(1).SchemaUrl())
+	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+
+	// Verify third scope: scope.with.attributes (NO attributes in legacy mode)
+	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
+	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+	require.Empty(t, sms.At(2).SchemaUrl())
+	require.Equal(t, 0, sms.At(2).Scope().Attributes().Len(), "Legacy mode should not extract scope attributes from otel_scope_ labels")
+
+	// Check that otel_scope_ labels are NOT filtered from metric data point attributes in legacy mode
+	require.Equal(t, 1, sms.At(2).Metrics().Len())
+	metric := sms.At(2).Metrics().At(0)
+	dp := metric.Gauge().DataPoints().At(0)
+	require.Equal(t, 3, dp.Attributes().Len(), "Should have 'area', 'otel_scope_animal', and 'otel_scope_color' attributes in legacy mode")
+	_, found := dp.Attributes().Get("area")
+	require.True(t, found, "Should have 'area' attribute")
+	_, found = dp.Attributes().Get("otel_scope_animal")
+	require.True(t, found, "Should have otel_scope_animal attribute in datapoint when in legacy mode")
+	_, found = dp.Attributes().Get("otel_scope_color")
+	require.True(t, found, "Should have otel_scope_color attribute in datapoint when in legacy mode")
+
+	// Verify that in legacy mode, the scope.with.attributes scope gets 1 metric
+	// (the one with otel_scope_animal and otel_scope_color labels preserved as datapoint attributes)
+	scopeWithAttrs := sms.At(2)
+	require.Equal(t, "scope.with.attributes", scopeWithAttrs.Scope().Name())
+	require.Equal(t, 1, scopeWithAttrs.Metrics().Len(), "scope.with.attributes should have 1 metric")
+
+	// Verify that the default receiver scope has multiple metrics (including the one without otel_scope_ labels)
+	defaultScope := sms.At(1)
+	require.GreaterOrEqual(t, defaultScope.Metrics().Len(), 1, "default scope should have at least 1 metric")
 }
