@@ -177,7 +177,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		if !didShutdown.Load() {
 			waitForSupervisorConnection(connectedChan, false)
 			t.Log("Shutting down")
-			err := s.Stop(context.Background())
+			err := s.Stop(t.Context())
 			assert.NoError(t, err)
 			httpSrv.Close()
 			// Ensure that the connectedChan is drained and closed.
@@ -194,7 +194,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			require.Fail(t, "Agent connection has not been established")
 		}
 
-		err = agentConn.Load().(types.Connection).Send(context.Background(), msg)
+		err = agentConn.Load().(types.Connection).Send(t.Context(), msg)
 		require.NoError(t, err)
 	}
 	t.Cleanup(func() {
@@ -2078,9 +2078,17 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 					},
 				})
 
+			outputPath := filepath.Join(t.TempDir(), "output.txt")
+			backend := testbed.NewOTLPHTTPDataReceiver(4318)
+			mockBackend := testbed.NewMockBackend(outputPath, backend)
+			mockBackend.EnableRecording()
+			defer mockBackend.Stop()
+			require.NoError(t, mockBackend.Start())
+
 			extraConfigData := map[string]string{
 				"url":                  server.addr,
 				"config_apply_timeout": "3s",
+				"telemetryUrl":         "localhost:4318",
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
@@ -2199,6 +2207,20 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
 				}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
+
+				gotSpans := []string{}
+				expectedSpans := []string{"GetBootstrapInfo", "onMessage"}
+				require.EventuallyWithT(t, func(collect *assert.CollectT) {
+					require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
+				}, 10*time.Second, 250*time.Millisecond)
+
+				for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
+					gotSpans = append(gotSpans, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+				}
+
+				for _, expectedSpan := range expectedSpans {
+					require.Contains(t, gotSpans, expectedSpan)
+				}
 			})
 		})
 	}
@@ -2406,8 +2428,6 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		})
 
 	outputPath := filepath.Join(t.TempDir(), "output.txt")
-	_, err = findRandomPort()
-	require.Nil(t, err)
 	backend := testbed.NewOTLPHTTPDataReceiver(4318)
 	mockBackend := testbed.NewMockBackend(outputPath, backend)
 	mockBackend.EnableRecording()
@@ -2450,8 +2470,10 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
 
+	expectedSpans := []string{"GetBootstrapInfo"}
+
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		require.Len(collect, mockBackend.ReceivedTraces, 1)
+		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
 	}, 10*time.Second, 250*time.Millisecond)
 
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
@@ -2459,8 +2481,17 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
-	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
-	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+	for _, expectedSpan := range expectedSpans {
+		gotSpan := false
+		for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
+			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().Len())
+			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+			if mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name() != expectedSpan {
+				continue
+			}
+			gotSpan = true
+			require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+		}
+		require.Truef(t, gotSpan, "expected to find span '%s', but did not find it", expectedSpan)
+	}
 }
