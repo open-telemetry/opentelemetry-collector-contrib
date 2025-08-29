@@ -171,6 +171,34 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
+// writeLibhoneyError writes a bad request error response in the appropriate format for libhoney clients
+func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, errorMsg string) {
+	errorResponse := []response.ResponseInBatch{{
+		ErrorStr: errorMsg,
+		Status:   http.StatusBadRequest,
+	}}
+
+	var responseBody []byte
+	var err error
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		responseBody, err = msgpack.Marshal(errorResponse)
+		contentType = encoder.MsgpackContentType
+	default:
+		responseBody, err = json.Marshal(errorResponse)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		// Fallback to generic error if we can't marshal the response
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, http.StatusBadRequest, responseBody)
+}
+
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
@@ -191,10 +219,14 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		errorutil.HTTPError(resp, err)
+		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
+		writeLibhoneyError(resp, enc, "failed to read request body")
+		return
 	}
 	if err = req.Body.Close(); err != nil {
-		errorutil.HTTPError(resp, err)
+		r.settings.Logger.Error("Failed to close request body", zap.Error(err))
+		writeLibhoneyError(resp, enc, "failed to close request body")
+		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
 	switch req.Header.Get("Content-Type") {
@@ -204,6 +236,8 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		err = decoder.Decode(&libhoneyevents)
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
+			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
+			return
 		}
 		// Post-process msgpack events to ensure timestamps are set
 		for i := range libhoneyevents {
@@ -227,7 +261,8 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	case encoder.JSONContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
-			errorutil.HTTPError(resp, err)
+			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
+			return
 		}
 		if len(libhoneyevents) > 0 {
 			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
