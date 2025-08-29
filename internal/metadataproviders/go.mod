@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.133.0
 	github.com/shirou/gopsutil/v4 v4.25.7
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/sdk v1.37.0
 	go.uber.org/goleak v1.3.0
