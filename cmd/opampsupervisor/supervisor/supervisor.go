@@ -1859,7 +1859,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
-		span.AddEvent("ConfigChanged")
+		span.AddEvent("Config changed")
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
