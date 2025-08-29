@@ -16,10 +16,10 @@ import (
 
 type DialConfig struct {
 	mqtt.ClientOptions
-	QoS                       byte
-	Retain                    bool
+	QoS                        byte
+	Retain                     bool
 	PublishConfirmationTimeout time.Duration
-	TLS                       *tls.Config
+	TLS                        *tls.Config
 }
 
 type Message struct {
@@ -38,6 +38,29 @@ func NewConnection(logger *zap.Logger, config DialConfig) (Publisher, error) {
 	if config.TLS != nil {
 		opts.SetTLSConfig(config.TLS)
 	}
+
+	// Improve connection resilience
+	if opts.KeepAlive == 0 {
+		opts.KeepAlive = int64((30 * time.Second).Seconds())
+	}
+	if opts.PingTimeout == 0 {
+		opts.PingTimeout = 10 * time.Second
+	}
+	opts.AutoReconnect = true
+	opts.ConnectRetry = true
+	if opts.ConnectRetryInterval == 0 {
+		opts.ConnectRetryInterval = 2 * time.Second
+	}
+	if opts.MaxReconnectInterval == 0 {
+		opts.MaxReconnectInterval = 30 * time.Second
+	}
+	// Log lifecycle events
+	opts.SetOnConnectHandler(func(c mqtt.Client) {
+		logger.Info("MQTT connected")
+	})
+	opts.SetConnectionLostHandler(func(c mqtt.Client, err error) {
+		logger.Warn("MQTT connection lost", zap.Error(err))
+	})
 
 	// Create MQTT client
 	client := mqtt.NewClient(&opts)
@@ -71,7 +94,7 @@ func (p *publisher) Publish(ctx context.Context, message Message) error {
 
 	// Publish message with QoS and retain settings
 	token := p.client.Publish(message.Topic, p.config.QoS, p.config.Retain, message.Body)
-	
+
 	// Wait for the token to complete with timeout
 	select {
 	case <-token.Done():
@@ -93,7 +116,6 @@ func (p *publisher) Close() error {
 	if p.client == nil {
 		return nil
 	}
-	
 	// Disconnect from MQTT broker
 	p.client.Disconnect(250) // 250ms wait time
 	return nil

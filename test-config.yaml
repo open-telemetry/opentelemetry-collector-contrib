@@ -1,8 +1,10 @@
 receivers:
   otlp:
     protocols:
-      http:
       grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
 
 exporters:
   mqtt:
@@ -16,11 +18,17 @@ exporters:
       keep_alive: 30s
       publish_confirmation_timeout: 5s
     topic:
-      topic: telemetry/data
+      topic: telemetry/data/$${resource.attributes.host.name}
     qos: 1
     retain: false
+    encoding_extension: otlp_encoding/otl
+
+extensions:
+  otlp_encoding/otl:
+    protocol: otlp_json
 
 service:
+  extensions: [otlp_encoding/otl]
   pipelines:
     traces:
       receivers: [otlp]

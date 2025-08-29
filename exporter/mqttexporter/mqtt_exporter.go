@@ -7,6 +7,8 @@ import (
 	"context"
 	"crypto/tls"
 	"net/url"
+	"regexp"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"go.opentelemetry.io/collector/component"
@@ -90,43 +92,55 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *mqttExporter) publishTraces(context context.Context, traces ptrace.Traces) error {
+func (e *mqttExporter) publishTraces(ctx context.Context, traces ptrace.Traces) error {
 	body, err := e.tracesMarshaler.MarshalTraces(traces)
 	if err != nil {
 		return err
 	}
 
+	topic := renderTopicFromTraces(e.topic, traces)
+	if topic == "" {
+		topic = e.topic
+	}
 	message := publisher.Message{
-		Topic: e.topic,
+		Topic: topic,
 		Body:  body,
 	}
-	return e.publisher.Publish(context, message)
+	return e.publisher.Publish(ctx, message)
 }
 
-func (e *mqttExporter) publishMetrics(context context.Context, metrics pmetric.Metrics) error {
+func (e *mqttExporter) publishMetrics(ctx context.Context, metrics pmetric.Metrics) error {
 	body, err := e.metricsMarshaler.MarshalMetrics(metrics)
 	if err != nil {
 		return err
 	}
 
+	topic := renderTopicFromMetrics(e.topic, metrics)
+	if topic == "" {
+		topic = e.topic
+	}
 	message := publisher.Message{
-		Topic: e.topic,
+		Topic: topic,
 		Body:  body,
 	}
-	return e.publisher.Publish(context, message)
+	return e.publisher.Publish(ctx, message)
 }
 
-func (e *mqttExporter) publishLogs(context context.Context, logs plog.Logs) error {
+func (e *mqttExporter) publishLogs(ctx context.Context, logs plog.Logs) error {
 	body, err := e.logsMarshaler.MarshalLogs(logs)
 	if err != nil {
 		return err
 	}
 
+	topic := renderTopicFromLogs(e.topic, logs)
+	if topic == "" {
+		topic = e.topic
+	}
 	message := publisher.Message{
-		Topic: e.topic,
+		Topic: topic,
 		Body:  body,
 	}
-	return e.publisher.Publish(context, message)
+	return e.publisher.Publish(ctx, message)
 }
 
 func (e *mqttExporter) shutdown(_ context.Context) error {
@@ -134,4 +148,77 @@ func (e *mqttExporter) shutdown(_ context.Context) error {
 		return e.publisher.Close()
 	}
 	return nil
+}
+
+// Template rendering helpers
+// Supports placeholders like ${resource.attributes.host.name}
+var resAttrPattern = regexp.MustCompile(`\$\{resource\.attributes\.([a-zA-Z0-9_.-]+)\}`)
+
+func renderWithResource(template string, getAttr func(string) (string, bool)) string {
+	if template == "" {
+		return template
+	}
+	return resAttrPattern.ReplaceAllStringFunc(template, func(m string) string {
+		match := resAttrPattern.FindStringSubmatch(m)
+		if len(match) != 2 {
+			return ""
+		}
+		key := match[1]
+		// Attribute keys in OTel are dot-separated (e.g., host.name)
+		if v, ok := getAttr(key); ok {
+			return sanitizeTopicFragment(v)
+		}
+		return ""
+	})
+}
+
+func renderTopicFromMetrics(template string, md pmetric.Metrics) string {
+	if md.ResourceMetrics().Len() == 0 {
+		return template
+	}
+	rm := md.ResourceMetrics().At(0)
+	attrs := rm.Resource().Attributes()
+	return renderWithResource(template, func(k string) (string, bool) {
+		if v, ok := attrs.Get(k); ok {
+			return v.AsString(), true
+		}
+		return "", false
+	})
+}
+
+func renderTopicFromTraces(template string, td ptrace.Traces) string {
+	if td.ResourceSpans().Len() == 0 {
+		return template
+	}
+	rs := td.ResourceSpans().At(0)
+	attrs := rs.Resource().Attributes()
+	return renderWithResource(template, func(k string) (string, bool) {
+		if v, ok := attrs.Get(k); ok {
+			return v.AsString(), true
+		}
+		return "", false
+	})
+}
+
+func renderTopicFromLogs(template string, ld plog.Logs) string {
+	if ld.ResourceLogs().Len() == 0 {
+		return template
+	}
+	rl := ld.ResourceLogs().At(0)
+	attrs := rl.Resource().Attributes()
+	return renderWithResource(template, func(k string) (string, bool) {
+		if v, ok := attrs.Get(k); ok {
+			return v.AsString(), true
+		}
+		return "", false
+	})
+}
+
+// sanitizeTopicFragment ensures the substituted value is safe for MQTT topic segments
+func sanitizeTopicFragment(s string) string {
+	// Disallow wildcard and control characters in topics; replace with '-'
+	s = strings.ReplaceAll(s, "+", "-")
+	s = strings.ReplaceAll(s, "#", "-")
+	s = strings.ReplaceAll(s, "\u0000", "-")
+	return s
 }
