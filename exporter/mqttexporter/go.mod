@@ -3,18 +3,31 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mqttex
 go 1.24
 
 require (
+<<<<<<< HEAD
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/mqtt v0.133.0
+=======
+	github.com/eclipse/paho.mqtt.golang v1.4.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componenttest v0.133.0
 	go.opentelemetry.io/collector/config/configretry v1.39.0
 	go.opentelemetry.io/collector/config/configtls v1.39.0
+<<<<<<< HEAD
+=======
+	go.opentelemetry.io/collector/confmap v1.39.0
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	go.opentelemetry.io/collector/consumer v1.39.0
 	go.opentelemetry.io/collector/exporter v0.133.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.133.0
 	go.opentelemetry.io/collector/pdata v1.39.0
+<<<<<<< HEAD
+=======
+	go.uber.org/zap v1.27.0
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 )
 
 require (
@@ -34,7 +47,10 @@ require (
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
+<<<<<<< HEAD
 	github.com/eclipse/paho.mqtt.golang v1.4.3 // indirect
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -81,7 +97,10 @@ require (
 	go.opentelemetry.io/collector/client v1.39.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.39.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v0.133.0 // indirect
+<<<<<<< HEAD
 	go.opentelemetry.io/collector/confmap v1.39.0 // indirect
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	go.opentelemetry.io/collector/confmap/xconfmap v0.133.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.133.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.133.0 // indirect
@@ -108,7 +127,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+<<<<<<< HEAD
 	go.uber.org/zap v1.27.0 // indirect
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
@@ -123,8 +145,11 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
+<<<<<<< HEAD
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/mqtt => ../../internal/mqtt
 
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest

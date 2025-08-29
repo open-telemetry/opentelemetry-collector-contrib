@@ -8,6 +8,10 @@ The following configuration options are required:
 
 - `connection.endpoint` (no default): The MQTT broker endpoint (e.g., "tcp://localhost:1883")
 - `connection.auth.plain.username` (no default): Username for authentication
+<<<<<<< HEAD
+=======
+- `connection.auth.plain.password` (no default): Password for authentication
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 
 The following configuration options can also be configured:
 
@@ -25,7 +29,10 @@ The following configuration options can also be configured:
 - `connection.keep_alive` (default: 30s): Keep alive interval
 - `connection.publish_confirmation_timeout` (default: 5s): Timeout for publish confirmation
 - `connection.tls` (optional): TLS configuration for secure connections
+<<<<<<< HEAD
 - `connection.auth.plain.password` (optional): Password for authentication (password-less users are supported)
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 - `encoding_extension` (optional): Encoding extension to use for serialization
 - `retry_on_failure` (optional): Configuration for retry logic
 
@@ -39,6 +46,7 @@ exporters:
       auth:
         plain:
           username: "myuser"
+<<<<<<< HEAD
           password: "mypass"  # Optional - password-less users are supported
       client_id: "otel-collector"
       connection_timeout: 10s
@@ -54,6 +62,16 @@ exporters:
     qos: 1
     retain: false
     encoding_extension: "otlp_encoding/otl"
+=======
+          password: "mypass"
+      client_id: "otel-collector"
+      connection_timeout: 10s
+      keep_alive: 30s
+    topic:
+      topic: "telemetry/data"
+    qos: 1
+    retain: false
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -61,6 +79,7 @@ exporters:
       max_elapsed_time: 300s
 ```
 
+<<<<<<< HEAD
 ## Topic Templating
 
 The MQTT exporter supports dynamic topic templating using resource attributes. Use the `%{resource.attributes.attribute_name}` pattern to substitute values from the telemetry data.
@@ -71,6 +90,8 @@ The MQTT exporter supports dynamic topic templating using resource attributes. U
 - `%{resource.attributes.environment}` - Uses the environment from resource attributes
 
 
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
 ## Supported Signal Types
 
 - Traces
