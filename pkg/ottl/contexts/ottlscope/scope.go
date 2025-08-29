@@ -32,15 +32,17 @@ var (
 type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
-	cache                pcommon.Map
 	schemaURLItem        ctxcommon.SchemaURLItem
+	cache                ctxcache.LazyCache
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	if tCtx.cache.IsInit() {
+		err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache.GetCache())))
+	}
 	return err
 }
 
@@ -52,7 +54,6 @@ func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, reso
 	tc := TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
 		schemaURLItem:        schemaURLItem,
 	}
 	for _, opt := range options {
@@ -153,7 +154,7 @@ func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {
-	return tCtx.cache
+	return tCtx.cache.GetCache()
 }
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {

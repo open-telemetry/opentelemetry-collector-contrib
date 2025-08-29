@@ -374,7 +374,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cacheGetter := func(tCtx TransformContext) pcommon.Map {
-				return tCtx.cache
+				return tCtx.cache.GetCache()
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)

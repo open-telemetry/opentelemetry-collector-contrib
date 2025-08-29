@@ -37,9 +37,9 @@ type TransformContext struct {
 	logRecord            plog.LogRecord
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
-	cache                pcommon.Map
 	scopeLogs            plog.ScopeLogs
 	resourceLogs         plog.ResourceLogs
+	cache                ctxcache.LazyCache
 }
 
 type logRecord plog.LogRecord
@@ -68,7 +68,9 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
 	err = errors.Join(err, encoder.AddObject("log_record", logRecord(tCtx.logRecord)))
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	if tCtx.cache.IsInit() {
+		err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache.GetCache())))
+	}
 	return err
 }
 
@@ -81,7 +83,6 @@ func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.
 		logRecord:            logRecord,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
 		scopeLogs:            scopeLogs,
 		resourceLogs:         resourceLogs,
 	}
@@ -196,7 +197,7 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {
-	return tCtx.cache
+	return tCtx.cache.GetCache()
 }
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {

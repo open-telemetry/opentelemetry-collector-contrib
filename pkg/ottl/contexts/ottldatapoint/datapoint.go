@@ -40,9 +40,9 @@ type TransformContext struct {
 	metrics              pmetric.MetricSlice
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
-	cache                pcommon.Map
 	scopeMetrics         pmetric.ScopeMetrics
 	resourceMetrics      pmetric.ResourceMetrics
+	cache                ctxcache.LazyCache
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
@@ -61,8 +61,9 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	case pmetric.SummaryDataPoint:
 		err = encoder.AddObject("datapoint", logging.SummaryDataPoint(dp))
 	}
-
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	if tCtx.cache.IsInit() {
+		err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache.GetCache())))
+	}
 	return err
 }
 
@@ -76,7 +77,6 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
 		scopeMetrics:         scopeMetrics,
 		resourceMetrics:      resourceMetrics,
 	}
@@ -200,7 +200,7 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {
-	return tCtx.cache
+	return tCtx.cache.GetCache()
 }
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {
