@@ -9,6 +9,8 @@ import (
 	"math"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pprofile"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilecommon"
@@ -40,10 +42,13 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	case "timestamps":
 		return accessTimestamps[K](), nil
 	case "attributes":
-		if path.Keys() == nil {
-			return ctxprofilecommon.AccessAttributes[K](), nil
+		attributable := func(ctx K) (pprofile.ProfilesDictionary, ctxprofilecommon.ProfileAttributable) {
+			return ctx.GetProfilesDictionary(), ctx.GetProfileSample()
 		}
-		return ctxprofilecommon.AccessAttributesKey[K](path.Keys()), nil
+		if path.Keys() == nil {
+			return ctxprofilecommon.AccessAttributes[K](attributable), nil
+		}
+		return ctxprofilecommon.AccessAttributesKey[K](path.Keys(), attributable), nil
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}

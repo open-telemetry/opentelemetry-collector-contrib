@@ -87,10 +87,6 @@ func (tCtx TransformContext) GetProfileSample() pprofile.Sample {
 	return tCtx.sample
 }
 
-func (tCtx TransformContext) AttributeIndices() pcommon.Int32Slice {
-	return tCtx.sample.AttributeIndices()
-}
-
 // GetProfilesDictionary returns the profiles dictionary from the TransformContext.
 func (tCtx TransformContext) GetProfilesDictionary() pprofile.ProfilesDictionary {
 	return tCtx.dictionary
