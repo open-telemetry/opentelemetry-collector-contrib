@@ -130,7 +130,7 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 
 func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container) error {
 	var errs error
-	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
+	r.recordCPUMetrics(now, containerStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
@@ -266,7 +266,8 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	}
 }
 
-func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats, prevStats *ctypes.CPUStats) {
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, v *ctypes.StatsResponse) {
+	cpuStats := v.CPUStats
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
@@ -274,7 +275,7 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats, prev
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
-	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(v))
 	r.mb.RecordContainerCPULogicalCountDataPoint(now, int64(cpuStats.OnlineCPUs))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {

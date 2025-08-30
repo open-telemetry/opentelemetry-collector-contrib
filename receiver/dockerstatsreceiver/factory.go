@@ -29,12 +29,8 @@ func createDefaultConfig() component.Config {
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
 	return &Config{
-		ControllerConfig: scs,
-		Config: docker.Config{
-			Endpoint:         "unix:///var/run/docker.sock",
-			DockerAPIVersion: defaultDockerAPIVersion,
-			Timeout:          scs.Timeout,
-		},
+		ControllerConfig:     scs,
+		Config:               *docker.NewDefaultConfig(),
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
