@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
@@ -475,4 +477,280 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 
 func (*testConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
+}
+
+func TestLibhoneyReceiver_NilConsumerHandling(t *testing.T) {
+	now := time.Now()
+
+	tests := []struct {
+		name           string
+		events         []libhoneyevent.LibhoneyEvent
+		contentType    string
+		registerLogs   bool
+		registerTraces bool
+		expectedLogs   string
+		expectedStatus int
+	}{
+		{
+			name: "nil_log_consumer_with_log_data",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"meta.signal_type": "log",
+						"message":          "test log event",
+						"level":            "info",
+					},
+					Samplerate: 1,
+				},
+			},
+			contentType:    "application/json",
+			registerLogs:   false, // Don't register log consumer
+			registerTraces: true,  // Register trace consumer
+			expectedLogs:   "Dropping log records - no log consumer configured",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "nil_trace_consumer_with_trace_data",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"meta.signal_type": "trace",
+						"trace.trace_id":   "1234567890abcdef1234567890abcdef",
+						"trace.span_id":    "1234567890abcdef",
+						"name":             "test span",
+						"duration_ms":      100,
+					},
+					Samplerate: 1,
+				},
+			},
+			contentType:    "application/json",
+			registerLogs:   true,  // Register log consumer
+			registerTraces: false, // Don't register trace consumer
+			expectedLogs:   "Dropping trace spans - no trace consumer configured",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "nil_both_consumers_with_mixed_data",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"meta.signal_type": "log",
+						"message":          "test log event",
+						"level":            "info",
+					},
+					Samplerate: 1,
+				},
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"meta.signal_type": "trace",
+						"trace.trace_id":   "1234567890abcdef1234567890abcdef",
+						"trace.span_id":    "1234567890abcdef",
+						"name":             "test span",
+						"duration_ms":      100,
+					},
+					Samplerate: 1,
+				},
+			},
+			contentType:    "application/json",
+			registerLogs:   false, // Don't register either consumer
+			registerTraces: false,
+			expectedLogs:   "Dropping", // Should see both drop messages
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "msgpack_nil_log_consumer",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Time:             now.Format(time.RFC3339),
+					MsgPackTimestamp: &now,
+					Data: map[string]any{
+						"meta.signal_type": "log",
+						"message":          "test msgpack log",
+					},
+					Samplerate: 1,
+				},
+			},
+			contentType:    "application/msgpack",
+			registerLogs:   false,
+			registerTraces: true,
+			expectedLogs:   "Dropping log records - no log consumer configured",
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a custom logger to capture warn messages
+			core, logs := observer.New(zap.WarnLevel)
+			logger := zap.New(core)
+
+			cfg := createDefaultConfig()
+			getOrInsertDefault(t, &cfg.(*Config).HTTP)
+			set := receivertest.NewNopSettings(metadata.Type)
+			set.Logger = logger
+
+			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
+			require.NoError(t, err)
+
+			// Conditionally register consumers
+			if tt.registerLogs {
+				r.registerLogConsumer(&consumertest.LogsSink{})
+			}
+			if tt.registerTraces {
+				r.registerTraceConsumer(&consumertest.TracesSink{})
+			}
+
+			// Prepare request body
+			var body []byte
+			switch tt.contentType {
+			case "application/json":
+				body, err = json.Marshal(tt.events)
+			case "application/msgpack":
+				body, err = msgpack.Marshal(tt.events)
+			}
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPost, "/1/events/test_dataset", bytes.NewReader(body))
+			req.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+
+			// This should not panic despite nil consumers
+			r.handleEvent(w, req)
+
+			resp := w.Result()
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			// Check that warn log messages were generated for dropped data
+			logEntries := logs.All()
+			var foundExpectedLog bool
+			for _, entry := range logEntries {
+				if strings.Contains(entry.Message, tt.expectedLogs) {
+					foundExpectedLog = true
+					assert.Equal(t, zap.WarnLevel, entry.Level)
+					break
+				}
+			}
+			assert.True(t, foundExpectedLog, "Expected warn log message containing '%s' was not found", tt.expectedLogs)
+		})
+	}
+}
+
+func TestLibhoneyReceiver_NilMsgPackTimestampHandling(t *testing.T) {
+	// Test the JSON nil MsgPackTimestamp fix
+	events := []libhoneyevent.LibhoneyEvent{
+		{
+			Time: time.Now().Format(time.RFC3339),
+			// MsgPackTimestamp is nil for JSON requests
+			Data: map[string]any{
+				"meta.signal_type": "log",
+				"message":          "test event without msgpack timestamp",
+			},
+			Samplerate: 1,
+		},
+	}
+
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+
+	cfg := createDefaultConfig()
+	getOrInsertDefault(t, &cfg.(*Config).HTTP)
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.Logger = logger
+
+	r, err := newLibhoneyReceiver(cfg.(*Config), &set)
+	require.NoError(t, err)
+
+	r.registerLogConsumer(&consumertest.LogsSink{})
+
+	body, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/1/events/test_dataset", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// This should not panic despite nil MsgPackTimestamp
+	r.handleEvent(w, req)
+
+	resp := w.Result()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Check that debug log was generated without panic
+	logEntries := logs.All()
+	var foundDecodingLog bool
+	for _, entry := range logEntries {
+		if strings.Contains(entry.Message, "Decoding with json worked") {
+			foundDecodingLog = true
+			assert.Equal(t, zap.DebugLevel, entry.Level)
+			break
+		}
+	}
+	assert.True(t, foundDecodingLog, "Expected debug log for JSON decoding was not found")
+}
+
+func TestLibhoneyReceiver_ErrorResponseFormat(t *testing.T) {
+	tests := []struct {
+		name        string
+		contentType string
+		invalidBody string
+	}{
+		{
+			name:        "json_invalid_request",
+			contentType: "application/json",
+			invalidBody: "invalid json",
+		},
+		{
+			name:        "msgpack_invalid_request",
+			contentType: "application/msgpack",
+			invalidBody: "invalid msgpack",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig()
+			getOrInsertDefault(t, &cfg.(*Config).HTTP)
+			set := receivertest.NewNopSettings(metadata.Type)
+			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
+			require.NoError(t, err)
+
+			r.registerLogConsumer(&consumertest.LogsSink{})
+
+			req := httptest.NewRequest(http.MethodPost, "/1/events/test_dataset", bytes.NewReader([]byte(tt.invalidBody)))
+			req.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+
+			r.handleEvent(w, req)
+
+			resp := w.Result()
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Equal(t, tt.contentType, resp.Header.Get("Content-Type"))
+
+			// Parse response to verify it's in libhoney format
+			var actualResponse []response.ResponseInBatch
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			switch tt.contentType {
+			case "application/json":
+				err = json.Unmarshal(body, &actualResponse)
+			case "application/msgpack":
+				err = msgpack.Unmarshal(body, &actualResponse)
+			}
+			require.NoError(t, err)
+
+			// Verify libhoney error response format
+			require.Len(t, actualResponse, 1)
+			assert.NotEmpty(t, actualResponse[0].ErrorStr)
+			assert.Equal(t, http.StatusBadRequest, actualResponse[0].Status)
+		})
+	}
 }
