@@ -113,6 +113,8 @@ all_set:
       enabled: true
     server.port:
       enabled: true
+    service.instance.id:
+      enabled: true
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
@@ -233,6 +235,8 @@ none_set:
       enabled: false
     server.port:
       enabled: false
+    service.instance.id:
+      enabled: false
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
@@ -254,6 +258,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.instance.id:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -297,6 +307,12 @@ filter_set_exclude:
         - regexp: ".*"
       events_exclude:
         - regexp: ".*"
+    service.instance.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.instance.id-val"
+      events_exclude:
+        - strict: "service.instance.id-val"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:
