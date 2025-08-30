@@ -270,6 +270,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attributes](#aggregate_on_attributes)
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
+- [merge_histogram_buckets](#merge_histogram_buckets)
 
 ### convert_sum_to_gauge
 
@@ -617,6 +618,37 @@ statements:
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
+### merge_histogram_buckets
+
+`merge_histogram_buckets(bound)`
+
+The `merge_histogram_buckets` function merges a specific bucket of a histogram with the next bucket by removing the specified boundary. This effectively combines the counts of the bucket ending at the specified bound with the counts of the next bucket.
+
+`bound` is a float64 value that specifies which bucket boundary to remove. The function will merge the bucket that ends at this boundary with the next bucket.
+
+The function:
+- Preserves the total count and sum of the histogram.  
+- Only works on histogram metrics (no-op for other metric types).  
+- Uses floating-point tolerance (epsilon = 1e-12) when matching the bound.  
+- Makes no changes if:  
+  - The bound is not found.  
+  - The histogram is empty.  
+  - The histogram structure is invalid (mismatched bounds and counts).
+
+Examples:
+
+```yaml
+# Merge the bucket ending at 0.5 with the next bucket
+- merge_histogram_buckets(0.5) where metric.name == "http_request_duration"
+
+# Given a histogram with:
+# bounds: [0.1, 0.5, 1.0]
+# counts: [5, 8, 3, 1]
+#
+# After merging at 0.5:
+# bounds: [0.1, 1.0]
+# counts: [5, 11, 1]
+```
 
 ## Examples
 
