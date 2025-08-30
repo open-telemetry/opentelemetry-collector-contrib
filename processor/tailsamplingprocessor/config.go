@@ -35,6 +35,8 @@ const (
 	And PolicyType = "and"
 	// Drop allows defining a Drop policy, combining one or more policies to drop traces.
 	Drop PolicyType = "drop"
+	// Skip allows defining a Skip policy, combining one or more policies to skip samples.
+	Skip PolicyType = "skip"
 	// SpanCount sample traces that are have more spans per Trace than a given threshold.
 	SpanCount PolicyType = "span_count"
 	// TraceState sample traces with specified values by the given key
@@ -107,6 +109,11 @@ type DropCfg struct {
 	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"drop_sub_policy"`
 }
 
+// SkipCfg holds the common configuration to all policies under drop policy.
+type SkipCfg struct {
+	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"skip_sub_policy"`
+}
+
 // CompositeCfg holds the configurable settings to create a composite
 // sampling policy evaluator.
 type CompositeCfg struct {
@@ -132,6 +139,8 @@ type PolicyCfg struct {
 	AndCfg AndCfg `mapstructure:"and"`
 	// Configs for defining drop policy
 	DropCfg DropCfg `mapstructure:"drop"`
+	// Configs for defining skip policy
+	SkipCfg SkipCfg `mapstructure:"skip"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
@@ -170,7 +179,7 @@ type ProbabilisticCfg struct {
 	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
 }
 
-// StatusCodeCfg holds the configurable settings to create a status code filter sampling
+// StatusCodeCfg holds the configurablea settings to create a status code filter sampling
 // policy evaluator.
 type StatusCodeCfg struct {
 	StatusCodes []string `mapstructure:"status_codes"`

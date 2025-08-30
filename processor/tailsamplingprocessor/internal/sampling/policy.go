@@ -45,6 +45,12 @@ const (
 	// Dropped is used to indicate that a trace should be dropped regardless of
 	// all other decisions.
 	Dropped
+	// Skipped is used to indicate that trace should be skipped in making
+	// decisions process.
+	Skipped
+	// Continued Continue is used to indicate that trace does not match any skipped condition
+	// decisions process.
+	Continued
 	// Error is used to indicate that policy evaluation was not succeeded.
 	Error
 	// InvertSampled is used on the invert match flow and indicates to sample
