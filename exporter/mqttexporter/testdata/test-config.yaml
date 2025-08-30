@@ -1,0 +1,52 @@
+mqtt/all_fields:
+  connection:
+    endpoint: ssl://localhost:8883 # Using SSL endpoint since TLS is configured
+    auth:
+      plain:
+        username: user
+        password: pass
+    tls:
+      ca_file: "cert123"
+      insecure: true
+    connection_timeout: 1s # A more realistic connection timeout
+    keep_alive: 30s # MQTT keep alive interval in seconds
+  topic:
+    topic: custom_topic # The MQTT topic to publish to
+  qos: 1
+  retain: false
+  retry_on_failure:
+    enabled: true
+
+mqtt/mandatory_fields:
+  connection:
+    endpoint: tcp://localhost:1883
+    auth:
+      plain:
+        username: user
+        password: pass
+  topic:
+    topic: mandatory_topic
+  qos: 1
+  retain: false
+
+mqtt/missing_endpoint:
+  connection:
+    auth:
+      plain:
+        username: user
+        password: pass
+  topic:
+    topic: some_topic
+  qos: 1
+  retain: false
+
+mqtt/missing_plainauth_username:
+  connection:
+    endpoint: tcp://localhost:1883
+    auth:
+      plain:
+        password: pass
+  topic:
+    topic: some_topic
+  qos: 1
+  retain: false

@@ -1,0 +1,103 @@
+# MQTT Exporter
+
+This exporter sends telemetry data to an MQTT broker using the MQTT protocol.
+
+## Configuration
+
+The following configuration options are required:
+
+- `connection.endpoint` (no default): The MQTT broker endpoint (e.g., "tcp://localhost:1883")
+- `connection.auth.plain.username` (no default): Username for authentication
+<<<<<<< HEAD
+=======
+- `connection.auth.plain.password` (no default): Password for authentication
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
+
+The following configuration options can also be configured:
+
+- `topic.topic` (default: varies by signal type): The MQTT topic to publish to
+  - Default for traces: "otlp/spans"
+  - Default for metrics: "otlp/metrics" 
+  - Default for logs: "otlp/logs"
+- `qos` (default: 1): Quality of Service level (0, 1, or 2)
+- `retain` (default: false): Whether to set the retain flag on published messages
+- `connection.client_id` (default: varies by signal type): MQTT client ID
+  - Default for traces: "otel-collector-spans"
+  - Default for metrics: "otel-collector-metrics"
+  - Default for logs: "otel-collector-logs"
+- `connection.connection_timeout` (default: 10s): Connection timeout
+- `connection.keep_alive` (default: 30s): Keep alive interval
+- `connection.publish_confirmation_timeout` (default: 5s): Timeout for publish confirmation
+- `connection.tls` (optional): TLS configuration for secure connections
+<<<<<<< HEAD
+- `connection.auth.plain.password` (optional): Password for authentication (password-less users are supported)
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
+- `encoding_extension` (optional): Encoding extension to use for serialization
+- `retry_on_failure` (optional): Configuration for retry logic
+
+## Example Configuration
+
+```yaml
+exporters:
+  mqtt:
+    connection:
+      endpoint: "tcp://localhost:1883"
+      auth:
+        plain:
+          username: "myuser"
+<<<<<<< HEAD
+          password: "mypass"  # Optional - password-less users are supported
+      client_id: "otel-collector"
+      connection_timeout: 10s
+      keep_alive: 30s
+      publish_confirmation_timeout: 5s
+      tls:
+        ca_file: "/path/to/ca.crt"
+        cert_file: "/path/to/cert.crt"
+        key_file: "/path/to/key.key"
+        insecure: false
+    topic:
+      topic: "telemetry/data/%{resource.attributes.host.name}"
+    qos: 1
+    retain: false
+    encoding_extension: "otlp_encoding/otl"
+=======
+          password: "mypass"
+      client_id: "otel-collector"
+      connection_timeout: 10s
+      keep_alive: 30s
+    topic:
+      topic: "telemetry/data"
+    qos: 1
+    retain: false
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+```
+
+<<<<<<< HEAD
+## Topic Templating
+
+The MQTT exporter supports dynamic topic templating using resource attributes. Use the `%{resource.attributes.attribute_name}` pattern to substitute values from the telemetry data.
+
+**Examples:**
+- `%{resource.attributes.host.name}` - Uses the host name from resource attributes
+- `%{resource.attributes.service.name}` - Uses the service name from resource attributes
+- `%{resource.attributes.environment}` - Uses the environment from resource attributes
+
+
+=======
+>>>>>>> 2c2e65cb1a (feat(mqttexporter): add MQTT exporter and wire into local build)
+## Supported Signal Types
+
+- Traces
+- Metrics  
+- Logs
+
+## Stability
+
+This exporter is in **Alpha** stability for all signal types. 
