@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
@@ -66,10 +67,23 @@ func (c *Config) Validate() error {
 			if eachMap.Histogram.MaxSize != 0 && (eachMap.Histogram.MaxSize < structure.MinSize || eachMap.Histogram.MaxSize > structure.MaximumMaxSize) {
 				errs = multierr.Append(errs, fmt.Errorf("histogram max_size out of range: %v", eachMap.Histogram.MaxSize))
 			}
-		} else {
+
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				for i, eb := range eachMap.Histogram.ExplicitBuckets {
+					if eb.MatcherPattern == "" {
+						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern must not be empty", i))
+					}
+					if len(eb.Buckets) == 0 {
+						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
+					}
+					if _, err := regexp.Compile(eb.MatcherPattern); err != nil {
+						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern is not a valid regular expression: %w", i, err))
+					}
+				}
+			}
+		} else if eachMap.ObserverType != protocol.HistogramObserver {
 			// Non-histogram observer w/ histogram config
-			var empty protocol.HistogramConfig
-			if eachMap.Histogram != empty {
+			if eachMap.Histogram.MaxSize != 0 || eachMap.Histogram.ExplicitBuckets != nil {
 				errs = multierr.Append(errs, errors.New("histogram configuration requires observer_type: histogram"))
 			}
 		}
