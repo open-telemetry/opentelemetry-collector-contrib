@@ -53,7 +53,7 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	e.marshaler = m
-	fmt.Println("e.config.Connection.Endpoint", e.config)
+
 	dialConfig := publisher.DialConfig{
 		DialConfig: mqtt.DialConfig{
 			BrokerURLs:                 []string{e.config.Connection.Endpoint},
@@ -86,7 +86,7 @@ func (e *mqttExporter) start(ctx context.Context, host component.Host) error {
 	
 
 	p, err := e.publisherFactory(dialConfig)
-	fmt.Println("e.tlsFactorysdfsadf sdf", e.tlsFactory)
+
 	e.publisher = p
 
 	if err != nil {
@@ -155,8 +155,8 @@ func (e *mqttExporter) shutdown(_ context.Context) error {
 }
 
 // Template rendering helpers
-// Supports placeholders like ${resource.attributes.host.name}
-var resAttrPattern = regexp.MustCompile(`\$\{resource\.attributes\.([a-zA-Z0-9_.-]+)\}`)
+// Supports placeholders like %{resource.attributes.host.name}
+var resAttrPattern = regexp.MustCompile(`%\{resource\.attributes\.([a-zA-Z0-9_.-]+)\}`)
 
 func renderWithResource(template string, getAttr func(string) (string, bool)) string {
 	if template == "" {

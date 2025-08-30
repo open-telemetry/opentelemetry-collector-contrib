@@ -18,7 +18,7 @@ exporters:
       keep_alive: 30s
       publish_confirmation_timeout: 5s
     topic:
-      topic: telemetry/data/$${resource.attributes.host.name}
+      topic: telemetry/data/%{resource.attributes.host.name}
     qos: 1
     retain: false
     encoding_extension: otlp_encoding/otl
