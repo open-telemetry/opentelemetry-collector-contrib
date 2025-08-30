@@ -39,9 +39,9 @@ type TransformContext struct {
 	dictionary           pprofile.ProfilesDictionary
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
-	cache                pcommon.Map
 	scopeProfiles        pprofile.ScopeProfiles
 	resourceProfiles     pprofile.ResourceProfiles
+	cache                ctxcache.LazyCache
 }
 
 // MarshalLogObject serializes the profile into a zapcore.ObjectEncoder for logging.
@@ -49,7 +49,9 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
 	err = errors.Join(err, encoder.AddObject("profile", logprofile.Profile{Profile: tCtx.profile, Dictionary: tCtx.dictionary}))
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	if tCtx.cache.IsInit() {
+		err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache.GetCache())))
+	}
 	return err
 }
 
@@ -63,7 +65,6 @@ func NewTransformContext(profile pprofile.Profile, dictionary pprofile.ProfilesD
 		dictionary:           dictionary,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
 		scopeProfiles:        scopeProfiles,
 		resourceProfiles:     resourceProfiles,
 	}
@@ -176,7 +177,7 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {
-	return tCtx.cache
+	return tCtx.cache.GetCache()
 }
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {

@@ -35,10 +35,10 @@ type TransformContext struct {
 	span                 ptrace.Span
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
-	cache                pcommon.Map
 	scopeSpans           ptrace.ScopeSpans
 	resouceSpans         ptrace.ResourceSpans
 	eventIndex           *int64
+	cache                ctxcache.LazyCache
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
@@ -47,7 +47,9 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
 	err = errors.Join(err, encoder.AddObject("span", logging.Span(tCtx.span)))
 	err = errors.Join(err, encoder.AddObject("spanevent", logging.SpanEvent(tCtx.spanEvent)))
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	if tCtx.cache.IsInit() {
+		err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache.GetCache())))
+	}
 	if tCtx.eventIndex != nil {
 		encoder.AddInt64("event_index", *tCtx.eventIndex)
 	}
@@ -64,7 +66,6 @@ func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumen
 		span:                 span,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
 		scopeSpans:           scopeSpans,
 		resouceSpans:         resourceSpans,
 	}
@@ -205,7 +206,7 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {
-	return tCtx.cache
+	return tCtx.cache.GetCache()
 }
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {
