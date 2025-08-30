@@ -60,6 +60,10 @@ type WebHook struct {
 	GitlabHeaders   GitlabHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
 
 	Secret string `mapstructure:"secret"` // secret for webhook
+
+	// IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included
+	// Default: false (user information is excluded by default for privacy)
+	IncludeUserAttributes bool `mapstructure:"include_user_attributes"`
 }
 
 type GitlabHeaders struct {
@@ -90,8 +94,9 @@ func createDefaultConfig() component.Config {
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
-			Path:       defaultPath,
-			HealthPath: defaultHealthPath,
+			Path:                  defaultPath,
+			HealthPath:            defaultHealthPath,
+			IncludeUserAttributes: false,
 		},
 	}
 }

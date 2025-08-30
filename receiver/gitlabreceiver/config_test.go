@@ -44,6 +44,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
+			IncludeUserAttributes: false,
 		},
 	}
 
