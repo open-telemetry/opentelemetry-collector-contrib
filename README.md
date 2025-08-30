@@ -92,6 +92,7 @@ For more information about the maintainer role, see the [community repository](h
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
@@ -106,7 +107,6 @@ For more information about the approver role, see the [community repository](htt
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Roger Coll](https://github.com/rogercoll), Elastic
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
