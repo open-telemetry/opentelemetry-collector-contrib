@@ -16,11 +16,14 @@ import (
 type Config struct {
 	common.Config
 	NumLogs        int
-	Body           string
 	SeverityText   string
 	SeverityNumber int32
+	Body           string
 	TraceID        string
 	SpanID         string
+	UseHTTP        bool
+	Batch          bool
+	BatchSize      int
 }
 
 func NewConfig() *Config {
@@ -41,6 +44,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.Int32Var(&c.SeverityNumber, "severity-number", c.SeverityNumber, "Severity number of the log, range from 1 to 24 (inclusive)")
 	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID of the log")
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID of the log")
+	fs.BoolVar(&c.Batch, "batch", c.Batch, "Enable batching of logs")
+	fs.IntVar(&c.BatchSize, "batch-size", c.BatchSize, "Number of logs to batch before flushing")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -56,6 +61,8 @@ func (c *Config) SetDefaults() {
 	c.SeverityNumber = 9
 	c.TraceID = ""
 	c.SpanID = ""
+	c.Batch = false
+	c.BatchSize = 1
 }
 
 // Validate validates the test scenario parameters.
@@ -74,6 +81,11 @@ func (c *Config) Validate() error {
 		if err := common.ValidateSpanID(c.SpanID); err != nil {
 			return err
 		}
+	}
+
+	// If batching is enabled but no specific batch size is provided, set default to 100
+	if c.Batch && c.BatchSize == 1 {
+		c.BatchSize = 100
 	}
 
 	return nil

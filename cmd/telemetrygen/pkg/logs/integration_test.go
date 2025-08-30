@@ -190,4 +190,50 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		logs := receiver.GetLogs()
 		assert.NotEmpty(t, logs, "Should have generated some logs")
 	})
+
+	t.Run("BatchingWithBatchSize", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "5", "--batch", "--batch-size", "2", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		err := cmd.Run()
+		require.NoError(t, err, "Failed to run telemetrygen")
+
+		time.Sleep(1 * time.Second)
+
+		logs := receiver.GetLogs()
+		assert.Len(t, logs, 3, "Expected 3 batches with batch size 2")
+		assert.Equal(t, 2, logs[0].LogRecordCount(), "First batch should have 2 logs")
+		assert.Equal(t, 2, logs[1].LogRecordCount(), "Second batch should have 2 logs")
+		assert.Equal(t, 1, logs[2].LogRecordCount(), "Third batch should have 1 log")
+	})
+
+	t.Run("NoBatchingWhenFlagDisabled", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "3", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		err := cmd.Run()
+		require.NoError(t, err, "Failed to run telemetrygen")
+
+		time.Sleep(1 * time.Second)
+
+		logs := receiver.GetLogs()
+		assert.Len(t, logs, 3, "Expected 3 individual logs when batching is disabled")
+		assert.Equal(t, 1, logs[0].LogRecordCount(), "Each log should be sent individually")
+		assert.Equal(t, 1, logs[1].LogRecordCount(), "Each log should be sent individually")
+		assert.Equal(t, 1, logs[2].LogRecordCount(), "Each log should be sent individually")
+	})
 }
