@@ -22,36 +22,58 @@ func Test_newSharedInformer(t *testing.T) {
 	require.NoError(t, err)
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newSharedInformer(client, "testns", labelSelector, fieldSelector)
+	stopCh := make(chan struct{})
+	informer, err := newSharedInformer(client, "testns", labelSelector, fieldSelector, nil, stopCh)
+	require.NoError(t, err)
 	assert.NotNil(t, informer)
+	assert.False(t, informer.IsStopped())
+	close(stopCh)
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		assert.True(collect, informer.IsStopped())
+	}, time.Second*5, time.Millisecond)
 }
 
 func Test_newSharedNamespaceInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newNamespaceSharedInformer(client)
+	stopCh := make(chan struct{})
+	informer := newNamespaceSharedInformer(client, stopCh)
 	assert.NotNil(t, informer)
+	assert.False(t, informer.IsStopped())
+	close(stopCh)
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		assert.True(collect, informer.IsStopped())
+	}, time.Second*5, time.Millisecond)
 }
 
 func Test_newSharedDeploymentInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newDeploymentSharedInformer(client, "ns")
+	stopCh := make(chan struct{})
+	informer, err := newDeploymentSharedInformer(client, "ns", nil, stopCh)
+	require.NoError(t, err)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedStatefulSetInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newStatefulSetSharedInformer(client, "ns")
+	stopCh := make(chan struct{})
+	informer, err := newStatefulSetSharedInformer(client, "ns", nil, stopCh)
+	require.NoError(t, err)
 	assert.NotNil(t, informer)
 }
 
 func Test_newKubeSystemSharedInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newKubeSystemSharedInformer(client)
+	stopCh := make(chan struct{})
+	informer := newKubeSystemSharedInformer(client, stopCh)
 	assert.NotNil(t, informer)
+	close(stopCh)
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		assert.True(collect, informer.IsStopped())
+	}, time.Second*5, time.Millisecond)
 }
 
 func Test_informerListFuncWithSelectors(t *testing.T) {
@@ -132,7 +154,10 @@ func Test_fakeInformer(t *testing.T) {
 	// nothing real to test here. just to make coverage happy
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	i := NewFakeInformer(c, "ns", nil, nil)
+	stopCh := make(chan struct{})
+	i, err := NewFakeInformer(c, "ns", nil, nil, nil, stopCh)
+	require.NoError(t, err)
+	require.NotNil(t, i)
 	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
 	assert.NoError(t, err)
 	i.HasSynced()
@@ -145,7 +170,8 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	// nothing real to test here. just to make coverage happy
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	i := NewFakeNamespaceInformer(c)
+	stopCh := make(chan struct{})
+	i := NewFakeNamespaceInformer(c, stopCh)
 	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
 	assert.NoError(t, err)
 	i.HasSynced()
