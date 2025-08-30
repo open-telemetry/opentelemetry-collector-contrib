@@ -125,6 +125,10 @@ go.opentelemetry.io/collector/consumer/consumertest v0.134.0 h1:PQPXW51Nz0oomgJm
 go.opentelemetry.io/collector/consumer/consumertest v0.134.0/go.mod h1:DiiT7O/jnmIJZ8YiayfFHzgi8ZH1SCxVSG9ZAjPHn+c=
 go.opentelemetry.io/collector/consumer/xconsumer v0.134.0 h1:DcplBz4DufDVWVmZ7TPJQxDFxDPy914EExSau8pwLLA=
 go.opentelemetry.io/collector/consumer/xconsumer v0.134.0/go.mod h1:zUIk8vYOgPnaiJHgJURSsNmbOUTEOCLq5wYrJ28tjjM=
+go.opentelemetry.io/collector/extension v1.40.0 h1:Cq7QUFk1D2rGJOiw24drGd8aAgcpmUZ2QpYVddD7Frc=
+go.opentelemetry.io/collector/extension v1.40.0/go.mod h1:cT+OyxJ0Fdlk4AJYD+PBMiuFDWZLcYxK9E4HDF+w8u4=
+go.opentelemetry.io/collector/extension/extensiontest v0.134.0 h1:LRAvMMQt5qjOUG3HA83ZQpya1vhEgKsdwfSB6rmNO4s=
+go.opentelemetry.io/collector/extension/extensiontest v0.134.0/go.mod h1:7+FCynzvZa1kckyAm6n0vSh2OL96+nIP66eVlYUKFz8=
 go.opentelemetry.io/collector/featuregate v1.40.0 h1:B6VRAq2AlKZZQGnzJUqX21qOfeqarm/K9LhFJP/O0iY=
 go.opentelemetry.io/collector/featuregate v1.40.0/go.mod h1:A72x92glpH3zxekaUybml1vMSv94BH6jQRn5+/htcjw=
 go.opentelemetry.io/collector/internal/telemetry v0.134.0 h1:zpRlBXfpmsu2K1NnYKoA53DIzlZpoafgrQhNbb7sWDk=
@@ -248,8 +252,8 @@ k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 h1:M3sRQVHv7vB20Xc2ybTt7ODCeFj6J
 k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 h1:/Rv+M11QRah1itp8VhT6HoVx1Ray9eB4DBr+K+/sCJ8=
 sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3/go.mod h1:18nIHnGi6636UCz6m8i4DhaJ65T6EruyzmoQqI2BVDo=
-sigs.k8s.io/structured-merge-diff/v4 v4.4.2 h1:MdmvkGuXi/8io6ixD5wud3vOLwc1rj0aNqRlpuvjmwA=
-sigs.k8s.io/structured-merge-diff/v4 v4.4.2/go.mod h1:N8f93tFZh9U6vpxwRArLiikrE5/2tiu1w1AGfACIGE4=
+sigs.k8s.io/structured-merge-diff/v4 v4.4.3 h1:sCP7Vv3xx/CWIuTPVN38lUPx0uw0lcLfzaiDa8Ja01A=
+sigs.k8s.io/structured-merge-diff/v4 v4.4.3/go.mod h1:N8f93tFZh9U6vpxwRArLiikrE5/2tiu1w1AGfACIGE4=
 sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
 sigs.k8s.io/yaml v1.5.0 h1:M10b2U7aEUY6hRtU870n2VTPgR5RZiL/I6Lcc2F4NUQ=
 sigs.k8s.io/yaml v1.5.0/go.mod h1:wZs27Rbxoai4C0f8/9urLZtZtF3avA3gKvGyPdDqTO4=
