@@ -38,7 +38,7 @@ const franzGoClientFeatureGateName = "exporter.kafkaexporter.UseFranzGo"
 // will use the franz-go client, which is more performant and has better support for
 // modern Kafka features.
 var franzGoClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoClientFeatureGateName, featuregate.StageAlpha,
+	franzGoClientFeatureGateName, featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Kafka exporter will use the franz-go client to produce messages to Kafka."),
 	featuregate.WithRegisterFromVersion("v0.128.0"),
 )
@@ -109,7 +109,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 		)
 		if ferr != nil {
-			return err
+			return ferr
 		}
 		e.producer = kafkaclient.NewFranzSyncProducer(producer,
 			e.cfg.IncludeMetadataKeys,
