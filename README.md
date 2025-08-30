@@ -74,6 +74,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
@@ -84,13 +85,14 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
+- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
-- [Christos Markou](https://github.com/ChrsMark), Elastic (On leave)
+- [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
 - [Matt Wear](https://github.com/mwear), Lightstep
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
@@ -98,7 +100,6 @@ For more information about the approver role, see the [community repository](htt
 
 ### Triagers
 
-- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
@@ -106,7 +107,7 @@ For more information about the approver role, see the [community repository](htt
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Roger Coll](https://github.com/rogercoll), Elastic
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 

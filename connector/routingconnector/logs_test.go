@@ -52,7 +52,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 		logs1:       &sink1,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
@@ -74,9 +74,9 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
-	assert.NoError(t, conn.Shutdown(context.Background()))
+	assert.NoError(t, conn.Shutdown(t.Context()))
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -118,7 +118,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
@@ -126,9 +126,9 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	t.Run("logs matched by no expressions", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Empty(t, sink0.AllLogs())
@@ -155,7 +155,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "xacme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
@@ -171,7 +171,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "ecorp")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Len(t, sink0.AllLogs(), 1)
@@ -222,7 +222,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
@@ -230,9 +230,9 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	t.Run("logs matched by no expressions", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Empty(t, sink0.AllLogs())
@@ -259,7 +259,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "xacme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
@@ -279,7 +279,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
@@ -301,7 +301,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Len(t, sink0.AllLogs(), 1)
@@ -322,7 +322,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "ecorp")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Len(t, sink0.AllLogs(), 1)
@@ -357,7 +357,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
@@ -365,9 +365,9 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	l := plog.NewLogs()
@@ -375,7 +375,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rm.Resource().Attributes().PutStr("attr", "acme")
 
-	assert.NoError(t, conn.ConsumeLogs(context.Background(), l))
+	assert.NoError(t, conn.ConsumeLogs(t.Context(), l))
 	logs := sink1.AllLogs()
 	require.Len(t, logs, 1, "log should be routed to non-default exporter")
 	require.Equal(t, 1, logs[0].ResourceLogs().Len())
@@ -408,7 +408,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
-		context.Background(),
+		t.Context(),
 		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
@@ -437,9 +437,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isBodyString := `IsString(body) == true`
-	require.Contains(t, common.Functions[ottllog.TransformContext](), "IsString")
+	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsString")
 	isBodyMap := `IsMap(body) == true`
-	require.Contains(t, common.Functions[ottllog.TransformContext](), "IsMap")
+	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsMap")
 
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
@@ -461,7 +461,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         context.Background(),
+			ctx:         t.Context(),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plog.Logs{},
 			expectSink1: plog.Logs{},
@@ -475,7 +475,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			),
 			ctx: withGRPCMetadata(
 				withHTTPMetadata(
-					context.Background(),
+					t.Context(),
 					map[string][]string{"X-Tenant": {"acme"}},
 				),
 				map[string]string{"X-Tenant": "notacme"},
@@ -491,7 +491,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink1: plog.Logs{},
@@ -503,7 +503,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "notacme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "notacme"}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plog.Logs{},
 			expectSink1: plog.Logs{},
@@ -515,7 +515,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink1: plog.Logs{},
@@ -527,7 +527,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink1: plog.Logs{},
@@ -539,7 +539,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink0),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"notacme"}}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plog.Logs{},
 			expectSink1: plog.Logs{},
@@ -808,7 +808,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("A", "CD", "EF"),
 			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
@@ -821,7 +821,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("AB", "CD", "F"),
 			expectSink1: plogutiltest.NewLogs("AB", "CD", "E"),
@@ -834,7 +834,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("A", "CD", "EF"),
 			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
@@ -847,7 +847,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				withRoute("request", isAcme, idSink1),
 				withDefault(idSinkD),
 			),
-			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("AB", "CD", "F"),
 			expectSink1: plogutiltest.NewLogs("AB", "CD", "E"),
@@ -889,14 +889,14 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			})
 
 			conn, err := NewFactory().CreateLogsToLogs(
-				context.Background(),
+				t.Context(),
 				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Logs),
 			)
 			require.NoError(t, err)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if tt.ctx != nil {
 				ctx = tt.ctx
 			}

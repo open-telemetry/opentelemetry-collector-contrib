@@ -4,7 +4,6 @@
 package skywalkingencodingextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,7 +23,7 @@ func TestExtension_Start(t *testing.T) {
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 	}
@@ -36,7 +35,7 @@ func TestExtension_Start(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			err = ext.Start(t.Context(), componenttest.NewNopHost())
 			if test.expectedErr != "" && err != nil {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
