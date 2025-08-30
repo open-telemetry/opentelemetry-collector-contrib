@@ -18,7 +18,7 @@ require (
 	github.com/prometheus/common v0.65.0
 	github.com/prometheus/exporter-toolkit v0.14.0
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componentstatus v0.134.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
@@ -231,6 +231,7 @@ require (
 	go.opentelemetry.io/collector/connector/xconnector v0.134.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.134.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.134.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.134.0 // indirect
 	go.opentelemetry.io/collector/extension v1.40.0 // indirect

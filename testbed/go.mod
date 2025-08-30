@@ -32,7 +32,7 @@ require (
 	github.com/prometheus/common v0.65.0
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
 	github.com/shirou/gopsutil/v4 v4.25.8-0.20250809033336-ffcdc2b7662f
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/config/configcompression v1.40.0
@@ -49,6 +49,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.134.0
 	go.opentelemetry.io/collector/exporter v0.134.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.134.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.134.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.134.0

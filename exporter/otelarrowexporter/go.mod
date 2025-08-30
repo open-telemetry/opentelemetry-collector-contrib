@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.133.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.133.0
 	github.com/open-telemetry/otel-arrow/go v0.39.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.40.0
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.40.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.134.0
 	go.opentelemetry.io/collector/exporter v0.134.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0
 	go.opentelemetry.io/collector/extension v1.40.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.40.0

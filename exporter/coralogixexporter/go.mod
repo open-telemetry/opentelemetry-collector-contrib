@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.133.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/config/configcompression v1.40.0
@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.40.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.134.0
 	go.opentelemetry.io/collector/exporter v0.134.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.134.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.134.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.134.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.134.0
