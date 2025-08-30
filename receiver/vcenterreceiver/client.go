@@ -555,7 +555,8 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	}
 
 	// Parse all metrics
-	for _, vSANValue := range vSANResult.Value {
+	for i := range vSANResult.Value {
+		vSANValue := vSANResult.Value[i]
 		metricDetails, err := vc.convertVSANValueToMetricDetails(vSANValue, timestamps)
 		if err != nil {
 			return &metricResults, err
