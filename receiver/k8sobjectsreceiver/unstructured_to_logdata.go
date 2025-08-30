@@ -12,11 +12,13 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 type attrUpdaterFunc func(pcommon.Map)
 
-func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8sObjectsConfig) (plog.Logs, error) {
+func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8sObjectsConfig, version string) (plog.Logs, error) {
 	udata, ok := event.Object.(*unstructured.Unstructured)
 	if !ok {
 		return plog.Logs{}, fmt.Errorf("received data that wasnt unstructure, %v", event)
@@ -31,7 +33,7 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 		}},
 	}
 
-	return unstructuredListToLogData(&ul, observedAt, config, func(attrs pcommon.Map) {
+	return unstructuredListToLogData(&ul, observedAt, config, version, func(attrs pcommon.Map) {
 		objectMeta := udata.Object["metadata"].(map[string]any)
 		name := objectMeta["name"].(string)
 		if name != "" {
@@ -41,11 +43,11 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 	}), nil
 }
 
-func pullObjectsToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig) plog.Logs {
-	return unstructuredListToLogData(event, observedAt, config)
+func pullObjectsToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, version string) plog.Logs {
+	return unstructuredListToLogData(event, observedAt, config, version)
 }
 
-func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, attrUpdaters ...attrUpdaterFunc) plog.Logs {
+func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, version string, attrUpdaters ...attrUpdaterFunc) plog.Logs {
 	out := plog.NewLogs()
 	resourceLogs := out.ResourceLogs()
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
@@ -59,6 +61,8 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 				resourceAttrs.PutStr(string(semconv.K8SNamespaceNameKey), namespace)
 			}
 			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(metadata.ScopeName)
+			sl.Scope().SetVersion(version)
 			logSlice = sl.LogRecords()
 			namespaceResourceMap[getNamespace(e)] = logSlice
 		}
