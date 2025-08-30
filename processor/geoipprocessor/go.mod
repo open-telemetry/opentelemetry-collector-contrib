@@ -4,8 +4,8 @@ go 1.24
 
 require (
 	github.com/maxmind/MaxMind-DB v0.0.0-20240605211347-880f6b4b5eb6
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.133.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.134.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.134.0
 	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
@@ -54,7 +54,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.133.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.134.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

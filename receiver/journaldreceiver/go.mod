@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journa
 go 1.24
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.133.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.134.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/confmap v1.40.0
