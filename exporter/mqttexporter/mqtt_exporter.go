@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"fmt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"

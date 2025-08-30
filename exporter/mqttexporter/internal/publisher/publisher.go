@@ -18,7 +18,6 @@ type DialConfig struct {
 	Retain                     bool
 	PublishConfirmationTimeout time.Duration
 }
-}
 
 type Message struct {
 	Topic string
@@ -39,7 +38,6 @@ func NewConnection(logger *zap.Logger, client mqtt.MqttClient, config DialConfig
 	p.connection = conn
 
 	return &p, nil
-}
 }
 
 type Publisher interface {
@@ -69,5 +67,4 @@ func (p *publisher) Close() error {
 		return nil
 	}
 	return p.connection.Close()
-}
 }
