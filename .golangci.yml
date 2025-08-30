@@ -162,7 +162,6 @@ linters:
     misspell:
       ignore-rules:
         - cancelled
-        - mosquitto
 
       # Correct spellings using locale preferences for US or UK.
       # Default is to use a neutral variety of English.
