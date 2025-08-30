@@ -6,13 +6,13 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
@@ -31,6 +31,7 @@ type k8seventsReceiver struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
+	wg              sync.WaitGroup
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -73,14 +74,16 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
 		}
 
-		kr.settings.Logger.Info("registering the receiver in leader election")
 		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
 		if !ok {
-			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
+			return fmt.Errorf("the extension %T does not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
 		}
+
+		kr.settings.Logger.Info("registering the receiver in leader election")
 
 		elector.SetCallBackFuncs(
 			func(_ context.Context) {
+				kr.settings.Logger.Info("Events Receiver started as leader")
 				if len(kr.config.Namespaces) == 0 {
 					kr.startWatch(corev1.NamespaceAll, k8sInterface)
 				} else {
@@ -88,39 +91,55 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 						kr.startWatch(ns, k8sInterface)
 					}
 				}
-				kr.settings.Logger.Info("Events Receiver started as leader")
 			},
+			// onStoppedLeading: stop watches, but DO NOT shut the whole receiver down
 			func() {
-				kr.settings.Logger.Info("no longer leader, stopping")
-				err = kr.Shutdown(context.Background())
-				if err != nil {
-					kr.settings.Logger.Error("shutdown receiver error:", zap.Error(err))
-				}
-			})
-	} else {
-		kr.settings.Logger.Info("starting to watch namespaces for the events.")
-		if len(kr.config.Namespaces) == 0 {
-			kr.startWatch(corev1.NamespaceAll, k8sInterface)
-		} else {
-			for _, ns := range kr.config.Namespaces {
-				kr.startWatch(ns, k8sInterface)
-			}
-		}
+				kr.settings.Logger.Info("no longer leader, stopping watches")
+				kr.stopWatches()
+			},
+		)
+		return nil
 	}
 
+	// No leader election: start immediately.
+	kr.settings.Logger.Info("starting to watch namespaces for the events.")
+	if len(kr.config.Namespaces) == 0 {
+		kr.startWatch(corev1.NamespaceAll, k8sInterface)
+	} else {
+		for _, ns := range kr.config.Namespaces {
+			kr.startWatch(ns, k8sInterface)
+		}
+	}
 	return nil
 }
 
 func (kr *k8seventsReceiver) Shutdown(context.Context) error {
-	if kr.cancel == nil {
-		return nil
+	// Stop informers and wait for them to exit.
+	kr.stopWatches()
+
+	if kr.cancel != nil {
+		kr.cancel()
+		kr.cancel = nil
 	}
-	// Stop watching all the namespaces by closing all the stopper channels.
-	for _, stopperChan := range kr.stopperChanList {
-		close(stopperChan)
-	}
-	kr.cancel()
 	return nil
+}
+
+// stopWatches closes all informer stop channels (idempotently) and waits for their goroutines to exit.
+func (kr *k8seventsReceiver) stopWatches() {
+	if len(kr.stopperChanList) == 0 {
+		return
+	}
+	for _, ch := range kr.stopperChanList {
+		select {
+		case <-ch: // already closed
+		default:
+			close(ch)
+		}
+	}
+	// Wait for all controller.Run goroutines to finish.
+	kr.wg.Wait()
+	// Reset slice so we can start again on leadership regain.
+	kr.stopperChanList = nil
 }
 
 // Add the 'Event' handler and trigger the watch for a specific namespace.
@@ -131,12 +150,14 @@ func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
-			ev := obj.(*corev1.Event)
-			kr.handleEvent(ev)
+			if ev, ok := obj.(*corev1.Event); ok {
+				kr.handleEvent(ev)
+			}
 		},
 		UpdateFunc: func(_, obj any) {
-			ev := obj.(*corev1.Event)
-			kr.handleEvent(ev)
+			if ev, ok := obj.(*corev1.Event); ok {
+				kr.handleEvent(ev)
+			}
 		},
 	}, ns, stopperChan)
 }
@@ -153,7 +174,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 // startWatchingNamespace creates an informer and starts
 // watching a specific namespace for the events.
-func (*k8seventsReceiver) startWatchingNamespace(
+func (kr *k8seventsReceiver) startWatchingNamespace(
 	clientset k8s.Interface,
 	handlers cache.ResourceEventHandlerFuncs,
 	ns string,
@@ -167,7 +188,11 @@ func (*k8seventsReceiver) startWatchingNamespace(
 		ResyncPeriod:  0,
 		Handler:       handlers,
 	})
-	go controller.Run(stopper)
+	kr.wg.Add(1)
+	go func() {
+		defer kr.wg.Done()
+		controller.Run(stopper)
+	}()
 }
 
 // Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)
