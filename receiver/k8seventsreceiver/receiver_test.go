@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -139,7 +138,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.K8sLeaderElector = &leaderID
-	cfg.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
 		return fake.NewSimpleClientset(), nil
 	}
 
