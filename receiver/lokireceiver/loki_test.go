@@ -73,6 +73,9 @@ func sendToCollector(endpoint, contentType, contentEncoding string, body []byte)
 	if err != nil {
 		return err
 	}
+	// Ensure the request is closed when the test finishes so t.Cleanup() can shut down
+	// without consulting the (already-canceled) test context. See issue #42173.
+	req.Close = true
 
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Content-Encoding", contentEncoding)
@@ -107,8 +110,12 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(ctx))
+	})
 
 	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -131,8 +138,12 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(ctx))
+	})
 
 	return addr, sink
 }
@@ -408,8 +419,12 @@ func TestExpectedStatus(t *testing.T) {
 			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
-			require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+			ctx := t.Context()
+
+			require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, lr.Shutdown(ctx))
+			})
 			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
