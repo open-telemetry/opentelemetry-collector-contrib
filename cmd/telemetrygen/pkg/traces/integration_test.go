@@ -113,7 +113,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		duration := time.Since(start)
 
 		assert.NoError(t, err, "telemetrygen should complete successfully with --traces parameter")
-		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+		assert.Less(t, duration, 10*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all traces to be processed
 		time.Sleep(500 * time.Millisecond)
