@@ -7,6 +7,53 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.134.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/awscloudwatchmetrics`: Remove unmaintained component (#42238)
+- `opencensusreceiver`: Remove the deprecated opencensus receiver. (#36791)
+- `opencensusexporter`: Remove the deprecated opencensus exporter. (#36791)
+- `pkg/ottl`: Keep the original map and continue processing keys if an error is encountered when calling an optional replacement function in `replace_all_patterns`. (#42359)
+
+### 💡 Enhancements 💡
+
+- `cmd/opampsupervisor`: Add metrics to the Supervisor application. (#40155)
+  Add some metrics to the cmd/opampsupervisor application.
+  
+  The following metrics are added:
+  - supervisor.collector.health_status: The health status of the collector.
+  
+- `cfgardenobserver`: Move to alpha (#41586)
+- `exporter/prometheus`: Add debug logging for refused metric points. (#13643)
+- `httpcheckreceiver`: Add response body validation (#41325)
+  The httpcheckreceiver now supports validating the response body using a few approaches.
+  String matching, JSON path matching, size ranges, and regex matching are supported.
+  
+- `httpcheckreceiver`: Fix race for timing of request steps (#42042)
+  The httpcheckreceiver uses atomic operations to track the timing of request steps to avoid race conditions.
+  
+- `pkg/ottl`: Avoid multiple copies of the Map in replace_all_patterns. (#42359)
+- `kafkareceiver`: Add profiles support (#41479)
+- `pkg/ottl`: Remove unnecessary Value initialization when setting an attribute/body (#42335, #42362)
+- `opampsupervisor`: Emit spans for handling OpAMP messages (#38724)
+- `pkg/ottl`: Add an `Index(target, value)` OTTL function which returns the index of the first occurrence of `value` in `target`. (#40351)
+- `pkg/stanza`: add `sanitize_utf8` operator to replace invalid UTF-8 characters. (#42028)
+
+### 🧰 Bug fixes 🧰
+
+- `elasticsearchexporter`: Fix the warning on Kibana when using `sum` operation on delta temporality sum metric mapped as a counter (#40804)
+- `failoverconnector`: fix for flaky test in failover_test.go (#42020)
+- `k8sattributesprocessor`: Allow service.namespace to be used in rules and fix docs (#40859)
+- `prometheusremotewriteexporter`: Make sure concurrency is set to the appropriate value (#41785)
+- `tailsamplingprocessor`: Fix a race condition in the tailsampling processor that could cause traces to be dropped prematurely. (#41656)
+- `sqlserverreceiver`: Fix memory leak from top queries and query samples features (#42302)
+  The issue was caused by the misuse of the obfuscate library.
+  
+- `telemetrygen`: Fix infinite duration bug and add tests. (#42170)
+
+<!-- previous-version -->
+
 ## v0.133.0
 
 ### 🛑 Breaking changes 🛑
