@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/IBM/sarama v1.46.0
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.134.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
