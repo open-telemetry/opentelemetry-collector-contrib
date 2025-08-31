@@ -227,14 +227,14 @@ wait_for_metadata_timeout: 10s
 
 ## Extracting attributes from pod labels and annotations
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets and nodes.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/StatefulSet/Node annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/nodes and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets, daemonsets and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/StatefulSet/DaemonSet/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/daemonsets/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset" and "node" and defaults to "pod" if none is specified.
+The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset", "daemonset" and "node" and defaults to "pod" if none is specified.
 
-By default, extracting metadata from `Deployments` and `StatefulSets` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
+By default, extracting metadata from `Deployments`, `StatefulSets` and `DaemonSets` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
 A few examples to use this config are as follows:
 
@@ -345,7 +345,7 @@ rules:
   resources: ["pods", "namespaces", "nodes"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
-  resources: ["replicasets", "deployments", "statefulsets"]
+  resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["extensions"]
   resources: ["replicasets"]
@@ -394,7 +394,7 @@ rules:
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
-  resources: ["replicasets", "deployments", "statefulsets"]
+  resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -512,7 +512,7 @@ timestamp value as an RFC3339 compliant timestamp.
    of the node it is on, it consumes more memory than other processors. That consumption is compounded
    if users don't filter down to only the metadata for the node the processor is running on.
 
-## Feature Gate
+## Feature Gates
 
 ### `k8sattr.fieldExtractConfigRegex.disallow`
 
@@ -543,3 +543,15 @@ can be converted with the usage of `ExtractPatterns` function:
   - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
   - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
 ```
+
+### `k8sattr.labelsAnnotationsSingular.allow`
+
+The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+
+The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
+
+Affected resources are:
+
+- namespaces
+- nodes
+- pods
