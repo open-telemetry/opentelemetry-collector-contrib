@@ -36,7 +36,7 @@ type Statement[K any] struct {
 // If the statement contains no condition, the function will run and true will be returned.
 // In addition, the functions return value is always returned.
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
-	ctx, span := s.tracer.Start(ctx, "ottl.Statement.Execute")
+	ctx, span := s.tracer.Start(ctx, "ottl/StatementExecution")
 	defer span.End()
 
 	span.SetAttributes(

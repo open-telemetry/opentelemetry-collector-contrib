@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -2556,7 +2557,7 @@ func Test_Statement_Execute(t *testing.T) {
 			},
 			expectedCondition: true,
 			expectedResult:    1,
-			expectedSpan:      expectedSpan{
+			expectedSpan: expectedSpan{
 				name: "ottl/StatementExecution",
 				attributes: []attribute.KeyValue{
 					{
@@ -2570,7 +2571,7 @@ func Test_Statement_Execute(t *testing.T) {
 				},
 				status: trace.Status{
 					Code:        codes.Ok,
-					Description: "statement executed successfully",
+					Description: "",
 				},
 			},
 		},
@@ -2582,7 +2583,7 @@ func Test_Statement_Execute(t *testing.T) {
 			},
 			expectedCondition: false,
 			expectedResult:    nil,
-			expectedSpan:      expectedSpan{
+			expectedSpan: expectedSpan{
 				name: "ottl/StatementExecution",
 				attributes: []attribute.KeyValue{
 					{
@@ -2595,8 +2596,8 @@ func Test_Statement_Execute(t *testing.T) {
 					},
 				},
 				status: trace.Status{
-					Code:        codes.Error,
-					Description: "failed to execute statement 'test': test",
+					Code:        codes.Ok,
+					Description: "",
 				},
 			},
 		},
@@ -2608,7 +2609,7 @@ func Test_Statement_Execute(t *testing.T) {
 			},
 			expectedCondition: true,
 			expectedResult:    nil,
-			expectedSpan:      expectedSpan{
+			expectedSpan: expectedSpan{
 				name: "ottl/StatementExecution",
 				attributes: []attribute.KeyValue{
 					{
@@ -2622,7 +2623,7 @@ func Test_Statement_Execute(t *testing.T) {
 				},
 				status: trace.Status{
 					Code:        codes.Ok,
-					Description: "statement executed successfully",
+					Description: "",
 				},
 			},
 		},
@@ -2633,13 +2634,20 @@ func Test_Statement_Execute(t *testing.T) {
 				condition:         BoolExpr[any]{tt.condition},
 				function:          Expr[any]{exprFunc: tt.function},
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
-				tracer:            noop.NewTracerProvider().Tracer("ottl"),
+				origText:          "test",
 			}
+			spanRecorder := tracetest.NewSpanRecorder()
+			statement.telemetrySettings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+			statement.tracer = statement.telemetrySettings.TracerProvider.Tracer("ottl")
 
 			result, condition, err := statement.Execute(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+
+			require.Equal(t, tt.expectedSpan.name, spanRecorder.Ended()[0].Name())
+			require.Equal(t, tt.expectedSpan.attributes, spanRecorder.Ended()[0].Attributes())
+			require.Equal(t, tt.expectedSpan.status, spanRecorder.Ended()[0].Status())
 		})
 	}
 }
