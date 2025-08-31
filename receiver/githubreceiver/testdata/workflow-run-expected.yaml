@@ -52,10 +52,8 @@ resourceSpans:
           - endTimeUnixNano: "1744837827000000000"
             kind: 2
             links:
-              - spanId: ""
-                traceId: 3ab150c94bf95169f4958bc860bddc3b
+              - traceId: 3ab150c94bf95169f4958bc860bddc3b
             name: build-and-test
-            parentSpanId: ""
             spanId: aba151af7cfbcf0f
             startTimeUnixNano: "1744837733000000000"
             status:

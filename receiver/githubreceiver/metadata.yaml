@@ -31,8 +31,14 @@ attributes:
   vcs.ref.head.name:
     description: The name of the VCS head reference (branch).
     type: string
+  vcs.ref.head.type:
+    description: The type of the head reference (branch, tag).
+    type: string
+    enum:
+      - branch
+      - tag
   vcs.ref.base.name:
-    description: The name of the VCS base reference (branch).
+    description: The name of the VCS base reference (branch/tag) for comparison.
     type: string
   vcs.ref.base.type:
     description: The type of the base reference (branch, tag).
@@ -52,8 +58,6 @@ attributes:
     enum:
       - open
       - merged
-      - closed
-      - wip
   vcs.revision_delta.direction:
     description: The type of revision comparison.
     type: string
@@ -88,21 +92,21 @@ metrics:
     unit: s
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
   vcs.ref.revisions_delta:
     enabled: true
     description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
     unit: "{revision}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.type, vcs.ref.base.name, vcs.ref.base.type, vcs.revision_delta.direction]
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.revision_delta.direction]
   vcs.ref.lines_delta:
     enabled: true
     description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
     unit: "{line}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.type, vcs.ref.base.name, vcs.ref.base.type, vcs.line_change.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.line_change.type]
   vcs.contributor.count:
     enabled: false
     description: The number of unique contributors to a repository.

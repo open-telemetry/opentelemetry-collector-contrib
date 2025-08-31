@@ -133,11 +133,13 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
+				headRefType := metadata.AttributeVcsRefHeadTypeBranch
+
 				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/githubreceiver/internal/scraper/githubscraper/README.md#github-limitations
 				// for more information as to why `BehindBy` and `AheadBy` are
 				// swapped.
-				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionAhead)
-				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionBehind)
+				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionAhead)
+				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionBehind)
 
 				var additions int
 				var deletions int
@@ -149,9 +151,9 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
-				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, refType)
-				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, refType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeAdded)
-				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, refType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeRemoved)
+				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, headRefType)
+				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeAdded)
+				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeRemoved)
 			}
 
 			// Get the contributor count for each of the repositories

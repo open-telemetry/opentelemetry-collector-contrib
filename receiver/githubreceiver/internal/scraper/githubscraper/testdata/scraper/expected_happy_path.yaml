@@ -115,7 +115,7 @@ resourceMetrics:
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: vcs.ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -140,7 +140,7 @@ resourceMetrics:
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: vcs.ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -167,7 +167,7 @@ resourceMetrics:
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: vcs.ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -192,7 +192,7 @@ resourceMetrics:
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: vcs.ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -216,7 +216,7 @@ resourceMetrics:
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: vcs.ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
