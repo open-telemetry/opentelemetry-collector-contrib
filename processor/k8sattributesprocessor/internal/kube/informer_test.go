@@ -47,6 +47,13 @@ func Test_newSharedStatefulSetInformer(t *testing.T) {
 	assert.NotNil(t, informer)
 }
 
+func Test_newSharedDaemonSetInformer(t *testing.T) {
+	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	require.NoError(t, err)
+	informer := newDaemonSetSharedInformer(client, "ns")
+	assert.NotNil(t, informer)
+}
+
 func Test_newKubeSystemSharedInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
