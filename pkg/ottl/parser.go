@@ -59,7 +59,6 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
-		span.End()
 		return nil, false, err
 	}
 	var result any
@@ -67,12 +66,10 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 		result, err = s.function.Eval(ctx, tCtx)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
-			span.End()
 			return nil, true, err
 		}
 	}
 	span.SetStatus(codes.Ok, "statement executed successfully")
-	span.End()
 	return result, condition, nil
 }
 

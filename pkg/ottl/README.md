@@ -16,7 +16,6 @@ The OpenTelemetry Transformation Language (OTTL) is a small, domain-specific pro
 
 This package implements everything necessary to use OTTL in a Collector component or in another user-facing system.
 
-- [OpenTelemetry Transformation Language](#opentelemetry-transformation-language)
   - [Getting Started](#getting-started)
   - [Where to use OTTL](#where-to-use-ottl)
   - [Troubleshooting](#troubleshooting)
