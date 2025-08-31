@@ -15,6 +15,7 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -37,12 +38,18 @@ const (
 	// `*.label.*` and `*.annotation.*`
 	// Sematic conventions define `*.label.*` and `*.annotation.*`
 	// More information - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37957
-	K8sPodLabels            = "k8s.pod.labels.%s"
-	K8sPodAnnotations       = "k8s.pod.annotations.%s"
-	K8sNodeLabels           = "k8s.node.labels.%s"
-	K8sNodeAnnotations      = "k8s.node.annotations.%s"
-	K8sNamespaceLabels      = "k8s.namespace.labels.%s"
-	K8sNamespaceAnnotations = "k8s.namespace.annotations.%s"
+	K8sPodLabelsKey            = "k8s.pod.labels.%s"
+	K8sPodLabelKey             = "k8s.pod.label.%s"
+	K8sPodAnnotationsKey       = "k8s.pod.annotations.%s"
+	K8sPodAnnotationKey        = "k8s.pod.annotation.%s"
+	K8sNodeLabelsKey           = "k8s.node.labels.%s"
+	K8sNodeLabelKey            = "k8s.node.label.%s"
+	K8sNodeAnnotationsKey      = "k8s.node.annotations.%s"
+	K8sNodeAnnotationKey       = "k8s.node.annotation.%s"
+	K8sNamespaceLabelsKey      = "k8s.namespace.labels.%s"
+	K8sNamespaceLabelKey       = "k8s.namespace.label.%s"
+	K8sNamespaceAnnotationsKey = "k8s.namespace.annotations.%s"
+	K8sNamespaceAnnotationKey  = "k8s.namespace.annotation.%s"
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
 	K8sDeploymentLabel      = "k8s.deployment.label.%s"
 	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
@@ -52,6 +59,13 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#daemonset
 	K8sDaemonSetLabel      = "k8s.daemonset.label.%s"
 	K8sDaemonSetAnnotation = "k8s.daemonset.annotation.%s"
+)
+
+var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.labelsAnnotationsSingular.allow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
+	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -810,8 +824,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	formatterLabel := K8sPodLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sPodLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabels)
+		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sPodAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sPodAnnotationKey
 	}
 
 	if c.Rules.ServiceName {
@@ -825,7 +849,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotations)
+		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
 	}
 	return tags
 }
@@ -1037,12 +1061,22 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := K8sNamespaceLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sNamespaceLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabels)
+		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sNamespaceAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sNamespaceAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotations)
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
 	}
 
 	return tags
@@ -1051,14 +1085,23 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := K8sNodeLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sNodeLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabels)
+		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sNodeAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sNodeAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotations)
+		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
 	}
-
 	return tags
 }
 
