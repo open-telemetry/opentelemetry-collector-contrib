@@ -112,8 +112,6 @@ receivers:
           static_configs:
             - targets: [%q]
 
-processors:
-  batch:
 exporters:
   prometheusremotewrite:
     endpoint: %q
@@ -121,10 +119,12 @@ exporters:
       insecure: true
 
 service:
+  telemetry:
+    metrics:
+      level: "none"
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
