@@ -19,7 +19,6 @@ subtext: |
   - Resource attributes changed: `organization.name` -> `vcs.owner.name`, `vcs.vendor.name` -> `vcs.provider.name`
   - Trace attributes now use standardized VCS naming: `vcs.ref.head.type` -> `vcs.ref.type`
   - Added new standardized attributes: `vcs.ref.base.name`, `vcs.ref.base.type`, `vcs.ref.type`
-  - Enhanced `vcs.change.state` enum with `closed` and `wip` values
   - Delta metrics now include base reference tracking attributes
   - Updated schema URL to https://opentelemetry.io/schemas/1.37.0
 
