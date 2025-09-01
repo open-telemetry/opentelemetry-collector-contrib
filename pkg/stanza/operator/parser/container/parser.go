@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/lrucache"
 	"regexp"
 	"strings"
 	"sync"
@@ -69,8 +68,6 @@ type Parser struct {
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
 	timeLayout              string
-	// TODO this should be an interface to a cache
-	metadataCache *lrucache.Cache
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
@@ -283,17 +280,6 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 
 	var parsedValues map[string]any
 	var err error
-	/*
-		if value, ok := p.metadataCache.Get(rawLogPath); ok {
-			parsedValues = value.(map[string]any)
-		} else {
-			parsedValues, err = helper.MatchValues(rawLogPath, pathMatcher)
-			if err != nil {
-				return errors.New("failed to detect a valid log path")
-			}
-			p.metadataCache.Add(rawLogPath, parsedValues)
-		}
-	*/
 
 	parsedValues, err = helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
