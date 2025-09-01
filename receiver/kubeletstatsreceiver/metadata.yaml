@@ -504,8 +504,9 @@ metrics:
     enabled: false
     description: "The number of used bytes in the pod volume."
     unit: By
-    gauge:
+    sum:
       value_type: int
+      monotonic:
     attributes: []
   k8s.volume.inodes:
     enabled: true

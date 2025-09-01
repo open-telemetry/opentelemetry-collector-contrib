@@ -534,9 +534,9 @@ The time since the pod started
 
 The number of used bytes in the pod volume.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Unspecified | false |
 
 ## Resource Attributes
 
