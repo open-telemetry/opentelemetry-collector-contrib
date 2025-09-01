@@ -753,7 +753,8 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			cfg := &Config{Logs: LogFilters{LogConditions: tt.conditions}, logFunctions: defaultLogFunctionsMap()}
+			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
 			got, err := processor.processLogs(t.Context(), constructLogs())
@@ -773,7 +774,8 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	processor, err := newFilterLogsProcessor(metadatatest.NewSettings(tel), &Config{
-		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+		Logs:         LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+		logFunctions: defaultLogFunctionsMap(),
 	})
 	assert.NoError(t, err)
 
