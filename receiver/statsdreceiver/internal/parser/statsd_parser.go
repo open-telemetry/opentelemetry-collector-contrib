@@ -9,7 +9,6 @@ import (
 	"math"
 	"net"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -106,37 +105,28 @@ type explicitBucketConfig struct {
 }
 
 type explicitBucket struct {
-	_             struct{}
-	buckets       map[float64]int
-	sortedBuckets []float64
-	count         uint64
-	infCount      uint64
-	sum           float64
-	min           float64
-	max           float64
+	_         struct{}
+	bucketMap map[float64]int
+	buckets   []float64
+	count     uint64
+	infCount  uint64
+	sum       float64
+	min       float64
+	max       float64
 }
 
+// Init retrieves ascendingly sorted unique buckets
 func (e *explicitBucket) Init(buckets []float64) {
 	e.count = 0
 	e.sum = 0
 	e.min = math.Inf(-1)
 	e.max = math.Inf(+1)
-	sort.Float64s(buckets)
-	uniqueBuckets := make([]float64, 0, len(buckets))
-	if len(buckets) > 0 {
-		uniqueBuckets = append(uniqueBuckets, buckets[0])
-		for i := 1; i < len(buckets); i++ {
-			if buckets[i] > uniqueBuckets[len(uniqueBuckets)-1] {
-				uniqueBuckets = append(uniqueBuckets, buckets[i])
-			}
-		}
-	}
-	e.buckets = make(map[float64]int, len(uniqueBuckets))
-	for _, bucket := range uniqueBuckets {
-		e.buckets[bucket] = 0
+	e.bucketMap = make(map[float64]int, len(buckets))
+	for _, bucket := range buckets {
+		e.bucketMap[bucket] = 0
 	}
 
-	e.sortedBuckets = uniqueBuckets
+	e.buckets = buckets
 }
 
 func (e *explicitBucket) UpdateByIncr(value float64, count uint64) {
@@ -158,9 +148,9 @@ func (e *explicitBucket) UpdateByIncr(value float64, count uint64) {
 		}
 	}
 	isBucketFound := false
-	for _, bucket := range e.sortedBuckets {
+	for _, bucket := range e.buckets {
 		if value <= bucket {
-			e.buckets[bucket] += int(count)
+			e.bucketMap[bucket] += int(count)
 			isBucketFound = true
 			break
 		}

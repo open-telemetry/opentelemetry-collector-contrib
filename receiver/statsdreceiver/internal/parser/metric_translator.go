@@ -119,14 +119,14 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 			dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 		}
 
-		dp.ExplicitBounds().FromRaw(eb.sortedBuckets)
+		dp.ExplicitBounds().FromRaw(eb.buckets)
 		// +1 to give space for the +Inf bucket
-		cumulativeCounts := make([]uint64, len(eb.sortedBuckets)+1)
+		cumulativeCounts := make([]uint64, len(eb.buckets)+1)
 
-		for i, bound := range eb.sortedBuckets {
-			cumulativeCounts[i] = uint64(eb.buckets[bound])
+		for i, bound := range eb.buckets {
+			cumulativeCounts[i] = uint64(eb.bucketMap[bound])
 		}
-		cumulativeCounts[len(eb.sortedBuckets)] = eb.infCount
+		cumulativeCounts[len(eb.buckets)] = eb.infCount
 		dp.BucketCounts().FromRaw(cumulativeCounts)
 	} else {
 		expo := nm.SetEmptyExponentialHistogram()
