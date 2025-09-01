@@ -293,8 +293,6 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 			}
 			p.metadataCache.Add(rawLogPath, parsedValues)
 		}
-
-
 	*/
 
 	parsedValues, err = helper.MatchValues(rawLogPath, pathMatcher)

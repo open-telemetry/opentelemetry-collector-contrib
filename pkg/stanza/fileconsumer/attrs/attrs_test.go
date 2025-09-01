@@ -127,6 +127,32 @@ func TestResolver_extractMetadata(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			args: args{
+				path:       "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler/1.log",
+				attributes: map[string]any{},
+			},
+			fields: fields{
+				MetadataExtraction: MetadataExtraction{
+					Regex: "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$",
+					Mapping: map[string]string{
+						"container_name": "k8s.container.name",
+						"namespace":      "k8s.namespace.name",
+						"pod_name":       "k8s.pod.name",
+						"restart_count":  "k8s.container.restart_count",
+						"uid":            "k8s.pod.uid",
+					},
+				},
+			},
+			want: map[string]any{
+				"k8s.namespace.name":          "some",
+				"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+				"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+				"k8s.container.name":          "kube-scheduler",
+				"k8s.container.restart_count": "1",
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

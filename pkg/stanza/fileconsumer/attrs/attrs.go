@@ -5,6 +5,7 @@ package attrs // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/lrucache"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,6 +36,9 @@ type Resolver struct {
 	IncludeFileOwnerName      bool               `mapstructure:"include_file_owner_name,omitempty"`
 	IncludeFileOwnerGroupName bool               `mapstructure:"include_file_owner_group_name,omitempty"`
 	MetadataExtraction        MetadataExtraction `mapstructure:"metadata_extraction"`
+
+	// TODO this should be an interface to a cache
+	metadataCache *lrucache.Cache
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -88,6 +92,15 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 }
 
 func (r *Resolver) extractMetadata(path string, attributes map[string]any) (map[string]any, error) {
+	if r.metadataCache == nil {
+		r.metadataCache = lrucache.New(1000)
+	}
+
+	if value, ok := r.metadataCache.Get(path); ok {
+		parsedValues := value.(map[string]any)
+		return parsedValues, nil
+	}
+
 	regex, err := regexp.Compile(r.MetadataExtraction.Regex)
 	if err != nil {
 		return attributes, err
@@ -104,8 +117,13 @@ func (r *Resolver) extractMetadata(path string, attributes map[string]any) (map[
 			continue
 		}
 		if subexp != "" {
-			attributes[subexp] = matches[i]
+			if mappedKey, ok := r.MetadataExtraction.Mapping[subexp]; ok {
+				attributes[mappedKey] = matches[i]
+			} else {
+				attributes[subexp] = matches[i]
+			}
 		}
 	}
+	r.metadataCache.Add(path, attributes)
 	return attributes, nil
 }
