@@ -60,6 +60,13 @@ attributes:
       - p50
       - p99
       - p99.9
+  mode:
+    description: Redis server mode
+    type: string
+    enum:
+      - cluster
+      - sentinel
+      - standalone
 
 metrics:
   redis.maxmemory:
@@ -167,7 +174,6 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
 
-
   redis.keys.evicted:
     enabled: true
     description: Number of evicted keys due to maxmemory limit
@@ -200,7 +206,7 @@ metrics:
     description: Total number of bytes allocated by Redis using its allocator
     unit: By
     gauge:
-     value_type: int
+      value_type: int
 
   redis.memory.peak:
     enabled: true
@@ -291,6 +297,14 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
 
+  redis.mode:
+    enabled: true
+    description: Redis server mode
+    unit: "{state}"
+    gauge:
+      value_type: int
+    attributes: [mode]
+
   redis.latest_fork:
     enabled: true
     description: Duration of the latest fork operation in microseconds
@@ -318,6 +332,57 @@ metrics:
     enabled: true
     description: The server's current replication offset
     unit: "By"
+    gauge:
+      value_type: int
+
+  redis.sentinel.masters:
+    enabled: true
+    description: Number of masters monitored by Sentinel.
+    unit: "{masters}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.tilt:
+    enabled: true
+    description: Whether Sentinel is in TILT mode (1 = tilt, 0 = normal).
+    unit: "{state}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.tilt_since_seconds:
+    enabled: true
+    description: Duration in seconds of current TILT, or -1 if not in TILT mode.
+    unit: "s"
+    gauge:
+      value_type: int
+
+  redis.sentinel.total_tilt:
+    enabled: true
+    description: Total TILT occurrences since start.
+    unit: "{events}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  redis.sentinel.running_scripts:
+    enabled: true
+    description: Number of running Sentinel scripts.
+    unit: "{scripts}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.scripts_queue_length:
+    enabled: true
+    description: Length of Sentinel scripts queue.
+    unit: "{scripts}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.simulate_failure_flags:
+    enabled: true
+    description: Simulated failure flags bitmask.
+    unit: "{flags}"
     gauge:
       value_type: int
 
