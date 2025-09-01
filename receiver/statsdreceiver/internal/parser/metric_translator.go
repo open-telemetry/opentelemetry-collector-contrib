@@ -97,78 +97,88 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 	}
 }
 
-func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+func buildExplicitBucketHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
+	h := nm.SetEmptyHistogram()
+	h.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := h.DataPoints().AppendEmpty()
+	eb := histogram.explicitBucket
+
+	dp.SetCount(eb.count)
+	dp.SetSum(eb.sum)
+	if eb.count != 0 {
+		dp.SetMin(histogram.explicitBucket.min)
+		dp.SetMax(histogram.explicitBucket.max)
+	}
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	dp.ExplicitBounds().FromRaw(eb.buckets)
+	// +1 to give space for the +Inf bucket
+	cumulativeCounts := make([]uint64, len(eb.buckets)+1)
+
+	for i, bound := range eb.buckets {
+		cumulativeCounts[i] = uint64(eb.bucketMap[bound])
+	}
+	cumulativeCounts[len(eb.buckets)] = eb.infCount
+	dp.BucketCounts().FromRaw(cumulativeCounts)
+}
+
+func buildExponentialBucketHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	expo := nm.SetEmptyExponentialHistogram()
+	expo.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	dp := expo.DataPoints().AppendEmpty()
+	agg := histogram.agg
+
+	dp.SetCount(agg.Count())
+	dp.SetSum(agg.Sum())
+	if agg.Count() != 0 {
+		dp.SetMin(agg.Min())
+		dp.SetMax(agg.Max())
+	}
+
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	dp.SetZeroCount(agg.ZeroCount())
+	dp.SetScale(agg.Scale())
+
+	for _, half := range []struct {
+		inFunc  func() *structure.Buckets
+		outFunc func() pmetric.ExponentialHistogramDataPointBuckets
+	}{
+		{agg.Positive, dp.Positive},
+		{agg.Negative, dp.Negative},
+	} {
+		in := half.inFunc()
+		out := half.outFunc()
+		out.SetOffset(in.Offset())
+
+		out.BucketCounts().EnsureCapacity(int(in.Len()))
+
+		for i := uint32(0); i < in.Len(); i++ {
+			out.BucketCounts().Append(in.At(i))
+		}
+	}
+}
+
+func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
 	if histogram.explicitBucket != nil {
-		h := nm.SetEmptyHistogram()
-		h.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-		dp := h.DataPoints().AppendEmpty()
-		eb := histogram.explicitBucket
-
-		dp.SetCount(eb.count)
-		dp.SetSum(eb.sum)
-		if eb.count != 0 {
-			dp.SetMin(histogram.explicitBucket.min)
-			dp.SetMax(histogram.explicitBucket.max)
-		}
-		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
-
-		for i := desc.attrs.Iter(); i.Next(); {
-			dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
-		}
-
-		dp.ExplicitBounds().FromRaw(eb.buckets)
-		// +1 to give space for the +Inf bucket
-		cumulativeCounts := make([]uint64, len(eb.buckets)+1)
-
-		for i, bound := range eb.buckets {
-			cumulativeCounts[i] = uint64(eb.bucketMap[bound])
-		}
-		cumulativeCounts[len(eb.buckets)] = eb.infCount
-		dp.BucketCounts().FromRaw(cumulativeCounts)
+		buildExplicitBucketHistogramMetric(desc, histogram, startTime, timeNow, ilm)
 	} else {
-		expo := nm.SetEmptyExponentialHistogram()
-		expo.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-
-		dp := expo.DataPoints().AppendEmpty()
-		agg := histogram.agg
-
-		dp.SetCount(agg.Count())
-		dp.SetSum(agg.Sum())
-		if agg.Count() != 0 {
-			dp.SetMin(agg.Min())
-			dp.SetMax(agg.Max())
-		}
-
-		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
-
-		for i := desc.attrs.Iter(); i.Next(); {
-			dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
-		}
-
-		dp.SetZeroCount(agg.ZeroCount())
-		dp.SetScale(agg.Scale())
-
-		for _, half := range []struct {
-			inFunc  func() *structure.Buckets
-			outFunc func() pmetric.ExponentialHistogramDataPointBuckets
-		}{
-			{agg.Positive, dp.Positive},
-			{agg.Negative, dp.Negative},
-		} {
-			in := half.inFunc()
-			out := half.outFunc()
-			out.SetOffset(in.Offset())
-
-			out.BucketCounts().EnsureCapacity(int(in.Len()))
-
-			for i := uint32(0); i < in.Len(); i++ {
-				out.BucketCounts().Append(in.At(i))
-			}
-		}
+		buildExponentialBucketHistogramMetric(desc, histogram, startTime, timeNow, ilm)
 	}
 }
 
