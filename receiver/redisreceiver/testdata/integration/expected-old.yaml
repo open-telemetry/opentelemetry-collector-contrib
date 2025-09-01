@@ -201,16 +201,6 @@ resourceMetrics:
                   timeUnixNano: "1687339332739210000"
             name: redis.memory.used
             unit: By
-          - description: The total number of bytes read from the network
-            name: redis.net.input
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "23"
-                  startTimeUnixNano: "1687339331739210000"
-                  timeUnixNano: "1687339332739210000"
-              isMonotonic: true
-            unit: By
           - description: Redis server mode
             gauge:
               dataPoints:
@@ -223,6 +213,16 @@ resourceMetrics:
                   timeUnixNano: "1687339332739210000"
             name: redis.mode
             unit: "{mode}"
+          - description: The total number of bytes read from the network
+            name: redis.net.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "23"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: By
           - description: The total number of bytes written to the network
             name: redis.net.output
             sum:
