@@ -394,23 +394,23 @@ func TestGetInstanceId(t *testing.T) {
 	localhostName, _ := os.Hostname()
 
 	hostString := "example.com:1521"
-	instanceId := getInstanceId(hostString, zap.NewNop())
-	assert.Equal(t, "example.com:1521", instanceId)
+	instanceID := getInstanceID(hostString, zap.NewNop())
+	assert.Equal(t, "example.com:1521", instanceID)
 
 	localHostStringUppercase := "Localhost:1521"
-	localInstanceId := getInstanceId(localHostStringUppercase, zap.NewNop())
-	assert.NotNil(t, localInstanceId)
-	assert.Equal(t, localhostName+":1521", localInstanceId)
+	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
 
 	localHostString := "127.0.0.1:1521"
-	localInstanceId = getInstanceId(localHostString, zap.NewNop())
-	assert.NotNil(t, localInstanceId)
-	assert.Equal(t, localhostName+":1521", localInstanceId)
+	localInstanceID = getInstanceID(localHostString, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
 
 	localHostStringIPV6 := "[::1]:1521"
-	localInstanceId = getInstanceId(localHostStringIPV6, zap.NewNop())
-	assert.NotNil(t, localInstanceId)
-	assert.Equal(t, localhostName+":1521", localInstanceId)
+	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
 }
 
 func readFile(fname string) []byte {

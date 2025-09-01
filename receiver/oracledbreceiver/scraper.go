@@ -167,7 +167,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 		obfuscator:         newObfuscator(),
-		serviceInstanceID:  getInstanceId(hostName, logger),
+		serviceInstanceID:  getInstanceID(hostName, logger),
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -835,7 +835,7 @@ func (s *oracleScraper) shutdown(_ context.Context) error {
 	return s.db.Close()
 }
 
-func getInstanceId(hostString string, logger *zap.Logger) string {
+func getInstanceID(hostString string, logger *zap.Logger) string {
 	host, port, err := net.SplitHostPort(hostString)
 	if err == nil && (strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()) {
 		host, err = os.Hostname()
