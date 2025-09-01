@@ -37,7 +37,6 @@ type encodingExtension struct {
 	unmarshaler awsunmarshaler.AWSUnmarshaler
 	format      string
 	gzipPool    sync.Pool
-
 	// if format is VPC, then content can be in parquet or
 	// gzip encoding
 	vpcFormat string
@@ -108,38 +107,45 @@ func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {
 	} else {
 		err = gzipReader.Reset(bytes.NewBuffer(buf))
 	}
+
 	if err != nil {
 		if gzipReader != nil {
 			e.gzipPool.Put(gzipReader)
 		}
 		return nil, fmt.Errorf("failed to decompress content: %w", err)
 	}
+
 	return gzipReader, nil
+}
+
+// isGzipData checks if the buffer contains gzip-compressed data by examining magic bytes
+func isGzipData(buf []byte) bool {
+	return len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b
+}
+
+// getReaderForData returns the appropriate reader and encoding type based on data format
+func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, error) {
+	if isGzipData(buf) {
+		reader, err := e.getGzipReader(buf)
+		return gzipEncoding, reader, err
+	}
+	return bytesEncoding, bytes.NewReader(buf), nil
 }
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLog:
-		reader, err := e.getGzipReader(buf)
-		return gzipEncoding, reader, err
+	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLog, formatELBAccessLog:
+		return e.getReaderForData(buf)
+
 	case formatS3AccessLog:
 		return bytesEncoding, bytes.NewReader(buf), nil
-	case formatELBAccessLog:
-		// Check if the data is compressed
-		// NLB and ALB store compressed files.
-		// CLB stores plain text files.
-		if len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b {
-			reader, err := e.getGzipReader(buf)
-			return gzipEncoding, reader, err
-		}
-		return bytesEncoding, bytes.NewReader(buf), nil
+
 	case formatVPCFlowLog:
 		switch e.vpcFormat {
 		case fileFormatParquet:
 			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", e.vpcFormat)
 		case fileFormatPlainText:
-			reader, err := e.getGzipReader(buf)
-			return gzipEncoding, reader, err
+			return e.getReaderForData(buf)
 		default:
 			// should not be possible
 			return "", nil, fmt.Errorf(
@@ -148,6 +154,7 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 				supportedVPCFlowLogFileFormat,
 			)
 		}
+
 	default:
 		// should not be possible
 		return "", nil, fmt.Errorf("unimplemented: format %q has no reader", e.format)
@@ -159,6 +166,7 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to get reader for %q logs: %w", e.format, err)
 	}
+
 	defer func() {
 		if encodingReader == gzipEncoding {
 			r := reader.(*gzip.Reader)
@@ -171,5 +179,6 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as %q format: %w", e.format, err)
 	}
+
 	return logs, nil
 }

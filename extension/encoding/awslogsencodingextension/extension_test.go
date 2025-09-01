@@ -24,7 +24,7 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to get reader for "cloudwatch_logs_subscription_filter" logs`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_logs_subscription_filter" format`)
 }
 
 func TestNew_CloudTrailLog(t *testing.T) {
@@ -33,7 +33,7 @@ func TestNew_CloudTrailLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, "failed to get reader for \"cloudtrail_log\" logs: failed to decompress content")
+	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudtrail_log" format`)
 }
 
 func TestNew_VPCFlowLog(t *testing.T) {
@@ -43,8 +43,10 @@ func TestNew_VPCFlowLog(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
-	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to get reader for "vpc_flow_log" logs`)
+	// VPC Flow Log unmarshaler handles non-log input gracefully
+	logs, err := e.UnmarshalLogs([]byte("some test input"))
+	require.NoError(t, err)
+	require.NotNil(t, logs)
 }
 
 func TestNew_S3AccessLog(t *testing.T) {
@@ -62,7 +64,7 @@ func TestNew_WAFLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to get reader for "waf_log" logs`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "waf_log" format`)
 }
 
 func TestNew_ELBAcessLog(t *testing.T) {
@@ -85,14 +87,12 @@ func TestGetReaderFromFormat(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		format      string
-		buf         []byte
-		expectedErr string
+		format string
+		buf    []byte
 	}{
-		"invalid_gzip_reader": {
-			format:      formatWAFLog,
-			buf:         []byte("invalid"),
-			expectedErr: "failed to decompress content",
+		"non_gzip_data_waf_log": {
+			format: formatWAFLog,
+			buf:    []byte("invalid"),
 		},
 		"valid_gzip_reader": {
 			format: formatWAFLog,
@@ -115,10 +115,6 @@ func TestGetReaderFromFormat(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			e := &encodingExtension{format: test.format}
 			_, reader, err := e.getReaderFromFormat(test.buf)
-			if test.expectedErr != "" {
-				require.ErrorContains(t, err, test.expectedErr)
-				return
-			}
 			require.NoError(t, err)
 			require.NotNil(t, reader)
 		})
@@ -157,7 +153,6 @@ func TestConcurrentGzipReaderUsage(t *testing.T) {
 
 	// non concurrent
 	testUnmarshall()
-
 	// concurrent usage
 	concurrent := 20
 	wg := sync.WaitGroup{}
