@@ -93,6 +93,7 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 
 func (r *Resolver) extractMetadata(path string, attributes map[string]any) (map[string]any, error) {
 	if r.metadataCache == nil {
+		// TODO the capacity should not be hardcoded
 		r.metadataCache = lrucache.New(1000)
 	}
 

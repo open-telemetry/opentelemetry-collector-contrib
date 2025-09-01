@@ -6,7 +6,6 @@ package container // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/lrucache"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -89,8 +88,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	p.recombineParser = recombineParser
-	// TODO the capacity should not be hardcoded
-	p.metadataCache = lrucache.New(100)
 
 	return p, nil
 }
