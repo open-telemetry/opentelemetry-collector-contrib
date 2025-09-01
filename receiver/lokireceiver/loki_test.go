@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -132,7 +133,9 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	require.NoError(t, err)
 
 	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.Background())) //nolint:usetesting
+	})
 
 	return addr, sink
 }
