@@ -136,11 +136,11 @@ func TestBasicStart(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialID)
 	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialKey)
 	assert.NotEmpty(t, se.registrationInfo.CollectorID)
-	require.NoError(t, se.Shutdown(context.Background()))
+	require.NoError(t, se.Shutdown(t.Context()))
 }
 
 func TestStoreCredentials(t *testing.T) {
@@ -214,8 +214,8 @@ func TestStoreCredentials(t *testing.T) {
 		require.NoError(t, err)
 		credsPath := path.Join(dir, fileName)
 		require.NoFileExists(t, credsPath)
-		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-		require.NoError(t, se.Shutdown(context.Background()))
+		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+		require.NoError(t, se.Shutdown(t.Context()))
 		require.FileExists(t, credsPath)
 	})
 
@@ -238,8 +238,8 @@ func TestStoreCredentials(t *testing.T) {
 		require.NoError(t, err)
 		credsPath := path.Join(dir, fileName)
 		require.NoFileExists(t, credsPath)
-		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-		require.NoError(t, se.Shutdown(context.Background()))
+		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+		require.NoError(t, se.Shutdown(t.Context()))
 		require.FileExists(t, credsPath)
 	})
 
@@ -261,8 +261,8 @@ func TestStoreCredentials(t *testing.T) {
 		require.NoError(t, err)
 		credsPath := path.Join(dir, fileName)
 		require.NoFileExists(t, credsPath)
-		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-		require.NoError(t, se.Shutdown(context.Background()))
+		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+		require.NoError(t, se.Shutdown(t.Context()))
 		require.FileExists(t, credsPath)
 	})
 
@@ -286,8 +286,8 @@ func TestStoreCredentials(t *testing.T) {
 
 		credsPath := path.Join(dir, fileName)
 		require.NoFileExists(t, credsPath)
-		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-		require.NoError(t, se.Shutdown(context.Background()))
+		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+		require.NoError(t, se.Shutdown(t.Context()))
 		require.FileExists(t, credsPath)
 	})
 }
@@ -368,8 +368,8 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	// it directly via store.Store()
 	require.FileExists(t, credsPath)
 
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, se.Shutdown(context.Background()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
 	require.FileExists(t, credsPath)
 
 	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
@@ -450,22 +450,22 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 	se1, err := newSumologicExtension(cfg1, logger1, component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, se1.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, se1.Shutdown(context.Background())) }) //nolint:usetesting
 	fileName1, err := credentials.HashKeyToFilename(createHashKey(cfg1))
 	require.NoError(t, err)
 	credsPath1 := path.Join(dir1, fileName1)
 	require.NoFileExists(t, credsPath1)
-	require.NoError(t, se1.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se1.Start(t.Context(), componenttest.NewNopHost()))
 	require.FileExists(t, credsPath1)
 
 	se2, err := newSumologicExtension(cfg2, logger2, component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, se2.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, se2.Shutdown(context.Background())) }) //nolint:usetesting
 	fileName2, err := credentials.HashKeyToFilename(createHashKey(cfg2))
 	require.NoError(t, err)
 	credsPath2 := path.Join(dir2, fileName2)
 	require.NoFileExists(t, credsPath2)
-	require.NoError(t, se2.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se2.Start(t.Context(), componenttest.NewNopHost()))
 	require.FileExists(t, credsPath2)
 
 	require.NotEqual(t, credsPath1, credsPath2,
@@ -533,7 +533,7 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, err)
 	require.Equal(t, hostname, se.collectorName)
 }
@@ -619,8 +619,8 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, se.Shutdown(context.Background()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
 	assert.NotEmpty(t, se.collectorName)
 	assert.Equal(t, hostname, se.collectorName)
 	colCreds, err := se.credentialsStore.Get(se.hashKey)
@@ -628,7 +628,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 	colName := colCreds.CollectorName
 	se, err = newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Equal(t, se.collectorName, colName)
 }
 
@@ -689,8 +689,8 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, se.Shutdown(context.Background()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
 }
 
 func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
@@ -975,7 +975,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 			se, err := newSumologicExtension(cfg, logger, component.NewID(metadata.Type), "1.0.0")
 			require.NoError(t, err)
-			require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
 			if !assert.Eventually(t,
 				func() bool {
@@ -988,7 +988,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 				)
 			}
 
-			require.NoError(t, se.Shutdown(context.Background()))
+			require.NoError(t, se.Shutdown(t.Context()))
 		})
 	}
 }
@@ -1061,7 +1061,7 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	require.Equal(t, hostname, se.collectorName)
 }
 
@@ -1109,7 +1109,7 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.EqualError(t, se.Start(context.Background(), componenttest.NewNopHost()),
+	require.EqualError(t, se.Start(t.Context(), componenttest.NewNopHost()),
 		"collector registration failed: failed to register the collector, got HTTP status code: 404")
 	require.Equal(t, hostname, se.collectorName)
 }
@@ -1210,7 +1210,7 @@ func TestRegistrationRedirect(t *testing.T) {
 	t.Run("works correctly", func(t *testing.T) {
 		se, err := newSumologicExtension(configFn(), logger, component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
-		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 		assert.Eventually(t, func() bool { return atomic.LoadInt32(&origReqCount) == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should only make 1 request to the original server before redirect",
@@ -1219,13 +1219,13 @@ func TestRegistrationRedirect(t *testing.T) {
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 3 requests (registration + metadata + heartbeat) to the destination server",
 		)
-		require.NoError(t, se.Shutdown(context.Background()))
+		require.NoError(t, se.Shutdown(t.Context()))
 	})
 
 	t.Run("credentials store retrieves credentials with redirected api url", func(t *testing.T) {
 		se, err := newSumologicExtension(configFn(), logger, component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
-		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
 		assert.Eventually(t, func() bool { return atomic.LoadInt32(&origReqCount) == 1 },
 			5*time.Second, 100*time.Millisecond,
@@ -1239,7 +1239,7 @@ func TestRegistrationRedirect(t *testing.T) {
 				"which we wait here) to the destination server",
 		)
 
-		require.NoError(t, se.Shutdown(context.Background()))
+		require.NoError(t, se.Shutdown(t.Context()))
 	})
 }
 
@@ -1320,7 +1320,7 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, logger, component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
 	const expectedReqCount = 10
 	if !assert.Eventually(t,
@@ -1334,7 +1334,7 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 		)
 	}
 
-	require.NoError(t, se.Shutdown(context.Background()))
+	require.NoError(t, se.Shutdown(t.Context()))
 }
 
 func TestRegistrationRequestPayload(t *testing.T) {
@@ -1409,10 +1409,10 @@ func TestRegistrationRequestPayload(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	require.Equal(t, hostname, se.collectorName)
 
-	require.NoError(t, se.Shutdown(context.Background()))
+	require.NoError(t, se.Shutdown(t.Context()))
 }
 
 func TestWatchCredentialKey(t *testing.T) {
@@ -1421,13 +1421,13 @@ func TestWatchCredentialKey(t *testing.T) {
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctxc, cancel := context.WithCancel(ctx)
 	cancel()
 	v := se.WatchCredentialKey(ctxc, "")
 	require.Empty(t, v)
 
-	v = se.WatchCredentialKey(context.Background(), "foobar")
+	v = se.WatchCredentialKey(t.Context(), "foobar")
 	require.Empty(t, v)
 
 	go func() {
@@ -1438,7 +1438,7 @@ func TestWatchCredentialKey(t *testing.T) {
 		close(se.credsNotifyUpdate)
 	}()
 
-	v = se.WatchCredentialKey(context.Background(), "")
+	v = se.WatchCredentialKey(t.Context(), "")
 	require.Equal(t, "test-credential-key", v)
 }
 
@@ -1516,10 +1516,10 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
 
-	httpClient, err := se.getHTTPClient(context.Background(), se.conf.ClientConfig, api.OpenRegisterResponsePayload{})
+	httpClient, err := se.getHTTPClient(t.Context(), se.conf.ClientConfig, api.OpenRegisterResponsePayload{})
 	require.NoError(t, err)
 
-	err = se.updateMetadataWithHTTPClient(context.TODO(), httpClient)
+	err = se.updateMetadataWithHTTPClient(t.Context(), httpClient)
 	require.NoError(t, err)
 }
 

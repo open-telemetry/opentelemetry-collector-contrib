@@ -175,7 +175,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		closeChan:           make(chan struct{}),
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
-		concurrency:         cfg.RemoteWriteQueue.NumConsumers,
+		concurrency:         concurrency,
 		clientSettings:      &cfg.ClientConfig,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
@@ -194,7 +194,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 
-	prwe.wal, err = newWAL(cfg.WAL, set, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL.Get(), set, prwe.export)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	prwe.wal.telemetry.recordWALWriteLatency(ctx, duration.Milliseconds())
 	if err != nil {
 		prwe.wal.telemetry.recordWALWritesFailures(ctx)
-		return consumererror.NewPermanent(err)
+		return err
 	}
 	return nil
 }
@@ -388,8 +388,10 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	}
 	compressedData := snappy.Encode(buf.snappy, buf.protobuf.Bytes())
 
+	retryCount := 0
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() (int, error) {
+		retryCount++
 		// check there was no timeout in the component level to avoid retries
 		// to continue to run after a timeout
 		select {
@@ -446,11 +448,23 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			prwe.settings.Logger.Debug("remote write request successful",
+				zap.Int("status_code", resp.StatusCode),
+				zap.String("status", resp.Status),
+				zap.String("endpoint", prwe.endpointURL.String()),
+			)
 			return resp.StatusCode, nil
 		}
 
-		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
-		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		prwe.settings.Logger.Error("failed to send WriteRequest to remote endpoint",
+			zap.Int("status_code", resp.StatusCode),
+			zap.String("status", resp.Status),
+			zap.String("endpoint", prwe.endpointURL.String()),
+			zap.Int("retry_attempt", retryCount),
+			zap.String("error", string(body)),
+		)
+		rerr := errors.New("remote write request failed")
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return resp.StatusCode, rerr
 		}
@@ -477,10 +491,11 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	}
 
 	if err != nil {
+		// A permanent error is being returned here so we don't retry on context deadline exceeded.
 		return consumererror.NewPermanent(err)
 	}
 
-	return err
+	return nil
 }
 
 func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }

@@ -6,7 +6,6 @@ package datadogexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,17 +31,20 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestNewExporter(t *testing.T) {
+	resetZorkianWarningsForTesting()
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
 		defer require.NoError(t, enableMetricExportSerializer())
@@ -78,18 +80,18 @@ func TestNewExporter(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -130,18 +132,18 @@ func TestNewExporter_Serializer(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -458,7 +460,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			require.NoError(t, err)
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
@@ -475,7 +477,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			}
 			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
-			err = exp.PushMetricsData(context.Background(), tt.metrics)
+			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
@@ -512,10 +514,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 }
 
 func TestNewExporter_Zorkian(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableMetricExportSerializer())
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
@@ -543,30 +544,34 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	}
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
+	core, logs := observer.New(zap.WarnLevel)
+	params.Logger = zap.New(core)
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
+
+	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
+
 	attrs := map[string]string{
 		string(conventions.DeploymentEnvironmentKey): "dev",
 		"custom_attribute":                           "custom_value",
@@ -893,6 +898,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+			resetZorkianWarningsForTesting()
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV1Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -908,9 +914,14 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			acfg := traceconfig.New()
+
+			core, logs := observer.New(zap.WarnLevel)
+			params := exportertest.NewNopSettings(metadata.Type)
+			params.Logger = zap.New(core)
+
 			exp, err := newMetricsExporter(
-				context.Background(),
-				exportertest.NewNopSettings(metadata.Type),
+				t.Context(),
+				params,
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -926,7 +937,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			}
 			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
-			err = exp.PushMetricsData(context.Background(), tt.metrics)
+			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
@@ -952,6 +963,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
+				assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 			}
 		})
 	}
@@ -1031,21 +1043,21 @@ func TestNewExporterWithProxy(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 
 	// Create & send test metrics (no metadata)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	// Send another with metadata
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan

@@ -27,24 +27,56 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for httpcheck metrics.
 type MetricsConfig struct {
-	HttpcheckDuration         MetricConfig `mapstructure:"httpcheck.duration"`
-	HttpcheckError            MetricConfig `mapstructure:"httpcheck.error"`
-	HttpcheckStatus           MetricConfig `mapstructure:"httpcheck.status"`
-	HttpcheckTLSCertRemaining MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
+	HttpcheckClientConnectionDuration MetricConfig `mapstructure:"httpcheck.client.connection.duration"`
+	HttpcheckClientRequestDuration    MetricConfig `mapstructure:"httpcheck.client.request.duration"`
+	HttpcheckDNSLookupDuration        MetricConfig `mapstructure:"httpcheck.dns.lookup.duration"`
+	HttpcheckDuration                 MetricConfig `mapstructure:"httpcheck.duration"`
+	HttpcheckError                    MetricConfig `mapstructure:"httpcheck.error"`
+	HttpcheckResponseDuration         MetricConfig `mapstructure:"httpcheck.response.duration"`
+	HttpcheckResponseSize             MetricConfig `mapstructure:"httpcheck.response.size"`
+	HttpcheckStatus                   MetricConfig `mapstructure:"httpcheck.status"`
+	HttpcheckTLSCertRemaining         MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
+	HttpcheckTLSHandshakeDuration     MetricConfig `mapstructure:"httpcheck.tls.handshake.duration"`
+	HttpcheckValidationFailed         MetricConfig `mapstructure:"httpcheck.validation.failed"`
+	HttpcheckValidationPassed         MetricConfig `mapstructure:"httpcheck.validation.passed"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		HttpcheckClientConnectionDuration: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckClientRequestDuration: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckDNSLookupDuration: MetricConfig{
+			Enabled: false,
+		},
 		HttpcheckDuration: MetricConfig{
 			Enabled: true,
 		},
 		HttpcheckError: MetricConfig{
 			Enabled: true,
 		},
+		HttpcheckResponseDuration: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckResponseSize: MetricConfig{
+			Enabled: false,
+		},
 		HttpcheckStatus: MetricConfig{
 			Enabled: true,
 		},
 		HttpcheckTLSCertRemaining: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckTLSHandshakeDuration: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckValidationFailed: MetricConfig{
+			Enabled: false,
+		},
+		HttpcheckValidationPassed: MetricConfig{
 			Enabled: false,
 		},
 	}

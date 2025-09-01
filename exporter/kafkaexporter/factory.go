@@ -48,11 +48,11 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-		ClientConfig:    configkafka.NewDefaultClientConfig(),
-		Producer:        configkafka.NewDefaultProducerConfig(),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+		ClientConfig:     configkafka.NewDefaultClientConfig(),
+		Producer:         configkafka.NewDefaultProducerConfig(),
 		Logs: SignalConfig{
 			Topic:    defaultLogsTopic,
 			Encoding: defaultLogsEncoding,
@@ -86,14 +86,11 @@ func createTracesExporter(
 		set,
 		&oCfg,
 		exp.exportData,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
-		// and will rely on the sarama Producer Timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.Start),
-		exporterhelper.WithShutdown(exp.Close),
+		exporterhelperOptions(
+			oCfg,
+			exporterhelper.NewTracesQueueBatchSettings(),
+			exp.Start, exp.Close,
+		)...,
 	)
 }
 
@@ -109,14 +106,11 @@ func createMetricsExporter(
 		set,
 		&oCfg,
 		exp.exportData,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
-		// and will rely on the sarama Producer Timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.Start),
-		exporterhelper.WithShutdown(exp.Close),
+		exporterhelperOptions(
+			oCfg,
+			exporterhelper.NewMetricsQueueBatchSettings(),
+			exp.Start, exp.Close,
+		)...,
 	)
 }
 
@@ -132,14 +126,11 @@ func createLogsExporter(
 		set,
 		&oCfg,
 		exp.exportData,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
-		// and will rely on the sarama Producer Timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.Start),
-		exporterhelper.WithShutdown(exp.Close),
+		exporterhelperOptions(
+			oCfg,
+			exporterhelper.NewLogsQueueBatchSettings(),
+			exp.Start, exp.Close,
+		)...,
 	)
 }
 
@@ -155,13 +146,31 @@ func createProfilesExporter(
 		set,
 		&oCfg,
 		exp.exportData,
+		exporterhelperOptions(
+			oCfg,
+			xexporterhelper.NewProfilesQueueBatchSettings(),
+			exp.Start, exp.Close,
+		)...,
+	)
+}
+
+func exporterhelperOptions(
+	cfg Config,
+	qbs exporterhelper.QueueBatchSettings,
+	startFunc component.StartFunc,
+	shutdownFunc component.ShutdownFunc,
+) []exporterhelper.Option {
+	if len(cfg.IncludeMetadataKeys) > 0 {
+		qbs.Partitioner = metadataKeysPartitioner{keys: cfg.IncludeMetadataKeys}
+	}
+	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.Start),
-		exporterhelper.WithShutdown(exp.Close),
-	)
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
+		exporterhelper.WithStart(startFunc),
+		exporterhelper.WithShutdown(shutdownFunc),
+	}
 }
