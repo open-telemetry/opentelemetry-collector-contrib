@@ -300,7 +300,6 @@ func TestConfig_validateExplicitBuckets(t *testing.T) {
 		{
 			Name: "InvalidMatcherPattern",
 			Explicitbuckets: []protocol.ExplicitBucket{
-
 				{
 					MatcherPattern: `foo.*\k`,
 					Buckets:        []float64{1, 2, 3},
