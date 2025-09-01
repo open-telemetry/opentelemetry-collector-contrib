@@ -239,6 +239,7 @@ func TestHandleRequestMetadata(t *testing.T) {
 	tests := map[string]struct {
 		metadata     *requestMetadata
 		expectedAttr map[string]any
+		expectsErr   string
 	}{
 		"nil": {
 			metadata:     nil,
@@ -300,6 +301,14 @@ func TestHandleRequestMetadata(t *testing.T) {
 				gcpAuditRequestAuthAudiences:           []any{"test-service", "another-service"},
 			},
 		},
+		"request attributes - invalid request size format": {
+			metadata: &requestMetadata{
+				RequestAttributes: &requestAttributes{
+					Size: "invalid",
+				},
+			},
+			expectsErr: "failed to add http request size",
+		},
 		"destination attributes": {
 			metadata: &requestMetadata{
 				DestinationAttributes: &destinationAttributes{
@@ -324,6 +333,14 @@ func TestHandleRequestMetadata(t *testing.T) {
 				},
 			},
 		},
+		"destination attributes - invalid port format": {
+			metadata: &requestMetadata{
+				DestinationAttributes: &destinationAttributes{
+					Port: "invalid",
+				},
+			},
+			expectsErr: "failed to add destination port",
+		},
 	}
 
 	for name, tt := range tests {
@@ -331,6 +348,10 @@ func TestHandleRequestMetadata(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
 			err := handleRequestMetadata(tt.metadata, attr)
+			if tt.expectsErr != "" {
+				require.ErrorContains(t, err, tt.expectsErr)
+				return
+			}
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
