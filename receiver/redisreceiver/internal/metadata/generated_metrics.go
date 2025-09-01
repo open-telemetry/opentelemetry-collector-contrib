@@ -1645,7 +1645,7 @@ type metricRedisMode struct {
 func (m *metricRedisMode) init() {
 	m.data.SetName("redis.mode")
 	m.data.SetDescription("Redis server mode")
-	m.data.SetUnit("{state}")
+	m.data.SetUnit("{mode}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }

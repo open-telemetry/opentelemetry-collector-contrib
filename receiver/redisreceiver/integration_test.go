@@ -20,6 +20,7 @@ import (
 )
 
 const redisPort = "6379"
+const sentinelPort = "26379"
 
 func TestIntegrationV6(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
@@ -89,5 +90,41 @@ func TestIntegrationV7Cluster(t *testing.T) {
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "expected-cluster.yaml")),
 		scraperinttest.WithCreateContainerTimeout(time.Minute),
 		scraperinttest.WithCompareTimeout(time.Minute),
+	).Run(t)
+}
+
+func TestIntegrationV8Sentinel(t *testing.T) {
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				Image:        "redis:8.2.1",
+				ExposedPorts: []string{sentinelPort},
+				Cmd: []string{
+					"redis-sentinel",
+					"/etc/redis/sentinel.conf",
+				},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "redis-sentinel.conf"),
+						ContainerFilePath: "/etc/redis/sentinel.conf",
+						FileMode:          0644,
+					},
+				},
+				WaitingFor: wait.ForListeningPort(sentinelPort),
+			}),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, sentinelPort))
+			}),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		),
+		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "expected-sentinel.yaml")),
+		scraperinttest.WithCreateContainerTimeout(time.Minute),
 	).Run(t)
 }

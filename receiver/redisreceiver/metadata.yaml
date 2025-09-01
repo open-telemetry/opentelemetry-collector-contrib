@@ -300,7 +300,7 @@ metrics:
   redis.mode:
     enabled: true
     description: Redis server mode
-    unit: "{state}"
+    unit: "{mode}"
     gauge:
       value_type: int
     attributes: [mode]

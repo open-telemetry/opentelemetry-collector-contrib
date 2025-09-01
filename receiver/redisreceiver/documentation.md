@@ -218,7 +218,7 @@ Redis server mode
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {state} | Gauge | Int |
+| {mode} | Gauge | Int |
 
 #### Attributes
 
