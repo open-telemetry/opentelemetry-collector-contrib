@@ -151,8 +151,7 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 				},
 			}
 			assert.Exactly(t, expected, converter.unique)
-			// TODO check when conflicts handling is implemented
-			// assert.Empty(t, converter.conflicts)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
@@ -273,8 +272,7 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 			)
 
 			assert.Equal(t, tt.want(), converter.unique)
-			// TODO check when conflicts handling is implemented
-			// assert.Empty(t, converter.conflicts)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
@@ -395,8 +393,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 			)
 
 			assert.Equal(t, tt.want(), converter.unique)
-			// TODO check when conflicts handling is implemented
-			// assert.Empty(t, converter.conflicts)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
