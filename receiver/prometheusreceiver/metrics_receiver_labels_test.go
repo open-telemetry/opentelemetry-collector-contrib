@@ -4,6 +4,7 @@
 package prometheusreceiver
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prometheus/prometheus/model/labels"
@@ -843,6 +844,28 @@ jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel
 jvm_memory_bytes_used{area="heap"} 100
 `
 
+const targetMixedScopeInfoAndLabels = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.from.labels", otel_scope_version="v1.0.0", otel_scope_animal="bear", otel_scope_environment="staging"} 100
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.from.info", otel_scope_version="v2.0.0", otel_scope_animal="cat"} 200
+jvm_memory_bytes_used{area="heap"} 300
+# TYPE otel_scope_info gauge
+otel_scope_info{otel_scope_name="scope.from.info", otel_scope_version="v2.0.0", team="backend", environment="production"} 1
+`
+
+const targetMixedWithConflicts = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="conflicted.scope", otel_scope_version="v1.0.0", otel_scope_animal="bear", otel_scope_team="frontend"} 100
+jvm_memory_bytes_used{area="heap"} 200
+# TYPE otel_scope_info gauge
+otel_scope_info{otel_scope_name="conflicted.scope", otel_scope_version="v1.0.0", animal="cat", team="backend", environment="production"} 1
+`
+
+// TestScopeAttributes tests scope attribute extraction behavior.
+// Note: Some tests may fail until the implementation is updated to match the target behavior
+// defined in the implementation plan (always extract otel_scope_ labels as scope attributes).
 func TestScopeAttributes(t *testing.T) {
 	t.Run("ScopeInfoMetric", func(t *testing.T) {
 		// Test parsing otel_scope_info metric (feature gate disabled)
@@ -879,7 +902,7 @@ func TestScopeAttributes(t *testing.T) {
 	})
 
 	t.Run("ScopeLabels/feature_disabled", func(t *testing.T) {
-		// Test new-style data (otel_scope_ labels) with feature gate disabled (legacy mode)
+		// Test parsing otel_scope_ labels (feature gate disabled)
 		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, false)()
 
 		targets := []*testData{
@@ -888,7 +911,58 @@ func TestScopeAttributes(t *testing.T) {
 				pages: []mockPrometheusResponse{
 					{code: 200, data: targetInstrumentationScopeLabels},
 				},
-				validateFunc: verifyScopeLabelsLegacyMode,
+				validateFunc: verifyTargetWithScopeLabels,
+			},
+		}
+
+		testComponent(t, targets, nil)
+	})
+
+	t.Run("Mixed/ScopeInfoAndLabels/feature_disabled", func(t *testing.T) {
+		// Test mixed scenario: both otel_scope_info and otel_scope_ labels (feature gate disabled)
+		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, false)()
+
+		targets := []*testData{
+			{
+				name: "target1",
+				pages: []mockPrometheusResponse{
+					{code: 200, data: targetMixedScopeInfoAndLabels},
+				},
+				validateFunc: verifyMixedScopeInfoAndLabels,
+			},
+		}
+
+		testComponent(t, targets, nil)
+	})
+
+	t.Run("Mixed/ScopeInfoAndLabels/feature_enabled", func(t *testing.T) {
+		// Test mixed scenario: both otel_scope_info and otel_scope_ labels (feature gate enabled)
+		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, true)()
+
+		targets := []*testData{
+			{
+				name: "target1",
+				pages: []mockPrometheusResponse{
+					{code: 200, data: targetMixedScopeInfoAndLabels},
+				},
+				validateFunc: verifyMixedScopeInfoAndLabelsFeatureEnabled,
+			},
+		}
+
+		testComponent(t, targets, nil)
+	})
+
+	t.Run("Mixed/ConflictResolution/feature_disabled", func(t *testing.T) {
+		// Test conflict resolution: otel_scope_ labels should win over otel_scope_info
+		defer testutil.SetFeatureGateForTest(t, internal.RemoveScopeInfoGate, false)()
+
+		targets := []*testData{
+			{
+				name: "target1",
+				pages: []mockPrometheusResponse{
+					{code: 200, data: targetMixedWithConflicts},
+				},
+				validateFunc: verifyMixedConflictResolution,
 			},
 		}
 
@@ -988,52 +1062,193 @@ func verifyTargetWithScopeLabels(t *testing.T, td *testData, rms []pmetric.Resou
 	require.Equal(t, 0, defaultScope.Scope().Attributes().Len(), "default scope should have no attributes")
 }
 
-func verifyScopeLabelsLegacyMode(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+// verifyMixedScopeInfoAndLabels tests the target behavior where both otel_scope_info metrics
+// and otel_scope_ labels are present, with feature gate that removes scope info parsing disabled.
+// attributes from otel_scope_info should be merged with attributes from otel_scope_ labels when scope is the same.
+func verifyMixedScopeInfoAndLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	sms := rms[0].ScopeMetrics()
-	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present when processing otel_scope_ labels in legacy mode")
+	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present")
 	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
 		return a.Scope().Name() < b.Scope().Name()
 	})
 
-	// Verify first scope: fake.scope.name (no attributes)
-	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
-	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
-	require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sms.At(0).SchemaUrl())
+	// Verify default receiver scope (no attributes)
+	// This one is used for the metric without any otel_scope_ labels
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(0).Scope().Name())
 	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
 
-	// Verify second scope: default receiver scope (no attributes)
-	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
-	require.Empty(t, sms.At(1).SchemaUrl())
-	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+	// Verify scope.from.info: should have attributes from otel_scope_info, plus the one from otel_scope_ labels
+	require.Equal(t, "scope.from.info", sms.At(1).Scope().Name())
+	require.Equal(t, "v2.0.0", sms.At(1).Scope().Version())
+	require.Equal(t, 3, sms.At(1).Scope().Attributes().Len())
+	teamVal, found := sms.At(1).Scope().Attributes().Get("team")
+	require.True(t, found)
+	require.Equal(t, "backend", teamVal.Str())
+	envVal, found := sms.At(1).Scope().Attributes().Get("environment")
+	require.True(t, found)
+	require.Equal(t, "production", envVal.Str())
+	animalVal, found := sms.At(1).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "cat", animalVal.Str())
 
-	// Verify third scope: scope.with.attributes (NO attributes in legacy mode)
-	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
-	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
-	require.Empty(t, sms.At(2).SchemaUrl())
-	require.Equal(t, 0, sms.At(2).Scope().Attributes().Len(), "Legacy mode should not extract scope attributes from otel_scope_ labels")
+	// Verify scope.from.labels: should have attributes from otel_scope_ labels
+	require.Equal(t, "scope.from.labels", sms.At(2).Scope().Name())
+	require.Equal(t, "v1.0.0", sms.At(2).Scope().Version())
+	require.Equal(t, 2, sms.At(2).Scope().Attributes().Len())
+	animalVal, found = sms.At(2).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "bear", animalVal.Str())
+	envVal, found = sms.At(2).Scope().Attributes().Get("environment")
+	require.True(t, found)
+	require.Equal(t, "staging", envVal.Str())
 
-	// Check that otel_scope_ labels are NOT filtered from metric data point attributes in legacy mode
+	// Verify that otel_scope_ labels are filtered from datapoint attributes
+	for i := 0; i < sms.Len(); i++ {
+		scope := sms.At(i)
+		for j := 0; j < scope.Metrics().Len(); j++ {
+			metric := scope.Metrics().At(j)
+			if metric.Type() == pmetric.MetricTypeGauge {
+				for k := 0; k < metric.Gauge().DataPoints().Len(); k++ {
+					dp := metric.Gauge().DataPoints().At(k)
+					dp.Attributes().Range(func(key string, _ pcommon.Value) bool {
+						require.False(t, strings.HasPrefix(key, "otel_scope_"),
+							"Found otel_scope_ prefixed attribute %s in datapoint - should be filtered", key)
+						return true
+					})
+				}
+			}
+		}
+	}
+}
+
+// verifyMixedScopeInfoAndLabelsFeatureEnabled tests the behavior when feature gate is enabled:
+// otel_scope_ labels should be extracted as scope attributes, otel_scope_info should be treated as regular metric.
+func verifyMixedScopeInfoAndLabelsFeatureEnabled(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	require.Equal(t, 4, sms.Len(), "Four scope metrics should be present")
+	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+		return a.Scope().Name() < b.Scope().Name()
+	})
+
+	// Verify default receiver scope (no attributes)
+	// This one is used for the metric without any otel_scope_ labels
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(0).Scope().Name())
+	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+
+	// Verify scope.from.info(jvm_memory_bytes_used): should have only attributes from otel_scope_ labels (otel_scope_info is not processed)
+	require.Equal(t, "scope.from.info", sms.At(1).Scope().Name())
+	require.Equal(t, "v2.0.0", sms.At(1).Scope().Version())
+	require.Equal(t, 1, sms.At(1).Scope().Attributes().Len(), "Should have only attributes from otel_scope_ labels when feature gate is enabled")
+	animalVal, found := sms.At(1).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "cat", animalVal.Str())
+	_, found = sms.At(1).Scope().Attributes().Get("team")
+	require.False(t, found)
+	_, found = sms.At(1).Scope().Attributes().Get("environment")
+	require.False(t, found)
+
+	// Verify scope.from.info(otel_scope_info): It should become a new scope, since it has different attributes from jvm_memory_bytes_used
+	require.Equal(t, "scope.from.info", sms.At(2).Scope().Name())
+	require.Equal(t, "v2.0.0", sms.At(2).Scope().Version())
+	require.Equal(t, 0, sms.At(2).Scope().Attributes().Len())
+	// Verify otel_scope_info has become a datapoint, and team and environment are now datapoint attributes
 	require.Equal(t, 1, sms.At(2).Metrics().Len())
 	metric := sms.At(2).Metrics().At(0)
+	require.Equal(t, "otel_scope_info", metric.Name())
+	require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+	require.Equal(t, 1, metric.Gauge().DataPoints().Len())
 	dp := metric.Gauge().DataPoints().At(0)
-	require.Equal(t, 3, dp.Attributes().Len(), "Should have 'area', 'otel_scope_animal', and 'otel_scope_color' attributes in legacy mode")
-	_, found := dp.Attributes().Get("area")
-	require.True(t, found, "Should have 'area' attribute")
-	_, found = dp.Attributes().Get("otel_scope_animal")
-	require.True(t, found, "Should have otel_scope_animal attribute in datapoint when in legacy mode")
-	_, found = dp.Attributes().Get("otel_scope_color")
-	require.True(t, found, "Should have otel_scope_color attribute in datapoint when in legacy mode")
+	require.Equal(t, 2, dp.Attributes().Len())
+	teamVal, found := dp.Attributes().Get("team")
+	require.True(t, found)
+	require.Equal(t, "backend", teamVal.Str())
+	envVal, found := dp.Attributes().Get("environment")
+	require.True(t, found)
+	require.Equal(t, "production", envVal.Str())
 
-	// Verify that in legacy mode, the scope.with.attributes scope gets 1 metric
-	// (the one with otel_scope_animal and otel_scope_color labels preserved as datapoint attributes)
-	scopeWithAttrs := sms.At(2)
-	require.Equal(t, "scope.with.attributes", scopeWithAttrs.Scope().Name())
-	require.Equal(t, 1, scopeWithAttrs.Metrics().Len(), "scope.with.attributes should have 1 metric")
+	// Verify scope.from.labels: should have attributes from otel_scope_ labels
+	require.Equal(t, "scope.from.labels", sms.At(3).Scope().Name())
+	require.Equal(t, "v1.0.0", sms.At(3).Scope().Version())
+	require.Equal(t, 2, sms.At(3).Scope().Attributes().Len())
+	animalVal, found = sms.At(3).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "bear", animalVal.Str())
+	envVal, found = sms.At(3).Scope().Attributes().Get("environment")
+	require.True(t, found)
+	require.Equal(t, "staging", envVal.Str())
 
-	// Verify that the default receiver scope has multiple metrics (including the one without otel_scope_ labels)
-	defaultScope := sms.At(1)
-	require.GreaterOrEqual(t, defaultScope.Metrics().Len(), 1, "default scope should have at least 1 metric")
+	// Verify that otel_scope_ labels are filtered from datapoint attributes
+	for i := 0; i < sms.Len(); i++ {
+		scope := sms.At(i)
+		for j := 0; j < scope.Metrics().Len(); j++ {
+			metric := scope.Metrics().At(j)
+			if metric.Type() == pmetric.MetricTypeGauge && metric.Name() != "otel_scope_info" {
+				for k := 0; k < metric.Gauge().DataPoints().Len(); k++ {
+					dp := metric.Gauge().DataPoints().At(k)
+					dp.Attributes().Range(func(key string, _ pcommon.Value) bool {
+						require.False(t, strings.HasPrefix(key, "otel_scope_"),
+							"Found otel_scope_ prefixed attribute %s in datapoint - should be filtered", key)
+						return true
+					})
+				}
+			}
+		}
+	}
+}
+
+// verifyMixedConflictResolution tests that otel_scope_ labels take precedence over otel_scope_info
+// attributes when there are conflicts.
+func verifyMixedConflictResolution(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	require.Equal(t, 2, sms.Len(), "Two scope metrics should be present")
+	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+		return a.Scope().Name() < b.Scope().Name()
+	})
+
+	// Verify conflicted.scope: otel_scope_ labels should win over otel_scope_info
+	require.Equal(t, "conflicted.scope", sms.At(0).Scope().Name())
+	require.Equal(t, "v1.0.0", sms.At(0).Scope().Version())
+	require.Equal(t, 3, sms.At(0).Scope().Attributes().Len())
+
+	// Verify otel_scope_ labels won (animal="bear", team="frontend")
+	animalVal, found := sms.At(0).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "bear", animalVal.Str(), "otel_scope_ label should win over otel_scope_info")
+	teamVal, found := sms.At(0).Scope().Attributes().Get("team")
+	require.True(t, found)
+	require.Equal(t, "frontend", teamVal.Str(), "otel_scope_ label should win over otel_scope_info")
+
+	// Verify otel_scope_info attribute without conflict is preserved
+	envVal, found := sms.At(0).Scope().Attributes().Get("environment")
+	require.True(t, found)
+	require.Equal(t, "production", envVal.Str(), "otel_scope_info attribute should be preserved when no conflict")
+
+	// Verify default receiver scope
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+
+	// Verify that otel_scope_ labels are filtered from datapoint attributes
+	conflictedScope := sms.At(0)
+	for j := 0; j < conflictedScope.Metrics().Len(); j++ {
+		metric := conflictedScope.Metrics().At(j)
+		if metric.Type() == pmetric.MetricTypeGauge {
+			for k := 0; k < metric.Gauge().DataPoints().Len(); k++ {
+				dp := metric.Gauge().DataPoints().At(k)
+				dp.Attributes().Range(func(key string, _ pcommon.Value) bool {
+					require.False(t, strings.HasPrefix(key, "otel_scope_"),
+						"Found otel_scope_ prefixed attribute %s in datapoint - should be filtered", key)
+					return true
+				})
+			}
+		}
+	}
 }

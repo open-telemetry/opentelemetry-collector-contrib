@@ -18,11 +18,13 @@ issues: [40060]
 subtext: |
   The OpenTelemetry Prometheus specification has been updated to deprecate the `otel_scope_info` metric 
   in favor of embedding scope attributes directly in metrics using `otel_scope_` prefixed labels.
-  A new feature gate `receiver.prometheusreceiver.RemoveScopeInfo` controls this behavior:
-  - When enabled (new behavior): scope attributes are extracted from `otel_scope_` prefixed labels on all metrics
-  - When disabled (legacy behavior): scope attributes continue to be extracted from the `otel_scope_info` metric
+  This implementation always extracts scope attributes from `otel_scope_` prefixed labels on all metrics
+  and always filters these labels from datapoint attributes, regardless of the feature gate setting.
+  The feature gate `receiver.prometheusreceiver.RemoveScopeInfo` only controls `otel_scope_info` processing:
+  - When disabled: `otel_scope_info` metrics are processed for scope attributes and merged with `otel_scope_` labels.
+  - When enabled: `otel_scope_info` metrics are treated as regular metrics.
   This change maintains backward compatibility while enabling compliance with the updated specification.
-  See: https://github.com/open-telemetry/opentelemetry-specification/issues/4223
+  See: https://github.com/open-telemetry/opentelemetry-specification/pull/4505
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

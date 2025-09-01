@@ -153,10 +153,16 @@ This receiver accepts exemplars coming in Prometheus format and converts it to O
 This receiver drops the `target_info` prometheus metric, if present, and uses attributes on
 that metric to populate the OpenTelemetry Resource.
 
-It drops `otel_scope_name` and `otel_scope_version` labels, if present, from metrics, and uses them to populate
-the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_scope_info` metric,
-and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
-Attributes.
+It always extracts scope attributes from `otel_scope_` prefixed labels on metrics. Labels with the 
+`otel_scope_name`, `otel_scope_version`, and `otel_scope_schema_url` prefixes are used to populate the 
+OpenTelemetry Instrumentation Scope identity, while other `otel_scope_` prefixed labels become Scope Attributes.
+All `otel_scope_` labels are filtered from the metric datapoint attributes.
+
+The processing of `otel_scope_info` metrics is controlled by the `receiver.prometheusreceiver.RemoveScopeInfo` 
+feature gate:
+- When disabled: `otel_scope_info` metrics are processed for scope attributes and merged with 
+  any `otel_scope_` labels, with `otel_scope_` labels taking precedence in conflicts.
+- When enabled: `otel_scope_info` metrics are treated as regular metrics and not processed for scope attributes.
 
 ## Prometheus API Server
 The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:

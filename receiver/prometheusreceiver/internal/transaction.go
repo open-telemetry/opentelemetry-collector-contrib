@@ -42,10 +42,11 @@ var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
 var RemoveScopeInfoGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveScopeInfo",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
-		" extract scope attributes from 'otel_scope_' prefixed labels on metrics instead of"+
-		" from the 'otel_scope_info' metric. The 'otel_scope_info' metric will be treated as"+
-		" a regular metric when this feature is enabled."),
+	featuregate.WithRegisterDescription("Controls the processing of 'otel_scope_info' metrics. "+
+		"The receiver always extracts scope attributes from 'otel_scope_' prefixed labels on all metrics. "+
+		"When this feature gate is disabled (legacy mode), 'otel_scope_info' metrics are also processed "+
+		"for scope attributes and merged with any 'otel_scope_' labels (with 'otel_scope_' taking precedence). "+
+		"When enabled, 'otel_scope_info' metrics are treated as regular metrics and not processed for scope attributes."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4505"),
 )
 
@@ -265,8 +266,8 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		return 0, nil
 	}
 
-	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	// Only in legacy mode (when removeScopeInfo feature gate is disabled)
+	// For the `otel_scope_info` metric we have different behavior depending on the feature gate.
+	// It becomes a new scope when the feature gate is disabled, and a regular metric when it is enabled.
 	if metricName == prometheus.ScopeInfoMetricName && !t.removeScopeInfo {
 		t.addScopeInfo(*rKey, ls)
 		return 0, nil
@@ -552,15 +553,6 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 				// Copy scope attributes if they exist
 				if scope.Attributes().Len() > 0 {
 					scope.Attributes().CopyTo(ils.Scope().Attributes())
-				} else if !t.removeScopeInfo {
-					// Legacy mode: check scopeAttributes map for this scope
-					if scopeAttributes, ok := t.scopeAttributes[rKey]; ok {
-						if legacyScope, isLegacy := scope.(LegacyScopeID); isLegacy {
-							if attributes, ok := scopeAttributes[legacyScope]; ok {
-								attributes.CopyTo(ils.Scope().Attributes())
-							}
-						}
-					}
 				}
 			}
 			metrics := ils.Metrics()
@@ -588,27 +580,30 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 }
 
 func (t *transaction) getScopeIdentifier(ls labels.Labels) ScopeIdentifier {
-	if t.removeScopeInfo {
-		return t.getScopeWithAttributes(ls)
+	// Check if this is an otel_scope_info metric when feature gate is enabled
+	metricName := ls.Get("__name__")
+	if t.removeScopeInfo && metricName == prometheus.ScopeInfoMetricName {
+		// When feature gate is enabled, otel_scope_info should extract only basic scope info
+		// (name, version, schema_url) but NOT other otel_scope_ attributes
+		scope := ScopeID{
+			attributes: pcommon.NewMap(),
+		}
+		ls.Range(func(lbl labels.Label) {
+			switch lbl.Name {
+			case prometheus.ScopeNameLabelKey:
+				scope.name = lbl.Value
+			case prometheus.ScopeVersionLabelKey:
+				scope.version = lbl.Value
+			case prometheus.ScopeSchemaURLLabelKey:
+				scope.schemaURL = lbl.Value
+				// Don't extract other otel_scope_ labels as scope attributes for otel_scope_info when gate is enabled
+			}
+		})
+		return scope
 	}
-	// Legacy behavior: use only scope name, version, and schema URL
-	return t.getLegacyScope(ls)
-}
 
-func (*transaction) getLegacyScope(ls labels.Labels) LegacyScopeID {
-	var scope LegacyScopeID
-	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == prometheus.ScopeNameLabelKey {
-			scope.name = lbl.Value
-		}
-		if lbl.Name == prometheus.ScopeVersionLabelKey {
-			scope.version = lbl.Value
-		}
-		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
-			scope.schemaURL = lbl.Value
-		}
-	})
-	return scope
+	// Always extract otel_scope_ labels as scope attributes for all other cases
+	return t.getScopeWithAttributes(ls)
 }
 
 func (*transaction) getScopeWithAttributes(ls labels.Labels) ScopeID {
@@ -620,14 +615,18 @@ func (*transaction) getScopeWithAttributes(ls labels.Labels) ScopeID {
 		switch {
 		case lbl.Name == prometheus.ScopeNameLabelKey:
 			scope.name = lbl.Value
+			return
 		case lbl.Name == prometheus.ScopeVersionLabelKey:
 			scope.version = lbl.Value
+			return
 		case lbl.Name == prometheus.ScopeSchemaURLLabelKey:
 			scope.schemaURL = lbl.Value
+			return
 		case strings.HasPrefix(lbl.Name, "otel_scope_"):
 			// Extract scope attributes from otel_scope_ prefixed labels
 			attrName := strings.TrimPrefix(lbl.Name, "otel_scope_")
 			scope.attributes.PutStr(attrName, lbl.Value)
+			return
 		}
 	})
 	return scope
@@ -740,50 +739,101 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 
 func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 	t.addingNativeHistogram = false
-	attrs := pcommon.NewMap()
-	legacyScope := LegacyScopeID{}
+
+	// Extract scope information from otel_scope_info metric
+	scopeInfoAttrs := pcommon.NewMap()
+	scopeFromInfo := ScopeID{
+		attributes: pcommon.NewMap(),
+	}
 
 	ls.Range(func(lbl labels.Label) {
 		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
 			return
 		}
-		if lbl.Name == prometheus.ScopeNameLabelKey {
-			legacyScope.name = lbl.Value
-			return
+		switch lbl.Name {
+		case prometheus.ScopeNameLabelKey:
+			scopeFromInfo.name = lbl.Value
+		case prometheus.ScopeVersionLabelKey:
+			scopeFromInfo.version = lbl.Value
+		case prometheus.ScopeSchemaURLLabelKey:
+			scopeFromInfo.schemaURL = lbl.Value
+		default:
+			// All other labels from otel_scope_info become scope attributes
+			scopeInfoAttrs.PutStr(lbl.Name, lbl.Value)
 		}
-		if lbl.Name == prometheus.ScopeVersionLabelKey {
-			legacyScope.version = lbl.Value
-			return
-		}
-		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
-			legacyScope.schemaURL = lbl.Value
-			return
-		}
-		attrs.PutStr(lbl.Name, lbl.Value)
 	})
 
-	// Store scope attributes separately for legacy mode (similar to original implementation)
-	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[LegacyScopeID]pcommon.Map)
+	// Initialize scope map if needed
+	if _, ok := t.scopeMap[key]; !ok {
+		t.scopeMap[key] = make(map[string]ScopeIdentifier)
 	}
-	t.scopeAttributes[key][legacyScope] = attrs
+
+	// Look for existing scopes with the same name/version/schema (ignoring attributes for now)
+	var existingScopeKey string
+	var existingScope ScopeID
+	var found bool
+
+	for scopeKey, scope := range t.scopeMap[key] {
+		if scopeID, ok := scope.(ScopeID); ok {
+			if scopeID.name == scopeFromInfo.name &&
+				scopeID.version == scopeFromInfo.version &&
+				scopeID.schemaURL == scopeFromInfo.schemaURL {
+				existingScopeKey = scopeKey
+				existingScope = scopeID
+				found = true
+				break
+			}
+		}
+	}
+
+	if found {
+		// Remove the old scope entry
+		delete(t.scopeMap[key], existingScopeKey)
+
+		// Merge attributes: otel_scope_ labels take precedence over otel_scope_info.
+		mergedAttrs := pcommon.NewMap()
+		scopeInfoAttrs.CopyTo(mergedAttrs)
+		existingScope.attributes.Range(func(k string, v pcommon.Value) bool {
+			mergedAttrs.PutStr(k, v.AsString())
+			return true
+		})
+
+		// Create merged scope with new key
+		mergedScope := ScopeID{
+			name:       scopeFromInfo.name,
+			version:    scopeFromInfo.version,
+			schemaURL:  scopeFromInfo.schemaURL,
+			attributes: mergedAttrs,
+		}
+		t.scopeMap[key][mergedScope.Key()] = mergedScope
+
+		// Update any existing metric families that were using the old scope key
+		if t.families[key] != nil {
+			if familiesForOldScope, exists := t.families[key][existingScopeKey]; exists {
+				t.families[key][mergedScope.Key()] = familiesForOldScope
+				delete(t.families[key], existingScopeKey)
+			}
+		}
+	} else {
+		// No existing scope, just store the otel_scope_info attributes
+		scopeFromInfo.attributes = scopeInfoAttrs
+		t.scopeMap[key][scopeFromInfo.Key()] = scopeFromInfo
+	}
 }
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
 	excludeLabels := getSortedNotUsefulLabels(mtype)
 
-	// When removeScopeInfo feature gate is enabled, also exclude otel_scope_ prefixed labels
-	// from series reference hash generation
-	if RemoveScopeInfoGate.IsEnabled() {
-		var scopeLabels []string
-		ls.Range(func(l labels.Label) {
-			if strings.HasPrefix(l.Name, "otel_scope_") {
-				scopeLabels = append(scopeLabels, l.Name)
-			}
-		})
-		if len(scopeLabels) > 0 {
-			excludeLabels = append(excludeLabels, scopeLabels...)
+	// Always exclude otel_scope_ prefixed labels from series reference hash generation
+	// as they are extracted as scope attributes instead of datapoint attributes
+	var scopeLabels []string
+	ls.Range(func(l labels.Label) {
+		if strings.HasPrefix(l.Name, "otel_scope_") {
+			scopeLabels = append(scopeLabels, l.Name)
 		}
+	})
+	if len(scopeLabels) > 0 {
+		excludeLabels = append(excludeLabels, scopeLabels...)
 	}
 
 	return ls.HashWithoutLabels(bytes, excludeLabels...)

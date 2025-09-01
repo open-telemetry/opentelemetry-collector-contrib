@@ -776,6 +776,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	}
 }
 
+// TestPopulateAttributes_ScopeLabelFiltering tests the target behavior where otel_scope_
+// prefixed labels should always be filtered from datapoint attributes regardless of feature gate.
 func TestPopulateAttributes_ScopeLabelFiltering(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -784,40 +786,24 @@ func TestPopulateAttributes_ScopeLabelFiltering(t *testing.T) {
 		wantAttrs      map[string]string
 	}{
 		{
-			name: "feature_disabled_keeps_scope_labels",
+			name: "feature_gate_disabled",
 			labels: labels.FromStrings(
 				"__name__", "test_metric",
 				"job", "test-job",
 				"instance", "localhost:8080",
 				"method", "GET",
+				"otel_scope_name", "my-scope",
+				"otel_scope_version", "1.0.0",
 				"otel_scope_animal", "bear",
-				"otel_scope_color", "blue",
 			),
 			featureEnabled: false,
 			wantAttrs: map[string]string{
-				"method":            "GET",
-				"otel_scope_animal": "bear",
-				"otel_scope_color":  "blue",
-			},
-		},
-		{
-			name: "feature_enabled_filters_scope_labels",
-			labels: labels.FromStrings(
-				"__name__", "test_metric",
-				"job", "test-job",
-				"instance", "localhost:8080",
-				"method", "GET",
-				"otel_scope_animal", "bear",
-				"otel_scope_color", "blue",
-			),
-			featureEnabled: true,
-			wantAttrs: map[string]string{
 				"method": "GET",
-				// otel_scope_* labels should be filtered out
+				// otel_scope_* labels should always be filtered out regardless of feature gate
 			},
 		},
 		{
-			name: "feature_enabled_keeps_standard_scope_labels_filtered",
+			name: "feature_gate_enabled",
 			labels: labels.FromStrings(
 				"__name__", "test_metric",
 				"job", "test-job",
@@ -830,7 +816,7 @@ func TestPopulateAttributes_ScopeLabelFiltering(t *testing.T) {
 			featureEnabled: true,
 			wantAttrs: map[string]string{
 				"method": "GET",
-				// All otel_scope_* labels should be filtered out
+				// otel_scope_* labels should always be filtered out regardless of feature gate
 			},
 		},
 	}
@@ -851,14 +837,12 @@ func TestPopulateAttributes_ScopeLabelFiltering(t *testing.T) {
 				require.Equal(t, expectedValue, actualValue.AsString(), "Unexpected value for attribute %s", key)
 			}
 
-			// Verify no otel_scope_ attributes when feature is enabled
-			if tt.featureEnabled {
-				attrs.Range(func(k string, _ pcommon.Value) bool {
-					require.False(t, strings.HasPrefix(k, "otel_scope_"),
-						"Found otel_scope_ prefixed attribute %s when feature gate is enabled", k)
-					return true
-				})
-			}
+			// Verify no otel_scope_ attributes are present regardless of feature gate
+			attrs.Range(func(k string, _ pcommon.Value) bool {
+				require.False(t, strings.HasPrefix(k, "otel_scope_"),
+					"Found otel_scope_ prefixed attribute %s in datapoint attributes - these should always be filtered", k)
+				return true
+			})
 		})
 	}
 }
