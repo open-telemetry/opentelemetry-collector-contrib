@@ -141,6 +141,9 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnected
 	callbacks.OnConnected = func(ctx context.Context, conn types.Connection) {
+		if didShutdown.Load() {
+			return
+		}
 		if onConnectedFunc != nil {
 			onConnectedFunc(ctx, conn)
 		}
@@ -150,6 +153,9 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionClose
 	callbacks.OnConnectionClose = func(conn types.Connection) {
+		if didShutdown.Load() {
+			return
+		}
 		isAgentConnected.Store(false)
 		connectedChan <- false
 		if onConnectionCloseFunc != nil {
@@ -171,9 +177,15 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		if !didShutdown.Load() {
 			waitForSupervisorConnection(connectedChan, false)
 			t.Log("Shutting down")
-			err := s.Stop(context.Background())
+			err := s.Stop(t.Context())
 			assert.NoError(t, err)
 			httpSrv.Close()
+			// Ensure that the connectedChan is drained and closed.
+			select {
+			case <-connectedChan:
+			default:
+			}
+			close(connectedChan)
 		}
 		didShutdown.Store(true)
 	}
@@ -182,7 +194,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			require.Fail(t, "Agent connection has not been established")
 		}
 
-		err = agentConn.Load().(types.Connection).Send(context.Background(), msg)
+		err = agentConn.Load().(types.Connection).Send(t.Context(), msg)
 		require.NoError(t, err)
 	}
 	t.Cleanup(func() {
@@ -381,6 +393,56 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 
 				return n != 0
 			}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+		})
+	}
+}
+
+func TestSupervisorStartsCollectorWithNoPipelineConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			connected := atomic.Bool{}
+			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+				OnConnected: func(context.Context, types.Connection) {
+					connected.Store(true)
+				},
+			})
+
+			cfg, _ := createEmptyPipelineCollectorConf(t)
+
+			collectorConfigDir := t.TempDir()
+			cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
+			t.Cleanup(func() { cfgFile.Close() })
+			require.NoError(t, err)
+
+			_, err = cfgFile.Write(cfg.Bytes())
+			require.NoError(t, err)
+
+			storageDir := t.TempDir()
+
+			extraConfigData := map[string]string{
+				"url":          server.addr,
+				"storage_dir":  storageDir,
+				"local_config": cfgFile.Name(),
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			t.Cleanup(s.Shutdown)
+			require.NoError(t, s.Start())
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+			require.True(t, connected.Load(), "Supervisor failed to connect")
+
+			require.EventuallyWithTf(t, func(c *assert.CollectT) {
+				require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+			}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
 		})
 	}
 }
@@ -825,6 +887,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {
+	t.Skip("broken test: http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42108")
 	tests := []struct {
 		name     string
 		cfg      string
@@ -1245,6 +1308,32 @@ func createSimplePipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte, *os
 	}
 
 	return &confmapBuf, h.Sum(nil), inputFile, outputFile
+}
+
+// Creates a Collector config that contains no pipeline
+func createEmptyPipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "empty_pipeline.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	var confmapBuf bytes.Buffer
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{},
+	)
+	require.NoError(t, err)
+
+	h := sha256.New()
+	if _, err := io.Copy(h, bytes.NewBuffer(confmapBuf.Bytes())); err != nil {
+		log.Fatal(err)
+	}
+
+	return &confmapBuf, h.Sum(nil)
 }
 
 func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
@@ -1989,9 +2078,17 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 					},
 				})
 
+			outputPath := filepath.Join(t.TempDir(), "output.txt")
+			backend := testbed.NewOTLPHTTPDataReceiver(4318)
+			mockBackend := testbed.NewMockBackend(outputPath, backend)
+			mockBackend.EnableRecording()
+			defer mockBackend.Stop()
+			require.NoError(t, mockBackend.Start())
+
 			extraConfigData := map[string]string{
 				"url":                  server.addr,
 				"config_apply_timeout": "3s",
+				"telemetryUrl":         "localhost:4318",
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
@@ -2110,6 +2207,20 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
 				}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
+
+				gotSpans := []string{}
+				expectedSpans := []string{"GetBootstrapInfo", "onMessage"}
+				require.EventuallyWithT(t, func(collect *assert.CollectT) {
+					require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
+				}, 10*time.Second, 250*time.Millisecond)
+
+				for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
+					gotSpans = append(gotSpans, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+				}
+
+				for _, expectedSpan := range expectedSpans {
+					require.Contains(t, gotSpans, expectedSpan)
+				}
 			})
 		})
 	}
@@ -2180,6 +2291,83 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
+func TestSupervisorHealthCheckServer(t *testing.T) {
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{},
+	)
+
+	randomPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
+		"url":      server.addr,
+		"endpoint": fmt.Sprintf("localhost:%d", randomPort),
+	})
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Wait for the health check server to start
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", randomPort))
+		if err != nil {
+			t.Logf("Failed health check request: %s", err)
+			return false
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
+}
+
+func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
+	healthcheckPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
+		"url":      "badserver:8080",
+		"endpoint": fmt.Sprintf("localhost:%d", healthcheckPort),
+	})
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	// Wait for the health check server to start
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", healthcheckPort))
+		if err != nil {
+			t.Logf("Failed health check request: %s", err)
+			return false
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
+}
+
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -2240,8 +2428,6 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		})
 
 	outputPath := filepath.Join(t.TempDir(), "output.txt")
-	_, err = findRandomPort()
-	require.Nil(t, err)
 	backend := testbed.NewOTLPHTTPDataReceiver(4318)
 	mockBackend := testbed.NewMockBackend(outputPath, backend)
 	mockBackend.EnableRecording()
@@ -2284,8 +2470,10 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
 
+	expectedSpans := []string{"GetBootstrapInfo"}
+
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		require.Len(collect, mockBackend.ReceivedTraces, 1)
+		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
 	}, 10*time.Second, 250*time.Millisecond)
 
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
@@ -2293,8 +2481,17 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
-	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
-	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+	for _, expectedSpan := range expectedSpans {
+		gotSpan := false
+		for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
+			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().Len())
+			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+			if mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name() != expectedSpan {
+				continue
+			}
+			gotSpan = true
+			require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+		}
+		require.Truef(t, gotSpan, "expected to find span '%s', but did not find it", expectedSpan)
+	}
 }

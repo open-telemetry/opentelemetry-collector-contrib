@@ -4,9 +4,12 @@
 package googlecloudlogentryencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
 
 import (
+	"bufio"
+	"bytes"
 	"context"
-	stdjson "encoding/json"
+	"fmt"
 
+	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -16,31 +19,14 @@ import (
 var _ encoding.LogsUnmarshalerExtension = (*ext)(nil)
 
 type ext struct {
-	Config     Config
-	extractFns map[string]extractFn
+	config Config
 }
 
 func newExtension(cfg *Config) *ext {
-	return &ext{Config: *cfg}
+	return &ext{config: *cfg}
 }
 
-func (ex *ext) Start(_ context.Context, _ component.Host) error {
-	ex.extractFns = map[string]extractFn{
-		"protoPayload":     handleProtoPayload,
-		"receiveTimestamp": handleReceiveTimestamp,
-		"timestamp":        handleTimestamp,
-		"insertId":         handleInsertID,
-		"logName":          handleLogName,
-		"textPayload":      handleTextPayload,
-		"jsonPayload":      handleJSONPayload,
-		"severity":         handleSeverity,
-		"trace":            handleTrace,
-		"spanId":           handleSpanID,
-		"traceSampled":     handleTraceSampled,
-		"labels":           handleLabels,
-		"httpRequest":      handleHTTPRequest,
-		"resource":         handleResource,
-	}
+func (*ext) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -49,48 +35,36 @@ func (*ext) Shutdown(context.Context) error {
 }
 
 func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	logs, err := ex.translateLogEntry(buf)
-	if err != nil {
-		return plog.Logs{}, err
+	logs := plog.NewLogs()
+
+	// each line corresponds to a log
+	scanner := bufio.NewScanner(bytes.NewReader(buf))
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if err := ex.handleLogLine(logs, line); err != nil {
+			return plog.Logs{}, err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return plog.Logs{}, fmt.Errorf("error reading log: %w", err)
 	}
 
 	return logs, nil
 }
 
-// TranslateLogEntry translates a JSON-encoded LogEntry message into a pair of
-// pcommon.Resource and plog.LogRecord, trying to keep as close as possible to
-// the semantic conventions.
-//
-// For maximum fidelity, the decoding is done according to the protobuf message
-// schema; this ensures that a numeric value in the input is correctly
-// translated to either an integer or a double in the output. It falls back to
-// plain JSON decoding if payload type is not available in the proto registry.
-func (ex *ext) translateLogEntry(data []byte) (plog.Logs, error) {
-	var src map[string]stdjson.RawMessage
-	err := json.Unmarshal(data, &src)
-	if err != nil {
-		return plog.Logs{}, err
+func (ex *ext) handleLogLine(logs plog.Logs, logLine []byte) error {
+	var log logEntry
+	if err := gojson.Unmarshal(logLine, &log); err != nil {
+		return fmt.Errorf("failed to unmarshal log entry: %w", err)
 	}
 
-	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	res := rl.Resource()
-	lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-	resAttrs := res.Attributes()
-	attrs := lr.Attributes()
-
-	for key, value := range src {
-		fn := ex.extractFns[key]
-		if fn != nil {
-			kverr := fn(resAttrs, lr, attrs, key, value, ex.Config)
-			if kverr == nil {
-				delete(src, key)
-			}
-		}
+	r := rl.Resource()
+	logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	if err := handleLogEntryFields(r.Attributes(), logRecord, log, ex.config); err != nil {
+		return fmt.Errorf("failed to handle log entry: %w", err)
 	}
 
-	// All other fields -> Attributes["gcp.*"]
-	err = translateInto(attrs, getLogEntryDescriptor(), src, preserveDst, prefixKeys("gcp."), snakeifyKeys)
-	return logs, err
+	return nil
 }

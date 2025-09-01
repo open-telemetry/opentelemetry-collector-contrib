@@ -108,7 +108,7 @@ func Test_isMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isMatch(tt.target, tt.pattern)
 			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -133,6 +133,6 @@ func Test_isMatch_error(t *testing.T) {
 	}
 	exprFunc, err := isMatch[any](target, "test")
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }

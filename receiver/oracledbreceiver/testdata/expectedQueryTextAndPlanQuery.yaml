@@ -18,16 +18,19 @@ resourceLogs:
                   stringValue: oracle-host-sample-1
               - key: db.query.text
                 value:
-                  stringValue: select count ( * ) from admin. employee e join admin. person p on e. businessentityid = ? join admin. employeepayhistory eph on e. businessentityid = eph. businessentityid where eph. rate > ( select avg ( rate ) from admin. employeepayhistory )
+                  stringValue: SELECT COUNT ( * ) FROM ADMIN. Employee e JOIN ADMIN. Person p ON e. BusinessEntityID = ? JOIN ADMIN. EmployeePayHistory eph ON e. BusinessEntityID = eph. BusinessEntityID WHERE eph. Rate > ( SELECT AVG ( Rate ) FROM ADMIN. EmployeePayHistory )
               - key: oracledb.query_plan
                 value:
-                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
+                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
               - key: oracledb.sql_id
                 value:
                   stringValue: fxk8aq3nds8aw
               - key: oracledb.child_number
                 value:
                   stringValue: "0"
+              - key: oracledb.child_address
+                value:
+                  stringValue: 0000000074C6E830
               - key: oracledb.application_wait_time
                 value:
                   doubleValue: 0
@@ -79,7 +82,7 @@ resourceLogs:
             body: {}
             eventName: db.server.top_query
             spanId: ""
-            timeUnixNano: "1750963641750185000"
+            timeUnixNano: "1752581882636677000"
             traceId: ""
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver

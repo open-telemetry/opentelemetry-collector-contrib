@@ -9,9 +9,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptrace"
+	"regexp"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -26,6 +31,57 @@ var (
 	errClientNotInit    = errors.New("client not initialized")
 	httpResponseClasses = map[string]int{"1xx": 1, "2xx": 2, "3xx": 3, "4xx": 4, "5xx": 5}
 )
+
+// timingInfo holds timing information for different phases of HTTP request
+type timingInfo struct {
+	dnsStart      atomic.Int64
+	dnsEnd        atomic.Int64
+	connectStart  atomic.Int64
+	connectEnd    atomic.Int64
+	tlsStart      atomic.Int64
+	tlsEnd        atomic.Int64
+	writeStart    atomic.Int64
+	writeEnd      atomic.Int64
+	readStart     atomic.Int64
+	readEnd       atomic.Int64
+	requestStart  atomic.Int64
+	responseStart atomic.Int64
+}
+
+// getDurations calculates the duration for each phase in milliseconds
+func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
+	dnsStartNs := t.dnsStart.Load()
+	dnsEndNs := t.dnsEnd.Load()
+	if dnsStartNs != 0 && dnsEndNs != 0 {
+		dnsMs = (dnsEndNs - dnsStartNs) / int64(time.Millisecond)
+	}
+
+	connectStartNs := t.connectStart.Load()
+	connectEndNs := t.connectEnd.Load()
+	if connectStartNs != 0 && connectEndNs != 0 {
+		tcpMs = (connectEndNs - connectStartNs) / int64(time.Millisecond)
+	}
+
+	tlsStartNs := t.tlsStart.Load()
+	tlsEndNs := t.tlsEnd.Load()
+	if tlsStartNs != 0 && tlsEndNs != 0 {
+		tlsMs = (tlsEndNs - tlsStartNs) / int64(time.Millisecond)
+	}
+
+	writeStartNs := t.writeStart.Load()
+	writeEndNs := t.writeEnd.Load()
+	if writeStartNs != 0 && writeEndNs != 0 {
+		requestMs = (writeEndNs - writeStartNs) / int64(time.Millisecond)
+	}
+
+	readStartNs := t.readStart.Load()
+	readEndNs := t.readEnd.Load()
+	if readStartNs != 0 && readEndNs != 0 {
+		responseMs = (readEndNs - readStartNs) / int64(time.Millisecond)
+	}
+
+	return
+}
 
 type httpcheckScraper struct {
 	clients  []*http.Client
@@ -65,6 +121,80 @@ func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans
 	timeLeft = int64(timeLeftSeconds)
 
 	return issuer, commonName, sans, timeLeft
+}
+
+// validateResponse performs response validation based on configured rules
+func validateResponse(body []byte, validations []validationConfig) (passed, failed map[string]int) {
+	passed = make(map[string]int)
+	failed = make(map[string]int)
+
+	for _, validation := range validations {
+		// String matching validations
+		if validation.Contains != "" {
+			if strings.Contains(string(body), validation.Contains) {
+				passed["contains"]++
+			} else {
+				failed["contains"]++
+			}
+		}
+
+		if validation.NotContains != "" {
+			if !strings.Contains(string(body), validation.NotContains) {
+				passed["not_contains"]++
+			} else {
+				failed["not_contains"]++
+			}
+		}
+
+		// JSON path validations
+		if validation.JSONPath != "" {
+			result := gjson.GetBytes(body, validation.JSONPath)
+			if !result.Exists() {
+				failed["json_path"]++
+				continue
+			}
+
+			if validation.Equals != "" {
+				if result.String() == validation.Equals {
+					passed["json_path"]++
+				} else {
+					failed["json_path"]++
+				}
+			} else {
+				// If no equals condition, just check existence
+				passed["json_path"]++
+			}
+		}
+
+		// Size validations
+		bodySize := int64(len(body))
+		if validation.MaxSize != nil {
+			if bodySize <= *validation.MaxSize {
+				passed["size"]++
+			} else {
+				failed["size"]++
+			}
+		}
+
+		if validation.MinSize != nil {
+			if bodySize >= *validation.MinSize {
+				passed["size"]++
+			} else {
+				failed["size"]++
+			}
+		}
+
+		// Regex validations
+		if validation.Regex != "" {
+			if matched, err := regexp.Match(validation.Regex, body); err == nil && matched {
+				passed["regex"]++
+			} else {
+				failed["regex"]++
+			}
+		}
+	}
+
+	return passed, failed
 }
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
@@ -124,11 +254,50 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			now := pcommon.NewTimestampFromTime(time.Now())
 
+			// Initialize timing info
+			timing := &timingInfo{}
+
+			// Create trace context for timing collection
+			trace := &httptrace.ClientTrace{
+				DNSStart: func(_ httptrace.DNSStartInfo) {
+					timing.dnsStart.Store(time.Now().UnixNano())
+				},
+				DNSDone: func(_ httptrace.DNSDoneInfo) {
+					timing.dnsEnd.Store(time.Now().UnixNano())
+				},
+				ConnectStart: func(_, _ string) {
+					timing.connectStart.Store(time.Now().UnixNano())
+				},
+				ConnectDone: func(_, _ string, _ error) {
+					timing.connectEnd.Store(time.Now().UnixNano())
+				},
+				TLSHandshakeStart: func() {
+					timing.tlsStart.Store(time.Now().UnixNano())
+				},
+				TLSHandshakeDone: func(_ tls.ConnectionState, _ error) {
+					timing.tlsEnd.Store(time.Now().UnixNano())
+				},
+				WroteRequest: func(_ httptrace.WroteRequestInfo) {
+					timing.writeEnd.Store(time.Now().UnixNano())
+				},
+				GotFirstResponseByte: func() {
+					now := time.Now().UnixNano()
+					timing.responseStart.Store(now)
+					timing.readStart.Store(now)
+				},
+			}
+
+			// Create request with trace context and body
+			var requestBody io.Reader = http.NoBody
+			if h.cfg.Targets[targetIndex].Body != "" {
+				requestBody = strings.NewReader(h.cfg.Targets[targetIndex].Body)
+			}
+
 			req, err := http.NewRequestWithContext(
-				ctx,
+				httptrace.WithClientTrace(ctx, trace),
 				h.cfg.Targets[targetIndex].Method,
-				h.cfg.Targets[targetIndex].Endpoint, // Use the ClientConfig.Endpoint
-				http.NoBody,
+				h.cfg.Targets[targetIndex].Endpoint,
+				requestBody,
 			)
 			if err != nil {
 				h.settings.Logger.Error("failed to create request", zap.Error(err))
@@ -140,19 +309,42 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 
+			// Set Content-Type header automatically if body is present, no Content-Type is set, and auto_content_type is enabled
+			if h.cfg.Targets[targetIndex].Body != "" && req.Header.Get("Content-Type") == "" && h.cfg.Targets[targetIndex].AutoContentType {
+				body := strings.TrimSpace(h.cfg.Targets[targetIndex].Body)
+				switch {
+				case strings.HasPrefix(body, "{") || strings.HasPrefix(body, "["):
+					req.Header.Set("Content-Type", "application/json")
+				case strings.Contains(h.cfg.Targets[targetIndex].Body, "="):
+					req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				default:
+					req.Header.Set("Content-Type", "text/plain")
+				}
+			}
+
 			// Send the request and measure response time
 			start := time.Now()
+			startNs := start.UnixNano()
+			timing.requestStart.Store(startNs)
+			timing.writeStart.Store(startNs)
 			resp, err := targetClient.Do(req)
+			timing.readEnd.Store(time.Now().UnixNano())
 
-			// Always close response body if it exists, even on error
+			// Read response body for validation and metrics
+			var responseBody []byte
 			if resp != nil && resp.Body != nil {
 				defer func() {
-					// Drain the body to allow connection reuse
-					_, _ = io.Copy(io.Discard, resp.Body)
 					if closeErr := resp.Body.Close(); closeErr != nil {
 						h.settings.Logger.Error("failed to close response body", zap.Error(closeErr))
 					}
 				}()
+
+				// Read the response body
+				if body, readErr := io.ReadAll(resp.Body); readErr == nil {
+					responseBody = body
+				} else {
+					h.settings.Logger.Error("failed to read response body", zap.Error(readErr))
+				}
 			}
 
 			mux.Lock()
@@ -172,18 +364,64 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					)
 				}
 			}
+			// Record timing breakdown metrics
+			dnsMs, tcpMs, tlsMs, requestMs, responseMs := timing.getDurations()
+			endpoint := h.cfg.Targets[targetIndex].Endpoint
+
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
 				time.Since(start).Milliseconds(),
-				h.cfg.Targets[targetIndex].Endpoint, // Use the correct endpoint
+				endpoint,
 			)
+			// Record response size metric
+			if len(responseBody) > 0 {
+				h.mb.RecordHttpcheckResponseSizeDataPoint(now, int64(len(responseBody)), endpoint)
+			}
+
+			// Perform response validation if configured
+			if len(h.cfg.Targets[targetIndex].Validations) > 0 && len(responseBody) > 0 {
+				passed, failed := validateResponse(responseBody, h.cfg.Targets[targetIndex].Validations)
+
+				// Record validation metrics
+				for validationType, count := range passed {
+					h.mb.RecordHttpcheckValidationPassedDataPoint(now, int64(count), endpoint, validationType)
+				}
+
+				for validationType, count := range failed {
+					h.mb.RecordHttpcheckValidationFailedDataPoint(now, int64(count), endpoint, validationType)
+				}
+			}
+
+			// Record detailed timing metrics if enabled
+			// Always record timing metrics regardless of value for enabled metrics
+			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsMs, endpoint)
+			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpMs, endpoint, "tcp")
+			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsMs, endpoint)
+			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestMs, endpoint)
+			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseMs, endpoint)
+
+			// Check if TLS metric is enabled and this is an HTTPS endpoint
+			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
+				// Extract TLS info directly from the HTTP response
+				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
+				if issuer != "" || commonName != "" || len(sans) > 0 {
+					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
+						now,
+						timeLeft,
+						endpoint,
+						issuer,
+						commonName,
+						sans,
+					)
+				}
+			}
 
 			statusCode := 0
 			if err != nil {
 				h.mb.RecordHttpcheckErrorDataPoint(
 					now,
 					int64(1),
-					h.cfg.Targets[targetIndex].Endpoint,
+					endpoint,
 					err.Error(),
 				)
 			} else {
@@ -196,7 +434,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(1),
-						h.cfg.Targets[targetIndex].Endpoint,
+						endpoint,
 						int64(statusCode),
 						req.Method,
 						class,

@@ -4,7 +4,6 @@
 package roundrobinconnector
 
 import (
-	"context"
 	"strconv"
 	"testing"
 
@@ -35,7 +34,7 @@ func TestLogsRoundRobin(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	assert.Equal(t, &Config{}, cfg)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	set := connectortest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost()
 
@@ -72,7 +71,7 @@ func TestMetricsRoundRobin(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	assert.Equal(t, &Config{}, cfg)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	set := connectortest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost()
 
@@ -109,7 +108,7 @@ func TestTracesRoundRobin(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	assert.Equal(t, &Config{}, cfg)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	set := connectortest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost()
 

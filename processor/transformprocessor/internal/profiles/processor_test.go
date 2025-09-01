@@ -63,7 +63,7 @@ func Test_ProcessProfiles_ResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -104,7 +104,7 @@ func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -145,7 +145,7 @@ func Test_ProcessProfiles_ScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -186,7 +186,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -401,7 +401,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "profile", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -609,7 +609,7 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -726,7 +726,7 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -816,7 +816,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -852,7 +852,7 @@ func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.Error(t, err)
 		})
 	}
@@ -935,7 +935,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1076,7 +1076,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -1217,7 +1217,7 @@ func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessProfiles(context.Background(), td)
+			_, err = processor.ProcessProfiles(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructProfiles()
@@ -1346,7 +1346,7 @@ func constructTestProfiles() pprofiletest.Profiles {
 
 func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, key string, value any) {
 	t.Helper()
-	dic := td.ProfilesDictionary()
+	dic := td.Dictionary()
 	profile := td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(profileIndex)
 	switch v := value.(type) {
 	case string:
@@ -1367,7 +1367,7 @@ func clearProfileAttributes(pp pprofile.Profiles, idx int) {
 
 // deleteProfileAttribute works as deleteKey() in func_delete_key.go.
 func deleteProfileAttribute(pp pprofile.Profiles, idx int, key string) {
-	dic := pp.ProfilesDictionary()
+	dic := pp.Dictionary()
 	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
 	indices := profile.AttributeIndices().AsRaw()
 	for i := range indices {
@@ -1381,7 +1381,7 @@ func deleteProfileAttribute(pp pprofile.Profiles, idx int, key string) {
 
 // deleteProfileAttributeSequential works as deleteMatchingKeys() in func_delete_matching_keys.go.
 func deleteProfileAttributeSequential(pp pprofile.Profiles, idx int, key string) { //nolint:unparam
-	dic := pp.ProfilesDictionary()
+	dic := pp.Dictionary()
 	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
 	indices := profile.AttributeIndices().AsRaw()
 	j := 0
