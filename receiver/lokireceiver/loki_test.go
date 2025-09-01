@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -73,9 +74,6 @@ func sendToCollector(endpoint, contentType, contentEncoding string, body []byte)
 	if err != nil {
 		return err
 	}
-	// Ensure the request is closed when the test finishes so t.Cleanup() can shut down
-	// without consulting the (already-canceled) test context. See issue #42173.
-	req.Close = true
 
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Content-Encoding", contentEncoding)
@@ -114,7 +112,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 
 	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, lr.Shutdown(ctx))
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
 	})
 
 	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -142,7 +140,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 
 	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, lr.Shutdown(ctx))
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
 	})
 
 	return addr, sink
@@ -422,9 +420,9 @@ func TestExpectedStatus(t *testing.T) {
 			ctx := t.Context()
 
 			require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
-			t.Cleanup(func() {
+			defer func() {
 				require.NoError(t, lr.Shutdown(ctx))
-			})
+			}()
 			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
