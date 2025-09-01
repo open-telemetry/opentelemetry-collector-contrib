@@ -506,9 +506,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
+	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder())
+
 	out := s.mb.Emit(metadata.WithResource(rb.Emit()))
 	s.logger.Debug("Done scraping")
 	if len(scrapeErrors) > 0 {
@@ -638,10 +637,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	hits = s.obfuscateCacheHits(hits)
 	childAddressToPlanMap := s.getChildAddressToPlanMap(ctx, hits)
 
-	rb := s.lb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
-	rb.SetServiceInstanceID(s.serviceInstanceID)
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for _, hit := range hits {
 		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
@@ -722,10 +718,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
 	}
 
-	rb := s.lb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
-	rb.SetServiceInstanceID(s.serviceInstanceID)
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for _, row := range rows {
 		if row[sqlText] == "" {
@@ -833,6 +826,13 @@ func (s *oracleScraper) shutdown(_ context.Context) error {
 		return nil
 	}
 	return s.db.Close()
+}
+
+func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	rb.SetOracledbInstanceName(s.instanceName)
+	rb.SetHostName(s.hostName)
+	rb.SetServiceInstanceID(s.serviceInstanceID)
+	return rb
 }
 
 func getInstanceID(hostString string, logger *zap.Logger) string {
