@@ -25,12 +25,19 @@ metrics:
 {% for m in ctx.groups | selectattr("type", "equalto", "metric") %}  {{ m.id | safe }}:
     description: {{ m.brief | safe }}
     enabled: {{ m.annotations.scraper.enabled | safe }}
-    {% if m.instrument == "updowncounter" %}sum:
-      monotonic: false
+    {% if m.instrument == "counter" %}sum:
       aggregation_temporality: cumulative
-      value_type: int
+      monotonic: true
+      value_type: {{ m.annotations.scraper.value_type | safe }}
+      {% if m.annotations.scraper.input_type == "string"%}input_type: string{% endif %}
+    {% elif m.instrument == "updowncounter" %}sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: {{ m.annotations.scraper.value_type | safe }}
+      {% if m.annotations.scraper.input_type == "string"%}input_type: string{% endif %}
     {% else %}gauge:
-      value_type: int
+      value_type: {{ m.annotations.scraper.value_type | safe }}
+      {% if m.annotations.scraper.input_type == "string"%}input_type: string{% endif %}
     {% endif %}unit: {{ m.unit }}
 {% if m.attributes %}    attributes:{% for attr in m.attributes %}
       - {{ attr.name | safe }}{% endfor %}

@@ -20,8 +20,6 @@ The collector accepts data formatted as JSON [HEC events](https://docs.splunk.co
 under any path or as EOL separated log [raw data](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/FormateventsforHTTPEventCollector#Raw_event_parsing) 
 if sent to the `raw_path` path.
 
-> :construction: This receiver is in beta and configuration fields are subject to change.
-
 ## Configuration
 
 The following settings are required:

@@ -416,6 +416,7 @@ sample query
 | oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
 | oracledb.sql_id | The SQL ID of the query. | Any Str |
 | oracledb.child_number | The child number of the query. | Any Str |
+| oracledb.child_address | Address of the child cursor. | Any Str |
 | oracledb.sid | ID of the Oracle Server session. | Any Str |
 | oracledb.serial | Serial number associated with a session. | Any Str |
 | oracledb.process | The operating system process ID (PID) associated with a session. | Any Str |

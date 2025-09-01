@@ -1,24 +1,30 @@
 name: 'First time contributor'
 on:
-  pull_request:
-    types: [opened]
+  pull_request_target:
+    types:
+      - opened
+      - labeled
+
+permissions: read-all
 
 jobs:
   welcome_first_contributor:
-    runs-on: ubuntu-latest
     permissions:
-      issues: write
       pull-requests: write
-    if: github.event.pull_request.author_association == 'NONE'
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'open-telemetry' && (github.event.pull_request.author_association == 'NONE' || github.event.label.name == 'first-contrib-test')
     steps:
-      - name: Add first-time contributor label
-        uses: actions-ecosystem/action-add-labels@v1
-        with:
-          labels: 'first-time contributor'
+      - run: gh pr edit "$NUMBER" --add-label "$LABELS"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          LABELS: 'first-time contributor'
 
       - name: Comment on PR
-        uses: actions-ecosystem/action-create-comment@v1
+        uses: actions-ecosystem/action-create-comment@e23bc59fbff7aac7f9044bd66c2dc0fe1286f80b # v1.0.2
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             Welcome, contributor! Thank you for your contribution to opentelemetry-collector-contrib.
 

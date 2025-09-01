@@ -51,6 +51,7 @@ Count of documents flushed to Elasticsearch. [alpha]
 | outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
 | http.response.status_code | HTTP status code. | Any Int |
 | failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` |
+| error.type | The type of error that occurred when processing the documents. | Any Str |
 
 ### otelcol.elasticsearch.docs.received
 

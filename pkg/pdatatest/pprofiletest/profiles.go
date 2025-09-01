@@ -86,7 +86,7 @@ func CompareProfiles(expected, actual pprofile.Profiles, options ...CompareProfi
 
 	for ar, er := range matchingResources {
 		errPrefix := fmt.Sprintf(`resource "%v"`, er.Resource().Attributes().AsRaw())
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceProfiles(exp.ProfilesDictionary(), act.ProfilesDictionary(), er, ar)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceProfiles(exp.Dictionary(), act.Dictionary(), er, ar)))
 	}
 
 	return errs

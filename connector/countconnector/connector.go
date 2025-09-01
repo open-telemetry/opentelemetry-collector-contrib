@@ -216,8 +216,8 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
 
-				pCtx := ottlprofile.NewTransformContext(profile, ld.ProfilesDictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
-				attributes := pprofile.FromAttributeIndices(ld.ProfilesDictionary().AttributeTable(), profile)
+				pCtx := ottlprofile.NewTransformContext(profile, ld.Dictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile)
 				multiError = errors.Join(multiError, counter.update(ctx, attributes, pCtx))
 			}
 		}

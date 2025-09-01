@@ -254,4 +254,4 @@ This can cause existing gzip files to be re-ingested because of changes in how f
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.129.0`
+- Move to `Beta` (enabled by default) in `v0.133.0`

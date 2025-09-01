@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -61,12 +62,11 @@ func TestExtension(t *testing.T) {
 
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
-	require.Eventually(t, func() bool {
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
-		return true
 	}, 10*time.Second, 100*time.Millisecond)
 
 	require.True(t, onStartLeadingInvoked.Load())

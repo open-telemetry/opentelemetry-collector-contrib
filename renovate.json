@@ -100,6 +100,10 @@
       ]
     },
     {
+      "matchPackagePatterns": ["^github.com/DataDog/opentelemetry-mapping-go/"],
+      "enabled": false
+    },
+    {
       "matchManagers": [
         "gomod"
       ],

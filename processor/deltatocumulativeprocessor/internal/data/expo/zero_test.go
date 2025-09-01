@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
@@ -56,9 +55,7 @@ func TestWidenZero(t *testing.T) {
 				zt = want.ZeroThreshold()
 			}
 			expo.WidenZero(hist, zt)
-
-			is := datatest.New(t)
-			is.Equal(want, hist)
+			assert.Equal(t, want, hist)
 		})
 	}
 
@@ -108,9 +105,7 @@ func TestSlice(t *testing.T) {
 			want := cs.want.Into()
 
 			expo.Abs(bins).Slice(from, to)
-
-			is := datatest.New(t)
-			is.Equal(want, bins)
+			assert.Equal(t, want, bins)
 		})
 	}
 

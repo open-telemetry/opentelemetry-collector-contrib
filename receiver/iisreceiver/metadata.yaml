@@ -1,5 +1,9 @@
 type: iis
 
+tests:
+  goleak:
+    setup: "setupTestMain(m)"
+
 status:
   class: receiver
   stability:

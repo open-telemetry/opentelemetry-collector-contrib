@@ -73,9 +73,9 @@ func TestFailoverRecovery(t *testing.T) {
 		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
-		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
-		idx := failoverConnector.failover.TestGetCurrentConsumerIndex()
-		require.Equal(t, 2, idx)
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 2, tr)
+		}, 3*time.Second, 5*time.Millisecond)
 
 		// Simulate recovery of exporter
 		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)

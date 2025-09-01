@@ -23,7 +23,6 @@ type testHarness struct {
 	metricSupplier     *metricSupplier
 	metricIndex        *metricsReceivedIndex
 	sender             testbed.MetricDataSender
-	currPDM            pmetric.Metrics
 	diffConsumer       diffConsumer
 	outOfMetrics       bool
 	allMetricsReceived chan struct{}
@@ -93,10 +92,11 @@ func (h *testHarness) compare(pdm pmetric.Metrics) {
 }
 
 func (h *testHarness) sendNextMetric() {
-	h.currPDM, h.outOfMetrics = h.metricSupplier.nextMetrics()
+	var pdm pmetric.Metrics
+	pdm, h.outOfMetrics = h.metricSupplier.nextMetrics()
 	if h.outOfMetrics {
 		return
 	}
-	err := h.sender.ConsumeMetrics(context.Background(), h.currPDM)
+	err := h.sender.ConsumeMetrics(context.Background(), pdm)
 	require.NoError(h.t, err)
 }

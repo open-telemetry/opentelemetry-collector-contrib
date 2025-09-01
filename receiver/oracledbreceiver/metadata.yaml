@@ -207,6 +207,7 @@ events:
       - oracledb.plan_hash_value
       - oracledb.sql_id
       - oracledb.child_number
+      - oracledb.child_address
       - oracledb.sid
       - oracledb.serial
       - oracledb.process

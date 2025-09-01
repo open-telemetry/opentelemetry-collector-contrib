@@ -295,9 +295,11 @@ func (c *Config) Validate() error {
 		missingFields = append(missingFields, "`endpoint`")
 	}
 	if c.TargetSystem == "" {
-		// jmx-scraper can specify jmx_configs instead
-		if c.validateJar(jmxScraperVersions, c.JARPath) == nil && c.JmxConfigs == "" {
-			missingFields = append(missingFields, "`target_system`", "`jmx_configs`")
+		// jmx-scraper can use jmx_configs instead
+		if c.validateJar(jmxScraperVersions, c.JARPath) == nil {
+			if c.JmxConfigs == "" {
+				missingFields = append(missingFields, "`target_system`", "`jmx_configs`")
+			}
 		} else {
 			missingFields = append(missingFields, "`target_system`")
 		}
@@ -337,9 +339,11 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	for _, system := range strings.Split(c.TargetSystem, ",") {
-		if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
-			return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
+	if c.TargetSystem != "" {
+		for _, system := range strings.Split(c.TargetSystem, ",") {
+			if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
+				return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
+			}
 		}
 	}
 

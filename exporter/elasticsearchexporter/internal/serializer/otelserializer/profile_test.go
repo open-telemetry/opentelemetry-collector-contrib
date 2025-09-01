@@ -230,6 +230,6 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = ser.SerializeProfile(profiles.ProfilesDictionary(), resource.Resource(), scope.Scope(), profile, pushData)
+		_ = ser.SerializeProfile(profiles.Dictionary(), resource.Resource(), scope.Scope(), profile, pushData)
 	}
 }

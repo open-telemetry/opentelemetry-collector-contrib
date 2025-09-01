@@ -140,9 +140,9 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoError(t, exp.Shutdown(t.Context()))
-	})
+	}()
 
 	assert.NotNil(t, exp)
 
@@ -193,9 +193,9 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoError(t, exp.Shutdown(t.Context()))
-	})
+	}()
 
 	assert.NotNil(t, exp)
 
@@ -267,9 +267,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoError(t, exp.Shutdown(t.Context()))
-	})
+	}()
 
 	assert.NotNil(t, exp)
 
@@ -336,9 +336,9 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoError(t, exp.Shutdown(t.Context()))
-	})
+	}()
 
 	assert.NotNil(t, exp)
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
@@ -408,9 +408,9 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	assert.NoError(t, err)
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoError(t, exp.Shutdown(t.Context()))
-	})
+	}()
 
 	assert.NotNil(t, exp)
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
@@ -668,9 +668,9 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 			require.NoError(t, err)
 
-			t.Cleanup(func() {
+			defer func() {
 				require.NoError(t, exp.Shutdown(t.Context()))
-			})
+			}()
 
 			assert.NotNil(t, exp)
 			require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))

@@ -50,7 +50,6 @@ exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
 exporter/mezmoexporter exporter/mezmo
-exporter/opencensusexporter exporter/opencensus
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
@@ -122,6 +121,7 @@ internal/docker internal/docker
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
 internal/grpcutil internal/grpcutil
+internal/healthcheck internal/healthcheck
 internal/k8sconfig internal/k8sconfig
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
@@ -263,7 +263,6 @@ receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
 receiver/ntpreceiver receiver/ntp
-receiver/opencensusreceiver receiver/opencensus
 receiver/oracledbreceiver receiver/oracledb
 receiver/osqueryreceiver receiver/osquery
 receiver/otelarrowreceiver receiver/otelarrow
@@ -320,7 +319,5 @@ exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
-processor/routingprocessor processor/routing
-receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon

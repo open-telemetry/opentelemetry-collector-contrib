@@ -96,7 +96,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 		registry:     registry,
 		targetAllocatorManager: targetallocator.NewManager(
 			set,
-			cfg.TargetAllocator,
+			cfg.TargetAllocator.Get(),
 			&baseCfg,
 			enableNativeHistogramsGate.IsEnabled(),
 		),
@@ -123,7 +123,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if r.cfg.APIServer != nil && r.cfg.APIServer.Enabled {
+	if r.cfg.APIServer.Enabled {
 		err = r.initAPIServer(discoveryCtx, host)
 		if err != nil {
 			r.settings.Logger.Error("Failed to initAPIServer", zap.Error(err))
