@@ -26,6 +26,9 @@ type TelemetryBuilder struct {
 	meter                        metric.Meter
 	mu                           sync.Mutex
 	registrations                []metric.Registration
+	OtelsvcK8sDaemonsetAdded     metric.Int64Counter
+	OtelsvcK8sDaemonsetDeleted   metric.Int64Counter
+	OtelsvcK8sDaemonsetUpdated   metric.Int64Counter
 	OtelsvcK8sDeploymentAdded    metric.Int64Counter
 	OtelsvcK8sDeploymentDeleted  metric.Int64Counter
 	OtelsvcK8sDeploymentUpdated  metric.Int64Counter
@@ -77,6 +80,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.OtelsvcK8sDaemonsetAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_daemonset_added",
+		metric.WithDescription("Number of daemonset add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDaemonsetDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_daemonset_deleted",
+		metric.WithDescription("Number of daemonset delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDaemonsetUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_daemonset_updated",
+		metric.WithDescription("Number of daemonset update events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	builder.OtelsvcK8sDeploymentAdded, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_deployment_added",
 		metric.WithDescription("Number of deployment add events received"),
