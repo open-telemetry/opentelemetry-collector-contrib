@@ -19,7 +19,7 @@ Count of spans that were sampled or not per sampling policy
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped. Deprecated in favor of `decision`. | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
@@ -35,7 +35,7 @@ Count of traces that were sampled or not per sampling policy
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped. Deprecated in favor of `decision`. | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
@@ -64,7 +64,7 @@ Global count of traces that were sampled or not by at least one policy
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped. Deprecated in favor of `decision`. | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
