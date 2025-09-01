@@ -70,6 +70,7 @@ func getAttributeValue(table pprofile.AttributeTableSlice, indices pcommon.Int32
 	for _, tableIndex := range indices.All() {
 		attr := table.At(int(tableIndex))
 		if attr.Key() == key {
+			// Copy the value because OTTL expects to do inplace updates for the values.
 			v := pcommon.NewValueEmpty()
 			attr.Value().CopyTo(v)
 			return v
