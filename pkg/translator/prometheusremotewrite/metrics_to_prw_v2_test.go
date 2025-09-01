@@ -169,7 +169,7 @@ func TestConflictHandling(t *testing.T) {
 		}
 
 		// Verify that conflicts are properly tracked
-		require.Greater(t, converter.conflictCount, 0, "Expected at least one conflict to be recorded")
+		require.Positive(t, converter.conflictCount, "Expected at least one conflict to be recorded")
 
 		// Verify that we have either:
 		// 1. Two unique entries (if no natural collision occurred), or
