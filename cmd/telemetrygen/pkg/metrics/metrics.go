@@ -83,6 +83,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:                  i,
 			clock:                  &realClock{},
 			batchSize:              c.BatchSize,
+			batch:                  c.Batch,
 			metricBuffer:           make([]metricdata.ResourceMetrics, 0),
 			bufferMutex:            sync.Mutex{},
 		}

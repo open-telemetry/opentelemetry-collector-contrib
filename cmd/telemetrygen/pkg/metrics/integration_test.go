@@ -106,7 +106,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "3", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "3", "--batch=false", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
 
 		start := time.Now()
 		err := cmd.Run()
@@ -135,7 +135,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "100", "--duration", "100ms", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "100", "--duration", "100ms", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
 
 		start := time.Now()
 		err := cmd.Run()
@@ -163,7 +163,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Reset receiver to ensure clean state
 		receiver.Reset()
 
-		cmd := exec.Command(testBinaryPath, "metrics", "--metrics", "50", "--duration", "inf", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.Command(testBinaryPath, "metrics", "--metrics", "50", "--duration", "inf", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
 
 		// Start the command first to ensure Process is available
 		err := cmd.Start()
@@ -205,7 +205,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "6", "--workers", "1", "--batch", "--batch-size", "3", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "6", "--workers", "1", "--batch-size", "3", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
 
 		start := time.Now()
 		err := cmd.Run()
@@ -220,7 +220,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		assert.Len(t, metrics, 2, "Should have received 2 batches (6 metrics / 3 per batch)")
 	})
 
-	t.Run("BatchingWithoutBatchFlag", func(t *testing.T) {
+	t.Run("BatchingDisabled", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
 		defer func() {
 			server.Stop()
@@ -234,7 +234,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "4", "--workers", "1", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "4", "--workers", "1", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
 
 		start := time.Now()
 		err := cmd.Run()
@@ -263,7 +263,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "150", "--workers", "1", "--batch", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "150", "--workers", "1", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
 
 		start := time.Now()
 		err := cmd.Run()

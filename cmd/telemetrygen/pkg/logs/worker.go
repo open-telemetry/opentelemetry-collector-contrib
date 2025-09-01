@@ -83,7 +83,13 @@ func (w *worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, 
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
 		}
 
-		w.addToBuffer(logs[0], exporter)
+		if w.batch {
+			w.addToBuffer(logs[0], exporter)
+		} else {
+			if err := exporter.Export(context.Background(), logs); err != nil {
+				w.logger.Fatal("exporter failed", zap.Error(err))
+			}
+		}
 
 		i++
 		if w.numLogs != 0 && i >= int64(w.numLogs) {

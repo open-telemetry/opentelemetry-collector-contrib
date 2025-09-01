@@ -69,7 +69,7 @@ func Start(cfg *Config) error {
 
 	var ssp sdktrace.SpanProcessor
 	if cfg.Batch {
-		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second), sdktrace.WithMaxExportBatchSize(cfg.BatchSize))
 		defer func() {
 			logger.Info("stop the batch span processor")
 

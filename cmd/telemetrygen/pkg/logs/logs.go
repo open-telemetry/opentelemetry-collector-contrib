@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/plog"
-
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/log"
@@ -93,9 +92,15 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 
 		exp, err := expF()
 		if err != nil {
-			logger.Error("failed to create exporter", zap.Error(err))
+			w.logger.Error("failed to create the exporter", zap.Error(err))
 			return err
 		}
+		defer func() {
+			w.logger.Info("stopping the exporter")
+			if tempError := exp.Shutdown(context.Background()); tempError != nil {
+				w.logger.Error("failed to stop the exporter", zap.Error(tempError))
+			}
+		}()
 		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration.Duration() > 0 && !c.TotalDuration.IsInf() {

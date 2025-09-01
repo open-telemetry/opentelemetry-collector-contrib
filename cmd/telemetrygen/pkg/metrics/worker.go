@@ -36,6 +36,7 @@ type worker struct {
 	batchSize              int                          // number of metrics to batch before flushing
 	metricBuffer           []metricdata.ResourceMetrics // buffer for batching metrics
 	bufferMutex            sync.Mutex                   // mutex for buffer access
+	batch                  bool                         // whether to batch metrics
 }
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
@@ -175,8 +176,13 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
 		}
 
-		// Always use batching (if batch size is 1, it's effectively direct export)
-		w.addToBuffer(rm, exporter)
+		if w.batch {
+			w.addToBuffer(rm, exporter)
+		} else {
+			if err := exporter.Export(context.Background(), &rm); err != nil {
+				w.logger.Fatal("exporter failed", zap.Error(err))
+			}
+		}
 
 		i++
 		if w.numMetrics != 0 && i >= int64(w.numMetrics) {
