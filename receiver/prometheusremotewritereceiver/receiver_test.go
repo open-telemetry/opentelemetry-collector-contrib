@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -1754,4 +1755,139 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+}
+
+// TestConcurrentRequestsforSameResourceAttributes reproduces the concurrency bug where subsequent requests
+// fail to reach the next consumer after the first successful request.
+func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
+	mockConsumer := &mockConsumer{}
+	prwReceiver := setupMetricsReceiver(t)
+	prwReceiver.nextConsumer = mockConsumer
+
+	// Create a test HTTP server
+	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+	defer ts.Close()
+
+	// Create multiple requests with the same job/instance labels (triggering cache key collision)
+	createRequest := func(metricName string, value float64, timestamp int64) *writev2.Request {
+		return &writev2.Request{
+			Symbols: []string{
+				"",                     // 0
+				"__name__", metricName, // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "test_instance", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: value, Timestamp: timestamp}},
+				},
+			},
+		}
+	}
+
+	// Prepare requests
+	requests := []*writev2.Request{}
+	for i := 0; i < 5; i++ {
+		requests = append(requests, createRequest("metric_"+strconv.Itoa(i+1), float64(i+1)*10, int64(i+1)*1000))
+	}
+
+	// Send requests concurrently
+	var wg sync.WaitGroup
+	var httpResults []int // Store HTTP status codes
+	var mu sync.Mutex
+
+	for i, req := range requests {
+		wg.Add(1)
+		go func(requestID int, request *writev2.Request) {
+			defer wg.Done()
+
+			pBuf := proto.NewBuffer(nil)
+			err := pBuf.Marshal(request)
+			assert.NoError(t, err)
+
+			resp, err := http.Post(
+				ts.URL,
+				fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+				bytes.NewBuffer(pBuf.Bytes()),
+			)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+
+			mu.Lock()
+			httpResults = append(httpResults, resp.StatusCode)
+			mu.Unlock()
+		}(i, req)
+	}
+	wg.Wait()
+
+	// Give some time for async processing
+	time.Sleep(100 * time.Millisecond)
+
+	// Analyze results
+	mockConsumer.mu.Lock()
+	receivedMetrics := len(mockConsumer.metrics)
+	totalDataPoints := mockConsumer.dataPoints
+	mockConsumer.mu.Unlock()
+
+	// Verify all HTTP requests succeeded
+	for i, status := range httpResults {
+		assert.Equal(t, http.StatusNoContent, status, "Request %d should return 204", i+1)
+	}
+
+	// The expected behavior is:
+	// - All HTTP requests return 204 (success)
+	// - All 5 data points are present (no data loss)
+	// - We have 5 resource attributes, each with 1 data point. The resource attributes are equal since they have the same job/instance labels.
+	// - The cache should have a single resource attribute.
+	assert.Equal(t, 5, totalDataPoints)
+	assert.Equal(t, 1, prwReceiver.rmCache.Len())
+
+	// Additional debugging info
+	t.Logf("Metrics batches received: %d", receivedMetrics)
+	for i, metrics := range mockConsumer.metrics {
+		t.Logf("Batch %d: %d resource metrics, %d data points",
+			i+1, metrics.ResourceMetrics().Len(), metrics.DataPointCount())
+	}
+
+	// Additional analysis: Check if we're getting mixed data due to concurrent mutations
+
+	t.Logf("=== DETAILED ANALYSIS ===")
+	for i, metrics := range mockConsumer.metrics {
+		resourceMetrics := metrics.ResourceMetrics()
+		t.Logf("Batch %d:", i+1)
+		for j := 0; j < resourceMetrics.Len(); j++ {
+			rm := resourceMetrics.At(j)
+			scopeMetrics := rm.ScopeMetrics()
+			for k := 0; k < scopeMetrics.Len(); k++ {
+				scope := scopeMetrics.At(k)
+				metricsList := scope.Metrics()
+				for l := 0; l < metricsList.Len(); l++ {
+					metric := metricsList.At(l)
+					t.Logf("  - Metric: %s, DataPoints: %d", metric.Name(), metric.Gauge().DataPoints().Len())
+				}
+			}
+		}
+	}
+
+	// Verify thread safety: Check that metrics are properly consolidated without corruption
+	// With the mutex fix, we should see clean consolidation where all metrics are grouped properly
+	for i, metrics := range mockConsumer.metrics {
+		if metrics.DataPointCount() > 0 {
+			resourceMetrics := metrics.ResourceMetrics()
+			for j := 0; j < resourceMetrics.Len(); j++ {
+				rm := resourceMetrics.At(j)
+				scopeMetrics := rm.ScopeMetrics()
+				for k := 0; k < scopeMetrics.Len(); k++ {
+					scope := scopeMetrics.At(k)
+					metricsCount := scope.Metrics().Len()
+					if metricsCount != 1 {
+						t.Errorf("Batch %d: Found %d datapoints when it should be 1", i+1, metricsCount)
+					}
+				}
+			}
+		}
+	}
+
 }
