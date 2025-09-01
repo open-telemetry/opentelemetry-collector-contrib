@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestSkipEvaluatorContinued(t *testing.T) {
@@ -18,7 +17,7 @@ func TestSkipEvaluatorContinued(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	skip := NewSkip([]PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -42,7 +41,7 @@ func TestSkipEvaluatorSkipped(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	skip := NewSkip([]PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -67,7 +66,7 @@ func TestSkipEvaluatorStringInvertMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	skip := NewSkip([]PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -92,7 +91,7 @@ func TestSkipEvaluatorStringInvertNotMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	skip := NewSkip([]PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -119,7 +118,7 @@ func TestSkipEvaluatorOneSubPolicyNotSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	skip := NewSkip([]PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -140,7 +139,7 @@ func TestSkipEvaluatorOneSubPolicyNotSampled(t *testing.T) {
 
 func TestSkipEvaluatorEmptySubPolicies(t *testing.T) {
 	// Test case with no sub-policies - should return Skipped
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{})
+	skip := NewSkip([]PolicyEvaluator{})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -163,7 +162,7 @@ func TestSkipEvaluatorAllSubPoliciesSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"attribute_value"}, false, 0, false)
 	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "another_attribute", []string{"another_value"}, false, 0, false)
 
-	skip := NewSkip(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	skip := NewSkip([]PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

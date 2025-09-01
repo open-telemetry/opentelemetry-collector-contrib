@@ -179,7 +179,7 @@ type ProbabilisticCfg struct {
 	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
 }
 
-// StatusCodeCfg holds the configurablea settings to create a status code filter sampling
+// StatusCodeCfg holds the configurable settings to create a status code filter sampling
 // policy evaluator.
 type StatusCodeCfg struct {
 	StatusCodes []string `mapstructure:"status_codes"`

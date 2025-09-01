@@ -19,7 +19,7 @@ func getNewSkipPolicy(settings component.TelemetrySettings, config *SkipCfg) (sa
 		}
 		subPolicyEvaluators[i] = policy
 	}
-	return sampling.NewSkip(settings.Logger, subPolicyEvaluators), nil
+	return sampling.NewSkip(subPolicyEvaluators), nil
 }
 
 // Return instance of and sub-policy

@@ -290,8 +290,9 @@ type policyDecisionMetrics struct {
 }
 
 type policyMetrics struct {
-	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped, decisionSkipped, decisionContinued int64
-	tracesSampledByPolicyDecision                                                                                                      []map[sampling.Decision]policyDecisionMetrics
+	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped, decisionSkipped,
+	decisionContinued int64
+	tracesSampledByPolicyDecision []map[sampling.Decision]policyDecisionMetrics
 }
 
 func newPolicyMetrics(numPolicies int) *policyMetrics {

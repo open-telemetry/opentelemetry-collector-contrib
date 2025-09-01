@@ -7,22 +7,18 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/zap"
 )
 
 type Skip struct {
 	// the subpolicy evaluators
 	subpolicies []PolicyEvaluator
-	logger      *zap.Logger
 }
 
 func NewSkip(
-	logger *zap.Logger,
 	subpolicies []PolicyEvaluator,
 ) PolicyEvaluator {
 	return &Skip{
 		subpolicies: subpolicies,
-		logger:      logger,
 	}
 }
 

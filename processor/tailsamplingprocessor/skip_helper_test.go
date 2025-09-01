@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
@@ -29,7 +28,7 @@ func TestSkipHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewSkip(zap.NewNop(), []sampling.PolicyEvaluator{
+		expected := sampling.NewSkip([]sampling.PolicyEvaluator{
 			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
 		})
 		assert.Equal(t, expected, actual)
@@ -95,7 +94,7 @@ func TestSkipHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewSkip(zap.NewNop(), []sampling.PolicyEvaluator{})
+		expected := sampling.NewSkip([]sampling.PolicyEvaluator{})
 		assert.Equal(t, expected, actual)
 	})
 
@@ -115,7 +114,7 @@ func TestSkipHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewSkip(zap.NewNop(), []sampling.PolicyEvaluator{
+		expected := sampling.NewSkip([]sampling.PolicyEvaluator{
 			sampling.NewProbabilisticSampler(componenttest.NewNopTelemetrySettings(), "", 50.0),
 		})
 		assert.Equal(t, expected, actual)
