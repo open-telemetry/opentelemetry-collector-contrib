@@ -18,6 +18,10 @@ resource_attributes:
     description: The host name of Oracle Server
     enabled: true
     type: string
+  service.instance.id:
+    description: A unique identifier of the Oracle db instance in the format host:port
+    enabled: true
+    type: string
 
 attributes:
   session_status:

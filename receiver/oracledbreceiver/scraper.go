@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -131,6 +133,7 @@ type oracleScraper struct {
 	topQueryCollectCfg         TopQueryCollection
 	obfuscator                 *obfuscator
 	querySampleCfg             QuerySample
+	serviceInstanceID          string
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
@@ -164,6 +167,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 		obfuscator:         newObfuscator(),
+		serviceInstanceID:  getInstanceId(hostName, logger),
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -637,6 +641,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	rb := s.lb.NewResourceBuilder()
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
+	rb.SetServiceInstanceID(s.serviceInstanceID)
 
 	for _, hit := range hits {
 		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
@@ -720,6 +725,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	rb := s.lb.NewResourceBuilder()
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
+	rb.SetServiceInstanceID(s.serviceInstanceID)
 
 	for _, row := range rows {
 		if row[sqlText] == "" {
@@ -827,4 +833,18 @@ func (s *oracleScraper) shutdown(_ context.Context) error {
 		return nil
 	}
 	return s.db.Close()
+}
+
+func getInstanceId(hostString string, logger *zap.Logger) string {
+	host, port, err := net.SplitHostPort(hostString)
+	if err == nil && (strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()) {
+		host, err = os.Hostname()
+	}
+
+	if err != nil {
+		logger.Warn("Failed to compute service.instance.id", zap.Error(err))
+		return "unknown:1521"
+	}
+
+	return host + ":" + port
 }
