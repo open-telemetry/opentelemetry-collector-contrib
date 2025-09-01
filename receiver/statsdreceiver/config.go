@@ -69,16 +69,8 @@ func (c *Config) Validate() error {
 			}
 
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				for i, eb := range eachMap.Histogram.ExplicitBuckets {
-					if eb.MatcherPattern == "" {
-						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern must not be empty", i))
-					}
-					if len(eb.Buckets) == 0 {
-						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
-					}
-					if _, err := regexp.Compile(eb.MatcherPattern); err != nil {
-						errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern is not a valid regular expression: %w", i, err))
-					}
+				if err := c.validateExplicitBuckets(eachMap.Histogram.ExplicitBuckets); err != nil {
+					errs = multierr.Append(errs, err)
 				}
 			}
 		} else if eachMap.ObserverType != protocol.HistogramObserver {
@@ -103,5 +95,27 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("must specify object id for all TimerHistogramMappings"))
 	}
 
+	return errs
+}
+
+func (*Config) validateExplicitBuckets(explicitBuckets []protocol.ExplicitBucket) error {
+	var errs error
+	for i, eb := range explicitBuckets {
+		if eb.MatcherPattern == "" {
+			errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern must not be empty", i))
+		}
+		if _, err := regexp.Compile(eb.MatcherPattern); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern is not a valid regular expression: %w", i, err))
+		}
+		if len(eb.Buckets) == 0 {
+			return multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
+		}
+		for j := 0; j < len(eb.Buckets)-1; j++ {
+			if eb.Buckets[j] > eb.Buckets[j+1] {
+				errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets are not unique or not ascendingly sorted %+v", i, eb.Buckets))
+				break
+			}
+		}
+	}
 	return errs
 }

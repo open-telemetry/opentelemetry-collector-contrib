@@ -4,6 +4,7 @@
 package statsdreceiver
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -101,15 +102,13 @@ func TestValidate(t *testing.T) {
 	}
 
 	const (
-		negativeAggregationIntervalErr         = "aggregation_interval must be a positive duration"
-		noObjectNameErr                        = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr                = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
-		observerTypeNotSupportErr              = "observer_type is not supported for histogram and timing metrics: %s"
-		invalidHistogramErr                    = "histogram configuration requires observer_type: histogram"
-		invalidSummaryErr                      = "summary configuration requires observer_type: summary"
-		invalidExplicitBucketNoPatternErr      = "explicit bucket [0] matcher_pattern must not be empty"
-		invalidExplicitBucketNoBucketErr       = "explicit bucket [0] buckets must not be empty"
-		invalidExplicitBucketInvalidPatternErr = "explicit bucket [0] matcher_pattern is not a valid regular expression: %s"
+		negativeAggregationIntervalErr    = "aggregation_interval must be a positive duration"
+		noObjectNameErr                   = "must specify object id for all TimerHistogramMappings"
+		statsdTypeNotSupportErr           = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr         = "observer_type is not supported for histogram and timing metrics: %s"
+		invalidHistogramErr               = "histogram configuration requires observer_type: histogram"
+		invalidSummaryErr                 = "summary configuration requires observer_type: summary"
+		invalidExplicitBucketNoPatternErr = "explicit bucket [0] matcher_pattern must not be empty"
 	)
 
 	tests := []test{
@@ -206,7 +205,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: negativeAggregationIntervalErr,
 		},
 		{
-			name: "invalidExplicitBucketsEmptyPattern",
+			name: "NotEmptyExplicitBuckets-invalidExplicitBucketsEmptyPattern",
 			cfg: &Config{
 				AggregationInterval: 20 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
@@ -225,49 +224,6 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: invalidExplicitBucketNoPatternErr,
-		},
-		{
-			name: "invalidExplicitBucketsEmptyBucket",
-			cfg: &Config{
-				AggregationInterval: 20 * time.Second,
-				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{
-						StatsdType:   "timing",
-						ObserverType: "histogram",
-						Histogram: protocol.HistogramConfig{
-							MaxSize: 100,
-							ExplicitBuckets: []protocol.ExplicitBucket{
-								{
-									MatcherPattern: "foo.*",
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedErr: invalidExplicitBucketNoBucketErr,
-		},
-		{
-			name: "invalidExplicitBucketsWrongPattern",
-			cfg: &Config{
-				AggregationInterval: 20 * time.Second,
-				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{
-						StatsdType:   "timing",
-						ObserverType: "histogram",
-						Histogram: protocol.HistogramConfig{
-							MaxSize: 100,
-							ExplicitBuckets: []protocol.ExplicitBucket{
-								{
-									MatcherPattern: `foo.*\k`,
-									Buckets:        []float64{1, 2, 3},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedErr: fmt.Sprintf(invalidExplicitBucketInvalidPatternErr, "error parsing regexp: invalid escape sequence: `\\k`"),
 		},
 	}
 
@@ -313,5 +269,74 @@ func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {
 		}
 		err := cfg.Validate()
 		assert.NoError(t, err)
+	}
+}
+
+func TestConfig_validateExplicitBuckets(t *testing.T) {
+	tt := []struct {
+		_               struct{}
+		Name            string
+		Explicitbuckets []protocol.ExplicitBucket
+		Want            error
+	}{
+		{
+			Name: "EmptyPattern",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					Buckets: []float64{1, 2, 3},
+				},
+			},
+			Want: errors.New("explicit bucket [0] matcher_pattern must not be empty"),
+		},
+		{
+			Name: "EmptyBuckets",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: "foo.*",
+				},
+			},
+			Want: errors.New("explicit bucket [0] buckets must not be empty"),
+		},
+		{
+			Name: "InvalidMatcherPattern",
+			Explicitbuckets: []protocol.ExplicitBucket{
+
+				{
+					MatcherPattern: `foo.*\k`,
+					Buckets:        []float64{1, 2, 3},
+				},
+			},
+			Want: errors.New("explicit bucket [0] matcher_pattern is not a valid regular expression: error parsing regexp: invalid escape sequence: `\\k`"),
+		},
+		{
+			Name: "UnsortedBuckets",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: "foo.*",
+					Buckets:        []float64{3, 2, 1},
+				},
+			},
+			Want: errors.New("explicit bucket [0] buckets are not unique or not ascendingly sorted [3 2 1]"),
+		},
+		{
+			Name: "DuplicatedBucket",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: "foo.*",
+					Buckets:        []float64{1, 2, 3, 2, 4, 5},
+				},
+			},
+			Want: errors.New("explicit bucket [0] buckets are not unique or not ascendingly sorted [1 2 3 2 4 5]"),
+		},
+	}
+
+	cfg := &Config{}
+	for i := range tt {
+		tc := tt[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			got := cfg.validateExplicitBuckets(tc.Explicitbuckets)
+			require.EqualError(t, got, tc.Want.Error())
+		})
 	}
 }
