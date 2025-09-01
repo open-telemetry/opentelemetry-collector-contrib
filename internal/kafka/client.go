@@ -121,8 +121,8 @@ func setSaramaProducerConfig(
 func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.ClientID = config.ClientID
-	if config.Rack != "" {
-		saramaConfig.RackID = config.Rack
+	if config.RackID != "" {
+		saramaConfig.RackID = config.RackID
 	}
 	saramaConfig.Metadata.Full = config.Metadata.Full
 	saramaConfig.Metadata.RefreshFrequency = config.Metadata.RefreshInterval

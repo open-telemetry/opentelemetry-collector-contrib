@@ -49,10 +49,10 @@ type ClientConfig struct {
 	// Metadata holds metadata-related configuration for producers and consumers.
 	Metadata MetadataConfig `mapstructure:"metadata"`
 
-	// Rack provides the rack identifier for this client to enable rack-aware
+	// RackID provides the rack identifier for this client to enable rack-aware
 	// replica selection when supported by the brokers. This maps to Kafka's
 	// standard "client.rack" setting. By default, this is empty.
-	Rack string `mapstructure:"rack_id"`
+	RackID string `mapstructure:"rack_id"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
