@@ -19,8 +19,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const redisPort = "6379"
-const sentinelPort = "26379"
+const (
+	redisPort    = "6379"
+	sentinelPort = "26379"
+)
 
 func TestIntegrationV6(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
@@ -108,7 +110,7 @@ func TestIntegrationV8Sentinel(t *testing.T) {
 					{
 						HostFilePath:      filepath.Join("testdata", "integration", "redis-sentinel.conf"),
 						ContainerFilePath: "/etc/redis/sentinel.conf",
-						FileMode:          0644,
+						FileMode:          0o644,
 					},
 				},
 				WaitingFor: wait.ForListeningPort(sentinelPort),
