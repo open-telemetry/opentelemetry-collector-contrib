@@ -134,7 +134,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 
 	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, lr.Shutdown(context.Background())) //nolint:usetesting
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(t.Context())))
 	})
 
 	return addr, sink
