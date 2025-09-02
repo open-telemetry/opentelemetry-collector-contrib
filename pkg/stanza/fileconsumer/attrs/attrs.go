@@ -61,7 +61,8 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	}
 
 	if r.MetadataExtraction.Regex != "" {
-		extractedAttributes, err := r.extractMetadata(path, attributes)
+		var extractedAttributes map[string]any
+		extractedAttributes, err = r.extractMetadata(path, attributes)
 		if err != nil {
 			return nil, err
 		}
