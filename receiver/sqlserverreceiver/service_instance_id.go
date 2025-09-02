@@ -6,7 +6,9 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
+	"strings"
 
 	"github.com/microsoft/go-mssqldb/msdsn"
 )
@@ -15,7 +17,7 @@ const defaultSQLServerPort = 1433
 
 // isLocalhost checks if the given host is a local address
 func isLocalhost(host string) bool {
-	return host == "localhost" || host == "127.0.0.1"
+	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
 }
 
 // computeServiceInstanceID computes the service.instance.id based on the configuration
@@ -47,7 +49,7 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	}
 
 	// Replace localhost with actual hostname
-	if isLocalhost(host) {
+	if isLocalhost(host) || host == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return "", err

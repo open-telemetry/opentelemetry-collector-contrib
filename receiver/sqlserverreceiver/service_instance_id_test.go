@@ -110,6 +110,13 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
+			name: "empty server in datasource",
+			config: &Config{
+				DataSource: "user id=sa",
+			},
+			expected: fmt.Sprintf("%s:1433", hostname),
+		},
+		{
 			name:     "no server uses hostname",
 			config:   &Config{},
 			expected: fmt.Sprintf("%s:1433", hostname),
