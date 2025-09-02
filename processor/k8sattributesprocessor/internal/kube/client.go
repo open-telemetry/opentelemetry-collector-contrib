@@ -20,6 +20,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -59,6 +60,9 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#daemonset
 	K8sDaemonSetLabel      = "k8s.daemonset.label.%s"
 	K8sDaemonSetAnnotation = "k8s.daemonset.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
+	K8sJobLabel      = "k8s.job.label.%s"
+	K8sJobAnnotation = "k8s.job.annotation.%s"
 )
 
 var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
@@ -80,6 +84,7 @@ type WatchClient struct {
 	deploymentInformer     cache.SharedInformer
 	statefulsetInformer    cache.SharedInformer
 	daemonsetInformer      cache.SharedInformer
+	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
@@ -115,6 +120,10 @@ type WatchClient struct {
 	// A map containing DaemonSet related data, used to associate them with resources.
 	// Key is daemonset uid
 	DaemonSets map[string]*DaemonSet
+
+	// A map containing job related data, used to associate them with resources.
+	// Key is job uid
+	Jobs map[string]*Job
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -178,6 +187,7 @@ func New(
 	c.Deployments = map[string]*Deployment{}
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
+	c.Jobs = map[string]*Job{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -269,6 +279,10 @@ func New(
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
+	if c.extractJobLabelsAnnotations() {
+		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
 	return c, err
 }
 
@@ -351,6 +365,19 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, reg.HasSynced)
 		go c.daemonsetInformer.Run(c.stopCh)
+	}
+
+	if c.jobInformer != nil {
+		reg, err = c.jobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleJobAdd,
+			UpdateFunc: c.handleJobUpdate,
+			DeleteFunc: c.handleJobDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.jobInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -578,6 +605,37 @@ func (c *WatchClient) handleDaemonSetDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleJobAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sJobAdded.Add(context.Background(), 1)
+	if job, ok := obj.(*batch_v1.Job); ok {
+		c.addOrUpdateJob(job)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleJobUpdate(_, newJob any) {
+	c.telemetryBuilder.OtelsvcK8sJobUpdated.Add(context.Background(), 1)
+	if job, ok := newJob.(*batch_v1.Job); ok {
+		c.addOrUpdateJob(job)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", newJob))
+	}
+}
+
+func (c *WatchClient) handleJobDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sJobDeleted.Add(context.Background(), 1)
+	if job, ok := ignoreDeletedFinalStateUnknown(obj).(*batch_v1.Job); ok {
+		c.m.Lock()
+		if n, ok := c.Jobs[string(job.UID)]; ok {
+			delete(c.Jobs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -681,6 +739,16 @@ func (c *WatchClient) GetDaemonSet(daemonSetUID string) (*DaemonSet, bool) {
 	c.m.RUnlock()
 	if ok {
 		return daemonSet, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetJob(jobUID string) (*Job, bool) {
+	c.m.RLock()
+	job, ok := c.Jobs[jobUID]
+	c.m.RUnlock()
+	if ok {
+		return job, ok
 	}
 	return nil, false
 }
@@ -1147,6 +1215,20 @@ func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[strin
 	return tags
 }
 
+func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromJobMetadata(d.Labels, tags, K8sJobLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromJobMetadata(d.Annotations, tags, K8sJobAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
@@ -1155,6 +1237,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		DeploymentUID:  "",
 		StatefulSetUID: "",
 		DaemonSetUID:   "",
+		JobUID:         "",
 		Address:        pod.Status.PodIP,
 		HostNetwork:    pod.Spec.HostNetwork,
 		PodUID:         string(pod.UID),
@@ -1173,6 +1256,10 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 	if daemonset, ok := c.getDaemonSet(getPodDaemonSetUID(pod)); ok {
 		newPod.DaemonSetUID = daemonset.UID
+	}
+
+	if job, ok := c.getJob(getPodJobUID(pod)); ok {
+		newPod.JobUID = job.UID
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -1208,6 +1295,15 @@ func getPodStatefulSetUID(pod *api_v1.Pod) string {
 func getPodDaemonSetUID(pod *api_v1.Pod) string {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == "DaemonSet" {
+			return string(ref.UID)
+		}
+	}
+	return ""
+}
+
+func getPodJobUID(pod *api_v1.Pod) string {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == "Job" {
 			return string(ref.UID)
 		}
 	}
@@ -1493,6 +1589,22 @@ func (c *WatchClient) extractDaemonSetLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractJobLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -1565,6 +1677,20 @@ func (c *WatchClient) addOrUpdateDaemonSet(daemonset *apps_v1.DaemonSet) {
 	c.m.Lock()
 	if daemonset.UID != "" {
 		c.DaemonSets[string(daemonset.UID)] = newDaemonSet
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
+	newJob := &Job{
+		Name: job.Name,
+		UID:  string(job.UID),
+	}
+	newJob.Attributes = c.extractJobAttributes(job)
+
+	c.m.Lock()
+	if job.UID != "" {
+		c.Jobs[string(job.UID)] = newJob
 	}
 	c.m.Unlock()
 }
@@ -1672,6 +1798,16 @@ func (c *WatchClient) getDaemonSet(uid string) (*DaemonSet, bool) {
 	c.m.RUnlock()
 	if ok {
 		return daemonset, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) getJob(uid string) (*Job, bool) {
+	c.m.RLock()
+	job, ok := c.Jobs[uid]
+	c.m.RUnlock()
+	if ok {
+		return job, ok
 	}
 	return nil, false
 }
