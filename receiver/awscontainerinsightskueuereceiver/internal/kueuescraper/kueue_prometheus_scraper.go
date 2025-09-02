@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -30,10 +31,9 @@ const (
 	// kmJobName needs to be "containerInsightsKueueMetricsScraper" so metric translator tags the source as the container insights receiver
 	kmJobName                   = "containerInsightsKueueMetricsScraper"
 	kueueNamespace              = "kueue-system"
+	kueueService                = "kueue-controller-manager-metrics-service"
 	kueueNameLabelSelector      = "app.kubernetes.io/name=kueue"
 	kueueComponentLabelSelector = "app.kubernetes.io/component=controller"
-	kueueServiceFieldSelector   = "metadata.name=kueue-controller-manager-metrics-service"
-	kueueMetricsLogStream       = "kubernetes-kueue"
 
 	serviceAccountTokenDefaultPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
 )
@@ -104,20 +104,20 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 		MetricsPath:            "/metrics",
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&kubernetes.SDConfig{
-				Role: kubernetes.RoleService,
+				Role: kubernetes.RoleEndpointSlice,
 				NamespaceDiscovery: kubernetes.NamespaceDiscovery{
 					Names: []string{kueueNamespace},
 				},
 				Selectors: []kubernetes.SelectorConfig{
 					{
-						Role:  kubernetes.RoleService,
+						Role:  kubernetes.RoleEndpointSlice,
 						Label: fmt.Sprintf("%s,%s", kueueNameLabelSelector, kueueComponentLabelSelector),
-						Field: kueueServiceFieldSelector,
 					},
 				},
 			},
 		},
-		MetricRelabelConfigs: GetKueueRelabelConfigs(opts.ClusterName),
+		RelabelConfigs:       GetKueueRelabelConfigs(),
+		MetricRelabelConfigs: GetKueueMetricRelabelConfigs(opts.ClusterName),
 	}
 
 	promConfig := prometheusreceiver.Config{
@@ -146,7 +146,23 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 	}, nil
 }
 
-func GetKueueRelabelConfigs(clusterName string) []*relabel.Config {
+func GetKueueRelabelConfigs() []*relabel.Config {
+	relabelConfigs := []*relabel.Config{
+		{ // Limit scraping to the kueue controller manager service
+			Action:       relabel.Keep,
+			Regex:        relabel.MustNewRegexp(fmt.Sprintf("^%s.*", kueueService)),
+			SourceLabels: model.LabelNames{"__meta_kubernetes_endpointslice_name"},
+		},
+		{ // Limit scraping to only the collector running on the same node as the kueue controller manager
+			Action:       relabel.Keep,
+			Regex:        relabel.MustNewRegexp(os.Getenv("HOST_NAME")),
+			SourceLabels: model.LabelNames{"__meta_kubernetes_endpointslice_endpoint_node_name"},
+		},
+	}
+	return relabelConfigs
+}
+
+func GetKueueMetricRelabelConfigs(clusterName string) []*relabel.Config {
 	relabelConfigs := []*relabel.Config{
 		{ // filter by metric name: keep only the Kueue metrics specified via regex in `kueueMetricAllowList`
 			Action:       relabel.Keep,
