@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.2.0
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
 	github.com/knadh/koanf/v2 v2.2.2
-	github.com/open-telemetry/opamp-go v0.21.0
+	github.com/open-telemetry/opamp-go v0.22.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.134.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
@@ -84,6 +84,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
+	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -117,7 +118,7 @@ require (
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.8-0.20250809033336-ffcdc2b7662f // indirect
+	github.com/shirou/gopsutil/v4 v4.25.8 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/splunk/stef/go/grpc v0.0.7 // indirect
