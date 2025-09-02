@@ -167,3 +167,22 @@ func TestResolver_extractMetadata(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkResolveWithMetadataExtraction(b *testing.B) {
+
+	r := Resolver{
+		// /var/folders/62/9h0qt0r51h5gzvxshbzl6ksh0000gq/T/BenchmarkResolveWithMetadataExtraction406651325/001/1725504552
+		MetadataExtraction: MetadataExtraction{
+			Regex: `^(?P<file>.*)$`,
+		},
+	}
+
+	// Create a file
+	tempDir := b.TempDir()
+	temp := filetest.OpenTemp(b, tempDir)
+
+	for i := 0; i < b.N; i++ {
+		_, err := r.Resolve(temp)
+		assert.NoError(b, err)
+	}
+}

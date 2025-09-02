@@ -58,15 +58,16 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 			return nil, err
 		}
 	}
-	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
-		return attributes, nil
-	}
 
 	if r.MetadataExtraction.Regex != "" {
 		attributes, err := r.extractMetadata(path, attributes)
 		if err != nil {
 			return attributes, err
 		}
+	}
+
+	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
+		return attributes, nil
 	}
 
 	resolved := path
