@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -107,8 +108,12 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
 
 	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -131,8 +136,12 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
 
 	return addr, sink
 }
@@ -408,8 +417,12 @@ func TestExpectedStatus(t *testing.T) {
 			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
-			require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+			ctx := t.Context()
+
+			require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, lr.Shutdown(ctx))
+			}()
 			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
