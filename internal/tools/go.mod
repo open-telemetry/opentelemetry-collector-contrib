@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
 go 1.24.0
 
-toolchain go1.24.6
-
 require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/client9/misspell v0.3.4
