@@ -37,7 +37,7 @@ resource_attributes:
     enabled: true
     type: string
   service.instance.id:
-    description: A unique identifier of the SQL Server instance in the format host:port
+    description: A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server.
     enabled: true
     type: string
 
