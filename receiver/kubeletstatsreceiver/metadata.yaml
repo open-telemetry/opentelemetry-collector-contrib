@@ -506,7 +506,8 @@ metrics:
     unit: By
     sum:
       value_type: int
-      monotonic:
+      aggregation_temporality: cumulative 
+      monotonic: false 
     attributes: []
   k8s.volume.inodes:
     enabled: true
