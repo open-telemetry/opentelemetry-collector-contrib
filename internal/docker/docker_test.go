@@ -199,12 +199,12 @@ func TestEventLoopHandlesError(t *testing.T) {
 	go cli.ContainerEventLoop(ctx)
 	defer cancel()
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		for _, l := range logs.All() {
-			assert.Contains(t, l.Message, "Error watching docker container events")
-			assert.Contains(t, l.ContextMap()["error"], "EOF")
+			assert.Contains(tt, l.Message, "Error watching docker container events")
+			assert.Contains(tt, l.ContextMap()["error"], "EOF")
 		}
-		return len(logs.All()) > 0
+		assert.NotEmpty(tt, logs.All())
 	}, 1*time.Second, 1*time.Millisecond, "failed to find desired error logs.")
 
 	finished := make(chan struct{})

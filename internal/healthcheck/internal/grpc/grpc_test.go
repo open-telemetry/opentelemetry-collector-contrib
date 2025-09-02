@@ -718,13 +718,13 @@ func TestCheck(t *testing.T) {
 				}
 
 				if ts.eventually {
-					assert.Eventually(t, func() bool {
+					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 						resp, err := client.Check(
 							t.Context(),
 							&healthpb.HealthCheckRequest{Service: ts.service},
 						)
-						require.NoError(t, err)
-						return ts.expectedStatus == resp.Status
+						require.NoError(tt, err)
+						assert.Equal(tt, ts.expectedStatus, resp.Status)
 					}, time.Second, 10*time.Millisecond)
 					continue
 				}
