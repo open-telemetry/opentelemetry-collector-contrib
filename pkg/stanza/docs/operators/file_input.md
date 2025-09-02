@@ -21,7 +21,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `include_file_owner_name`       | `false`                              | Whether to add the file owner name as the attribute `log.file.owner.name`. Not supported for windows.                                                                                                                                                            |
 | `include_file_owner_group_name` | `false`                              | Whether to add the file group name as the attribute `log.file.owner.group.name`. Not supported for windows.                                                                                                                                                      |
 | `include_file_record_number`    | `false`                              | Whether to add the record's record number in the file as the attribute `log.file.record_number`.                                                                                                                                                                 |
-| `include_file_record_offset`    | `false`                              | Whether to add the record's offset in the file as the attribute `log.file.record_offset`                                                                                                                                                                          |
+| `include_file_record_offset`    | `false`                              | Whether to add the record's offset in the file as the attribute `log.file.record_offset`                                                                                                                                                                         |
 | `preserve_leading_whitespaces`  | `false`                              | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces` | `false`                              | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                        |
 | `start_at`                      | `end`                                | At startup, where to start reading logs from the file. Options are `beginning` or `end`. This setting will be ignored if previously read file offsets are retrieved from a persistence mechanism.                                                                |
@@ -37,6 +37,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `header`                        | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details.                                                                                                            |
 | `header.pattern`                | required for header metadata parsing | A regex that matches every header line.                                                                                                                                                                                                                          |
 | `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header.                                                                                                                                                                                                      |
+| `metadata_extraction`           | {}                                   | An object that specifies which attributes are extracted from the file name, based on a regex with capture groups. Capture group names can be mapped to attribute names. See below for details.                                                                   |
 
 Note that by default, no logs will be read unless the monitored file is actively being written to because `start_at` defaults to `end`.
 
@@ -57,6 +58,42 @@ In order to forcefully flush last buffered log after certain period of time,
 use `force_flush_period` option.
 
 Also refer to [recombine](../operators/recombine.md) operator for merging events with greater control.
+
+#### `metadata_extraction` configuration
+
+If set, the `metadata_extraction` configuration allows to extract attributes from the file path.
+This can be used for, e.g. extracting attributes from file paths following a fixed scheme, like it is the case for Kubernetes pod logs.
+
+Example:
+
+```yaml
+type: file_input
+include:
+  - /var/log/pods/*/*/*.log
+include_file_name_resolved: true
+metadata_extraction:
+  regex: ^.*(\/|\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)(\/|\\)(?P<container_name>[^\._]+)(\/|\\)(?P<restart_count>\d+)\.log(\.\d{8}-\d{6})?$
+```
+
+This configuration will extract the attributes `namespace`, `pod_name`, `uid`, `container_name`, and `restart_count` from the logs of a K8s pod log file.
+Capture group names are limited in terms of which characters can be used for them (e.g. their names cannot contain certain characters like dots), but the additional `mapping` option can be used to rename the extracted attributes:
+
+```yaml
+type: file_input
+include:
+  - /var/log/pods/*/*/*.log
+include_file_name_resolved: true
+metadata_extraction:
+  regex: ^.*(\/|\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)(\/|\\)(?P<container_name>[^\._]+)(\/|\\)(?P<restart_count>\d+)\.log(\.\d{8}-\d{6})?$
+  mapping:
+    namespace: k8s.namespace.name
+    pod_name: k8s.pod.name
+    uid: k8s.pod.uid
+    container_name: k8s.container.name
+    restart_count: k8s.container.restart_count
+```
+
+With this configuration, the resulting attributes will be renamed to `k8s.namespace.name`, `k8s.pod.name`, `k8s.pod.uid`, `k8s.container.name`, and `k8s.container.restart_count`.
 
 ### File rotation
 
