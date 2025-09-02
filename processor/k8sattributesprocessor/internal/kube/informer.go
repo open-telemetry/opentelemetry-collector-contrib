@@ -208,3 +208,30 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 		return client.AppsV1().StatefulSets(namespace).Watch(context.Background(), opts)
 	}
 }
+
+func newDaemonSetSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  daemonsetListFuncWithSelectors(client, namespace),
+			WatchFunc: daemonsetWatchFuncWithSelectors(client, namespace),
+		},
+		&apps_v1.DaemonSet{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func daemonsetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.AppsV1().DaemonSets(namespace).List(context.Background(), opts)
+	}
+}
+
+func daemonsetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.AppsV1().DaemonSets(namespace).Watch(context.Background(), opts)
+	}
+}
