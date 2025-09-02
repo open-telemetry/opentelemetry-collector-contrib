@@ -5,7 +5,6 @@ components:
     exporter:
         - file
         - kafka
-        - opencensus
         - prometheus
         - prometheusremotewrite
         - zipkin
@@ -22,7 +21,6 @@ components:
         - hostmetrics
         - jaeger
         - kafka
-        - opencensus
         - prometheus
         - zipkin
     scraper:
