@@ -113,8 +113,8 @@ Here are available AWS PrivateLink domains:
 
 | Region  | Domain                                              |
 |---------|-----------------------------------------------------|
-| USA1    | `private.coralogix.com`                             |
-| USA2    | `ingress.private.cx498-aws-us-west-2.coralogix.com` |
+| USA1    | `private.us1.coralogix.com`                             |
+| USA2    | `private.us2.coralogix.com` |
 | APAC1   | `private.coralogix.in`                              |
 | APAC2   | `private.coralogixsg.com`                           |
 | EUROPE1 | `private.coralogix.com`                             |
