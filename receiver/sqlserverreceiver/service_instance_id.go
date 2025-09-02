@@ -23,7 +23,6 @@ func isLocalhost(host string) bool {
 // Special handling:
 // - localhost/127.0.0.1 are replaced with os.Hostname()
 // - Port 0 defaults to 1433
-// - DataSource takes precedence over Server/Port config
 func computeServiceInstanceID(cfg *Config) (string, error) {
 	var host string
 	var port int
