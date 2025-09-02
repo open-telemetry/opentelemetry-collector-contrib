@@ -7,7 +7,7 @@ change_type: enhancement
 component: oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: `service.instance.id` attribute is added in resourceAttributes of all metrics and logs in oracledbreceiver
+note: service.instance.id attribute is added in resourceAttributes of all metrics and logs in oracledbreceiver
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42402]
