@@ -303,31 +303,96 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
-			// Merge bucket counts.
-			// Note that groupExponentialHistogramDataPoints() has already ensured that we only try
-			// to merge exponential histograms with matching Scale and Positive/Negative Offsets,
-			// so the corresponding array items in BucketCounts have the same bucket boundaries.
-			// However, the number of buckets may differ depending on what values have been observed.
-			for b := 0; b < dps.At(i).Negative().BucketCounts().Len(); b++ {
-				if b < negatives.Len() {
-					negatives.SetAt(b, negatives.At(b)+dps.At(i).Negative().BucketCounts().At(b))
-				} else {
-					negatives.Append(dps.At(i).Negative().BucketCounts().At(b))
-				}
+
+			// Check if offsets are different, indicating we need to adjust dp offsets and bucket counts after merging
+			negOffsetDiff := dp.Negative().Offset() != dps.At(i).Negative().Offset()
+			posOffsetDiff := dp.Positive().Offset() != dps.At(i).Positive().Offset()
+
+			mergeExponentialHistogramBuckets(negatives, dps.At(i).Negative().BucketCounts(), dp.Negative().Offset(), dps.At(i).Negative().Offset())
+			mergeExponentialHistogramBuckets(positives, dps.At(i).Positive().BucketCounts(), dp.Positive().Offset(), dps.At(i).Positive().Offset())
+
+			// Only adjust offsets and remove leading zero buckets if we had different offsets and the buckets are not empty
+			if negOffsetDiff && dps.At(i).Negative().BucketCounts().Len() != 0 {
+				dp.Negative().SetOffset(min(dp.Negative().Offset(), dps.At(i).Negative().Offset()))
+				trimBuckets(negatives)
 			}
-			for b := 0; b < dps.At(i).Positive().BucketCounts().Len(); b++ {
-				if b < positives.Len() {
-					positives.SetAt(b, positives.At(b)+dps.At(i).Positive().BucketCounts().At(b))
-				} else {
-					positives.Append(dps.At(i).Positive().BucketCounts().At(b))
-				}
+			if posOffsetDiff && dps.At(i).Positive().BucketCounts().Len() != 0 {
+				dp.Positive().SetOffset(min(dp.Positive().Offset(), dps.At(i).Positive().Offset()))
+				trimBuckets(positives)
 			}
+
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 			if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 			}
 		}
 	}
+}
+
+func mergeExponentialHistogramBuckets(tgt, src pcommon.UInt64Slice, tgtOff, srcOff int32) {
+	// Both data points have the same offset - simple element-wise addition
+	if tgtOff == srcOff {
+		for b := 0; b < src.Len(); b++ {
+			if b < tgt.Len() {
+				tgt.SetAt(b, tgt.At(b)+src.At(b))
+			} else {
+				tgt.Append(src.At(b))
+			}
+		}
+		return
+	}
+
+	// Source offset is less than target offset - source data point covers lower values
+	if srcOff < tgtOff {
+		for b := src.Len() - 1; b >= 0; b-- {
+			count := src.At(b)
+			if count > 0 {
+				tgt.Append(0)
+				for i := tgt.Len() - 1; i > 0; i-- {
+					tgt.SetAt(i, tgt.At(i-1))
+				}
+				tgt.SetAt(0, count)
+			}
+		}
+		return
+	}
+
+	// Source offset is greater than target offset - source data point covers higher values
+	for b := 0; b < src.Len(); b++ {
+		count := src.At(b)
+		if count == 0 {
+			continue
+		}
+
+		idx := b + int(srcOff-tgtOff)
+		if idx >= 0 {
+			if idx < tgt.Len() {
+				tgt.SetAt(idx, tgt.At(idx)+count)
+			} else {
+				for tgt.Len() <= idx {
+					tgt.Append(0)
+				}
+				tgt.SetAt(idx, tgt.At(idx)+count)
+			}
+		}
+	}
+}
+
+func trimBuckets(buckets pcommon.UInt64Slice) {
+	zeroCount := 0
+	for i := 0; i < buckets.Len() && buckets.At(i) == 0; i++ {
+		zeroCount++
+	}
+
+	if zeroCount == 0 {
+		return
+	}
+
+	newBuckets := make([]uint64, buckets.Len()-zeroCount)
+	for i := zeroCount; i < buckets.Len(); i++ {
+		newBuckets[i-zeroCount] = buckets.At(i)
+	}
+	buckets.FromRaw(newBuckets)
 }
 
 func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
@@ -373,9 +438,8 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 ) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]any, 0, 5)
-		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), uint32(dp.Flags()), dp.Negative().Offset(),
-			dp.Positive().Offset())
+		keyHashParts := make([]any, 0, 4)
+		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), uint32(dp.Flags()))
 		if useStartTime {
 			keyHashParts = append(keyHashParts, dp.StartTimestamp().String())
 		}
