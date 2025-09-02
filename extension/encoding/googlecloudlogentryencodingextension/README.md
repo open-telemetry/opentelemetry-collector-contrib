@@ -150,8 +150,27 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `requestMetadata.callerIp`                                                 | `client.address`                                                    |
 | `requestMetadata.callerSuppliedUserAgent`                                  | `user_agent.original`                                               |
 | `requestMetadata.callerNetwork`                                            | `gcp.audit.request.caller.network`                                  |
-| `requestMetadata.requestAttributes`                                        | _Currently not supported_                                           |
-| `requestMetadata.destinationAttributes`                                    | _Currently not supported_                                           |
+| `requestMetadata.requestAttributes.id`                                     | `http.request.id`                                                   |
+| `requestMetadata.requestAttributes.method`                                 | `http.request.method`                                               |
+| `requestMetadata.requestAttributes.headers`                                | `http.request.header.<header name>`                                 |
+| `requestMetadata.requestAttributes.path`                                   | `url.path`                                                          |
+| `requestMetadata.requestAttributes.host`                                   | `http.request.header.host`                                          |
+| `requestMetadata.requestAttributes.scheme`                                 | `url.scheme`                                                        |
+| `requestMetadata.requestAttributes.query`                                  | `url.query`                                                         |
+| `requestMetadata.requestAttributes.time`                                   | `gcp.audit.request.time`                                            |
+| `requestMetadata.requestAttributes.size`                                   | `http.request.size`                                                 |
+| `requestMetadata.requestAttributes.protocol`                               | `network.protocol.name`                                             |
+| `requestMetadata.requestAttributes.reason`                                 | `gcp.audit.request.reason`                                          |
+| `requestMetadata.requestAttributes.auth.principal`                         | `gcp.audit.request.auth.principal`                                  |
+| `requestMetadata.requestAttributes.auth.audiences`                         | `gcp.audit.request.auth.audiences`                                  |
+| `requestMetadata.requestAttributes.auth.presenter`                         | `gcp.audit.request.auth.presenter`                                  |
+| `requestMetadata.requestAttributes.auth.accessLevels`                      | `gcp.audit.request.auth.access_levels`                              |
+| `requestMetadata.requestAttributes.auth.claims`                            | _Currently not supported_                                           |
+| `requestMetadata.destinationAttributes.ip`                                 | `server.address`                                                    |
+| `requestMetadata.destinationAttributes.port`                               | `server.port`                                                       |
+| `requestMetadata.destinationAttributes.labels`                             | `gcp.audit.destination.label.<label_key>`                           |
+| `requestMetadata.destinationAttributes.principal`                          | `gcp.audit.destination.principal`                                   |
+| `requestMetadata.destinationAttributes.regionCode`                         | `gcp.audit.destination.region_code`                                 |
 | `request`                                                                  | _Currently not supported_                                           |
 | `response`                                                                 | _Currently not supported_                                           |
 | `metadata`                                                                 | _Currently not supported_                                           |

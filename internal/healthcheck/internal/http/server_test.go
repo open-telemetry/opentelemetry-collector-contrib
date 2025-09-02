@@ -2970,10 +2970,10 @@ func TestStatus(t *testing.T) {
 				var resp *http.Response
 
 				if ts.eventually {
-					assert.Eventually(t, func() bool {
+					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 						resp, err = client.Get(stepURL)
-						require.NoError(t, err)
-						return ts.expectedStatusCode == resp.StatusCode
+						require.NoError(tt, err)
+						assert.Equal(tt, ts.expectedStatusCode, resp.StatusCode)
 					}, time.Second, 10*time.Millisecond)
 				} else {
 					resp, err = client.Get(stepURL)
