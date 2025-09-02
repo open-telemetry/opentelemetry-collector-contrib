@@ -46,13 +46,13 @@ var skippedTests = map[string]struct{}{
 	"bad_exemplars_on_unallowed_samples_3": {}, "bad_exemplars_on_unallowed_metric_types_2": {},
 }
 
-var positiveTestsWithOutSeries = []string{"null_byte", "empty_metadata"}
+var positiveTestsWithoutSeries = []string{"null_byte", "empty_metadata"}
 
 func verifyPositiveTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
-	if slices.Contains(positiveTestsWithOutSeries, td.name) {
+	if slices.Contains(positiveTestsWithoutSeries, td.name) {
 		require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
 	} else {
 		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
