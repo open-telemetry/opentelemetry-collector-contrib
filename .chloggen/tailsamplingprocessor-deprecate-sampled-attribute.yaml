@@ -16,7 +16,7 @@ issues: [42397]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `sampled` attribute on `attribute on otelcol_processor_tail_sampling_count_traces_sampled`, `otelcol_processor_tail_sampling_count_spans_sampled`
+  The `sampled` attribute on `otelcol_processor_tail_sampling_count_traces_sampled`, `otelcol_processor_tail_sampling_count_spans_sampled`
   and `otelcol_processor_tail_sampling_global_count_traces_sampled` is deprecated in favor of `decision`.
 
 # If your change doesn't affect end users or the exported elements of any package,
