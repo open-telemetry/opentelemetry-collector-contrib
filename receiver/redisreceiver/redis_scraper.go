@@ -84,6 +84,11 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
+	clusterInf, err := rs.redisSvc.clusterInfo()
+	if err != nil {
+		return pmetric.Metrics{}, err
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 	currentUptime, err := inf.getUptimeInSeconds()
 	if err != nil {
@@ -99,12 +104,16 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdMetrics(now, inf)
+	rs.recordClusterMetrics(now, clusterInf)
 	rb := rs.mb.NewResourceBuilder()
 	rb.SetRedisVersion(rs.getRedisVersion(inf))
 	rb.SetServerAddress(rs.configInfo.Address)
 	rb.SetServerPort(rs.configInfo.Port)
 	return rs.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
+
+// recordClusterMetrics records metrics from Redis CLUSTER INFO key-value pairs.
+func (rs *redisScraper) recordClusterMetrics(ts pcommon.Timestamp, clusterInf clusterInfo) {}
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
 func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {

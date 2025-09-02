@@ -42,7 +42,7 @@ func (p *redisSvc) info() (info, error) {
 	return attrs, nil
 }
 
-func (p *redisSvc) cluster_info() (cluster_info, error) {
+func (p *redisSvc) clusterInfo() (clusterInfo, error) {
 	str, err := p.client.retrieveClusterInfo()
 	if err != nil {
 		return nil, err

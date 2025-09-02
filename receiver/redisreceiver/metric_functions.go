@@ -49,6 +49,13 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 	}
 }
 
+// clusterInfoRecorder returns recorders for all metrics we want to extract from Redis CLUSTER INFO.
+func clusterInfoRecorder(rs *redisScraper) map[string]any {
+	return map[string]any{
+		"cluster_state": rs.mb, // there're no params in the *metadata.MetricsBuilder for the CLUSTER INFO command fields, how can those be recorded?
+	}
+}
+
 func (rs *redisScraper) recordUsedCPUSys(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, metadata.AttributeStateSys)
 }
