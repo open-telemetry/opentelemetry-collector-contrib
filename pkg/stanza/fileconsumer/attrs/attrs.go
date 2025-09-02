@@ -5,13 +5,13 @@ package attrs // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/lrucache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 )
 
 const (
