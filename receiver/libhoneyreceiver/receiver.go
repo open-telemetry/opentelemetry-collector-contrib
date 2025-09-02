@@ -255,7 +255,11 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			}
 		}
 		if len(libhoneyevents) > 0 {
-			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			if libhoneyevents[0].MsgPackTimestamp != nil {
+				r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			} else {
+				r.settings.Logger.Debug("Decoding with msgpack worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			}
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case encoder.JSONContentType:
@@ -278,16 +282,24 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
-		ctx = r.obsreport.StartLogsOp(ctx)
-		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
-		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		if r.nextLogs != nil {
+			ctx = r.obsreport.StartLogsOp(ctx)
+			err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		} else {
+			r.settings.Logger.Debug("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+		}
 	}
 
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
-		ctx = r.obsreport.StartTracesOp(ctx)
-		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
-		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		if r.nextTraces != nil {
+			ctx = r.obsreport.StartTracesOp(ctx)
+			err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		} else {
+			r.settings.Logger.Debug("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+		}
 	}
 
 	if err != nil {
