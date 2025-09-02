@@ -2,6 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opamp
 
 go 1.24
 
-require github.com/open-telemetry/opamp-go v0.21.0
+require github.com/open-telemetry/opamp-go v0.22.0
 
-require google.golang.org/protobuf v1.36.6 // indirect
+require google.golang.org/protobuf v1.36.7 // indirect
