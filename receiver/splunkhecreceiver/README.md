@@ -45,7 +45,7 @@ The following settings are optional:
       `key_file` and `cert_file` are required for TLS connection.
 * `raw_path` (default = '/services/collector/raw'): The path accepting [raw HEC events](https://help.splunk.com/en/splunk-enterprise/get-data-in/get-started-with-getting-data-in/10.0/get-data-with-http-event-collector/format-events-for-http-event-collector#example-5-curl-statement-sending-raw-data-0). Only applies when the receiver is used for logs.
 * `splitting` defines the splitting strategy used by the receiver when ingesting raw events. Can be set to "line" or "none". Default is "line".
-* `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://docs.splunk.com/Documentation/Splunk/9.0.1/RESTREF/RESTinput#services.2Fcollector.2Fhealth).
+* `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-reference/9.0/input-endpoints/input-endpoint-descriptions#services.2Fcollector.2Fhealth).
 * `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of the source field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of the sourcetype field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the index field to a specific unified model attribute.
