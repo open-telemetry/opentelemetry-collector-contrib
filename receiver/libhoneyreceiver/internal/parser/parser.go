@@ -43,7 +43,6 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	spanEvents := map[trc.SpanID][]libhoneyevent.LibhoneyEvent{}
 
 	foundScopes.Scope = make(map[string]libhoneyevent.SimpleScope) // a list of already seen scopes
-	// Per-service default scopes are now created dynamically in GetScope() when needed
 
 	alreadyUsedFields := []string{cfg.Resources.ServiceName, cfg.Scopes.LibraryName, cfg.Scopes.LibraryVersion}
 	alreadyUsedTraceFields := []string{
