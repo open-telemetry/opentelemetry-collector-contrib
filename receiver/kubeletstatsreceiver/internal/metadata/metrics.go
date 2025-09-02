@@ -138,6 +138,7 @@ var PodNetworkMetrics = NetworkMetrics{
 type VolumeMetrics struct {
 	Available  RecordIntDataPointFunc
 	Capacity   RecordIntDataPointFunc
+	Used       RecordIntDataPointFunc
 	Inodes     RecordIntDataPointFunc
 	InodesFree RecordIntDataPointFunc
 	InodesUsed RecordIntDataPointFunc
@@ -146,6 +147,7 @@ type VolumeMetrics struct {
 var K8sVolumeMetrics = VolumeMetrics{
 	Available:  (*MetricsBuilder).RecordK8sVolumeAvailableDataPoint,
 	Capacity:   (*MetricsBuilder).RecordK8sVolumeCapacityDataPoint,
+	Used:       (*MetricsBuilder).RecordK8sPodVolumeUsageDataPoint,
 	Inodes:     (*MetricsBuilder).RecordK8sVolumeInodesDataPoint,
 	InodesFree: (*MetricsBuilder).RecordK8sVolumeInodesFreeDataPoint,
 	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,
