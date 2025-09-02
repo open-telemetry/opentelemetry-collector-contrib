@@ -5,6 +5,7 @@ package attrs // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -60,10 +61,11 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	}
 
 	if r.MetadataExtraction.Regex != "" {
-		attributes, err := r.extractMetadata(path, attributes)
+		extractedAttributes, err := r.extractMetadata(path, attributes)
 		if err != nil {
-			return attributes, err
+			return nil, err
 		}
+		attributes = maps.MergeRawMaps(attributes, extractedAttributes)
 	}
 
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
