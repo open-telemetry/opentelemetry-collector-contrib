@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
+module github.com/groq/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
 
 go 1.23.0
 
