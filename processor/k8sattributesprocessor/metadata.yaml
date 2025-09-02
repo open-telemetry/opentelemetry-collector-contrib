@@ -255,6 +255,48 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    otelsvc_k8s_job_updated:
+      enabled: false
+      description: Number of job update events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_job_added:
+      enabled: false
+      description: Number of job add events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_job_deleted:
+      enabled: false
+      description: Number of job delete events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_daemonset_updated:
+      enabled: false
+      description: Number of daemonset update events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_daemonset_added:
+      enabled: false
+      description: Number of daemonset add events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_daemonset_deleted:
+      enabled: false
+      description: Number of daemonset delete events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_replicaset_updated:
       enabled: true
       description: Number of ReplicaSet update events received
