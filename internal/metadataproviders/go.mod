@@ -8,8 +8,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.237.0
 	github.com/docker/docker v28.3.3+incompatible
-	github.com/hashicorp/consul/api v1.32.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.132.0
+	github.com/hashicorp/consul/api v1.32.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.134.0
 	github.com/shirou/gopsutil/v4 v4.25.7
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/otel v1.37.0
@@ -94,7 +94,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
