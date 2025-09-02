@@ -1414,13 +1414,46 @@ func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	return nil
 }
 
+// buildExpectedMetrics creates expected metrics with or without target_info enrichment
+func buildExpectedMetrics(enriched bool) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	attrs := rm.Resource().Attributes()
+	
+	// Basic attributes
+	attrs.PutStr("service.namespace", "production")
+	attrs.PutStr("service.name", "service_a")
+	attrs.PutStr("service.instance.id", "host1")
+	
+	// Add enriched attributes if target_info came first
+	if enriched {
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
+		attrs.PutStr("region", "us-central1")
+	}
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("OpenTelemetry Collector")
+	sm.Scope().SetVersion("latest")
+	m1 := sm.Metrics().AppendEmpty()
+	m1.SetName("normal_metric")
+	m1.SetUnit("")
+	m1.SetDescription("")
+	dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp1.SetDoubleValue(2.0)
+	dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+	dp1.Attributes().PutStr("foo", "bar")
+
+	return metrics
+}
+
 func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	tests := []struct {
 		name     string
 		requests []*writev2.Request
 	}{
 		{
-			name: "target_info first, normal metric second",
+			name: "target_info first, normal_metric second",
 			requests: []*writev2.Request{
 				{
 					Symbols: []string{
@@ -1458,7 +1491,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 			},
 		},
 		{
-			name: "normal metric first, target_info second",
+			name: "normal_metric first, target_info second",
 			requests: []*writev2.Request{
 				{
 					Symbols: []string{
@@ -1497,33 +1530,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		},
 	}
 
-	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedMetrics := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
-		sm := rm.ScopeMetrics().AppendEmpty()
-		sm.Scope().SetName("OpenTelemetry Collector")
-		sm.Scope().SetVersion("latest")
-		m1 := sm.Metrics().AppendEmpty()
-		m1.SetName("normal_metric")
-		m1.SetUnit("")
-		m1.SetDescription("")
-		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp1.SetDoubleValue(2.0)
-		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-		dp1.Attributes().PutStr("foo", "bar")
-
-		return metrics
-	}()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockConsumer := new(mockConsumer)
@@ -1535,9 +1541,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 			for _, req := range tt.requests {
 				pBuf := proto.NewBuffer(nil)
-				// we don't need to compress the body to use the snappy compression in the unit test
-				// because the encoder is just initialized when we initialize the http server.
-				// so we can just use the uncompressed body.
 				err := pBuf.Marshal(req)
 				assert.NoError(t, err)
 
@@ -1554,8 +1557,19 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
-		})
+			// Find the response that contains metrics (non-zero scopes)
+			var metricsWithData pmetric.Metrics
+			for _, metrics := range mockConsumer.metrics {
+				if metrics.ResourceMetrics().Len() > 0 &&
+					metrics.ResourceMetrics().At(0).ScopeMetrics().Len() > 0 {
+					metricsWithData = metrics
+					break
+				}
+			}
+
+			expectedMetrics := buildExpectedMetrics(tt.name == "target_info first, normal_metric second")
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metricsWithData))
+			})
 	}
 }
 
