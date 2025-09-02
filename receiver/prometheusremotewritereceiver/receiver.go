@@ -245,7 +245,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			Confirmed: true,
 		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
-		metricCache = make(map[uint64]pmetric.Metric)
+		metricCache        = make(map[uint64]pmetric.Metric)
 		resourceMetricsMap = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
@@ -262,9 +262,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if ls.Get(labels.MetricName) == "target_info" {
-			
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-			
+
 			prw.cacheMutex.Lock()
 			var rm pmetric.ResourceMetrics
 			if existingRM, ok := resourceMetricsMap[hashedLabels]; ok {
@@ -274,7 +273,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				resourceMetricsMap[hashedLabels] = rm
 
 				if cachedAttrs, ok := prw.rmCache.Get(hashedLabels); ok {
-            		cachedAttrs.CopyTo(rm.Resource().Attributes())
+					cachedAttrs.CopyTo(rm.Resource().Attributes())
 				} else {
 					parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 				}
@@ -289,7 +288,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				}
 			}
 			cachedAttrs := pcommon.NewMap()
-			attrs.CopyTo(cachedAttrs)			
+			attrs.CopyTo(cachedAttrs)
 			prw.rmCache.Add(hashedLabels, cachedAttrs)
 			prw.cacheMutex.Unlock()
 			continue
@@ -348,7 +347,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		metricKey := metricIdentity.Hash()
 
 		// Find or create scope
-		
 		var scope pmetric.ScopeMetrics
 		var foundScope bool
 		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
@@ -460,13 +458,13 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 				resourceMetricsMap[hashedLabels] = rm
-				
+
 				// Set resource attributes (from cache or parse new)
 				if cachedAttrs, ok := prw.rmCache.Get(hashedLabels); ok {
 					cachedAttrs.CopyTo(rm.Resource().Attributes())
 				} else {
 					parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-					
+
 					// Cache the attributes
 					cachedAttrs := pcommon.NewMap()
 					rm.Resource().Attributes().CopyTo(cachedAttrs)

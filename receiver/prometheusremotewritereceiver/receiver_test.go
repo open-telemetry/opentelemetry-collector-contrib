@@ -1419,12 +1419,12 @@ func buildExpectedMetrics(enriched bool) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	attrs := rm.Resource().Attributes()
-	
+
 	// Basic attributes
 	attrs.PutStr("service.namespace", "production")
 	attrs.PutStr("service.name", "service_a")
 	attrs.PutStr("service.instance.id", "host1")
-	
+
 	// Add enriched attributes if target_info came first
 	if enriched {
 		attrs.PutStr("machine_type", "n1-standard-1")
@@ -1569,7 +1569,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 			expectedMetrics := buildExpectedMetrics(tt.name == "target_info first, normal_metric second")
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metricsWithData))
-			})
+		})
 	}
 }
 
@@ -1814,7 +1814,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 
 	for i, req := range requests {
 		wg.Add(1)
-		go func(requestID int, request *writev2.Request) {
+		go func(_ int, request *writev2.Request) {
 			defer wg.Done()
 
 			pBuf := proto.NewBuffer(nil)
@@ -1903,5 +1903,4 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 			}
 		}
 	}
-
 }
