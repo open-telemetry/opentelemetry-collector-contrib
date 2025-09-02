@@ -150,8 +150,6 @@ github.com/mostynb/go-grpc-compression v1.2.3 h1:42/BKWMy0KEJGSdWvzqIyOZ95YcR9mL
 github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1Vjs47Km/Y2FE6ouQ7Lg=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/open-telemetry/opamp-go v0.21.0 h1:G2e0G4bi2Il3Z4hHqbXUA05m5jajdhQLxq2dBARvT5U=
-github.com/open-telemetry/opamp-go v0.21.0/go.mod h1:d8/1ubFfy2QkTodIC9rd+9A3OCC/6788jSJ6uil1uLk=
 github.com/open-telemetry/opamp-go v0.22.0 h1:7UnsQgFFS7ffM09JQk+9aGVBAAlsLfcooZ9xvSYwxWM=
 github.com/open-telemetry/opamp-go v0.22.0/go.mod h1:339N71soCPrhHywbAcKUZJDODod581ZOxCpTkrl3zYQ=
 github.com/openzipkin/zipkin-go v0.4.3 h1:9EGwpqkgnwdEIJ+Od7QVSEIH+ocmm5nPat0G7sjsSdg=
