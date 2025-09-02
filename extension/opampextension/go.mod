@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/google/uuid v1.6.0
 	github.com/oklog/ulid/v2 v2.1.1
-	github.com/open-telemetry/opamp-go v0.21.0
+	github.com/open-telemetry/opamp-go v0.22.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.134.0
 	github.com/shirou/gopsutil/v4 v4.25.8
@@ -39,6 +39,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
