@@ -2410,14 +2410,11 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 }
 
 func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
-	t.Cleanup(func() {
-		goleak.VerifyNone(t)
-	})
 	healthcheckPort, err := findRandomPort()
 	require.NoError(t, err)
 
 	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
-		"url":      "badserver:8080",
+		"url":      "192.168.99.99:8080",
 		"endpoint": fmt.Sprintf("localhost:%d", healthcheckPort),
 	})
 
@@ -2426,10 +2423,13 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
 	require.NoError(t, err)
 
+	cfg.Telemetry.Logs.Level = zap.DebugLevel
+
 	s, err := supervisor.NewSupervisor(logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start())
-	defer s.Shutdown()
+	// defer s.Shutdown()
+	t.Cleanup(s.Shutdown)
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
@@ -2445,6 +2445,9 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 		}
 		return true
 	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
+	t.Cleanup(func() {
+		goleak.VerifyNone(t)
+	})
 }
 
 func findRandomPort() (int, error) {
