@@ -45,6 +45,8 @@ func TestLoadConfig(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
+			S3Prefix:          "",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -88,6 +90,7 @@ func TestConfig(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -123,6 +126,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
@@ -160,6 +164,7 @@ func TestConfigS3ACL(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -198,6 +203,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -238,6 +244,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "alternative-s3-system.example.com",
 			S3ForcePathStyle:  true,
@@ -357,6 +364,8 @@ func TestMarshallerName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
+			S3Prefix:          "",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -375,6 +384,8 @@ func TestMarshallerName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
+			S3Prefix:          "",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -410,6 +421,8 @@ func TestCompressionName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
+			S3Prefix:          "",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "gzip",
 			StorageClass:      "STANDARD",
@@ -429,6 +442,8 @@ func TestCompressionName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
+			S3Prefix:          "",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "none",
 			StorageClass:      "STANDARD",
@@ -466,6 +481,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -507,6 +523,7 @@ func TestRetry(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
@@ -542,6 +559,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
+			S3BasePath:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			RetryMode:         DefaultRetryMode,
@@ -553,6 +571,87 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3BasePath(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_base_path.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+	timeoutCfg := exporterhelper.TimeoutConfig{
+		Timeout: 5 * time.Second,
+	}
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3BasePath:        "base/path",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		MarshalerName:   "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3BasePathWithResourceAttrs(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_base_path_with_resource_attrs.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+	timeoutCfg := exporterhelper.TimeoutConfig{
+		Timeout: 5 * time.Second,
+	}
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "default-metric",
+			S3BasePath:        "environment/prod",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		MarshalerName:   "otlp_json",
+		ResourceAttrsToS3: ResourceAttrsToS3{
+			S3Prefix: "com.awss3.prefix",
+		},
 	}, e,
 	)
 }

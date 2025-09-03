@@ -25,6 +25,7 @@ The following exporter configuration parameters are supported.
 | `region`                  | AWS region.                                                                                                                                                                                                                | "us-east-1"                                 |
 | `s3_bucket`               | S3 bucket                                                                                                                                                                                                                  |                                             |
 | `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                                                                                                      |                                             |
+| `s3_base_path`            | base path that is always included as the root path when uploading files to S3.                                                                                |                                             |
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
 | `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
@@ -141,9 +142,33 @@ In this case, logs and traces would be stored in the following path format.
 metric/YYYY/MM/DD/HH/mm
 ```
 
+## Base Path Configuration
+
+The `s3_base_path` option allows you to specify a base path that is always included as the root path when uploading files to S3. If provided, `s3_prefix` will be appended to this base path.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: 'eu-central-1'
+      s3_bucket: 'databucket'
+      s3_base_path: 'environment/prod'
+      s3_prefix: 'metric'
+      s3_partition_format: '%Y/%m/%d/%H/%M'
+```
+
+In this case, logs and traces would be stored in the following path format.
+
+```console
+environment/prod/metric/YYYY/MM/DD/HH/mm
+```
+
 ## Data routing based on resource attributes
 When `resource_attrs_to_s3/s3_bucket` or `resource_attrs_to_s3/s3_prefix` is configured, the S3 bucket and/or prefix are dynamically derived from specified resource attributes in your data.
 If the attribute values are unavailable, the bucket and prefix will fall back to the values defined in `s3uploader/s3_bucket` and `s3uploader/s3_prefix` respectively.
+
+**Note:** `s3_base_path` is always preserved and never overridden by resource attributes. It serves as a consistent root path for all uploads.
+
 ```yaml
 exporters:
   awss3:
@@ -165,6 +190,44 @@ bucket3/prefix-bar/YYYY/MM/DD/HH/mm
 databucket/metric/YYYY/MM/DD/HH/mm
 ...
 ```
+
+## Base Path with Resource Attributes
+
+When using both `s3_base_path` and `resource_attrs_to_s3/s3_prefix`, the base path is always preserved while the prefix can be dynamically overridden by resource attributes.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: 'eu-central-1'
+      s3_bucket: 'databucket'
+      s3_base_path: 'environment/prod'
+      s3_prefix: 'default-metric'
+      s3_partition_format: '%Y/%m/%d/%H/%M'
+    resource_attrs_to_s3:
+      s3_prefix: "com.awss3.prefix"
+```
+
+**Important:** `resource_attrs_to_s3/s3_prefix` only overrides `s3_prefix`, not `s3_base_path`. The base path is always included as the root path.
+
+In this configuration:
+- **Base path**: `environment/prod` (always included)
+- **Prefix**: Dynamically set from resource attribute `com.awss3.prefix` if available, otherwise falls back to `default-metric`
+
+**Path format examples:**
+
+```console
+# When resource attribute com.awss3.prefix = "service-a/metrics"
+environment/prod/service-a/metrics/YYYY/MM/DD/HH/mm
+
+# When resource attribute com.awss3.prefix = "service-b/logs"  
+environment/prod/service-b/logs/YYYY/MM/DD/HH/mm
+
+# When resource attribute is unavailable (fallback)
+environment/prod/default-metric/YYYY/MM/DD/HH/mm
+```
+
+This allows you to maintain consistent organizational structure (via base path) while dynamically routing different data types or services to specific subdirectories.
 
 ## Retry
 

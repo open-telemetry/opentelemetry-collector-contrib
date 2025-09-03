@@ -102,6 +102,69 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 			expect:         "/foo-prefix1/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics.gz",
 			overridePrefix: "/foo-prefix1",
 		},
+		{
+			name: "base path only",
+			inputs: &PartitionKeyBuilder{
+				S3BasePath:       "base/path",
+				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:       "signal-output-",
+				Metadata:         "service-01_pod2",
+				FileFormat:       "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "",
+		},
+		{
+			name: "base path with prefix",
+			inputs: &PartitionKeyBuilder{
+				S3BasePath:       "base/path",
+				PartitionPrefix:  "telemetry",
+				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:       "signal-output-",
+				Metadata:         "service-01_pod2",
+				FileFormat:       "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/telemetry/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "",
+		},
+		{
+			name: "base path with prefix and override",
+			inputs: &PartitionKeyBuilder{
+				S3BasePath:       "base/path",
+				PartitionPrefix:  "telemetry",
+				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:       "signal-output-",
+				Metadata:         "service-01_pod2",
+				FileFormat:       "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/override/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "override",
+		},
+		{
+			name: "base path with empty prefix",
+			inputs: &PartitionKeyBuilder{
+				S3BasePath:       "base/path",
+				PartitionPrefix:  "",
+				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:       "signal-output-",
+				Metadata:         "service-01_pod2",
+				FileFormat:       "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

@@ -7,6 +7,7 @@ import (
 	"math/rand/v2"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +23,8 @@ type PartitionKeyBuilder struct {
 	// PartitionPrefix defines the S3 directory (key)
 	// prefix used to write the file
 	PartitionPrefix string
+	// S3BasePath defines the base path that is always included as the root path when uploading files to S3.
+	S3BasePath string
 	// PartitionFormat is used to separate values into
 	// different time buckets.
 	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
@@ -55,10 +58,20 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix str
 	if overridePrefix != "" {
 		prefix = overridePrefix
 	}
-	if prefix != "" {
-		prefix += "/"
+	
+	var pathParts []string
+	
+	if pki.S3BasePath != "" {
+		pathParts = append(pathParts, pki.S3BasePath)
 	}
-	return prefix + timefmt.Format(ts, pki.PartitionFormat)
+	
+	if prefix != "" {
+		pathParts = append(pathParts, prefix)
+	}
+	
+	pathParts = append(pathParts, timefmt.Format(ts, pki.PartitionFormat))
+
+	return strings.Join(pathParts, "/")
 }
 
 func (pki *PartitionKeyBuilder) fileName() string {
