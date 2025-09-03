@@ -109,9 +109,6 @@ type telemetrySettings struct {
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
-	runCtx       context.Context
-	runCtxCancel context.CancelFunc
-
 	pidProvider pidProvider
 
 	// Commander that starts/stops the Agent process.
@@ -179,8 +176,7 @@ type Supervisor struct {
 	opampServerPort int
 
 	// The HTTP server for health check endpoint
-	healthCheckServer   *http.Server
-	healthCheckServerWG sync.WaitGroup
+	healthCheckServer *http.Server
 
 	telemetrySettings telemetrySettings
 
@@ -205,40 +201,36 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		agentReadyChan:                 make(chan struct{}, 1),
 		metrics:                        &supervisorTelemetry.Metrics{},
 	}
-
-	s.runCtx, s.runCtxCancel = context.WithCancel(context.Background())
-
 	if err := s.createTemplates(); err != nil {
 		return nil, err
 	}
 
-	if err := cfg.Validate(); err != nil {
+	var err error
+	s.telemetrySettings, err = initTelemetrySettings(logger, cfg.Telemetry)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg
 
-	if err := os.MkdirAll(s.config.Storage.Directory, 0o700); err != nil {
+	if err = os.MkdirAll(s.config.Storage.Directory, 0o700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
-	var err error
-
-	s.telemetrySettings, err = initTelemetrySettings(s.runCtx, logger, cfg.Telemetry)
-	if err != nil {
-		return nil, err
-	}
+	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
 	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
 	if err != nil {
 		return nil, fmt.Errorf("error creating internal metrics: %w", err)
 	}
 
-	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
-
 	return s, nil
 }
 
-func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.Telemetry) (telemetrySettings, error) {
+func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetrySettings, error) {
 	readers := cfg.Metrics.Readers
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		readers = []telemetryconfig.MetricReader{}
@@ -267,6 +259,8 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 	}
 
 	sch := semconv.SchemaURL
+
+	ctx := context.Background()
 
 	sdk, err := telemetryconfig.NewSDK(
 		telemetryconfig.WithContext(ctx),
@@ -443,7 +437,7 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
+	_, span := s.getTracer().Start(context.Background(), "GetBootstrapInfo")
 	defer span.End()
 
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
@@ -547,7 +541,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 
 	defer func() {
-		if stopErr := srv.Stop(s.runCtx); stopErr != nil {
+		if stopErr := srv.Stop(context.Background()); stopErr != nil {
 			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
 		}
 	}()
@@ -570,13 +564,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	if err = cmd.Start(s.runCtx); err != nil {
+	if err = cmd.Start(context.Background()); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
 	defer func() {
-		if stopErr := cmd.Stop(s.runCtx); stopErr != nil {
+		if stopErr := cmd.Stop(context.Background()); stopErr != nil {
 			err = errors.Join(err, fmt.Errorf("error when stopping the collector: %w", stopErr))
 		}
 	}()
@@ -638,7 +632,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("parse server endpoint: %w", err)
 	}
 	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
-		tlsConfig, err = s.config.Server.TLS.LoadTLSConfig(s.runCtx)
+		tlsConfig, err = s.config.Server.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return err
 		}
@@ -712,7 +706,7 @@ func (s *Supervisor) startOpAMPClient() error {
 	}
 
 	s.telemetrySettings.Logger.Debug("Starting OpAMP client...")
-	if err := s.opampClient.Start(s.runCtx, settings); err != nil {
+	if err := s.opampClient.Start(context.Background(), settings); err != nil {
 		return err
 	}
 	s.telemetrySettings.Logger.Debug("OpAMP client started.")
@@ -750,7 +744,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 
 	healthCheckServerPort := s.config.HealthCheck.Port()
 	server, err := s.config.HealthCheck.ToServer(
-		s.runCtx,
+		context.Background(),
 		nopHost{},
 		s.telemetrySettings.TelemetrySettings,
 		mux,
@@ -760,14 +754,12 @@ func (s *Supervisor) startHealthCheckServer() error {
 	}
 	s.healthCheckServer = server
 
-	listener, err := s.config.HealthCheck.ToListener(s.runCtx)
+	listener, err := s.config.HealthCheck.ToListener(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}
 
-	s.healthCheckServerWG.Add(1)
 	go func() {
-		defer s.healthCheckServerWG.Done()
 		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int64("port", healthCheckServerPort))
 		if err := s.healthCheckServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
@@ -826,7 +818,7 @@ func (s *Supervisor) startOpAMPServer() error {
 }
 
 func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-	ctx, span := s.getTracer().Start(s.runCtx, "handleAgentOpAMPMessage")
+	ctx, span := s.getTracer().Start(context.Background(), "handleAgentOpAMPMessage")
 	defer span.End()
 
 	s.agentConn.Store(conn)
@@ -971,7 +963,7 @@ func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyVa
 
 func (s *Supervisor) stopOpAMPClient() error {
 	s.telemetrySettings.Logger.Debug("Stopping OpAMP client...")
-	ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err := s.opampClient.Stop(ctx)
 	// TODO(srikanthccv): remove context.DeadlineExceeded after https://github.com/open-telemetry/opamp-go/pull/213
@@ -1327,7 +1319,7 @@ func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Cannot parse last received own telemetry config", zap.Error(err))
 		} else {
-			s.setupOwnTelemetry(s.runCtx, set)
+			s.setupOwnTelemetry(context.Background(), set)
 		}
 	}
 }
@@ -1458,7 +1450,7 @@ func (s *Supervisor) handleRestartCommand() error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 	s.telemetrySettings.Logger.Debug("Received restart command")
-	err := s.commander.Restart(s.runCtx)
+	err := s.commander.Restart(context.Background())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
@@ -1471,14 +1463,14 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		// Don't start the agent if there is no config to run
 		s.telemetrySettings.Logger.Info("No config present, not starting agent.")
 		// need to manually trigger updating effective config
-		err := s.opampClient.UpdateEffectiveConfig(s.runCtx)
+		err := s.opampClient.UpdateEffectiveConfig(context.Background())
 		if err != nil {
 			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 		}
 		return agentNotStarting, nil
 	}
 
-	err := s.commander.Start(s.runCtx)
+	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Cannot start the agent", zap.Error(err))
 		startErr := fmt.Errorf("cannot start the agent: %w", err)
@@ -1605,7 +1597,7 @@ func (s *Supervisor) runAgentProcess() {
 			}
 
 		case <-s.doneChan:
-			err := s.commander.Stop(s.runCtx)
+			err := s.commander.Stop(context.Background())
 			if err != nil {
 				s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 			}
@@ -1717,7 +1709,7 @@ func (s *Supervisor) writeAgentConfig() error {
 
 func (s *Supervisor) stopAgentApplyConfig() {
 	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
-	err := s.commander.Stop(s.runCtx)
+	err := s.commander.Stop(context.Background())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 	}
@@ -1728,8 +1720,6 @@ func (s *Supervisor) stopAgentApplyConfig() {
 }
 
 func (s *Supervisor) Shutdown() {
-	defer s.runCtxCancel()
-
 	s.telemetrySettings.Logger.Debug("Supervisor shutting down...")
 	close(s.doneChan)
 
@@ -1739,7 +1729,7 @@ func (s *Supervisor) Shutdown() {
 
 	if s.opampServer != nil {
 		s.telemetrySettings.Logger.Debug("Stopping OpAMP server...")
-		ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		err := s.opampServer.Stop(ctx)
@@ -1752,15 +1742,13 @@ func (s *Supervisor) Shutdown() {
 
 	if s.healthCheckServer != nil {
 		s.telemetrySettings.Logger.Debug("Stopping health check server...")
-		// ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
-		// defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-		err := s.healthCheckServer.Close()
-
+		err := s.healthCheckServer.Shutdown(ctx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not stop the health check server", zap.Error(err))
 		} else {
-			s.healthCheckServerWG.Wait()
 			s.telemetrySettings.Logger.Debug("Health check server stopped.")
 		}
 	}
@@ -1787,7 +1775,7 @@ func (s *Supervisor) Shutdown() {
 }
 
 func (s *Supervisor) shutdownTelemetry() error {
-	ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	// The metric.MeterProvider and trace.TracerProvider interfaces do not have a Shutdown method.
 	// To shutdown the providers we try to cast to this interface, which matches the type signature used in the SDK.
@@ -1863,7 +1851,7 @@ func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error
 		zap.Bool("healthy", componentHealth.Healthy),
 		zap.String("lastError", componentHealth.LastError),
 	)
-	s.metrics.SetCollectorHealthStatus(s.runCtx, componentHealth.Healthy)
+	s.metrics.SetCollectorHealthStatus(context.Background(), componentHealth.Healthy)
 
 	err := s.opampClient.SetHealth(componentHealth)
 	if err != nil {
