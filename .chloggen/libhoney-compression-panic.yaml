@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: libhoneyreceiver
+note: Properly handle compressed payloads
+issues: [42279]
+subtext:
+  Compression issues now return a 400 status rather than panic. 
+  Exposes the http library's compression algorthms to let users override if needed.
+change_logs: [user]
