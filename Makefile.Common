@@ -50,13 +50,30 @@ CHLOGGEN_CONFIG  := .chloggen/config.yaml
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
 .PHONY: install-tools
-install-tools: $(TOOLS_BIN_NAMES)
+install-tools: $(TOOLS_BIN_NAMES) $(TOOLS_BIN_DIR)/golangci-lint
 
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+
+# === CWA Fork ===
+# One of the build dependency repo's for golangci-lint no longer exists so we are unable to build golangci-lint from source
+# The golangci-lint maintainers ran into this problem: https://github.com/golangci/golangci-lint/issues/6017
+# They have unreleased fix: https://github.com/golangci/golangci-lint/pull/6018
+# Install golangci-lint by downloading the binary directly instead
+# We should remove this block once golangci-lint releases a fix, the fix is pulled into OTel upstream repo, and we
+# sync with OTel upstream
+$(TOOLS_BIN_DIR)/golangci-lint: $(TOOLS_BIN_DIR)
+	@(\
+		flock -x 200; \
+		if [ ! -f $@ ]; then \
+			echo "Downloading golangci-lint..."; \
+			curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(TOOLS_BIN_DIR) v2.1.1; \
+		fi \
+	) 200>$@.lock
+# === CWA Fork ===
 
 ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
 MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
@@ -211,7 +228,7 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: $(LINT) checklicense misspell
+lint: $(LINT) checklicense misspell 
 	$(LINT) run
 
 .PHONY: govulncheck
