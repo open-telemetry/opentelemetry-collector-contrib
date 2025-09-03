@@ -76,6 +76,12 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue))
 		case "ConnsTotal":
 			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+		case "ConnsAsyncWriting":
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateWriting))
+		case "ConnsAsyncKeepAlive":
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateKeepalive))
+		case "ConnsAsyncClosing":
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateClosing))
 		case "BusyWorkers":
 			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":

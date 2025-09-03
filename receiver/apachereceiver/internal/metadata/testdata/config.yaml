@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    apache.connections.async:
+      enabled: true
     apache.cpu.load:
       enabled: true
     apache.cpu.time:
@@ -32,6 +34,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    apache.connections.async:
+      enabled: false
     apache.cpu.load:
       enabled: false
     apache.cpu.time:
