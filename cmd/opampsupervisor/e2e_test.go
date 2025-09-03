@@ -2428,8 +2428,8 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	s, err := supervisor.NewSupervisor(logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start())
-	// defer s.Shutdown()
-	t.Cleanup(s.Shutdown)
+	defer s.Shutdown()
+	// t.Cleanup(s.Shutdown)
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
