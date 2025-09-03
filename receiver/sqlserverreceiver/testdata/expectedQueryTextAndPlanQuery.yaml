@@ -60,9 +60,7 @@ resourceLogs:
                   stringValue: microsoft.sql_server
             body: {}
             eventName: db.server.top_query
-            spanId: ""
-            timeUnixNano: "1749224037462260000"
-            traceId: ""
+            timeUnixNano: "1754969688164935095"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
