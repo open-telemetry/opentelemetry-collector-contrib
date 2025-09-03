@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.4
+	github.com/grafana/clusterurl v0.0.0-20250902185539-d4367e922036
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
@@ -38,6 +39,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
@@ -77,6 +79,8 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/grafana/clusterurl => github.com/grafana/clusterurl v0.0.0-20250902185539-d4367e922036
 
 retract (
 	v0.76.2
