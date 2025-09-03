@@ -277,71 +277,58 @@ func (c *UserCredentialsConfig) Validate() error {
 func (c *AuthConfig) Validate() error {
 	var errs error
 	authMethodsCount := 0
-
 	if c.Token != nil {
 		authMethodsCount++
 		if err := c.Token.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.UserInfo != nil {
 		authMethodsCount++
 		if err := c.UserInfo.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.NKey != nil {
 		authMethodsCount++
 		if err := c.NKey.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.UserJWT != nil {
 		authMethodsCount++
 		if err := c.UserJWT.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if c.UserCredentials != nil {
 		authMethodsCount++
 		if err := c.UserCredentials.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-
 	if authMethodsCount > 1 {
 		errs = multierr.Append(errs, errors.New("multiple auth methods configured simultaneously"))
 	}
-
 	return errs
 }
 
 func (c *Config) Validate() error {
 	var errs error
-
 	if err := c.TLS.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-
 	if err := c.Logs.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-
 	if err := c.Metrics.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-
 	if err := c.Traces.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-
 	if err := c.Auth.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-
 	return errs
 }

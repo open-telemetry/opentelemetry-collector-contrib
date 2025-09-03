@@ -11,9 +11,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/marshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/metadata"
@@ -63,13 +60,18 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
+	exporter, err := newNatsCoreLogsExporter(set, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
-		func(_ context.Context, _ plog.Logs) error {
-			return nil
-		},
+		exporter.export,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
 
@@ -78,13 +80,18 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
+	exporter, err := newNatsCoreMetricsExporter(set, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
-		func(_ context.Context, _ pmetric.Metrics) error {
-			return nil
-		},
+		exporter.export,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
 
@@ -93,12 +100,17 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
+	exporter, err := newNatsCoreTracesExporter(set, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
-		func(_ context.Context, _ ptrace.Traces) error {
-			return nil
-		},
+		exporter.export,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
