@@ -217,10 +217,32 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		r.settings.Logger.Debug("dataset parsed", zap.String("dataset.parsed", dataset))
 	}
 
-	body, err := io.ReadAll(req.Body)
+	// The confighttp middleware automatically handles decompression based on Content-Encoding header
+	// However, there's a bug where some clients send uncompressed data with Content-Encoding headers
+	// This causes the decompressor middleware to panic. We wrap the read in panic recovery.
+	
+	var body []byte
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				// Log the panic but don't expose internal details to the client
+				r.settings.Logger.Error("Panic during request body read (likely malformed compressed data)", 
+					zap.Any("panic", panicVal),
+					zap.String("content-encoding", req.Header.Get("Content-Encoding")))
+				err = fmt.Errorf("failed to read request body: invalid compressed data")
+			}
+		}()
+		body, err = io.ReadAll(req.Body)
+	}()
+	
 	if err != nil {
 		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
 		writeLibhoneyError(resp, enc, "failed to read request body")
+		// Drain any remaining body to allow connection reuse
+		if req.Body != nil {
+			_, _ = io.ReadAll(req.Body)
+			_ = req.Body.Close()
+		}
 		return
 	}
 	if err = req.Body.Close(); err != nil {
