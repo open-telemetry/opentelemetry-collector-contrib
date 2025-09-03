@@ -836,6 +836,8 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 }
 
 func getInstanceID(hostString string, logger *zap.Logger) string {
+	const fallback = "unknown:1521"
+
 	host, port, err := net.SplitHostPort(hostString)
 	if err == nil && (strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()) {
 		host, err = os.Hostname()
@@ -843,7 +845,10 @@ func getInstanceID(hostString string, logger *zap.Logger) string {
 
 	if err != nil {
 		logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-		return "unknown:1521"
+		if port == "" {
+			return fallback
+		}
+		return "unknown:" + port
 	}
 
 	return host + ":" + port
