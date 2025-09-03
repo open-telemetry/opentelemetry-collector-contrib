@@ -2410,6 +2410,9 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 }
 
 func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
+	t.Cleanup(func() {
+		goleak.VerifyNone(t)
+	})
 	healthcheckPort, err := findRandomPort()
 	require.NoError(t, err)
 
@@ -2428,8 +2431,8 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	s, err := supervisor.NewSupervisor(logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start())
-	defer s.Shutdown()
-	// t.Cleanup(s.Shutdown)
+	// defer s.Shutdown()
+	t.Cleanup(s.Shutdown)
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
@@ -2445,9 +2448,6 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 		}
 		return true
 	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
-	t.Cleanup(func() {
-		goleak.VerifyNone(t)
-	})
 }
 
 func findRandomPort() (int, error) {
@@ -2470,9 +2470,9 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	t.Cleanup(func() {
 		goleak.VerifyNone(t)
 	})
-	if runtime.GOOS == "windows" {
-		t.Skip("Leaks a goroutine on Windows: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42352")
-	}
+	// if runtime.GOOS == "windows" {
+	// 	t.Skip("Leaks a goroutine on Windows: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42352")
+	// }
 
 	agentDescription := atomic.Value{}
 
