@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -79,9 +80,9 @@ func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
 	config := Protocols{
-		ThriftHTTP: &confighttp.ServerConfig{
+		ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
 			Endpoint: addr,
-		},
+		}),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -89,8 +90,13 @@ func TestReception(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		// Not using t.Cleanup because this is a graceful shutdown of an HTTP server
+		// and the context shouldn't be already cancelled during a graceful shutdown
+		// if the server still can have any live connections. See issue #42072.
+		require.NoError(t, jr.Shutdown(t.Context()))
+	}()
 
 	// 2. Then send spans to the Jaeger receiver.
 	_, port, _ := net.SplitHostPort(addr)
@@ -119,8 +125,8 @@ func TestPortsNotOpen(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
 	// there is a race condition here that we're ignoring.
 	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
@@ -141,12 +147,12 @@ func TestPortsNotOpen(t *testing.T) {
 func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := Protocols{
-		GRPC: &configgrpc.ServerConfig{
+		GRPC: configoptional.Some(configgrpc.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  testutil.GetAvailableLocalAddress(t),
 				Transport: confignet.TransportTypeTCP,
 			},
-		},
+		}),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -154,10 +160,10 @@ func TestGRPCReception(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -171,7 +177,7 @@ func TestGRPCReception(t *testing.T) {
 
 	// test
 	req := grpcFixture(t, now, d10min, d2sec)
-	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
+	resp, err := cl.PostSpans(t.Context(), req, grpc.WaitForReady(true))
 
 	// verify
 	assert.NoError(t, err, "should not have failed to post spans")
@@ -188,23 +194,23 @@ func TestGRPCReception(t *testing.T) {
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
-	tlsCreds := &configtls.ServerConfig{
+	tlsCreds := configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
 		},
 	}
 
-	grpcServerSettings := &configgrpc.ServerConfig{
+	grpcServerSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLS: tlsCreds,
+		TLS: configoptional.Some(tlsCreds),
 	}
 
 	config := Protocols{
-		GRPC: grpcServerSettings,
+		GRPC: configoptional.Some(grpcServerSettings),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -212,8 +218,8 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
 	creds, err := credentials.NewClientTLSFromFile(filepath.Join("testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
@@ -231,7 +237,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	// test
 	req := grpcFixture(t, now, d10min, d2sec)
-	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
+	resp, err := cl.PostSpans(t.Context(), req, grpc.WaitForReady(true))
 
 	// verify
 	assert.NoError(t, err, "should not have failed to post spans")
@@ -337,10 +343,10 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 
 func TestSampling(t *testing.T) {
 	config := Protocols{
-		GRPC: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
+		GRPC: configoptional.Some(configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
-		}},
+		}}),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -348,16 +354,16 @@ func TestSampling(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	require.NoError(t, jr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer conn.Close()
 
 	cl := api_v2.NewSamplingManagerClient(conn)
 
-	resp, err := cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
+	resp, err := cl.GetSamplingStrategy(t.Context(), &api_v2.SamplingStrategyParameters{
 		ServiceName: "foo",
 	})
 	assert.Error(t, err, "expect: unknown service jaeger.api_v2.SamplingManager")
@@ -378,7 +384,7 @@ func TestConsumeThriftTrace(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		numSpans, err := consumeTraces(context.Background(), test.batch, consumertest.NewNop())
+		numSpans, err := consumeTraces(t.Context(), test.batch, consumertest.NewNop())
 		require.NoError(t, err)
 		assert.Equal(t, test.numSpans, numSpans)
 	}

@@ -278,9 +278,9 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| resource | the name of the resource on which the quota is applied | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| resource | the name of the resource on which the quota is applied | Any Str | false |
 
 ### k8s.resource_quota.used
 
@@ -292,9 +292,9 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| resource | the name of the resource on which the quota is applied | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| resource | the name of the resource on which the quota is applied | Any Str | false |
 
 ### k8s.statefulset.current_pods
 
@@ -338,10 +338,10 @@ The upper limit for a particular resource in a specific namespace.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| k8s.namespace.name | The k8s namespace name. | Any Str |
-| resource | the name of the resource on which the quota is applied | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| k8s.namespace.name | The k8s namespace name. | Any Str | false |
+| resource | the name of the resource on which the quota is applied | Any Str | false |
 
 ### openshift.appliedclusterquota.used
 
@@ -353,10 +353,10 @@ The usage for a particular resource in a specific namespace.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| k8s.namespace.name | The k8s namespace name. | Any Str |
-| resource | the name of the resource on which the quota is applied | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| k8s.namespace.name | The k8s namespace name. | Any Str | false |
+| resource | the name of the resource on which the quota is applied | Any Str | false |
 
 ### openshift.clusterquota.limit
 
@@ -368,9 +368,9 @@ The configured upper limit for a particular resource.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| resource | the name of the resource on which the quota is applied | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| resource | the name of the resource on which the quota is applied | Any Str | false |
 
 ### openshift.clusterquota.used
 
@@ -382,9 +382,9 @@ The usage for a particular resource with a configured limit.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| resource | the name of the resource on which the quota is applied | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| resource | the name of the resource on which the quota is applied | Any Str | false |
 
 ## Optional Metrics
 
@@ -396,6 +396,20 @@ metrics:
     enabled: true
 ```
 
+### k8s.container.status.state
+
+Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {container} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | false |
+
 ### k8s.node.condition
 
 The condition of a particular Node.
@@ -406,9 +420,9 @@ The condition of a particular Node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | false |
 
 ### k8s.pod.status_reason
 

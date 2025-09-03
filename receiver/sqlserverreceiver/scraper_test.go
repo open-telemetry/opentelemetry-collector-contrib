@@ -81,6 +81,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
+	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
+	cfg.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
 	// cfg.QuerySample.Enabled = enabled
 }
@@ -137,9 +139,9 @@ func TestSuccessfulScrape(t *testing.T) {
 			assert.NotEmpty(t, scrapers)
 
 			for _, scraper := range scrapers {
-				err := scraper.Start(context.Background(), componenttest.NewNopHost())
+				err := scraper.Start(t.Context(), componenttest.NewNopHost())
 				assert.NoError(t, err)
-				defer assert.NoError(t, scraper.Shutdown(context.Background()))
+				defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 				scraper.client = mockClient{
 					instanceName:        scraper.config.InstanceName,
@@ -148,7 +150,7 @@ func TestSuccessfulScrape(t *testing.T) {
 					lookbackTime:        20,
 				}
 
-				actualMetrics, err := scraper.ScrapeMetrics(context.Background())
+				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
 				fileSuffix := ".yaml"
 				if test.removeServerResourceAttributeFeatureGate {
@@ -172,7 +174,7 @@ func TestSuccessfulScrape(t *testing.T) {
 				expectedMetrics, err := golden.ReadMetrics(expectedFile)
 				assert.NoError(t, err)
 
-				assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+				assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 					pmetrictest.IgnoreMetricDataPointsOrder(),
 					pmetrictest.IgnoreStartTimestamp(),
 					pmetrictest.IgnoreTimestamp(),
@@ -198,16 +200,16 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
-		err := scraper.Start(context.Background(), componenttest.NewNopHost())
+		err := scraper.Start(t.Context(), componenttest.NewNopHost())
 		assert.NoError(t, err)
-		defer assert.NoError(t, scraper.Shutdown(context.Background()))
+		defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 		scraper.client = mockClient{
 			instanceName: scraper.config.InstanceName,
 			SQL:          "Invalid SQL query",
 		}
 
-		actualMetrics, err := scraper.ScrapeMetrics(context.Background())
+		actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 		assert.Error(t, err)
 		assert.Empty(t, actualMetrics)
 	}
@@ -416,7 +418,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 		topQueryCount:       200,
 	}
 
-	actualLogs, err := scraper.ScrapeLogs(context.Background())
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
@@ -476,7 +478,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 		},
 	}
 
-	actualLogs, err := scraper.ScrapeLogs(context.Background())
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	assert.Error(t, err)
 
 	expectedFile := "expectedQueryTextAndPlanQueryWithInvalidData.yaml"
@@ -545,7 +547,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 
 			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
 
-			actualLogs, err := scraper.ScrapeLogs(context.Background())
+			actualLogs, err := scraper.ScrapeLogs(t.Context())
 			if tc.errors {
 				assert.Error(t, err)
 			} else {

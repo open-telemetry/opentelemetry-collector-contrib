@@ -26,16 +26,15 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 const (
-	computerNameKey  = "computer_name"
-	databaseNameKey  = "database_name"
-	instanceNameKey  = "sql_instance"
-	serverAddressKey = "server.address"
-	serverPortKey    = "server.port"
+	computerNameKey = "computer_name"
+	databaseNameKey = "database_name"
+	instanceNameKey = "sql_instance"
 )
 
 const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
@@ -63,6 +62,7 @@ type sqlServerScraperHelper struct {
 	lb                     *metadata.LogsBuilder
 	cache                  *lru.Cache[string, int64]
 	lastExecutionTimestamp time.Time
+	obfuscator             *obfuscator
 }
 
 var (
@@ -91,6 +91,7 @@ func newSQLServerScraper(id component.ID,
 		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
+		obfuscator:             newObfuscator(),
 	}
 }
 
@@ -151,7 +152,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	return s.lb.Emit(metadata.WithLogsResource(resources)), err
 }
 
-func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
+func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
 	if s.db != nil {
 		return s.db.Close()
 	}
@@ -208,10 +209,11 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val.(float64)/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite)
 		}
 
-		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
+		errs = append(errs,
+			s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead),
+			s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite),
+			s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead),
+			s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -537,6 +539,8 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbPendingRecovery = "db_recoveryPending"
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
+	const cpuCount = "cpu_count"
+	const computerUptime = "computer_uptime"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -559,12 +563,16 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 			rb.SetServerPort(int64(s.config.Port))
 		}
 
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
-		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+		errs = append(errs,
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect),
+			s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline),
+			s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]),
+			s.mb.RecordSqlserverComputerUptimeDataPoint(now, row[computerUptime]),
+		)
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -696,7 +704,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			obfuscated, err := obfuscateSQL(statement)
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
 				return "", nil
@@ -729,7 +737,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			physicalReadsVal = int64(0)
 		}
 
-		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateXMLPlan(row[columnName]) })
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			return s.obfuscator.obfuscateXMLPlan(row[columnName])
+		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
 		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
@@ -800,7 +810,7 @@ func (s *sqlServerScraperHelper) retrieveValue(
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
-func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val int64) (bool, int64) {
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column string, val int64) (bool, int64) {
 	if val < 0 {
 		return false, 0
 	}
@@ -821,44 +831,6 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash st
 	return true, 0
 }
 
-type item struct {
-	row      sqlquery.StringMap
-	priority int64
-	index    int
-}
-
-// reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-type priorityQueue []*item
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].priority > pq[j].priority
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *priorityQueue) Push(x any) {
-	n := len(*pq)
-	item := x.(*item)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // don't stop the GC from reclaiming the item eventually
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
-}
-
 // sortRows sorts the rows based on the `values` slice in descending order and return the first M(M=maximum) rows
 // Input: (row: [row1, row2, row3], values: [100, 10, 1000], maximum: 2
 // Expected Output: (row: [row3, row1]
@@ -871,20 +843,20 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 		maximum <= 0 {
 		return []sqlquery.StringMap{}
 	}
-	pq := make(priorityQueue, len(rows))
+	pq := make(priorityqueue.PriorityQueue[sqlquery.StringMap, int64], len(rows))
 	for i, row := range rows {
 		value := values[i]
-		pq[i] = &item{
-			row:      row,
-			priority: value,
-			index:    i,
+		pq[i] = &priorityqueue.QueueItem[sqlquery.StringMap, int64]{
+			Value:    row,
+			Priority: value,
+			Index:    i,
 		}
 	}
 	heap.Init(&pq)
 
 	for pq.Len() > 0 && len(results) < int(maximum) {
-		item := heap.Pop(&pq).(*item)
-		results = append(results, item.row)
+		item := heap.Pop(&pq).(*priorityqueue.QueueItem[sqlquery.StringMap, int64])
+		results = append(results, item.Value)
 	}
 	return results
 }
@@ -966,7 +938,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.TopQueryCount),
+		sql.Named("top", s.config.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -992,7 +964,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			obfuscated, err := obfuscateSQL(statement)
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
 				return "", nil

@@ -4,7 +4,6 @@
 package alertmanagerexporter
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -274,7 +273,7 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings(metadata.Type))
+	lte, err := newTracesExporter(t.Context(), cfg, exportertest.NewNopSettings(metadata.Type))
 	fmt.Println(lte)
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
@@ -365,16 +364,16 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	cfg.Endpoint = mock.mockserver.URL
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
-	err := am.start(context.Background(), componenttest.NewNopHost())
+	err := am.start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = am.postAlert(context.Background(), alerts)
+	err = am.postAlert(t.Context(), alerts)
 	assert.Contains(t, err.Error(), "failed - \"404 Not Found\"")
 
 	cfg.APIVersion = "v1"
 	am = newAlertManagerExporter(cfg, set.TelemetrySettings)
-	err = am.start(context.Background(), componenttest.NewNopHost())
+	err = am.start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = am.postAlert(context.Background(), alerts)
+	err = am.postAlert(t.Context(), alerts)
 	assert.NoError(t, err)
 
 	assert.True(t, mock.fooCalledSuccessfully, "mock server wasn't called")
@@ -447,7 +446,7 @@ func TestClientConfig(t *testing.T) {
 			set := exportertest.NewNopSettings(metadata.Type)
 			am := newAlertManagerExporter(tt.config, set.TelemetrySettings)
 
-			exp, err := newTracesExporter(context.Background(), tt.config, set)
+			exp, err := newTracesExporter(t.Context(), tt.config, set)
 			if tt.mustFailOnCreate {
 				assert.Error(t, err)
 				return
@@ -455,13 +454,13 @@ func TestClientConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 
-			err = am.start(context.Background(), componenttest.NewNopHost())
+			err = am.start(t.Context(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
 				assert.Error(t, err)
 			}
 
 			t.Cleanup(func() {
-				require.NoError(t, am.shutdown(context.Background()))
+				require.NoError(t, am.shutdown(t.Context()))
 			})
 		})
 	}

@@ -160,7 +160,7 @@ func hashMetricSlice(metricSlice []cWMetricInfo) []string {
 	// Convert to string for easier sorting
 	stringified := make([]string, len(metricSlice))
 	for i, v := range metricSlice {
-		stringified[i] = fmt.Sprint(v.Name) + "," + fmt.Sprint(v.Unit) + "," + fmt.Sprint(v.StorageResolution)
+		stringified[i] = fmt.Sprintf("%s,%s,%d", v.Name, v.Unit, v.StorageResolution)
 	}
 	// Sort across metrics for equality checking
 	sort.Strings(stringified)

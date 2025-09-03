@@ -5,83 +5,50 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"unicode"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v74/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
-// model.go contains specific attributes from the 1.28 and 1.29 releases of
-// SemConv. They are manually added due to issue
-// https://github.com/open-telemetry/weaver/issues/227 which will migrate code
-// gen to weaver. Once that is done, these attributes will be migrated to the
-// semantic conventions package.
+// model.go contains custom attributes that complement the standardized attributes
+// from OpenTelemetry semantic conventions v1.37.0. While many VCS and CICD attributes
+// are now standardized, these custom attributes provide GitHub-specific functionality
+// not yet covered by the standard semantic conventions.
 const (
-	// vcs.change.state with enum values of open, closed, or merged.
-	AttributeVCSChangeState       = "vcs.change.state"
-	AttributeVCSChangeStateOpen   = "open"
-	AttributeVCSChangeStateClosed = "closed"
-	AttributeVCSChangeStateMerged = "merged"
-
-	// vcs.change.title
-	AttributeVCSChangeTitle = "vcs.change.title"
-
-	// vcs.change.id
-	AttributeVCSChangeID = "vcs.change.id"
-
-	// vcs.revision_delta.direction with enum values of behind or ahead.
-	AttributeVCSRevisionDeltaDirection       = "vcs.revision_delta.direction"
-	AttributeVCSRevisionDeltaDirectionBehind = "behind"
-	AttributeVCSRevisionDeltaDirectionAhead  = "ahead"
-
-	// vcs.line_change.type with enum values of added or removed.
-	AttributeVCSLineChangeType        = "vcs.line_change.type"
-	AttributeVCSLineChangeTypeAdded   = "added"
-	AttributeVCSLineChangeTypeRemoved = "removed"
-
-	// vcs.ref.type with enum values of branch or tag.
-	AttributeVCSRefType       = "vcs.ref.type"
-	AttributeVCSRefTypeBranch = "branch"
-	AttributeVCSRefTypeTag    = "tag"
+	// Note: Many VCS attributes are now standardized in semantic conventions v1.37.0
+	// and available through the generated metadata package.
 
 	// vcs.repository.name
 	AttributeVCSRepositoryName = "vcs.repository.name"
 
-	// vcs.ref.base.name
-	AttributeVCSRefBase = "vcs.ref.base"
-
-	// vcs.ref.base.revision
-	AttributeVCSRefBaseRevision = "vcs.ref.base.revision"
-
-	// vcs.ref.base.type with enum values of branch or tag.
-	AttributeVCSRefBaseType       = "vcs.ref.base.type"
-	AttributeVCSRefBaseTypeBranch = "branch"
-	AttributeVCSRefBaseTypeTag    = "tag"
-
-	// vcs.ref.head.name
+	// vcs.ref.head.name (used in trace generation)
 	AttributeVCSRefHead = "vcs.ref.head"
 
 	// vcs.ref.head.revision
 	AttributeVCSRefHeadRevision = "vcs.ref.head.revision"
 
 	// vcs.ref.head.type with enum values of branch or tag.
+	// Note: This is now standardized in semantic conventions v1.37.0
 	AttributeVCSRefHeadType       = "vcs.ref.head.type"
 	AttributeVCSRefHeadTypeBranch = "branch"
 	AttributeVCSRefHeadTypeTag    = "tag"
 
-	// The following prototype attributes that do not exist yet in semconv.
-	// They are highly experimental and subject to change.
+	// The following CICD attributes are not yet standardized in semantic conventions v1.37.0.
+	// They provide GitHub-specific functionality and may be subject to change.
 
 	AttributeCICDPipelineRunURLFull = "cicd.pipeline.run.url.full" // equivalent to GitHub's `html_url`
 
-	// These are being added in https://github.com/open-telemetry/semantic-conventions/pull/1681
+	// CICD pipeline and task run status attributes for GitHub workflow integration
 	AttributeCICDPipelineRunStatus             = "cicd.pipeline.run.status" // equivalent to GitHub's `conclusion`
 	AttributeCICDPipelineRunStatusSuccess      = "success"
 	AttributeCICDPipelineRunStatusFailure      = "failure"
 	AttributeCICDPipelineRunStatusCancellation = "cancellation"
-	AttributeCICDPipelineRunStatusError        = "error"
-	AttributeCICDPipelineRunStatusSkip         = "skip"
+
+	AttributeCICDPipelineRunStatusSkip = "skip"
 
 	AttributeCICDPipelineTaskRunStatus             = "cicd.pipeline.run.task.status" // equivalent to GitHub's `conclusion`
 	AttributeCICDPipelineTaskRunStatusSuccess      = "success"
@@ -89,10 +56,10 @@ const (
 	AttributeCICDPipelineTaskRunStatusCancellation = "cancellation"
 	AttributeCICDPipelineTaskRunStatusSkip         = "skip"
 
-	// The following attributes are not part of the semantic conventions yet.
-	AttributeCICDPipelineRunSenderLogin         = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
-	AttributeCICDPipelineTaskRunSenderLogin     = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
-	AttributeCICDPipelineFilePath               = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
+	// The following GitHub-specific attributes are not part of semantic conventions v1.37.0.
+	AttributeCICDPipelineRunSenderLogin     = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
+	AttributeCICDPipelineTaskRunSenderLogin = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
+
 	AttributeCICDPipelinePreviousAttemptURLFull = "cicd.pipeline.run.previous_attempt.url.full"
 	AttributeCICDPipelineWorkerID               = "cicd.pipeline.worker.id"          // GitHub's Runner ID
 	AttributeCICDPipelineWorkerGroupID          = "cicd.pipeline.worker.group.id"    // GitHub's Runner Group ID
@@ -103,10 +70,8 @@ const (
 	AttributeCICDPipelineRunQueueDuration       = "cicd.pipeline.run.queue.duration" // GitHub's Queue Duration
 
 	// The following attributes are exclusive to GitHub but not listed under
-	// Vendor Extensions within Semantic Conventions yet.
-	AttributeGitHubAppInstallationID            = "github.app.installation.id"             // GitHub's Installation ID
-	AttributeGitHubWorkflowRunAttempt           = "github.workflow.run.attempt"            // GitHub's Run Attempt
-	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
+	// vendor extensions within semantic conventions v1.37.0.
+	AttributeGitHubRepositoryCustomProperty = "github.repository.custom_properties" // GitHub's Repository Custom Properties (used in custom property processing)
 
 	// github.reference.workflow acts as a template attribute where it'll be
 	// joined with a `name` and a `version` value. There is an unknown amount of
@@ -129,8 +94,7 @@ const (
 	// the user deems it as such.
 	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"  // GitHub's Head Revision Author Name
 	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email" // GitHub's Head Revision Author Email
-	AttributeVCSRepositoryOwner            = "vcs.repository.owner"               // GitHub's Owner Login
-	AttributeVCSVendorName                 = "vcs.vendor.name"                    // GitHub
+
 )
 
 // getWorkflowRunAttrs returns a pcommon.Map of attributes for the Workflow Run
@@ -147,11 +111,14 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 
 	attrs.PutStr(string(semconv.ServiceNameKey), svc)
 
+	// Add all custom properties from the repository as resource attributes
+	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
+
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
-	attrs.PutStr(AttributeVCSVendorName, "github")
+	attrs.PutStr("vcs.provider.name", "github")
 	attrs.PutStr(AttributeVCSRefHead, e.GetWorkflowRun().GetHeadBranch())
-	attrs.PutStr(AttributeVCSRefHeadType, AttributeVCSRefHeadTypeBranch)
+	attrs.PutStr("vcs.ref.type", "branch")
 	attrs.PutStr(AttributeVCSRefHeadRevision, e.GetWorkflowRun().GetHeadSHA())
 	attrs.PutStr(AttributeVCSRefHeadRevisionAuthorName, e.GetWorkflowRun().GetHeadCommit().GetCommitter().GetName())
 	attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.GetWorkflowRun().GetHeadCommit().GetCommitter().GetEmail())
@@ -220,11 +187,14 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 
 	attrs.PutStr(string(semconv.ServiceNameKey), svc)
 
+	// Add all custom properties from the repository as resource attributes
+	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
+
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
-	attrs.PutStr(AttributeVCSVendorName, "github")
+	attrs.PutStr("vcs.provider.name", "github")
 	attrs.PutStr(AttributeVCSRefHead, e.GetWorkflowJob().GetHeadBranch())
-	attrs.PutStr(AttributeVCSRefHeadType, AttributeVCSRefHeadTypeBranch)
+	attrs.PutStr("vcs.ref.type", "branch")
 	attrs.PutStr(AttributeVCSRefHeadRevision, e.GetWorkflowJob().GetHeadSHA())
 
 	// CICD Worker (GitHub Runner) Attributes
@@ -312,8 +282,47 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 		return formatted, nil
 	default:
 		// This should never happen, but in the event it does, unknown_service
-		// and a error will be returned to abide by semantic conventions.
+		// and an error will be returned to abide by semantic conventions.
 		return "unknown_service", errors.New("unable to generate service.name resource attribute")
+	}
+}
+
+// addCustomPropertiesToAttrs adds all custom properties from the repository as resource attributes
+// with the prefix AttributeGitHubCustomProperty. Keys are converted to snake_case to follow
+// resource attribute naming convention.
+func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]any) {
+	if len(customProps) == 0 {
+		return
+	}
+
+	for key, value := range customProps {
+		// Skip service_name as it's already handled separately
+		if key == "service_name" {
+			continue
+		}
+
+		// Convert key to snake_case
+		snakeCaseKey := toSnakeCase(key)
+
+		// Use dot notation for keys, following resource attribute naming convention
+		attrKey := fmt.Sprintf("%s.%s", AttributeGitHubRepositoryCustomProperty, snakeCaseKey)
+
+		// Handle different value types
+		switch v := value.(type) {
+		case string:
+			attrs.PutStr(attrKey, v)
+		case int:
+			attrs.PutInt(attrKey, int64(v))
+		case int64:
+			attrs.PutInt(attrKey, v)
+		case float64:
+			attrs.PutDouble(attrKey, v)
+		case bool:
+			attrs.PutBool(attrKey, v)
+		default:
+			// For any other types, convert to string
+			attrs.PutStr(attrKey, fmt.Sprintf("%v", v))
+		}
 	}
 }
 
@@ -327,4 +336,42 @@ func formatString(input string) string {
 func replaceAPIURL(apiURL string) (htmlURL string) {
 	// TODO: Support enterpise server configuration with custom domain.
 	return strings.Replace(apiURL, "api.github.com/repos", "github.com", 1)
+}
+
+// toSnakeCase converts a string to snake_case format.
+// It handles all GitHub supported characters for custom property names: a-z, A-Z, 0-9, _, -, $, #.
+// This function ensures that the resulting string follows snake_case convention.
+func toSnakeCase(s string) string {
+	// Replace hyphens, spaces, and dots with underscores
+	s = strings.ReplaceAll(s, "-", "_")
+	s = strings.ReplaceAll(s, " ", "_")
+	s = strings.ReplaceAll(s, ".", "_")
+
+	// Replace special characters with underscores
+	s = strings.ReplaceAll(s, "$", "_dollar_")
+	s = strings.ReplaceAll(s, "#", "_hash_")
+
+	// Handle camelCase and PascalCase
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && unicode.IsUpper(r) {
+			// If current char is uppercase and previous char is lowercase or a digit,
+			// or if current char is uppercase and next char is lowercase,
+			// add an underscore before the current char
+			prevIsLower := i > 0 && (unicode.IsLower(rune(s[i-1])) || unicode.IsDigit(rune(s[i-1])))
+			nextIsLower := i < len(s)-1 && unicode.IsLower(rune(s[i+1]))
+			if prevIsLower || nextIsLower {
+				result.WriteRune('_')
+			}
+		}
+		result.WriteRune(unicode.ToLower(r))
+	}
+
+	// Replace multiple consecutive underscores with a single one
+	output := result.String()
+	for strings.Contains(output, "__") {
+		output = strings.ReplaceAll(output, "__", "_")
+	}
+
+	return output
 }

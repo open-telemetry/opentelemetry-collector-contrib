@@ -30,14 +30,14 @@ func configureHTTPProxy(cfg huaweiSessionConfig) (*config.Proxy, error) {
 	proxy := config.NewProxy().
 		WithSchema(proxyURL.Scheme).
 		WithHost(proxyURL.Hostname())
-	if len(proxyURL.Port()) > 0 {
+	if proxyURL.Port() != "" {
 		if i, err := strconv.Atoi(proxyURL.Port()); err == nil {
 			proxy = proxy.WithPort(i)
 		}
 	}
 
 	// Configure the username and password if the proxy requires authentication
-	if len(cfg.ProxyUser) > 0 {
+	if cfg.ProxyUser != "" {
 		proxy = proxy.WithUsername(cfg.ProxyUser).WithPassword(cfg.ProxyPassword)
 	}
 	return proxy, nil

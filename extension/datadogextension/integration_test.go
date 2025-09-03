@@ -53,7 +53,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	resolver, err := confmap.NewResolver(resolverSettings)
 	require.NoError(t, err, "should be able to create resolver")
 
-	confMap, err := resolver.Resolve(context.Background())
+	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err, "should be able to load config file")
 
 	// Create a realistic ModuleInfoJSON that matches the components in sample-config.yaml
@@ -162,7 +162,7 @@ func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
 	resolver, err := confmap.NewResolver(resolverSettings)
 	require.NoError(t, err, "should be able to create resolver")
 
-	confMap, err := resolver.Resolve(context.Background())
+	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err, "should be able to load config file")
 
 	// Test DataToFlattenedJSONString with the loaded configuration
@@ -287,7 +287,7 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	// Step 5: Simulate sending payload (in a real scenario, this would use serializer.SendEvents or similar)
 	// For this test, we simulate the HTTP request that would be made
 	client := &http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest(http.MethodPost, backendURL+"/api/v1/otel_collector", nil)
+	req, err := http.NewRequest(http.MethodPost, backendURL+"/api/v1/otel_collector", http.NoBody)
 	require.NoError(t, err)
 
 	req.Header.Set("Content-Type", "application/json")
@@ -548,7 +548,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 	resolver, err := confmap.NewResolver(resolverSettings)
 	require.NoError(t, err)
 
-	confMap, err := resolver.Resolve(context.Background())
+	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	// Create module info and populate active components for realistic test data
@@ -633,7 +633,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 	// Start the HTTP server
 	server.Start()
 	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		defer cancel()
 		server.Stop(ctx)
 	}()
@@ -662,7 +662,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 
 	// Step 6: Test HTTP endpoint functionality
 	// Test the handler directly since we're using port 0
-	req := httptest.NewRequest(http.MethodGet, serverConfig.Path, nil)
+	req := httptest.NewRequest(http.MethodGet, serverConfig.Path, http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	server.HandleMetadata(recorder, req)
@@ -689,7 +689,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 	assert.Contains(t, err.Error(), "forwarder is not started")
 
 	// Test HandleMetadata with nil ResponseWriter (should not panic)
-	server.HandleMetadata(nil, httptest.NewRequest(http.MethodGet, serverConfig.Path, nil))
+	server.HandleMetadata(nil, httptest.NewRequest(http.MethodGet, serverConfig.Path, http.NoBody))
 }
 
 // TestHTTPServerConfigIntegration tests different HTTP server configurations
@@ -773,7 +773,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 			server.Start()
 			time.Sleep(50 * time.Millisecond) // Brief pause to allow server startup
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 			defer cancel()
 			server.Stop(ctx)
 		})
@@ -852,7 +852,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 
 			// Create test request
-			req := httptest.NewRequest(http.MethodGet, serverConfig.Path, nil)
+			req := httptest.NewRequest(http.MethodGet, serverConfig.Path, http.NoBody)
 			recorder := httptest.NewRecorder()
 
 			// Call HandleMetadata

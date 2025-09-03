@@ -83,7 +83,7 @@ type RegexRule struct {
 	metricNameParts []string
 }
 
-var _ (ParserConfig) = (*RegexParserConfig)(nil)
+var _ ParserConfig = (*RegexParserConfig)(nil)
 
 // BuildParser builds the respective parser of the configuration instance.
 func (rpc *RegexParserConfig) BuildParser() (Parser, error) {
@@ -161,55 +161,56 @@ type regexPathParser struct {
 // settings.
 func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error {
 	for _, rule := range rpp.rules {
-		if rule.compRegexp.MatchString(path) {
-			ms := rule.compRegexp.FindStringSubmatch(path)
-			nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
-			metricNameLookup := map[string]string{}
-			attributes := pcommon.NewMap()
-
-			for i := 1; i < len(ms); i++ {
-				groupName, groupValue := nms[i], ms[i]
-				if groupName == "" {
-					// Skip unnamed groups.
-					continue
-				}
-				if groupValue == "" {
-					// Skip unmatched groups.
-					continue
-				}
-				if strings.HasPrefix(groupName, metricNameCapturePrefix) {
-					metricNameLookup[groupName] = groupValue
-				} else {
-					attributes.PutStr(groupName[len(keyCapturePrefix):], groupValue)
-				}
-			}
-
-			for k, v := range rule.Labels {
-				attributes.PutStr(k, v)
-			}
-
-			var actualMetricName string
-			if len(rule.metricNameParts) == 0 {
-				actualMetricName = rule.NamePrefix
-			} else {
-				var sb strings.Builder
-				sb.WriteString(rule.NamePrefix)
-				for _, mnp := range rule.metricNameParts {
-					sb.WriteString(rpp.metricNameSeparator)
-					sb.WriteString(metricNameLookup[mnp])
-				}
-				actualMetricName = sb.String()
-			}
-
-			if actualMetricName == "" {
-				actualMetricName = path
-			}
-
-			parsedPath.MetricName = actualMetricName
-			parsedPath.Attributes = attributes
-			parsedPath.MetricType = TargetMetricType(rule.MetricType)
-			return nil
+		if !rule.compRegexp.MatchString(path) {
+			continue
 		}
+		ms := rule.compRegexp.FindStringSubmatch(path)
+		nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
+		metricNameLookup := map[string]string{}
+		attributes := pcommon.NewMap()
+
+		for i := 1; i < len(ms); i++ {
+			groupName, groupValue := nms[i], ms[i]
+			if groupName == "" {
+				// Skip unnamed groups.
+				continue
+			}
+			if groupValue == "" {
+				// Skip unmatched groups.
+				continue
+			}
+			if strings.HasPrefix(groupName, metricNameCapturePrefix) {
+				metricNameLookup[groupName] = groupValue
+			} else {
+				attributes.PutStr(groupName[len(keyCapturePrefix):], groupValue)
+			}
+		}
+
+		for k, v := range rule.Labels {
+			attributes.PutStr(k, v)
+		}
+
+		var actualMetricName string
+		if len(rule.metricNameParts) == 0 {
+			actualMetricName = rule.NamePrefix
+		} else {
+			var sb strings.Builder
+			sb.WriteString(rule.NamePrefix)
+			for _, mnp := range rule.metricNameParts {
+				sb.WriteString(rpp.metricNameSeparator)
+				sb.WriteString(metricNameLookup[mnp])
+			}
+			actualMetricName = sb.String()
+		}
+
+		if actualMetricName == "" {
+			actualMetricName = path
+		}
+
+		parsedPath.MetricName = actualMetricName
+		parsedPath.Attributes = attributes
+		parsedPath.MetricType = TargetMetricType(rule.MetricType)
+		return nil
 	}
 
 	return rpp.plaintextPathParser.ParsePath(path, parsedPath)

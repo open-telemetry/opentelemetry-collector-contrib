@@ -4,16 +4,19 @@ resourceSpans:
         - key: service.name
           value:
             stringValue: otel-collector
+        - key: github.repository.custom_properties.team_name
+          value:
+            stringValue: open-telemetry
         - key: vcs.repository.name
           value:
             stringValue: open-telemetry-otel-collector
-        - key: vcs.vendor.name
+        - key: vcs.provider.name
           value:
             stringValue: github
         - key: vcs.ref.head
           value:
             stringValue: renovate/major-tool-deps
-        - key: vcs.ref.head.type
+        - key: vcs.ref.type
           value:
             stringValue: branch
         - key: vcs.ref.head.revision

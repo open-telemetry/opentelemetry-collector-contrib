@@ -4,13 +4,14 @@
 package splunkhecexporter
 
 import (
-	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -29,7 +30,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createMetricsExporter(context.Background(), params, cfg)
+	_, err := createMetricsExporter(t.Context(), params, cfg)
 	assert.NoError(t, err)
 }
 
@@ -39,7 +40,7 @@ func TestCreateTraces(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createTracesExporter(context.Background(), params, cfg)
+	_, err := createTracesExporter(t.Context(), params, cfg)
 	assert.NoError(t, err)
 }
 
@@ -49,7 +50,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createLogsExporter(context.Background(), params, cfg)
+	_, err := createLogsExporter(t.Context(), params, cfg)
 	assert.NoError(t, err)
 }
 
@@ -61,7 +62,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(
-		context.Background(), params,
+		t.Context(), params,
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -70,12 +71,12 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg.Token = "testToken"
 	cfg.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetrics(
-		context.Background(), params,
+		t.Context(), params,
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	assert.NoError(t, exp.Shutdown(t.Context()))
 }
 
 func TestFactory_CreateMetrics(t *testing.T) {
@@ -87,7 +88,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	}
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	te, err := createMetricsExporter(context.Background(), params, config)
+	te, err := createMetricsExporter(t.Context(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -101,25 +102,30 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 		ClientConfig: clientConfig,
 	}
 
-	me, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	me, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.False(t, me.Capabilities().MutatesData)
-	te, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	te, err := createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.False(t, te.Capabilities().MutatesData)
-	le, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	le, err := createLogsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
 
-	config.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
+	config.QueueSettings = exporterhelper.NewDefaultQueueConfig()
+	config.QueueSettings.Sizer = exporterhelper.RequestSizerTypeItems
+	config.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		MinSize:      8192,
+	})
 
-	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	me, err = createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.True(t, me.Capabilities().MutatesData)
-	te, err = createTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	te, err = createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.True(t, te.Capabilities().MutatesData)
-	le, err = createLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
+	le, err = createLogsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.True(t, le.Capabilities().MutatesData)
 }

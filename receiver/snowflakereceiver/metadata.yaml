@@ -299,19 +299,19 @@ metrics:
     description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: true
   snowflake.storage.stage_bytes.total:
     description: Number of bytes of stage storage used by files in all internal stages (named, table, user).
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: true
   snowflake.storage.failsafe_bytes.total:
     description: Number of bytes of data in Fail-safe.
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: false 
 
 tests:

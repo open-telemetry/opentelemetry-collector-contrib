@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -56,7 +57,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -100,7 +101,7 @@ func TestConfig(t *testing.T) {
 				},
 				Flush: FlushSettings{
 					Bytes:    10485760,
-					Interval: 30 * time.Second,
+					Interval: 10 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -119,13 +120,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 10 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -136,7 +133,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -180,7 +177,7 @@ func TestConfig(t *testing.T) {
 				},
 				Flush: FlushSettings{
 					Bytes:    10485760,
-					Interval: 30 * time.Second,
+					Interval: 10 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -199,13 +196,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 10 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -216,7 +209,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -260,7 +253,7 @@ func TestConfig(t *testing.T) {
 				},
 				Flush: FlushSettings{
 					Bytes:    10485760,
-					Interval: 30 * time.Second,
+					Interval: 10 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -279,13 +272,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 10 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -361,6 +350,32 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 				includeSource := true
 				cfg.IncludeSourceOnError = &includeSource
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "metadata_keys"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "queuebatch_enabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.QueueBatchConfig.Enabled = true
+				cfg.QueueBatchConfig.NumConsumers = 100
+				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeItems
+				cfg.QueueBatchConfig.Batch = configoptional.Some(
+					exporterhelper.BatchConfig{
+						Sizer:        exporterhelper.RequestSizerTypeItems,
+						FlushTimeout: 10 * time.Second,
+					},
+				)
 			}),
 		},
 	}
@@ -475,6 +490,13 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Retry.MaxRequests = 1
 			}),
 			err: `must not specify both retry::max_requests and retry::max_retries`,
+		},
+		"duplicate metadata_keys specified": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.MetadataKeys = []string{"x-test-1", "x-test-2", "x-test-1"}
+			}),
+			err: `metadata_keys must be case-insenstive and unique, found duplicate: x-test-1`,
 		},
 	}
 

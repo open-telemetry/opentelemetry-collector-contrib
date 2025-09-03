@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 const (
@@ -75,6 +76,19 @@ func TestNumberOfSpans(t *testing.T) {
 	assert.Len(t, syncer.spans, expectedNumSpans)
 }
 
+func TestDurationInf(t *testing.T) {
+	cfg := &Config{
+		Config: common.Config{
+			TotalDuration: types.DurationWithInf(-1),
+		},
+		NumTraces:     1,
+		NumChildSpans: 5,
+	}
+
+	// test
+	require.NoError(t, run(cfg, zap.NewNop()))
+}
+
 func TestRateOfSpans(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
@@ -87,7 +101,7 @@ func TestRateOfSpans(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: time.Second / 2,
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 	}
@@ -118,7 +132,7 @@ func TestSpanDuration(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: time.Second / 2,
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		SpanDuration: targetDuration,
@@ -148,7 +162,7 @@ func TestUnthrottled(t *testing.T) {
 
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: 50 * time.Millisecond,
+			TotalDuration: types.DurationWithInf(50 * time.Millisecond),
 			WorkerCount:   1,
 		},
 	}
@@ -317,7 +331,7 @@ func TestValidate(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name: "No duration or NumTraces",
+			name: "No duration, NumTraces, or Continuous",
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
@@ -351,7 +365,7 @@ func (m *mockSyncer) ExportSpans(_ context.Context, spanData []sdktrace.ReadOnly
 	return nil
 }
 
-func (m *mockSyncer) Shutdown(context.Context) error {
+func (*mockSyncer) Shutdown(context.Context) error {
 	panic("implement me")
 }
 

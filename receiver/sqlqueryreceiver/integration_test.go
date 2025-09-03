@@ -6,7 +6,6 @@
 package sqlqueryreceiver
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"path/filepath"
@@ -67,7 +66,7 @@ var (
 		SQLParameter: func(position int) string {
 			return fmt.Sprintf("$%d", position)
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for Postgres
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -94,10 +93,10 @@ var (
 	}
 	MySQL = dbEngineUnderTest{
 		Port: mysqlPort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for MySQL
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -184,7 +183,7 @@ var (
 	}
 	SapASE = dbEngineUnderTest{
 		Port: sapAsePort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
 		CheckCompatibility: func(t *testing.T) {
@@ -280,7 +279,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 			engine := getDbEngine(driver)
 			engine.CheckCompatibility(t)
 			dbContainer, err := testcontainers.GenericContainer(
-				context.Background(),
+				t.Context(),
 				testcontainers.GenericContainerRequest{
 					ContainerRequest: engine.ContainerRequest,
 					Started:          true,
@@ -288,7 +287,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 			)
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, dbContainer.Terminate(context.Background()))
+				require.NoError(t, dbContainer.Terminate(t.Context()))
 			}()
 
 			for _, test := range dbEngineTests {
@@ -345,7 +344,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 	}
 
 	host := storagetest.NewStorageHost().WithExtension(storageExtension.ID, storageExtension)
-	err := receiver.Start(context.Background(), host)
+	err := receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -358,7 +357,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 		"failed to receive more than 0 logs",
 	)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	initialLogCount := 5
@@ -382,12 +381,12 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 			TrackingStartValue: trackingStartValue,
 		},
 	}
-	err = receiver.Start(context.Background(), host)
+	err = receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	time.Sleep(5 * time.Second)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, 0, consumer.LogRecordCount())
@@ -413,7 +412,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 			TrackingStartValue: trackingStartValue,
 		},
 	}
-	err = receiver.Start(context.Background(), host)
+	err = receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -426,7 +425,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 		"failed to receive more than 0 logs",
 	)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, newLogCount, consumer.LogRecordCount())
@@ -455,7 +454,7 @@ func runTestForLogTrackingWithoutStorage(t *testing.T, engine dbEngineUnderTest,
 		},
 	}
 	host := componenttest.NewNopHost()
-	err := receiver.Start(context.Background(), host)
+	err := receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -470,14 +469,14 @@ func runTestForLogTrackingWithoutStorage(t *testing.T, engine dbEngineUnderTest,
 	require.Equal(t, 5, consumer.LogRecordCount())
 	testAllSimpleLogs(t, consumer.AllLogs(), engine.ConvertColumnName("attribute"))
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
 func getContainerHostAndPort(t *testing.T, container testcontainers.Container, port string) (string, nat.Port) {
-	dbPort, err := container.MappedPort(context.Background(), nat.Port(port))
+	dbPort, err := container.MappedPort(t.Context(), nat.Port(port))
 	require.NoError(t, err)
-	dbHost, err := container.Host(context.Background())
+	dbHost, err := container.Host(t.Context())
 	require.NoError(t, err)
 	return dbHost, dbPort
 }
@@ -508,10 +507,10 @@ func cleanupSimpleLogs(t *testing.T, engine dbEngineUnderTest, container testcon
 }
 
 func openDatabase(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) *sql.DB {
-	externalPort, err := container.MappedPort(context.Background(), nat.Port(engine.Port))
+	externalPort, err := container.MappedPort(t.Context(), nat.Port(engine.Port))
 	require.NoError(t, err)
 
-	host, err := container.Host(context.Background())
+	host, err := container.Host(t.Context())
 	require.NoError(t, err)
 
 	db, err := sql.Open(engine.Driver, engine.ConnectionString(host, externalPort))
@@ -534,7 +533,7 @@ func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCre
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
 	receiver, err := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receiverCreateSettings,
 		config,
 		consumer,
@@ -879,6 +878,109 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreMetricsOrder(),
+		),
+	).Run(t)
+}
+
+func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
+	Postgres.CheckCompatibility(t)
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			Postgres.ContainerRequest),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Driver = Postgres.Driver
+				rCfg.Host = ci.Host(t)
+				rCfg.Port = nat.Port(ci.MappedPort(t, Postgres.Port)).Int()
+				rCfg.Database = "otel"
+				rCfg.Username = "otel"
+				rCfg.Password = "otel"
+				rCfg.AdditionalParams = map[string]any{
+					"sslmode": "disable",
+				}
+				rCfg.Queries = []sqlquery.Query{
+					{
+						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:       "genre.count",
+								ValueColumn:      "count",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:       "genre.imdb",
+								ValueColumn:      "avg",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+					{
+						SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
+							" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:  "a",
+								ValueColumn: "a",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "b",
+								ValueColumn: "b",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "c",
+								ValueColumn: "c",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "d",
+								ValueColumn: "d",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "e",
+								ValueColumn: "e",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "f",
+								ValueColumn: "f",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "g",
+								ValueColumn: "g",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "h",
+								ValueColumn: "h",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+				}
+			}),
+		scraperinttest.WithExpectedFile(
+			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
+		),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
 }

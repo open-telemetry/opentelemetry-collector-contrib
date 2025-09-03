@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -703,36 +703,3 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
 	}
 }
-
-// Setup
-// logger := zap.NewNop()
-// receiver := &githubTracesReceiver{
-// 	logger:   logger,
-// 	cfg:      createDefaultConfig().(*Config),
-// 	settings: receivertest.NewNopSettings(metadata.Type),
-// }
-//
-// // Read and parse the workflow run event from the test data file
-// data, err := os.ReadFile("testdata/workflow_run_completed.json")
-// require.NoError(t, err, "Failed to read test data file")
-//
-// var event github.WorkflowRunEvent
-// err = json.Unmarshal(data, &event)
-// require.NoError(t, err, "Failed to unmarshal workflow run event")
-//
-// // Process the event
-// traces, err := receiver.handleWorkflowRun(&event)
-// require.NoError(t, err, "Failed to handle workflow run event")
-//
-// // Validate the generated traces
-// expectedFile := filepath.Join("testdata", "workflow_run_expected.yaml")
-//
-// // Uncomment the following line to update the golden file
-// // golden.WriteTraces(t, expectedFile, traces)
-//
-// // Read and compare with golden file
-// expectedTraces, err := golden.ReadTraces(expectedFile)
-// require.NoError(t, err, "Failed to read expected traces")
-//
-// // Compare actual and expected traces
-// require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))

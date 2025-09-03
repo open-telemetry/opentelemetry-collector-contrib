@@ -159,7 +159,7 @@ func TestGetCGroupMountPoint(t *testing.T) {
 }
 
 func TestGetCPUReservedInTask(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	taskinfo := &MockTaskInfo{
 		tasks: []ECSTask{},
@@ -215,7 +215,7 @@ func TestGetCPUReservedInTask(t *testing.T) {
 }
 
 func TestGetMEMReservedInTask(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	taskinfo := &MockTaskInfo{
 		tasks: []ECSTask{},
@@ -269,7 +269,7 @@ func TestGetMEMReservedInTask(t *testing.T) {
 }
 
 func TestGetCPUReservedAndMemReserved(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	var tasks []ECSTask
 	var containers []ECSContainer
 
@@ -292,8 +292,7 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 		DockerID: "container2",
 	}
 
-	containers = append(containers, container1)
-	containers = append(containers, container2)
+	containers = append(containers, container1, container2)
 
 	task2 := ECSTask{
 		KnownStatus: "RUNNING",
@@ -301,9 +300,7 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 		Containers:  containers,
 	}
 
-	tasks = append(tasks, task1)
-	tasks = append(tasks, task2)
-	tasks = append(tasks, task3)
+	tasks = append(tasks, task1, task2, task3)
 
 	taskinfo := &MockTaskInfo{
 		tasks: tasks,

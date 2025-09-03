@@ -13,8 +13,9 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - body:
-              stringValue: "timestamp=2025-03-01T15:42:14Z kind=log message=\"Hello world\" level=info context_app=foo sdk_name=@grafana/faro-core sdk_version=1.0.0 app_name=example.com app_version=1.0.0 app_environment=prod session_id=ABCD1234 page_url=https://example.com/ browser_mobile=false view_name=default"
+              stringValue: "timestamp=2025-03-01T15:42:14Z kind=log level=info message=\"Hello world\" context_app=foo sdk_name=@grafana/faro-core sdk_version=1.0.0 app_name=example.com app_version=1.0.0 app_environment=prod session_id=ABCD1234 page_url=https://example.com/ browser_mobile=false view_name=default"
             attributes:
               - key: kind
                 value:
                   stringValue: log
+            timeUnixNano: 1740843734000000000

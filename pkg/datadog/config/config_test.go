@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -31,7 +32,7 @@ func TestValidate(t *testing.T) {
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
-	auth := configauth.Config{AuthenticatorID: component.NewID(ty)}
+	someAuth := configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(ty)})
 
 	tests := []struct {
 		name string
@@ -188,7 +189,7 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint:             "endpoint",
 					Compression:          "gzip",
-					Auth:                 &auth,
+					Auth:                 someAuth,
 					Headers:              map[string]configopaque.String{"key": "val"},
 					HTTP2ReadIdleTimeout: 250,
 					HTTP2PingTimeout:     200,

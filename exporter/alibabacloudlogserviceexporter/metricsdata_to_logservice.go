@@ -184,14 +184,15 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 		for k, v := range attributeMap.All() {
 			labels.Append(k, v.AsString())
 		}
-		logs = append(logs, newMetricLogFromRaw(name+"_sum",
-			labels,
-			int64(dataPoint.Timestamp()),
-			dataPoint.Sum()))
-		logs = append(logs, newMetricLogFromRaw(name+"_count",
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Count())))
+		logs = append(logs,
+			newMetricLogFromRaw(name+"_sum",
+				labels,
+				int64(dataPoint.Timestamp()),
+				dataPoint.Sum()),
+			newMetricLogFromRaw(name+"_count",
+				labels,
+				int64(dataPoint.Timestamp()),
+				float64(dataPoint.Count())))
 
 		bounds := dataPoint.ExplicitBounds()
 		boundsStr := make([]string, bounds.Len()+1)
@@ -230,14 +231,15 @@ func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice,
 		for k, v := range attributeMap.All() {
 			labels.Append(k, v.AsString())
 		}
-		logs = append(logs, newMetricLogFromRaw(name+"_sum",
-			labels,
-			int64(dataPoint.Timestamp()),
-			dataPoint.Sum()))
-		logs = append(logs, newMetricLogFromRaw(name+"_count",
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Count())))
+		logs = append(logs,
+			newMetricLogFromRaw(name+"_sum",
+				labels,
+				int64(dataPoint.Timestamp()),
+				dataPoint.Sum()),
+			newMetricLogFromRaw(name+"_count",
+				labels,
+				int64(dataPoint.Timestamp()),
+				float64(dataPoint.Count())))
 
 		// Adding the "quantile" dimension.
 		summaryLabels := labels.Clone()

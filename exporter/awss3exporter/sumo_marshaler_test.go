@@ -190,3 +190,163 @@ func TestAttributeValueToString(t *testing.T) {
 		assert.Equal(t, testCase.result, val)
 	}
 }
+
+func TestMarshalerNonMutatingFlow(t *testing.T) {
+	logs := plog.NewLogs()
+	rls := logs.ResourceLogs().AppendEmpty()
+
+	ra := rls.Resource().Attributes()
+	ra.PutStr("_sourceCategory", "test/category")
+	ra.PutStr("_sourceHost", "test-host")
+	ra.PutStr("_sourceName", "test-source")
+	ra.PutStr("service.name", "test-service")
+	ra.PutStr("service.version", "1.0.0")
+	ra.PutInt("custom.number", 42)
+
+	sl := rls.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("test log message")
+	logRecord.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	logRecord.Attributes().PutStr("log.level", "info")
+	logRecord.Attributes().PutStr("user.id", "test-user")
+
+	originalResourceAttrs := make(map[string]any)
+	ra.Range(func(k string, v pcommon.Value) bool {
+		originalResourceAttrs[k] = v.AsRaw()
+		return true
+	})
+
+	originalLogAttrs := make(map[string]any)
+	logRecord.Attributes().Range(func(k string, v pcommon.Value) bool {
+		originalLogAttrs[k] = v.AsRaw()
+		return true
+	})
+
+	originalLogBody := logRecord.Body().AsRaw()
+
+	marshaler := &sumoMarshaler{}
+	require.NotNil(t, marshaler)
+	buf, err := marshaler.MarshalLogs(logs)
+	require.NoError(t, err)
+	require.NotEmpty(t, buf)
+
+	t.Run("ResourceAttributesUnchanged", func(t *testing.T) {
+		currentAttrs := make(map[string]any)
+		ra.Range(func(k string, v pcommon.Value) bool {
+			currentAttrs[k] = v.AsRaw()
+			return true
+		})
+
+		assert.Equal(t, originalResourceAttrs, currentAttrs, "Resource attributes were modified during marshaling")
+
+		sourceCategory, exists := ra.Get("_sourceCategory")
+		assert.True(t, exists, "_sourceCategory should still exist")
+		assert.Equal(t, "test/category", sourceCategory.Str())
+
+		sourceHost, exists := ra.Get("_sourceHost")
+		assert.True(t, exists, "_sourceHost should still exist")
+		assert.Equal(t, "test-host", sourceHost.Str())
+
+		sourceName, exists := ra.Get("_sourceName")
+		assert.True(t, exists, "_sourceName should still exist")
+		assert.Equal(t, "test-source", sourceName.Str())
+	})
+
+	t.Run("LogRecordAttributesUnchanged", func(t *testing.T) {
+		currentLogAttrs := make(map[string]any)
+		logRecord.Attributes().Range(func(k string, v pcommon.Value) bool {
+			currentLogAttrs[k] = v.AsRaw()
+			return true
+		})
+
+		assert.Equal(t, originalLogAttrs, currentLogAttrs, "Log record attributes were modified during marshaling")
+
+		_, logKeyExists := logRecord.Attributes().Get("log")
+		assert.False(t, logKeyExists, "Original log record should not have 'log' key added")
+	})
+
+	t.Run("LogBodyUnchanged", func(t *testing.T) {
+		currentLogBody := logRecord.Body().AsRaw()
+		assert.Equal(t, originalLogBody, currentLogBody, "Log body was modified during marshaling")
+	})
+
+	t.Run("OutputFormatCorrect", func(t *testing.T) {
+		output := string(buf)
+
+		assert.Contains(t, output, `"sourceCategory":"test/category"`)
+		assert.Contains(t, output, `"sourceHost":"test-host"`)
+		assert.Contains(t, output, `"sourceName":"test-source"`)
+
+		assert.Contains(t, output, `"service.name":"test-service"`)
+		assert.Contains(t, output, `"service.version":"1.0.0"`)
+		assert.Contains(t, output, `"custom.number":42`)
+
+		assert.NotContains(t, output, `"fields":{"_sourceCategory"`)
+		assert.NotContains(t, output, `"fields":{"_sourceHost"`)
+		assert.NotContains(t, output, `"fields":{"_sourceName"`)
+
+		assert.Contains(t, output, `"log.level":"info"`)
+		assert.Contains(t, output, `"user.id":"test-user"`)
+		assert.Contains(t, output, `"log":"test log message"`)
+	})
+}
+
+func TestMarshalerMultipleCallsSafe(t *testing.T) {
+	logs := plog.NewLogs()
+	rls := logs.ResourceLogs().AppendEmpty()
+
+	ra := rls.Resource().Attributes()
+	ra.PutStr("_sourceCategory", "test/category")
+	ra.PutStr("_sourceHost", "test-host")
+	ra.PutStr("_sourceName", "test-source")
+	ra.PutStr("service.name", "test-service")
+
+	sl := rls.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("test message")
+	logRecord.Attributes().PutStr("key", "value")
+
+	marshaler := &sumoMarshaler{}
+
+	buf1, err1 := marshaler.MarshalLogs(logs)
+	require.NoError(t, err1)
+
+	buf2, err2 := marshaler.MarshalLogs(logs)
+	require.NoError(t, err2)
+
+	buf3, err3 := marshaler.MarshalLogs(logs)
+	require.NoError(t, err3)
+
+	assert.Equal(t, string(buf1), string(buf2), "Multiple marshaling calls should produce identical output")
+	assert.Equal(t, string(buf2), string(buf3), "Multiple marshaling calls should produce identical output")
+
+	sourceCategory, exists := ra.Get("_sourceCategory")
+	assert.True(t, exists)
+	assert.Equal(t, "test/category", sourceCategory.Str())
+}
+
+func TestMarshalerEmptyAttributes(t *testing.T) {
+	logs := plog.NewLogs()
+	rls := logs.ResourceLogs().AppendEmpty()
+
+	ra := rls.Resource().Attributes()
+	ra.PutStr("_sourceCategory", "minimal")
+	ra.PutStr("_sourceHost", "host")
+	ra.PutStr("_sourceName", "name")
+
+	sl := rls.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("minimal log")
+
+	marshaler := &sumoMarshaler{}
+	buf, err := marshaler.MarshalLogs(logs)
+	require.NoError(t, err)
+
+	output := string(buf)
+
+	assert.Contains(t, output, `"fields":{}`)
+
+	assert.Contains(t, output, `"message":{"log":"minimal log"}`)
+
+	assert.Equal(t, 3, ra.Len(), "Should still have exactly 3 source attributes")
+}

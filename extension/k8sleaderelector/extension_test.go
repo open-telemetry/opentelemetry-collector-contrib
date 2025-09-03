@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -31,7 +32,7 @@ func TestExtension(t *testing.T) {
 		RetryPeriod:    2 * time.Second,
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 	fakeClient := fake.NewClientset()
 	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fakeClient, nil
@@ -61,13 +62,66 @@ func TestExtension(t *testing.T) {
 
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
-	require.Eventually(t, func() bool {
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
+	}, 10*time.Second, 100*time.Millisecond)
+
+	require.True(t, onStartLeadingInvoked.Load())
+	require.NoError(t, leaderElection.Shutdown(ctx))
+}
+
+func TestExtension_WithDelay(t *testing.T) {
+	config := &Config{
+		LeaseName:      "foo",
+		LeaseNamespace: "default",
+		LeaseDuration:  15 * time.Second,
+		RenewDuration:  10 * time.Second,
+		RetryPeriod:    2 * time.Second,
+	}
+
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fakeClient, nil
+	}
+
+	observedZapCore, _ := observer.New(zap.WarnLevel)
+
+	leaderElection := leaderElectionExtension{
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderID: "foo",
+	}
+
+	var onStartLeadingInvoked atomic.Bool
+
+	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
+
+	// Simulate a delay of setting up callbacks after the leader has been elected.
+	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	require.Eventually(t, func() bool {
+		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+		require.NotNil(t, lease.Spec.AcquireTime)
+		require.NotNil(t, lease.Spec.HolderIdentity)
+		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
 		return true
 	}, 10*time.Second, 100*time.Millisecond)
+
+	leaderElection.SetCallBackFuncs(
+		func(_ context.Context) {
+			onStartLeadingInvoked.Store(true)
+			fmt.Printf("%v: LeaderElection started leading\n", time.Now().String())
+		},
+		func() {
+			fmt.Printf("%v: LeaderElection stopped leading\n", time.Now().String())
+		},
+	)
 
 	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))

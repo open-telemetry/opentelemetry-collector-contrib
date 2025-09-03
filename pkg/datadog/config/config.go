@@ -170,7 +170,7 @@ func StaticAPIKeyCheck(key string) error {
 
 func validateClientConfig(cfg confighttp.ClientConfig) error {
 	var unsupported []string
-	if cfg.Auth != nil {
+	if cfg.Auth.HasValue() {
 		unsupported = append(unsupported, "auth")
 	}
 	if cfg.Endpoint != "" {

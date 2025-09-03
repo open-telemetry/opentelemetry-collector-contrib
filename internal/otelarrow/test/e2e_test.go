@@ -15,13 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/datagen"
-	otel_assert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	"github.com/open-telemetry/otel-arrow/go/pkg/datagen"
+	otel_assert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -121,7 +122,7 @@ func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.Ob
 }
 
 func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	efact := otelarrowexporter.NewFactory()
 	rfact := otelarrowreceiver.NewFactory()
@@ -145,6 +146,10 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	exporterCfg.Arrow.NumStreams = 1
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
+
+	// The default exporter setting enables the memory queue; we
+	// disable to avoid flaky tests.
+	exporterCfg.QueueSettings.WaitForResult = true
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -281,7 +286,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -460,7 +465,7 @@ func consumerFailure(t *testing.T, err error) {
 func TestIntegrationTracesSimple(t *testing.T) {
 	for _, n := range []int{1, 2, 4, 8} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// until 10 threads can write 1000 spans
@@ -481,7 +486,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 func TestIntegrationDeadlinePropagation(t *testing.T) {
 	for _, hasDeadline := range []bool{false, true} {
 		t.Run(fmt.Sprint("deadline=", hasDeadline), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// Until at least one span is written.
@@ -506,7 +511,7 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 }
 
 func TestIntegrationMemoryLimited(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// until exporter and receiver finish at least one ArrowTraces span.
@@ -594,7 +599,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 }
 
 func TestIntegrationSelfTracing(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// until 2 Arrow stream spans are received from self instrumentation
@@ -612,12 +617,12 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
+		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
-			},
-		}
+			}),
+		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
 
@@ -627,7 +632,7 @@ func nearLimitGenFunc() MkGen {
 	const hardLimit = 1 << 20   // 1 MiB
 
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -675,7 +680,7 @@ func TestIntegrationAdmissionLimited(t *testing.T) {
 		},
 	} {
 		t.Run(fmt.Sprint("bounded=", test.bounded, ",allow_wait=", test.allowWait), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// until exporter and receiver finish at least one ArrowTraces span.

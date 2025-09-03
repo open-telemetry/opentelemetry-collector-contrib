@@ -37,6 +37,8 @@ import (
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
+var onceZorkianTracesWarning sync.Once
+
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
 	featuregate.StageAlpha,
@@ -92,6 +94,9 @@ func newTracesExporter(
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
+		onceZorkianTracesWarning.Do(func() {
+			exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
+		})
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exp.client = client
@@ -155,7 +160,7 @@ func (exp *traceExporter) consumeTraces(
 	return nil
 }
 
-func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
 	var err error
@@ -181,6 +186,9 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 			return clientutil.WrapError(merr, httpresp)
 		})
 	} else {
+		onceZorkianTracesWarning.Do(func() {
+			exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
+		})
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 		for host := range hosts {
 			series = append(series, metrics.DefaultZorkianMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)

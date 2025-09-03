@@ -20,10 +20,13 @@ import (
 var (
 	format1 = "%Y-%m-%d %H:%M:%S.%f"
 	format2 = "%Y-%m-%d %l:%M:%S.%L %P, %a"
+	format3 = "%Y-%m-%d %T.%s +0000"
 	value1  = "2019-01-02 15:04:05.666666"
 	value2  = "2019-01-02 3:04:05.666 pm, Wed"
+	value3  = "2025-07-07 01:07:27.123456789 +0000"
 	dt1     = time.Date(2019, 1, 2, 15, 4, 5, 666666000, time.UTC)
 	dt2     = time.Date(2019, 1, 2, 15, 4, 5, 666000000, time.UTC)
+	dt3     = time.Date(2025, 7, 7, 1, 7, 27, 123456789, time.UTC)
 )
 
 func TestFormat(t *testing.T) {
@@ -34,6 +37,10 @@ func TestFormat(t *testing.T) {
 	s, err = Format(format2, dt1)
 	require.NoError(t, err)
 	assert.Equal(t, s, value2, "Given: %v, expected: %v", s, value2)
+
+	s, err = Format(format3, dt3)
+	require.NoError(t, err)
+	assert.Equal(t, s, value3, "Given: %v, expected: %v", s, value2)
 }
 
 func TestParse(t *testing.T) {

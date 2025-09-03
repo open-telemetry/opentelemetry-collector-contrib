@@ -80,7 +80,7 @@ func TestConfigValidation(t *testing.T) {
 			}
 			if tc.wantErr {
 				assert.Error(t, err)
-				if len(tc.errorMessage) != 0 {
+				if tc.errorMessage != "" {
 					assert.Equal(t, errors.New(tc.errorMessage), err, "Error messages must match")
 				}
 				return
@@ -174,7 +174,7 @@ func TestUnmarshal(t *testing.T) {
 					"resource_mapping_op": "invalid_op",
 				},
 			}),
-			err: "'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
+			err: "'logs.resource_mapping_op' unsupported mapping operation \"invalid_op\"",
 		},
 	}
 

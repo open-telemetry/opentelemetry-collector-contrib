@@ -93,7 +93,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 		}
 		buf := bytes.NewBuffer(append(remainder, payload[0:n]...))
 		for {
-			bytes, err := buf.ReadBytes((byte)('\n'))
+			bytes, err := buf.ReadBytes(byte('\n'))
 			if errors.Is(err, io.EOF) {
 				if len(bytes) != 0 {
 					remainder = bytes
@@ -102,7 +102,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 			}
 			line := strings.TrimSpace(string(bytes))
 			if line != "" {
-				transferChan <- Metric{line, c.LocalAddr()}
+				transferChan <- Metric{line, c.RemoteAddr()}
 			}
 		}
 	}

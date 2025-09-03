@@ -74,7 +74,7 @@ func TestNewS3SQSReader(t *testing.T) {
 			},
 		}
 
-		reader, err := newS3SQSReader(context.Background(), logger, cfg)
+		reader, err := newS3SQSReader(t.Context(), logger, cfg)
 		assert.Error(t, err)
 		assert.Nil(t, reader)
 	})
@@ -91,7 +91,7 @@ func TestNewS3SQSReader(t *testing.T) {
 			},
 		}
 
-		r, err := newS3SQSReader(context.Background(), logger, cfg)
+		r, err := newS3SQSReader(t.Context(), logger, cfg)
 		assert.NotNil(t, r)
 		assert.NoError(t, err)
 	})
@@ -135,6 +135,18 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 					},
 					Object: s3ObjectData{
 						Key: "test-key",
+					},
+				},
+			},
+			{
+				EventSource: "aws:s3",
+				EventName:   "ObjectCreated:Put",
+				S3: s3Data{
+					Bucket: s3BucketData{
+						Name: "test-bucket",
+					},
+					Object: s3ObjectData{
+						Key: "url-encoding%3dtest-key",
 					},
 				},
 			},
@@ -184,6 +196,14 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 		nil,
 	)
 
+	mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("url-encoding=test-key"),
+	}).Return(
+		[]byte("url-encoded-content"),
+		nil,
+	)
+
 	mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
 		return *input.QueueUrl == cfg.SQS.QueueURL &&
 			*input.ReceiptHandle == "test-receipt-handle"
@@ -193,17 +213,17 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
-	var callbackCalled bool
-	var receivedKey string
-	var receivedContent []byte
+	var callbackCallCount int
+	var receivedKeys []string
+	var receivedContents [][]byte
 
 	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
-		callbackCalled = true
-		receivedKey = key
-		receivedContent = content
+		callbackCallCount++
+		receivedKeys = append(receivedKeys, key)
+		receivedContents = append(receivedContents, content)
 		return nil
 	})
 
@@ -212,9 +232,11 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	assert.Equal(t, context.DeadlineExceeded, err)
 
 	// Verify callback was called with correct data
-	assert.True(t, callbackCalled)
-	assert.Equal(t, "test-key", receivedKey)
-	assert.Equal(t, []byte("test-content"), receivedContent)
+	assert.Equal(t, 2, callbackCallCount)
+	assert.Equal(t, "test-key", receivedKeys[0])
+	assert.Equal(t, []byte("test-content"), receivedContents[0])
+	assert.Equal(t, "url-encoding=test-key", receivedKeys[1])
+	assert.Equal(t, []byte("url-encoded-content"), receivedContents[1])
 
 	// Verify all expectations
 	mockS3.AssertExpectations(t)
@@ -314,7 +336,7 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
 	var callbackCalled bool
@@ -377,7 +399,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			errors.New("context canceled"),
 		)
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel() // Cancel context immediately to trigger error case
 
 		err := reader.readAll(ctx, "test-telemetry", nil)
@@ -468,7 +490,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			nil,
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
 		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
 			t.Fatal("Callback should not be called when S3 retrieval fails")
@@ -613,7 +635,7 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
 	processedKeys := make(map[string][]byte)

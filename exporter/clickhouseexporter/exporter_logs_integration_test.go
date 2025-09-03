@@ -6,7 +6,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -17,23 +16,26 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testLogsExporter(t *testing.T, endpoint string) {
+func testLogsExporter(t *testing.T, endpoint string, mapBody bool) {
 	exporter := newTestLogsExporter(t, endpoint)
-	verifyExportLogs(t, exporter)
+	verifyExportLogs(t, exporter, mapBody)
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
-	require.NoError(t, exporter.start(context.Background(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.Background()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
-func verifyExportLogs(t *testing.T, exporter *logsExporter) {
+func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody bool) {
+	err := exporter.db.Exec(t.Context(), "TRUNCATE otel_int_test.otel_logs")
+	require.NoError(t, err)
+
 	pushConcurrentlyNoError(t, func() error {
-		return exporter.pushLogsData(context.Background(), simpleLogs(5000))
+		return exporter.pushLogsData(t.Context(), simpleLogs(5000, mapBody))
 	})
 
 	type log struct {
@@ -78,18 +80,21 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter) {
 			"service.namespace": "default",
 		},
 	}
+	if mapBody {
+		expectedLog.Body = `{"error":"message"}`
+	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_logs")
+	row := exporter.db.QueryRow(t.Context(), "SELECT * FROM otel_int_test.otel_logs")
 	require.NoError(t, row.Err())
 
 	var actualLog log
-	err := row.ScanStruct(&actualLog)
+	err = row.ScanStruct(&actualLog)
 	require.NoError(t, err)
 
 	require.Equal(t, expectedLog, actualLog)
 }
 
-func simpleLogs(count int) plog.Logs {
+func simpleLogs(count int, mapBody bool) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
@@ -106,7 +111,14 @@ func simpleLogs(count int) plog.Logs {
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
-		r.Body().SetStr("error message")
+
+		if mapBody {
+			r.Body().SetEmptyMap()
+			r.Body().Map().PutStr("error", "message")
+		} else {
+			r.Body().SetStr("error message")
+		}
+
 		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})

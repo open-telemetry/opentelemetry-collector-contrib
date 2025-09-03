@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -83,7 +82,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := factory.CreateMetrics(
 		ctx,
 		exportertest.NewNopSettings(metadata.Type),
@@ -95,8 +94,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
-	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -119,7 +116,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
+		ctx := t.Context()
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
@@ -142,12 +139,13 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
+		ctx := t.Context()
 		exp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(metadata.Type),
@@ -172,13 +170,9 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
-	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -198,7 +192,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 
 	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
+		ctx := t.Context()
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
@@ -221,12 +215,13 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
+		ctx := t.Context()
 		exp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(metadata.Type),
@@ -251,8 +246,6 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
@@ -272,7 +265,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := factory.CreateLogs(
 		ctx,
 		exportertest.NewNopSettings(metadata.Type),
@@ -288,7 +281,7 @@ func TestOnlyMetadata(t *testing.T) {
 	defer server.Close()
 
 	factory := NewFactory()
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg := &datadogconfig.Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
@@ -354,7 +347,7 @@ func TestStopExporters(t *testing.T) {
 	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	expTraces, err := factory.CreateTraces(
 		ctx,
 		exportertest.NewNopSettings(metadata.Type),
@@ -390,4 +383,9 @@ func TestStopExporters(t *testing.T) {
 	case <-time.After(time.Second * 10):
 		t.Fatal("Timed out")
 	}
+}
+
+func resetZorkianWarningsForTesting() {
+	onceZorkianMetricsWarning = sync.Once{}
+	onceZorkianTracesWarning = sync.Once{}
 }

@@ -236,9 +236,10 @@ func (mcfg MetricsConfig) ToTranslatorOpts() []otlpmetrics.TranslatorOption {
 	case CumulativeMonotonicSumModeToDelta:
 		numberMode = otlpmetrics.NumberModeCumulativeToDelta
 	}
-	options = append(options, otlpmetrics.WithNumberMode(numberMode))
-	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
-		otlpmetrics.InitialCumulMonoValueMode(mcfg.SumConfig.InitialCumulativeMonotonicMode)))
+	options = append(options,
+		otlpmetrics.WithNumberMode(numberMode),
+		otlpmetrics.WithInitialCumulMonoValueMode(
+			otlpmetrics.InitialCumulMonoValueMode(mcfg.SumConfig.InitialCumulativeMonotonicMode)))
 
 	return options
 }
