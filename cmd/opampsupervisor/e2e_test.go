@@ -503,7 +503,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 
 			// Verify the collector runs eventually by pinging the healthcheck extension
 			require.Eventually(t, func() bool {
-				resp, err := http.DefaultClient.Get("http://localhost:13133")
+				resp, err := http.DefaultClient.Get("http://127.0.0.1:13133")
 				if err != nil {
 					t.Logf("Failed healthcheck: %s", err)
 					return false
@@ -578,7 +578,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 
 			// Verify the collector runs eventually by pinging the healthcheck extension
 			require.Eventually(t, func() bool {
-				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://127.0.0.1:%d", healthcheckPort))
 				if err != nil {
 					t.Logf("Failed healthcheck: %s", err)
 					return false
@@ -669,7 +669,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	for _, port := range []int{healthcheckPort, secondHealthcheckPort} {
 		require.Eventually(t, func() bool {
-			resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", port))
+			resp, err := http.DefaultClient.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
 			if err != nil {
 				t.Logf("Failed healthcheck: %s", err)
 				return false
@@ -732,7 +732,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
 	time.Sleep(250 * time.Millisecond)
-	_, err := http.DefaultClient.Get("http://localhost:12345")
+	_, err := http.DefaultClient.Get("http://127.0.0.1:12345")
 
 	if runtime.GOOS != "windows" {
 		require.ErrorContains(t, err, "connection refused")
@@ -1978,7 +1978,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 
 	// Use health check endpoint to determine if the collector is actually running
 	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Get("http://localhost:13133")
+		resp, err := http.DefaultClient.Get("http://127.0.0.1:13133")
 		if err != nil {
 			t.Logf("Failed agent healthcheck request: %s", err)
 			return false
@@ -2010,7 +2010,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		_, err := http.DefaultClient.Get("http://localhost:12345")
+		_, err := http.DefaultClient.Get("http://127.0.0.1:12345")
 		if runtime.GOOS != "windows" {
 			assert.ErrorContains(tt, err, "connection refused")
 		} else {
@@ -2161,7 +2161,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 			extraConfigData := map[string]string{
 				"url":                  server.addr,
 				"config_apply_timeout": "3s",
-				"telemetryUrl":         "localhost:4318",
+				"telemetryUrl":         "127.0.0.1:4318",
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
@@ -2382,7 +2382,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 
 	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
 		"url":      server.addr,
-		"endpoint": fmt.Sprintf("localhost:%d", randomPort),
+		"endpoint": fmt.Sprintf("127.0.0.1:%d", randomPort),
 	})
 
 	cfg, err := config.Load(cfgFile.Name())
@@ -2398,7 +2398,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", randomPort))
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/health", randomPort))
 		if err != nil {
 			t.Logf("Failed health check request: %s", err)
 			return false
@@ -2421,7 +2421,7 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 
 	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
 		"url":      "badserver:8080",
-		"endpoint": fmt.Sprintf("localhost:%d", healthcheckPort),
+		"endpoint": fmt.Sprintf("127.0.0.1:%d", healthcheckPort),
 	})
 
 	cfg, err := config.Load(cfgFile.Name())
@@ -2436,7 +2436,7 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", healthcheckPort))
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/health", healthcheckPort))
 		if err != nil {
 			t.Logf("Failed health check request: %s", err)
 			return false
@@ -2527,7 +2527,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		"emit_telemetry",
 		map[string]string{
 			"url":          server.addr,
-			"telemetryUrl": fmt.Sprintf("localhost:%d", 4318),
+			"telemetryUrl": fmt.Sprintf("127.0.0.1:%d", 4318),
 		},
 	)
 
