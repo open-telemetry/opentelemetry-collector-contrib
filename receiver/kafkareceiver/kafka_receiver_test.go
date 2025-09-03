@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver"
@@ -75,7 +76,7 @@ func TestReceiver(t *testing.T) {
 		traces := testdata.GenerateTraces(5)
 		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(context.Background(), &kgo.Record{
+		results := kafkaClient.ProduceSync(t.Context(), &kgo.Record{
 			Topic: "otlp_spans",
 			Value: data,
 		})
@@ -131,7 +132,7 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 				traces := testdata.GenerateTraces(1)
 				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 				require.NoError(t, err)
-				results := kafkaClient.ProduceSync(context.Background(), &kgo.Record{
+				results := kafkaClient.ProduceSync(t.Context(), &kgo.Record{
 					Topic:   "otlp_spans",
 					Value:   data,
 					Headers: testcase.headers,
@@ -165,7 +166,7 @@ func TestReceiver_Headers_HeaderExtraction(t *testing.T) {
 				traces := testdata.GenerateTraces(1)
 				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 				require.NoError(t, err)
-				results := kafkaClient.ProduceSync(context.Background(), &kgo.Record{
+				results := kafkaClient.ProduceSync(t.Context(), &kgo.Record{
 					Topic: "otlp_spans",
 					Value: data,
 					Headers: []kgo.RecordHeader{{
@@ -222,7 +223,7 @@ func TestReceiver_ConsumeError(t *testing.T) {
 				traces := testdata.GenerateTraces(1)
 				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 				require.NoError(t, err)
-				results := kafkaClient.ProduceSync(context.Background(),
+				results := kafkaClient.ProduceSync(t.Context(),
 					&kgo.Record{Topic: "otlp_spans", Value: data},
 				)
 				require.NoError(t, results.FirstErr())
@@ -267,7 +268,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		traces := testdata.GenerateTraces(1)
 		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(context.Background(),
+		results := kafkaClient.ProduceSync(t.Context(),
 			&kgo.Record{Topic: "otlp_spans", Value: data},
 			&kgo.Record{Topic: "otlp_spans", Value: data},
 			&kgo.Record{Topic: "otlp_spans", Value: data},
@@ -280,11 +281,11 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		received := make(chan consumerArgs[ptrace.Traces], 1)
 		set, tel, observedLogs := mustNewSettings(t)
 		f := NewFactory()
-		r, err := f.CreateTraces(context.Background(), set, receiverConfig, newChannelTracesConsumer(received))
+		r, err := f.CreateTraces(t.Context(), set, receiverConfig, newChannelTracesConsumer(received))
 		require.NoError(t, err)
-		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(context.Background()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 		for range 4 {
 			<-received
@@ -311,6 +312,18 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 		if franzGoConsumerFeatureGate.IsEnabled() {
 			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
@@ -358,8 +371,40 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverReadLatency(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "seed_0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverRecordsDelay(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		} else {
 			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
@@ -381,7 +426,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		}
 
 		// Shut down and check that the partition close metric is updated.
-		err = r.Shutdown(context.Background())
+		err = r.Shutdown(t.Context())
 		require.NoError(t, err)
 		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
@@ -413,8 +458,9 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 func TestReceiver_MessageMarking(t *testing.T) {
 	for name, testcase := range map[string]struct {
-		markAfter  bool
-		markErrors bool
+		markAfter           bool
+		markErrors          bool
+		markPermanentErrors bool
 
 		errorShouldRestart bool
 	}{
@@ -425,9 +471,21 @@ func TestReceiver_MessageMarking(t *testing.T) {
 			markAfter:          true,
 			errorShouldRestart: true,
 		},
-		"mark_after_all": {
-			markAfter:  true,
-			markErrors: true,
+		"mark_after_errors": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: true,
+		},
+		"mark_after_non_permanent_only": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: false,
+			errorShouldRestart:  true, // error is permanent, so it isn't marked and will cause a restart
+		},
+		"mark_after_permanent_only": {
+			markAfter:           true,
+			markErrors:          false,
+			markPermanentErrors: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -440,7 +498,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				traces := testdata.GenerateTraces(1)
 				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 				require.NoError(t, err)
-				results := kafkaClient.ProduceSync(context.Background(),
+				results := kafkaClient.ProduceSync(t.Context(),
 					&kgo.Record{Topic: "otlp_spans", Value: []byte("junk")},
 					&kgo.Record{Topic: "otlp_spans", Value: data},
 				)
@@ -455,13 +513,14 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				// Only mark messages after consuming, including for errors.
 				receiverConfig.MessageMarking.After = testcase.markAfter
 				receiverConfig.MessageMarking.OnError = testcase.markErrors
+				receiverConfig.MessageMarking.OnPermanentError = testcase.markPermanentErrors
 				set, tel, observedLogs := mustNewSettings(t)
 				f := NewFactory()
-				r, err := f.CreateTraces(context.Background(), set, receiverConfig, consumer)
+				r, err := f.CreateTraces(t.Context(), set, receiverConfig, consumer)
 				require.NoError(t, err)
-				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				t.Cleanup(func() {
-					assert.NoError(t, r.Shutdown(context.Background()))
+					assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 				})
 
 				if testcase.errorShouldRestart {
@@ -474,13 +533,13 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}
 
 					// Verify that the consumer restarts at least once.
-					assert.Eventually(t, func() bool {
+					assert.EventuallyWithT(t, func(t *assert.CollectT) {
 						m, err := tel.GetMetric("otelcol_kafka_receiver_partition_start")
 						require.NoError(t, err)
 
 						dataPoints := m.Data.(metricdata.Sum[int64]).DataPoints
 						assert.Len(t, dataPoints, 1)
-						return dataPoints[0].Value >= value
+						assert.GreaterOrEqual(t, dataPoints[0].Value, value)
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message
@@ -555,7 +614,7 @@ func TestNewLogsReceiver(t *testing.T) {
 		logs := testdata.GenerateLogs(1)
 		data, err := (&plog.ProtoMarshaler{}).MarshalLogs(logs)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(context.Background(),
+		results := kafkaClient.ProduceSync(t.Context(),
 			&kgo.Record{
 				Topic: "otlp_logs",
 				Value: data,
@@ -567,10 +626,10 @@ func TestNewLogsReceiver(t *testing.T) {
 		)
 		require.NoError(t, results.FirstErr())
 
-		err = r.Start(context.Background(), componenttest.NewNopHost())
+		err = r.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(context.Background()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 
 		// There should be one failed message due to the invalid message payload.
@@ -609,7 +668,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 		metrics := testdata.GenerateMetrics(1)
 		data, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(metrics)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(context.Background(),
+		results := kafkaClient.ProduceSync(t.Context(),
 			&kgo.Record{
 				Topic: "otlp_metrics",
 				Value: data,
@@ -621,10 +680,10 @@ func TestNewMetricsReceiver(t *testing.T) {
 		)
 		require.NoError(t, results.FirstErr())
 
-		err = r.Start(context.Background(), componenttest.NewNopHost())
+		err = r.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, r.Shutdown(context.Background()))
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
 		})
 
 		// There should be one failed message due to the invalid message payload.
@@ -644,6 +703,60 @@ func TestNewMetricsReceiver(t *testing.T) {
 		// There should be one successfully processed batch of metrics.
 		assert.Len(t, sink.AllMetrics(), 1)
 		_, ok := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("kafka.header.key1")
+		require.True(t, ok)
+	})
+}
+
+func TestNewProfilesReceiver(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_profiles"))
+
+		var sink consumertest.ProfilesSink
+		receiverConfig.HeaderExtraction.ExtractHeaders = true
+		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
+		set, tel, _ := mustNewSettings(t)
+		r, err := newProfilesReceiver(receiverConfig, set, &sink)
+		require.NoError(t, err)
+
+		// Send some profiles to the otlp_profiles topic.
+		profiles := testdata.GenerateProfiles(1)
+		data, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(profiles)
+		require.NoError(t, err)
+		results := kafkaClient.ProduceSync(t.Context(),
+			&kgo.Record{
+				Topic: "otlp_profiles",
+				Value: data,
+				Headers: []kgo.RecordHeader{
+					{Key: "key1", Value: []byte("value1")},
+				},
+			},
+			&kgo.Record{Topic: "otlp_profiles", Value: []byte("junk")},
+		)
+		require.NoError(t, results.FirstErr())
+
+		err = r.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+		})
+
+		// There should be one failed message due to the invalid message payload.
+		// It may not be available immediately, as the receiver may not have processed it yet.
+		assert.Eventually(t, func() bool {
+			_, err := tel.GetMetric("otelcol_kafka_receiver_unmarshal_failed_profiles")
+			return err == nil
+		}, 10*time.Second, 100*time.Millisecond)
+		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedProfiles(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_profiles"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		// There should be one successfully processed batch of profiles.
+		assert.Len(t, sink.AllProfiles(), 1)
+		_, ok := sink.AllProfiles()[0].ResourceProfiles().At(0).Resource().Attributes().Get("kafka.header.key1")
 		require.True(t, ok)
 	})
 }
@@ -681,15 +794,15 @@ func TestComponentStatus(t *testing.T) {
 	receiverConfig.Brokers = []string{lis.Addr().String()}
 
 	f := NewFactory()
-	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
+	r, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
 	require.NoError(t, err)
-	require.NoError(t, r.Start(context.Background(), &statusReporterHost{
+	require.NoError(t, r.Start(t.Context(), &statusReporterHost{
 		report: func(event *componentstatus.Event) {
 			statusEventCh <- event
 		},
 	}))
 	t.Cleanup(func() {
-		assert.NoError(t, r.Shutdown(context.Background()))
+		assert.NoError(t, r.Shutdown(t.Context()))
 	})
 
 	// Connection to the Kafka cluster is asynchronous; the receiver
@@ -721,7 +834,7 @@ func TestComponentStatus(t *testing.T) {
 	assert.Equal(t, componentstatus.StatusOK, waitStatusEvent().Status())
 	assertNoStatusEvent(t)
 
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 
 	assert.Equal(t, componentstatus.StatusStopping, waitStatusEvent().Status())
 	assert.Equal(t, componentstatus.StatusStopped, waitStatusEvent().Status())
@@ -732,11 +845,11 @@ func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Tra
 	tb.Helper()
 
 	f := NewFactory()
-	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
+	r, err := f.CreateTraces(tb.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
 	require.NoError(tb, err)
-	require.NoError(tb, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(tb, r.Start(tb.Context(), componenttest.NewNopHost()))
 	tb.Cleanup(func() {
-		assert.NoError(tb, r.Shutdown(context.Background()))
+		assert.NoError(tb, r.Shutdown(context.Background())) //nolint:usetesting
 	})
 }
 
@@ -745,7 +858,7 @@ func mustNewSettings(tb testing.TB) (receiver.Settings, *componenttest.Telemetry
 	set := receivertest.NewNopSettings(metadata.Type)
 	tel := componenttest.NewTelemetry()
 	tb.Cleanup(func() {
-		assert.NoError(tb, tel.Shutdown(context.Background()))
+		assert.NoError(tb, tel.Shutdown(context.Background())) //nolint:usetesting
 	})
 	set.TelemetrySettings = tel.NewTelemetrySettings()
 	set.Logger = zap.New(zapCore)
@@ -785,6 +898,7 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	cfg.ClientConfig = clientConfig
 	cfg.InitialOffset = "earliest"
 	cfg.MaxFetchWait = 10 * time.Millisecond
+	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	return kafkaClient, cfg
 }
 
@@ -800,9 +914,10 @@ func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
 // It is necessary to call this to exit the group goroutines in the kfake cluster.
 func deleteConsumerGroups(tb testing.TB, client *kgo.Client) {
 	adminClient := kadm.NewClient(client)
-	groups, err := adminClient.ListGroups(context.Background())
+	ctx := context.Background() //nolint:usetesting // we may call this on test teardown
+	groups, err := adminClient.ListGroups(ctx)
 	assert.NoError(tb, err)
-	_, err = adminClient.DeleteGroups(context.Background(), groups.Groups()...)
+	_, err = adminClient.DeleteGroups(ctx, groups.Groups()...)
 	assert.NoError(tb, err)
 }
 
@@ -810,7 +925,7 @@ type statusReporterHost struct {
 	report func(*componentstatus.Event)
 }
 
-func (h *statusReporterHost) GetExtensions() map[component.ID]component.Component {
+func (*statusReporterHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

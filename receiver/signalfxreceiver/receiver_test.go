@@ -6,7 +6,6 @@ package signalfxreceiver
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -78,10 +77,10 @@ func Test_signalfxreceiver_New(t *testing.T) {
 			if tt.args.nextConsumer != nil {
 				got.RegisterMetricsConsumer(tt.args.nextConsumer)
 			}
-			err = got.Start(context.Background(), componenttest.NewNopHost())
+			err = got.Start(t.Context(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantStartErr, err)
 			if err == nil {
-				assert.NoError(t, got.Shutdown(context.Background()))
+				assert.NoError(t, got.Shutdown(t.Context()))
 			}
 		})
 	}
@@ -96,11 +95,11 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 	runtime.Gosched()
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()))
+		require.NoError(t, r.Shutdown(t.Context()))
 	}()
 
 	unixSecs := int64(1574092046)
@@ -152,11 +151,11 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 		AccessToken: "access_token",
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetrics(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		expCfg)
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
 		conn, err := net.Dial("tcp", addr)
 		if err == nil && conn != nil {
@@ -166,9 +165,9 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 		return false
 	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
 	defer func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(t.Context()))
 	}()
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), want))
 
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
@@ -196,7 +195,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost", http.NoBody),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
@@ -220,7 +219,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/not-protobuf")
 				return req
 			}(),
@@ -232,7 +231,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding_sfx",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
@@ -245,7 +244,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding_otlp",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", otlpContentHeader)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
@@ -258,7 +257,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "fail_to_read_body_sfx",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Body = badReqBody{}
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				return req
@@ -271,7 +270,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "fail_to_read_body_otlp",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Body = badReqBody{}
 				req.Header.Set("Content-Type", otlpContentHeader)
 				return req
@@ -462,7 +461,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest(http.MethodPut, "http://localhost", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost", http.NoBody),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
@@ -486,7 +485,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
 				return req
 			}(),
@@ -498,7 +497,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
@@ -511,7 +510,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		{
 			name: "fail_to_read_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPost, "http://localhost", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost", http.NoBody)
 				req.Body = badReqBody{}
 				req.Header.Set("Content-Type", "application/x-protobuf")
 				return req
@@ -634,7 +633,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()))
+		require.NoError(t, r.Shutdown(t.Context()))
 	}()
 
 	mh := &nopHost{
@@ -642,7 +641,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 			require.NoError(t, event.Err())
 		},
 	}
-	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
+	require.NoError(t, r.Start(t.Context(), mh), "should not have failed to start metric reception")
 
 	t.Log("Metric Reception Started")
 
@@ -681,7 +680,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, errTLS := tlscs.LoadTLSConfig(context.Background())
+	tls, errTLS := tlscs.LoadTLSConfig(t.Context())
 	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -900,7 +899,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
+func buildSFxDatapointMsg(time, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
 	return &sfxpb.DataPointUploadMessage{
 		Datapoints: []*sfxpb.DataPoint{
 			{
@@ -941,11 +940,11 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(_ []byte) (n int, err error) {
+func (badReqBody) Read([]byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 
-func (b badReqBody) Close() error {
+func (badReqBody) Close() error {
 	return nil
 }
 
@@ -1068,7 +1067,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

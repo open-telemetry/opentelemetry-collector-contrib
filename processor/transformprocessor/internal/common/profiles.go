@@ -25,12 +25,12 @@ type profileStatements struct {
 	expr.BoolExpr[ottlprofile.TransformContext]
 }
 
-func (l profileStatements) Context() ContextID {
+func (profileStatements) Context() ContextID {
 	return Profile
 }
 
 func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
-	dic := ld.ProfilesDictionary()
+	dic := ld.Dictionary()
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
 			for _, profile := range sprofiles.Profiles().All() {

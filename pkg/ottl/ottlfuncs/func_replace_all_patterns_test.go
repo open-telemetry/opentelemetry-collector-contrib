@@ -167,8 +167,13 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacementFormat: ottl.NewTestingOptional[ottl.StringGetter[pcommon.Map]](invalidPrefix),
 			function:          optionalArg,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutEmpty("test")
-				expectedMap.Remove("test")
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
+				expectedMap.PutInt("test4", 1234)
+				expectedMap.PutDouble("test5", 1234)
+				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -605,7 +610,7 @@ func Test_replaceAllPatterns_bad_function_result(t *testing.T) {
 			}
 			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
-		Setter: func(_ context.Context, tCtx any, m any) error {
+		Setter: func(_ context.Context, tCtx, m any) error {
 			if v, ok := tCtx.(pcommon.Map); ok {
 				if v2, ok2 := m.(pcommon.Map); ok2 {
 					v.CopyTo(v2)
@@ -643,7 +648,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 			assert.Nil(t, tCtx)
 			return pcommon.NewMap(), nil
 		},
-		Setter: func(_ context.Context, tCtx any, m any) error {
+		Setter: func(_ context.Context, tCtx, m any) error {
 			if v, ok := tCtx.(pcommon.Map); ok {
 				if v2, ok2 := m.(pcommon.Map); ok2 {
 					v.CopyTo(v2)

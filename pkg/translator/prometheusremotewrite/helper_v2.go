@@ -8,14 +8,13 @@ import (
 	"strconv"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // addResourceTargetInfoV2 converts the resource to the target info metric.
@@ -42,13 +41,13 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		return
 	}
 
-	name := prometheustranslator.TargetInfoMetricName
-	if len(settings.Namespace) > 0 {
+	name := otlptranslator.TargetInfoMetricName
+	if settings.Namespace != "" {
 		// TODO what to do with this in case of full utf-8 support?
 		name = settings.Namespace + "_" + name
 	}
 
-	labels := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, model.MetricNameLabel, name)
+	labels := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, model.MetricNameLabel, name)
 	haveIdentifier := false
 	for _, l := range labels {
 		if l.Name == model.JobLabel || l.Name == model.InstanceLabel {
@@ -97,7 +96,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
 		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// Add sum and count samples
@@ -119,7 +118,7 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
 		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// If the sum is unset, it indicates the _sum metric point should be

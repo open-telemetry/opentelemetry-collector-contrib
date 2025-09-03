@@ -20,7 +20,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.ProcessBatchWith(ctx, entries, p.parse)
 }
 
 // Process will parse an entry for key value pairs.
@@ -38,7 +38,7 @@ func (p *Parser) parse(value any) (any, error) {
 	}
 }
 
-func (p *Parser) parser(input string, delimiter string, pairDelimiter string) (map[string]any, error) {
+func (p *Parser) parser(input, delimiter, pairDelimiter string) (map[string]any, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", p.ParseFrom.String())
 	}

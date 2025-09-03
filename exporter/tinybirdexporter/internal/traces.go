@@ -43,7 +43,7 @@ type traceSignal struct {
 	LinksAttributes  []map[string]string `json:"links_attributes"`
 }
 
-func convertEvents(events ptrace.SpanEventSlice) (timestamps []string, names []string, attributes []map[string]string) {
+func convertEvents(events ptrace.SpanEventSlice) (timestamps, names []string, attributes []map[string]string) {
 	timestamps = make([]string, events.Len())
 	names = make([]string, events.Len())
 	attributes = make([]map[string]string, events.Len())
@@ -56,7 +56,7 @@ func convertEvents(events ptrace.SpanEventSlice) (timestamps []string, names []s
 	return timestamps, names, attributes
 }
 
-func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []string, states []string, attrs []map[string]string) {
+func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []string, attrs []map[string]string) {
 	traceIDs = make([]string, links.Len())
 	spanIDs = make([]string, links.Len())
 	states = make([]string, links.Len())

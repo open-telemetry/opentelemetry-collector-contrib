@@ -21,7 +21,7 @@ type TTLMap struct {
 // TTLMap to begin periodic sweeps which check for expiration and evict entries
 // as needed.
 // done is the channel that will be used to signal to the timer to stop its work.
-func New(sweepIntervalSeconds int64, maxAgeSeconds int64, done chan struct{}) *TTLMap {
+func New(sweepIntervalSeconds, maxAgeSeconds int64, done chan struct{}) *TTLMap {
 	return &TTLMap{
 		sweepInterval: sweepIntervalSeconds,
 		md:            newTTLMapData(maxAgeSeconds),

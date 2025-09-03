@@ -23,6 +23,7 @@ components:
         - health_check
         - host_observer
         - http_forwarder
+        - k8s_leader_elector
         - k8s_observer
         - oauth2client
         - oidc
@@ -58,7 +59,6 @@ components:
         - k8s_events
         - k8sobjects
         - kubeletstats
-        - opencensus
         - otelarrow
         - prometheus
         - receiver_creator

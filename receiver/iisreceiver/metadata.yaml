@@ -1,5 +1,9 @@
 type: iis
 
+tests:
+  goleak:
+    setup: "setupTestMain(m)"
+
 status:
   class: receiver
   stability:
@@ -140,10 +144,10 @@ metrics:
     unit: "{state}"
     gauge:
       value_type: int
-    enabled: false
+    enabled: true
   iis.application_pool.uptime:
     description: The application pools uptime period since the last restart.
     unit: "{ms}"
     gauge:
       value_type: int
-    enabled: false
+    enabled: true

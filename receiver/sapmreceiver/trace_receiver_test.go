@@ -252,12 +252,12 @@ func setupReceiver(t *testing.T, config *Config, sink consumer.Traces) receiver.
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 
-	require.NoError(t, sr.Start(context.Background(), &nopHost{
+	require.NoError(t, sr.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			require.NoError(t, event.Err())
 		},
 	}), "should not have failed to start trace reception")
-	require.NoError(t, sr.Start(context.Background(), &nopHost{
+	require.NoError(t, sr.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			require.NoError(t, event.Err())
 		},
@@ -340,7 +340,7 @@ func TestReception(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			sr := setupReceiver(t, tt.args.config, sink)
 			defer func() {
-				require.NoError(t, sr.Shutdown(context.Background()))
+				require.NoError(t, sr.Shutdown(t.Context()))
 			}()
 
 			t.Log("Sending Sapm Request")
@@ -396,7 +396,7 @@ func TestStatusCode(t *testing.T) {
 			resp, err := sendSapm(config.Endpoint, sapm, "", false, "")
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, test.expectedStatus, resp.StatusCode)
-			require.NoError(t, sr.Shutdown(context.Background()))
+			require.NoError(t, sr.Shutdown(t.Context()))
 		})
 	}
 }
@@ -407,7 +407,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

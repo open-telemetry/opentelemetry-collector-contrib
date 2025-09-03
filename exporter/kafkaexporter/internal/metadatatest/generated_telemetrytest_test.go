@@ -10,9 +10,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -23,10 +23,13 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaBrokerClosed.Add(context.Background(), 1)
 	tb.KafkaBrokerConnects.Add(context.Background(), 1)
 	tb.KafkaBrokerThrottlingDuration.Record(context.Background(), 1)
+	tb.KafkaBrokerThrottlingLatency.Record(context.Background(), 1)
 	tb.KafkaExporterBytes.Add(context.Background(), 1)
 	tb.KafkaExporterBytesUncompressed.Add(context.Background(), 1)
 	tb.KafkaExporterLatency.Record(context.Background(), 1)
 	tb.KafkaExporterMessages.Add(context.Background(), 1)
+	tb.KafkaExporterRecords.Add(context.Background(), 1)
+	tb.KafkaExporterWriteLatency.Record(context.Background(), 1)
 	AssertEqualKafkaBrokerClosed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -35,6 +38,9 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaBrokerThrottlingDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaBrokerThrottlingLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaExporterBytes(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -47,6 +53,12 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaExporterMessages(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaExporterRecords(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaExporterWriteLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))

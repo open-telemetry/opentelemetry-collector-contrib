@@ -91,7 +91,7 @@ func TestTransformerDropOnError(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -141,7 +141,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -191,7 +191,7 @@ func TestTransformerSendOnError(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -241,7 +241,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -288,7 +288,7 @@ func TestTransformerProcessWithValid(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	transform := func(_ *entry.Entry) error {
 		return nil
@@ -297,6 +297,87 @@ func TestTransformerProcessWithValid(t *testing.T) {
 	err := transformer.ProcessWith(ctx, testEntry, transform)
 	require.NoError(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+}
+
+// TestTransformerSplitsBatches documents that if a transformer operator uses the `TransformerOperator`'s `ProcessBatchWith` method,
+// the batch is split into individual entries,
+// as described in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39575.
+func TestTransformerSplitsBatches(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	transformer := TransformerOperator{
+		OnError: SendOnError,
+		WriterOperator: WriterOperator{
+			BasicOperator: BasicOperator{
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
+			},
+			OutputOperators: []operator.Operator{output},
+			OutputIDs:       []string{"test-output"},
+		},
+	}
+
+	ctx := t.Context()
+	testEntry := entry.New()
+	testEntry2 := entry.New()
+	testEntry3 := entry.New()
+	testEntries := []*entry.Entry{testEntry, testEntry2, testEntry3}
+	process := func(ctx context.Context, entries *entry.Entry) error {
+		return transformer.ProcessWith(ctx, entries, func(*entry.Entry) error {
+			return nil
+		})
+	}
+
+	err := transformer.ProcessBatchWith(ctx, testEntries, process)
+	require.NoError(t, err)
+	// The following assertions prove that the batch was split into three separate calls to Process.
+	output.AssertCalled(t, "Process", ctx, testEntry)
+	output.AssertCalled(t, "Process", ctx, testEntry2)
+	output.AssertCalled(t, "Process", ctx, testEntry3)
+	output.AssertNumberOfCalls(t, "Process", 3)
+}
+
+// TestTransformerDoesNotSplitBatches documents that if a transformer operator uses the `TransformerOperator`'s `ProcessBatchWithTransform` method,
+// the batch of entries is NOT split into individual entries, which is more performant and preferred way to process entries by operators.
+func TestTransformerDoesNotSplitBatches(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	transformer := TransformerOperator{
+		OnError: SendOnError,
+		WriterOperator: WriterOperator{
+			BasicOperator: BasicOperator{
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
+			},
+			OutputOperators: []operator.Operator{output},
+			OutputIDs:       []string{"test-output"},
+		},
+	}
+
+	ctx := t.Context()
+	testEntry := entry.New()
+	testEntry2 := entry.New()
+	testEntry3 := entry.New()
+	testEntries := []*entry.Entry{testEntry, testEntry2, testEntry3}
+	transform := func(_ *entry.Entry) error {
+		return nil
+	}
+
+	err := transformer.ProcessBatchWithTransform(ctx, testEntries, transform)
+	require.NoError(t, err)
+	// This proves that the batch was not split.
+	output.AssertCalled(t, "ProcessBatch", ctx, testEntries)
+	output.AssertNumberOfCalls(t, "ProcessBatch", 1)
 }
 
 func TestTransformerIf(t *testing.T) {
@@ -360,7 +441,7 @@ func TestTransformerIf(t *testing.T) {
 
 			e := entry.New()
 			e.Body = tc.inputBody
-			err = transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
+			err = transformer.ProcessWith(t.Context(), e, func(e *entry.Entry) error {
 				e.Body = "parsed"
 				return nil
 			})

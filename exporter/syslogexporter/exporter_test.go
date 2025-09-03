@@ -4,7 +4,6 @@
 package syslogexporter
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -182,7 +181,7 @@ func createTCPTestConfig() *Config {
 func sendTestMessage(t *testing.T, exp *syslogexporter) error {
 	buffer := exampleLog(t)
 	logs := logRecordsToLogs(buffer)
-	return exp.pushLogsData(context.Background(), logs)
+	return exp.pushLogsData(t.Context(), logs)
 }
 
 func TestTCPSyslogExportSuccess(t *testing.T) {
@@ -208,7 +207,7 @@ func TestTCPSyslogExportFail(t *testing.T) {
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
 	assert.True(t, ok)
-	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
+	consumerLogs := consumerErrorLogs.Data()
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())
 	scl := rls.At(0).ScopeLogs()
@@ -299,7 +298,7 @@ func TestUnixSocketExporterFail(t *testing.T) {
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
 	assert.True(t, ok)
-	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
+	consumerLogs := consumerErrorLogs.Data()
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())
 	scl := rls.At(0).ScopeLogs()

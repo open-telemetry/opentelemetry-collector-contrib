@@ -42,11 +42,18 @@ type Config struct {
 
 	// Tinybird API token.
 	Token   configopaque.String `mapstructure:"token"`
-	Metrics SignalConfig        `mapstructure:"metrics"`
+	Metrics metricSignalConfigs `mapstructure:"metrics"`
 	Traces  SignalConfig        `mapstructure:"traces"`
 	Logs    SignalConfig        `mapstructure:"logs"`
 	// Wait for data to be ingested before returning a response.
 	Wait bool `mapstructure:"wait"`
+}
+
+type metricSignalConfigs struct {
+	MetricsGauge                SignalConfig `mapstructure:"gauge"`
+	MetricsSum                  SignalConfig `mapstructure:"sum"`
+	MetricsHistogram            SignalConfig `mapstructure:"histogram"`
+	MetricsExponentialHistogram SignalConfig `mapstructure:"exponential_histogram"`
 }
 
 var _ component.Config = (*Config)(nil)

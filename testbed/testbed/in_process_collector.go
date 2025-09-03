@@ -46,7 +46,7 @@ func (ipp *inProcessCollector) PrepareConfig(t *testing.T, configStr string) (co
 	return configCleanup, err
 }
 
-func (ipp *inProcessCollector) Start(_ StartParams) error {
+func (ipp *inProcessCollector) Start(StartParams) error {
 	var err error
 
 	confFile, err := os.CreateTemp(ipp.t.TempDir(), "conf-")
@@ -54,7 +54,7 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 		return err
 	}
 
-	if _, err = confFile.Write([]byte(ipp.configStr)); err != nil {
+	if _, err = confFile.WriteString(ipp.configStr); err != nil {
 		os.Remove(confFile.Name())
 		return err
 	}
@@ -109,15 +109,15 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	return stopped, err
 }
 
-func (ipp *inProcessCollector) WatchResourceConsumption() error {
+func (*inProcessCollector) WatchResourceConsumption() error {
 	return nil
 }
 
-func (ipp *inProcessCollector) GetProcessMon() *process.Process {
+func (*inProcessCollector) GetProcessMon() *process.Process {
 	return nil
 }
 
-func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
+func (*inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	return &ResourceConsumption{
 		CPUPercentAvg:   0,
 		CPUPercentMax:   0,
@@ -128,6 +128,6 @@ func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	}
 }
 
-func (ipp *inProcessCollector) GetResourceConsumption() string {
+func (*inProcessCollector) GetResourceConsumption() string {
 	return ""
 }

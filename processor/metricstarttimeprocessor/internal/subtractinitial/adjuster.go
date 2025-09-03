@@ -25,21 +25,15 @@ import (
 const Type = "subtract_initial_point"
 
 type Adjuster struct {
-	// referenceCache stores the initial point of each
-	// timeseries. Subsequent points are normalized against this point.
 	referenceCache *datapointstorage.Cache
-	// previousValueCache to store the previous value of each
-	// timeseries provided to the adjuster for reset detection.
-	previousValueCache *datapointstorage.Cache
-	set                component.TelemetrySettings
+	set            component.TelemetrySettings
 }
 
 // NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
 func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adjuster {
 	return &Adjuster{
-		referenceCache:     datapointstorage.NewCache(gcInterval),
-		previousValueCache: datapointstorage.NewCache(gcInterval),
-		set:                set,
+		referenceCache: datapointstorage.NewCache(gcInterval),
+		set:            set,
 	}
 }
 
@@ -60,12 +54,10 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		attrHash := pdatautil.MapHash(rm.Resource().Attributes())
-		referenceTsm, _ := a.referenceCache.Get(attrHash)
-		previousValueTsm, _ := a.previousValueCache.Get(attrHash)
+		previousValueTsm, _ := a.referenceCache.Get(attrHash)
 
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 		// nothing else can modify the data used for adjustment.
-		referenceTsm.Lock()
 		previousValueTsm.Lock()
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
@@ -73,27 +65,26 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 				metric := ilm.Metrics().At(k)
 				switch dataType := metric.Type(); dataType {
 				case pmetric.MetricTypeHistogram:
-					adjustMetricHistogram(referenceTsm, previousValueTsm, metric)
+					adjustMetricHistogram(previousValueTsm, metric)
 
 				case pmetric.MetricTypeSummary:
-					adjustMetricSummary(referenceTsm, previousValueTsm, metric)
+					adjustMetricSummary(previousValueTsm, metric)
 
 				case pmetric.MetricTypeSum:
-					adjustMetricSum(referenceTsm, previousValueTsm, metric)
+					adjustMetricSum(previousValueTsm, metric)
 
 				case pmetric.MetricTypeExponentialHistogram:
-					adjustMetricExponentialHistogram(referenceTsm, previousValueTsm, metric)
+					adjustMetricExponentialHistogram(previousValueTsm, metric)
 				}
 			}
 		}
-		referenceTsm.Unlock()
 		previousValueTsm.Unlock()
 	}
 
 	return metrics, nil
 }
 
-func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
+func adjustMetricHistogram(referenceValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
 	histogram := metric.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -107,45 +98,50 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 			return false
 		}
 
-		referenceTsi, found := referenceTsm.Get(metric, currentDist.Attributes())
-		// previousTsi always exists when reference Tsi is found
-		previousTsi, _ := previousValueTsm.Get(metric, currentDist.Attributes())
+		refTsi, found := referenceValueTsm.Get(metric, currentDist.Attributes())
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
-			referenceTsi.Histogram = pmetric.NewHistogramDataPoint()
-			minimalHistogramCopyTo(currentDist, referenceTsi.Histogram)
-			previousTsi.Histogram = pmetric.NewHistogramDataPoint()
-			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
+			refTsi.Histogram = datapointstorage.HistogramInfo{
+				RefCount:             currentDist.Count(),
+				RefSum:               currentDist.Sum(),
+				RefBucketCounts:      currentDist.BucketCounts().AsRaw(),
+				PreviousCount:        currentDist.Count(),
+				PreviousSum:          currentDist.Sum(),
+				PreviousBucketCounts: currentDist.BucketCounts().AsRaw(),
+				StartTime:            currentDist.Timestamp(),
+				ExplicitBounds:       currentDist.ExplicitBounds().AsRaw(),
+			}
 			return true
 		}
 
 		// Adjust the datapoint based on the reference value.
-		currentDist.SetStartTimestamp(referenceTsi.Histogram.StartTimestamp())
+		currentDist.SetStartTimestamp(refTsi.Histogram.StartTime)
 		if currentDist.Flags().NoRecordedValue() {
 			return false
 		}
 
-		if datapointstorage.IsResetHistogram(currentDist, previousTsi.Histogram) {
+		if refTsi.IsResetHistogram(currentDist) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
 
 			// Update the reference value with the metric point.
-			referenceTsi.Histogram = pmetric.NewHistogramDataPoint()
-			previousTsi.Histogram = pmetric.NewHistogramDataPoint()
-			referenceTsi.Histogram.SetStartTimestamp(resetStartTimeStamp)
-			currentDist.ExplicitBounds().CopyTo(referenceTsi.Histogram.ExplicitBounds())
-			referenceTsi.Histogram.BucketCounts().FromRaw(make([]uint64, currentDist.BucketCounts().Len()))
-			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
+			refTsi.Histogram.RefCount, refTsi.Histogram.RefSum = 0, 0
+			refTsi.Histogram.StartTime = resetStartTimeStamp
+			refTsi.Histogram.RefBucketCounts = make([]uint64, currentDist.BucketCounts().Len())
+			refTsi.Histogram.ExplicitBounds = currentDist.ExplicitBounds().AsRaw()
+			refTsi.Histogram.PreviousBucketCounts = currentDist.BucketCounts().AsRaw()
+			refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
 		} else {
-			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
-			subtractHistogramDataPoint(currentDist, referenceTsi.Histogram)
+			refTsi.Histogram.PreviousBucketCounts = currentDist.BucketCounts().AsRaw()
+			refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
+			subtractHistogramDataPoint(currentDist, refTsi.Histogram)
 		}
 		return false
 	})
 }
 
-func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
+func adjustMetricExponentialHistogram(referenceValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
 	histogram := metric.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -159,45 +155,51 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 			return false
 		}
 
-		referenceTsi, found := referenceTsm.Get(metric, currentDist.Attributes())
-		// previousTsi always exists when reference Tsi is found
-		previousTsi, _ := previousValueTsm.Get(metric, currentDist.Attributes())
+		refTsi, found := referenceValueTsm.Get(metric, currentDist.Attributes())
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
-			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			minimalExponentialHistogramCopyTo(currentDist, referenceTsi.ExponentialHistogram)
-			previousTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
+			refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{
+				RefCount: currentDist.Count(), RefSum: currentDist.Sum(), RefZeroCount: currentDist.ZeroCount(),
+				RefPositive:   datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive()),
+				RefNegative:   datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative()),
+				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(), PreviousZeroCount: currentDist.ZeroCount(),
+				PreviousPositive: datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive()),
+				PreviousNegative: datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative()),
+				Scale:            currentDist.Scale(),
+				StartTime:        currentDist.Timestamp(),
+			}
 			return true
 		}
 
 		// Adjust the datapoint based on the reference value.
-		currentDist.SetStartTimestamp(referenceTsi.ExponentialHistogram.StartTimestamp())
+		currentDist.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 		if currentDist.Flags().NoRecordedValue() {
 			return false
 		}
 
-		if datapointstorage.IsResetExponentialHistogram(currentDist, previousTsi.ExponentialHistogram) {
+		if refTsi.IsResetExponentialHistogram(currentDist) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
 
-			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			previousTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			referenceTsi.ExponentialHistogram.SetStartTimestamp(resetStartTimeStamp)
-			referenceTsi.ExponentialHistogram.SetScale(currentDist.Scale())
-			referenceTsi.ExponentialHistogram.Positive().BucketCounts().FromRaw(make([]uint64, currentDist.Positive().BucketCounts().Len()))
-			referenceTsi.ExponentialHistogram.Negative().BucketCounts().FromRaw(make([]uint64, currentDist.Negative().BucketCounts().Len()))
-			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
+			refTsi.ExponentialHistogram.RefCount, refTsi.ExponentialHistogram.RefSum, refTsi.ExponentialHistogram.RefZeroCount, refTsi.ExponentialHistogram.Scale = 0, 0, 0, currentDist.Scale()
+			refTsi.ExponentialHistogram.StartTime = resetStartTimeStamp
+			refTsi.ExponentialHistogram.RefPositive.BucketCounts = make([]uint64, currentDist.Positive().BucketCounts().Len())
+			refTsi.ExponentialHistogram.RefNegative.BucketCounts = make([]uint64, currentDist.Negative().BucketCounts().Len())
+			refTsi.ExponentialHistogram.PreviousPositive = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive())
+			refTsi.ExponentialHistogram.PreviousNegative = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative())
+			refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
 		} else {
-			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
-			subtractExponentialHistogramDataPoint(currentDist, referenceTsi.ExponentialHistogram)
+			refTsi.ExponentialHistogram.PreviousPositive = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive())
+			refTsi.ExponentialHistogram.PreviousNegative = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative())
+			refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
+			subtractExponentialHistogramDataPoint(currentDist, refTsi.ExponentialHistogram)
 		}
 		return false
 	})
 }
 
-func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
+func adjustMetricSum(referenceValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
 	sum := metric.Sum()
 	if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only handle cumulative temporality sums
@@ -211,42 +213,36 @@ func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.Timeseries
 			return false
 		}
 
-		referenceTsi, found := referenceTsm.Get(metric, currentSum.Attributes())
-		// previousTsi always exists when reference Tsi is found
-		previousTsi, _ := previousValueTsm.Get(metric, currentSum.Attributes())
+		refTsi, found := referenceValueTsm.Get(metric, currentSum.Attributes())
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
-			referenceTsi.Number = pmetric.NewNumberDataPoint()
-			minimalSumCopyTo(currentSum, referenceTsi.Number)
-			previousTsi.Number = pmetric.NewNumberDataPoint()
-			minimalSumCopyTo(currentSum, previousTsi.Number)
+			refTsi.Number = datapointstorage.NumberInfo{PreviousValue: currentSum.DoubleValue(), RefValue: currentSum.DoubleValue(), StartTime: currentSum.Timestamp()}
 			return true
 		}
 
 		// Adjust the datapoint based on the reference value.
-		currentSum.SetStartTimestamp(referenceTsi.Number.StartTimestamp())
+		currentSum.SetStartTimestamp(refTsi.Number.StartTime)
 		if currentSum.Flags().NoRecordedValue() {
 			return false
 		}
 
-		if datapointstorage.IsResetSum(currentSum, previousTsi.Number) {
+		if refTsi.IsResetSum(currentSum) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSum.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentSum.SetStartTimestamp(resetStartTimeStamp)
 
-			referenceTsi.Number = pmetric.NewNumberDataPoint()
-			previousTsi.Number = pmetric.NewNumberDataPoint()
-			referenceTsi.Number.SetStartTimestamp(resetStartTimeStamp)
-			minimalSumCopyTo(currentSum, previousTsi.Number)
+			refTsi.Number.StartTime = resetStartTimeStamp
+			refTsi.Number.RefValue = 0
+			refTsi.Number.PreviousValue = currentSum.DoubleValue()
 		} else {
-			minimalSumCopyTo(currentSum, previousTsi.Number)
-			currentSum.SetDoubleValue(currentSum.DoubleValue() - referenceTsi.Number.DoubleValue())
+			refTsi.Number.PreviousValue = currentSum.DoubleValue()
+			currentSum.SetDoubleValue(currentSum.DoubleValue() - refTsi.Number.RefValue)
 		}
 		return false
 	})
 }
 
-func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
+func adjustMetricSummary(referenceValueTsm *datapointstorage.TimeseriesMap, metric pmetric.Metric) {
 	metric.Summary().DataPoints().RemoveIf(func(currentSummary pmetric.SummaryDataPoint) bool {
 		pointStartTime := currentSummary.StartTimestamp()
 		if pointStartTime != 0 && pointStartTime != currentSummary.Timestamp() {
@@ -254,137 +250,85 @@ func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.Timese
 			return false
 		}
 
-		referenceTsi, found := referenceTsm.Get(metric, currentSummary.Attributes())
-		// previousTsi always exists when reference Tsi is found
-		previousTsi, _ := previousValueTsm.Get(metric, currentSummary.Attributes())
+		refTsi, found := referenceValueTsm.Get(metric, currentSummary.Attributes())
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
-			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
-			minimalSummaryCopyTo(currentSummary, referenceTsi.Summary)
-			previousTsi.Summary = pmetric.NewSummaryDataPoint()
-			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
+			refTsi.Summary = datapointstorage.SummaryInfo{
+				RefCount: currentSummary.Count(), RefSum: currentSummary.Sum(),
+				PreviousCount: currentSummary.Count(), PreviousSum: currentSummary.Sum(),
+				StartTime: currentSummary.Timestamp(),
+			}
 			return true
 		}
 
 		// Adjust the datapoint based on the reference value.
-		currentSummary.SetStartTimestamp(referenceTsi.Summary.StartTimestamp())
+		currentSummary.SetStartTimestamp(refTsi.Summary.StartTime)
 		if currentSummary.Flags().NoRecordedValue() {
 			return false
 		}
 
-		if datapointstorage.IsResetSummary(currentSummary, previousTsi.Summary) {
+		if refTsi.IsResetSummary(currentSummary) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSummary.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentSummary.SetStartTimestamp(resetStartTimeStamp)
 
-			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
-			previousTsi.Summary = pmetric.NewSummaryDataPoint()
-			referenceTsi.Summary.SetStartTimestamp(resetStartTimeStamp)
-			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
+			refTsi.Summary.StartTime = resetStartTimeStamp
+			refTsi.Summary.RefCount, refTsi.Summary.RefSum = 0, 0
+			refTsi.Summary.PreviousCount, refTsi.Summary.PreviousSum = currentSummary.Count(), currentSummary.Sum()
 		} else {
-			currentSummary.SetStartTimestamp(referenceTsi.Summary.StartTimestamp())
-			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
-			currentSummary.SetCount(currentSummary.Count() - referenceTsi.Summary.Count())
-			currentSummary.SetSum(currentSummary.Sum() - referenceTsi.Summary.Sum())
+			refTsi.Summary.PreviousCount, refTsi.Summary.PreviousSum = currentSummary.Count(), currentSummary.Sum()
+			currentSummary.SetCount(currentSummary.Count() - refTsi.Summary.RefCount)
+			currentSummary.SetSum(currentSummary.Sum() - refTsi.Summary.RefSum)
 		}
 		return false
 	})
 }
 
 // subtractHistogramDataPoint subtracts b from a.
-func subtractHistogramDataPoint(a, b pmetric.HistogramDataPoint) {
-	a.SetStartTimestamp(b.StartTimestamp())
-	a.SetCount(a.Count() - b.Count())
-	a.SetSum(a.Sum() - b.Sum())
+func subtractHistogramDataPoint(a pmetric.HistogramDataPoint, ref datapointstorage.HistogramInfo) {
+	a.SetStartTimestamp(ref.StartTime)
+	a.SetCount(a.Count() - ref.RefCount)
+	a.SetSum(a.Sum() - ref.RefSum)
 	aBuckets := a.BucketCounts()
-	bBuckets := b.BucketCounts()
-	if bBuckets.Len() != aBuckets.Len() {
+	bBuckets := ref.RefBucketCounts
+	if len(bBuckets) != aBuckets.Len() {
 		// Post reset, the reference histogram will have no buckets.
 		return
 	}
 	newBuckets := make([]uint64, aBuckets.Len())
 	for i := 0; i < aBuckets.Len(); i++ {
-		newBuckets[i] = aBuckets.At(i) - bBuckets.At(i)
+		newBuckets[i] = aBuckets.At(i) - bBuckets[i]
 	}
 	a.BucketCounts().FromRaw(newBuckets)
 }
 
 // subtractExponentialHistogramDataPoint subtracts b from a.
-func subtractExponentialHistogramDataPoint(a, b pmetric.ExponentialHistogramDataPoint) {
-	a.SetStartTimestamp(b.StartTimestamp())
-	a.SetCount(a.Count() - b.Count())
-	a.SetSum(a.Sum() - b.Sum())
-	a.SetZeroCount(a.ZeroCount() - b.ZeroCount())
-	if a.Positive().BucketCounts().Len() != b.Positive().BucketCounts().Len() ||
-		a.Negative().BucketCounts().Len() != b.Negative().BucketCounts().Len() {
+func subtractExponentialHistogramDataPoint(a pmetric.ExponentialHistogramDataPoint, ref datapointstorage.ExponentialHistogramInfo) {
+	a.SetStartTimestamp(ref.StartTime)
+	a.SetCount(a.Count() - ref.RefCount)
+	a.SetSum(a.Sum() - ref.RefSum)
+	a.SetZeroCount(a.ZeroCount() - ref.RefZeroCount)
+	if a.Positive().BucketCounts().Len() != len(ref.RefPositive.BucketCounts) ||
+		a.Negative().BucketCounts().Len() != len(ref.RefNegative.BucketCounts) {
 		// Post reset, the reference histogram will have no buckets.
 		return
 	}
-	a.Positive().BucketCounts().FromRaw(subtractExponentialBuckets(a.Positive(), b.Positive()))
-	a.Negative().BucketCounts().FromRaw(subtractExponentialBuckets(a.Negative(), b.Negative()))
+	a.Positive().BucketCounts().FromRaw(subtractExponentialBuckets(a.Positive(), ref.RefPositive))
+	a.Negative().BucketCounts().FromRaw(subtractExponentialBuckets(a.Negative(), ref.RefNegative))
 }
 
 // subtractExponentialBuckets subtracts b from a.
-func subtractExponentialBuckets(a, b pmetric.ExponentialHistogramDataPointBuckets) []uint64 {
+func subtractExponentialBuckets(a pmetric.ExponentialHistogramDataPointBuckets, b datapointstorage.ExponentialHistogramBucketInfo) []uint64 {
 	newBuckets := make([]uint64, a.BucketCounts().Len())
-	offsetDiff := int(a.Offset() - b.Offset())
+	offsetDiff := int(a.Offset() - b.Offset)
 	for i := 0; i < a.BucketCounts().Len(); i++ {
 		bOffset := i + offsetDiff
 		// if there is no corresponding bucket for the starting BucketCounts, don't normalize
-		if bOffset < 0 || bOffset >= b.BucketCounts().Len() {
+		if bOffset < 0 || bOffset >= len(b.BucketCounts) {
 			newBuckets[i] = a.BucketCounts().At(i)
 		} else {
-			newBuckets[i] = a.BucketCounts().At(i) - b.BucketCounts().At(bOffset)
+			newBuckets[i] = a.BucketCounts().At(i) - b.BucketCounts[bOffset]
 		}
 	}
 	return newBuckets
-}
-
-// minimalHistogramCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
-func minimalHistogramCopyTo(a, b pmetric.HistogramDataPoint) {
-	// Copy attributes and exemplars to temporary structures so they are not copied to b.
-	tmpAttrs := pcommon.NewMap()
-	tmpExemplars := pmetric.NewExemplarSlice()
-	a.Attributes().MoveTo(tmpAttrs)
-	a.Exemplars().MoveAndAppendTo(tmpExemplars)
-	a.CopyTo(b)
-	// Restore attributes and exemplars.
-	tmpAttrs.MoveTo(a.Attributes())
-	tmpExemplars.MoveAndAppendTo(a.Exemplars())
-}
-
-// minimalExponentialHistogramCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
-func minimalExponentialHistogramCopyTo(a, b pmetric.ExponentialHistogramDataPoint) {
-	// Copy attributes and exemplars to temporary structures so they are not copied to b.
-	tmpAttrs := pcommon.NewMap()
-	tmpExemplars := pmetric.NewExemplarSlice()
-	a.Attributes().MoveTo(tmpAttrs)
-	a.Exemplars().MoveAndAppendTo(tmpExemplars)
-	a.CopyTo(b)
-	// Restore attributes and exemplars.
-	tmpAttrs.MoveTo(a.Attributes())
-	tmpExemplars.MoveAndAppendTo(a.Exemplars())
-}
-
-// minimalSumCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
-func minimalSumCopyTo(a, b pmetric.NumberDataPoint) {
-	// Copy attributes and exemplars to temporary structures so they are not copied to b.
-	tmpAttrs := pcommon.NewMap()
-	tmpExemplars := pmetric.NewExemplarSlice()
-	a.Attributes().MoveTo(tmpAttrs)
-	a.Exemplars().MoveAndAppendTo(tmpExemplars)
-	a.CopyTo(b)
-	// Restore attributes and exemplars.
-	tmpAttrs.MoveTo(a.Attributes())
-	tmpExemplars.MoveAndAppendTo(a.Exemplars())
-}
-
-// minimalSummaryCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
-func minimalSummaryCopyTo(a, b pmetric.SummaryDataPoint) {
-	// Copy attributes to a temporary map so they are not copied to b.
-	tmpAttrs := pcommon.NewMap()
-	a.Attributes().MoveTo(tmpAttrs)
-	a.CopyTo(b)
-	// Restore attributes.
-	tmpAttrs.MoveTo(a.Attributes())
 }

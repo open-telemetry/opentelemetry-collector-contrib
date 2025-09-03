@@ -134,7 +134,7 @@ func newUnhealthyTestChannel(t *testing.T) *unhealthyTestChannel {
 	return &unhealthyTestChannel{t: t}
 }
 
-func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
+func (unhealthyTestChannel) onConsume(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -272,7 +272,7 @@ func newCommonTestCase(t *testing.T, tc testChannel) *commonTestCase {
 	ctrl := gomock.NewController(t)
 	stream := arrowCollectorMock.NewMockArrowTracesService_ArrowTracesServer(ctrl)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	ctx = metadata.NewIncomingContext(ctx, metadata.MD{
 		"stream_ctx": []string{"per-request"},
 	})
@@ -947,17 +947,6 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Wait()
 }
 
-func TestReceiverCancel(t *testing.T) {
-	tc := newHealthyTestChannel(t)
-	ctc := newCommonTestCase(t, tc)
-
-	ctc.cancel()
-	ctc.start(ctc.newRealConsumer, defaultBQ())
-
-	err := ctc.wait()
-	requireCanceledStatus(t, err)
-}
-
 func requireContainsAll(t *testing.T, md client.Metadata, exp map[string][]string) {
 	for key, vals := range exp {
 		require.Equal(t, vals, md.Get(key))
@@ -976,7 +965,7 @@ func TestHeaderReceiverStreamContextOnly(t *testing.T) {
 		"L": {"l1"},
 	}
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD(expect))
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.MD(expect))
 
 	h := newHeaderReceiver(ctx, nil, true)
 
@@ -994,7 +983,7 @@ func TestHeaderReceiverNoIncludeMetadata(t *testing.T) {
 		"L": {"l1"},
 	}
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD(noExpect))
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.MD(noExpect))
 
 	h := newHeaderReceiver(ctx, nil, false)
 
@@ -1012,7 +1001,7 @@ func TestHeaderReceiverAuthServerNoIncludeMetadata(t *testing.T) {
 		"K": {"l1"},
 	}
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD(expectForAuth))
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.MD(expectForAuth))
 
 	ctrl := gomock.NewController(t)
 	as := mock.NewMockServer(ctrl)
@@ -1048,7 +1037,7 @@ func TestHeaderReceiverRequestNoStreamMetadata(t *testing.T) {
 
 	hpe := hpack.NewEncoder(&hpb)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h := newHeaderReceiver(ctx, nil, true)
 
@@ -1082,7 +1071,7 @@ func TestHeaderReceiverAuthServerIsSetNoIncludeMetadata(t *testing.T) {
 
 	hpe := hpack.NewEncoder(&hpb)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctrl := gomock.NewController(t)
 	as := mock.NewMockServer(ctrl)
@@ -1147,7 +1136,7 @@ func TestHeaderReceiverBothMetadata(t *testing.T) {
 
 	hpe := hpack.NewEncoder(&hpb)
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD(expectK))
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.MD(expectK))
 
 	h := newHeaderReceiver(ctx, nil, true)
 
@@ -1193,7 +1182,7 @@ func TestHeaderReceiverDuplicateMetadata(t *testing.T) {
 
 	hpe := hpack.NewEncoder(&hpb)
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD(expectStream))
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.MD(expectStream))
 
 	h := newHeaderReceiver(ctx, nil, true)
 
@@ -1223,7 +1212,7 @@ func TestReceiverAuthHeadersStream(t *testing.T) {
 	t.Run("per-data", func(t *testing.T) { testReceiverAuthHeaders(t, true, true) })
 }
 
-func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
+func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
@@ -1381,7 +1370,7 @@ func TestHeaderReceiverIsTraced(t *testing.T) {
 
 	hpe := hpack.NewEncoder(&hpb)
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD(streamHeaders))
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.MD(streamHeaders))
 
 	h := newHeaderReceiver(ctx, nil, true)
 

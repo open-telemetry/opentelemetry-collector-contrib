@@ -51,7 +51,7 @@ const (
 )
 
 // Unmarshal the sketch payload, which contains the underlying Dogsketch structure used for the translation
-func (mt *MetricsTranslator) HandleSketchesPayload(req *http.Request) (sp []gogen.SketchPayload_Sketch, err error) {
+func (*MetricsTranslator) HandleSketchesPayload(req *http.Request) (sp []gogen.SketchPayload_Sketch, err error) {
 	buf := GetBuffer()
 	defer PutBuffer(buf)
 	if _, err := io.Copy(buf, req.Body); err != nil {

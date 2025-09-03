@@ -48,6 +48,11 @@ type ClientConfig struct {
 
 	// Metadata holds metadata-related configuration for producers and consumers.
 	Metadata MetadataConfig `mapstructure:"metadata"`
+
+	// RackID provides the rack identifier for this client to enable rack-aware
+	// replica selection when supported by the brokers. This maps to Kafka's
+	// standard "client.rack" setting. By default, this is empty.
+	RackID string `mapstructure:"rack_id"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
@@ -140,7 +145,7 @@ func (c ConsumerConfig) Validate() error {
 		)
 	}
 
-	if len(c.GroupRebalanceStrategy) != 0 {
+	if c.GroupRebalanceStrategy != "" {
 		switch c.GroupRebalanceStrategy {
 		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
 			// Valid

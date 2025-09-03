@@ -57,11 +57,11 @@ func (f internalFilterStrict) matchMetric(metric pmetric.Metric) bool {
 	return false
 }
 
-func (f internalFilterStrict) submatches(_ pmetric.Metric) []int {
+func (internalFilterStrict) submatches(pmetric.Metric) []int {
 	return nil
 }
 
-func (f internalFilterStrict) expand(_, _ string) string {
+func (internalFilterStrict) expand(string, string) string {
 	return ""
 }
 

@@ -46,12 +46,12 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 	case pmetric.MetricTypeSum:
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
-			if metric.Sum().IsMonotonic() {
+			if metric.Sum().IsMonotonic() && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 				return "counter_double"
 			}
 			return "gauge_double"
 		case pmetric.NumberDataPointValueTypeInt:
-			if metric.Sum().IsMonotonic() {
+			if metric.Sum().IsMonotonic() && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 				return "counter_long"
 			}
 			return "gauge_long"
@@ -71,7 +71,7 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 	return ""
 }
 
-func (dp Number) DocCount() uint64 {
+func (Number) DocCount() uint64 {
 	return 1
 }
 

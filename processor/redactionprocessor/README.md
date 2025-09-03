@@ -57,9 +57,8 @@ Examples:
 ```yaml
 processors:
   redaction:
-    # allow_all_keys is a flag which when set to true, which can disables the
-    # allowed_keys list. The list of blocked_values is applied regardless. If
-    # you just want to block values, set this to true.
+    # allow_all_keys is a flag that disables the allowed_keys list when set to true.
+    # The list of blocked_values is applied regardless. If you just want to block values, set this to true.
     allow_all_keys: false
     # allowed_keys is a list of span/log/datapoint attribute keys that are kept on the span/log/datapoint and
     # processed. The list is designed to fail closed. If allowed_keys is empty,
@@ -74,6 +73,8 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # redact_all_types will check incoming fields for sensitive data based on their AsString() representation. This allows the processor to redact sensitive data from ints. This is useful for redacting credit card numbers
+    redact_all_types: true
     # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
     # matching the regexes on the list are masked.
     blocked_key_patterns:
@@ -133,3 +134,52 @@ For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
 number in the `notes` field that matched a regular expression on the list of
 blocked values, then that value is masked.
+
+## Database Query Sanitization
+
+The redaction processor now supports sanitizing database queries and commands to remove sensitive information. This feature supports multiple database systems:
+
+- SQL databases
+- Redis
+- Memcached
+- MongoDB
+- OpenSearch
+- Elasticsearch
+
+Example configuration with database sanitization:
+
+```yaml
+processors:
+  redaction:
+    # ... other redaction settings ...
+    
+    # Database sanitization configuration
+    db_sanitizer:
+      sql:
+        enabled: true
+        attributes: ["db.statement", "db.query"]
+      redis:
+        enabled: true
+        attributes: ["db.statement", "redis.command"]
+      memcached:
+        enabled: true
+        attributes: ["db.statement", "memcached.command"] 
+      mongo:
+        enabled: true
+        attributes: ["db.statement", "mongodb.query"]
+      opensearch:
+        enabled: true
+        attributes: ["db.statement", "opensearch.body"]
+      es:
+        enabled: true
+        attributes: ["db.statement", "elasticsearch.body"]
+```
+
+The database sanitizer will:
+- Remove sensitive data like literal values from SQL queries
+- Redact command arguments from Redis/Memcached commands
+- Sanitize MongoDB queries and JSON payloads
+- Process only specified attributes if provided
+- Preserve query structure while removing sensitive data
+
+This provides an additional layer of protection when collecting telemetry that includes database operations.

@@ -96,10 +96,9 @@ are then also available for the use within association rules. Available attribut
   - k8s.cluster.uid
   - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
   - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
-  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)
-  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)
+  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)(cannot be used for source rules in the pod_association when it's calculated based on container's image tag/digest)
+  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)(cannot be used for source rules in the pod_association)
   - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
-
 
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
@@ -126,7 +125,7 @@ correctly associate the matching container to the resource:
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
-Please note, however, that container level attributes can't be used for source rules in the pod_association.
+Please note, however, that only `container.id` attribute can be used for source rules in the pod_association.
 
 Example for extracting container level attributes:
 
@@ -228,12 +227,14 @@ wait_for_metadata_timeout: 10s
 
 ## Extracting attributes from pod labels and annotations
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments and nodes.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/Node annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/nodes and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets, daemonsets, jobs and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/StatefulSet/DaemonSet/Job/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/daemonsets/jobs/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has only three possible values "pod", "namespace", "deployment" and "node" and defaults to "pod" if none is specified.
+The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
+
+By default, extracting metadata from `Deployments`, `StatefulSets`, `DaemonSets` and `Jobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
 A few examples to use this config are as follows:
 
@@ -344,7 +345,10 @@ rules:
   resources: ["pods", "namespaces", "nodes"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
-  resources: ["replicasets", "deployments"]
+  resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["extensions"]
   resources: ["replicasets"]
@@ -393,7 +397,10 @@ rules:
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
-  resources: ["replicasets", "deployments"]
+  resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -511,7 +518,7 @@ timestamp value as an RFC3339 compliant timestamp.
    of the node it is on, it consumes more memory than other processors. That consumption is compounded
    if users don't filter down to only the metadata for the node the processor is running on.
 
-## Feature Gate
+## Feature Gates
 
 ### `k8sattr.fieldExtractConfigRegex.disallow`
 
@@ -542,3 +549,15 @@ can be converted with the usage of `ExtractPatterns` function:
   - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
   - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
 ```
+
+### `k8sattr.labelsAnnotationsSingular.allow`
+
+The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+
+The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
+
+Affected resources are:
+
+- namespaces
+- nodes
+- pods

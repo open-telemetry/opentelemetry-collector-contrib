@@ -29,6 +29,9 @@ type fakeClient struct {
 	Namespaces         map[string]*kube.Namespace
 	Nodes              map[string]*kube.Node
 	Deployments        map[string]*kube.Deployment
+	StatefulSets       map[string]*kube.StatefulSet
+	DaemonSets         map[string]*kube.DaemonSet
+	Jobs               map[string]*kube.Job
 	StopCh             chan struct{}
 }
 
@@ -75,6 +78,21 @@ func (f *fakeClient) GetNode(nodeName string) (*kube.Node, bool) {
 func (f *fakeClient) GetDeployment(deploymentUID string) (*kube.Deployment, bool) {
 	d, ok := f.Deployments[deploymentUID]
 	return d, ok
+}
+
+func (f *fakeClient) GetStatefulSet(statefulsetUID string) (*kube.StatefulSet, bool) {
+	s, ok := f.StatefulSets[statefulsetUID]
+	return s, ok
+}
+
+func (f *fakeClient) GetDaemonSet(daemonsetUID string) (*kube.DaemonSet, bool) {
+	s, ok := f.DaemonSets[daemonsetUID]
+	return s, ok
+}
+
+func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
+	j, ok := f.Jobs[jobUID]
+	return j, ok
 }
 
 // Start is a noop for FakeClient.

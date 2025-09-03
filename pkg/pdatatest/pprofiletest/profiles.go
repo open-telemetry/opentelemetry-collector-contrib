@@ -86,7 +86,7 @@ func CompareProfiles(expected, actual pprofile.Profiles, options ...CompareProfi
 
 	for ar, er := range matchingResources {
 		errPrefix := fmt.Sprintf(`resource "%v"`, er.Resource().Attributes().AsRaw())
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceProfiles(exp.ProfilesDictionary(), act.ProfilesDictionary(), er, ar)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceProfiles(exp.Dictionary(), act.Dictionary(), er, ar)))
 	}
 
 	return errs
@@ -153,7 +153,7 @@ func CompareResourceProfiles(expectedDic, actualDic pprofile.ProfilesDictionary,
 	}
 
 	for i := 0; i < esls.Len(); i++ {
-		errPrefix := fmt.Sprintf(`scope "%s"`, esls.At(i).Scope().Name())
+		errPrefix := fmt.Sprintf(`scope %q`, esls.At(i).Scope().Name())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareScopeProfiles(expectedDic, actualDic, esls.At(i), asls.At(i))))
 	}
 

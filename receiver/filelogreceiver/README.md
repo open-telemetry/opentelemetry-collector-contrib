@@ -66,6 +66,7 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
 | `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
+| `polls_to_archive`                    |  `0`                                    | This settings controls the number of poll cycles to store on disk, rather than being discarded. By default, the receiver will purge the record of readers that have existed for 3 generations. Refer [archiving](#archiving) and [polling](../../pkg/stanza/fileconsumer/design.md#polling) for more details. **Note: This feature is experimental.** |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -222,6 +223,14 @@ Here is some of the information the file log receiver stores:
 
 Exactly how this information is serialized depends on the type of storage being used.
 
+### Archiving
+
+If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory. 
+
+This is useful when `exclude_older_than` setting is used and the user wants the receiver to remember offsets of files for longer period of times. This helps prevent duplication if a file is modified after the `exclude_older_than` duration has passed.
+
+Note that if the `polls_to_archive` setting is used without specifying `storage`, the receiver will revert to the default behavior i.e. purge the record of readers that have existed for 3 generations.
+
 ## Troubleshooting
 
 ### Tracking symlinked files
@@ -245,4 +254,4 @@ This can cause existing gzip files to be re-ingested because of changes in how f
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.129.0`
+- Move to `Beta` (enabled by default) in `v0.133.0`

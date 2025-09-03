@@ -5,7 +5,6 @@ package carbonexporter
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"io"
 	"net"
@@ -33,23 +32,23 @@ import (
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopSettings(metadata.Type))
+	got, err := newCarbonExporter(t.Context(), cfg, exportertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
 
 func TestConsumeMetricsNoServer(t *testing.T) {
 	exp, err := newCarbonExporter(
-		context.Background(),
+		t.Context(),
 		&Config{
 			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: testutil.GetAvailableLocalAddress(t)},
 			TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 		},
 		exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
-	require.Error(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
-	require.NoError(t, exp.Shutdown(context.Background()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	require.Error(t, exp.ConsumeMetrics(t.Context(), generateSmallBatch()))
+	require.NoError(t, exp.Shutdown(t.Context()))
 }
 
 func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
@@ -60,7 +59,7 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 	cs.start(t, 1)
 
 	exp, err := newCarbonExporter(
-		context.Background(),
+		t.Context(),
 		&Config{
 			TCPAddrConfig:             confignet.TCPAddrConfig{Endpoint: addr},
 			TimeoutSettings:           exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
@@ -68,9 +67,9 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 		},
 		exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), generateSmallBatch()))
+	assert.NoError(t, exp.Shutdown(t.Context()))
 	cs.shutdownAndVerify(t)
 }
 
@@ -125,7 +124,7 @@ func TestConsumeMetrics(t *testing.T) {
 			cs.start(t, tt.numProducers*tt.writesPerProducer*tt.md.DataPointCount())
 
 			exp, err := newCarbonExporter(
-				context.Background(),
+				t.Context(),
 				&Config{
 					TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: addr},
 					MaxIdleConns:    tt.numProducers,
@@ -133,7 +132,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 				exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
-			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 
 			startCh := make(chan struct{})
 			var writersWG sync.WaitGroup
@@ -143,7 +142,7 @@ func TestConsumeMetrics(t *testing.T) {
 					defer writersWG.Done()
 					<-startCh
 					for j := 0; j < tt.writesPerProducer; j++ {
-						assert.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
+						assert.NoError(t, exp.ConsumeMetrics(t.Context(), tt.md))
 					}
 				}()
 			}
@@ -153,7 +152,7 @@ func TestConsumeMetrics(t *testing.T) {
 			// Wait for all senders to finish.
 			writersWG.Wait()
 
-			assert.NoError(t, exp.Shutdown(context.Background()))
+			assert.NoError(t, exp.Shutdown(t.Context()))
 			cs.shutdownAndVerify(t)
 		})
 	}
@@ -311,7 +310,7 @@ type carbonServer struct {
 	expectedContainsValue string
 }
 
-func newCarbonServer(t *testing.T, addr string, expectedContainsValue string) *carbonServer {
+func newCarbonServer(t *testing.T, addr, expectedContainsValue string) *carbonServer {
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)
 	ln, err := net.ListenTCP("tcp", laddr)

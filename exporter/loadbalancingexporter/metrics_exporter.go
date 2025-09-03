@@ -78,7 +78,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 	return &metricExporter, nil
 }
 
-func (e *metricExporterImp) Capabilities() consumer.Capabilities {
+func (*metricExporterImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

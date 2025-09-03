@@ -39,7 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
 
-func sendToCollector(endpoint string, contentType string, contentEncoding string, body []byte) error {
+func sendToCollector(endpoint, contentType, contentEncoding string, body []byte) error {
 	var buf bytes.Buffer
 
 	switch contentEncoding {
@@ -108,8 +108,12 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(context.Background())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
 
 	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -132,8 +136,12 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(context.Background())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
 
 	return addr, sink
 }
@@ -357,7 +365,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := client.Push(context.Background(), tt.body)
+			resp, err := client.Push(t.Context(), tt.body)
 			assert.NoError(t, err, "should not have failed to post logs")
 			assert.NotNil(t, resp, "response should not have been nil")
 
@@ -409,8 +417,12 @@ func TestExpectedStatus(t *testing.T) {
 			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
-			require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, lr.Shutdown(context.Background())) })
+			ctx := t.Context()
+
+			require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, lr.Shutdown(ctx))
+			}()
 			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
@@ -430,7 +442,7 @@ func TestExpectedStatus(t *testing.T) {
 				},
 			}
 
-			_, err = grpcClient.Push(context.Background(), body)
+			_, err = grpcClient.Push(t.Context(), body)
 			require.EqualError(t, err, tt.expectedGrpcError)
 
 			_, port, _ := net.SplitHostPort(httpAddr)

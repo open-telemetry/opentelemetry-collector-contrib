@@ -71,7 +71,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
 }
 
 // Process will parse an entry of Container logs
@@ -117,14 +117,14 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParseWith(ctx, entry, p.parseContainerd, p.Write)
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
@@ -195,7 +195,7 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 }
 
 // parseCRIO will parse a crio log value based on a fixed regexp
-func (p *Parser) parseCRIO(value any) (any, error) {
+func (*Parser) parseCRIO(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
@@ -205,7 +205,7 @@ func (p *Parser) parseCRIO(value any) (any, error) {
 }
 
 // parseContainerd will parse a containerd log value based on a fixed regexp
-func (p *Parser) parseContainerd(value any) (any, error) {
+func (*Parser) parseContainerd(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
@@ -215,7 +215,7 @@ func (p *Parser) parseContainerd(value any) (any, error) {
 }
 
 // parseDocker will parse a docker log value as JSON
-func (p *Parser) parseDocker(value any) (any, error) {
+func (*Parser) parseDocker(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as docker container logs", value)
@@ -249,7 +249,7 @@ func (p *Parser) handleTimeAndAttributeMappings(e *entry.Entry) error {
 }
 
 // handleMoveAttributes moves fields to final attributes
-func (p *Parser) handleMoveAttributes(e *entry.Entry) error {
+func (*Parser) handleMoveAttributes(e *entry.Entry) error {
 	// move `log` to `body` explicitly first to avoid
 	// moving after more attributes have been added under the `log.*` key
 	err := moveFieldToBody(e, "log", "body")

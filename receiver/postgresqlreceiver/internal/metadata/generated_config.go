@@ -43,6 +43,7 @@ type MetricsConfig struct {
 	PostgresqlDatabaseLocks            MetricConfig `mapstructure:"postgresql.database.locks"`
 	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
 	PostgresqlDeadlocks                MetricConfig `mapstructure:"postgresql.deadlocks"`
+	PostgresqlFunctionCalls            MetricConfig `mapstructure:"postgresql.function.calls"`
 	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`
 	PostgresqlIndexSize                MetricConfig `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               MetricConfig `mapstructure:"postgresql.operations"`
@@ -53,6 +54,7 @@ type MetricsConfig struct {
 	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempIo                   MetricConfig `mapstructure:"postgresql.temp.io"`
 	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
 	PostgresqlTupDeleted               MetricConfig `mapstructure:"postgresql.tup_deleted"`
 	PostgresqlTupFetched               MetricConfig `mapstructure:"postgresql.tup_fetched"`
@@ -111,6 +113,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlDeadlocks: MetricConfig{
 			Enabled: false,
 		},
+		PostgresqlFunctionCalls: MetricConfig{
+			Enabled: false,
+		},
 		PostgresqlIndexScans: MetricConfig{
 			Enabled: true,
 		},
@@ -140,6 +145,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlTableVacuumCount: MetricConfig{
 			Enabled: true,
+		},
+		PostgresqlTempIo: MetricConfig{
+			Enabled: false,
 		},
 		PostgresqlTempFiles: MetricConfig{
 			Enabled: false,

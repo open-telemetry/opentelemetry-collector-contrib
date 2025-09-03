@@ -23,8 +23,8 @@ The following configuration options are supported:
 * `subscription` (Required): The subscription name to receive OTLP data from. The subscription name should be a
   fully qualified resource name (eg: `projects/otel-project/subscriptions/otlp`).
 * `encoding` (Optional): The encoding that will be used to received data from the subscription. This can either be
-  `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, `cloud_logging`, or `raw_text` (see `encoding`).  This will
-  only be used as a fallback, when no `content-type` attribute is present.
+  `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log` or and encoding extension (see `encoding`).  This will only 
+  be used as a fallback, when no `content-type` attribute is present.
 * `compression` (Optional): The compression that will be used on received data from the subscription. When set it can 
   only be `gzip`. This will only be used as a fallback, when no `content-encoding` attribute is present.
 * `endpoint` (Optional): Override the default Pubsub Endpoint, useful when connecting to the PubSub emulator instance
@@ -40,7 +40,6 @@ receivers:
   googlecloudpubsub:
     project: otel-project
     subscription: projects/otel-project/subscriptions/otlp-logs
-    encoding: raw_json
 ```
 
 ## Encoding
@@ -66,24 +65,17 @@ service:
       exporters: [debug]
 ```
 
-The receiver also supports build in encodings for the native OTLP encodings, without the need to specify an Encoding 
-Extensions. The non OTLP build in encodings will be deprecated as soon as extensions for the formats are available.
+The receiver also supports build in encodings for the native OTLP Protobuf encodings, without the need to specify an 
+Encoding Extensions.
 
 | encoding          | description                                    |
 |-------------------|------------------------------------------------|
 | otlp_proto_trace  | Decode OTLP trace message                      |
 | otlp_proto_metric | Decode OTLP trace message                      |
 | otlp_proto_log    | Decode OTLP trace message                      |
-| cloud_logging     | Decode [Cloud Logging] [LogEntry] message type |
-| raw_text          | Wrap in an OTLP log message                    |
 
-With `cloud_logging`, the receiver can be used to bring Cloud Logging messages into an OpenTelemetry pipeline. You'll
-first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. The build-in encoding is
-**deprecated** and will be removed in v0.132.0: Use the `googlecloudlogentry` encoding extension instead.
-
-With `raw_text`, the receiver can be used for ingesting arbitrary text message on a Pubsub subscription, wrapping them
-in OTLP Log messages.  The build-in encoding is **deprecated** and will be removed in v0.132.0: Use the `text` encoding
-extension instead.
+The build-in encoding `cloud_logging` and `raw_text` where removed since v0.132.0, use the encoding extensions
+`googlecloudlogentry` and `text` encoding extension instead.
 
 When no encoding is specified, the receiver will try to discover the type of the data by looking at the `ce-type` and
 `content-type` attributes of the message. These message attributes are set by the `googlepubsubexporter`.

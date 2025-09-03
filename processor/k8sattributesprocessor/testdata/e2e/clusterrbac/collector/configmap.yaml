@@ -23,6 +23,15 @@ data:
           - from: deployment
             key: workload
             tag_name: simple-deployment-workload-annotation
+          - from: statefulset
+            key: workload
+            tag_name: simple-statefulset-workload-annotation
+          - from: daemonset
+            key: workload
+            tag_name: simple-daemonset-workload-annotation
+          - from: job
+            key: workload
+            tag_name: simple-job-workload-annotation
           labels:
           - from: pod
             key: app

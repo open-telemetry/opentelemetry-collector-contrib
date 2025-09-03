@@ -4,7 +4,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -49,9 +48,9 @@ func TestLogsExporter_New(t *testing.T) {
 			exporter := newLogsExporter(zap.NewNop(), test.config)
 
 			if exporter != nil {
-				err = errors.Join(err, exporter.start(context.Background(), nil))
+				err = errors.Join(err, exporter.start(t.Context(), nil))
 				defer func() {
-					require.NoError(t, exporter.shutdown(context.Background()))
+					require.NoError(t, exporter.shutdown(t.Context()))
 				}()
 			}
 

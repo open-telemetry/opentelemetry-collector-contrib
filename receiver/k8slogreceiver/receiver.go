@@ -13,18 +13,18 @@ import (
 
 type k8slogReceiver struct{}
 
-func (k *k8slogReceiver) Start(_ context.Context, _ component.Host) error {
+func (*k8slogReceiver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (k *k8slogReceiver) Shutdown(_ context.Context) error {
+func (*k8slogReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
 func newReceiver(
-	_ receiver.Settings,
-	_ *Config,
-	_ consumer.Logs,
+	receiver.Settings,
+	*Config,
+	consumer.Logs,
 ) (receiver.Logs, error) {
 	return &k8slogReceiver{}, nil
 }

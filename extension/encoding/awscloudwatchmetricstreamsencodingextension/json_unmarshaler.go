@@ -170,7 +170,7 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 // addMetricToResource adds a new cloudwatchMetric to the
 // resource it belongs to according to resourceKey. It then
 // sets the data point for the cloudwatchMetric.
-func (c *formatJSONUnmarshaler) addMetricToResource(
+func (*formatJSONUnmarshaler) addMetricToResource(
 	byResource map[resourceKey]map[metricKey]pmetric.Metric,
 	cwMetric cloudwatchMetric,
 ) {

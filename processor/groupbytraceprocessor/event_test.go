@@ -434,7 +434,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
 	t.Cleanup(func() {
-		require.NoError(t, s.Shutdown(context.Background()))
+		require.NoError(t, s.Shutdown(t.Context()))
 	})
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.newTelemetrySettings())
 	require.NoError(t, err)
@@ -468,15 +468,17 @@ func TestPeriodicMetrics(t *testing.T) {
 	go em.periodicMetrics()
 
 	// ensure our gauge is showing 1 item in the queue
-	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 1
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
+		assert.Equal(tt, int64(1), val)
 	}, 1*time.Second, 10*time.Millisecond)
 
 	wg.Done() // release all events
 
 	// ensure our gauge is now showing no items in the queue
-	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 0
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
+		assert.Equal(tt, int64(0), val)
 	}, 1*time.Second, 10*time.Millisecond)
 
 	// signal and wait for the recursive call to finish
@@ -534,18 +536,23 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	assert.WithinDuration(t, start, time.Now(), 100*time.Millisecond)
 }
 
-func getGaugeValue(t *testing.T, name string, tt testTelemetry) int64 {
+func getGaugeValue(ctx context.Context, t *assert.CollectT, name string, tt testTelemetry) int64 {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.reader.Collect(ctx, &md))
 	m := tt.getMetric(name, md).Data
-	g := m.(metricdata.Gauge[int64])
-	assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
+	var g metricdata.Gauge[int64]
+	var ok bool
+	if g, ok = m.(metricdata.Gauge[int64]); !ok {
+		assert.Fail(t, "missing gauge data")
+	} else {
+		assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
+	}
 	return g.DataPoints[0].Value
 }
 
 func assertGaugeNotCreated(t *testing.T, name string, tt testTelemetry) {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.reader.Collect(t.Context(), &md))
 	got := tt.getMetric(name, md)
 	assert.Equal(t, metricdata.Metrics{}, got, "gauge exists already but shouldn't")
 }
@@ -569,7 +576,7 @@ func (tt *testTelemetry) newTelemetrySettings() component.TelemetrySettings {
 	return set
 }
 
-func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {

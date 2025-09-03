@@ -144,7 +144,7 @@ func BenchmarkProcessor(gb *testing.B) {
 			b.ResetTimer()
 			b.StopTimer()
 
-			ctx := context.Background()
+			ctx := gb.Context()
 			for range b.N {
 				for i := range ms.Len() {
 					cs.next(ms.At(i))
@@ -186,7 +186,7 @@ func Benchmark(b *testing.B) {
 		batchSize   = numMetrics / numRoutines
 	)
 
-	sink := new(CountingSink)
+	sink := new(countingSink)
 	proc, _ := setup(b, nil, sink)
 
 	// below b.Parallel call executes the benchmark with $GOMAXPROCS workers.
@@ -234,7 +234,7 @@ func Benchmark(b *testing.B) {
 		// block until all others have too and recordings are reset
 		<-wait
 
-		ctx := context.Background()
+		ctx := b.Context()
 		for n := 0; pb.Next(); n++ {
 			for _, m := range ms {
 				// re-using output as input, so reset temporality to delta
@@ -257,16 +257,16 @@ func Benchmark(b *testing.B) {
 	require.Equal(b, int64(dps), sink.Load())
 }
 
-type CountingSink struct {
+type countingSink struct {
 	atomic.Int64
 }
 
-func (cs *CountingSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (cs *countingSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	cs.Add(int64(md.DataPointCount()))
 	return nil
 }
 
-func (cs *CountingSink) Capabilities() consumer.Capabilities {
+func (*countingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 

@@ -34,7 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-func newPodIdentifier(from string, name string, value string) kube.PodIdentifier {
+func newPodIdentifier(from, name, value string) kube.PodIdentifier {
 	if from == kube.ConnectionSource {
 		return kube.PodIdentifier{
 			kube.PodIdentifierAttributeFromConnection(value),
@@ -148,7 +148,7 @@ func newMultiTest(
 
 	tp, err := newTracesProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
 	require.NoError(t, err)
-	err = tp.Start(context.Background(), &nopHost{
+	err = tp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			errFunc(event.Err())
 		},
@@ -160,7 +160,7 @@ func newMultiTest(
 
 	mp, err := newMetricsProcessor(cfg, m.nextMetrics, append(options, withExtractKubernetesProcessorInto(&m.kpMetrics))...)
 	require.NoError(t, err)
-	err = mp.Start(context.Background(), &nopHost{
+	err = mp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			errFunc(event.Err())
 		},
@@ -172,7 +172,7 @@ func newMultiTest(
 
 	lp, err := newLogsProcessor(cfg, m.nextLogs, append(options, withExtractKubernetesProcessorInto(&m.kpLogs))...)
 	require.NoError(t, err)
-	err = lp.Start(context.Background(), &nopHost{
+	err = lp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			errFunc(event.Err())
 		},
@@ -184,7 +184,7 @@ func newMultiTest(
 
 	pp, err := newProfilesProcessor(cfg, m.nextProfiles, append(options, withExtractKubernetesProcessorInto(&m.kpProfiles))...)
 	require.NoError(t, err)
-	err = pp.Start(context.Background(), &nopHost{
+	err = pp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			errFunc(event.Err())
 		},
@@ -244,7 +244,7 @@ func (m *multiTest) assertResourceObjectLen(batchNo int) {
 	assert.Equal(m.t, 1, m.nextProfiles.AllProfiles()[batchNo].ResourceProfiles().Len())
 }
 
-func (m *multiTest) assertResourceAttributesLen(batchNo int, attrsLen int) {
+func (m *multiTest) assertResourceAttributesLen(batchNo, attrsLen int) {
 	assert.Equal(m.t, attrsLen, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(0).Resource().Attributes().Len())
 	assert.Equal(m.t, attrsLen, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(m.t, attrsLen, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(0).Resource().Attributes().Len())
@@ -362,7 +362,7 @@ func withContainerRunID(containerRunID string) generateResourceFunc {
 
 type strAddr string
 
-func (s strAddr) String() string {
+func (strAddr) String() string {
 	return "1.1.1.1:3200"
 }
 
@@ -387,7 +387,7 @@ func TestIPDetectionFromContext(t *testing.T) {
 	}
 	for _, addr := range addresses {
 		m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
-		ctx := client.NewContext(context.Background(), client.Info{
+		ctx := client.NewContext(t.Context(), client.Info{
 			Addr: addr,
 		})
 		m.testConsume(
@@ -412,7 +412,7 @@ func TestIPDetectionFromContext(t *testing.T) {
 func TestNilBatch(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 	m.testConsume(
-		context.Background(),
+		t.Context(),
 		ptrace.NewTraces(),
 		pmetric.NewMetrics(),
 		generateLogs(),
@@ -432,7 +432,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		withExtractMetadata(string(conventions.K8SPodNameKey)),
 	)
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(t.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 		},
@@ -516,7 +516,7 @@ func TestNoIP(t *testing.T) {
 		nil,
 	)
 
-	m.testConsume(context.Background(), generateTraces(), generateMetrics(), generateLogs(), generateProfiles(), nil)
+	m.testConsume(t.Context(), generateTraces(), generateMetrics(), generateLogs(), generateProfiles(), nil)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -560,9 +560,9 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			if tc.contextIP != nil {
-				ctx = client.NewContext(context.Background(), client.Info{
+				ctx = client.NewContext(t.Context(), client.Info{
 					Addr: &net.IPAddr{
 						IP: tc.contextIP,
 					},
@@ -659,7 +659,7 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			traces := generateTraces()
 			metrics := generateMetrics()
 			logs := generateLogs()
@@ -713,7 +713,7 @@ func TestPodUID(t *testing.T) {
 		}
 	})
 
-	m.testConsume(context.Background(),
+	m.testConsume(t.Context(),
 		generateTraces(withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227")),
 		generateMetrics(withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227")),
 		generateLogs(withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227")),
@@ -768,7 +768,7 @@ func TestAddPodLabels(t *testing.T) {
 
 	var i int
 	for ip, attrs := range tests {
-		ctx := client.NewContext(context.Background(), client.Info{
+		ctx := client.NewContext(t.Context(), client.Info{
 			Addr: &net.IPAddr{
 				IP: net.ParseIP(ip),
 			},
@@ -846,7 +846,7 @@ func TestAddNamespaceLabels(t *testing.T) {
 		}
 	})
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(t.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.ParseIP(podIP),
 		},
@@ -920,7 +920,7 @@ func TestAddNodeLabels(t *testing.T) {
 		}
 	})
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(t.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.ParseIP(podIP),
 		},
@@ -986,7 +986,7 @@ func TestAddNodeUID(t *testing.T) {
 		}
 	})
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(t.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.ParseIP(podIP),
 		},
@@ -1410,7 +1410,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				),
 			)
 			m.kubernetesProcessorOperation(tt.op)
-			m.testConsume(context.Background(),
+			m.testConsume(t.Context(),
 				generateTraces(tt.resourceGens...),
 				generateMetrics(tt.resourceGens...),
 				generateLogs(tt.resourceGens...),
@@ -1463,7 +1463,7 @@ func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 	})
 
 	m.testConsume(
-		context.Background(),
+		t.Context(),
 		generateTraces(withPassthroughIP("2.2.2.2")),
 		generateMetrics(withPassthroughIP("2.2.2.2")),
 		generateLogs(withPassthroughIP("2.2.2.2")),
@@ -1493,7 +1493,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	kc := kp.kc.(*fakeClient)
 
@@ -1540,7 +1540,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := generateMetrics(withHostname(tc.hostname))
-			assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+			assert.NoError(t, p.ConsumeMetrics(t.Context(), metrics))
 			require.Len(t, next.AllMetrics(), i+1)
 
 			md := next.AllMetrics()[i]
@@ -1564,7 +1564,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	kc := kp.kc.(*fakeClient)
 	kp.podAssociations = []kube.Association{
@@ -1622,7 +1622,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := generateMetrics(withHostname(tc.hostname))
-			assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+			assert.NoError(t, p.ConsumeMetrics(t.Context(), metrics))
 			require.Len(t, next.AllMetrics(), i+1)
 
 			md := next.AllMetrics()[i]
@@ -1648,8 +1648,8 @@ func TestPassthroughStart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Just make sure this doesn't fail when Passthrough is enabled
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestRealClient(t *testing.T) {
@@ -1684,15 +1684,15 @@ func TestStartStop(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	assert.NotNil(t, kp)
 	kc := kp.kc.(*fakeClient)
 	controller := kc.Informer.GetController().(*kube.FakeController)
 
 	assert.False(t, controller.HasStopped())
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.NoError(t, p.Shutdown(t.Context()))
 	time.Sleep(time.Millisecond * 500)
 	assert.True(t, controller.HasStopped())
 }
@@ -1766,7 +1766,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

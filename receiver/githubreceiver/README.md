@@ -175,6 +175,9 @@ receivers:
             secret: ${env:SECRET_STRING_VAR}
             required_headers:
                 WAF-Header: "value"
+        scrapers: # The validation expects at least a dummy scraper config
+            scraper:
+                github_org: open-telemetry
 ```
 
 For tracing, all configuration is set under the `webhook` key. The full set
@@ -269,3 +272,35 @@ Examples of key transformations:
 
 **Note**:
 The `service_name` custom property is handled specially and is not added as a resource attribute with the prefix. Instead, it's used to set the `service.name` resource attribute directly, as described in the [Configuring Service Name](#configuring-service-name) section.
+
+## Migration Notes
+
+### Semantic Conventions v1.37.0 Upgrade
+
+The GitHub receiver has been updated to use OpenTelemetry semantic conventions v1.37.0. This brings standardization improvements and better alignment with the broader OpenTelemetry ecosystem.
+
+#### Breaking Changes
+
+**Resource Attributes:**
+- `organization.name` → `vcs.owner.name` - The resource attribute for organization/owner name has been standardized
+- `vcs.vendor.name` → `vcs.provider.name` - The VCS provider attribute has been standardized
+
+**Trace Attributes:**
+- `vcs.ref.head.type` → `vcs.ref.type` - Some trace attributes now use standardized naming
+
+#### What This Means for Users
+
+**For Dashboard and Alerting Users:**
+- Update your queries and dashboards to use the new attribute names
+- Old attribute names are no longer emitted starting with this version
+- The schema URL in telemetry data now references OpenTelemetry schemas v1.37.0
+
+**For Configuration Users:**
+- No configuration changes are required
+- All existing receiver configurations continue to work unchanged
+
+**Migration Timeline:**
+- **Before upgrading:** Update downstream systems (dashboards, alerts, queries) to use new attribute names
+- **After upgrading:** Verify that telemetry data is flowing correctly with the new attributes
+
+For the complete list of semantic convention changes, see the [OpenTelemetry semantic conventions v1.37.0 documentation](https://opentelemetry.io/docs/specs/semconv/).

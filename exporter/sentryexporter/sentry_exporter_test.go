@@ -661,8 +661,8 @@ func (t *mockTransport) SendEvents(transactions []*sentry.Event) {
 	t.called = true
 }
 
-func (t *mockTransport) Configure(_ sentry.ClientOptions) {}
-func (t *mockTransport) Flush(_ context.Context) bool {
+func (*mockTransport) Configure(sentry.ClientOptions) {}
+func (*mockTransport) Flush(context.Context) bool {
 	return true
 }
 
@@ -723,7 +723,7 @@ func TestPushTraceData(t *testing.T) {
 				transport: transport,
 			}
 
-			err := s.pushTraceData(context.Background(), test.td)
+			err := s.pushTraceData(t.Context(), test.td)
 			assert.NoError(t, err)
 			assert.Equal(t, test.called, transport.called)
 		})

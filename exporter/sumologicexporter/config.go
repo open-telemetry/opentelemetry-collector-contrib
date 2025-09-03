@@ -111,7 +111,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
-	if len(cfg.Endpoint) == 0 && !cfg.Auth.HasValue() {
+	if cfg.Endpoint == "" && !cfg.Auth.HasValue() {
 		return errors.New("no endpoint and no auth extension specified")
 	}
 

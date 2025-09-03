@@ -74,7 +74,7 @@ func (s *processesScraper) getProcessesMetadata(ctx context.Context) (processesM
 }
 
 func toAttributeStatus(status []string) (metadata.AttributeStatus, bool) {
-	if len(status) == 0 || len(status[0]) == 0 {
+	if len(status) == 0 || status[0] == "" {
 		return metadata.AttributeStatus(0), false
 	}
 	state, ok := charToState[status[0]]

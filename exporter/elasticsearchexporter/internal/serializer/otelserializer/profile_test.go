@@ -177,7 +177,7 @@ func TestSerializeProfile(t *testing.T) {
 			buf := []*bytes.Buffer{}
 			ser, err := New()
 			require.NoError(t, err)
-			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
+			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _, _ string) error {
 				buf = append(buf, b)
 				return nil
 			})
@@ -222,7 +222,7 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	resource := profiles.ResourceProfiles().At(0)
 	scope := resource.ScopeProfiles().At(0)
 	profile := scope.Profiles().At(0)
-	pushData := func(_ *bytes.Buffer, _ string, _ string) error {
+	pushData := func(_ *bytes.Buffer, _, _ string) error {
 		return nil
 	}
 
@@ -230,6 +230,6 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = ser.SerializeProfile(profiles.ProfilesDictionary(), resource.Resource(), scope.Scope(), profile, pushData)
+		_ = ser.SerializeProfile(profiles.Dictionary(), resource.Resource(), scope.Scope(), profile, pushData)
 	}
 }
