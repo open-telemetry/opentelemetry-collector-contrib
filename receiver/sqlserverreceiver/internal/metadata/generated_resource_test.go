@@ -16,6 +16,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostName("host.name-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
+			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
@@ -25,9 +26,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -49,6 +50,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, 11, val.Int())
+			}
+			val, ok = res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("sqlserver.computer.name")
 			assert.Equal(t, tt == "all_set", ok)
