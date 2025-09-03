@@ -26,9 +26,13 @@ func TestConfigValidate(t *testing.T) {
 		cfg  Config
 		err  error
 	}{
-		{name: "empty config", cfg: Config{}, err: nil},
 		{
-			name: "invalid logs subject",
+			name: "returns nil for empty config",
+			cfg:  Config{},
+			err:  nil,
+		},
+		{
+			name: "returns error for invalid logs subject",
 			cfg: Config{
 				Logs: LogsConfig{
 					Subject: "invalid",
@@ -37,26 +41,35 @@ func TestConfigValidate(t *testing.T) {
 			err: errors.New("failed to parse logs subject"),
 		},
 		{
-			name: "marshaler and encoder configured simultaneously",
+			name: "returns error for built-in marshaler and encoding extension configured simultaneously",
 			cfg: Config{
 				Logs: LogsConfig{
-					Marshaler: "otlp_json",
-					Encoder:   "otlp",
+					BuiltinMarshalerName:  "otlp_json",
+					EncodingExtensionName: "otlp",
 				},
 			},
-			err: errors.New("marshaler and encoder configured simultaneously"),
+			err: errors.New("built-in marshaler and encoding extension configured simultaneously"),
 		},
 		{
-			name: "unsupported marshaler",
+			name: "returns error for unsupported built-in marshaler",
 			cfg: Config{
 				Logs: LogsConfig{
-					Marshaler: "unsupported",
+					BuiltinMarshalerName: "unsupported",
 				},
 			},
-			err: errors.New("unsupported marshaler"),
+			err: errors.New("unsupported built-in marshaler"),
 		},
 		{
-			name: "complete token configuration",
+			name: "returns error for invalid encoding extension name",
+			cfg: Config{
+				Logs: LogsConfig{
+					EncodingExtensionName: "",
+				},
+			},
+			err: errors.New("failed to unmarshal encoding extension name"),
+		},
+		{
+			name: "returns nil for complete token configuration",
 			cfg: Config{
 				Auth: AuthConfig{
 					Token: &TokenConfig{
@@ -67,7 +80,7 @@ func TestConfigValidate(t *testing.T) {
 			err: nil,
 		},
 		{
-			name: "incomplete username/password configuration",
+			name: "returns error for incomplete username/password configuration",
 			cfg: Config{
 				Auth: AuthConfig{
 					UserInfo: &UserInfoConfig{
@@ -78,22 +91,21 @@ func TestConfigValidate(t *testing.T) {
 			err: errors.New("incomplete user_info configuration"),
 		},
 		{
-			name: "multiple auth methods configured simultaneously",
+			name: "returns error for multiple auth methods configured simultaneously",
 			cfg: Config{
 				Auth: AuthConfig{
 					Token: &TokenConfig{
 						Token: "token",
 					},
 					NKey: &NKeyConfig{
-						PubKey: "pub_key",
-						SigKey: "sig_key",
+						PublicKey: "public_key",
+						Seed:      "seed",
 					},
 				},
 			},
 			err: errors.New("multiple auth methods configured simultaneously"),
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.cfg.Validate()
@@ -122,16 +134,16 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "nats://localhost:1234",
 				TLS:      configtls.NewDefaultClientConfig(),
 				Logs: LogsConfig{
-					Subject:   "\"logs\"",
-					Marshaler: "otlp_json",
+					Subject:              "\"logs\"",
+					BuiltinMarshalerName: "otlp_json",
 				},
 				Metrics: MetricsConfig{
-					Subject:   "\"metrics\"",
-					Marshaler: "otlp_json",
+					Subject:              "\"metrics\"",
+					BuiltinMarshalerName: "otlp_json",
 				},
 				Traces: TracesConfig{
-					Subject:   "\"traces\"",
-					Marshaler: "otlp_json",
+					Subject:              "\"traces\"",
+					BuiltinMarshalerName: "otlp_json",
 				},
 				Auth: AuthConfig{
 					Token: &TokenConfig{
@@ -141,7 +153,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)

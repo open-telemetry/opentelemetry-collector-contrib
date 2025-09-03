@@ -5,8 +5,6 @@ package grouper // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 type Group[T any] struct {
@@ -17,8 +15,3 @@ type Group[T any] struct {
 type Grouper[T any] interface {
 	Group(ctx context.Context, data T) ([]Group[T], error)
 }
-
-type NewGrouperFunc[T any] func(
-	subject string,
-	telemetrySettings component.TelemetrySettings,
-) (Grouper[T], error)

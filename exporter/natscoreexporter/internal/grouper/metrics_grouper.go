@@ -19,10 +19,7 @@ type metricsGrouper struct {
 	valueExpression *ottl.ValueExpression[ottlmetric.TransformContext]
 }
 
-func (g *metricsGrouper) Group(
-	ctx context.Context,
-	srcMetrics pmetric.Metrics,
-) ([]Group[pmetric.Metrics], error) {
+func (g *metricsGrouper) Group(ctx context.Context, srcMetrics pmetric.Metrics) ([]Group[pmetric.Metrics], error) {
 	var errs error
 
 	type destContext struct {
@@ -54,6 +51,7 @@ func (g *metricsGrouper) Group(
 					srcScopeMetrics,
 					srcResourceMetrics,
 				)
+
 				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
 				if err != nil {
 					errs = multierr.Append(errs, err)
@@ -63,7 +61,9 @@ func (g *metricsGrouper) Group(
 
 				dest, ok := destBySubject[subject]
 				if !ok {
-					dest = &destContext{metrics: pmetric.NewMetrics()}
+					dest = &destContext{
+						metrics: pmetric.NewMetrics(),
+					}
 					destBySubject[subject] = dest
 				}
 				destMetrics := dest.metrics
@@ -104,12 +104,9 @@ func (g *metricsGrouper) Group(
 	return groups, errs
 }
 
-var _ Grouper[pmetric.Metrics] = &metricsGrouper{}
+var _ Grouper[pmetric.Metrics] = (*metricsGrouper)(nil)
 
-func NewMetricsGrouper(
-	subject string,
-	telemetrySettings component.TelemetrySettings,
-) (Grouper[pmetric.Metrics], error) {
+func NewMetricsGrouper(subject string, telemetrySettings component.TelemetrySettings) (Grouper[pmetric.Metrics], error) {
 	parser, err := ottlmetric.NewParser(
 		ottlfuncs.StandardConverters[ottlmetric.TransformContext](),
 		telemetrySettings,
@@ -123,7 +120,7 @@ func NewMetricsGrouper(
 		return nil, err
 	}
 
-	return &metricsGrouper{valueExpression: valueExpression}, nil
+	return &metricsGrouper{
+		valueExpression: valueExpression,
+	}, nil
 }
-
-var _ NewGrouperFunc[pmetric.Metrics] = NewMetricsGrouper

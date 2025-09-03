@@ -15,16 +15,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/marshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/metadata"
 )
 
 const (
 	defaultLogsSubject      = "\"otel_logs\""
-	defaultLogsMarshaler    = OtlpProtoMarshalerName
+	defaultLogsMarshaler    = marshaler.OtlpProtoBuiltinMarshalerName
 	defaultMetricsSubject   = "\"otel_metrics\""
-	defaultMetricsMarshaler = OtlpProtoMarshalerName
+	defaultMetricsMarshaler = marshaler.OtlpProtoBuiltinMarshalerName
 	defaultTracesSubject    = "\"otel_spans\""
-	defaultTracesMarshaler  = OtlpProtoMarshalerName
+	defaultTracesMarshaler  = marshaler.OtlpProtoBuiltinMarshalerName
 )
 
 func NewFactory() exporter.Factory {
@@ -42,16 +43,16 @@ func createDefaultConfig() component.Config {
 		Endpoint: nats.DefaultURL,
 		TLS:      configtls.NewDefaultClientConfig(),
 		Logs: LogsConfig{
-			Subject:   defaultLogsSubject,
-			Marshaler: defaultLogsMarshaler,
+			Subject:              defaultLogsSubject,
+			BuiltinMarshalerName: defaultLogsMarshaler,
 		},
 		Metrics: MetricsConfig{
-			Subject:   defaultMetricsSubject,
-			Marshaler: defaultMetricsMarshaler,
+			Subject:              defaultMetricsSubject,
+			BuiltinMarshalerName: defaultMetricsMarshaler,
 		},
 		Traces: TracesConfig{
-			Subject:   defaultTracesSubject,
-			Marshaler: defaultTracesMarshaler,
+			Subject:              defaultTracesSubject,
+			BuiltinMarshalerName: defaultTracesMarshaler,
 		},
 		Auth: AuthConfig{},
 	}

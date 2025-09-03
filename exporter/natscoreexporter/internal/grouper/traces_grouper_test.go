@@ -4,7 +4,6 @@
 package grouper // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/grouper"
 
 import (
-	"context"
 	"math/rand/v2"
 	"slices"
 	"strconv"
@@ -14,12 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -31,13 +27,13 @@ func generateTraces(t *testing.T) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	for range 10 {
 		resourceSpans := traces.ResourceSpans().AppendEmpty()
-		resourceSpans.Resource().Attributes().PutStr("id", uuid.New().String())
+		resourceSpans.Resource().Attributes().PutStr("id", uuid.NewString())
 		for range 10 {
 			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-			scopeSpans.Scope().Attributes().PutStr("id", uuid.New().String())
+			scopeSpans.Scope().Attributes().PutStr("id", uuid.NewString())
 			for range 10 {
 				span := scopeSpans.Spans().AppendEmpty()
-				span.Attributes().PutStr("id", uuid.New().String())
+				span.Attributes().PutStr("id", uuid.NewString())
 				span.Attributes().PutStr("subject", strconv.Itoa(rand.IntN(10)))
 			}
 		}
@@ -45,17 +41,18 @@ func generateTraces(t *testing.T) ptrace.Traces {
 	return traces
 }
 
-type naiveTracesGrouper struct {
-	valueExpression *ottl.ValueExpression[ottlspan.TransformContext]
-}
+func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[ptrace.Traces] {
+	t.Helper()
 
-func (g *naiveTracesGrouper) Group(
-	ctx context.Context,
-	srcTraces ptrace.Traces,
-) ([]Group[ptrace.Traces], error) {
-	var errs error
+	parser, err := ottlspan.NewParser(
+		ottlfuncs.StandardConverters[ottlspan.TransformContext](),
+		componenttest.NewNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+	valueExpression, err := parser.ParseValueExpression(subject)
+	require.NoError(t, err)
 
-	subjectByLogRecord := make(map[ptrace.Span]string)
+	subjectBySpan := make(map[ptrace.Span]string)
 	for _, srcResourceSpans := range srcTraces.ResourceSpans().All() {
 		for _, srcScopeSpans := range srcResourceSpans.ScopeSpans().All() {
 			for _, srcSpan := range srcScopeSpans.Spans().All() {
@@ -66,19 +63,18 @@ func (g *naiveTracesGrouper) Group(
 					srcScopeSpans,
 					srcResourceSpans,
 				)
-				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
-				if err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
+
+				subjectAsAny, err := valueExpression.Eval(t.Context(), transformContext)
+				require.NoError(t, err)
 				subject := subjectAsAny.(string)
-				subjectByLogRecord[srcSpan] = subject
+
+				subjectBySpan[srcSpan] = subject
 			}
 		}
 	}
 
 	subjects := make(map[string]bool)
-	for _, subject := range subjectByLogRecord {
+	for _, subject := range subjectBySpan {
 		subjects[subject] = true
 	}
 
@@ -90,7 +86,7 @@ func (g *naiveTracesGrouper) Group(
 			for _, srcScopeSpans := range srcResourceSpans.ScopeSpans().All() {
 				destSpanSlice := ptrace.NewSpanSlice()
 				for _, srcSpan := range srcScopeSpans.Spans().All() {
-					if subjectByLogRecord[srcSpan] == groupSubject {
+					if subjectBySpan[srcSpan] == groupSubject {
 						srcSpan.CopyTo(destSpanSlice.AppendEmpty())
 					}
 				}
@@ -118,56 +114,29 @@ func (g *naiveTracesGrouper) Group(
 			})
 		}
 	}
-	return groups, errs
+	return groups
 }
-
-var _ Grouper[ptrace.Traces] = &naiveTracesGrouper{}
-
-func newNaiveTracesGrouper(
-	subject string,
-	telemetrySettings component.TelemetrySettings,
-) (Grouper[ptrace.Traces], error) {
-	parser, err := ottlspan.NewParser(
-		ottlfuncs.StandardConverters[ottlspan.TransformContext](),
-		telemetrySettings,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	valueExpression, err := parser.ParseValueExpression(subject)
-	if err != nil {
-		return nil, err
-	}
-
-	return &naiveTracesGrouper{valueExpression: valueExpression}, nil
-}
-
-var _ NewGrouperFunc[ptrace.Traces] = newNaiveTracesGrouper
 
 func TestTracesGrouper(t *testing.T) {
 	t.Parallel()
 
-	t.Run("matches naive implementation", func(t *testing.T) {
+	t.Run("consistent with naive implementation", func(t *testing.T) {
 		subject := "span.attributes[\"subject\"]"
-		telemetrySettings := componenttest.NewNopTelemetrySettings()
 		srcTraces := generateTraces(t)
 
-		naiveTracesGrouper, err := newNaiveTracesGrouper(subject, telemetrySettings)
-		require.NoError(t, err)
-		tracesGrouper, err := NewTracesGrouper(subject, telemetrySettings)
+		tracesGrouper, err := NewTracesGrouper(subject, componenttest.NewNopTelemetrySettings())
 		assert.NoError(t, err)
-
-		wantGroups, err := naiveTracesGrouper.Group(t.Context(), srcTraces)
-		require.NoError(t, err)
 		haveGroups, err := tracesGrouper.Group(t.Context(), srcTraces)
 		assert.NoError(t, err)
+
+		wantGroups := groupTraces(t, subject, srcTraces)
 
 		compareGroups := func(a, b Group[ptrace.Traces]) int {
 			return strings.Compare(a.Subject, b.Subject)
 		}
 		slices.SortFunc(wantGroups, compareGroups)
 		slices.SortFunc(haveGroups, compareGroups)
+
 		assert.Len(t, wantGroups, len(haveGroups))
 		for i := range len(wantGroups) {
 			assert.NoError(t, ptracetest.CompareTraces(

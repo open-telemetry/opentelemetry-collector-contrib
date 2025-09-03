@@ -4,7 +4,6 @@
 package grouper
 
 import (
-	"context"
 	"math/rand/v2"
 	"slices"
 	"strconv"
@@ -14,12 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -31,13 +27,13 @@ func generateLogs(t *testing.T) plog.Logs {
 	logs := plog.NewLogs()
 	for range 10 {
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
-		resourceLogs.Resource().Attributes().PutStr("id", uuid.New().String())
+		resourceLogs.Resource().Attributes().PutStr("id", uuid.NewString())
 		for range 10 {
 			scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-			scopeLogs.Scope().Attributes().PutStr("id", uuid.New().String())
+			scopeLogs.Scope().Attributes().PutStr("id", uuid.NewString())
 			for range 10 {
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
-				logRecord.Attributes().PutStr("id", uuid.New().String())
+				logRecord.Attributes().PutStr("id", uuid.NewString())
 				logRecord.Attributes().PutStr("subject", strconv.Itoa(rand.IntN(10)))
 			}
 		}
@@ -45,15 +41,16 @@ func generateLogs(t *testing.T) plog.Logs {
 	return logs
 }
 
-type naiveLogsGrouper struct {
-	valueExpression *ottl.ValueExpression[ottllog.TransformContext]
-}
+func groupLogs(t *testing.T, subject string, srcLogs plog.Logs) []Group[plog.Logs] {
+	t.Helper()
 
-func (g *naiveLogsGrouper) Group(
-	ctx context.Context,
-	srcLogs plog.Logs,
-) ([]Group[plog.Logs], error) {
-	var errs error
+	parser, err := ottllog.NewParser(
+		ottlfuncs.StandardConverters[ottllog.TransformContext](),
+		componenttest.NewNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+	valueExpression, err := parser.ParseValueExpression(subject)
+	require.NoError(t, err)
 
 	subjectByLogRecord := make(map[plog.LogRecord]string)
 	for _, srcResourceLogs := range srcLogs.ResourceLogs().All() {
@@ -66,12 +63,11 @@ func (g *naiveLogsGrouper) Group(
 					srcScopeLogs,
 					srcResourceLogs,
 				)
-				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
-				if err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
+
+				subjectAsAny, err := valueExpression.Eval(t.Context(), transformContext)
+				require.NoError(t, err)
 				subject := subjectAsAny.(string)
+
 				subjectByLogRecord[srcLogRecord] = subject
 			}
 		}
@@ -118,56 +114,29 @@ func (g *naiveLogsGrouper) Group(
 			})
 		}
 	}
-	return groups, errs
+	return groups
 }
-
-var _ Grouper[plog.Logs] = &naiveLogsGrouper{}
-
-func newNaiveLogsGrouper(
-	subject string,
-	telemetrySettings component.TelemetrySettings,
-) (Grouper[plog.Logs], error) {
-	parser, err := ottllog.NewParser(
-		ottlfuncs.StandardConverters[ottllog.TransformContext](),
-		telemetrySettings,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	valueExpression, err := parser.ParseValueExpression(subject)
-	if err != nil {
-		return nil, err
-	}
-
-	return &naiveLogsGrouper{valueExpression: valueExpression}, nil
-}
-
-var _ NewGrouperFunc[plog.Logs] = newNaiveLogsGrouper
 
 func TestLogsGrouper(t *testing.T) {
 	t.Parallel()
 
-	t.Run("matches naive implementation", func(t *testing.T) {
+	t.Run("consistent with naive implementation", func(t *testing.T) {
 		subject := "log.attributes[\"subject\"]"
-		telemetrySettings := componenttest.NewNopTelemetrySettings()
 		srcLogs := generateLogs(t)
 
-		naiveLogsGrouper, err := newNaiveLogsGrouper(subject, telemetrySettings)
-		require.NoError(t, err)
-		logsGrouper, err := NewLogsGrouper(subject, telemetrySettings)
+		logsGrouper, err := NewLogsGrouper(subject, componenttest.NewNopTelemetrySettings())
 		assert.NoError(t, err)
-
-		wantGroups, err := naiveLogsGrouper.Group(t.Context(), srcLogs)
-		require.NoError(t, err)
 		haveGroups, err := logsGrouper.Group(t.Context(), srcLogs)
 		assert.NoError(t, err)
+
+		wantGroups := groupLogs(t, subject, srcLogs)
 
 		compareGroups := func(a, b Group[plog.Logs]) int {
 			return strings.Compare(a.Subject, b.Subject)
 		}
 		slices.SortFunc(wantGroups, compareGroups)
 		slices.SortFunc(haveGroups, compareGroups)
+
 		assert.Len(t, wantGroups, len(haveGroups))
 		for i := range len(wantGroups) {
 			assert.NoError(t, plogtest.CompareLogs(

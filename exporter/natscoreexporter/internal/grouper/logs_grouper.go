@@ -19,10 +19,7 @@ type logsGrouper struct {
 	valueExpression *ottl.ValueExpression[ottllog.TransformContext]
 }
 
-func (g *logsGrouper) Group(
-	ctx context.Context,
-	srcLogs plog.Logs,
-) ([]Group[plog.Logs], error) {
+func (g *logsGrouper) Group(ctx context.Context, srcLogs plog.Logs) ([]Group[plog.Logs], error) {
 	var errs error
 
 	type destContext struct {
@@ -52,6 +49,7 @@ func (g *logsGrouper) Group(
 					srcScopeLogs,
 					srcResourceLogs,
 				)
+
 				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
 				if err != nil {
 					errs = multierr.Append(errs, err)
@@ -61,7 +59,9 @@ func (g *logsGrouper) Group(
 
 				dest, ok := destBySubject[subject]
 				if !ok {
-					dest = &destContext{logs: plog.NewLogs()}
+					dest = &destContext{
+						logs: plog.NewLogs(),
+					}
 					destBySubject[subject] = dest
 				}
 				destLogs := dest.logs
@@ -102,12 +102,9 @@ func (g *logsGrouper) Group(
 	return groups, errs
 }
 
-var _ Grouper[plog.Logs] = &logsGrouper{}
+var _ Grouper[plog.Logs] = (*logsGrouper)(nil)
 
-func NewLogsGrouper(
-	subject string,
-	telemetrySettings component.TelemetrySettings,
-) (Grouper[plog.Logs], error) {
+func NewLogsGrouper(subject string, telemetrySettings component.TelemetrySettings) (Grouper[plog.Logs], error) {
 	parser, err := ottllog.NewParser(
 		ottlfuncs.StandardConverters[ottllog.TransformContext](),
 		telemetrySettings,
@@ -121,7 +118,7 @@ func NewLogsGrouper(
 		return nil, err
 	}
 
-	return &logsGrouper{valueExpression: valueExpression}, nil
+	return &logsGrouper{
+		valueExpression: valueExpression,
+	}, nil
 }
-
-var _ NewGrouperFunc[plog.Logs] = NewLogsGrouper

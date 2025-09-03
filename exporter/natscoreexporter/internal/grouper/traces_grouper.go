@@ -49,6 +49,7 @@ func (g *tracesGrouper) Group(ctx context.Context, srcTraces ptrace.Traces) ([]G
 					srcScopeSpans,
 					srcResourceSpans,
 				)
+
 				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
 				if err != nil {
 					errs = multierr.Append(errs, err)
@@ -58,7 +59,9 @@ func (g *tracesGrouper) Group(ctx context.Context, srcTraces ptrace.Traces) ([]G
 
 				dest, ok := destBySubject[subject]
 				if !ok {
-					dest = &destContext{traces: ptrace.NewTraces()}
+					dest = &destContext{
+						traces: ptrace.NewTraces(),
+					}
 					destBySubject[subject] = dest
 				}
 				destTraces := dest.traces
@@ -99,12 +102,9 @@ func (g *tracesGrouper) Group(ctx context.Context, srcTraces ptrace.Traces) ([]G
 	return groups, errs
 }
 
-var _ Grouper[ptrace.Traces] = &tracesGrouper{}
+var _ Grouper[ptrace.Traces] = (*tracesGrouper)(nil)
 
-func NewTracesGrouper(
-	subject string,
-	telemetrySettings component.TelemetrySettings,
-) (Grouper[ptrace.Traces], error) {
+func NewTracesGrouper(subject string, telemetrySettings component.TelemetrySettings) (Grouper[ptrace.Traces], error) {
 	parser, err := ottlspan.NewParser(
 		ottlfuncs.StandardConverters[ottlspan.TransformContext](),
 		telemetrySettings,
@@ -118,7 +118,7 @@ func NewTracesGrouper(
 		return nil, err
 	}
 
-	return &tracesGrouper{valueExpression: valueExpression}, nil
+	return &tracesGrouper{
+		valueExpression: valueExpression,
+	}, nil
 }
-
-var _ NewGrouperFunc[ptrace.Traces] = NewTracesGrouper
