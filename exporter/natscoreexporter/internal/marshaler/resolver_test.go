@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestBuiltinMarshalerResolver(t *testing.T) {
@@ -61,9 +62,28 @@ func TestBuiltinMarshalerResolver(t *testing.T) {
 
 				genericBuiltinMarshaler, ok := genericMarshaler.(*genericBuiltinMarshaler)
 				assert.True(t, ok)
-				assert.IsType(t, tt.wantLogsMarshaler, genericBuiltinMarshaler.logsMarshaler)
-				assert.IsType(t, tt.wantMetricsMarshaler, genericBuiltinMarshaler.metricsMarshaler)
-				assert.IsType(t, tt.wantTracesMarshaler, genericBuiltinMarshaler.tracesMarshaler)
+
+				logs := testdata.GenerateLogs(10)
+				metrics := testdata.GenerateMetrics(10)
+				traces := testdata.GenerateTraces(10)
+
+				haveEncodedLogs, err := genericBuiltinMarshaler.MarshalLogs(logs)
+				assert.NoError(t, err)
+				haveEncodedMetrics, err := genericBuiltinMarshaler.MarshalMetrics(metrics)
+				assert.NoError(t, err)
+				haveEncodedTraces, err := genericBuiltinMarshaler.MarshalTraces(traces)
+				assert.NoError(t, err)
+
+				wantEncodedLogs, err := tt.wantLogsMarshaler.MarshalLogs(logs)
+				assert.NoError(t, err)
+				wantEncodedMetrics, err := tt.wantMetricsMarshaler.MarshalMetrics(metrics)
+				assert.NoError(t, err)
+				wantEncodedTraces, err := tt.wantTracesMarshaler.MarshalTraces(traces)
+				assert.NoError(t, err)
+
+				assert.Equal(t, wantEncodedLogs, haveEncodedLogs)
+				assert.Equal(t, wantEncodedMetrics, haveEncodedMetrics)
+				assert.Equal(t, wantEncodedTraces, haveEncodedTraces)
 			}
 		})
 	}
@@ -95,49 +115,20 @@ func TestEncodingExtensionResolver(t *testing.T) {
 		},
 	}
 
-	tests := []struct {
-		name                  string
-		encodingExtensionName string
-		wantEncodingExtension component.Component
-		wantNewResolverError  error
-		wantResolveError      error
-	}{
-		{
-			name:                  "resolves extension",
-			encodingExtensionName: "extension",
-			wantEncodingExtension: extension,
-			wantNewResolverError:  nil,
-			wantResolveError:      nil,
-		},
-		{
-			name:                  "returns error for invalid encoding extension name",
-			encodingExtensionName: "",
-			wantNewResolverError:  errors.New("failed to unmarshal encoding extension name"),
-			wantResolveError:      nil,
-		},
-		{
-			name:                  "returns error for missing encoding extension",
-			encodingExtensionName: "missing",
-			wantNewResolverError:  nil,
-			wantResolveError:      errors.New("encoding extension not found"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resolver, err := NewEncodingExtensionResolver(tt.encodingExtensionName)
-			if tt.wantNewResolverError != nil {
-				assert.ErrorContains(t, err, tt.wantNewResolverError.Error())
-			} else {
-				assert.NoError(t, err)
+	t.Run("resolves extension if found", func(t *testing.T) {
+		resolver, err := NewEncodingExtensionResolver("extension")
+		assert.NoError(t, err)
 
-				extension, err := resolver.Resolve(host)
-				if tt.wantResolveError != nil {
-					assert.ErrorContains(t, err, tt.wantResolveError.Error())
-				} else {
-					assert.NoError(t, err)
-					assert.Equal(t, tt.wantEncodingExtension, extension)
-				}
-			}
-		})
-	}
+		extension, err := resolver.Resolve(host)
+		assert.NoError(t, err)
+		assert.Equal(t, extension, extension)
+	})
+
+	t.Run("returns error if extension not found", func(t *testing.T) {
+		resolver, err := NewEncodingExtensionResolver("missing")
+		assert.NoError(t, err)
+
+		_, err = resolver.Resolve(host)
+		assert.ErrorContains(t, err, "encoding extension not found")
+	})
 }

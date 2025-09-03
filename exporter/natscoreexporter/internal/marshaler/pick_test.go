@@ -15,7 +15,7 @@ import (
 func TestPickMarshalLogs(t *testing.T) {
 	t.Parallel()
 
-	t.Run("returns MarshalLogs for plog.Marshaler", func(t *testing.T) {
+	t.Run("returns MarshalLogs method for plog.Marshaler", func(t *testing.T) {
 		genericMarshaler := &plog.JSONMarshaler{}
 		marshal, err := PickMarshalLogs(genericMarshaler)
 		assert.NoError(t, err)
@@ -32,7 +32,7 @@ func TestPickMarshalLogs(t *testing.T) {
 func TestPickMarshalMetrics(t *testing.T) {
 	t.Parallel()
 
-	t.Run("returns MarshalMetrics for pmetric.Marshaler", func(t *testing.T) {
+	t.Run("returns MarshalMetrics method for pmetric.Marshaler", func(t *testing.T) {
 		genericMarshaler := &pmetric.JSONMarshaler{}
 		marshal, err := PickMarshalMetrics(genericMarshaler)
 		assert.NoError(t, err)
@@ -49,7 +49,7 @@ func TestPickMarshalMetrics(t *testing.T) {
 func TestPickMarshalTraces(t *testing.T) {
 	t.Parallel()
 
-	t.Run("returns MarshalTraces for ptrace.Marshaler", func(t *testing.T) {
+	t.Run("returns MarshalTraces method for ptrace.Marshaler", func(t *testing.T) {
 		genericMarshaler := &ptrace.JSONMarshaler{}
 		marshal, err := PickMarshalTraces(genericMarshaler)
 		assert.NoError(t, err)

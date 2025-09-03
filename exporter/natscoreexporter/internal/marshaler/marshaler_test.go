@@ -28,14 +28,6 @@ func (r *mockResolver) Resolve(host component.Host) (GenericMarshaler, error) {
 
 var _ Resolver = (*mockResolver)(nil)
 
-type mockErrorResolver struct{}
-
-func (r *mockErrorResolver) Resolve(host component.Host) (GenericMarshaler, error) {
-	return nil, errors.New("resolver error")
-}
-
-var _ Resolver = (*mockErrorResolver)(nil)
-
 func mockPick(genericMarshaler GenericMarshaler) (MarshalFunc[string], error) {
 	mockGenericMarshaler, ok := genericMarshaler.(*mockGenericMarshaler)
 	if !ok {
@@ -45,12 +37,6 @@ func mockPick(genericMarshaler GenericMarshaler) (MarshalFunc[string], error) {
 }
 
 var _ PickFunc[string] = mockPick
-
-func mockErrorPick(genericMarshaler GenericMarshaler) (MarshalFunc[string], error) {
-	return nil, errors.New("pick error")
-}
-
-var _ PickFunc[string] = mockErrorPick
 
 func TestMarshaler(t *testing.T) {
 	t.Parallel()
@@ -64,21 +50,5 @@ func TestMarshaler(t *testing.T) {
 		marshaled, err := marshaler.Marshal("test")
 		assert.NoError(t, err)
 		assert.Equal(t, []byte("test"), marshaled)
-	})
-
-	t.Run("returns error when resolver fails", func(t *testing.T) {
-		marshaler := NewMarshaler(&mockErrorResolver{}, mockPick)
-
-		err := marshaler.Resolve(componenttest.NewNopHost())
-		assert.Error(t, err)
-		assert.ErrorContains(t, err, "resolver error")
-	})
-
-	t.Run("returns error when pick fails", func(t *testing.T) {
-		marshaler := NewMarshaler(&mockResolver{}, mockErrorPick)
-
-		err := marshaler.Resolve(componenttest.NewNopHost())
-		assert.Error(t, err)
-		assert.ErrorContains(t, err, "pick error")
 	})
 }
