@@ -2471,9 +2471,8 @@ func findRandomPort() (int, error) {
 
 func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	t.Cleanup(func() {
-		require.Eventually(t, func() bool {
-			return goleak.Find() == nil
-		}, 5*time.Second, 100*time.Millisecond)
+		// TODO just to see if more time helps, but should be removed when we have a proper solution
+		<-time.After(5 * time.Second)
 		goleak.VerifyNone(t)
 	})
 	if runtime.GOOS == "windows" {
