@@ -23,7 +23,7 @@ type (
 	OpAddSubTerm      = opAddSubTerm
 	MathValue         = mathValue
 	Field             = field
-	GrammerKey        = key
+	GrammarKey        = key
 	IsNil             = isNil
 	ByteSlice         = byteSlice
 	String            = string
