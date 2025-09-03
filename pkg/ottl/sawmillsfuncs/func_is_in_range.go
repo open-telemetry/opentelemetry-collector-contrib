@@ -31,10 +31,11 @@ func NewIsInRangeFactory[K any]() ottl.Factory[K] {
 //   - Validates that all getters (Target, Min, Max) are properly configured to handle numeric values
 //   - Uses a zero value of type K to perform a "dry run" of the getters
 //   - Catches configuration errors early, before any runtime execution
-//   - Ensures Min is less than or equal to Max
+//   - Ensures Min is less than or equal to Max (using validation values)
 //
 // 2. Runtime Phase (during function execution):
-//   - Uses the actual context to get real-time values
+//   - Uses the actual context to get real-time values for Target, Min, and Max
+//   - All three values are re-evaluated on each function call based on the runtime context
 //   - Checks if the target value falls within the range [min, max]
 //   - Values can change between function calls based on the runtime context
 func createIsInRangeFunction[K any](
@@ -72,6 +73,7 @@ func createIsInRangeFunction[K any](
 		return nil, fmt.Errorf("target value is nil")
 	}
 
+	// Validate min type
 	min, err := args.Min.Get(ctx, *new(K))
 	if err != nil {
 		return nil, fmt.Errorf("min must be a number")
@@ -79,8 +81,8 @@ func createIsInRangeFunction[K any](
 	if min == nil {
 		return nil, fmt.Errorf("min value is nil")
 	}
-	minFloat := *min
 
+	// Validate max type
 	max, err := args.Max.Get(ctx, *new(K))
 	if err != nil {
 		return nil, fmt.Errorf("max must be a number")
@@ -88,9 +90,9 @@ func createIsInRangeFunction[K any](
 	if max == nil {
 		return nil, fmt.Errorf("max value is nil")
 	}
-	maxFloat := *max
 
-	if minFloat > maxFloat {
+	// Validate that min <= max using the validation values
+	if *min > *max {
 		return nil, fmt.Errorf("min must be less than or equal to max")
 	}
 
@@ -107,9 +109,25 @@ func createIsInRangeFunction[K any](
 			return nil, fmt.Errorf("target value is nil")
 		}
 
-		targetFloat := *target
+		// Get the current min value from the runtime context
+		min, err := args.Min.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if min == nil {
+			return nil, fmt.Errorf("min value is nil")
+		}
+
+		// Get the current max value from the runtime context
+		max, err := args.Max.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if max == nil {
+			return nil, fmt.Errorf("max value is nil")
+		}
 
 		// Check if target is in range [min, max]
-		return targetFloat >= minFloat && targetFloat <= maxFloat, nil
+		return *target >= *min && *target <= *max, nil
 	}, nil
 }
