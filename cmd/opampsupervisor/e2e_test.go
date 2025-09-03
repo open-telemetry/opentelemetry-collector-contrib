@@ -201,10 +201,11 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	t.Cleanup(func() {
 		shutdown()
 	})
+	t.Logf("Address used for OpAmp server: %s", httpSrv.Listener.Addr().String())
 	_, port, err := net.SplitHostPort(httpSrv.Listener.Addr().String())
 	require.NoError(t, err)
 	return &testingOpAMPServer{
-		addr:                "localhost:" + port,
+		addr:                "127.0.0.1:" + port,
 		supervisorConnected: connectedChan,
 		sendToSupervisor:    send,
 		start:               httpSrv.Start,
