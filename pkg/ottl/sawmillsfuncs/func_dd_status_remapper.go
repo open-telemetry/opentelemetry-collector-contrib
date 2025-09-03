@@ -94,33 +94,29 @@ func statusRemapper[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 			}
 		}
 
-		if levelStr, ok := val.(string); ok {
-			levelLower := strings.ToLower(levelStr)
+		levelLower := strings.ToLower(stringValue)
 
-			switch {
-			case strings.HasPrefix(levelLower, "emerg") || strings.HasPrefix(levelLower, "f"):
-				return "emerg", nil
-			case strings.HasPrefix(levelLower, "a"):
-				return "alert", nil
-			case strings.HasPrefix(levelLower, "c"):
-				return "critical", nil
-			case strings.HasPrefix(levelLower, "e") && !strings.HasPrefix(levelLower, "emerg"):
-				return "error", nil
-			case strings.HasPrefix(levelLower, "w"):
-				return "warning", nil
-			case strings.HasPrefix(levelLower, "n"):
-				return "notice", nil
-			case strings.HasPrefix(levelLower, "i"):
-				return "info", nil
-			case strings.HasPrefix(levelLower, "d") || strings.HasPrefix(levelLower, "trace") || strings.HasPrefix(levelLower, "verbose"):
-				return "debug", nil
-			case strings.HasPrefix(levelLower, "o") || strings.HasPrefix(levelLower, "s") || levelLower == "ok" || levelLower == "success":
-				return "ok", nil
-			default:
-				return "info", nil
-			}
+		switch {
+		case strings.HasPrefix(levelLower, "emerg") || strings.HasPrefix(levelLower, "f"):
+			return "emerg", nil
+		case strings.HasPrefix(levelLower, "a"):
+			return "alert", nil
+		case strings.HasPrefix(levelLower, "c"):
+			return "critical", nil
+		case strings.HasPrefix(levelLower, "e") && !strings.HasPrefix(levelLower, "emerg"):
+			return "error", nil
+		case strings.HasPrefix(levelLower, "w"):
+			return "warning", nil
+		case strings.HasPrefix(levelLower, "n"):
+			return "notice", nil
+		case strings.HasPrefix(levelLower, "i"):
+			return "info", nil
+		case strings.HasPrefix(levelLower, "d") || strings.HasPrefix(levelLower, "trace") || strings.HasPrefix(levelLower, "verbose"):
+			return "debug", nil
+		case strings.HasPrefix(levelLower, "o") || strings.HasPrefix(levelLower, "s") || levelLower == "ok" || levelLower == "success":
+			return "ok", nil
+		default:
+			return "info", nil
 		}
-
-		return "info", nil
 	}, nil
 }
