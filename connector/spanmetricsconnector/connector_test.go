@@ -905,6 +905,7 @@ func TestConsumeTraces(t *testing.T) {
 
 				// Trigger flush.
 				mockClock.Advance(time.Nanosecond)
+				time.Sleep(10 * time.Millisecond)
 				require.Eventually(t, func() bool {
 					return len(mcon.AllMetrics()) > 0
 				}, 1*time.Second, 10*time.Millisecond)

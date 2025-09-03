@@ -103,6 +103,7 @@ func TestExtension_WithDelay(t *testing.T) {
 
 	// Simulate a delay of setting up callbacks after the leader has been elected.
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	time.Sleep(100 * time.Millisecond)
 	require.Eventually(t, func() bool {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)
