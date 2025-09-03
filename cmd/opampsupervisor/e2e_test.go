@@ -2414,6 +2414,9 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 
 func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	t.Cleanup(func() {
+		require.Eventually(t, func() bool {
+			return goleak.Find() == nil
+		}, 5*time.Second, 100*time.Millisecond)
 		goleak.VerifyNone(t)
 	})
 	healthcheckPort, err := findRandomPort()
@@ -2468,6 +2471,9 @@ func findRandomPort() (int, error) {
 
 func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	t.Cleanup(func() {
+		require.Eventually(t, func() bool {
+			return goleak.Find() == nil
+		}, 5*time.Second, 100*time.Millisecond)
 		goleak.VerifyNone(t)
 	})
 	if runtime.GOOS == "windows" {
