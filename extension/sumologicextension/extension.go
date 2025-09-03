@@ -61,10 +61,11 @@ type SumologicExtension struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	closeChan chan struct{}
-	closeOnce sync.Once
-	backOff   *backoff.ExponentialBackOff
-	id        component.ID
+	closeChan            chan struct{}
+	closeOnce            sync.Once
+	backOff              *backoff.ExponentialBackOff
+	id                   component.ID
+	collectorCredentials credentials.CollectorCredentials
 }
 
 const (
@@ -129,7 +130,16 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 	var (
 		collectorName string
 		hashKey       = createHashKey(conf)
+		hashKeyV2     = createHashKeyV2(conf)
 	)
+
+	_, err = credentialsStore.Get(hashKeyV2)
+	if err != nil {
+		fmt.Printf("using v1 key as v2 credentials not found for key: %s, error: %s", hashKeyV2, err)
+	} else {
+		fmt.Printf("v2 credentials found for key: %s", hashKeyV2)
+		hashKey = hashKeyV2
+	}
 	if conf.CollectorName == "" {
 		// If collector name is not set by the user, check if the collector was restarted
 		// and that we can reuse collector name save in credentials store.
@@ -178,6 +188,13 @@ func createHashKey(conf *Config) string {
 	)
 }
 
+func createHashKeyV2(conf *Config) string {
+	return fmt.Sprintf("%s%s",
+		conf.Credentials.InstallationToken,
+		strings.TrimSuffix(conf.APIBaseURL, "/"),
+	)
+}
+
 func (se *SumologicExtension) Start(ctx context.Context, host component.Host) error {
 	var err error
 	se.host = host
@@ -191,6 +208,7 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	}
 
 	colCreds, err := se.getCredentials(ctx)
+	se.collectorCredentials = colCreds
 	if err != nil {
 		return err
 	}
@@ -218,8 +236,18 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-// Shutdown is invoked during service shutdown.
 func (se *SumologicExtension) Shutdown(ctx context.Context) error {
+	hashKeyV2 := createHashKeyV2(se.conf)
+	_, err := se.credentialsStore.Get(hashKeyV2)
+	fmt.Printf("Shutting down Sumo Logic extension hashkeyV2 %s", hashKeyV2)
+	if err != nil {
+		se.logger.Error("Failed to get collector v2 credentials on shutdown, migrating to v2", zap.Error(err))
+		err := se.credentialsStore.Store(hashKeyV2, se.collectorCredentials)
+		if err != nil {
+			se.logger.Error("Failed to migrate collector credentials to v2 on shutdown", zap.Error(err))
+		}
+	}
+
 	se.closeOnce.Do(func() { close(se.closeChan) })
 	select {
 	case <-ctx.Done():
