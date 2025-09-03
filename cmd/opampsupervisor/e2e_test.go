@@ -2414,9 +2414,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 
 func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	t.Cleanup(func() {
-		require.Eventually(t, func() bool {
-			return goleak.Find() == nil
-		}, 5*time.Second, 100*time.Millisecond)
+		<-time.After(5 * time.Second)
 		goleak.VerifyNone(t)
 	})
 	healthcheckPort, err := findRandomPort()
@@ -2475,9 +2473,6 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		<-time.After(5 * time.Second)
 		goleak.VerifyNone(t)
 	})
-	if runtime.GOOS == "windows" {
-		t.Skip("Leaks a goroutine on Windows: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42352")
-	}
 
 	agentDescription := atomic.Value{}
 
