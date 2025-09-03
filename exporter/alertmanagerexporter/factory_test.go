@@ -4,6 +4,7 @@
 package alertmanagerexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

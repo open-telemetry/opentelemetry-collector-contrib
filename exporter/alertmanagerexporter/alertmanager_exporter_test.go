@@ -4,6 +4,7 @@
 package alertmanagerexporter
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
