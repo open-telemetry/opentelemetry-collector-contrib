@@ -52,10 +52,14 @@ func endsWith[K any](
 	suffixes []string,
 	caseSensitive bool,
 ) (ottl.ExprFunc[K], error) {
+	var processedSuffixes []string
 	if !caseSensitive {
+		processedSuffixes = make([]string, len(suffixes))
 		for i, suffix := range suffixes {
-			suffixes[i] = strings.ToLower(suffix)
+			processedSuffixes[i] = strings.ToLower(suffix)
 		}
+	} else {
+		processedSuffixes = suffixes
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
@@ -74,6 +78,6 @@ func endsWith[K any](
 		if !caseSensitive {
 			val = strings.ToLower(val)
 		}
-		return endsWithAny(val, suffixes), nil
+		return endsWithAny(val, processedSuffixes), nil
 	}, nil
 }
