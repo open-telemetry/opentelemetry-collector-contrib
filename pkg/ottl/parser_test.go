@@ -17,6 +17,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -2542,6 +2547,7 @@ func Test_Statement_Execute(t *testing.T) {
 		function          ExprFunc[any]
 		expectedCondition bool
 		expectedResult    any
+		expectedSpan      expectedSpan
 	}{
 		{
 			name:      "Condition matched",
@@ -2551,6 +2557,23 @@ func Test_Statement_Execute(t *testing.T) {
 			},
 			expectedCondition: true,
 			expectedResult:    1,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(true),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Ok,
+					Description: "",
+				},
+			},
 		},
 		{
 			name:      "Condition not matched",
@@ -2560,6 +2583,23 @@ func Test_Statement_Execute(t *testing.T) {
 			},
 			expectedCondition: false,
 			expectedResult:    nil,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(false),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Ok,
+					Description: "",
+				},
+			},
 		},
 		{
 			name:      "No result",
@@ -2569,6 +2609,23 @@ func Test_Statement_Execute(t *testing.T) {
 			},
 			expectedCondition: true,
 			expectedResult:    nil,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(true),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Ok,
+					Description: "",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -2577,12 +2634,20 @@ func Test_Statement_Execute(t *testing.T) {
 				condition:         BoolExpr[any]{tt.condition},
 				function:          Expr[any]{exprFunc: tt.function},
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				origText:          "test",
 			}
+			spanRecorder := tracetest.NewSpanRecorder()
+			statement.telemetrySettings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+			statement.tracer = statement.telemetrySettings.TracerProvider.Tracer("ottl")
 
 			result, condition, err := statement.Execute(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+
+			require.Equal(t, tt.expectedSpan.name, spanRecorder.Ended()[0].Name())
+			require.Equal(t, tt.expectedSpan.attributes, spanRecorder.Ended()[0].Attributes())
+			require.Equal(t, tt.expectedSpan.status, spanRecorder.Ended()[0].Status())
 		})
 	}
 }
@@ -2619,10 +2684,11 @@ func Test_Condition_Eval(t *testing.T) {
 
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
-		name      string
-		condition boolExpressionEvaluator[any]
-		function  ExprFunc[any]
-		errorMode ErrorMode
+		name         string
+		condition    boolExpressionEvaluator[any]
+		function     ExprFunc[any]
+		errorMode    ErrorMode
+		expectedSpan expectedSpan
 	}{
 		{
 			name: "IgnoreError error from condition",
@@ -2633,6 +2699,23 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: IgnoreError,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(false),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Error,
+					Description: "failed to execute statement 'test': test",
+				},
+			},
 		},
 		{
 			name: "PropagateError error from condition",
@@ -2643,6 +2726,23 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: PropagateError,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(false),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Error,
+					Description: "failed to execute statement 'test': test",
+				},
+			},
 		},
 		{
 			name: "IgnoreError error from function",
@@ -2653,6 +2753,23 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, errors.New("test")
 			},
 			errorMode: IgnoreError,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(true),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Error,
+					Description: "failed to execute statement 'test': test",
+				},
+			},
 		},
 		{
 			name: "PropagateError error from function",
@@ -2663,6 +2780,23 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, errors.New("test")
 			},
 			errorMode: PropagateError,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(false),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Error,
+					Description: "failed to execute statement 'test': test",
+				},
+			},
 		},
 		{
 			name: "SilentError error from condition",
@@ -2673,6 +2807,23 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: SilentError,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(false),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Error,
+					Description: "failed to execute statement 'test': test",
+				},
+			},
 		},
 		{
 			name: "SilentError error from function",
@@ -2683,6 +2834,23 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, errors.New("test")
 			},
 			errorMode: SilentError,
+			expectedSpan: expectedSpan{
+				name: "ottl/StatementExecution",
+				attributes: []attribute.KeyValue{
+					{
+						Key:   "statement",
+						Value: attribute.StringValue("test"),
+					},
+					{
+						Key:   "condition.matched",
+						Value: attribute.BoolValue(false),
+					},
+				},
+				status: trace.Status{
+					Code:        codes.Error,
+					Description: "failed to execute statement 'test': test",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -2693,6 +2861,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 						condition:         BoolExpr[any]{tt.condition},
 						function:          Expr[any]{exprFunc: tt.function},
 						telemetrySettings: componenttest.NewNopTelemetrySettings(),
+						tracer:            noop.NewTracerProvider().Tracer("ottl"),
 					},
 				},
 				errorMode:         tt.errorMode,
@@ -3318,4 +3487,10 @@ func Test_prependContextToValueExpressionPaths_Success(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+type expectedSpan struct {
+	name       string
+	attributes []attribute.KeyValue
+	status     trace.Status
 }
