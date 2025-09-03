@@ -10,6 +10,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -37,6 +40,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -64,6 +70,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -95,6 +104,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -126,6 +138,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -153,6 +168,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -180,6 +198,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -211,6 +232,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -238,6 +262,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -269,6 +296,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -296,6 +326,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -324,6 +357,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -351,6 +387,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -378,6 +417,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -405,6 +447,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -432,6 +477,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -459,6 +507,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -486,6 +537,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -513,6 +567,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -540,6 +597,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -567,6 +627,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -602,6 +665,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -629,6 +695,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -656,6 +725,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -683,6 +755,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -710,6 +785,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -737,6 +815,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -764,6 +845,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -791,6 +875,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -819,6 +906,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -847,6 +937,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -874,6 +967,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -905,6 +1001,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -932,6 +1031,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -963,6 +1065,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -994,6 +1099,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1021,6 +1129,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1052,6 +1163,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1079,6 +1193,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1107,6 +1224,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1134,6 +1254,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1161,6 +1284,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1188,6 +1314,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1220,6 +1349,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1247,6 +1379,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1276,6 +1411,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: sqlserver.computer.name
+          value:
+            stringValue: abcde
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
