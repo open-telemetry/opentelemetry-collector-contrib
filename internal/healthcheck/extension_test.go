@@ -54,18 +54,18 @@ func TestComponentStatus(t *testing.T) {
 
 	// Note the use of assert.Eventually here and throughout this test is because
 	// status events are processed asynchronously in the background.
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
-		require.True(t, ok)
-		return st.Status() == componentstatus.StatusStarting
+		require.True(tt, ok)
+		assert.Equal(tt, componentstatus.StatusStarting, st.Status())
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.Ready())
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
-		require.True(t, ok)
-		return st.Status() == componentstatus.StatusOK
+		require.True(tt, ok)
+		assert.Equal(tt, componentstatus.StatusOK, st.Status())
 	}, time.Second, 10*time.Millisecond)
 
 	// StatusStopping will be sent immediately.
@@ -73,10 +73,10 @@ func TestComponentStatus(t *testing.T) {
 		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
 	}
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
-		require.True(t, ok)
-		return st.Status() == componentstatus.StatusStopping
+		require.True(tt, ok)
+		assert.Equal(tt, componentstatus.StatusStopping, st.Status())
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.NotReady())
