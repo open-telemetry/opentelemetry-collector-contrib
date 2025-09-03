@@ -48,7 +48,7 @@ const (
 	// Skipped is used to indicate that trace should be skipped in making
 	// decisions process.
 	Skipped
-	// Continued Continue is used to indicate that trace does not match any skipped condition
+	// Continued is used to indicate that trace does not match any skipped condition
 	// decisions process.
 	Continued
 	// Error is used to indicate that policy evaluation was not succeeded.
