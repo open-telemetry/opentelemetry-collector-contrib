@@ -2414,7 +2414,10 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 
 func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	t.Cleanup(func() {
-		<-time.After(5 * time.Second)
+		require.EventuallyWithT(t, func(collect *assert.CollectT) {
+			require.NoError(collect, goleak.Find(goleak.IgnoreCurrent()))
+		}, 10*time.Second, 100*time.Millisecond)
+		//<-time.After(5 * time.Second)
 		goleak.VerifyNone(t)
 	})
 	healthcheckPort, err := findRandomPort()
