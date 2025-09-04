@@ -52,7 +52,7 @@ var (
 type TestPolicyEvaluator struct {
 	Started       chan struct{}
 	CouldContinue chan struct{}
-	pe            samplingpolicy.PolicyEvaluator
+	pe            samplingpolicy.Evaluator
 }
 
 func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
@@ -880,7 +880,7 @@ type mockPolicyEvaluator struct {
 	EvaluationCount int
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
+var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.EvaluationCount++

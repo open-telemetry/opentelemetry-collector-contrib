@@ -30,7 +30,7 @@ func TestDropHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{
+		expected := sampling.NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{
 			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
 		})
 		assert.Equal(t, expected, actual)

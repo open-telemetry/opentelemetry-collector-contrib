@@ -55,9 +55,9 @@ const (
 	InvertNotSampled
 )
 
-// PolicyEvaluator implements a tail-based sampling policy evaluator,
+// Evaluator implements a tail-based sampling policy evaluator,
 // which makes a sampling decision for a given trace when requested.
-type PolicyEvaluator interface {
+type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 }

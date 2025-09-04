@@ -22,12 +22,12 @@ type numericAttributeFilter struct {
 	invertMatch bool
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*numericAttributeFilter)(nil)
+var _ samplingpolicy.Evaluator = (*numericAttributeFilter)(nil)
 
 // NewNumericAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range. If minValue is nil, it will use math.MinInt64.
 // If maxValue is nil, it will use math.MaxInt64. At least one of minValue or maxValue must be set.
-func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue *int64, invertMatch bool) samplingpolicy.PolicyEvaluator {
+func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue *int64, invertMatch bool) samplingpolicy.Evaluator {
 	if minValue == nil && maxValue == nil {
 		settings.Logger.Error("At least one of minValue or maxValue must be set")
 		return nil

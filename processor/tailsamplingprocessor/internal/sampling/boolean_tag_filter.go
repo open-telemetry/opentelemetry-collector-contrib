@@ -20,11 +20,11 @@ type booleanAttributeFilter struct {
 	invertMatch bool
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*booleanAttributeFilter)(nil)
+var _ samplingpolicy.Evaluator = (*booleanAttributeFilter)(nil)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.
-func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value, invertMatch bool) samplingpolicy.PolicyEvaluator {
+func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value, invertMatch bool) samplingpolicy.Evaluator {
 	return &booleanAttributeFilter{
 		key:         key,
 		value:       value,

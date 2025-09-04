@@ -20,11 +20,11 @@ type traceStateFilter struct {
 	matcher func(string) bool
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*traceStateFilter)(nil)
+var _ samplingpolicy.Evaluator = (*traceStateFilter)(nil)
 
 // NewTraceStateFilter creates a policy evaluator that samples all traces with
 // the given value by the specific key in the trace_state.
-func NewTraceStateFilter(settings component.TelemetrySettings, key string, values []string) samplingpolicy.PolicyEvaluator {
+func NewTraceStateFilter(settings component.TelemetrySettings, key string, values []string) samplingpolicy.Evaluator {
 	// initialize the exact value map
 	valuesMap := make(map[string]struct{})
 	for _, value := range values {

@@ -25,10 +25,10 @@ type ottlConditionFilter struct {
 	logger              *zap.Logger
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*ottlConditionFilter)(nil)
+var _ samplingpolicy.Evaluator = (*ottlConditionFilter)(nil)
 
 // NewOTTLConditionFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (samplingpolicy.PolicyEvaluator, error) {
+func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (samplingpolicy.Evaluator, error) {
 	filter := &ottlConditionFilter{
 		errorMode: errMode,
 		logger:    settings.Logger,

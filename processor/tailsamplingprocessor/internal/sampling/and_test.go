@@ -19,7 +19,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewAnd(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -43,7 +43,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewAnd(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -68,7 +68,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewAnd(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -93,7 +93,7 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewAnd(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

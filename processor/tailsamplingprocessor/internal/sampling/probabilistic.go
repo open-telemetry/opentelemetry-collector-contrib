@@ -25,11 +25,11 @@ type probabilisticSampler struct {
 	hashSalt  string
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*probabilisticSampler)(nil)
+var _ samplingpolicy.Evaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) samplingpolicy.PolicyEvaluator {
+func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) samplingpolicy.Evaluator {
 	if hashSalt == "" {
 		hashSalt = defaultHashSalt
 	}

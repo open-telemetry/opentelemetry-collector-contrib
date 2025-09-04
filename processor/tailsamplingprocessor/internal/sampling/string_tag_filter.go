@@ -31,11 +31,11 @@ type regexStrSetting struct {
 	filterList   []*regexp.Regexp
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*stringAttributeFilter)(nil)
+var _ samplingpolicy.Evaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(settings component.TelemetrySettings, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) samplingpolicy.PolicyEvaluator {
+func NewStringAttributeFilter(settings component.TelemetrySettings, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) samplingpolicy.Evaluator {
 	// initialize regex filter rules and LRU cache for matched results
 	if regexMatchEnabled {
 		if evictSize <= 0 {

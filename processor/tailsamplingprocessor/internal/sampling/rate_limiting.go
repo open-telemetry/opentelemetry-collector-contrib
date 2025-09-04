@@ -20,10 +20,10 @@ type rateLimiting struct {
 	logger               *zap.Logger
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*rateLimiting)(nil)
+var _ samplingpolicy.Evaluator = (*rateLimiting)(nil)
 
 // NewRateLimiting creates a policy evaluator the samples all traces.
-func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64) samplingpolicy.PolicyEvaluator {
+func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64) samplingpolicy.Evaluator {
 	return &rateLimiting{
 		spansPerSecond: spansPerSecond,
 		logger:         settings.Logger,
