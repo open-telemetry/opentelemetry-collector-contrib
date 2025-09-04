@@ -1,0 +1,11 @@
+type: unroll
+status:
+  class: processor
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [schmikei]
+tests:
+  config:
+    recursive: false

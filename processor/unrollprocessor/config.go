@@ -1,0 +1,14 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package unrollprocessor
+
+// Config is the configuration for the unroll processor.
+type Config struct {
+	Recursive bool `mapstructure:"recursive"`
+}
+
+// Validate is a no-op for this as there's no configuration that is possibly invalid after unmarshalling
+func (*Config) Validate() error {
+	return nil
+}
