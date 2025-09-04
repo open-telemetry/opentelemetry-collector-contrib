@@ -214,11 +214,6 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		dataset = strings.Replace(dataset, p, "", 1)
 		r.settings.Logger.Debug("dataset parsed", zap.String("dataset.parsed", dataset))
 	}
-
-	// The confighttp middleware automatically handles decompression based on Content-Encoding header
-	// However, there's a bug where some clients send uncompressed data with Content-Encoding headers
-	// This causes the decompressor middleware to panic. We wrap the read in panic recovery.
-
 	var body []byte
 	func() {
 		defer func() {
@@ -273,6 +268,8 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		}
 
 		if len(libhoneyevents) > 0 {
+			// Debug: Log the state of MsgPackTimestamp
+			r.settings.Logger.Debug("JSON event decoded", zap.Bool("has_msgpacktimestamp", libhoneyevents[0].MsgPackTimestamp != nil))
 			if libhoneyevents[0].MsgPackTimestamp != nil {
 				r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 			} else {
