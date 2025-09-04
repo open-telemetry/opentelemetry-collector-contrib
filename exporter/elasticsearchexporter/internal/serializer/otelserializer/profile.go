@@ -23,6 +23,8 @@ const (
 
 	ExecutablesSymQueueIndex = "profiling-sq-executables"
 	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
+
+	HostsMetadataIndex = "profiling-hosts"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
@@ -130,6 +132,26 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 		return err
 	}
 
+	err = s.knownHosts.WithLock(func(hostMetadata lru.LockedLRUSet) error {
+		for _, payload := range data {
+			hostID := payload.HostMetadata.HostID
+			if hostID == "" {
+				continue
+			}
+
+			if !hostMetadata.CheckAndAdd(hostID) {
+				err = pushDataAsJSON(payload.HostMetadata, "", HostsMetadataIndex)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
 		for _, payload := range data {
 			for _, executable := range payload.UnsymbolizedExecutables {
@@ -187,6 +209,12 @@ func (s *Serializer) createLRUs() error {
 		s.knownUnsymbolizedExecutables, err = lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
+			return
+		}
+
+		s.knownHosts, err = lru.NewLRUSet(knownHostsCacheSize, minILMRolloverTime)
+		if err != nil {
+			s.lruErr = fmt.Errorf("failed to create hosts LRU: %w", err)
 			return
 		}
 	})
