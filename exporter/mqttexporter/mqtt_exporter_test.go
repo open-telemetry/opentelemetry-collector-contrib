@@ -214,3 +214,110 @@ func (p *testPublisher) Publish(ctx context.Context, message publisher.Message) 
 func (p *testPublisher) Close() error {
 	return nil
 }
+
+// Test topic templating with default values
+func TestRenderWithResourceDefaultValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		attrs    map[string]string
+		expected string
+	}{
+		{
+			name:     "no template",
+			template: "simple/topic",
+			attrs:    map[string]string{"host.name": "test-host"},
+			expected: "simple/topic",
+		},
+		{
+			name:     "attribute found",
+			template: "telemetry/data/%{resource.attributes.host.name}",
+			attrs:    map[string]string{"host.name": "test-host"},
+			expected: "telemetry/data/test-host",
+		},
+		{
+			name:     "attribute not found, no default",
+			template: "telemetry/data/%{resource.attributes.host.name}",
+			attrs:    map[string]string{"service.name": "test-service"},
+			expected: "telemetry/data/",
+		},
+		{
+			name:     "attribute not found, with default",
+			template: "telemetry/data/%{resource.attributes.host.name:unknown}",
+			attrs:    map[string]string{"service.name": "test-service"},
+			expected: "telemetry/data/unknown",
+		},
+		{
+			name:     "attribute found, default ignored",
+			template: "telemetry/data/%{resource.attributes.host.name:unknown}",
+			attrs:    map[string]string{"host.name": "test-host"},
+			expected: "telemetry/data/test-host",
+		},
+		{
+			name:     "multiple attributes with defaults",
+			template: "telemetry/data/%{resource.attributes.host.name:unknown}/%{resource.attributes.service.name:default-service}",
+			attrs:    map[string]string{"host.name": "test-host"},
+			expected: "telemetry/data/test-host/default-service",
+		},
+		{
+			name:     "empty default value",
+			template: "telemetry/data/%{resource.attributes.host.name:}",
+			attrs:    map[string]string{"service.name": "test-service"},
+			expected: "telemetry/data/",
+		},
+		{
+			name:     "default value with special characters",
+			template: "telemetry/data/%{resource.attributes.host.name:default+host#name}",
+			attrs:    map[string]string{"service.name": "test-service"},
+			expected: "telemetry/data/default-host-name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := renderWithResource(tt.template, func(key string) (string, bool) {
+				if val, ok := tt.attrs[key]; ok {
+					return val, true
+				}
+				return "", false
+			})
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestRenderTopicFromMetricsWithDefaults(t *testing.T) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("host.name", "test-host")
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	tests := []struct {
+		name     string
+		template string
+		expected string
+	}{
+		{
+			name:     "attribute found",
+			template: "telemetry/data/%{resource.attributes.host.name}",
+			expected: "telemetry/data/test-host",
+		},
+		{
+			name:     "attribute not found, with default",
+			template: "telemetry/data/%{resource.attributes.environment:production}",
+			expected: "telemetry/data/production",
+		},
+		{
+			name:     "mixed found and default",
+			template: "telemetry/data/%{resource.attributes.host.name}/%{resource.attributes.environment:production}",
+			expected: "telemetry/data/test-host/production",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := renderTopicFromMetrics(tt.template, metrics)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

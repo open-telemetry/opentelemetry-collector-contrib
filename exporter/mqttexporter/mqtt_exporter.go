@@ -150,8 +150,8 @@ func (e *mqttExporter) shutdown(_ context.Context) error {
 }
 
 // Template rendering helpers
-// Supports placeholders like %{resource.attributes.host.name}
-var resAttrPattern = regexp.MustCompile(`%\{resource\.attributes\.([a-zA-Z0-9_.-]+)\}`)
+// Supports placeholders like %{resource.attributes.host.name} or %{resource.attributes.host.name:default}
+var resAttrPattern = regexp.MustCompile(`%\{resource\.attributes\.([a-zA-Z0-9_.-]+)(?::([^}]*))?\}`)
 
 func renderWithResource(template string, getAttr func(string) (string, bool)) string {
 	if template == "" {
@@ -159,14 +159,26 @@ func renderWithResource(template string, getAttr func(string) (string, bool)) st
 	}
 	return resAttrPattern.ReplaceAllStringFunc(template, func(m string) string {
 		match := resAttrPattern.FindStringSubmatch(m)
-		if len(match) != 2 {
+		if len(match) < 2 {
 			return ""
 		}
 		key := match[1]
+		hasDefault := len(match) > 2
+		defaultValue := ""
+		if hasDefault {
+			defaultValue = match[2]
+		}
+		
 		// Attribute keys in OTel are dot-separated (e.g., host.name)
 		if v, ok := getAttr(key); ok {
 			return sanitizeTopicFragment(v)
 		}
+		
+		// If attribute not found, use default value if provided (including empty string)
+		if hasDefault {
+			return sanitizeTopicFragment(defaultValue)
+		}
+		
 		return ""
 	})
 }

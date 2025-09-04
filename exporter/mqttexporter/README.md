@@ -50,7 +50,7 @@ exporters:
         key_file: "/path/to/key.key"
         insecure: false
     topic:
-      topic: "telemetry/data/%{resource.attributes.host.name}"
+      topic: "telemetry/data/%{resource.attributes.host.name:unknown}"
     qos: 1
     retain: false
     encoding_extension: "otlp_encoding/otl"
@@ -65,10 +65,20 @@ exporters:
 
 The MQTT exporter supports dynamic topic templating using resource attributes. Use the `%{resource.attributes.attribute_name}` pattern to substitute values from the telemetry data.
 
-**Examples:**
+**Basic Examples:**
 - `%{resource.attributes.host.name}` - Uses the host name from resource attributes
 - `%{resource.attributes.service.name}` - Uses the service name from resource attributes
 - `%{resource.attributes.environment}` - Uses the environment from resource attributes
+
+**Default Values:**
+You can provide default values for attributes that might not be present in the telemetry data by using a colon separator:
+- `%{resource.attributes.host.name:unknown}` - Uses the host name if present, otherwise uses "unknown"
+- `%{resource.attributes.environment:production}` - Uses the environment if present, otherwise uses "production"
+- `%{resource.attributes.service.name:default-service}` - Uses the service name if present, otherwise uses "default-service"
+
+**Advanced Examples:**
+- `telemetry/data/%{resource.attributes.host.name:unknown}/%{resource.attributes.service.name:default-service}` - Creates a topic with both host name and service name, using defaults if not found
+- `metrics/%{resource.attributes.environment:production}/%{resource.attributes.host.name}` - Uses environment with default, host name without default
 ## Supported Signal Types
 
 - Traces
