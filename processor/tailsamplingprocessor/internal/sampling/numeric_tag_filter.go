@@ -7,6 +7,7 @@ import (
 	"context"
 	"math"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -21,12 +22,12 @@ type numericAttributeFilter struct {
 	invertMatch bool
 }
 
-var _ PolicyEvaluator = (*numericAttributeFilter)(nil)
+var _ samplingpolicy.PolicyEvaluator = (*numericAttributeFilter)(nil)
 
 // NewNumericAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range. If minValue is nil, it will use math.MinInt64.
 // If maxValue is nil, it will use math.MaxInt64. At least one of minValue or maxValue must be set.
-func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue *int64, invertMatch bool) PolicyEvaluator {
+func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue *int64, invertMatch bool) samplingpolicy.PolicyEvaluator {
 	if minValue == nil && maxValue == nil {
 		settings.Logger.Error("At least one of minValue or maxValue must be set")
 		return nil
@@ -41,7 +42,7 @@ func NewNumericAttributeFilter(settings component.TelemetrySettings, key string,
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	trace.Lock()
 	defer trace.Unlock()
 	batches := trace.ReceivedBatches

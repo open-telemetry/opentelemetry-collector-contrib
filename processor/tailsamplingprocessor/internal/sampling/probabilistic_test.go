@@ -8,6 +8,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -76,7 +77,7 @@ func TestProbabilisticSampling(t *testing.T) {
 				decision, err := probabilisticSampler.Evaluate(t.Context(), traceID, trace)
 				assert.NoError(t, err)
 
-				if decision == Sampled {
+				if decision == samplingpolicy.Sampled {
 					sampled++
 				}
 			}

@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestAndHelper(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAndHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewAnd(zap.NewNop(), []sampling.PolicyEvaluator{
+		expected := sampling.NewAnd(zap.NewNop(), []samplingpolicy.PolicyEvaluator{
 			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
 		})
 		assert.Equal(t, expected, actual)
