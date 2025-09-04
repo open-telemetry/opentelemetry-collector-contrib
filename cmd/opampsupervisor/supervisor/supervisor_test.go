@@ -1026,6 +1026,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1040,6 +1041,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			doneChan:                       make(chan struct{}),
 			agentReadyChan:                 make(chan struct{}),
 			agentReady:                     atomic.Bool{},
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		loopDoneChan := make(chan struct{})
@@ -1080,6 +1083,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1092,6 +1096,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    client,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1109,6 +1115,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1121,6 +1128,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1148,6 +1157,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1160,6 +1170,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1187,6 +1199,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1199,6 +1212,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1228,6 +1243,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		defer func() {
 			_ = mp.Shutdown(t.Context())
 		}()
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1243,6 +1259,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			agentReadyChan:                 make(chan struct{}),
 			agentReady:                     atomic.Bool{},
 			metrics:                        metrics,
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -2039,12 +2057,14 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 
 func TestSupervisor_HealthCheckServer(t *testing.T) {
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
-
+	runCtx, runCtxCancel := context.WithCancel(t.Context())
 	s := &Supervisor{
 		telemetrySettings: newNopTelemetrySettings(),
 		persistentState:   &persistentState{InstanceID: testUUID},
 		cfgState:          &atomic.Value{},
 		doneChan:          make(chan struct{}),
+		runCtx:            runCtx,
+		runCtxCancel:      runCtxCancel,
 	}
 
 	healthyConfig := &configState{
