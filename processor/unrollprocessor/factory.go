@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package unrollprocessor // import "github.com/observiq/bindplane-otel-collector/processor/unrollprocessor"
+package unrollprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/unrollprocessor"
 
 import (
 	"context"
