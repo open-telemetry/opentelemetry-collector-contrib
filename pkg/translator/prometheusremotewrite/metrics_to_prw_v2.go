@@ -116,6 +116,10 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
+					if settings.ConvertHistogramsToNHCB {
+						c.addCustomBucketsHistogramDataPoints(dataPoints, resource, settings, promName, m)
+						break
+					}
 					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()

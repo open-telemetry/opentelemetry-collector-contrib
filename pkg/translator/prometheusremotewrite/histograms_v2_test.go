@@ -366,7 +366,7 @@ func TestConvertBucketsLayoutV2(t *testing.T) {
 	for _, tt := range tests {
 		for scaleDown, wantLayout := range tt.wantLayout {
 			t.Run(fmt.Sprintf("%s-scaleby-%d", tt.name, scaleDown), func(t *testing.T) {
-				gotSpans, gotDeltas := convertBucketsLayoutV2(tt.buckets(), scaleDown)
+				gotSpans, gotDeltas := convertBucketsLayoutV2(tt.buckets().BucketCounts().AsRaw(), tt.buckets().Offset(), scaleDown, true)
 				assert.Equal(t, wantLayout.wantSpans, gotSpans)
 				assert.Equal(t, wantLayout.wantDeltas, gotDeltas)
 			})
