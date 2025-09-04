@@ -1,4 +1,4 @@
-package lrucache
+package lrucache // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/lrucache"
 
 import (
 	"container/list"
