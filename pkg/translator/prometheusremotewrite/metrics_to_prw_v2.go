@@ -85,7 +85,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				promName, err := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),
