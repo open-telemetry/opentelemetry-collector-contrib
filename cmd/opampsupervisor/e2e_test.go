@@ -2351,8 +2351,6 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
 	require.NoError(t, err)
 
-	cfg.Telemetry.Logs.Level = zap.DebugLevel
-
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start(t.Context()))
