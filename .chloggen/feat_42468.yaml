@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "exporter/kafka"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add AllowAutoTopicCreation option to kafka exporter and client"
+note: "Add allow_auto_topic_creation producer option to kafka exporter and client"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42468]
