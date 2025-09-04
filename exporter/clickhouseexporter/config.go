@@ -4,8 +4,10 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/config/configtls"
 	"net/url"
 	"time"
 
@@ -36,6 +38,8 @@ type Config struct {
 	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
+	// TLS is the TLS config for connecting to ClickHouse.
+	TLS configtls.ClientConfig `mapstructure:"tls"`
 	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
 	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
@@ -193,6 +197,27 @@ func (cfg *Config) buildDSN() (string, error) {
 	dsnURL.RawQuery = queryParams.Encode()
 
 	return dsnURL.String(), nil
+}
+
+func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
+	dsn, err := cfg.buildDSN()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build DSN from config: %w", err)
+	}
+
+	opt, err := clickhouse.ParseDSN(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse DSN: %w", err)
+	}
+
+	if cfg.TLS.CAFile != "" || cfg.TLS.CertFile != "" || cfg.TLS.KeyFile != "" {
+		opt.TLS, err = cfg.TLS.LoadTLSConfig(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("failed to load TLS config: %w", err)
+		}
+	}
+
+	return opt, nil
 }
 
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.

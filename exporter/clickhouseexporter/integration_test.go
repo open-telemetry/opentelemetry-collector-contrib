@@ -171,10 +171,10 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 
 func TestIntegration(t *testing.T) {
 	// Update versions according to oldest and newest supported here: https://github.com/clickhouse/clickhouse/security
-	t.Run("25.6", func(t *testing.T) {
+	t.Run("25.8", func(t *testing.T) {
 		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.6-alpine")
 	})
-	t.Run("24.11", func(t *testing.T) {
+	t.Run("25.3", func(t *testing.T) {
 		testIntegrationWithImage(t, "clickhouse/clickhouse-server:24.11-alpine")
 	})
 
