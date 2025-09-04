@@ -66,9 +66,13 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 			scopeMetrics := scopeMetricsSlice.At(j)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
+				metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				if err != nil {
+					// TODO: What to do here?
+				}
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
-					MetricFamilyName: metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
+					MetricFamilyName: metricName,
 					Unit:             unitNamer.Build(metric.Unit()),
 					Help:             metric.Description(),
 				}

@@ -309,7 +309,11 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 		if key == "" || value == "" {
 			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-		sanitizedLabels[namer.Build(key)] = value
+		normalizedName, err := namer.Build(key)
+		if err != nil {
+			return nil, err
+		}
+		sanitizedLabels[normalizedName] = value
 	}
 
 	return sanitizedLabels, nil
