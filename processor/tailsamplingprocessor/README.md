@@ -34,6 +34,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on the rate of spans per second.
+- `bytes_limiting`: Sample based on the rate of kilobytes per second using a token bucket algorithm. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
@@ -127,21 +128,26 @@ processors:
          },
          {
             name: test-policy-9,
+            type: bytes_limiting,
+            bytes_limiting: {kb_per_second: 1000, burst_capacity_kb: 2000}
+         },
+         {
+            name: test-policy-10,
             type: span_count,
             span_count: {min_spans: 2, max_spans: 20}
          },
          {
-             name: test-policy-10,
+             name: test-policy-11,
              type: trace_state,
              trace_state: { key: key3, values: [value1, value2] }
          },
          {
-              name: test-policy-11,
+              name: test-policy-12,
               type: boolean_attribute,
               boolean_attribute: {key: key4, value: true}
          },
          {
-              name: test-policy-12,
+              name: test-policy-13,
               type: ottl_condition,
               ottl_condition: {
                    error_mode: ignore,
@@ -229,6 +235,49 @@ processors:
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+## Bytes Limiting Policy
+
+The `bytes_limiting` policy uses a token bucket algorithm to control the rate of data throughput based on the estimated size of traces in bytes. This policy is particularly useful for:
+
+- **Volume control**: Limiting the total amount of trace data processed per unit time
+- **Burst handling**: Allowing short-term spikes in data volume while maintaining long-term rate limits
+- **Memory protection**: Preventing downstream systems from being overwhelmed by large traces
+
+### Configuration
+
+The `bytes_limiting` policy supports the following configuration parameters:
+
+- `kb_per_second`: The sustained rate at which kilobytes are allowed through (required)
+- `burst_capacity_kb`: The maximum number of kilobytes that can be processed in a burst (optional, defaults to 2x `kb_per_second`)
+
+### Token Bucket Algorithm
+
+The policy implements a token bucket algorithm where:
+
+1. **Tokens represent bytes**: Each token in the bucket represents one byte of trace data
+2. **Continuous refill**: Tokens are added to the bucket at the configured `kb_per_second` rate (converted to bytes internally)
+3. **Burst capacity**: The bucket can hold up to `burst_capacity_kb` tokens for handling traffic bursts
+4. **Consumption**: When a trace arrives, tokens equal to the trace size are consumed from the bucket
+5. **Rejection**: If insufficient tokens are available, the trace is not sampled
+
+### Example Configuration
+
+```yaml
+processors:
+  tail_sampling:
+    policies:
+      - name: volume-control
+        type: bytes_limiting
+        bytes_limiting:
+          kb_per_second: 1024          # 1 MB/second sustained rate
+          burst_capacity_kb: 5120      # 5 MB burst capacity
+```
+
+This configuration allows:
+- A sustained throughput of 1 MB/second (1024 KB/s)
+- Burst traffic up to 5 MB (5120 KB) before rate limiting kicks in
+- Smooth handling of variable trace sizes and timing
 
 ## A Practical Example
 

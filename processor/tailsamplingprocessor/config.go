@@ -45,6 +45,8 @@ const (
 	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
 	// conditions.
 	OTTLCondition PolicyType = "ottl_condition"
+	// BytesLimiting allows all traces until the specified byte limits are satisfied.
+	BytesLimiting PolicyType = "bytes_limiting"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -66,6 +68,8 @@ type sharedPolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for bytes limiting filter sampling policy evaluator.
+	BytesLimitingCfg BytesLimitingCfg `mapstructure:"bytes_limiting"`
 	// Configs for span count filter sampling policy evaluator.
 	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 	// Configs for defining trace_state policy
@@ -201,6 +205,16 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+}
+
+// BytesLimitingCfg holds the configurable settings to create a bytes limiting
+// sampling policy evaluator using a token bucket algorithm.
+type BytesLimitingCfg struct {
+	// KilobytesPerSecond sets the limit on the maximum number of kilobytes that can be processed each second.
+	KilobytesPerSecond int64 `mapstructure:"kb_per_second"`
+	// BurstCapacityKB sets the maximum burst capacity in kilobytes. If not specified, defaults to 2x KilobytesPerSecond.
+	// This allows for short bursts of traffic above the sustained rate.
+	BurstCapacityKB int64 `mapstructure:"burst_capacity_kb"`
 }
 
 // SpanCountCfg holds the configurable settings to create a Span Count filter sampling
