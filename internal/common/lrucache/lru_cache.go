@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package lrucache // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/lrucache"
 
 import (
