@@ -395,7 +395,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	}
 
 	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
-	attrs.PutStr(AttributeVCSRepositoryNamespace, e.Project.Namespace)
+	attrs.PutStr(AttributeGitLabProjectNamespace, e.Project.Namespace)
 	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
 
 	// User details are only included if explicitly enabled in configuration

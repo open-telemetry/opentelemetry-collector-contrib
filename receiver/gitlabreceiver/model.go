@@ -18,7 +18,6 @@ const (
 	// The following attributes are not part of semconv yet, but potential candidates for future inclusion
 	// They are highly experimental and subject to change
 	AttributeVCSRepositoryVisibility = "vcs.repository.visibility"
-	AttributeVCSRepositoryNamespace  = "vcs.repository.namespace"
 	AttributeVCSRepositoryRefDefault = "vcs.repository.ref.default"
 
 	AttributeVCSRefHeadRevisionMessage     = "vcs.ref.head.revision.message"
@@ -39,6 +38,8 @@ const (
 
 	// The following attributes are EXCLUSIVE to GitLab but not listed under Vendor Extensions within Semantic Conventions yet
 	// They are highly experimental and subject to change
+	AttributeGitLabProjectNamespace = "gitlab.project.namespace"
+
 	AttributeGitLabPipelineRunActorUsername = "gitlab.pipeline.run.actor.username"
 
 	AttributeGitLabPipelineSource              = "gitlab.pipeline.source" // Source of the pipeline: https://docs.gitlab.com/ci/jobs/job_rules/#ci_pipeline_source-predefined-variable
