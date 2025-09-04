@@ -2,6 +2,10 @@ type: resourcedetectionprocessor/hetzner
 
 parent: resourcedetection
 
+status:
+  codeowners:
+    active: [Aneurysm9, dashpole, paulojmdias]
+
 resource_attributes:
   cloud.availability_zone:
     description: The cloud availability zone
