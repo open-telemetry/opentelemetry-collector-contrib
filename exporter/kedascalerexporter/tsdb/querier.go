@@ -95,9 +95,9 @@ func (q *InMemoryQuerier) LabelNames(
 		if !matchLabels(s.Labels, matchers) {
 			continue
 		}
-		for _, l := range s.Labels {
+		s.Labels.Range(func(l labels.Label) {
 			nameSet[l.Name] = struct{}{}
-		}
+		})
 	}
 	var names []string
 	for n := range nameSet {

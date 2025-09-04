@@ -161,7 +161,7 @@ require (
 	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 )
 
-replace github.com/prometheus/common => github.com/prometheus/common v0.62.0
+replace github.com/prometheus/common => github.com/prometheus/common v0.65.0
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
