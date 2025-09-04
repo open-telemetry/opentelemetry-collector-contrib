@@ -174,7 +174,13 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, alreadyUsedFields []string, logger *zap.Logger) {
 	for _, spe := range events {
 		newEvent := sp.Events().AppendEmpty()
-		newEvent.SetTimestamp(pcommon.Timestamp(spe.MsgPackTimestamp.UnixNano()))
+		// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+		if spe.MsgPackTimestamp != nil {
+			newEvent.SetTimestamp(pcommon.Timestamp(spe.MsgPackTimestamp.UnixNano()))
+		} else {
+			// Use current time if timestamp is not available
+			newEvent.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+		}
 		newEvent.SetName(spe.Data["name"].(string))
 		for lkey, lval := range spe.Data {
 			if slices.Contains(alreadyUsedFields, lkey) {
