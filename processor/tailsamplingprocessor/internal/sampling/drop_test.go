@@ -6,6 +6,7 @@ package sampling
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -18,7 +19,7 @@ func TestDropEvaluatorNotSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -29,12 +30,12 @@ func TestDropEvaluatorNotSampled(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, NotSampled, decision)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
 
 func TestDropEvaluatorSampled(t *testing.T) {
@@ -42,7 +43,7 @@ func TestDropEvaluatorSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -54,12 +55,12 @@ func TestDropEvaluatorSampled(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, Dropped, decision)
+	assert.Equal(t, samplingpolicy.Dropped, decision)
 }
 
 func TestDropEvaluatorStringInvertMatch(t *testing.T) {
@@ -67,7 +68,7 @@ func TestDropEvaluatorStringInvertMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -79,12 +80,12 @@ func TestDropEvaluatorStringInvertMatch(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, Dropped, decision)
+	assert.Equal(t, samplingpolicy.Dropped, decision)
 }
 
 func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
@@ -92,7 +93,7 @@ func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -104,10 +105,10 @@ func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, NotSampled, decision)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }

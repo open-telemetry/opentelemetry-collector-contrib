@@ -4,6 +4,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -14,20 +15,20 @@ func hasResourceOrSpanWithCondition(
 	td ptrace.Traces,
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
-) Decision {
+) samplingpolicy.Decision {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
 		resource := rs.Resource()
 		if shouldSampleResource(resource) {
-			return Sampled
+			return samplingpolicy.Sampled
 		}
 
 		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, false) {
-			return Sampled
+			return samplingpolicy.Sampled
 		}
 	}
-	return NotSampled
+	return samplingpolicy.NotSampled
 }
 
 // invertHasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
@@ -36,7 +37,7 @@ func invertHasResourceOrSpanWithCondition(
 	td ptrace.Traces,
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
-) Decision {
+) samplingpolicy.Decision {
 	isd := IsInvertDecisionsDisabled()
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -45,35 +46,35 @@ func invertHasResourceOrSpanWithCondition(
 		resource := rs.Resource()
 		if !shouldSampleResource(resource) {
 			if isd {
-				return NotSampled
+				return samplingpolicy.NotSampled
 			}
-			return InvertNotSampled
+			return samplingpolicy.InvertNotSampled
 		}
 
 		if !hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, true) {
 			if isd {
-				return NotSampled
+				return samplingpolicy.NotSampled
 			}
-			return InvertNotSampled
+			return samplingpolicy.InvertNotSampled
 		}
 	}
 
 	if isd {
-		return Sampled
+		return samplingpolicy.Sampled
 	}
-	return InvertSampled
+	return samplingpolicy.InvertSampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.
-func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) bool) Decision {
+func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) bool) samplingpolicy.Decision {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
 		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample, false) {
-			return Sampled
+			return samplingpolicy.Sampled
 		}
 	}
-	return NotSampled
+	return samplingpolicy.NotSampled
 }
 
 func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool, invert bool) bool {
@@ -91,7 +92,7 @@ func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, che
 	return invert
 }
 
-func SetAttrOnScopeSpans(data *TraceData, attrName, attrKey string) {
+func SetAttrOnScopeSpans(data *samplingpolicy.TraceData, attrName, attrKey string) {
 	data.Lock()
 	defer data.Unlock()
 

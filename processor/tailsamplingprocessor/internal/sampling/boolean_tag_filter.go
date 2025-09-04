@@ -6,6 +6,7 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -19,11 +20,11 @@ type booleanAttributeFilter struct {
 	invertMatch bool
 }
 
-var _ PolicyEvaluator = (*booleanAttributeFilter)(nil)
+var _ samplingpolicy.PolicyEvaluator = (*booleanAttributeFilter)(nil)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.
-func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value, invertMatch bool) PolicyEvaluator {
+func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value, invertMatch bool) samplingpolicy.PolicyEvaluator {
 	return &booleanAttributeFilter{
 		key:         key,
 		value:       value,
@@ -33,7 +34,7 @@ func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string,
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	trace.Lock()
 	defer trace.Unlock()
 	batches := trace.ReceivedBatches
