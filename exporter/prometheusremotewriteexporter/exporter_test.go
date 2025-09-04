@@ -1195,15 +1195,16 @@ func TestRetries(t *testing.T) {
 				telemetry: telemetry,
 			}
 			buf := bufferPool.Get().(*buffer)
+			buf.protobuf.Reset()
 			defer bufferPool.Put(buf)
 
-			reqBuf, errMarshal := buf.MarshalAndEncode(&prompb.WriteRequest{})
+			errMarshal := buf.protobuf.Marshal(&prompb.WriteRequest{})
 			if errMarshal != nil {
 				require.NoError(t, errMarshal)
 				return
 			}
 
-			err = exporter.execute(tt.ctx, reqBuf)
+			err = exporter.execute(tt.ctx, buf)
 			tt.assertError(t, err)
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
@@ -1227,17 +1228,10 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
-	// Create the telemetry
-	testTel := componenttest.NewTelemetry()
-	telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
-	require.NoError(b, err)
-
 	// Create the prwExporter
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
-		settings:    testTel.NewTelemetrySettings(),
-		telemetry:   telemetry,
 	}
 
 	generateSamples := func(n int) []prompb.Sample {
@@ -1303,18 +1297,18 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
-
 	for _, req := range reqs {
 		buf := bufferPool.Get().(*buffer)
-		reqBuf, errMarshal := buf.MarshalAndEncode(req)
+		buf.protobuf.Reset()
+		defer bufferPool.Put(buf)
+
+		errMarshal := buf.protobuf.Marshal(req)
 		if errMarshal != nil {
 			require.NoError(b, errMarshal)
 			return
 		}
-		if err = exporter.execute(ctx, reqBuf); err != nil {
-			b.Fatal(err)
-		}
-		bufferPool.Put(buf)
+		err := exporter.execute(ctx, buf)
+		require.NoError(b, err)
 	}
 }
 
