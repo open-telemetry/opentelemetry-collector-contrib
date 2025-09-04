@@ -19,7 +19,7 @@ func TestDropEvaluatorNotSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -43,7 +43,7 @@ func TestDropEvaluatorSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -68,7 +68,7 @@ func TestDropEvaluatorStringInvertMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -93,7 +93,7 @@ func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewDrop(zap.NewNop(), []samplingpolicy.PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

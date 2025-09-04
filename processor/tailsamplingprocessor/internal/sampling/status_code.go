@@ -20,11 +20,11 @@ type statusCodeFilter struct {
 	statusCodes []ptrace.StatusCode
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*statusCodeFilter)(nil)
+var _ samplingpolicy.Evaluator = (*statusCodeFilter)(nil)
 
 // NewStatusCodeFilter creates a policy evaluator that samples all traces with
 // a given status code.
-func NewStatusCodeFilter(settings component.TelemetrySettings, statusCodeString []string) (samplingpolicy.PolicyEvaluator, error) {
+func NewStatusCodeFilter(settings component.TelemetrySettings, statusCodeString []string) (samplingpolicy.Evaluator, error) {
 	if len(statusCodeString) == 0 {
 		return nil, errors.New("expected at least one status code to filter on")
 	}

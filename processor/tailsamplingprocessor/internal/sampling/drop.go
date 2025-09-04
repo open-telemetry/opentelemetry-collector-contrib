@@ -13,14 +13,14 @@ import (
 
 type Drop struct {
 	// the subpolicy evaluators
-	subpolicies []samplingpolicy.PolicyEvaluator
+	subpolicies []samplingpolicy.Evaluator
 	logger      *zap.Logger
 }
 
 func NewDrop(
 	logger *zap.Logger,
-	subpolicies []samplingpolicy.PolicyEvaluator,
-) samplingpolicy.PolicyEvaluator {
+	subpolicies []samplingpolicy.Evaluator,
+) samplingpolicy.Evaluator {
 	return &Drop{
 		subpolicies: subpolicies,
 		logger:      logger,

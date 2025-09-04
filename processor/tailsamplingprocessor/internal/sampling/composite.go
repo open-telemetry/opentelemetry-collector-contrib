@@ -13,7 +13,7 @@ import (
 
 type subpolicy struct {
 	// the subpolicy evaluator
-	evaluator samplingpolicy.PolicyEvaluator
+	evaluator samplingpolicy.Evaluator
 
 	// spans per second allocated to each subpolicy
 	allocatedSPS int64
@@ -42,11 +42,11 @@ type Composite struct {
 	recordSubPolicy bool
 }
 
-var _ samplingpolicy.PolicyEvaluator = (*Composite)(nil)
+var _ samplingpolicy.Evaluator = (*Composite)(nil)
 
 // SubPolicyEvalParams defines the evaluator and max rate for a sub-policy
 type SubPolicyEvalParams struct {
-	Evaluator         samplingpolicy.PolicyEvaluator
+	Evaluator         samplingpolicy.Evaluator
 	MaxSpansPerSecond int64
 	Name              string
 }
@@ -58,7 +58,7 @@ func NewComposite(
 	subPolicyParams []SubPolicyEvalParams,
 	timeProvider TimeProvider,
 	recordSubPolicy bool,
-) samplingpolicy.PolicyEvaluator {
+) samplingpolicy.Evaluator {
 	var subpolicies []*subpolicy
 
 	for i := 0; i < len(subPolicyParams); i++ {

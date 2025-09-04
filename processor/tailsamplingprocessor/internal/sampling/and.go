@@ -13,14 +13,14 @@ import (
 
 type And struct {
 	// the subpolicy evaluators
-	subpolicies []samplingpolicy.PolicyEvaluator
+	subpolicies []samplingpolicy.Evaluator
 	logger      *zap.Logger
 }
 
 func NewAnd(
 	logger *zap.Logger,
-	subpolicies []samplingpolicy.PolicyEvaluator,
-) samplingpolicy.PolicyEvaluator {
+	subpolicies []samplingpolicy.Evaluator,
+) samplingpolicy.Evaluator {
 	return &And{
 		subpolicies: subpolicies,
 		logger:      logger,
