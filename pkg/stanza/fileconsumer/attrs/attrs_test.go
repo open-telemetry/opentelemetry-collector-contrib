@@ -169,7 +169,6 @@ func TestResolver_extractMetadata(t *testing.T) {
 }
 
 func BenchmarkResolveWithMetadataExtraction(b *testing.B) {
-
 	r := Resolver{
 		MetadataExtraction: MetadataExtraction{
 			Regex: `^(?P<file>.*)$`,
