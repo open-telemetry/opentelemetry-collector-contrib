@@ -45,7 +45,7 @@ func newNatsCoreExporter[T any](
 	}
 }
 
-func setNatsTLSConfigOption(options *nats.Options, ctx context.Context, cfg *configtls.ClientConfig) error {
+func setNatsSecureOption(options *nats.Options, ctx context.Context, cfg *configtls.ClientConfig) error {
 	tlsConfig, err := cfg.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func createNats(ctx context.Context, cfg *Config) (*nats.Conn, error) {
 	options := nats.GetDefaultOptions()
 	options.Url = cfg.Endpoint
 	options.Pedantic = cfg.Pedantic
-	errs = multierr.Append(errs, setNatsTLSConfigOption(&options, ctx, &cfg.TLS))
+	errs = multierr.Append(errs, setNatsSecureOption(&options, ctx, &cfg.TLS))
 	errs = multierr.Append(errs, setNatsAuthOption(&options, &cfg.Auth))
 	if errs != nil {
 		return nil, errs
