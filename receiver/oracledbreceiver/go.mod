@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.4

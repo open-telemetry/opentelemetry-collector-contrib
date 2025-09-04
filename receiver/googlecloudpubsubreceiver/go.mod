@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	cloud.google.com/go/pubsub v1.49.0

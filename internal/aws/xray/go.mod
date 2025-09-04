@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0

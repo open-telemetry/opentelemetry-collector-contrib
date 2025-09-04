@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.69.4
