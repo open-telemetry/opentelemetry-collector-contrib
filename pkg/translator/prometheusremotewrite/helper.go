@@ -129,7 +129,10 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	sort.Stable(ByLabelName(labels))
 
 	for _, label := range labels {
-		finalKey := labelNamer.Build(label.Name)
+		finalKey, err := labelNamer.Build(label.Name)
+		if err != nil {
+			// TODO: What to do here?
+		}
 		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
 			// Only append to existing value if the new value is different
 			if existingValue != label.Value {
@@ -171,8 +174,12 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		}
 		// internal labels should be maintained
 		name := extras[i]
+		var err error
 		if len(name) <= 4 || name[:2] != "__" || name[len(name)-2:] != "__" {
-			name = labelNamer.Build(name)
+			name, err = labelNamer.Build(name)
+			if err != nil {
+				// TODO: What to do here?
+			}
 		}
 		l[name] = extras[i+1]
 	}
