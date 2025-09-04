@@ -162,6 +162,8 @@ func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
 	require.NotNil(t, supervisor.telemetrySettings.Logger)
 	require.NotNil(t, supervisor.telemetrySettings.loggerProvider)
 
+	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
+
 	supervisor.Shutdown()
 }
 

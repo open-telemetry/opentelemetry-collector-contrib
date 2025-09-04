@@ -120,6 +120,9 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
+	// The Logger given to the Supervisor on startup.
+	rawLogger *zap.Logger
+
 	agentDescription    *atomic.Value
 	availableComponents *atomic.Value
 
@@ -219,19 +222,9 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
-	var err error
-
-	s.telemetrySettings, err = initTelemetrySettings(s.runCtx, logger, cfg.Telemetry)
-	if err != nil {
-		return nil, err
-	}
-
-	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
-	if err != nil {
-		return nil, fmt.Errorf("error creating internal metrics: %w", err)
-	}
-
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+
+	s.rawLogger = logger
 
 	return s, nil
 }
@@ -322,6 +315,16 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	var err error
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
+
+	s.telemetrySettings, err = initTelemetrySettings(s.runCtx, s.rawLogger, s.config.Telemetry)
+	if err != nil {
+		return err
+	}
+
+	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
+	if err != nil {
+		return fmt.Errorf("error creating internal metrics: %w", err)
+	}
 
 	if err = s.startHealthCheckServer(); err != nil {
 		return fmt.Errorf("failed to start health check server: %w", err)

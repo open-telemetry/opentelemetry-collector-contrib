@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -56,6 +57,8 @@ func TestSupervisorMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 
+	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
+
 	supervisor.telemetrySettings.MeterProvider = mp
 	metrics, err := supervisorTelemetry.NewMetrics(mp)
 	require.NoError(t, err)
@@ -99,6 +102,8 @@ func TestSupervisorMetricsLifecycle(t *testing.T) {
 	supervisor, err := NewSupervisor(zap.NewNop(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
+
+	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
 
 	supervisor.telemetrySettings.MeterProvider = mp
 	metrics, err := supervisorTelemetry.NewMetrics(mp)
