@@ -168,8 +168,7 @@ func newNatsCoreLogsExporter(set exporter.Settings, cfg *Config) (*natsCoreExpor
 	}
 	marshaler := marshaler.NewMarshaler(resolver, marshaler.PickMarshalLogs)
 
-	exporter := newNatsCoreExporter(set, cfg, grouper, marshaler)
-	return exporter, nil
+	return newNatsCoreExporter(set, cfg, grouper, marshaler), nil
 }
 
 func newNatsCoreMetricsExporter(set exporter.Settings, cfg *Config) (*natsCoreExporter[pmetric.Metrics], error) {
@@ -184,8 +183,7 @@ func newNatsCoreMetricsExporter(set exporter.Settings, cfg *Config) (*natsCoreEx
 	}
 	marshaler := marshaler.NewMarshaler(resolver, marshaler.PickMarshalMetrics)
 
-	exporter := newNatsCoreExporter(set, cfg, grouper, marshaler)
-	return exporter, nil
+	return newNatsCoreExporter(set, cfg, grouper, marshaler), nil
 }
 
 func newNatsCoreTracesExporter(set exporter.Settings, cfg *Config) (*natsCoreExporter[ptrace.Traces], error) {
@@ -200,6 +198,5 @@ func newNatsCoreTracesExporter(set exporter.Settings, cfg *Config) (*natsCoreExp
 	}
 	marshaler := marshaler.NewMarshaler(resolver, marshaler.PickMarshalTraces)
 
-	exporter := newNatsCoreExporter(set, cfg, grouper, marshaler)
-	return exporter, nil
+	return newNatsCoreExporter(set, cfg, grouper, marshaler), nil
 }

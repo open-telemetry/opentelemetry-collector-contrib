@@ -43,21 +43,24 @@ func (g *metricsGrouper) Group(ctx context.Context, srcMetrics pmetric.Metrics) 
 			)
 
 			for _, srcMetric := range srcMetricSlice.All() {
-				transformContext := ottlmetric.NewTransformContext(
+				subjectAsAny, err := g.valueExpression.Eval(ctx, ottlmetric.NewTransformContext(
 					srcMetric,
 					srcMetricSlice,
 					srcScope,
 					srcResource,
 					srcScopeMetrics,
 					srcResourceMetrics,
-				)
-
-				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
+				))
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
 				}
+
 				subject := subjectAsAny.(string)
+				if err := validateSubject(subject); err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 
 				dest, ok := destBySubject[subject]
 				if !ok {

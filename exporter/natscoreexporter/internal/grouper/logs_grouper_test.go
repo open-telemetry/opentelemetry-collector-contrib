@@ -21,9 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-func generateLogs(t *testing.T) plog.Logs {
-	t.Helper()
-
+func generateLogs() plog.Logs {
 	logs := plog.NewLogs()
 	for range 10 {
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
@@ -42,8 +40,6 @@ func generateLogs(t *testing.T) plog.Logs {
 }
 
 func groupLogs(t *testing.T, subject string, srcLogs plog.Logs) []Group[plog.Logs] {
-	t.Helper()
-
 	parser, err := ottllog.NewParser(
 		ottlfuncs.StandardConverters[ottllog.TransformContext](),
 		componenttest.NewNopTelemetrySettings(),
@@ -52,67 +48,44 @@ func groupLogs(t *testing.T, subject string, srcLogs plog.Logs) []Group[plog.Log
 	valueExpression, err := parser.ParseValueExpression(subject)
 	require.NoError(t, err)
 
-	subjectByLogRecord := make(map[plog.LogRecord]string)
-	for _, srcResourceLogs := range srcLogs.ResourceLogs().All() {
-		for _, srcScopeLogs := range srcResourceLogs.ScopeLogs().All() {
-			for _, srcLogRecord := range srcScopeLogs.LogRecords().All() {
-				transformContext := ottllog.NewTransformContext(
-					srcLogRecord,
-					srcScopeLogs.Scope(),
-					srcResourceLogs.Resource(),
-					srcScopeLogs,
-					srcResourceLogs,
-				)
-
-				subjectAsAny, err := valueExpression.Eval(t.Context(), transformContext)
-				require.NoError(t, err)
-				subject := subjectAsAny.(string)
-
-				subjectByLogRecord[srcLogRecord] = subject
-			}
-		}
+	constructSubject := func(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord) string {
+		subjectAsAny, err := valueExpression.Eval(t.Context(), ottllog.NewTransformContext(
+			logRecord,
+			scopeLogs.Scope(),
+			resourceLogs.Resource(),
+			scopeLogs,
+			resourceLogs,
+		))
+		require.NoError(t, err)
+		return subjectAsAny.(string)
 	}
 
 	subjects := make(map[string]bool)
-	for _, subject := range subjectByLogRecord {
-		subjects[subject] = true
+	for _, srcResourceLogs := range srcLogs.ResourceLogs().All() {
+		for _, srcScopeLogs := range srcResourceLogs.ScopeLogs().All() {
+			for _, srcLogRecord := range srcScopeLogs.LogRecords().All() {
+				subjects[constructSubject(srcResourceLogs, srcScopeLogs, srcLogRecord)] = true
+			}
+		}
 	}
 
 	groups := make([]Group[plog.Logs], 0, len(subjects))
 	for groupSubject := range subjects {
-		destResourceLogsSlice := plog.NewResourceLogsSlice()
-		for _, srcResourceLogs := range srcLogs.ResourceLogs().All() {
-			destScopeLogsSlice := plog.NewScopeLogsSlice()
-			for _, srcScopeLogs := range srcResourceLogs.ScopeLogs().All() {
-				destLogRecordSlice := plog.NewLogRecordSlice()
-				for _, srcLogRecord := range srcScopeLogs.LogRecords().All() {
-					if subjectByLogRecord[srcLogRecord] == groupSubject {
-						srcLogRecord.CopyTo(destLogRecordSlice.AppendEmpty())
-					}
-				}
-
-				if destLogRecordSlice.Len() > 0 {
-					destScopeLogs := destScopeLogsSlice.AppendEmpty()
-					srcScopeLogs.CopyTo(destScopeLogs)
-					destLogRecordSlice.CopyTo(destScopeLogs.LogRecords())
-				}
-			}
-
-			if destScopeLogsSlice.Len() > 0 {
-				destResourceLogs := destResourceLogsSlice.AppendEmpty()
-				srcResourceLogs.CopyTo(destResourceLogs)
-				destScopeLogsSlice.CopyTo(destResourceLogs.ScopeLogs())
-			}
-		}
-
-		if destResourceLogsSlice.Len() > 0 {
-			destLogs := plog.NewLogs()
-			destResourceLogsSlice.CopyTo(destLogs.ResourceLogs())
-			groups = append(groups, Group[plog.Logs]{
-				Subject: groupSubject,
-				Data:    destLogs,
+		destLogs := plog.NewLogs()
+		srcLogs.CopyTo(destLogs)
+		destLogs.ResourceLogs().RemoveIf(func(destResourceLogs plog.ResourceLogs) bool {
+			destResourceLogs.ScopeLogs().RemoveIf(func(destScopeLogs plog.ScopeLogs) bool {
+				destScopeLogs.LogRecords().RemoveIf(func(destLogRecord plog.LogRecord) bool {
+					return constructSubject(destResourceLogs, destScopeLogs, destLogRecord) != groupSubject
+				})
+				return destScopeLogs.LogRecords().Len() == 0
 			})
-		}
+			return destResourceLogs.ScopeLogs().Len() == 0
+		})
+		groups = append(groups, Group[plog.Logs]{
+			Subject: groupSubject,
+			Data:    destLogs,
+		})
 	}
 	return groups
 }
@@ -122,7 +95,7 @@ func TestLogsGrouper(t *testing.T) {
 
 	t.Run("consistent with naive implementation", func(t *testing.T) {
 		subject := "log.attributes[\"subject\"]"
-		srcLogs := generateLogs(t)
+		srcLogs := generateLogs()
 
 		logsGrouper, err := NewLogsGrouper(subject, componenttest.NewNopTelemetrySettings())
 		assert.NoError(t, err)

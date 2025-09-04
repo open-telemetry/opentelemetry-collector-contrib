@@ -42,20 +42,23 @@ func (g *logsGrouper) Group(ctx context.Context, srcLogs plog.Logs) ([]Group[plo
 			)
 
 			for _, srcLogRecord := range srcScopeLogs.LogRecords().All() {
-				transformContext := ottllog.NewTransformContext(
+				subjectAsAny, err := g.valueExpression.Eval(ctx, ottllog.NewTransformContext(
 					srcLogRecord,
 					srcScope,
 					srcResource,
 					srcScopeLogs,
 					srcResourceLogs,
-				)
-
-				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
+				))
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
 				}
+
 				subject := subjectAsAny.(string)
+				if err := validateSubject(subject); err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 
 				dest, ok := destBySubject[subject]
 				if !ok {

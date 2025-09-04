@@ -42,20 +42,23 @@ func (g *tracesGrouper) Group(ctx context.Context, srcTraces ptrace.Traces) ([]G
 			)
 
 			for _, srcSpan := range srcScopeSpans.Spans().All() {
-				transformContext := ottlspan.NewTransformContext(
+				subjectAsAny, err := g.valueExpression.Eval(ctx, ottlspan.NewTransformContext(
 					srcSpan,
 					srcScope,
 					srcResource,
 					srcScopeSpans,
 					srcResourceSpans,
-				)
-
-				subjectAsAny, err := g.valueExpression.Eval(ctx, transformContext)
+				))
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
 				}
+
 				subject := subjectAsAny.(string)
+				if err := validateSubject(subject); err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 
 				dest, ok := destBySubject[subject]
 				if !ok {

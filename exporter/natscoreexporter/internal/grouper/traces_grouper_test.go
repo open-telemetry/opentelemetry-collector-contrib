@@ -21,9 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
-func generateTraces(t *testing.T) ptrace.Traces {
-	t.Helper()
-
+func generateTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	for range 10 {
 		resourceSpans := traces.ResourceSpans().AppendEmpty()
@@ -42,8 +40,6 @@ func generateTraces(t *testing.T) ptrace.Traces {
 }
 
 func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[ptrace.Traces] {
-	t.Helper()
-
 	parser, err := ottlspan.NewParser(
 		ottlfuncs.StandardConverters[ottlspan.TransformContext](),
 		componenttest.NewNopTelemetrySettings(),
@@ -52,67 +48,44 @@ func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[
 	valueExpression, err := parser.ParseValueExpression(subject)
 	require.NoError(t, err)
 
-	subjectBySpan := make(map[ptrace.Span]string)
-	for _, srcResourceSpans := range srcTraces.ResourceSpans().All() {
-		for _, srcScopeSpans := range srcResourceSpans.ScopeSpans().All() {
-			for _, srcSpan := range srcScopeSpans.Spans().All() {
-				transformContext := ottlspan.NewTransformContext(
-					srcSpan,
-					srcScopeSpans.Scope(),
-					srcResourceSpans.Resource(),
-					srcScopeSpans,
-					srcResourceSpans,
-				)
-
-				subjectAsAny, err := valueExpression.Eval(t.Context(), transformContext)
-				require.NoError(t, err)
-				subject := subjectAsAny.(string)
-
-				subjectBySpan[srcSpan] = subject
-			}
-		}
+	constructSubject := func(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span) string {
+		subjectAsAny, err := valueExpression.Eval(t.Context(), ottlspan.NewTransformContext(
+			span,
+			scopeSpans.Scope(),
+			resourceSpans.Resource(),
+			scopeSpans,
+			resourceSpans,
+		))
+		require.NoError(t, err)
+		return subjectAsAny.(string)
 	}
 
 	subjects := make(map[string]bool)
-	for _, subject := range subjectBySpan {
-		subjects[subject] = true
+	for _, srcResourceSpans := range srcTraces.ResourceSpans().All() {
+		for _, srcScopeSpans := range srcResourceSpans.ScopeSpans().All() {
+			for _, srcSpan := range srcScopeSpans.Spans().All() {
+				subjects[constructSubject(srcResourceSpans, srcScopeSpans, srcSpan)] = true
+			}
+		}
 	}
 
 	groups := make([]Group[ptrace.Traces], 0, len(subjects))
 	for groupSubject := range subjects {
-		destResourceSpansSlice := ptrace.NewResourceSpansSlice()
-		for _, srcResourceSpans := range srcTraces.ResourceSpans().All() {
-			destScopeSpansSlice := ptrace.NewScopeSpansSlice()
-			for _, srcScopeSpans := range srcResourceSpans.ScopeSpans().All() {
-				destSpanSlice := ptrace.NewSpanSlice()
-				for _, srcSpan := range srcScopeSpans.Spans().All() {
-					if subjectBySpan[srcSpan] == groupSubject {
-						srcSpan.CopyTo(destSpanSlice.AppendEmpty())
-					}
-				}
-
-				if destSpanSlice.Len() > 0 {
-					destScopeSpans := destScopeSpansSlice.AppendEmpty()
-					srcScopeSpans.CopyTo(destScopeSpans)
-					destSpanSlice.CopyTo(destScopeSpans.Spans())
-				}
-			}
-
-			if destScopeSpansSlice.Len() > 0 {
-				destResourceSpans := destResourceSpansSlice.AppendEmpty()
-				srcResourceSpans.CopyTo(destResourceSpans)
-				destScopeSpansSlice.CopyTo(destResourceSpans.ScopeSpans())
-			}
-		}
-
-		if destResourceSpansSlice.Len() > 0 {
-			destTraces := ptrace.NewTraces()
-			destResourceSpansSlice.CopyTo(destTraces.ResourceSpans())
-			groups = append(groups, Group[ptrace.Traces]{
-				Subject: groupSubject,
-				Data:    destTraces,
+		destTraces := ptrace.NewTraces()
+		srcTraces.CopyTo(destTraces)
+		destTraces.ResourceSpans().RemoveIf(func(destResourceSpans ptrace.ResourceSpans) bool {
+			destResourceSpans.ScopeSpans().RemoveIf(func(destScopeSpans ptrace.ScopeSpans) bool {
+				destScopeSpans.Spans().RemoveIf(func(destSpan ptrace.Span) bool {
+					return constructSubject(destResourceSpans, destScopeSpans, destSpan) != groupSubject
+				})
+				return destScopeSpans.Spans().Len() == 0
 			})
-		}
+			return destResourceSpans.ScopeSpans().Len() == 0
+		})
+		groups = append(groups, Group[ptrace.Traces]{
+			Subject: groupSubject,
+			Data:    destTraces,
+		})
 	}
 	return groups
 }
@@ -122,7 +95,7 @@ func TestTracesGrouper(t *testing.T) {
 
 	t.Run("consistent with naive implementation", func(t *testing.T) {
 		subject := "span.attributes[\"subject\"]"
-		srcTraces := generateTraces(t)
+		srcTraces := generateTraces()
 
 		tracesGrouper, err := NewTracesGrouper(subject, componenttest.NewNopTelemetrySettings())
 		assert.NoError(t, err)

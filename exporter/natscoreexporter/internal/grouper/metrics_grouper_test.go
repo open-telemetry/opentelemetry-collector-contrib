@@ -21,9 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func generateMetrics(t *testing.T) pmetric.Metrics {
-	t.Helper()
-
+func generateMetrics() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	for range 10 {
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -42,8 +40,6 @@ func generateMetrics(t *testing.T) pmetric.Metrics {
 }
 
 func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Group[pmetric.Metrics] {
-	t.Helper()
-
 	parser, err := ottlmetric.NewParser(
 		ottlfuncs.StandardConverters[ottlmetric.TransformContext](),
 		componenttest.NewNopTelemetrySettings(),
@@ -52,68 +48,45 @@ func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Gr
 	valueExpression, err := parser.ParseValueExpression(subject)
 	require.NoError(t, err)
 
-	subjectByMetric := make(map[pmetric.Metric]string)
-	for _, srcResourceMetrics := range srcMetrics.ResourceMetrics().All() {
-		for _, srcScopeMetrics := range srcResourceMetrics.ScopeMetrics().All() {
-			for _, srcMetric := range srcScopeMetrics.Metrics().All() {
-				transformContext := ottlmetric.NewTransformContext(
-					srcMetric,
-					srcScopeMetrics.Metrics(),
-					srcScopeMetrics.Scope(),
-					srcResourceMetrics.Resource(),
-					srcScopeMetrics,
-					srcResourceMetrics,
-				)
-
-				subjectAsAny, err := valueExpression.Eval(t.Context(), transformContext)
-				require.NoError(t, err)
-				subject := subjectAsAny.(string)
-
-				subjectByMetric[srcMetric] = subject
-			}
-		}
+	constructSubject := func(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric) string {
+		subjectAsAny, err := valueExpression.Eval(t.Context(), ottlmetric.NewTransformContext(
+			metric,
+			scopeMetrics.Metrics(),
+			scopeMetrics.Scope(),
+			resourceMetrics.Resource(),
+			scopeMetrics,
+			resourceMetrics,
+		))
+		require.NoError(t, err)
+		return subjectAsAny.(string)
 	}
 
 	subjects := make(map[string]bool)
-	for _, subject := range subjectByMetric {
-		subjects[subject] = true
+	for _, srcResourceMetrics := range srcMetrics.ResourceMetrics().All() {
+		for _, srcScopeMetrics := range srcResourceMetrics.ScopeMetrics().All() {
+			for _, srcMetric := range srcScopeMetrics.Metrics().All() {
+				subjects[constructSubject(srcResourceMetrics, srcScopeMetrics, srcMetric)] = true
+			}
+		}
 	}
 
 	groups := make([]Group[pmetric.Metrics], 0, len(subjects))
 	for groupSubject := range subjects {
-		destResourceMetricsSlice := pmetric.NewResourceMetricsSlice()
-		for _, srcResourceMetrics := range srcMetrics.ResourceMetrics().All() {
-			destScopeMetricsSlice := pmetric.NewScopeMetricsSlice()
-			for _, srcScopeMetrics := range srcResourceMetrics.ScopeMetrics().All() {
-				destMetricSlice := pmetric.NewMetricSlice()
-				for _, srcMetric := range srcScopeMetrics.Metrics().All() {
-					if subjectByMetric[srcMetric] == groupSubject {
-						srcMetric.CopyTo(destMetricSlice.AppendEmpty())
-					}
-				}
-
-				if destMetricSlice.Len() > 0 {
-					destScopeMetrics := destScopeMetricsSlice.AppendEmpty()
-					srcScopeMetrics.CopyTo(destScopeMetrics)
-					destMetricSlice.CopyTo(destScopeMetrics.Metrics())
-				}
-			}
-
-			if destScopeMetricsSlice.Len() > 0 {
-				destResourceMetrics := destResourceMetricsSlice.AppendEmpty()
-				srcResourceMetrics.CopyTo(destResourceMetrics)
-				destScopeMetricsSlice.CopyTo(destResourceMetrics.ScopeMetrics())
-			}
-		}
-
-		if destResourceMetricsSlice.Len() > 0 {
-			destMetrics := pmetric.NewMetrics()
-			destResourceMetricsSlice.CopyTo(destMetrics.ResourceMetrics())
-			groups = append(groups, Group[pmetric.Metrics]{
-				Subject: groupSubject,
-				Data:    destMetrics,
+		destMetrics := pmetric.NewMetrics()
+		srcMetrics.CopyTo(destMetrics)
+		destMetrics.ResourceMetrics().RemoveIf(func(destResourceMetrics pmetric.ResourceMetrics) bool {
+			destResourceMetrics.ScopeMetrics().RemoveIf(func(destScopeMetrics pmetric.ScopeMetrics) bool {
+				destScopeMetrics.Metrics().RemoveIf(func(destMetric pmetric.Metric) bool {
+					return constructSubject(destResourceMetrics, destScopeMetrics, destMetric) != groupSubject
+				})
+				return destScopeMetrics.Metrics().Len() == 0
 			})
-		}
+			return destResourceMetrics.ScopeMetrics().Len() == 0
+		})
+		groups = append(groups, Group[pmetric.Metrics]{
+			Subject: groupSubject,
+			Data:    destMetrics,
+		})
 	}
 	return groups
 }
@@ -123,7 +96,7 @@ func TestMetricsGrouper(t *testing.T) {
 
 	t.Run("consistent with naive implementation", func(t *testing.T) {
 		subject := "metric.metadata[\"subject\"]"
-		srcMetrics := generateMetrics(t)
+		srcMetrics := generateMetrics()
 
 		metricsGrouper, err := NewMetricsGrouper(subject, componenttest.NewNopTelemetrySettings())
 		assert.NoError(t, err)
