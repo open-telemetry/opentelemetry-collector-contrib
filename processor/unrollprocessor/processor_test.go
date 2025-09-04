@@ -86,7 +86,7 @@ func TestProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := sink.AllLogs()
-			require.Len(t, 1, len(actual))
+			require.Len(t, actual, 1)
 
 			require.NoError(t, plogtest.CompareLogs(expected, actual[0]))
 		})
