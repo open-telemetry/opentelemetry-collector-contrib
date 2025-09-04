@@ -4,6 +4,7 @@
 package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -182,19 +183,27 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync metadata accordingly.
-func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindJob)
 	if jobRef != nil {
-		job, exists, err := jobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+		var job any
+		var err error
+
+		job, err = utils.GetObjectFromStore(pod.Namespace, jobRef.Name, jobStores)
 		if err != nil {
 			logError(err, jobRef, pod.UID, logger)
 			return nil
-		} else if !exists {
+		} else if job == nil {
 			logDebug(jobRef, pod.UID, logger)
 			return nil
 		}
 
-		jobObj := job.(*batchv1.Job)
+		jobObj, ok := job.(*batchv1.Job)
+		// in practice the conversion should not fail, but checking just to be safe
+		if !ok {
+			logError(fmt.Errorf("cannot cast %T to *batchv1.Job", job), jobRef, pod.UID, logger)
+			return nil
+		}
 		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, constants.K8sKindCronJob); cronJobRef != nil {
 			return getWorkloadProperties(cronJobRef, string(conventions.K8SCronJobNameKey))
 		}
@@ -205,19 +214,27 @@ func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.
 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync metadata accordingly.
-func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindReplicaSet)
 	if rsRef != nil {
-		replicaSet, exists, err := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
+		var replicaSet any
+		var err error
+
+		replicaSet, err = utils.GetObjectFromStore(pod.Namespace, rsRef.Name, replicaSetStores)
 		if err != nil {
 			logError(err, rsRef, pod.UID, logger)
 			return nil
-		} else if !exists {
+		} else if replicaSet == nil {
 			logDebug(rsRef, pod.UID, logger)
 			return nil
 		}
 
-		replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
+		replicaSetObj, ok := replicaSet.(*appsv1.ReplicaSet)
+		// in practice the conversion should not fail, but checking just to be safe
+		if !ok {
+			logError(fmt.Errorf("cannot cast %T to *appsv1.ReplicaSet", replicaSet), rsRef, pod.UID, logger)
+			return nil
+		}
 		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, constants.K8sKindDeployment); deployRef != nil {
 			return getWorkloadProperties(deployRef, string(conventions.K8SDeploymentNameKey))
 		}

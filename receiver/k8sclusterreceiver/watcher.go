@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -91,7 +92,7 @@ func (rw *resourceWatcher) initialize() error {
 	}
 	rw.client = client
 
-	if rw.config.Distribution == distributionOpenShift && rw.config.Namespace == "" {
+	if rw.config.Distribution == distributionOpenShift && rw.config.Namespace == "" && len(rw.config.Namespaces) == 0 {
 		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
 		if err != nil {
 			return fmt.Errorf("Failed to create OpenShift quota API client: %w", err)
@@ -107,7 +108,7 @@ func (rw *resourceWatcher) initialize() error {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
-	factory := rw.getInformerFactory()
+	factories := rw.getInformerFactories()
 
 	// Map of supported group version kinds by name of a kind.
 	// If none of the group versions are supported by k8s server for a specific kind,
@@ -138,7 +139,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 			}
 			if supported {
 				anySupported = true
-				rw.setupInformerForKind(gvk, factory)
+				rw.setupInformerForKind(gvk, factories)
 			}
 		}
 		if !anySupported {
@@ -149,30 +150,50 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 
 	if rw.osQuotaClient != nil {
 		quotaFactory := quotainformersv1.NewSharedInformerFactory(rw.osQuotaClient, 0)
-		rw.setupInformer(gvk.ClusterResourceQuota, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
+		rw.setupInformer(gvk.ClusterResourceQuota, metadata.ClusterWideInformerKey, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
 		rw.informerFactories = append(rw.informerFactories, quotaFactory)
 	}
-	rw.informerFactories = append(rw.informerFactories, factory)
+	for _, factory := range factories {
+		rw.informerFactories = append(rw.informerFactories, factory)
+	}
 
 	return nil
 }
 
-func (rw *resourceWatcher) getInformerFactory() informers.SharedInformerFactory {
-	var factory informers.SharedInformerFactory
-	if rw.config.Namespace != "" {
+// getInformerFactories creates the informer factories which are used to set up the informers for the
+// resources that should be observed. The informer factories are returned as a map[string]informer.SharedInformerFactory,
+// where the map keys represent the namespace that should be observed. If the factory is created for the whole cluster,
+// the factory is stored under an empty string
+func (rw *resourceWatcher) getInformerFactories() map[string]informers.SharedInformerFactory {
+	factories := map[string]informers.SharedInformerFactory{}
+
+	switch {
+	case len(rw.config.Namespaces) > 0:
+		rw.logger.Info("Namespaces filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespaces", strings.Join(rw.config.Namespaces, ",")))
+		for _, ns := range rw.config.Namespaces {
+			factories[ns] = informers.NewSharedInformerFactoryWithOptions(
+				rw.client,
+				rw.config.MetadataCollectionInterval,
+				informers.WithNamespace(ns),
+			)
+		}
+	case rw.config.Namespace != "":
 		rw.logger.Info("Namespace filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespace", rw.config.Namespace))
-		factory = informers.NewSharedInformerFactoryWithOptions(
+		factories[rw.config.Namespace] = informers.NewSharedInformerFactoryWithOptions(
 			rw.client,
 			rw.config.MetadataCollectionInterval,
 			informers.WithNamespace(rw.config.Namespace),
 		)
-	} else {
-		factory = informers.NewSharedInformerFactoryWithOptions(
+	default:
+		// if no namespace is provided, the informer observes the whole cluster, and is stored under
+		// the key "<cluster-wide-informer-key>"
+		factories[metadata.ClusterWideInformerKey] = informers.NewSharedInformerFactoryWithOptions(
 			rw.client,
 			rw.config.MetadataCollectionInterval,
 		)
 	}
-	return factory
+
+	return factories
 }
 
 func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, error) {
@@ -193,38 +214,69 @@ func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, e
 	return false, nil
 }
 
-func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, factory informers.SharedInformerFactory) {
+// setupInformerForKind creates the informers for the given GVKs, based on the provided informer factories.
+// The factories are provided as a map[string]informers.SharedInformerFactory where the map keys represent the namespace
+// of the informer factory. For cluster wide informers, an empty string is used as a key
+func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, factories map[string]informers.SharedInformerFactory) {
 	switch kind {
 	case gvk.Pod:
-		rw.setupInformer(kind, factory.Core().V1().Pods().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().Pods().Informer())
+		}
 	case gvk.Node:
-		if rw.config.Namespace == "" {
-			rw.setupInformer(kind, factory.Core().V1().Nodes().Informer())
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
+			// if no namespace is provided, the cluster wide informer factory, which is stored under the key "" is used to create the informer
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().Nodes().Informer())
+			}
 		}
 	case gvk.Namespace:
-		if rw.config.Namespace == "" {
-			rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
+			// if no namespace is provided, the cluster wide informer factory, which is stored under the key "" is used to create the informer
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().Namespaces().Informer())
+			}
 		}
 	case gvk.ReplicationController:
-		rw.setupInformer(kind, factory.Core().V1().ReplicationControllers().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().ReplicationControllers().Informer())
+		}
 	case gvk.ResourceQuota:
-		rw.setupInformer(kind, factory.Core().V1().ResourceQuotas().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().ResourceQuotas().Informer())
+		}
 	case gvk.Service:
-		rw.setupInformer(kind, factory.Core().V1().Services().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().Services().Informer())
+		}
 	case gvk.DaemonSet:
-		rw.setupInformer(kind, factory.Apps().V1().DaemonSets().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().DaemonSets().Informer())
+		}
 	case gvk.Deployment:
-		rw.setupInformer(kind, factory.Apps().V1().Deployments().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().Deployments().Informer())
+		}
 	case gvk.ReplicaSet:
-		rw.setupInformer(kind, factory.Apps().V1().ReplicaSets().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().ReplicaSets().Informer())
+		}
 	case gvk.StatefulSet:
-		rw.setupInformer(kind, factory.Apps().V1().StatefulSets().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().StatefulSets().Informer())
+		}
 	case gvk.Job:
-		rw.setupInformer(kind, factory.Batch().V1().Jobs().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Batch().V1().Jobs().Informer())
+		}
 	case gvk.CronJob:
-		rw.setupInformer(kind, factory.Batch().V1().CronJobs().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Batch().V1().CronJobs().Informer())
+		}
 	case gvk.HorizontalPodAutoscaler:
-		rw.setupInformer(kind, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
+		}
 	default:
 		rw.logger.Error("Could not setup an informer for provided group version kind",
 			zap.String("group version kind", kind.String()))
@@ -251,7 +303,7 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf share
 }
 
 // setupInformer adds event handlers to informers and setups a metadataStore.
-func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer) {
+func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, namespace string, informer cache.SharedIndexInformer) {
 	err := informer.SetTransform(transformObject)
 	if err != nil {
 		rw.logger.Error("error setting informer transform function", zap.Error(err))
@@ -264,7 +316,7 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	if err != nil {
 		rw.logger.Error("error adding event handler to informer", zap.Error(err))
 	}
-	rw.metadataStore.Setup(gvk, informer.GetStore())
+	rw.metadataStore.Setup(gvk, namespace, informer.GetStore())
 }
 
 func (rw *resourceWatcher) onAdd(obj any) {

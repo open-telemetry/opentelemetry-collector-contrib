@@ -42,10 +42,13 @@ type Config struct {
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
-	// Namespace to fetch resources from. If this is set, certain cluster-wide resources such as Nodes or Namespaces
+	// Deprecated: This field is no longer supported, use cfg.Namespaces instead.
+	Namespace string `mapstructure:"namespace"`
+
+	// Namespaces to fetch resources from. If this is set, certain cluster-wide resources such as Nodes or Namespaces
 	// will not be able to be observed. Setting this option is recommended in environments where due to security restrictions
 	// the collector cannot be granted cluster-wide permissions.
-	Namespace string `mapstructure:"namespace"`
+	Namespaces []string `mapstructure:"namespaces"`
 
 	// K8sLeaderElector defines the reference to the k8s leader elector extension
 	// use this when k8s cluster receiver needs to be deployed in HA mode
