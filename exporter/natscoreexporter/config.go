@@ -138,6 +138,9 @@ type Config struct {
 	// Endpoint is the NATS server URL.
 	Endpoint string `mapstructure:"endpoint"`
 
+	// Pedantic enables/disables NATS pedantic mode.
+	Pedantic bool `mapstructure:"pedantic"`
+
 	// TLS holds the TLS configuration for the NATS client.
 	TLS configtls.ClientConfig `mapstructure:"tls"`
 

@@ -53,12 +53,7 @@ func (g *tracesGrouper) Group(ctx context.Context, srcTraces ptrace.Traces) ([]G
 					errs = multierr.Append(errs, err)
 					continue
 				}
-
 				subject := subjectAsAny.(string)
-				if err := validateSubject(subject); err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
 
 				dest, ok := destBySubject[subject]
 				if !ok {

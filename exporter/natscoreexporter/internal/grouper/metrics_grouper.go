@@ -55,12 +55,7 @@ func (g *metricsGrouper) Group(ctx context.Context, srcMetrics pmetric.Metrics) 
 					errs = multierr.Append(errs, err)
 					continue
 				}
-
 				subject := subjectAsAny.(string)
-				if err := validateSubject(subject); err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
 
 				dest, ok := destBySubject[subject]
 				if !ok {

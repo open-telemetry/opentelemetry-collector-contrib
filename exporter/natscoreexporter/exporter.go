@@ -6,14 +6,18 @@ package natscoreexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
+	"os"
 
+	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/grouper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/marshaler"
@@ -41,105 +45,136 @@ func newNatsCoreExporter[T any](
 	}
 }
 
-func createNatsTokenOption(cfg *TokenConfig) nats.Option {
-	return nats.Token(cfg.Token)
+func setNatsTLSConfigOption(options *nats.Options, ctx context.Context, cfg *configtls.ClientConfig) error {
+	tlsConfig, err := cfg.LoadTLSConfig(ctx)
+	if err != nil {
+		return err
+	}
+	options.TLSConfig = tlsConfig
+	return nil
 }
 
-func createNatsUserInfoOption(cfg *UserInfoConfig) nats.Option {
-	return nats.UserInfo(cfg.User, cfg.Password)
+func setNatsTokenOption(options *nats.Options, cfg *TokenConfig) {
+	options.Token = cfg.Token
 }
 
-func createNatsNKeyOption(cfg *NKeyConfig) (nats.Option, error) {
+func setNatsUserInfoOption(options *nats.Options, cfg *UserInfoConfig) {
+	options.User = cfg.User
+	options.Password = cfg.Password
+}
+
+func setNatsNKeyOption(options *nats.Options, cfg *NKeyConfig) error {
 	keyPair, err := nkeys.FromSeed([]byte(cfg.Seed))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nats.Nkey(cfg.PublicKey, keyPair.Sign), nil
+	options.Nkey = cfg.PublicKey
+	options.SignatureCB = keyPair.Sign
+	return nil
 }
 
-func createNatsUserJWTOption(cfg *UserJWTConfig) (nats.Option, error) {
+func setNatsUserJWTOption(options *nats.Options, cfg *UserJWTConfig) error {
 	keyPair, err := nkeys.FromSeed([]byte(cfg.Seed))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	userCB := func() (string, error) {
+	options.UserJWT = func() (string, error) {
 		return cfg.JWT, nil
 	}
-	return nats.UserJWT(userCB, keyPair.Sign), nil
+	options.SignatureCB = keyPair.Sign
+	return nil
 }
 
-func createNatsUserCredentialsOption(cfg *UserCredentialsConfig) nats.Option {
-	return nats.UserCredentials(cfg.UserFile)
+func setNatsUserCredentialsOption(options *nats.Options, cfg *UserCredentialsConfig) error {
+	var errs error
+
+	userConfig, err := os.ReadFile(cfg.UserFile)
+	errs = multierr.Append(errs, err)
+
+	userJwt, err := jwt.ParseDecoratedJWT(userConfig)
+	errs = multierr.Append(errs, err)
+
+	keyPair, err := jwt.ParseDecoratedNKey(userConfig)
+	errs = multierr.Append(errs, err)
+
+	options.UserJWT = func() (string, error) {
+		return userJwt, nil
+	}
+	options.SignatureCB = keyPair.Sign
+	return nil
 }
 
-func createNatsAuthOption(cfg *AuthConfig) (nats.Option, error) {
-	var authOption nats.Option
-	var err error
+func setNatsAuthOption(options *nats.Options, cfg *AuthConfig) error {
+	var errs error
 	if cfg.UserInfo != nil {
-		authOption = createNatsUserInfoOption(cfg.UserInfo)
-	} else if cfg.Token != nil {
-		authOption = createNatsTokenOption(cfg.Token)
-	} else if cfg.NKey != nil {
-		authOption, err = createNatsNKeyOption(cfg.NKey)
-	} else if cfg.UserJWT != nil {
-		authOption, err = createNatsUserJWTOption(cfg.UserJWT)
-	} else if cfg.UserCredentials != nil {
-		authOption = createNatsUserCredentialsOption(cfg.UserCredentials)
+		setNatsUserInfoOption(options, cfg.UserInfo)
 	}
-	if err != nil {
-		return nil, err
+	if cfg.Token != nil {
+		setNatsTokenOption(options, cfg.Token)
 	}
-	return authOption, nil
+	if cfg.NKey != nil {
+		errs = multierr.Append(errs, setNatsNKeyOption(options, cfg.NKey))
+	}
+	if cfg.UserJWT != nil {
+		errs = multierr.Append(errs, setNatsUserJWTOption(options, cfg.UserJWT))
+	}
+	if cfg.UserCredentials != nil {
+		errs = multierr.Append(errs, setNatsUserCredentialsOption(options, cfg.UserCredentials))
+	}
+	return errs
 }
 
-func createNats(cfg *Config) (*nats.Conn, error) {
-	authOption, err := createNatsAuthOption(&cfg.Auth)
-	if err != nil {
-		return nil, err
+func createNats(ctx context.Context, cfg *Config) (*nats.Conn, error) {
+	var errs error
+	options := nats.GetDefaultOptions()
+	options.Url = cfg.Endpoint
+	options.Pedantic = cfg.Pedantic
+	errs = multierr.Append(errs, setNatsTLSConfigOption(&options, ctx, &cfg.TLS))
+	errs = multierr.Append(errs, setNatsAuthOption(&options, &cfg.Auth))
+	if errs != nil {
+		return nil, errs
 	}
 
-	conn, err := nats.Connect(cfg.Endpoint, authOption)
+	conn, err := options.Connect()
 	if err != nil {
 		return nil, err
 	}
 	return conn, nil
 }
 
-func (e *natsCoreExporter[T]) start(_ context.Context, host component.Host) error {
-	err := e.marshaler.Resolve(host)
-	if err != nil {
-		return err
-	}
+func (e *natsCoreExporter[T]) start(ctx context.Context, host component.Host) error {
+	var errs error
 
-	conn, err := createNats(e.cfg)
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, e.marshaler.Resolve(host))
+
+	conn, err := createNats(ctx, e.cfg)
+	errs = multierr.Append(errs, err)
 	e.conn = conn
 
-	return nil
+	return errs
 }
 
 func (e *natsCoreExporter[T]) export(ctx context.Context, data T) error {
+	var errs error
+
 	groups, err := e.grouper.Group(ctx, data)
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
 	for _, group := range groups {
 		bytes, err := e.marshaler.Marshal(group.Data)
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
+			continue
 		}
 
 		err = e.conn.Publish(group.Subject, bytes)
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
 
 func (e *natsCoreExporter[T]) shutdown(_ context.Context) error {
@@ -157,46 +192,40 @@ func createResolver(cfg *SignalConfig) (marshaler.Resolver, error) {
 }
 
 func newNatsCoreLogsExporter(set exporter.Settings, cfg *Config) (*natsCoreExporter[plog.Logs], error) {
+	var errs error
+
 	grouper, err := grouper.NewLogsGrouper(cfg.Logs.Subject, set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
+	errs = multierr.Append(errs, err)
 
 	resolver, err := createResolver((*SignalConfig)(&cfg.Logs))
-	if err != nil {
-		return nil, err
-	}
+	errs = multierr.Append(errs, err)
 	marshaler := marshaler.NewMarshaler(resolver, marshaler.PickMarshalLogs)
 
-	return newNatsCoreExporter(set, cfg, grouper, marshaler), nil
+	return newNatsCoreExporter(set, cfg, grouper, marshaler), errs
 }
 
 func newNatsCoreMetricsExporter(set exporter.Settings, cfg *Config) (*natsCoreExporter[pmetric.Metrics], error) {
+	var errs error
+
 	grouper, err := grouper.NewMetricsGrouper(cfg.Metrics.Subject, set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
+	errs = multierr.Append(errs, err)
 
 	resolver, err := createResolver((*SignalConfig)(&cfg.Metrics))
-	if err != nil {
-		return nil, err
-	}
+	errs = multierr.Append(errs, err)
 	marshaler := marshaler.NewMarshaler(resolver, marshaler.PickMarshalMetrics)
 
-	return newNatsCoreExporter(set, cfg, grouper, marshaler), nil
+	return newNatsCoreExporter(set, cfg, grouper, marshaler), errs
 }
 
 func newNatsCoreTracesExporter(set exporter.Settings, cfg *Config) (*natsCoreExporter[ptrace.Traces], error) {
+	var errs error
+
 	grouper, err := grouper.NewTracesGrouper(cfg.Traces.Subject, set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
+	errs = multierr.Append(errs, err)
 
 	resolver, err := createResolver((*SignalConfig)(&cfg.Traces))
-	if err != nil {
-		return nil, err
-	}
+	errs = multierr.Append(errs, err)
 	marshaler := marshaler.NewMarshaler(resolver, marshaler.PickMarshalTraces)
 
-	return newNatsCoreExporter(set, cfg, grouper, marshaler), nil
+	return newNatsCoreExporter(set, cfg, grouper, marshaler), errs
 }
