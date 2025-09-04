@@ -227,7 +227,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 					zap.String("resource", config.gvr.String()),
 					zap.Error(err))
 			} else if len(objects.Items) > 0 {
-				logs := pullObjectsToLogData(objects, time.Now(), config)
+				logs := pullObjectsToLogData(objects, time.Now(), config, kr.setting.BuildInfo.Version)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				logRecordCount := logs.LogRecordCount()
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
@@ -310,7 +310,7 @@ func (kr *k8sobjectsreceiver) sendInitialState(ctx context.Context, config *K8sO
 			Object: &obj,
 		}
 
-		logs, err := watchObjectsToLogData(event, time.Now(), config)
+		logs, err := watchObjectsToLogData(event, time.Now(), config, kr.setting.BuildInfo.Version)
 		if err != nil {
 			kr.setting.Logger.Error("error converting initial state object to log data",
 				zap.String("resource", config.gvr.String()),
@@ -367,7 +367,7 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 				continue
 			}
 
-			logs, err := watchObjectsToLogData(&data, time.Now(), config)
+			logs, err := watchObjectsToLogData(&data, time.Now(), config, kr.setting.BuildInfo.Version)
 			if err != nil {
 				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
 			} else {
