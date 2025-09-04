@@ -1754,10 +1754,10 @@ func (s *Supervisor) Shutdown() {
 
 	if s.healthCheckServer != nil {
 		s.telemetrySettings.Logger.Debug("Stopping health check server...")
-		// ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
-		// defer cancel()
+		ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+		defer cancel()
 
-		err := s.healthCheckServer.Close()
+		err := s.healthCheckServer.Shutdown(ctx)
 
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not stop the health check server", zap.Error(err))

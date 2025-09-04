@@ -2337,8 +2337,12 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	healthcheckPort, err := findRandomPort()
 	require.NoError(t, err)
 
+	// Find an open port on the host that has no server listening on it.
+	badOpAMPServerPort, err := findRandomPort()
+	require.NoError(t, err)
+
 	cfgFile := getSupervisorConfig(t, "healthcheck", map[string]string{
-		"url":      "192.168.99.99:8080",
+		"url":      fmt.Sprintf("localhost:%d", badOpAMPServerPort),
 		"endpoint": fmt.Sprintf("localhost:%d", healthcheckPort),
 	})
 
@@ -2352,8 +2356,7 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start(t.Context()))
-	// defer s.Shutdown()
-	t.Cleanup(s.Shutdown)
+	defer s.Shutdown()
 
 	// Wait for the health check server to start
 	require.Eventually(t, func() bool {
