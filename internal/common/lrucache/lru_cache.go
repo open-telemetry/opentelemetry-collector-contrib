@@ -11,20 +11,20 @@ import (
 const defaultCapacity = 100
 
 type Cache interface {
-	Get(key interface{}) (interface{}, bool)
-	Add(key, value interface{})
+	Get(key any) (any, bool)
+	Add(key, value any)
 }
 
 type LRUCache struct {
 	capacity int
 	ll       *list.List
-	cache    map[interface{}]*list.Element
+	cache    map[any]*list.Element
 	mtx      sync.Mutex
 }
 
 type entry struct {
-	key   interface{}
-	value interface{}
+	key   any
+	value any
 }
 
 type option func(*LRUCache)
@@ -39,7 +39,7 @@ func New(opts ...option) *LRUCache {
 	c := &LRUCache{
 		capacity: defaultCapacity,
 		ll:       list.New(),
-		cache:    make(map[interface{}]*list.Element),
+		cache:    make(map[any]*list.Element),
 	}
 
 	for _, o := range opts {
@@ -49,7 +49,7 @@ func New(opts ...option) *LRUCache {
 	return c
 }
 
-func (c *LRUCache) Get(key interface{}) (value interface{}, ok bool) {
+func (c *LRUCache) Get(key any) (value any, ok bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -60,7 +60,7 @@ func (c *LRUCache) Get(key interface{}) (value interface{}, ok bool) {
 	return
 }
 
-func (c *LRUCache) Add(key, value interface{}) {
+func (c *LRUCache) Add(key, value any) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
