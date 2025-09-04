@@ -137,25 +137,39 @@ endif
 runbuilttest: $(GOTESTSUM)
 ifneq (,$(wildcard ./builtunitetest.test))
 	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
-endif	
+endif
 
+INTEGRATION_TEST_FILES := $(shell find . -name *integration_test.go)
+INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES), $(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
-	@echo "running $(GOCMD) integration test ./... in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
+	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
+	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
+		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION); \
+	else \
+        echo "No integration tests in `pwd`"; \
+	fi
 	@if [ -e integration-coverage.txt ]; then \
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi
 
 .PHONY: mod-integration-sudo-test
 mod-integration-sudo-test: $(GOTESTSUM)
-	@echo "running $(GOCMD) integration sudo (root/privileged) test ./... in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --format standard-verbose --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
+	@echo "running $(GOCMD) integration sudo (root/privileged) test $(INTEGRATION_TESTS) in `pwd`"
+	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
+		$(GOTESTSUM) $(GOTESTSUM_OPT) --format standard-verbose --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION_SUDO); \
+	else \
+        echo "No integration tests in `pwd`"; \
+	fi
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
-	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE)
+	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) + coverage in `pwd`"
+	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
+		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE); \
+	else \
+        echo "No integration tests in `pwd`"; \
+	fi
 	@if [ -e integration-coverage.txt ]; then \
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi

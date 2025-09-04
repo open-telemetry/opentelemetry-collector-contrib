@@ -137,10 +137,10 @@ func TestSerializeProfile(t *testing.T) {
 				{
 					"script": map[string]any{
 						"params": map[string]any{
-							"buildid":    "YA3K_koRAADyvzjEk_X7kg",
-							"ecsversion": "1.12.0",
-							"filename":   "samples",
-							"timestamp":  json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
+							"buildid":     "YA3K_koRAADyvzjEk_X7kg",
+							"ecs.version": "1.12.0",
+							"filename":    "samples",
+							"timestamp":   json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
 						},
 						"source": serializeprofiles.ExeMetadataUpsertScript,
 					},
