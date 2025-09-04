@@ -137,10 +137,10 @@ endif
 runbuilttest: $(GOTESTSUM)
 ifneq (,$(wildcard ./builtunitetest.test))
 	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
-endif	
+endif
 
 INTEGRATION_TEST_FILES := $(shell find . -name *integration_test.go)
-INTEGRATION_TESTS := $(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g")
+INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES), $(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
