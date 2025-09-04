@@ -38,6 +38,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Endpoint: nats.DefaultURL,
+		Pedantic: true,
 		TLS:      configtls.NewDefaultClientConfig(),
 		Logs: LogsConfig{
 			Subject:              defaultLogsSubject,

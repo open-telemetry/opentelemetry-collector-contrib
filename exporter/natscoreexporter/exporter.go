@@ -89,15 +89,15 @@ func setNatsUserJWTOption(options *nats.Options, cfg *UserJWTConfig) error {
 
 func setNatsUserCredentialsOption(options *nats.Options, cfg *UserCredentialsConfig) error {
 	var errs error
-
 	userConfig, err := os.ReadFile(cfg.UserFile)
 	errs = multierr.Append(errs, err)
-
 	userJwt, err := jwt.ParseDecoratedJWT(userConfig)
 	errs = multierr.Append(errs, err)
-
 	keyPair, err := jwt.ParseDecoratedNKey(userConfig)
 	errs = multierr.Append(errs, err)
+	if errs != nil {
+		return errs
+	}
 
 	options.UserJWT = func() (string, error) {
 		return userJwt, nil
