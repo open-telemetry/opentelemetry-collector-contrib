@@ -6,8 +6,8 @@
 package gohai // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/gohai"
 
 import (
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata/gohai"
 	"github.com/DataDog/gohai/processes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/gohai"
 	"go.uber.org/zap"
 )
 

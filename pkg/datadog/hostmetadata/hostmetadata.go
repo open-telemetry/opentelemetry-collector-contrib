@@ -6,7 +6,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"time"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"

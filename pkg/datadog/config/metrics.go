@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 

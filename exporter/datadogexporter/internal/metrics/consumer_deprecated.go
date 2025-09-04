@@ -6,8 +6,8 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/quantile"
 	"go.opentelemetry.io/collector/component"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -92,6 +92,7 @@ func (c *ZorkianConsumer) ConsumeTimeSeries(
 	dims *metrics.Dimensions,
 	typ metrics.DataType,
 	timestamp uint64,
+	_ int64,
 	value float64,
 ) {
 	dt := c.toDataType(typ)
@@ -105,6 +106,7 @@ func (c *ZorkianConsumer) ConsumeSketch(
 	_ context.Context,
 	dims *metrics.Dimensions,
 	timestamp uint64,
+	_ int64,
 	sketch *quantile.Sketch,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
