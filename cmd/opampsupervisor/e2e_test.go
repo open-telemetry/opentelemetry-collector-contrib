@@ -218,7 +218,7 @@ func newSupervisor(t *testing.T, configType string, extraConfigData map[string]s
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
 
-	s, err := supervisor.NewSupervisor(logger, cfg)
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 
 	return s, &cfg
@@ -2012,7 +2012,7 @@ func TestSupervisorLogging(t *testing.T) {
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
 	require.NoError(t, err)
 
-	s, err := supervisor.NewSupervisor(logger, cfg)
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start(t.Context()))
 
@@ -2311,7 +2311,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
 	require.NoError(t, err)
 
-	s, err := supervisor.NewSupervisor(logger, cfg)
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start(t.Context()))
 	defer s.Shutdown()
@@ -2349,7 +2349,7 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 
 	cfg.Telemetry.Logs.Level = zap.DebugLevel
 
-	s, err := supervisor.NewSupervisor(logger, cfg)
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 	require.Nil(t, s.Start(t.Context()))
 	// defer s.Shutdown()

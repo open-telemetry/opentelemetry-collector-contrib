@@ -53,7 +53,7 @@ func TestSupervisorMetrics(t *testing.T) {
 	defer func() { _ = mp.Shutdown(t.Context()) }()
 
 	cfg := newTestSupervisorConfig(t)
-	supervisor, err := NewSupervisor(zap.NewNop(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 
@@ -99,7 +99,7 @@ func TestSupervisorMetricsLifecycle(t *testing.T) {
 	defer func() { _ = mp.Shutdown(t.Context()) }()
 
 	cfg := newTestSupervisorConfig(t)
-	supervisor, err := NewSupervisor(zap.NewNop(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 

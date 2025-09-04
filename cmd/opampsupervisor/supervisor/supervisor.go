@@ -120,9 +120,6 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
-	// The Logger given to the Supervisor on startup.
-	rawLogger *zap.Logger
-
 	agentDescription    *atomic.Value
 	availableComponents *atomic.Value
 
@@ -191,7 +188,7 @@ type Supervisor struct {
 	metrics      *supervisorTelemetry.Metrics
 }
 
-func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
+func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
 		pidProvider:                    defaultPIDProvider{},
 		hasNewConfig:                   make(chan struct{}, 1),
@@ -209,6 +206,8 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		metrics:                        &supervisorTelemetry.Metrics{},
 	}
 
+	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
+
 	if err := s.createTemplates(); err != nil {
 		return nil, err
 	}
@@ -222,9 +221,19 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
-	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+	var err error
 
-	s.rawLogger = logger
+	s.telemetrySettings, err = initTelemetrySettings(ctx, logger, s.config.Telemetry)
+	if err != nil {
+		return nil, err
+	}
+
+	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
+	if err != nil {
+		return nil, fmt.Errorf("error creating internal metrics: %w", err)
+	}
+
+	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
 	return s, nil
 }
@@ -315,16 +324,6 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	var err error
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
-
-	s.telemetrySettings, err = initTelemetrySettings(s.runCtx, s.rawLogger, s.config.Telemetry)
-	if err != nil {
-		return err
-	}
-
-	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
-	if err != nil {
-		return fmt.Errorf("error creating internal metrics: %w", err)
-	}
 
 	if err = s.startHealthCheckServer(); err != nil {
 		return fmt.Errorf("failed to start health check server: %w", err)
