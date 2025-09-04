@@ -8,7 +8,7 @@ import (
 
 func TestCache_OldestItemIsRemoved(t *testing.T) {
 	capacity := 10
-	c := New(capacity)
+	c := New(WithCapacity(capacity))
 
 	for i := 0; i < capacity; i++ {
 		c.Add(i, i)
@@ -35,7 +35,7 @@ func TestCache_OldestItemIsRemoved(t *testing.T) {
 }
 
 func TestCache_UpdateItem(t *testing.T) {
-	c := New(2)
+	c := New(WithCapacity(2))
 
 	c.Add("a", "a")
 	c.Add("b", "b")

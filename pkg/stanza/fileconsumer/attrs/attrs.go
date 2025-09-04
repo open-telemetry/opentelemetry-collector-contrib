@@ -39,8 +39,7 @@ type Resolver struct {
 	IncludeFileOwnerGroupName bool               `mapstructure:"include_file_owner_group_name,omitempty"`
 	MetadataExtraction        MetadataExtraction `mapstructure:"metadata_extraction"`
 
-	// TODO this should be an interface to a cache
-	metadataCache *lrucache.Cache
+	metadataCache lrucache.Cache
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -98,8 +97,7 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 
 func (r *Resolver) extractMetadata(path string, attributes map[string]any) (map[string]any, error) {
 	if r.metadataCache == nil {
-		// TODO the capacity should not be hardcoded
-		r.metadataCache = lrucache.New(1000)
+		r.metadataCache = lrucache.New()
 	}
 
 	if value, ok := r.metadataCache.Get(path); ok {

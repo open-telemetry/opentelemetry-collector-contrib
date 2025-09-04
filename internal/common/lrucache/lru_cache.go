@@ -5,7 +5,14 @@ import (
 	"sync"
 )
 
-type Cache struct {
+const defaultCapacity = 100
+
+type Cache interface {
+	Get(key interface{}) (interface{}, bool)
+	Add(key, value interface{})
+}
+
+type LRUCache struct {
 	capacity int
 	ll       *list.List
 	cache    map[interface{}]*list.Element
@@ -17,15 +24,29 @@ type entry struct {
 	value interface{}
 }
 
-func New(capacity int) *Cache {
-	return &Cache{
-		capacity: capacity,
-		ll:       list.New(),
-		cache:    make(map[interface{}]*list.Element),
+type option func(*LRUCache)
+
+func WithCapacity(capacity int) func(c *LRUCache) {
+	return func(c *LRUCache) {
+		c.capacity = capacity
 	}
 }
 
-func (c *Cache) Get(key interface{}) (value interface{}, ok bool) {
+func New(opts ...option) *LRUCache {
+	c := &LRUCache{
+		capacity: defaultCapacity,
+		ll:       list.New(),
+		cache:    make(map[interface{}]*list.Element),
+	}
+
+	for _, o := range opts {
+		o(c)
+	}
+
+	return c
+}
+
+func (c *LRUCache) Get(key interface{}) (value interface{}, ok bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -36,7 +57,7 @@ func (c *Cache) Get(key interface{}) (value interface{}, ok bool) {
 	return
 }
 
-func (c *Cache) Add(key, value interface{}) {
+func (c *LRUCache) Add(key, value interface{}) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -54,7 +75,7 @@ func (c *Cache) Add(key, value interface{}) {
 	}
 }
 
-func (c *Cache) removeOldest() {
+func (c *LRUCache) removeOldest() {
 	ele := c.ll.Back()
 	if ele != nil {
 		c.ll.Remove(ele)
