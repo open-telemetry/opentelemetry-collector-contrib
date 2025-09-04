@@ -15,10 +15,12 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -37,18 +39,37 @@ const (
 	// `*.label.*` and `*.annotation.*`
 	// Sematic conventions define `*.label.*` and `*.annotation.*`
 	// More information - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37957
-	K8sPodLabels            = "k8s.pod.labels.%s"
-	K8sPodAnnotations       = "k8s.pod.annotations.%s"
-	K8sNodeLabels           = "k8s.node.labels.%s"
-	K8sNodeAnnotations      = "k8s.node.annotations.%s"
-	K8sNamespaceLabels      = "k8s.namespace.labels.%s"
-	K8sNamespaceAnnotations = "k8s.namespace.annotations.%s"
+	K8sPodLabelsKey            = "k8s.pod.labels.%s"
+	K8sPodLabelKey             = "k8s.pod.label.%s"
+	K8sPodAnnotationsKey       = "k8s.pod.annotations.%s"
+	K8sPodAnnotationKey        = "k8s.pod.annotation.%s"
+	K8sNodeLabelsKey           = "k8s.node.labels.%s"
+	K8sNodeLabelKey            = "k8s.node.label.%s"
+	K8sNodeAnnotationsKey      = "k8s.node.annotations.%s"
+	K8sNodeAnnotationKey       = "k8s.node.annotation.%s"
+	K8sNamespaceLabelsKey      = "k8s.namespace.labels.%s"
+	K8sNamespaceLabelKey       = "k8s.namespace.label.%s"
+	K8sNamespaceAnnotationsKey = "k8s.namespace.annotations.%s"
+	K8sNamespaceAnnotationKey  = "k8s.namespace.annotation.%s"
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
 	K8sDeploymentLabel      = "k8s.deployment.label.%s"
 	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#statefulset
 	K8sStatefulSetLabel      = "k8s.statefulset.label.%s"
 	K8sStatefulSetAnnotation = "k8s.statefulset.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#daemonset
+	K8sDaemonSetLabel      = "k8s.daemonset.label.%s"
+	K8sDaemonSetAnnotation = "k8s.daemonset.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
+	K8sJobLabel      = "k8s.job.label.%s"
+	K8sJobAnnotation = "k8s.job.annotation.%s"
+)
+
+var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.labelsAnnotationsSingular.allow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
+	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -62,6 +83,8 @@ type WatchClient struct {
 	nodeInformer           cache.SharedInformer
 	deploymentInformer     cache.SharedInformer
 	statefulsetInformer    cache.SharedInformer
+	daemonsetInformer      cache.SharedInformer
+	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
@@ -93,6 +116,14 @@ type WatchClient struct {
 	// A map containing StatefulSet related data, used to associate them with resources.
 	// Key is statefulset uid
 	StatefulSets map[string]*StatefulSet
+
+	// A map containing DaemonSet related data, used to associate them with resources.
+	// Key is daemonset uid
+	DaemonSets map[string]*DaemonSet
+
+	// A map containing job related data, used to associate them with resources.
+	// Key is job uid
+	Jobs map[string]*Job
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -155,6 +186,8 @@ func New(
 	c.ReplicaSets = map[string]*ReplicaSet{}
 	c.Deployments = map[string]*Deployment{}
 	c.StatefulSets = map[string]*StatefulSet{}
+	c.DaemonSets = map[string]*DaemonSet{}
+	c.Jobs = map[string]*Job{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -242,6 +275,14 @@ func New(
 		c.statefulsetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
+	if c.extractDaemonSetLabelsAnnotations() {
+		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
+	if c.extractJobLabelsAnnotations() {
+		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
 	return c, err
 }
 
@@ -311,6 +352,32 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, reg.HasSynced)
 		go c.statefulsetInformer.Run(c.stopCh)
+	}
+
+	if c.daemonsetInformer != nil {
+		reg, err = c.daemonsetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleDaemonSetAdd,
+			UpdateFunc: c.handleDaemonSetUpdate,
+			DeleteFunc: c.handleDaemonSetDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.daemonsetInformer.Run(c.stopCh)
+	}
+
+	if c.jobInformer != nil {
+		reg, err = c.jobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleJobAdd,
+			UpdateFunc: c.handleJobUpdate,
+			DeleteFunc: c.handleJobDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.jobInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -507,6 +574,68 @@ func (c *WatchClient) handleStatefulSetDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleDaemonSetAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
+	if daemonset, ok := obj.(*apps_v1.DaemonSet); ok {
+		c.addOrUpdateDaemonSet(daemonset)
+	} else {
+		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleDaemonSetUpdate(_, newDaemonSet any) {
+	c.telemetryBuilder.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
+	if daemonset, ok := newDaemonSet.(*apps_v1.DaemonSet); ok {
+		c.addOrUpdateDaemonSet(daemonset)
+	} else {
+		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", newDaemonSet))
+	}
+}
+
+func (c *WatchClient) handleDaemonSetDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
+	if daemonset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.DaemonSet); ok {
+		c.m.Lock()
+		if n, ok := c.DaemonSets[string(daemonset.UID)]; ok {
+			delete(c.DaemonSets, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleJobAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sJobAdded.Add(context.Background(), 1)
+	if job, ok := obj.(*batch_v1.Job); ok {
+		c.addOrUpdateJob(job)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleJobUpdate(_, newJob any) {
+	c.telemetryBuilder.OtelsvcK8sJobUpdated.Add(context.Background(), 1)
+	if job, ok := newJob.(*batch_v1.Job); ok {
+		c.addOrUpdateJob(job)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", newJob))
+	}
+}
+
+func (c *WatchClient) handleJobDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sJobDeleted.Add(context.Background(), 1)
+	if job, ok := ignoreDeletedFinalStateUnknown(obj).(*batch_v1.Job); ok {
+		c.m.Lock()
+		if n, ok := c.Jobs[string(job.UID)]; ok {
+			delete(c.Jobs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -600,6 +729,26 @@ func (c *WatchClient) GetStatefulSet(statefulSetUID string) (*StatefulSet, bool)
 	c.m.RUnlock()
 	if ok {
 		return statefulSet, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetDaemonSet(daemonSetUID string) (*DaemonSet, bool) {
+	c.m.RLock()
+	daemonSet, ok := c.DaemonSets[daemonSetUID]
+	c.m.RUnlock()
+	if ok {
+		return daemonSet, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetJob(jobUID string) (*Job, bool) {
+	c.m.RLock()
+	job, ok := c.Jobs[jobUID]
+	c.m.RUnlock()
+	if ok {
+		return job, ok
 	}
 	return nil, false
 }
@@ -743,8 +892,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	formatterLabel := K8sPodLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sPodLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabels)
+		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sPodAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sPodAnnotationKey
 	}
 
 	if c.Rules.ServiceName {
@@ -758,7 +917,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotations)
+		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
 	}
 	return tags
 }
@@ -970,12 +1129,22 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := K8sNamespaceLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sNamespaceLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabels)
+		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sNamespaceAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sNamespaceAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotations)
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
 	}
 
 	return tags
@@ -984,14 +1153,23 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := K8sNodeLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sNodeLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabels)
+		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sNodeAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sNodeAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotations)
+		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
 	}
-
 	return tags
 }
 
@@ -1023,6 +1201,34 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	return tags
 }
 
+func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromDaemonSetMetadata(d.Labels, tags, K8sDaemonSetLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromDaemonSetMetadata(d.Annotations, tags, K8sDaemonSetAnnotation)
+	}
+
+	return tags
+}
+
+func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromJobMetadata(d.Labels, tags, K8sJobLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromJobMetadata(d.Annotations, tags, K8sJobAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
@@ -1030,6 +1236,8 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		NodeName:       pod.Spec.NodeName,
 		DeploymentUID:  "",
 		StatefulSetUID: "",
+		DaemonSetUID:   "",
+		JobUID:         "",
 		Address:        pod.Status.PodIP,
 		HostNetwork:    pod.Spec.HostNetwork,
 		PodUID:         string(pod.UID),
@@ -1044,6 +1252,14 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 	if statefulset, ok := c.getStatefulSet(getPodStatefulSetUID(pod)); ok {
 		newPod.StatefulSetUID = statefulset.UID
+	}
+
+	if daemonset, ok := c.getDaemonSet(getPodDaemonSetUID(pod)); ok {
+		newPod.DaemonSetUID = daemonset.UID
+	}
+
+	if job, ok := c.getJob(getPodJobUID(pod)); ok {
+		newPod.JobUID = job.UID
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -1070,6 +1286,24 @@ func getPodReplicaSetUID(pod *api_v1.Pod) string {
 func getPodStatefulSetUID(pod *api_v1.Pod) string {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == "StatefulSet" {
+			return string(ref.UID)
+		}
+	}
+	return ""
+}
+
+func getPodDaemonSetUID(pod *api_v1.Pod) string {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == "DaemonSet" {
+			return string(ref.UID)
+		}
+	}
+	return ""
+}
+
+func getPodJobUID(pod *api_v1.Pod) string {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == "Job" {
 			return string(ref.UID)
 		}
 	}
@@ -1339,6 +1573,38 @@ func (c *WatchClient) extractStatefulSetLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractDaemonSetLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromDaemonSet {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromDaemonSet {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *WatchClient) extractJobLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -1397,6 +1663,34 @@ func (c *WatchClient) addOrUpdateStatefulSet(statefulset *apps_v1.StatefulSet) {
 	c.m.Lock()
 	if statefulset.UID != "" {
 		c.StatefulSets[string(statefulset.UID)] = newStatefulSet
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateDaemonSet(daemonset *apps_v1.DaemonSet) {
+	newDaemonSet := &DaemonSet{
+		Name: daemonset.Name,
+		UID:  string(daemonset.UID),
+	}
+	newDaemonSet.Attributes = c.extractDaemonSetAttributes(daemonset)
+
+	c.m.Lock()
+	if daemonset.UID != "" {
+		c.DaemonSets[string(daemonset.UID)] = newDaemonSet
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
+	newJob := &Job{
+		Name: job.Name,
+		UID:  string(job.UID),
+	}
+	newJob.Attributes = c.extractJobAttributes(job)
+
+	c.m.Lock()
+	if job.UID != "" {
+		c.Jobs[string(job.UID)] = newJob
 	}
 	c.m.Unlock()
 }
@@ -1494,6 +1788,26 @@ func (c *WatchClient) getStatefulSet(uid string) (*StatefulSet, bool) {
 	c.m.RUnlock()
 	if ok {
 		return statefulset, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) getDaemonSet(uid string) (*DaemonSet, bool) {
+	c.m.RLock()
+	daemonset, ok := c.DaemonSets[uid]
+	c.m.RUnlock()
+	if ok {
+		return daemonset, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) getJob(uid string) (*Job, bool) {
+	c.m.RLock()
+	job, ok := c.Jobs[uid]
+	c.m.RUnlock()
+	if ok {
+		return job, ok
 	}
 	return nil, false
 }

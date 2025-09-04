@@ -4,18 +4,19 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: pkg/ottl
+component: transformprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add an `Index(target, value)` OTTL function which returns the index of the first occurrence of `value` in `target`. 
+note: Add support for merging histogram buckets.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [40351]
+issues: [40280]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  The transformprocessor now supports merging histogram buckets using the `merge_histogram_buckets` function.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -4,18 +4,21 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: prometheusremotewriteexporter
+component: awslogsencodingextension
 
-# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Make sure concurrency is set to the appropriate value"
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Fixed gzip header detection for mixed compressed/uncompressed files"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [41785]
+issues: [41884]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  The extension now properly detects gzip magic bytes (0x1f, 0x8b) before attempting decompression,
+  preventing "gzip: invalid header" errors when processing files with .gz extensions that are not actually compressed.
+  Affected formats: WAF logs, CloudTrail logs, CloudWatch subscription filter logs, and VPC Flow logs.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -24,4 +27,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]
