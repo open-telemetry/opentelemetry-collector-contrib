@@ -81,7 +81,11 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				promName, err := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 
 				// handle individual metrics based on type
 				//exhaustive:enforce
