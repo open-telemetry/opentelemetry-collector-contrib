@@ -206,8 +206,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		metrics:                        &supervisorTelemetry.Metrics{},
 	}
 
-	s.runCtx, s.runCtxCancel = context.WithCancel(context.Background())
-
 	if err := s.createTemplates(); err != nil {
 		return nil, err
 	}
@@ -320,8 +318,10 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 	}, nil
 }
 
-func (s *Supervisor) Start() error {
+func (s *Supervisor) Start(ctx context.Context) error {
 	var err error
+
+	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
 
 	if err = s.startHealthCheckServer(); err != nil {
 		return fmt.Errorf("failed to start health check server: %w", err)
