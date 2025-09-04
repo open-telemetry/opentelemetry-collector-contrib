@@ -74,13 +74,13 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	if err != nil {
 		return err
 	}
-	if tmp.MsgPackTimestamp.IsZero() && tmp.Time == "none" {
+	if (tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero()) && tmp.Time == "none" {
 		// neither timestamp was set. give it right now.
 		tmp.Time = tstr
 		tnow := time.Now()
 		tmp.MsgPackTimestamp = &tnow
 	}
-	if tmp.MsgPackTimestamp.IsZero() {
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
 		propertime := eventtime.GetEventTime(tmp.Time)
 		tmp.MsgPackTimestamp = &propertime
 	}
@@ -270,7 +270,23 @@ type ServiceHistory struct {
 
 // ToPLogRecord converts a LibhoneyEvent to a Pdata LogRecord
 func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *[]string, logger zap.Logger) error {
-	timeNs := l.MsgPackTimestamp.UnixNano()
+	// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+	var timeNs int64
+	if l.MsgPackTimestamp != nil {
+		timeNs = l.MsgPackTimestamp.UnixNano()
+	} else {
+		// Parse time from Time field or use current time
+		if l.Time != "" {
+			parsedTime, err := time.Parse(time.RFC3339, l.Time)
+			if err == nil {
+				timeNs = parsedTime.UnixNano()
+			} else {
+				timeNs = time.Now().UnixNano()
+			}
+		} else {
+			timeNs = time.Now().UnixNano()
+		}
+	}
 	logger.Debug("processing log with", zap.Int64("timestamp", timeNs))
 	newLog.SetTimestamp(pcommon.Timestamp(timeNs))
 
@@ -346,7 +362,23 @@ func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
 
 // ToPTraceSpan converts a LibhoneyEvent to a Pdata Span
 func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]string, cfg FieldMapConfig, logger zap.Logger) error {
-	timeNs := l.MsgPackTimestamp.UnixNano()
+	// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+	var timeNs int64
+	if l.MsgPackTimestamp != nil {
+		timeNs = l.MsgPackTimestamp.UnixNano()
+	} else {
+		// Parse time from Time field or use current time
+		if l.Time != "" {
+			parsedTime, err := time.Parse(time.RFC3339, l.Time)
+			if err == nil {
+				timeNs = parsedTime.UnixNano()
+			} else {
+				timeNs = time.Now().UnixNano()
+			}
+		} else {
+			timeNs = time.Now().UnixNano()
+		}
+	}
 	logger.Debug("processing trace with", zap.Int64("timestamp", timeNs))
 
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
