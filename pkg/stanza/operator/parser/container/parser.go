@@ -278,7 +278,10 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
 	}
 
-	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
+	var parsedValues map[string]any
+	var err error
+
+	parsedValues, err = helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
 		return errors.New("failed to detect a valid log path")
 	}
