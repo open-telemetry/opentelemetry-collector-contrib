@@ -5,7 +5,7 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [schmikei]
+    active: [schmikei, rnishtala-sumo]
 tests:
   config:
     recursive: false
