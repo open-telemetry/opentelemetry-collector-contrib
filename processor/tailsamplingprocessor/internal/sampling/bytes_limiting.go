@@ -28,7 +28,7 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 
 // NewBytesLimitingWithBurstCapacity creates a policy evaluator with custom burst capacity.
 // Uses golang.org/x/time/rate.Limiter for efficient, thread-safe token bucket implementation.
-func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, bytesPerSecond, burstCapacity int64) PolicyEvaluator {
+func NewBytesLimitingWithBurstCapacity(_ component.TelemetrySettings, bytesPerSecond, burstCapacity int64) PolicyEvaluator {
 	// Create rate limiter with specified rate and burst capacity
 	// rate.Limit is tokens per second (bytes per second in our case)
 	// burst capacity is the maximum number of tokens (bytes) that can be consumed in a burst
@@ -41,7 +41,7 @@ func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, byt
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision based on token bucket algorithm.
 // Uses golang.org/x/time/rate.Limiter.AllowN() for efficient, thread-safe token consumption.
-func (b *bytesLimiting) Evaluate(ctx context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (b *bytesLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// Calculate the size of the trace in bytes
 	traceSize := calculateTraceSize(trace)
 
@@ -62,7 +62,7 @@ func calculateTraceSize(trace *TraceData) int64 {
 	defer trace.Unlock()
 
 	// Use the OpenTelemetry Collector's built-in method for accurate size calculation
-	// This gives us the exact protobuf marshaled size, which is more accurate than our custom estimation
+	// This gives us the exact protobuf marshaled size
 	marshaler := &ptrace.ProtoMarshaler{}
 	return int64(marshaler.TracesSize(trace.ReceivedBatches))
 }
