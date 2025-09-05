@@ -9,11 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestSetAttrOnScopeSpans_Empty(_ *testing.T) {
 	traces := ptrace.NewTraces()
-	traceData := &TraceData{
+	traceData := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 
@@ -39,7 +41,7 @@ func TestSetAttrOnScopeSpans_Many(t *testing.T) {
 	ss3 := rs2.ScopeSpans().AppendEmpty()
 	span4 := ss3.Spans().AppendEmpty()
 
-	traceData := &TraceData{
+	traceData := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 
@@ -78,7 +80,7 @@ func BenchmarkSetAttrOnScopeSpans(b *testing.B) {
 			ss3.Spans().AppendEmpty()
 		}
 
-		traceData := &TraceData{
+		traceData := &samplingpolicy.TraceData{
 			ReceivedBatches: traces,
 		}
 

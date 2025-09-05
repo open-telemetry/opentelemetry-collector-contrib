@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+package samplingpolicy // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 
 import (
 	"context"
@@ -55,9 +55,9 @@ const (
 	InvertNotSampled
 )
 
-// PolicyEvaluator implements a tail-based sampling policy evaluator,
+// Evaluator implements a tail-based sampling policy evaluator,
 // which makes a sampling decision for a given trace when requested.
-type PolicyEvaluator interface {
+type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 }

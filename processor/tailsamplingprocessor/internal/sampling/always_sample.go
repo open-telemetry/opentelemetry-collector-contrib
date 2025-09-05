@@ -9,23 +9,25 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type alwaysSample struct {
 	logger *zap.Logger
 }
 
-var _ PolicyEvaluator = (*alwaysSample)(nil)
+var _ samplingpolicy.Evaluator = (*alwaysSample)(nil)
 
 // NewAlwaysSample creates a policy evaluator the samples all traces.
-func NewAlwaysSample(settings component.TelemetrySettings) PolicyEvaluator {
+func NewAlwaysSample(settings component.TelemetrySettings) samplingpolicy.Evaluator {
 	return &alwaysSample{
 		logger: settings.Logger,
 	}
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (as *alwaysSample) Evaluate(context.Context, pcommon.TraceID, *TraceData) (Decision, error) {
+func (as *alwaysSample) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	as.logger.Debug("Evaluating spans in always-sample filter")
-	return Sampled, nil
+	return samplingpolicy.Sampled, nil
 }

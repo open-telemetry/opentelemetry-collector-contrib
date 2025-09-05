@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestEvaluate_AlwaysSample(t *testing.T) {
@@ -18,5 +20,5 @@ func TestEvaluate_AlwaysSample(t *testing.T) {
 		16,
 	}), newTraceStringAttrs(nil, "example", "value"))
 	assert.NoError(t, err)
-	assert.Equal(t, Sampled, decision)
+	assert.Equal(t, samplingpolicy.Sampled, decision)
 }
