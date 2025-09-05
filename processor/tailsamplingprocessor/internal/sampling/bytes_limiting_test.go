@@ -130,11 +130,9 @@ func TestBytesLimitingTokenRefill(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, NotSampled, decision2)
 
-	// Wait for tokens to refill (simulate time passing)
-	bytesFilter := filter.(*bytesLimiting)
-	bytesFilter.mutex.Lock()
-	bytesFilter.lastRefill = bytesFilter.lastRefill.Add(-time.Second) // Simulate 1 second passed
-	bytesFilter.mutex.Unlock()
+	// Wait for tokens to refill (real time delay)
+	// golang.org/x/time/rate handles token refill automatically based on real time
+	time.Sleep(600 * time.Millisecond) // Wait for more than half a second to allow refill
 
 	// Third trace should be sampled (tokens refilled)
 	decision3, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{3}), trace)

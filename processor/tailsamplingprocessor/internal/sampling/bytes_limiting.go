@@ -5,21 +5,17 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"golang.org/x/time/rate"
 )
 
 type bytesLimiting struct {
-	// Token bucket parameters
-	tokens     int64      // current number of tokens in the bucket
-	capacity   int64      // maximum bucket capacity (burst size)
-	refillRate int64      // tokens added per second (bytes per second)
-	lastRefill time.Time  // last time tokens were added to bucket
-	mutex      sync.Mutex // protects concurrent access to bucket state
+	// Rate limiter using golang.org/x/time/rate for efficient token bucket implementation
+	limiter *rate.Limiter
 }
 
 var _ PolicyEvaluator = (*bytesLimiting)(nil)
@@ -31,59 +27,32 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 }
 
 // NewBytesLimitingWithBurstCapacity creates a policy evaluator with custom burst capacity.
+// Uses golang.org/x/time/rate.Limiter for efficient, thread-safe token bucket implementation.
 func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, bytesPerSecond, burstCapacity int64) PolicyEvaluator {
-	now := time.Now()
+	// Create rate limiter with specified rate and burst capacity
+	// rate.Limit is tokens per second (bytes per second in our case)
+	// burst capacity is the maximum number of tokens (bytes) that can be consumed in a burst
+	limiter := rate.NewLimiter(rate.Limit(bytesPerSecond), int(burstCapacity))
+
 	return &bytesLimiting{
-		tokens:     burstCapacity, // start with full bucket
-		capacity:   burstCapacity,
-		refillRate: bytesPerSecond,
-		lastRefill: now,
+		limiter: limiter,
 	}
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision based on token bucket algorithm.
-func (b *bytesLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
+// Uses golang.org/x/time/rate.Limiter.AllowN() for efficient, thread-safe token consumption.
+func (b *bytesLimiting) Evaluate(ctx context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// Calculate the size of the trace in bytes
 	traceSize := calculateTraceSize(trace)
 
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-
-	// Refill tokens based on time elapsed
-	b.refillTokens()
-
-	// Check if we have enough tokens for this trace
-	if b.tokens >= traceSize {
-		b.tokens -= traceSize
+	// Use AllowN to check if we can consume 'traceSize' tokens
+	// AllowN returns true if the limiter allows the event and false otherwise
+	// The limiter automatically handles token bucket refill and thread safety
+	if b.limiter.AllowN(time.Now(), int(traceSize)) {
 		return Sampled, nil
 	}
 
 	return NotSampled, nil
-}
-
-// refillTokens adds tokens to the bucket based on elapsed time since last refill.
-// This method assumes the caller holds the mutex.
-func (b *bytesLimiting) refillTokens() {
-	now := time.Now()
-	elapsed := now.Sub(b.lastRefill)
-
-	if elapsed <= 0 {
-		return
-	}
-
-	// Calculate tokens to add based on elapsed time
-	tokensToAdd := int64(elapsed.Seconds() * float64(b.refillRate))
-
-	if tokensToAdd > 0 {
-		b.tokens += tokensToAdd
-
-		// Cap tokens at bucket capacity
-		if b.tokens > b.capacity {
-			b.tokens = b.capacity
-		}
-
-		b.lastRefill = now
-	}
 }
 
 // calculateTraceSize estimates the size of a trace in bytes
