@@ -231,9 +231,9 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	if err != nil {
 		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
 		writeLibhoneyError(resp, enc, "failed to read request body")
-		// Drain any remaining body to allow connection reuse
+		// Don't try to drain body if we got an error from compressed reader
+		// The reader may be in a corrupted state and cause another panic
 		if req.Body != nil {
-			_, _ = io.ReadAll(req.Body)
 			_ = req.Body.Close()
 		}
 		return
