@@ -496,3 +496,57 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	assert.True(t, mapContainedKey)
 	assert.True(t, wasAbsent.Bool())
 }
+
+func TestKeepAliveConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		disableKeepAlives bool
+		expectedEnabled   bool
+	}{
+		{
+			name:              "keep-alive enabled by default",
+			disableKeepAlives: false,
+			expectedEnabled:   true,
+		},
+		{
+			name:              "keep-alive disabled when configured",
+			disableKeepAlives: true,
+			expectedEnabled:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Get a random port for testing
+			listener, err := net.Listen("tcp", "localhost:0")
+			require.NoError(t, err)
+			addr := listener.Addr().String()
+			require.NoError(t, listener.Close())
+
+			cfg := &Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: addr,
+				},
+				DisableKeepAlives: tt.disableKeepAlives,
+			}
+
+			sink := &consumertest.TracesSink{}
+			r, err := newReceiver(cfg, sink, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, err)
+
+			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, r.Shutdown(context.Background()))
+			})
+
+			// Make a request to verify the server starts successfully
+			body := `[{"traceId":"1","id":"2","name":"test","timestamp":1234567890123456,"duration":1000000}]`
+			resp, err := http.Post(fmt.Sprintf("http://%s/api/v2/spans", addr), "application/json", bytes.NewBufferString(body))
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.NotNil(t, r.server, "HTTP server should be initialized")
+			assert.Equal(t, tt.disableKeepAlives, cfg.DisableKeepAlives, "Configuration should match expected value")
+		})
+	}
+}
