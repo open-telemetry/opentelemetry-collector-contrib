@@ -2501,3 +2501,57 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		require.Truef(t, gotSpan, "expected to find span '%s', but did not find it", expectedSpan)
 	}
 }
+
+func TestSupervisorReportsHeartbeat(t *testing.T) {
+	var heartbeatReport atomic.Bool
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if isHeartbeatMessage(message) {
+					heartbeatReport.Store(true)
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+	s, _ := newSupervisor(t, "reports_heartbeat", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Set the heartbeat interval to 5 seconds
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
+			Opamp: &protobufs.OpAMPConnectionSettings{
+				HeartbeatIntervalSeconds: 5,
+			},
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		return heartbeatReport.Load()
+	}, 7*time.Second, 250*time.Millisecond)
+}
+
+// isHeartbeatMessage returns true if all fields of the message are nil.
+func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
+	empty := true
+
+	empty = empty && message.AgentDescription == nil
+	empty = empty && message.Health == nil
+	empty = empty && message.EffectiveConfig == nil
+	empty = empty && message.RemoteConfigStatus == nil
+	empty = empty && message.PackageStatuses == nil
+	empty = empty && message.AgentDisconnect == nil
+	empty = empty && message.ConnectionSettingsRequest == nil
+	empty = empty && message.CustomCapabilities == nil
+	empty = empty && message.CustomMessage == nil
+	empty = empty && message.AvailableComponents == nil
+	empty = empty && message.Flags == 0
+
+	return empty
+}
