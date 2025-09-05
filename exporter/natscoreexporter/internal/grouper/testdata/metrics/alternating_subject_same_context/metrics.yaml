@@ -21,12 +21,12 @@ resourceMetrics:
                 value:
                   stringValue: "2"
           - metadata:
-              - key: subject
-                value:
-                  stringValue: "1"
               - key: id
                 value:
                   stringValue: 1.1.3
+              - key: subject
+                value:
+                  stringValue: "1"
         scope:
           attributes:
             - key: id

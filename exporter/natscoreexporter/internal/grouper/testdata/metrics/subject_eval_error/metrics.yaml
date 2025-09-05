@@ -7,12 +7,12 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - metadata:
-              - key: id
-                value:
-                  stringValue: 1.1.1
               - key: subject
                 value:
                   stringValue: ""
+              - key: id
+                value:
+                  stringValue: 1.1.1
         scope:
           attributes:
             - key: id
