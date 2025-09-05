@@ -12,11 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -726,6 +728,7 @@ func TestExtractionRules(t *testing.T) {
 		additionalAnnotations map[string]string
 		additionalLabels      map[string]string
 		attributes            map[string]string
+		singularFeatureGate   bool
 	}{
 		{
 			name:       "no-rules",
@@ -925,6 +928,22 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-labels singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
@@ -937,6 +956,21 @@ func TestExtractionRules(t *testing.T) {
 			attributes: map[string]string{
 				"k8s.pod.annotations.annotation1": "av1",
 			},
+		},
+		{
+			name: "all-annotations singular",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.annotation.annotation1": "av1",
+			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-annotations-not-match",
@@ -1036,6 +1070,13 @@ func TestExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.singularFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+				}()
+			}
+
 			c.Rules = tc.rules
 
 			// manually call the data removal functions here
@@ -1238,9 +1279,10 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
+		name                string
+		rules               ExtractionRules
+		attributes          map[string]string
+		singularFeatureGate bool
 	}{
 		{
 			name:       "no-rules",
@@ -1285,6 +1327,21 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-labels singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
@@ -1298,9 +1355,31 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				"k8s.namespace.annotations.annotation1": "av1",
 			},
 		},
+		{
+			name: "all-annotations singular",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.annotation.annotation1": "av1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.singularFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+				}()
+			}
+
 			c.Rules = tc.rules
 			c.handleNamespaceAdd(namespace)
 			p, ok := c.GetNamespace(namespace.Name)
@@ -1334,9 +1413,10 @@ func TestNodeExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
+		name                string
+		rules               ExtractionRules
+		attributes          map[string]string
+		singularFeatureGate bool
 	}{
 		{
 			name:       "no-rules",
@@ -1381,6 +1461,21 @@ func TestNodeExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-labels singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
@@ -1394,9 +1489,31 @@ func TestNodeExtractionRules(t *testing.T) {
 				"k8s.node.annotations.annotation1": "av1",
 			},
 		},
+		{
+			name: "all-annotations singular",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.annotation.annotation1": "av1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.singularFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+				}()
+			}
+
 			c.Rules = tc.rules
 			c.handleNodeAdd(node)
 			n, ok := c.GetNode(node.Name)
@@ -1592,6 +1709,198 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 			c.Rules = tc.rules
 			c.handleStatefulSetAdd(statefulset)
 			n, ok := c.GetStatefulSet(string(statefulset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestDaemonSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	daemonset := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleDaemonSetAdd(daemonset)
+			n, ok := c.GetDaemonSet(string(daemonset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestJobExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromJob,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleJobAdd(job)
+			n, ok := c.GetJob(string(job.UID))
 			require.True(t, ok)
 
 			assert.Len(t, tc.attributes, len(n.Attributes))
@@ -2396,6 +2705,134 @@ func TestExtractStatefulSetLabelsAnnotations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			assert.Equal(t, tc.shouldExtractStatefulSet, c.extractStatefulSetLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractDaemonSetLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                   string
+		shouldExtractDaemonSet bool
+		rules                  ExtractionRules
+	}{
+		{
+			name:                   "empty-rules",
+			shouldExtractDaemonSet: false,
+			rules:                  ExtractionRules{},
+		}, {
+			name:                   "pod-rules",
+			shouldExtractDaemonSet: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                   "daemonset-rules-only-annotations",
+			shouldExtractDaemonSet: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+			},
+		}, {
+			name:                   "daemonset-rules-only-labels",
+			shouldExtractDaemonSet: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractDaemonSet, c.extractDaemonSetLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractJobLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name             string
+		shouldExtractJob bool
+		rules            ExtractionRules
+	}{
+		{
+			name:             "empty-rules",
+			shouldExtractJob: false,
+			rules:            ExtractionRules{},
+		}, {
+			name:             "pod-rules",
+			shouldExtractJob: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:             "job-rules-only-annotations",
+			shouldExtractJob: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+		}, {
+			name:             "job-rules-only-labels",
+			shouldExtractJob: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractJob, c.extractJobLabelsAnnotations())
 		})
 	}
 }

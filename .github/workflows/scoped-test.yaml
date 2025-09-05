@@ -95,4 +95,4 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make"
+          make for-affected-components CMD="make lint test-three-times"

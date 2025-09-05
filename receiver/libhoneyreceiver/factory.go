@@ -41,7 +41,8 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		HTTP: configoptional.Default(HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointStr,
+				Endpoint:              endpointStr,
+				CompressionAlgorithms: []string{},
 			},
 			TracesURLPaths: defaultTracesURLPaths,
 		}),
