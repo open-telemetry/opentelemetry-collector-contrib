@@ -273,7 +273,7 @@ func TestLibhoneyEvent_GetScope(t *testing.T) {
 				},
 			},
 			serviceName: "test-service",
-			want:        "libhoney.receiver",
+			want:        "test-service-libhoney.receiver",
 			wantErr:     true,
 		},
 	}

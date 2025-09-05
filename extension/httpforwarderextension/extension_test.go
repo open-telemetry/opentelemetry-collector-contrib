@@ -30,123 +30,142 @@ type clientRequestArgs struct {
 }
 
 func TestExtension(t *testing.T) {
-	listenAt := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name                        string
-		config                      *Config
+		config                      func(listenAt string) *Config
 		expectedbackendStatusCode   int
 		expectedBackendResponseBody []byte
 		expectedHeaders             map[string]configopaque.String
 		httpErrorFromBackend        bool
 		requestErrorAtForwarder     bool
-		clientRequestArgs           clientRequestArgs
+		clientRequestArgs           func(listenAt string) clientRequestArgs
 		startUpError                bool
 		startUpErrorMessage         string
 	}{
 		{
 			name: "No additional headers",
-			config: &Config{
-				Ingress: confighttp.ServerConfig{
-					Endpoint: listenAt,
-				},
+			config: func(listenAt string) *Config {
+				return &Config{
+					Ingress: confighttp.ServerConfig{
+						Endpoint: listenAt,
+					},
+				}
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
 			expectedBackendResponseBody: []byte("hello world"),
 			expectedHeaders: map[string]configopaque.String{
 				"header": "value",
 			},
-			clientRequestArgs: clientRequestArgs{
-				method: http.MethodGet,
-				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
-				headers: map[string]string{
-					"client_header": "val1",
-				},
-				body: "client_body",
+			clientRequestArgs: func(listenAt string) clientRequestArgs {
+				return clientRequestArgs{
+					method: http.MethodGet,
+					url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+					headers: map[string]string{
+						"client_header": "val1",
+					},
+					body: "client_body",
+				}
 			},
 		},
 		{
 			name: "With additional headers",
-			config: &Config{
-				Ingress: confighttp.ServerConfig{
-					Endpoint: listenAt,
-				},
-				Egress: confighttp.ClientConfig{
-					Headers: map[string]configopaque.String{
-						"key": "value",
+			config: func(listenAt string) *Config {
+				return &Config{
+					Ingress: confighttp.ServerConfig{
+						Endpoint: listenAt,
 					},
-				},
+					Egress: confighttp.ClientConfig{
+						Headers: map[string]configopaque.String{
+							"key": "value",
+						},
+					},
+				}
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
 			expectedBackendResponseBody: []byte("hello world with additional headers"),
 			expectedHeaders: map[string]configopaque.String{
 				"header": "value",
 			},
-			clientRequestArgs: clientRequestArgs{
-				method: http.MethodPut,
-				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+			clientRequestArgs: func(listenAt string) clientRequestArgs {
+				return clientRequestArgs{
+					method: http.MethodPut,
+					url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+				}
 			},
 		},
 		{
 			name: "Error code from backend",
-			config: &Config{
-				Ingress: confighttp.ServerConfig{
-					Endpoint: listenAt,
-				},
-				Egress: confighttp.ClientConfig{
-					Headers: map[string]configopaque.String{
-						"key": "value",
+			config: func(listenAt string) *Config {
+				return &Config{
+					Ingress: confighttp.ServerConfig{
+						Endpoint: listenAt,
 					},
-				},
+					Egress: confighttp.ClientConfig{
+						Headers: map[string]configopaque.String{
+							"key": "value",
+						},
+					},
+				}
 			},
 			expectedbackendStatusCode:   http.StatusInternalServerError,
 			expectedBackendResponseBody: []byte("\n"),
 			httpErrorFromBackend:        true,
-			clientRequestArgs: clientRequestArgs{
-				method: "PATCH",
-				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+			clientRequestArgs: func(listenAt string) clientRequestArgs {
+				return clientRequestArgs{
+					method: "PATCH",
+					url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+				}
 			},
 		},
 		{
 			name: "Error making request at forwarder",
-			config: &Config{
-				Ingress: confighttp.ServerConfig{
-					Endpoint: listenAt,
-				},
-				Egress: confighttp.ClientConfig{
-					Headers: map[string]configopaque.String{
-						"key": "value",
+			config: func(listenAt string) *Config {
+				return &Config{
+					Ingress: confighttp.ServerConfig{
+						Endpoint: listenAt,
 					},
-				},
+					Egress: confighttp.ClientConfig{
+						Headers: map[string]configopaque.String{
+							"key": "value",
+						},
+					},
+				}
 			},
 			expectedbackendStatusCode:   http.StatusBadGateway,
 			expectedBackendResponseBody: []byte("\n"),
 			requestErrorAtForwarder:     true,
-			clientRequestArgs: clientRequestArgs{
-				method: http.MethodGet,
-				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+			clientRequestArgs: func(listenAt string) clientRequestArgs {
+				return clientRequestArgs{
+					method: http.MethodGet,
+					url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
+				}
 			},
 		},
 		{
 			name: "Invalid config - HTTP Client creation fails",
-			config: &Config{
-				Egress: confighttp.ClientConfig{
-					Endpoint: "localhost:9090",
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
+			config: func(_ string) *Config {
+				return &Config{
+					Egress: confighttp.ClientConfig{
+						Endpoint: "localhost:9090",
+						TLS: configtls.ClientConfig{
+							Config: configtls.Config{
+								CAFile: "/non/existent",
+							},
 						},
 					},
-				},
+				}
 			},
 			startUpError:        true,
 			startUpErrorMessage: "failed to create HTTP Client: ",
 		},
 		{
 			name: "Error on Startup",
-			config: &Config{
-				Ingress: confighttp.ServerConfig{
-					Endpoint: "invalid", // to mock error setting up listener.
-				},
+			config: func(_ string) *Config {
+				return &Config{
+					Ingress: confighttp.ServerConfig{
+						Endpoint: "invalid", // to mock error setting up listener.
+					},
+				}
 			},
 			startUpError: true,
 		},
@@ -154,24 +173,30 @@ func TestExtension(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			listenAt := testutil.GetAvailableLocalAddress(t)
+			cfg := test.config(listenAt)
+			var cra clientRequestArgs
+			if test.clientRequestArgs != nil {
+				cra = test.clientRequestArgs(listenAt)
+			}
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if test.httpErrorFromBackend {
 					http.Error(w, "", http.StatusInternalServerError)
 					return
 				}
 
-				assert.Equal(t, getParsedURL(t, test.clientRequestArgs.url).RequestURI(), r.RequestURI)
-				assert.Equal(t, test.clientRequestArgs.method, r.Method)
-				assert.Equal(t, test.clientRequestArgs.body, string(readBody(r.Body)))
+				assert.Equal(t, getParsedURL(t, cra.url).RequestURI(), r.RequestURI)
+				assert.Equal(t, cra.method, r.Method)
+				assert.Equal(t, cra.body, string(readBody(r.Body)))
 
 				// Assert headers originating from client.
-				for k, v := range test.clientRequestArgs.headers {
+				for k, v := range cra.headers {
 					got := r.Header.Get(k)
 					assert.Equal(t, v, got)
 				}
 
 				// Assert additional headers added by forwarder.
-				for k, v := range test.config.Egress.Headers {
+				for k, v := range cfg.Egress.Headers {
 					got := r.Header.Get(k)
 					assert.Equal(t, string(v), got)
 				}
@@ -190,14 +215,14 @@ func TestExtension(t *testing.T) {
 
 			// Fill in final destination URL.
 			backendURL, _ := url.Parse(backend.URL)
-			test.config.Egress.Endpoint = backendURL.String()
+			cfg.Egress.Endpoint = backendURL.String()
 
 			// Setup forwarder with wrong final address to mock failures.
 			if test.requestErrorAtForwarder {
-				test.config.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+				cfg.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 			}
 
-			hf, err := newHTTPForwarder(test.config, componenttest.NewNopTelemetrySettings())
+			hf, err := newHTTPForwarder(cfg, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			ctx := t.Context()
@@ -216,7 +241,7 @@ func TestExtension(t *testing.T) {
 			httpClient := http.Client{}
 
 			// Assert responses received by client.
-			response, err := httpClient.Do(httpRequest(t, test.clientRequestArgs))
+			response, err := httpClient.Do(httpRequest(t, cra))
 			require.NoError(t, err)
 			require.NotNil(t, response)
 			defer response.Body.Close()

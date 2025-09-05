@@ -32,10 +32,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -135,21 +138,22 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 func newNopTelemetrySettings() telemetrySettings {
 	return telemetrySettings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
+			Logger:         zap.NewNop(),
+			TracerProvider: noop.NewTracerProvider(),
 		},
 	}
 }
 
 func Test_NewSupervisor(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplate)
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 }
 
 func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplateWithTelemetrySettings)
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 	require.NotEmpty(t, supervisor.telemetrySettings)
@@ -157,6 +161,8 @@ func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
 	require.NotNil(t, supervisor.telemetrySettings.TracerProvider)
 	require.NotNil(t, supervisor.telemetrySettings.Logger)
 	require.NotNil(t, supervisor.telemetrySettings.loggerProvider)
+
+	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
 
 	supervisor.Shutdown()
 }
@@ -170,7 +176,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 	dir := filepath.Dir(cfg.Storage.Directory)
 	require.NoError(t, os.Chmod(dir, 0o500))
 
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "error creating storage dir")
 	require.Nil(t, supervisor)
@@ -750,6 +756,13 @@ service:
 
 		configStorageDir := t.TempDir()
 
+		mp := metric.NewMeterProvider()
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+		defer func() {
+			_ = mp.Shutdown(t.Context())
+		}()
+
 		s := Supervisor{
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
@@ -768,6 +781,7 @@ service:
 			cfgState:                       &atomic.Value{},
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			metrics:                        metrics,
 		}
 
 		require.NoError(t, s.createTemplates())
@@ -1014,6 +1028,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1028,6 +1043,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			doneChan:                       make(chan struct{}),
 			agentReadyChan:                 make(chan struct{}),
 			agentReady:                     atomic.Bool{},
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		loopDoneChan := make(chan struct{})
@@ -1068,6 +1085,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1080,6 +1098,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    client,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1097,6 +1117,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1109,6 +1130,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1136,6 +1159,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1148,6 +1172,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1175,6 +1201,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1187,6 +1214,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1210,6 +1239,13 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		mp := metric.NewMeterProvider()
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+		defer func() {
+			_ = mp.Shutdown(t.Context())
+		}()
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1224,6 +1260,9 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			doneChan:                       make(chan struct{}),
 			agentReadyChan:                 make(chan struct{}),
 			agentReady:                     atomic.Bool{},
+			metrics:                        metrics,
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1570,8 +1609,9 @@ service:
 func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	t.Run("empty config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 		got := s.createEffectiveConfigMsg()
 
@@ -1579,8 +1619,9 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	})
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.effectiveConfig.Store("effective")
@@ -1592,8 +1633,9 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	})
 	t.Run("only merged config set", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.cfgState.Store(&configState{mergedConfig: "merged"})
@@ -1895,7 +1937,7 @@ telemetry:
 `
 
 	cfg := setupSupervisorConfig(t, template)
-	supervisor, err := NewSupervisor(zap.NewNop(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 
 	path := filepath.Join(t.TempDir(), "output.txt")
@@ -2017,12 +2059,14 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 
 func TestSupervisor_HealthCheckServer(t *testing.T) {
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
-
+	runCtx, runCtxCancel := context.WithCancel(t.Context())
 	s := &Supervisor{
 		telemetrySettings: newNopTelemetrySettings(),
 		persistentState:   &persistentState{InstanceID: testUUID},
 		cfgState:          &atomic.Value{},
 		doneChan:          make(chan struct{}),
+		runCtx:            runCtx,
+		runCtxCancel:      runCtxCancel,
 	}
 
 	healthyConfig := &configState{
