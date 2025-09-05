@@ -135,138 +135,113 @@ func calculateTraceSize(trace *TraceData) int64 {
 
 // calculateResourceSize estimates the size of a resource in bytes
 func calculateResourceSize(resource pcommon.Resource) int64 {
-	var size int64
+	// Start with fixed overhead: DroppedAttributesCount (4 bytes for uint32)
+	size := int64(4)
 
-	// Resource attributes
+	// Resource attributes - inline attribute size calculation for performance
 	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
-		size += int64(len(k))
-		size += calculateValueSize(v)
+		size += int64(len(k)) + calculateValueSize(v)
 		return true
 	})
-
-	// DroppedAttributesCount (4 bytes for uint32)
-	size += 4
 
 	return size
 }
 
 // calculateScopeSize estimates the size of an instrumentation scope in bytes
 func calculateScopeSize(scope pcommon.InstrumentationScope) int64 {
-	var size int64
+	// Start with fixed overhead: name, version, and DroppedAttributesCount (4 bytes for uint32)
+	size := int64(len(scope.Name())) + int64(len(scope.Version())) + 4
 
-	// Name and version
-	size += int64(len(scope.Name()))
-	size += int64(len(scope.Version()))
-
-	// Scope attributes
+	// Scope attributes - inline attribute size calculation for performance
 	scope.Attributes().Range(func(k string, v pcommon.Value) bool {
-		size += int64(len(k))
-		size += calculateValueSize(v)
+		size += int64(len(k)) + calculateValueSize(v)
 		return true
 	})
-
-	// DroppedAttributesCount (4 bytes for uint32)
-	size += 4
 
 	return size
 }
 
 // calculateSpanSize estimates the size of a span in bytes
 func calculateSpanSize(span ptrace.Span) int64 {
-	var size int64
+	// Start with fixed-size fields (batch calculation for performance)
+	// TraceID(16) + SpanID(8) + ParentSpanID(8) + StartTime(8) + EndTime(8) + Kind(4) + StatusCode(4) + 3*DroppedCounts(12) = 68 bytes
+	size := int64(68)
 
-	// Span IDs and timestamps (fixed sizes)
-	size += 16 // TraceID
-	size += 8  // SpanID
-	size += 8  // ParentSpanID
-	size += 8  // StartTimeUnixNano
-	size += 8  // EndTimeUnixNano
-	size += 4  // Kind (int32)
-
-	// Name
+	// Variable-length string fields
 	size += int64(len(span.Name()))
-
-	// TraceState
 	size += int64(len(span.TraceState().AsRaw()))
-
-	// Status
-	size += 4 // StatusCode (int32)
 	size += int64(len(span.Status().Message()))
 
-	// Span attributes
+	// Span attributes - inline calculation for performance
 	span.Attributes().Range(func(k string, v pcommon.Value) bool {
-		size += int64(len(k))
-		size += calculateValueSize(v)
+		size += int64(len(k)) + calculateValueSize(v)
 		return true
 	})
 
-	// Events
-	for i := 0; i < span.Events().Len(); i++ {
+	// Events - pre-calculate length to avoid repeated calls
+	eventsLen := span.Events().Len()
+	for i := 0; i < eventsLen; i++ {
 		event := span.Events().At(i)
-		size += 8 // TimeUnixNano
-		size += int64(len(event.Name()))
+		// TimeUnixNano(8) + DroppedAttributesCount(4) = 12 bytes per event
+		size += 12 + int64(len(event.Name()))
 
+		// Event attributes - inline calculation
 		event.Attributes().Range(func(k string, v pcommon.Value) bool {
-			size += int64(len(k))
-			size += calculateValueSize(v)
+			size += int64(len(k)) + calculateValueSize(v)
 			return true
 		})
-
-		size += 4 // DroppedAttributesCount
 	}
 
-	// Links
-	for i := 0; i < span.Links().Len(); i++ {
+	// Links - pre-calculate length to avoid repeated calls
+	linksLen := span.Links().Len()
+	for i := 0; i < linksLen; i++ {
 		link := span.Links().At(i)
-		size += 16 // TraceID
-		size += 8  // SpanID
-		size += int64(len(link.TraceState().AsRaw()))
+		// TraceID(16) + SpanID(8) + DroppedAttributesCount(4) = 28 bytes per link
+		size += 28 + int64(len(link.TraceState().AsRaw()))
 
+		// Link attributes - inline calculation
 		link.Attributes().Range(func(k string, v pcommon.Value) bool {
-			size += int64(len(k))
-			size += calculateValueSize(v)
+			size += int64(len(k)) + calculateValueSize(v)
 			return true
 		})
-
-		size += 4 // DroppedAttributesCount
 	}
-
-	// Dropped counts (4 bytes each for uint32)
-	size += 4 // DroppedAttributesCount
-	size += 4 // DroppedEventsCount
-	size += 4 // DroppedLinksCount
 
 	return size
 }
 
-// calculateValueSize estimates the size of a pcommon.Value in bytes
+// calculateValueSize estimates the size of a pcommon.Value in bytes with optimized inline handling
 func calculateValueSize(v pcommon.Value) int64 {
+	// Optimize for most common types first (string, int, double, bool)
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		return int64(len(v.Str()))
-	case pcommon.ValueTypeBool:
-		return 1
 	case pcommon.ValueTypeInt:
-		return 8
+		return 8 // int64 is always 8 bytes
 	case pcommon.ValueTypeDouble:
-		return 8
+		return 8 // float64 is always 8 bytes
+	case pcommon.ValueTypeBool:
+		return 1 // bool is typically 1 byte
+	case pcommon.ValueTypeBytes:
+		return int64(len(v.Bytes().AsRaw()))
 	case pcommon.ValueTypeMap:
+		// For maps, use direct range instead of recursion for performance
 		var size int64
-		v.Map().Range(func(k string, v pcommon.Value) bool {
-			size += int64(len(k))
-			size += calculateValueSize(v)
+		v.Map().Range(func(k string, mapVal pcommon.Value) bool {
+			size += int64(len(k)) + calculateValueSize(mapVal)
 			return true
 		})
 		return size
 	case pcommon.ValueTypeSlice:
+		// For slices, pre-calculate length and use direct indexing
 		var size int64
-		for i := 0; i < v.Slice().Len(); i++ {
-			size += calculateValueSize(v.Slice().At(i))
+		slice := v.Slice()
+		sliceLen := slice.Len()
+		for i := 0; i < sliceLen; i++ {
+			size += calculateValueSize(slice.At(i))
 		}
 		return size
-	case pcommon.ValueTypeBytes:
-		return int64(len(v.Bytes().AsRaw()))
 	default:
+		// Handle unknown/empty types
 		return 0
 	}
 }
