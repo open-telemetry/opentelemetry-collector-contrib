@@ -46,7 +46,6 @@ components:
         - logicmonitor
         - logzio
         - mezmo
-        - opencensus
         - opensearch
         - otelarrow
         - prometheus
@@ -123,7 +122,6 @@ components:
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
         - sumologic
         - tail_sampling
@@ -193,7 +191,6 @@ components:
         - nginx
         - nsxt
         - ntp
-        - opencensus
         - oracledb
         - otelarrow
         - otlpjsonfile

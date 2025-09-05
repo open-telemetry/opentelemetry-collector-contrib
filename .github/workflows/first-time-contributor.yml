@@ -1,14 +1,16 @@
 name: 'First time contributor'
 on:
-  pull_request:
-    types: [opened, labeled]
+  pull_request_target:
+    types:
+      - opened
+      - labeled
 
-permissions:
-  contents: read
-  issues: write
+permissions: read-all
 
 jobs:
   welcome_first_contributor:
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-latest
     if: github.repository_owner == 'open-telemetry' && (github.event.pull_request.author_association == 'NONE' || github.event.label.name == 'first-contrib-test')
     steps:

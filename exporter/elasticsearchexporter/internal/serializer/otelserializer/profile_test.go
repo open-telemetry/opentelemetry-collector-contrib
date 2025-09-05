@@ -137,10 +137,10 @@ func TestSerializeProfile(t *testing.T) {
 				{
 					"script": map[string]any{
 						"params": map[string]any{
-							"buildid":    "YA3K_koRAADyvzjEk_X7kg",
-							"ecsversion": "1.12.0",
-							"filename":   "samples",
-							"timestamp":  json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
+							"buildid":     "YA3K_koRAADyvzjEk_X7kg",
+							"ecs.version": "1.12.0",
+							"filename":    "samples",
+							"timestamp":   json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
 						},
 						"source": serializeprofiles.ExeMetadataUpsertScript,
 					},
@@ -230,6 +230,6 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = ser.SerializeProfile(profiles.ProfilesDictionary(), resource.Resource(), scope.Scope(), profile, pushData)
+		_ = ser.SerializeProfile(profiles.Dictionary(), resource.Resource(), scope.Scope(), profile, pushData)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -120,6 +121,40 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 		logsConsumer, ok := receiver.(*saramaConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultLogsEncoding, logsConsumer.config.Logs.Encoding)
+		require.NoError(t, err)
+		assert.NotNil(t, receiver)
+	})
+}
+
+func TestCreateProfiles(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Brokers = []string{"invalid:9092"}
+	cfg.ProtocolVersion = "2.0.0"
+	r, err := createProfilesReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
+}
+
+func TestWithProfilesUnmarshalers(t *testing.T) {
+	f := NewFactory()
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Profiles.Encoding = "custom"
+		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+		profilesConsumer, ok := receiver.(*saramaConsumer)
+		require.True(t, ok)
+		require.Equal(t, "custom", profilesConsumer.config.Profiles.Encoding)
+		require.NoError(t, err)
+		require.NotNil(t, receiver)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		cfg := createDefaultConfig()
+		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+		profilesConsumer, ok := receiver.(*saramaConsumer)
+		require.True(t, ok)
+		require.Equal(t, defaultProfilesEncoding, profilesConsumer.config.Profiles.Encoding)
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
 	})
