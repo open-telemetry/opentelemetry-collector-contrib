@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.134.0
@@ -156,5 +156,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-// Remove this when github.com/stretchr/testify is fixed.
+// TODO: Remove this when github.com/stretchr/testify is fixed.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42459
 replace github.com/stretchr/testify => github.com/stretchr/testify v1.10.0

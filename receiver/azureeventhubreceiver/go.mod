@@ -1,10 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
+	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.134.0
@@ -19,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.40.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.134.0
 	go.opentelemetry.io/collector/extension/xextension v0.134.0
+	go.opentelemetry.io/collector/featuregate v1.40.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.134.0
 	go.opentelemetry.io/collector/pdata v1.40.0
 	go.opentelemetry.io/collector/pipeline v1.40.0
@@ -32,7 +35,8 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
-	github.com/Azure/go-amqp v1.0.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
+	github.com/Azure/go-amqp v1.4.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect
@@ -108,7 +112,6 @@ require (
 	go.opentelemetry.io/collector/extension v1.40.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.134.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.134.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.40.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.134.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.134.0 // indirect
 	go.opentelemetry.io/collector/otelcol v0.134.0 // indirect

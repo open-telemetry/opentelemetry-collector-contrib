@@ -10,6 +10,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestGetUIDForObject(t *testing.T) {
@@ -45,4 +49,70 @@ func TestGetIDForCache(t *testing.T) {
 	actual := GetIDForCache(ns, resName)
 
 	require.Equal(t, ns+"/"+resName, actual)
+}
+
+func TestGetObjectFromStore_ObjectInClusterWideStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := GetObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectInNamespacedStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := GetObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectNotFound(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "other-test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := GetObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.Nil(t, obj)
+}
+
+func TestGetObjectFromStore_ReturnsError(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	store.WantErr = true
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := GetObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.Error(t, err)
+	require.Nil(t, obj)
 }
