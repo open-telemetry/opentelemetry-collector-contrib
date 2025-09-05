@@ -152,16 +152,6 @@ func (s ProfileSample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return joinedErr
 }
 
-type valueTypes []valueType
-
-func (s valueTypes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
-	var err error
-	for _, vt := range s {
-		err = errors.Join(err, encoder.AppendObject(vt))
-	}
-	return err
-}
-
 type valueType struct {
 	typ                    string
 	unit                   string
