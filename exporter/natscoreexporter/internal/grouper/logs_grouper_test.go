@@ -74,7 +74,11 @@ func groupLogs(t *testing.T, subject string, srcLogs plog.Logs) ([]Group[plog.Lo
 			destResourceLogs.ScopeLogs().RemoveIf(func(destScopeLogs plog.ScopeLogs) bool {
 				destScopeLogs.LogRecords().RemoveIf(func(destLogRecord plog.LogRecord) bool {
 					subject, err := constructSubject(destResourceLogs, destScopeLogs, destLogRecord)
-					return err != nil || subject != groupSubject
+					if err == nil {
+						return subject != groupSubject
+					} else {
+						return true
+					}
 				})
 				return destScopeLogs.LogRecords().Len() == 0
 			})

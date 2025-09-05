@@ -74,7 +74,11 @@ func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) ([]Group
 			destResourceSpans.ScopeSpans().RemoveIf(func(destScopeSpans ptrace.ScopeSpans) bool {
 				destScopeSpans.Spans().RemoveIf(func(destSpan ptrace.Span) bool {
 					subject, err := constructSubject(destResourceSpans, destScopeSpans, destSpan)
-					return err != nil || subject != groupSubject
+					if err == nil {
+						return subject != groupSubject
+					} else {
+						return true
+					}
 				})
 				return destScopeSpans.Spans().Len() == 0
 			})

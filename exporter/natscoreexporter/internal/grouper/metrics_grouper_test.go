@@ -75,7 +75,11 @@ func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) ([]G
 			destResourceMetrics.ScopeMetrics().RemoveIf(func(destScopeMetrics pmetric.ScopeMetrics) bool {
 				destScopeMetrics.Metrics().RemoveIf(func(destMetric pmetric.Metric) bool {
 					subject, err := constructSubject(destResourceMetrics, destScopeMetrics, destMetric)
-					return err != nil || subject != groupSubject
+					if err == nil {
+						return subject != groupSubject
+					} else {
+						return true
+					}
 				})
 				return destScopeMetrics.Metrics().Len() == 0
 			})
