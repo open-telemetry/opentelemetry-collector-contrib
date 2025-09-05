@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:             "test-policy-8",
 						Type:             BytesLimiting,
-						BytesLimitingCfg: BytesLimitingCfg{KilobytesPerSecond: 1000, BurstCapacityKB: 2000},
+						BytesLimitingCfg: BytesLimitingCfg{BytesPerSecond: 1024000, BurstCapacity: 2048000},
 					},
 				},
 				{

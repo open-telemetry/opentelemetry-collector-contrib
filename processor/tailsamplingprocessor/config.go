@@ -210,11 +210,11 @@ type RateLimitingCfg struct {
 // BytesLimitingCfg holds the configurable settings to create a bytes limiting
 // sampling policy evaluator using a token bucket algorithm.
 type BytesLimitingCfg struct {
-	// KilobytesPerSecond sets the limit on the maximum number of kilobytes that can be processed each second.
-	KilobytesPerSecond int64 `mapstructure:"kb_per_second"`
-	// BurstCapacityKB sets the maximum burst capacity in kilobytes. If not specified, defaults to 2x KilobytesPerSecond.
+	// BytesPerSecond sets the limit on the maximum number of bytes that can be processed each second.
+	BytesPerSecond int64 `mapstructure:"bytes_per_second"`
+	// BurstCapacity sets the maximum burst capacity in bytes. If not specified, defaults to 2x BytesPerSecond.
 	// This allows for short bursts of traffic above the sustained rate.
-	BurstCapacityKB int64 `mapstructure:"burst_capacity_kb"`
+	BurstCapacity int64 `mapstructure:"burst_capacity"`
 }
 
 // SpanCountCfg holds the configurable settings to create a Span Count filter sampling

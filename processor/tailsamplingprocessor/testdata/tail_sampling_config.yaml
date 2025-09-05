@@ -44,7 +44,7 @@ tail_sampling:
        {
           name: test-policy-8,
           type: bytes_limiting,
-          bytes_limiting: {kb_per_second: 1000, burst_capacity_kb: 2000}
+          bytes_limiting: {bytes_per_second: 1024000, burst_capacity: 2048000}
        },
        {
           name: test-policy-9,

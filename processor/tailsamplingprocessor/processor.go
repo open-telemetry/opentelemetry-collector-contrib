@@ -262,13 +262,10 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewRateLimiting(settings, rlfCfg.SpansPerSecond), nil
 	case BytesLimiting:
 		blfCfg := cfg.BytesLimitingCfg
-		// Convert kilobytes to bytes
-		bytesPerSecond := blfCfg.KilobytesPerSecond * 1024
-		if blfCfg.BurstCapacityKB > 0 {
-			burstCapacityBytes := blfCfg.BurstCapacityKB * 1024
-			return sampling.NewBytesLimitingWithBurstCapacity(settings, bytesPerSecond, burstCapacityBytes), nil
+		if blfCfg.BurstCapacity > 0 {
+			return sampling.NewBytesLimitingWithBurstCapacity(settings, blfCfg.BytesPerSecond, blfCfg.BurstCapacity), nil
 		}
-		return sampling.NewBytesLimiting(settings, bytesPerSecond), nil
+		return sampling.NewBytesLimiting(settings, blfCfg.BytesPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
 		return sampling.NewSpanCount(settings, spCfg.MinSpans, spCfg.MaxSpans), nil

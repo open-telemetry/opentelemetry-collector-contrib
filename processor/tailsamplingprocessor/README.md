@@ -34,7 +34,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on the rate of spans per second.
-- `bytes_limiting`: Sample based on the rate of kilobytes per second using a token bucket algorithm. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
+- `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
@@ -129,7 +129,7 @@ processors:
          {
             name: test-policy-9,
             type: bytes_limiting,
-            bytes_limiting: {kb_per_second: 1000, burst_capacity_kb: 2000}
+            bytes_limiting: {bytes_per_second: 1024000, burst_capacity: 2048000}
          },
          {
             name: test-policy-10,
@@ -248,16 +248,16 @@ The `bytes_limiting` policy uses a token bucket algorithm to control the rate of
 
 The `bytes_limiting` policy supports the following configuration parameters:
 
-- `kb_per_second`: The sustained rate at which kilobytes are allowed through (required)
-- `burst_capacity_kb`: The maximum number of kilobytes that can be processed in a burst (optional, defaults to 2x `kb_per_second`)
+- `bytes_per_second`: The sustained rate at which bytes are allowed through (required)
+- `burst_capacity`: The maximum number of bytes that can be processed in a burst (optional, defaults to 2x `bytes_per_second`)
 
 ### Token Bucket Algorithm
 
 The policy implements a token bucket algorithm where:
 
 1. **Tokens represent bytes**: Each token in the bucket represents one byte of trace data
-2. **Continuous refill**: Tokens are added to the bucket at the configured `kb_per_second` rate (converted to bytes internally)
-3. **Burst capacity**: The bucket can hold up to `burst_capacity_kb` tokens for handling traffic bursts
+2. **Continuous refill**: Tokens are added to the bucket at the configured `bytes_per_second` rate
+3. **Burst capacity**: The bucket can hold up to `burst_capacity` tokens for handling traffic bursts
 4. **Consumption**: When a trace arrives, tokens equal to the trace size are consumed from the bucket
 5. **Rejection**: If insufficient tokens are available, the trace is not sampled
 
@@ -270,13 +270,13 @@ processors:
       - name: volume-control
         type: bytes_limiting
         bytes_limiting:
-          kb_per_second: 1024          # 1 MB/second sustained rate
-          burst_capacity_kb: 5120      # 5 MB burst capacity
+          bytes_per_second: 1048576    # 1 MB/second sustained rate
+          burst_capacity: 5242880      # 5 MB burst capacity
 ```
 
 This configuration allows:
-- A sustained throughput of 1 MB/second (1024 KB/s)
-- Burst traffic up to 5 MB (5120 KB) before rate limiting kicks in
+- A sustained throughput of 1 MB/second (1,048,576 bytes/s)
+- Burst traffic up to 5 MB (5,242,880 bytes) before rate limiting kicks in
 - Smooth handling of variable trace sizes and timing
 
 ## A Practical Example
