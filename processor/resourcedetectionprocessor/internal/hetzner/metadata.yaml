@@ -1,8 +1,9 @@
-type: resourcedetectionprocessor/hetzner
-
-parent: resourcedetection
+type: hetznerdetector
 
 status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs, profiles]
   codeowners:
     active: [Aneurysm9, dashpole, paulojmdias]
 
@@ -27,3 +28,7 @@ resource_attributes:
     description: The hostname
     type: string
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
