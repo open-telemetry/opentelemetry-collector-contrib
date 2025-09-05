@@ -298,7 +298,7 @@ type KeyValueAndUnit struct {
 func (a *KeyValueAndUnit) Transform(dic pprofile.ProfilesDictionary) int32 {
 	pa := dic.AttributeTable().AppendEmpty()
 	pa.SetKeyStrindex(addString(dic, a.Key))
-	pa.Value().FromRaw(a.Value)
+	_ = pa.Value().FromRaw(a.Value)
 	pa.SetUnitStrindex(addString(dic, a.Unit))
 	return int32(dic.AttributeTable().Len() - 1)
 }
