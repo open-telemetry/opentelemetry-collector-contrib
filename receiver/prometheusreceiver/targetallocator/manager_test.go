@@ -735,12 +735,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			tc.cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-			// baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
 			baseCfg, err := promconfig.Load("", nil)
 			require.NoError(t, err)
-			// baseCfg := *baseCfgPtr
-
-			// require.Equal(t, baseCfg, *baseCfg2)
 			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
