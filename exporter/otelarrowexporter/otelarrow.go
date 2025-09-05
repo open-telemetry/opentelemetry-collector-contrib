@@ -10,7 +10,6 @@ import (
 
 	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -31,7 +30,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
@@ -154,13 +152,6 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		arrowOpts := e.config.Arrow.toArrowProducerOptions()
 
 		arrowCallOpts := e.callOptions
-
-		if e.config.Compression == configcompression.TypeZstd {
-			// ignore the error below b/c Validate() was called
-			_ = zstd.SetEncoderConfig(e.config.Arrow.Zstd)
-			// use the configured compressor.
-			arrowCallOpts = append(arrowCallOpts, e.config.Arrow.Zstd.CallOption())
-		}
 
 		e.arrow = arrow.NewExporter(e.config.Arrow.MaxStreamLifetime, e.config.Arrow.NumStreams, e.config.Arrow.Prioritizer, e.config.Arrow.DisableDowngrade, e.settings.TelemetrySettings, arrowCallOpts, func() arrowRecord.ProducerAPI {
 			return arrowRecord.NewProducerWithOptions(arrowOpts...)

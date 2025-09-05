@@ -4,14 +4,8 @@
 package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver"
 
 import (
-	"fmt"
-
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 // Protocols is the configuration for the supported protocols.
@@ -51,9 +45,6 @@ type ArrowConfig struct {
 	// Deprecated: This field is no longer supported, use cfg.Admission.WaiterLimit instead.
 	DeprecatedWaiterLimit int64 `mapstructure:"waiter_limit"`
 
-	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
-	Zstd zstd.DecoderConfig `mapstructure:"zstd"`
-
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -67,28 +58,6 @@ type Config struct {
 
 	// prevent unkeyed literal initialization
 	_ struct{}
-}
-
-var (
-	_ component.Config   = (*Config)(nil)
-	_ xconfmap.Validator = (*ArrowConfig)(nil)
-)
-
-func (cfg *ArrowConfig) Validate() error {
-	if err := cfg.Zstd.Validate(); err != nil {
-		return fmt.Errorf("zstd decoder: invalid configuration: %w", err)
-	}
-	return nil
-}
-
-func (cfg *Config) Validate() error {
-	if err := cfg.GRPC.Validate(); err != nil {
-		return err
-	}
-	if err := cfg.Arrow.Validate(); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Unmarshal will apply deprecated field values to assist the user with migration.

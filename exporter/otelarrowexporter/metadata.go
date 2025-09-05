@@ -23,7 +23,6 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
@@ -60,9 +59,6 @@ func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClie
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	if !oCfg.Arrow.Disabled {
-		// Ignoring an error because Validate() was called.
-		_ = zstd.SetEncoderConfig(oCfg.Arrow.Zstd)
-
 		userAgent += fmt.Sprintf(" OTAP (NumStreams/%d)", oCfg.Arrow.NumStreams)
 	}
 	// use lower-case, to be consistent with http/2 headers.
