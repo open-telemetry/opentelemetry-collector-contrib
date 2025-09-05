@@ -714,7 +714,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_prometheus_job": "node",
 						},
 						MetricRelabelConfig: &expectedMetricRelabelConfigTestResult{
-							JobName:            "job1",
+							JobName: "job1",
+							// XXXXXXXXXXXXXXXx bad
 							MetricRelabelRegex: relabel.MustNewRegexp("regex2"),
 						},
 					},
@@ -734,8 +735,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			tc.cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, &baseCfg, false)
+			baseCfg, err := promconfig.Load("", nil)
+			require.NoError(t, err)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -926,8 +928,9 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-	baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig, ScrapeConfigs: initialScrapeConfigs}
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, &baseCfg, false)
+	baseCfg, err := promconfig.Load("", nil)
+	baseCfg.ScrapeConfigs = initialScrapeConfigs
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, false)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()
