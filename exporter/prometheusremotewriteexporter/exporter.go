@@ -366,38 +366,43 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	for i := 0; i < concurrencyLimit; i++ {
 		go func() {
 			defer wg.Done()
-			buf := bufferPool.Get().(*buffer)
-			defer bufferPool.Put(buf)
-			for {
-				select {
-				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
-					return
-
-				case request, ok := <-input:
-					if !ok {
-						return
-					}
-
-					reqBuf, errMarshal := buf.MarshalAndEncode(request)
-					if errMarshal != nil {
-						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
-						mu.Unlock()
-						return
-					}
-
-					if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
-						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
-						mu.Unlock()
-					}
-				}
+			err := prwe.handleRequests(ctx, input)
+			if err != nil {
+				mu.Lock()
+				errs = multierr.Append(errs, err)
+				mu.Unlock()
 			}
 		}()
 	}
 	wg.Wait()
 
 	return errs
+}
+
+func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.WriteRequest) error {
+	var errs error
+	buf := bufferPool.Get().(*buffer)
+	defer bufferPool.Put(buf)
+	for {
+		select {
+		case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
+			return errs
+
+		case request, ok := <-input:
+			if !ok {
+				return errs
+			}
+
+			reqBuf, errMarshal := buf.MarshalAndEncode(request)
+			if errMarshal != nil {
+				return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+			}
+
+			if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+			}
+		}
+	}
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
