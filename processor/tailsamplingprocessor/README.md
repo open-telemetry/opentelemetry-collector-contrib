@@ -238,7 +238,7 @@ Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for d
 
 ## Bytes Limiting Policy
 
-The `bytes_limiting` policy uses a token bucket algorithm implemented by [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate) to control the rate of data throughput based on the estimated size of traces in bytes. This policy is particularly useful for:
+The `bytes_limiting` policy uses a token bucket algorithm implemented by [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate) to control the rate of data throughput based on the accurate protobuf marshaled size of traces calculated using the OpenTelemetry Collector's built-in `ProtoMarshaler.TracesSize()` method. This policy is particularly useful for:
 
 - **Volume control**: Limiting the total amount of trace data processed per unit time
 - **Burst handling**: Allowing short-term spikes in data volume while maintaining long-term rate limits

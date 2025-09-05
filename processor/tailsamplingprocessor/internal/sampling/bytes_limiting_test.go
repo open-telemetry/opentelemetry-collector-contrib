@@ -181,71 +181,8 @@ func TestCalculateTraceSize(t *testing.T) {
 	trace := newTraceBytesFilter()
 	size := calculateTraceSize(trace)
 
-	// Should return a positive size
+	// Should return a positive size using ProtoMarshaler.TracesSize()
 	assert.Positive(t, size)
-}
-
-func TestCalculateValueSize(t *testing.T) {
-	testCases := []struct {
-		name         string
-		value        pcommon.Value
-		expectedSize int64
-	}{
-		{
-			name:         "String value",
-			value:        pcommon.NewValueStr("hello"),
-			expectedSize: 5,
-		},
-		{
-			name:         "Bool value",
-			value:        pcommon.NewValueBool(true),
-			expectedSize: 1,
-		},
-		{
-			name:         "Int value",
-			value:        pcommon.NewValueInt(123),
-			expectedSize: 8,
-		},
-		{
-			name:         "Double value",
-			value:        pcommon.NewValueDouble(3.14),
-			expectedSize: 8,
-		},
-		{
-			name:         "Empty string",
-			value:        pcommon.NewValueStr(""),
-			expectedSize: 0,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			size := calculateValueSize(tc.value)
-			assert.Equal(t, tc.expectedSize, size)
-		})
-	}
-}
-
-func TestCalculateValueSizeMap(t *testing.T) {
-	value := pcommon.NewValueMap()
-	m := value.Map()
-	m.PutStr("key1", "value1")
-	m.PutInt("key2", 42)
-
-	size := calculateValueSize(value)
-	expectedSize := int64(len("key1")) + int64(len("value1")) + int64(len("key2")) + 8 // int64 size
-	assert.Equal(t, expectedSize, size)
-}
-
-func TestCalculateValueSizeSlice(t *testing.T) {
-	value := pcommon.NewValueSlice()
-	s := value.Slice()
-	s.AppendEmpty().SetStr("item1")
-	s.AppendEmpty().SetInt(123)
-
-	size := calculateValueSize(value)
-	expectedSize := int64(len("item1")) + 8 // int64 size
-	assert.Equal(t, expectedSize, size)
 }
 
 // newTraceBytesFilter creates a trace for testing bytes limiting
