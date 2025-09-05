@@ -278,359 +278,359 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		cfg       *Config
 		want      expectedTestResult
 	}{
-		// {
-		// 	desc: "default",
-		// 	responses: Responses{
-		// 		responses: map[string][]mockTargetAllocatorResponseRaw{
-		// 			"/scrape_configs": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
-		// 					"job1": {
-		// 						"job_name":                 "job1",
-		// 						"scrape_interval":          "30s",
-		// 						"scrape_timeout":           "30s",
-		// 						"scrape_protocols":         []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":             "/metrics",
-		// 						"scheme":                   "http",
-		// 						"relabel_configs":          nil,
-		// 						"metric_relabel_configs":   nil,
-		// 						"fallback_scrape_protocol": promconfig.PrometheusText1_0_0,
-		// 					},
-		// 					"job2": {
-		// 						"job_name":               "job2",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 				}},
-		// 			},
-		// 			"/jobs/job1/targets": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "node",
-		// 						},
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "node",
-		// 						},
-		// 					},
-		// 				}},
-		// 			},
-		// 			"/jobs/job2/targets": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "alertmanager",
-		// 						},
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "alertmanager",
-		// 						},
-		// 					},
-		// 				}},
-		// 			},
-		// 		},
-		// 	},
-		// 	cfg: &Config{
-		// 		Interval:    10 * time.Second,
-		// 		CollectorID: "collector-1",
-		// 		HTTPSDConfig: &PromHTTPSDConfig{
-		// 			HTTPClientConfig: commonconfig.HTTPClientConfig{
-		// 				BasicAuth: &commonconfig.BasicAuth{
-		// 					Username: "user",
-		// 					Password: "aPassword",
-		// 				},
-		// 			},
-		// 			RefreshInterval: model.Duration(60 * time.Second),
-		// 		},
-		// 	},
-		// 	want: expectedTestResult{
-		// 		empty: false,
-		// 		jobMap: map[string]expectedTestResultJobMap{
-		// 			"job1": {
-		// 				Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-		// 				Labels: map[model.LabelName]model.LabelValue{
-		// 					"__meta_datacenter":     "london",
-		// 					"__meta_prometheus_job": "node",
-		// 				},
-		// 				ScrapeFallbackProtocol: promconfig.PrometheusText1_0_0,
-		// 			},
-		// 			"job2": {
-		// 				Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-		// 				Labels: map[model.LabelName]model.LabelValue{
-		// 					"__meta_datacenter":     "london",
-		// 					"__meta_prometheus_job": "alertmanager",
-		// 				},
-		// 				ScrapeFallbackProtocol: promconfig.PrometheusText0_0_4, // Tests default value
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	desc: "update labels and targets",
-		// 	responses: Responses{
-		// 		responses: map[string][]mockTargetAllocatorResponseRaw{
-		// 			"/scrape_configs": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
-		// 					"job1": {
-		// 						"job_name":               "job1",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 					"job2": {
-		// 						"job_name":               "job2",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 				}},
-		// 			},
-		// 			"/jobs/job1/targets": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "node",
-		// 						},
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"localhost:9090"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "node",
-		// 							"test":                  "aTest",
-		// 						},
-		// 					},
-		// 				}},
-		// 			},
-		// 			"/jobs/job2/targets": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"10.0.40.3:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "alertmanager",
-		// 						},
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter": "london",
-		// 						},
-		// 					},
-		// 				}},
-		// 			},
-		// 		},
-		// 	},
-		// 	cfg: &Config{
-		// 		Interval:    10 * time.Second,
-		// 		CollectorID: "collector-1",
-		// 		HTTPSDConfig: &PromHTTPSDConfig{
-		// 			HTTPClientConfig: commonconfig.HTTPClientConfig{},
-		// 			RefreshInterval:  model.Duration(60 * time.Second),
-		// 		},
-		// 	},
-		// 	want: expectedTestResult{
-		// 		empty: false,
-		// 		jobMap: map[string]expectedTestResultJobMap{
-		// 			"job1": {
-		// 				Targets: []string{"localhost:9090"},
-		// 				Labels: map[model.LabelName]model.LabelValue{
-		// 					"__meta_datacenter":     "london",
-		// 					"__meta_prometheus_job": "node",
-		// 					"test":                  "aTest",
-		// 				},
-		// 			},
-		// 			"job2": {
-		// 				Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-		// 				Labels: map[model.LabelName]model.LabelValue{
-		// 					"__meta_datacenter": "london",
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	desc: "update job list",
-		// 	responses: Responses{
-		// 		releaserMap: map[string]int{
-		// 			"/scrape_configs": 1,
-		// 		},
-		// 		responses: map[string][]mockTargetAllocatorResponseRaw{
-		// 			"/scrape_configs": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
-		// 					"job1": {
-		// 						"job_name":               "job1",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 					"job2": {
-		// 						"job_name":               "job2",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
-		// 					"job1": {
-		// 						"job_name":               "job1",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 					"job3": {
-		// 						"job_name":               "job3",
-		// 						"scrape_interval":        "30s",
-		// 						"scrape_timeout":         "30s",
-		// 						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-		// 						"metrics_path":           "/metrics",
-		// 						"scheme":                 "http",
-		// 						"relabel_configs":        nil,
-		// 						"metric_relabel_configs": nil,
-		// 					},
-		// 				}},
-		// 			},
-		// 			"/jobs/job1/targets": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"localhost:9090"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "node",
-		// 						},
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"localhost:9090"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "node",
-		// 						},
-		// 					},
-		// 				}},
-		// 			},
-		// 			"/jobs/job3/targets": {
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"10.0.40.3:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "alertmanager",
-		// 						},
-		// 					},
-		// 				}},
-		// 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-		// 					{
-		// 						Targets: []string{"10.0.40.3:9100"},
-		// 						Labels: map[model.LabelName]model.LabelValue{
-		// 							"__meta_datacenter":     "london",
-		// 							"__meta_prometheus_job": "alertmanager",
-		// 						},
-		// 					},
-		// 				}},
-		// 			},
-		// 		},
-		// 	},
-		// 	cfg: &Config{
-		// 		Interval:    10 * time.Second,
-		// 		CollectorID: "collector-1",
-		// 		HTTPSDConfig: &PromHTTPSDConfig{
-		// 			HTTPClientConfig: commonconfig.HTTPClientConfig{},
-		// 			RefreshInterval:  model.Duration(60 * time.Second),
-		// 		},
-		// 	},
-		// 	want: expectedTestResult{
-		// 		empty: false,
-		// 		jobMap: map[string]expectedTestResultJobMap{
-		// 			"job1": {
-		// 				Targets: []string{"localhost:9090"},
-		// 				Labels: map[model.LabelName]model.LabelValue{
-		// 					"__meta_datacenter":     "london",
-		// 					"__meta_prometheus_job": "node",
-		// 				},
-		// 			},
-		// 			"job3": {
-		// 				Targets: []string{"10.0.40.3:9100"},
-		// 				Labels: map[model.LabelName]model.LabelValue{
-		// 					"__meta_datacenter":     "london",
-		// 					"__meta_prometheus_job": "alertmanager",
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	desc: "endpoint is not reachable",
-		// 	responses: Responses{
-		// 		releaserMap: map[string]int{
-		// 			"/scrape_configs": 1, // we are too fast if we ignore the first wait a tick
-		// 		},
-		// 		responses: map[string][]mockTargetAllocatorResponseRaw{
-		// 			"/scrape_configs": {
-		// 				mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
-		// 				mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
-		// 			},
-		// 		},
-		// 	},
-		// 	cfg: &Config{
-		// 		Interval:    50 * time.Millisecond,
-		// 		CollectorID: "collector-1",
-		// 		HTTPSDConfig: &PromHTTPSDConfig{
-		// 			HTTPClientConfig: commonconfig.HTTPClientConfig{},
-		// 			RefreshInterval:  model.Duration(60 * time.Second),
-		// 		},
-		// 	},
-		// 	want: expectedTestResult{
-		// 		empty:  true,
-		// 		jobMap: map[string]expectedTestResultJobMap{},
-		// 	},
-		// },
+		{
+			desc: "default",
+			responses: Responses{
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+							"job1": {
+								"job_name":                 "job1",
+								"scrape_interval":          "30s",
+								"scrape_timeout":           "30s",
+								"scrape_protocols":         []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":             "/metrics",
+								"scheme":                   "http",
+								"relabel_configs":          nil,
+								"metric_relabel_configs":   nil,
+								"fallback_scrape_protocol": promconfig.PrometheusText1_0_0,
+							},
+							"job2": {
+								"job_name":               "job2",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+						}},
+					},
+					"/jobs/job1/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								},
+							},
+						}},
+					},
+					"/jobs/job2/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								},
+							},
+						}},
+					},
+				},
+			},
+			cfg: &Config{
+				Interval:    10 * time.Second,
+				CollectorID: "collector-1",
+				HTTPSDConfig: &PromHTTPSDConfig{
+					HTTPClientConfig: commonconfig.HTTPClientConfig{
+						BasicAuth: &commonconfig.BasicAuth{
+							Username: "user",
+							Password: "aPassword",
+						},
+					},
+					RefreshInterval: model.Duration(60 * time.Second),
+				},
+			},
+			want: expectedTestResult{
+				empty: false,
+				jobMap: map[string]expectedTestResultJobMap{
+					"job1": {
+						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "node",
+						},
+						ScrapeFallbackProtocol: promconfig.PrometheusText1_0_0,
+					},
+					"job2": {
+						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "alertmanager",
+						},
+						ScrapeFallbackProtocol: promconfig.PrometheusText0_0_4, // Tests default value
+					},
+				},
+			},
+		},
+		{
+			desc: "update labels and targets",
+			responses: Responses{
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job2": {
+								"job_name":               "job2",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+						}},
+					},
+					"/jobs/job1/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"localhost:9090"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+									"test":                  "aTest",
+								},
+							},
+						}},
+					},
+					"/jobs/job2/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter": "london",
+								},
+							},
+						}},
+					},
+				},
+			},
+			cfg: &Config{
+				Interval:    10 * time.Second,
+				CollectorID: "collector-1",
+				HTTPSDConfig: &PromHTTPSDConfig{
+					HTTPClientConfig: commonconfig.HTTPClientConfig{},
+					RefreshInterval:  model.Duration(60 * time.Second),
+				},
+			},
+			want: expectedTestResult{
+				empty: false,
+				jobMap: map[string]expectedTestResultJobMap{
+					"job1": {
+						Targets: []string{"localhost:9090"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "node",
+							"test":                  "aTest",
+						},
+					},
+					"job2": {
+						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter": "london",
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "update job list",
+			responses: Responses{
+				releaserMap: map[string]int{
+					"/scrape_configs": 1,
+				},
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job2": {
+								"job_name":               "job2",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job3": {
+								"job_name":               "job3",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+						}},
+					},
+					"/jobs/job1/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"localhost:9090"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"localhost:9090"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								},
+							},
+						}},
+					},
+					"/jobs/job3/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{
+								Targets: []string{"10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								},
+							},
+						}},
+					},
+				},
+			},
+			cfg: &Config{
+				Interval:    10 * time.Second,
+				CollectorID: "collector-1",
+				HTTPSDConfig: &PromHTTPSDConfig{
+					HTTPClientConfig: commonconfig.HTTPClientConfig{},
+					RefreshInterval:  model.Duration(60 * time.Second),
+				},
+			},
+			want: expectedTestResult{
+				empty: false,
+				jobMap: map[string]expectedTestResultJobMap{
+					"job1": {
+						Targets: []string{"localhost:9090"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "node",
+						},
+					},
+					"job3": {
+						Targets: []string{"10.0.40.3:9100"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "alertmanager",
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "endpoint is not reachable",
+			responses: Responses{
+				releaserMap: map[string]int{
+					"/scrape_configs": 1, // we are too fast if we ignore the first wait a tick
+				},
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
+					},
+				},
+			},
+			cfg: &Config{
+				Interval:    50 * time.Millisecond,
+				CollectorID: "collector-1",
+				HTTPSDConfig: &PromHTTPSDConfig{
+					HTTPClientConfig: commonconfig.HTTPClientConfig{},
+					RefreshInterval:  model.Duration(60 * time.Second),
+				},
+			},
+			want: expectedTestResult{
+				empty:  true,
+				jobMap: map[string]expectedTestResultJobMap{},
+			},
+		},
 		{
 			desc: "update metric relabel config regex",
 			responses: Responses{
