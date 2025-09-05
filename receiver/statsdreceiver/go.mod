@@ -6,7 +6,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.40.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/component v1.40.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/component/componentstatus v0.134.1-0.20250904124342-6831efd5116d
@@ -20,10 +20,10 @@ require (
 	go.opentelemetry.io/collector/receiver v1.40.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.134.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/receiver/receivertest v0.134.1-0.20250904124342-6831efd5116d
-	go.opentelemetry.io/otel v1.37.0
-	go.opentelemetry.io/otel/metric v1.37.0
-	go.opentelemetry.io/otel/sdk/metric v1.37.0
-	go.opentelemetry.io/otel/trace v1.37.0
+	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel/metric v1.38.0
+	go.opentelemetry.io/otel/sdk/metric v1.38.0
+	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -57,11 +57,11 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.40.1-0.20250904124342-6831efd5116d // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.134.1-0.20250904124342-6831efd5116d // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
-	go.opentelemetry.io/otel/log v0.13.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
+	go.opentelemetry.io/otel/log v0.14.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect

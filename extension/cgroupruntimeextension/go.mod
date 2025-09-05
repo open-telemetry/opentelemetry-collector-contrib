@@ -6,7 +6,7 @@ require (
 	github.com/KimMachineGun/automemlimit v0.7.4
 	github.com/containerd/cgroups/v3 v3.0.5
 	github.com/rdforte/gomaxecs v1.1.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/component/componenttest v0.134.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/confmap v1.40.1-0.20250904124342-6831efd5116d
@@ -49,12 +49,12 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.134.1-0.20250904124342-6831efd5116d // indirect
 	go.opentelemetry.io/collector/pdata v1.40.1-0.20250904124342-6831efd5116d // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
-	go.opentelemetry.io/otel v1.37.0 // indirect
-	go.opentelemetry.io/otel/log v0.13.0 // indirect
-	go.opentelemetry.io/otel/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	go.opentelemetry.io/otel v1.38.0 // indirect
+	go.opentelemetry.io/otel/log v0.14.0 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
