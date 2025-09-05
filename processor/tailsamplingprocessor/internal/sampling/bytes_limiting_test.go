@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -79,7 +78,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 			)
 
 			for i := 0; i < tc.numTraces; i++ {
-				decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{byte(i + 1)}), trace)
+				decision, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{byte(i + 1)}), trace)
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedDecisions[i], decision,
 					"Failed on trace %d: %s", i, tc.description)
@@ -96,16 +95,16 @@ func TestBytesLimitingDefaultConstructor(t *testing.T) {
 	filter := NewBytesLimiting(componenttest.NewNopTelemetrySettings(), traceSize)
 
 	// Should be able to sample at least 2 traces immediately (2x burst capacity)
-	decision1, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1}), trace)
+	decision1, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{1}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, Sampled, decision1)
 
-	decision2, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{2}), trace)
+	decision2, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{2}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, Sampled, decision2)
 
 	// Third trace should be rejected (exceeds 2x capacity)
-	decision3, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{3}), trace)
+	decision3, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{3}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, NotSampled, decision3)
 }
@@ -122,12 +121,12 @@ func TestBytesLimitingTokenRefill(t *testing.T) {
 	)
 
 	// First trace should be sampled (using burst capacity)
-	decision1, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1}), trace)
+	decision1, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{1}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, Sampled, decision1)
 
 	// Second trace should be rejected (no tokens left)
-	decision2, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{2}), trace)
+	decision2, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{2}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, NotSampled, decision2)
 
@@ -138,7 +137,7 @@ func TestBytesLimitingTokenRefill(t *testing.T) {
 	bytesFilter.mutex.Unlock()
 
 	// Third trace should be sampled (tokens refilled)
-	decision3, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{3}), trace)
+	decision3, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{3}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, Sampled, decision3)
 }
@@ -158,8 +157,8 @@ func TestBytesLimitingConcurrency(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func(id int) {
-			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{byte(id)}), trace)
-			require.NoError(t, err)
+			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{byte(id)}), trace)
+			assert.NoError(t, err)
 			results <- decision
 		}(i)
 	}
@@ -176,7 +175,7 @@ func TestBytesLimitingConcurrency(t *testing.T) {
 	}
 
 	// Should have some sampled (at least 2 due to burst) and some not sampled
-	assert.Greater(t, sampled, 0, "Should have sampled some traces")
+	assert.Positive(t, sampled, "Should have sampled some traces")
 	assert.GreaterOrEqual(t, sampled, 2, "Should sample at least 2 traces due to burst capacity")
 }
 
@@ -185,7 +184,7 @@ func TestCalculateTraceSize(t *testing.T) {
 	size := calculateTraceSize(trace)
 
 	// Should return a positive size
-	assert.Greater(t, size, int64(0))
+	assert.Positive(t, size)
 }
 
 func TestCalculateValueSize(t *testing.T) {
