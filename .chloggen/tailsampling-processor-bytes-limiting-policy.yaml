@@ -7,7 +7,7 @@ change_type: enhancement
 component: tailsamplingprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add bytes_limiting policy type, sample based on the rate of kilobytes per second using a token bucket algorithm.
+note: Add bytes_limiting policy type, sample based on the rate of bytes per second using a token bucket algorithm.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42509]
