@@ -375,6 +375,98 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
 }
 
+func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
+	t.Parallel()
+
+	getServer := func() *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, req *http.Request) {
+				if heartbeatURL == req.URL.Path {
+					w.WriteHeader(http.StatusNoContent)
+				} else if metadataURL == req.URL.Path {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}))
+	}
+
+	getConfig := func(url string) *Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.CollectorName = "collector_name"
+		cfg.APIBaseURL = url
+		cfg.Credentials.InstallationToken = "dummy_install_token"
+		return cfg
+	}
+
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	t.Logf("Using dir: %s", dir)
+
+	store, err := credentials.NewLocalFsStore(
+		credentials.WithCredentialsDirectory(dir),
+		credentials.WithLogger(logger),
+	)
+	require.NoError(t, err)
+
+	srv := getServer()
+	t.Cleanup(func() { srv.Close() })
+
+	cfg := getConfig(srv.URL)
+	cfg.CollectorCredentialsDirectory = dir
+
+	hashKey := createHashKey(cfg)
+
+	require.NoError(t,
+		store.Store(hashKey, credentials.CollectorCredentials{
+			CollectorName: "collector_name",
+			Credentials: api.OpenRegisterResponsePayload{
+				CollectorCredentialID:  "collectorId",
+				CollectorCredentialKey: "collectorKey",
+				CollectorID:            "id",
+			},
+		}),
+	)
+
+	se, err := newSumologicExtension(cfg, logger, component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+
+	fileName, err := credentials.HashKeyToFilename(hashKey)
+	require.NoError(t, err)
+	credsPath := path.Join(dir, fileName)
+	// Credentials file exists before starting the extension because we created
+	// it directly via store.Store()
+	require.FileExists(t, credsPath)
+
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
+	require.FileExists(t, credsPath)
+
+	//require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
+
+	hashKeyV2 := createHashKey(cfg)
+
+	fileName, err = credentials.HashKeyToFilename(hashKeyV2)
+	require.NoError(t, err)
+	credsPath = path.Join(dir, fileName)
+
+	require.EqualValues(t, hashKeyV2, se.hashKey)
+	require.EqualValues(t, credentials.CollectorCredentials{
+		CollectorName: "collector_name",
+		Credentials: api.OpenRegisterResponsePayload{
+			CollectorCredentialID:  "collectorId",
+			CollectorCredentialKey: "collectorKey",
+			CollectorID:            "id",
+		},
+	}, se.collectorCredentials)
+	require.FileExists(t, credsPath)
+
+}
+
 func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T) {
 	t.Parallel()
 
