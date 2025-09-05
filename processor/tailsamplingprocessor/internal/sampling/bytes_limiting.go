@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 type bytesLimiting struct {
@@ -21,7 +20,6 @@ type bytesLimiting struct {
 	refillRate int64      // tokens added per second (bytes per second)
 	lastRefill time.Time  // last time tokens were added to bucket
 	mutex      sync.Mutex // protects concurrent access to bucket state
-	logger     *zap.Logger
 }
 
 var _ PolicyEvaluator = (*bytesLimiting)(nil)
@@ -40,14 +38,11 @@ func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, byt
 		capacity:   burstCapacity,
 		refillRate: bytesPerSecond,
 		lastRefill: now,
-		logger:     settings.Logger,
 	}
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision based on token bucket algorithm.
 func (b *bytesLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	b.logger.Debug("Evaluating bytes in bytes-limiting filter using token bucket")
-
 	// Calculate the size of the trace in bytes
 	traceSize := calculateTraceSize(trace)
 
@@ -60,15 +55,9 @@ func (b *bytesLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *Tr
 	// Check if we have enough tokens for this trace
 	if b.tokens >= traceSize {
 		b.tokens -= traceSize
-		b.logger.Debug("Trace sampled",
-			zap.Int64("trace_size", traceSize),
-			zap.Int64("remaining_tokens", b.tokens))
 		return Sampled, nil
 	}
 
-	b.logger.Debug("Trace not sampled - insufficient tokens",
-		zap.Int64("trace_size", traceSize),
-		zap.Int64("available_tokens", b.tokens))
 	return NotSampled, nil
 }
 
@@ -94,10 +83,6 @@ func (b *bytesLimiting) refillTokens() {
 		}
 
 		b.lastRefill = now
-		b.logger.Debug("Refilled token bucket",
-			zap.Int64("tokens_added", tokensToAdd),
-			zap.Int64("current_tokens", b.tokens),
-			zap.Duration("elapsed", elapsed))
 	}
 }
 
