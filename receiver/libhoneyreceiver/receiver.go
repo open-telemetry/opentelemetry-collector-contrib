@@ -234,13 +234,34 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		// Don't try to drain body if we got an error from compressed reader
 		// The reader may be in a corrupted state and cause another panic
 		if req.Body != nil {
-			_ = req.Body.Close()
+			func() {
+				defer func() {
+					if panicVal := recover(); panicVal != nil {
+						r.settings.Logger.Debug("Panic during body close after read error (expected with corrupted data)",
+							zap.Any("panic", panicVal))
+					}
+				}()
+				_ = req.Body.Close()
+			}()
 		}
 		return
 	}
-	if err = req.Body.Close(); err != nil {
-		r.settings.Logger.Error("Failed to close request body", zap.Error(err))
-		writeLibhoneyError(resp, enc, "failed to close request body")
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				r.settings.Logger.Error("Panic during request body close",
+					zap.Any("panic", panicVal))
+				writeLibhoneyError(resp, enc, "failed to close request body")
+				err = errors.New("panic during body close")
+			}
+		}()
+		err = req.Body.Close()
+	}()
+	if err != nil {
+		if !strings.Contains(err.Error(), "panic during body close") {
+			r.settings.Logger.Error("Failed to close request body", zap.Error(err))
+			writeLibhoneyError(resp, enc, "failed to close request body")
+		}
 		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
