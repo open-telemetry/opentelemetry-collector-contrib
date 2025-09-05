@@ -4,42 +4,26 @@
 package grouper
 
 import (
-	"math/rand/v2"
+	"errors"
+	"os"
+	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func generateMetrics() pmetric.Metrics {
-	metrics := pmetric.NewMetrics()
-	for range 10 {
-		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-		resourceMetrics.Resource().Attributes().PutStr("id", uuid.NewString())
-		for range 10 {
-			scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-			scopeMetrics.Scope().Attributes().PutStr("id", uuid.NewString())
-			for range 10 {
-				metric := scopeMetrics.Metrics().AppendEmpty()
-				metric.Metadata().PutStr("id", uuid.NewString())
-				metric.Metadata().PutStr("subject", strconv.Itoa(rand.IntN(10)))
-			}
-		}
-	}
-	return metrics
-}
-
-func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Group[pmetric.Metrics] {
+func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) ([]Group[pmetric.Metrics], error) {
 	parser, err := ottlmetric.NewParser(
 		ottlfuncs.StandardConverters[ottlmetric.TransformContext](),
 		componenttest.NewNopTelemetrySettings(),
@@ -48,7 +32,7 @@ func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Gr
 	valueExpression, err := parser.ParseValueExpression(subject)
 	require.NoError(t, err)
 
-	constructSubject := func(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric) string {
+	constructSubject := func(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric) (string, error) {
 		subjectAsAny, err := valueExpression.Eval(t.Context(), ottlmetric.NewTransformContext(
 			metric,
 			scopeMetrics.Metrics(),
@@ -57,15 +41,28 @@ func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Gr
 			scopeMetrics,
 			resourceMetrics,
 		))
-		require.NoError(t, err)
-		return subjectAsAny.(string)
+		if err != nil {
+			return "", err
+		}
+
+		subject, ok := subjectAsAny.(string)
+		if !ok {
+			return "", errors.New("subject is not a string")
+		}
+		return subject, nil
 	}
 
 	subjects := make(map[string]bool)
+	var errs error
 	for _, srcResourceMetrics := range srcMetrics.ResourceMetrics().All() {
 		for _, srcScopeMetrics := range srcResourceMetrics.ScopeMetrics().All() {
 			for _, srcMetric := range srcScopeMetrics.Metrics().All() {
-				subjects[constructSubject(srcResourceMetrics, srcScopeMetrics, srcMetric)] = true
+				subject, err := constructSubject(srcResourceMetrics, srcScopeMetrics, srcMetric)
+				if err == nil {
+					subjects[subject] = true
+				} else {
+					errs = multierr.Append(errs, err)
+				}
 			}
 		}
 	}
@@ -77,7 +74,8 @@ func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Gr
 		destMetrics.ResourceMetrics().RemoveIf(func(destResourceMetrics pmetric.ResourceMetrics) bool {
 			destResourceMetrics.ScopeMetrics().RemoveIf(func(destScopeMetrics pmetric.ScopeMetrics) bool {
 				destScopeMetrics.Metrics().RemoveIf(func(destMetric pmetric.Metric) bool {
-					return constructSubject(destResourceMetrics, destScopeMetrics, destMetric) != groupSubject
+					subject, err := constructSubject(destResourceMetrics, destScopeMetrics, destMetric)
+					return err != nil || subject != groupSubject
 				})
 				return destScopeMetrics.Metrics().Len() == 0
 			})
@@ -88,35 +86,50 @@ func groupMetrics(t *testing.T, subject string, srcMetrics pmetric.Metrics) []Gr
 			Data:    destMetrics,
 		})
 	}
-	return groups
+	return groups, errs
 }
 
 func TestMetricsGrouper(t *testing.T) {
 	t.Parallel()
 
 	t.Run("consistent with naive implementation", func(t *testing.T) {
-		subject := "metric.metadata[\"subject\"]"
-		srcMetrics := generateMetrics()
+		metricsDir := "testdata/metrics"
 
-		metricsGrouper, err := NewMetricsGrouper(subject, componenttest.NewNopTelemetrySettings())
-		assert.NoError(t, err)
-		haveGroups, err := metricsGrouper.Group(t.Context(), srcMetrics)
-		assert.NoError(t, err)
+		entries, err := os.ReadDir(metricsDir)
+		require.NoError(t, err)
 
-		wantGroups := groupMetrics(t, subject, srcMetrics)
+		for _, entry := range entries {
+			t.Run(entry.Name(), func(t *testing.T) {
+				testCaseDir := filepath.Join(metricsDir, entry.Name())
 
-		compareGroups := func(a, b Group[pmetric.Metrics]) int {
-			return strings.Compare(a.Subject, b.Subject)
-		}
-		slices.SortFunc(wantGroups, compareGroups)
-		slices.SortFunc(haveGroups, compareGroups)
+				subjectAsBytes, err := os.ReadFile(filepath.Join(testCaseDir, "subject.txt"))
+				require.NoError(t, err)
+				subject := string(subjectAsBytes)
 
-		assert.Len(t, wantGroups, len(haveGroups))
-		for i := range len(wantGroups) {
-			assert.NoError(t, pmetrictest.CompareMetrics(
-				wantGroups[i].Data,
-				haveGroups[i].Data,
-			))
+				srcMetrics, err := golden.ReadMetrics(filepath.Join(testCaseDir, "metrics.yaml"))
+				require.NoError(t, err)
+
+				metricsGrouper, err := NewMetricsGrouper(subject, componenttest.NewNopTelemetrySettings())
+				assert.NoError(t, err)
+
+				haveGroups, haveErr := metricsGrouper.Group(t.Context(), srcMetrics)
+				wantGroups, wantErr := groupMetrics(t, subject, srcMetrics)
+				assert.ElementsMatch(t, multierr.Errors(haveErr), multierr.Errors(wantErr))
+
+				compareGroups := func(a, b Group[pmetric.Metrics]) int {
+					return strings.Compare(a.Subject, b.Subject)
+				}
+				slices.SortFunc(wantGroups, compareGroups)
+				slices.SortFunc(haveGroups, compareGroups)
+
+				assert.Len(t, wantGroups, len(haveGroups))
+				for i := range len(wantGroups) {
+					assert.NoError(t, pmetrictest.CompareMetrics(
+						wantGroups[i].Data,
+						haveGroups[i].Data,
+					))
+				}
+			})
 		}
 	})
 }

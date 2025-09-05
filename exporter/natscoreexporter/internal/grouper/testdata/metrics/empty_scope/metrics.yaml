@@ -1,0 +1,12 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "1"
+    scopeMetrics:
+      - scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.1"

@@ -1,45 +1,29 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package grouper // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natscoreexporter/internal/grouper"
+package grouper
 
 import (
-	"math/rand/v2"
+	"errors"
+	"os"
+	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
-func generateTraces() ptrace.Traces {
-	traces := ptrace.NewTraces()
-	for range 10 {
-		resourceSpans := traces.ResourceSpans().AppendEmpty()
-		resourceSpans.Resource().Attributes().PutStr("id", uuid.NewString())
-		for range 10 {
-			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-			scopeSpans.Scope().Attributes().PutStr("id", uuid.NewString())
-			for range 10 {
-				span := scopeSpans.Spans().AppendEmpty()
-				span.Attributes().PutStr("id", uuid.NewString())
-				span.Attributes().PutStr("subject", strconv.Itoa(rand.IntN(10)))
-			}
-		}
-	}
-	return traces
-}
-
-func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[ptrace.Traces] {
+func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) ([]Group[ptrace.Traces], error) {
 	parser, err := ottlspan.NewParser(
 		ottlfuncs.StandardConverters[ottlspan.TransformContext](),
 		componenttest.NewNopTelemetrySettings(),
@@ -48,7 +32,7 @@ func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[
 	valueExpression, err := parser.ParseValueExpression(subject)
 	require.NoError(t, err)
 
-	constructSubject := func(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span) string {
+	constructSubject := func(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span) (string, error) {
 		subjectAsAny, err := valueExpression.Eval(t.Context(), ottlspan.NewTransformContext(
 			span,
 			scopeSpans.Scope(),
@@ -56,15 +40,28 @@ func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[
 			scopeSpans,
 			resourceSpans,
 		))
-		require.NoError(t, err)
-		return subjectAsAny.(string)
+		if err != nil {
+			return "", err
+		}
+
+		subject, ok := subjectAsAny.(string)
+		if !ok {
+			return "", errors.New("subject is not a string")
+		}
+		return subject, nil
 	}
 
 	subjects := make(map[string]bool)
+	var errs error
 	for _, srcResourceSpans := range srcTraces.ResourceSpans().All() {
 		for _, srcScopeSpans := range srcResourceSpans.ScopeSpans().All() {
 			for _, srcSpan := range srcScopeSpans.Spans().All() {
-				subjects[constructSubject(srcResourceSpans, srcScopeSpans, srcSpan)] = true
+				subject, err := constructSubject(srcResourceSpans, srcScopeSpans, srcSpan)
+				if err == nil {
+					subjects[subject] = true
+				} else {
+					errs = multierr.Append(errs, err)
+				}
 			}
 		}
 	}
@@ -76,7 +73,8 @@ func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[
 		destTraces.ResourceSpans().RemoveIf(func(destResourceSpans ptrace.ResourceSpans) bool {
 			destResourceSpans.ScopeSpans().RemoveIf(func(destScopeSpans ptrace.ScopeSpans) bool {
 				destScopeSpans.Spans().RemoveIf(func(destSpan ptrace.Span) bool {
-					return constructSubject(destResourceSpans, destScopeSpans, destSpan) != groupSubject
+					subject, err := constructSubject(destResourceSpans, destScopeSpans, destSpan)
+					return err != nil || subject != groupSubject
 				})
 				return destScopeSpans.Spans().Len() == 0
 			})
@@ -87,35 +85,50 @@ func groupTraces(t *testing.T, subject string, srcTraces ptrace.Traces) []Group[
 			Data:    destTraces,
 		})
 	}
-	return groups
+	return groups, errs
 }
 
 func TestTracesGrouper(t *testing.T) {
 	t.Parallel()
 
 	t.Run("consistent with naive implementation", func(t *testing.T) {
-		subject := "span.attributes[\"subject\"]"
-		srcTraces := generateTraces()
+		tracesDir := "testdata/traces"
 
-		tracesGrouper, err := NewTracesGrouper(subject, componenttest.NewNopTelemetrySettings())
-		assert.NoError(t, err)
-		haveGroups, err := tracesGrouper.Group(t.Context(), srcTraces)
-		assert.NoError(t, err)
+		entries, err := os.ReadDir(tracesDir)
+		require.NoError(t, err)
 
-		wantGroups := groupTraces(t, subject, srcTraces)
+		for _, entry := range entries {
+			t.Run(entry.Name(), func(t *testing.T) {
+				testCaseDir := filepath.Join(tracesDir, entry.Name())
 
-		compareGroups := func(a, b Group[ptrace.Traces]) int {
-			return strings.Compare(a.Subject, b.Subject)
-		}
-		slices.SortFunc(wantGroups, compareGroups)
-		slices.SortFunc(haveGroups, compareGroups)
+				subjectAsBytes, err := os.ReadFile(filepath.Join(testCaseDir, "subject.txt"))
+				require.NoError(t, err)
+				subject := string(subjectAsBytes)
 
-		assert.Len(t, wantGroups, len(haveGroups))
-		for i := range len(wantGroups) {
-			assert.NoError(t, ptracetest.CompareTraces(
-				wantGroups[i].Data,
-				haveGroups[i].Data,
-			))
+				srcTraces, err := golden.ReadTraces(filepath.Join(testCaseDir, "traces.yaml"))
+				require.NoError(t, err)
+
+				tracesGrouper, err := NewTracesGrouper(subject, componenttest.NewNopTelemetrySettings())
+				assert.NoError(t, err)
+
+				haveGroups, haveErr := tracesGrouper.Group(t.Context(), srcTraces)
+				wantGroups, wantErr := groupTraces(t, subject, srcTraces)
+				assert.ElementsMatch(t, multierr.Errors(haveErr), multierr.Errors(wantErr))
+
+				compareGroups := func(a, b Group[ptrace.Traces]) int {
+					return strings.Compare(a.Subject, b.Subject)
+				}
+				slices.SortFunc(wantGroups, compareGroups)
+				slices.SortFunc(haveGroups, compareGroups)
+
+				assert.Len(t, wantGroups, len(haveGroups))
+				for i := range len(wantGroups) {
+					assert.NoError(t, ptracetest.CompareTraces(
+						wantGroups[i].Data,
+						haveGroups[i].Data,
+					))
+				}
+			})
 		}
 	})
 }

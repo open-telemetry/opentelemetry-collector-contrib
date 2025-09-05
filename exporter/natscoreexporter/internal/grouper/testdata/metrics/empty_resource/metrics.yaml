@@ -1,0 +1,6 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "1"

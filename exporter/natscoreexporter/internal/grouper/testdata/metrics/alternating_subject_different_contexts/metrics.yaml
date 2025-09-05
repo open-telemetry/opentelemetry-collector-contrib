@@ -1,0 +1,59 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "1"
+    scopeMetrics:
+      - metrics:
+          - metadata:
+              - key: id
+                value:
+                  stringValue: 1.1.1
+              - key: subject
+                value:
+                  stringValue: "1"
+          - metadata:
+              - key: id
+                value:
+                  stringValue: 1.1.2
+              - key: subject
+                value:
+                  stringValue: "2"
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.1"
+      - metrics:
+          - metadata:
+              - key: id
+                value:
+                  stringValue: 1.2.1
+              - key: subject
+                value:
+                  stringValue: "1"
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.2"
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "2"
+    scopeMetrics:
+      - metrics:
+          - metadata:
+              - key: id
+                value:
+                  stringValue: 2.1.1
+              - key: subject
+                value:
+                  stringValue: "2"
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "2.1"

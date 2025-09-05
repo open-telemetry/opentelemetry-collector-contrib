@@ -1,0 +1,20 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "1"
+    scopeMetrics:
+      - metrics:
+          - metadata:
+              - key: id
+                value:
+                  stringValue: 1.1.1
+              - key: subject
+                value:
+                  stringValue: ""
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.1"

@@ -5,6 +5,7 @@ package grouper // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -53,7 +54,12 @@ func (g *logsGrouper) Group(ctx context.Context, srcLogs plog.Logs) ([]Group[plo
 					errs = multierr.Append(errs, err)
 					continue
 				}
-				subject := subjectAsAny.(string)
+
+				subject, ok := subjectAsAny.(string)
+				if !ok {
+					errs = multierr.Append(errs, errors.New("subject is not a string"))
+					continue
+				}
 
 				dest, ok := destBySubject[subject]
 				if !ok {

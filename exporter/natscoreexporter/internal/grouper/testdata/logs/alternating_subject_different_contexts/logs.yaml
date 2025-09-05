@@ -1,0 +1,63 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "1"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: id
+                value:
+                  stringValue: 1.1.1
+              - key: subject
+                value:
+                  stringValue: "1"
+            body: {}
+          - attributes:
+              - key: id
+                value:
+                  stringValue: 1.1.2
+              - key: subject
+                value:
+                  stringValue: "2"
+            body: {}
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.1"
+      - logRecords:
+          - attributes:
+              - key: id
+                value:
+                  stringValue: 1.2.1
+              - key: subject
+                value:
+                  stringValue: "1"
+            body: {}
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.2"
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "2"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: subject
+                value:
+                  stringValue: "2"
+              - key: id
+                value:
+                  stringValue: 2.1.1
+            body: {}
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "2.1"

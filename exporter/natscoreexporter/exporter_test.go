@@ -12,19 +12,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newToken(t *testing.T) string {
+func createToken(t *testing.T) string {
 	t.Helper()
 
 	return uuid.NewString()
 }
 
-func newUserInfo(t *testing.T) (string, string) {
+func createUserInfo(t *testing.T) (string, string) {
 	t.Helper()
 
 	return uuid.NewString(), uuid.NewString()
 }
 
-func newNkey(t *testing.T) (string, string) {
+func createNkey(t *testing.T) (string, string) {
 	t.Helper()
 
 	userKeyPair, err := nkeys.CreateUser()
@@ -42,7 +42,7 @@ func newNkey(t *testing.T) (string, string) {
 	return userPubKey, string(userSeed)
 }
 
-func newUserJWT(t *testing.T) (string, string) {
+func createUserJWT(t *testing.T) (string, string) {
 	t.Helper()
 
 	accountKeyPair, err := nkeys.CreateAccount()
@@ -54,7 +54,7 @@ func newUserJWT(t *testing.T) (string, string) {
 	accountPubKey, err := accountKeyPair.PublicKey()
 	require.NoError(t, err)
 
-	userPubKey, userSeed := newNkey(t)
+	userPubKey, userSeed := createNkey(t)
 
 	userJwt, err := jwt.IssueUserJWT(
 		accountKeyPair,
@@ -68,10 +68,10 @@ func newUserJWT(t *testing.T) (string, string) {
 	return userJwt, userSeed
 }
 
-func newUserCredentials(t *testing.T) string {
+func createUserCredentials(t *testing.T) string {
 	t.Helper()
 
-	userJwt, userSeed := newUserJWT(t)
+	userJwt, userSeed := createUserJWT(t)
 
 	userConfig, err := jwt.FormatUserConfig(userJwt, []byte(userSeed))
 	require.NoError(t, err)
@@ -87,3 +87,12 @@ func newUserCredentials(t *testing.T) string {
 
 	return tempFile.Name()
 }
+
+// TODO: Test that sending stuff works
+//  - Test for each signal maybe?
+// TODO: Test config options
+//  - TLS option
+//  - All the auth options
+//  - We don't need to test options where we just set values
+//
+// I guess we're just after e2e testing all configurations?

@@ -1,0 +1,21 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: id
+          value:
+            stringValue: "1"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: id
+                value:
+                  stringValue: 1.1.1
+              - key: subject
+                value:
+                  intValue: "1"
+            body: {}
+        scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.1"
