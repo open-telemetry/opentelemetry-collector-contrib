@@ -2527,14 +2527,14 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
 			Opamp: &protobufs.OpAMPConnectionSettings{
-				HeartbeatIntervalSeconds: 5,
+				HeartbeatIntervalSeconds: 1,
 			},
 		},
 	})
 
 	require.Eventually(t, func() bool {
 		return heartbeatReport.Load()
-	}, 7*time.Second, 250*time.Millisecond)
+	}, 3*time.Second, 250*time.Millisecond)
 }
 
 // isHeartbeatMessage returns true if all fields of the message are nil.

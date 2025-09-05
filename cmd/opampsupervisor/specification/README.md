@@ -10,7 +10,7 @@ for the Collector in 2 different ways:
 
 - As a Collector extension, with limited functionality,
 - As an external Supervisor, that implements all or most of OpAMP
-  capabilities.
+    capabilities.
 
 In discussions with users and Collector contributors we found that both
 of these approaches are wanted. This document describes how to implement
@@ -37,34 +37,34 @@ Here is how a Supervisor-based management works:
 The Supervisor process does the following:
 
 - Implements the client-side of OpAMP protocol and communicates with
-  the OpAMP Backend.
+    the OpAMP Backend.
 - Starts/stops the Collector process as necessary.
 - Receives configuration from the OpAMP Backend and pushes it to the
-  Collector, using the Collector config.yaml file as an intermediary,
-  restarting the Collector process as necessary.
+    Collector, using the Collector config.yaml file as an intermediary,
+    restarting the Collector process as necessary.
 - Serves as a watchdog, restarts the Collector process if the
-  Collector crashes.
-- Accepts an OpAMP connection from Collectors' [_opamp
-  extension_](#collectors-opamp-extension), receives the Collector's
-  AgentDescription, HealthStatus and EffectiveConfig messages and
-  forwards them to the OpAMP Backend.
+    Collector crashes.
+- Accepts an OpAMP connection from Collectors' [*opamp
+    extension*](#collectors-opamp-extension), receives the Collector's
+    AgentDescription, HealthStatus and EffectiveConfig messages and
+    forwards them to the OpAMP Backend.
 - Optionally: downloads Collector executable packages offered by the
-  Backend and performs the Collector updates.
+    Backend and performs the Collector updates.
 - Optionally: configures Collector to collect Collector's own metrics
-  and report the metrics to the OTLP telemetry backend requested by
-  OpAMP Backend.
+    and report the metrics to the OTLP telemetry backend requested by
+    OpAMP Backend.
 - Optionally: collects Collector logs and sends them to the Telemetry
-  Backend via OTLP.
+    Backend via OTLP.
 
 Supervisor is implemented as a Go library that may be customized and
 rebuilt by vendors with useful default configurations, such as the OpAMP
 Backend endpoint to connect to, in order to minimize the manual
 configuration required.
 
-_Important: the Supervisor needs to be highly stable, so we need to keep
+*Important: the Supervisor needs to be highly stable, so we need to keep
 its complexity and functionality to minimum. The features listed in this
 section need a critical review and may be removed (responsibility moved
-elsewhere, e.g. to the Collector itself)._
+elsewhere, e.g. to the Collector itself).*
 
 ### Supervisor Configuration
 
@@ -224,6 +224,7 @@ telemetry:
   # Resource attributes.
   resource:
     service.namespace: otel-demo
+
 ```
 
 #### Notes on `agent::config_files`, `agent::args`, and `agent::env`
@@ -277,13 +278,13 @@ Take the configuration below as an example:
 agent:
   executable: ./otel-binary
   config_files:
-    - "./custom-config.yaml"
-    - "./another-custom-config.yaml"
+    - './custom-config.yaml'
+    - './another-custom-config.yaml'
   args:
-    - "--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient"
+    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
   env:
-    HOME: "/dev/home"
-    GO_HOME: "~/go"
+    HOME: '/dev/home'
+    GO_HOME: '~/go'
 ```
 
 This results in the following Collector process invocation:
@@ -328,8 +329,8 @@ Note: this capability must be manually enabled by the user via a
 AcceptsRemoteConfig setting in the supervisor config file and is
 disabled by default.
 
-The Supervisor receives [_Remote
-Configuration_](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#configuration)
+The Supervisor receives [*Remote
+Configuration*](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#configuration)
 from the OpAMP Backend, merges it with an optional local config file and
 writes it to the Collector's config file, then restarts the Collector.
 
@@ -356,13 +357,13 @@ The Supervisor will locate all such entries while building the Collector
 config file and will delete the ones which are prohibited by the access
 control settings.
 
-_Open Question: if after sanitizing the component's directory setting
-the configuration becomes invalid what do we do?_
+*Open Question: if after sanitizing the component's directory setting
+the configuration becomes invalid what do we do?*
 
-_The sanitizing logic is hard-coded in the Supervisor and works for
+*The sanitizing logic is hard-coded in the Supervisor and works for
 specific components only. In the future we will consider implementing a
 more generic safety mechanism that does not depend on the knowledge
-about specific component behavior._
+about specific component behavior.*
 
 #### Bootstrapping
 
@@ -472,8 +473,8 @@ The Supervisor will also write the Collector's log to a local log file.
 The path to the Collector log files will be printed in the Supervisor
 output.
 
-_Open Question: instead of writing to a local log file do we want to
-pipe Collector logs to Supervisor's log output?_
+*Open Question: instead of writing to a local log file do we want to
+pipe Collector logs to Supervisor's log output?*
 
 ### Collector Executable Updates
 
@@ -505,6 +506,16 @@ to make sure a fresh AgentDescription is obtained by the Supervisor on
 the next Collector start (at the minimum the version number to be
 included in AgentDescription is expected to change after the executable
 is updated).
+
+### OpAMP Heartbeats
+
+OpAMP heartbeats are enabled by default in the Supervisor. They can be
+disabled by setting `capabilities.reports_heartbeat` to `false`. The
+default interval is 30 seconds, but this can be changed by the OpAMP
+server sending a ServerToAgent message with the appropriate field set.
+This causes the Supervisor to periodically send an empty OpAMP
+AgentToServer message in order to keep the connection alive.
+For more information see the [OpAMP specification](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#opampconnectionsettingsheartbeat_interval_seconds).
 
 ### Addons Management
 
@@ -539,19 +550,19 @@ Collector's configuration. The opamp extension implements an OpAMP
 client with a small subset of OpAMP agent capabilities:
 
 - ReportsStatus. The extension reports agent description and status.
-  This is the first message from the client to the server in the OpAMP
-  protocol that is essential for beginning OpAMP message exchange.
+    This is the first message from the client to the server in the OpAMP
+    protocol that is essential for beginning OpAMP message exchange.
 - ReportsEffectiveConfig. The extension reports the Collector's
-  effective config on startup and any time the config changes. In
-  order to do this the opamp extension needs [access to the effective
-  config](https://github.com/open-telemetry/opentelemetry-collector/issues/6596).
+    effective config on startup and any time the config changes. In
+    order to do this the opamp extension needs [access to the effective
+    config](https://github.com/open-telemetry/opentelemetry-collector/issues/6596).
 - ReportsHealth. The extension reports Collector's health on startup
-  and any time the health changes. In order to do this the opamp
-  extension needs access to the health of the Collector. The very
-  basic health capability can be replicated by mirroring the
-  functionality of the healthcheck extension, a more advanced
-  capability depends on the [component status
-  reporting](https://github.com/open-telemetry/opentelemetry-collector/pull/6560).
+    and any time the health changes. In order to do this the opamp
+    extension needs access to the health of the Collector. The very
+    basic health capability can be replicated by mirroring the
+    functionality of the healthcheck extension, a more advanced
+    capability depends on the [component status
+    reporting](https://github.com/open-telemetry/opentelemetry-collector/pull/6560).
 
 The messages received from the opamp extension are forwarded by the
 Supervisor to the destination OpAMP Backend and replies to these
@@ -602,25 +613,25 @@ is an [open
 issue](https://github.com/open-telemetry/opentelemetry-collector/issues/6599)
 to allow this.
 
-_Open Question: when used with Supervisor do we want the Supervisor to
+*Open Question: when used with Supervisor do we want the Supervisor to
 actively periodically query the health of the Collector or we can rely
-on opamp extension to report the health when it changes?_
+on opamp extension to report the health when it changes?*
 
 ## Future Work
 
 - Decide if we want to have Supervisor-less AcceptsRemoteConfig
-  capability in the Collector. This currently can't be done by using
-  just an extension. At the minimum it requires a config Provider.
+    capability in the Collector. This currently can't be done by using
+    just an extension. At the minimum it requires a config Provider.
 - Consider extending the Supervisor to be able to manage multiple
-  Collector instances.
+    Collector instances.
 
 ## References
 
 - OpAMP Specification:
-  [https://github.com/open-telemetry/opamp-spec/blob/main/specification.md](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md)
+    [https://github.com/open-telemetry/opamp-spec/blob/main/specification.md](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md)
 - OpAMP client and server implementation in Go:
-  [https://github.com/open-telemetry/opamp-go](https://github.com/open-telemetry/opamp-go)
+    [https://github.com/open-telemetry/opamp-go](https://github.com/open-telemetry/opamp-go)
 - Example Supervisor implementation:
-  [https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor](https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor)
+    [https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor](https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor)
 - OpAMP Milestone in the Collector:
-  [https://github.com/open-telemetry/opentelemetry-collector/milestone/29](https://github.com/open-telemetry/opentelemetry-collector/milestone/29)
+    [https://github.com/open-telemetry/opentelemetry-collector/milestone/29](https://github.com/open-telemetry/opentelemetry-collector/milestone/29)
