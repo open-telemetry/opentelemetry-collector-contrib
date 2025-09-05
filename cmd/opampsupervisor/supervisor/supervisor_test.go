@@ -862,7 +862,7 @@ service:
 		mc := &mockOpAMPClient{
 			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
 				remoteConfigStatusUpdated = true
-				// assert the
+				// assert the Supervisor reports the new hash as applied
 				assert.Equal(t, remoteConfig.ConfigHash, rcs.LastRemoteConfigHash)
 				assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, rcs.Status)
 				assert.Empty(t, rcs.ErrorMessage)
