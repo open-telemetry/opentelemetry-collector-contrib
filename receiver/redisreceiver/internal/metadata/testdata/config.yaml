@@ -9,6 +9,30 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
+    redis.clusterInfo.cluster_current_epoch:
+      enabled: true
+    redis.clusterInfo.cluster_known_nodes:
+      enabled: true
+    redis.clusterInfo.cluster_my_epoch:
+      enabled: true
+    redis.clusterInfo.cluster_size:
+      enabled: true
+    redis.clusterInfo.cluster_slots_assigned:
+      enabled: true
+    redis.clusterInfo.cluster_slots_fail:
+      enabled: true
+    redis.clusterInfo.cluster_slots_ok:
+      enabled: true
+    redis.clusterInfo.cluster_slots_pfail:
+      enabled: true
+    redis.clusterInfo.cluster_state:
+      enabled: true
+    redis.clusterInfo.cluster_stats_messages_received:
+      enabled: true
+    redis.clusterInfo.cluster_stats_messages_sent:
+      enabled: true
+    redis.clusterInfo.total_cluster_links_buffer_limit_exceeded:
+      enabled: true
     redis.cmd.calls:
       enabled: true
     redis.cmd.latency:
@@ -87,6 +111,30 @@ none_set:
     redis.clients.max_input_buffer:
       enabled: false
     redis.clients.max_output_buffer:
+      enabled: false
+    redis.clusterInfo.cluster_current_epoch:
+      enabled: false
+    redis.clusterInfo.cluster_known_nodes:
+      enabled: false
+    redis.clusterInfo.cluster_my_epoch:
+      enabled: false
+    redis.clusterInfo.cluster_size:
+      enabled: false
+    redis.clusterInfo.cluster_slots_assigned:
+      enabled: false
+    redis.clusterInfo.cluster_slots_fail:
+      enabled: false
+    redis.clusterInfo.cluster_slots_ok:
+      enabled: false
+    redis.clusterInfo.cluster_slots_pfail:
+      enabled: false
+    redis.clusterInfo.cluster_state:
+      enabled: false
+    redis.clusterInfo.cluster_stats_messages_received:
+      enabled: false
+    redis.clusterInfo.cluster_stats_messages_sent:
+      enabled: false
+    redis.clusterInfo.total_cluster_links_buffer_limit_exceeded:
       enabled: false
     redis.cmd.calls:
       enabled: false

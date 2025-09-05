@@ -113,7 +113,34 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 // recordClusterMetrics records metrics from Redis CLUSTER INFO key-value pairs.
-func (rs *redisScraper) recordClusterMetrics(ts pcommon.Timestamp, clusterInf clusterInfo) {}
+func (rs *redisScraper) recordClusterMetrics(ts pcommon.Timestamp, clusterInf clusterInfo) {
+	recorders := clusterInfoRecorder(rs)
+	for infoKey, infoVal := range clusterInf {
+		recorder, ok := recorders[infoKey]
+		if !ok {
+			// Skip unregistered metric.
+			continue
+		}
+		switch recordDataPoint := recorder.(type) {
+		case func(pcommon.Timestamp, int64):
+			val, err := strconv.ParseInt(infoVal, 10, 64)
+			if err != nil {
+				rs.settings.Logger.Warn("failed to parse cluster info int val", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(err))
+			}
+			recordDataPoint(ts, val)
+		case func(pcommon.Timestamp, float64):
+			val, err := strconv.ParseFloat(infoVal, 64)
+			if err != nil {
+				rs.settings.Logger.Warn("failed to parse cluster info float val", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(err))
+			}
+			recordDataPoint(ts, val)
+		case func(pcommon.Timestamp, string):
+			recordDataPoint(ts, infoVal)
+		}
+	}
+}
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
 func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {

@@ -278,6 +278,108 @@ metrics:
     enabled: true
 ```
 
+### redis.clusterInfo.cluster_current_epoch
+
+Current epoch of the cluster
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {epoch} | Gauge | Int |
+
+### redis.clusterInfo.cluster_known_nodes
+
+Number of known nodes in the cluster
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {node} | Gauge | Int |
+
+### redis.clusterInfo.cluster_my_epoch
+
+The node's current epoch
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {epoch} | Gauge | Int |
+
+### redis.clusterInfo.cluster_size
+
+Number of master nodes in the cluster
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {master} | Gauge | Int |
+
+### redis.clusterInfo.cluster_slots_assigned
+
+Number of slots assigned in the cluster
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {slot} | Gauge | Int |
+
+### redis.clusterInfo.cluster_slots_fail
+
+Number of slots in the cluster that are in a failing state
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {slot} | Gauge | Int |
+
+### redis.clusterInfo.cluster_slots_ok
+
+Number of slots in the cluster that are ok
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {slot} | Gauge | Int |
+
+### redis.clusterInfo.cluster_slots_pfail
+
+Number of slots in the cluster that are in a 'potentially failing' state
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {slot} | Gauge | Int |
+
+### redis.clusterInfo.cluster_state
+
+State of the cluster
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {state} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | false |
+
+### redis.clusterInfo.cluster_stats_messages_received
+
+Total number of messages received by the cluster
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {message} | Sum | Int | Cumulative | true |
+
+### redis.clusterInfo.cluster_stats_messages_sent
+
+Total number of messages sent by the cluster
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {message} | Sum | Int | Cumulative | true |
+
+### redis.clusterInfo.total_cluster_links_buffer_limit_exceeded
+
+Total number of times the cluster links buffer limit was exceeded
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {exceed} | Sum | Int | Cumulative | true |
+
 ### redis.cmd.calls
 
 Total number of calls for a command
