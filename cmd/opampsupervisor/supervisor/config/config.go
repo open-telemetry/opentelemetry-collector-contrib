@@ -343,6 +343,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
+			ReportsHeartbeat:               true,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
