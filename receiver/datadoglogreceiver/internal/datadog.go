@@ -14,7 +14,6 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -36,8 +35,8 @@ func ParseRequest(
 	}
 
 	defer func() {
-		if body, ok := body.(io.Closer); ok {
-			if closeErr := body.Close(); closeErr != nil {
+		if closer, ok := body.(io.Closer); ok {
+			if closeErr := closer.Close(); closeErr != nil {
 				logger.Warn("failed to close reader", zap.Error(closeErr))
 			}
 		}
@@ -107,7 +106,7 @@ func parseDatadogRecords(body io.Reader, logger *zap.Logger) ([]DatadogRecord, e
 			zap.Error(arrayErr), // Log the array parsing error
 			zap.Error(err),      // Log the single record parsing error
 		)
-		return nil, fmt.Errorf("failed to parse as array: %v; as single record: %v", arrayErr, err)
+		return nil, fmt.Errorf("failed to parse as array: %w; as single record: %w", arrayErr, err)
 	}
 
 	return []DatadogRecord{singleRecord}, nil

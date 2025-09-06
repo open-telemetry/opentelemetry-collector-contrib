@@ -152,21 +152,21 @@ func (receiver *datadoglogReceiver) Start(ctx context.Context, host component.Ho
 	return err
 }
 
-func (r *datadoglogReceiver) startHTTPServer(ctx context.Context) error {
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.config.HTTP.Endpoint))
-	listener, err := r.config.HTTP.ToListener(ctx)
+func (receiver *datadoglogReceiver) startHTTPServer(ctx context.Context) error {
+	receiver.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", receiver.config.HTTP.Endpoint))
+	listener, err := receiver.config.HTTP.ToListener(ctx)
 	if err != nil {
-		r.settings.Logger.Error("Failed to bind to address", zap.Error(err))
+		receiver.settings.Logger.Error("Failed to bind to address", zap.Error(err))
 		return err
 	}
-	r.shutdownWG.Add(1)
+	receiver.shutdownWG.Add(1)
 
 	go func() {
-		defer r.shutdownWG.Done()
-		if errHTTP := r.serverHTTP.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) &&
+		defer receiver.shutdownWG.Done()
+		if errHTTP := receiver.serverHTTP.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) &&
 			errHTTP != nil {
-			r.settings.Logger.Error("HTTP server stopped unexpectedly", zap.Error(errHTTP))
-			componentstatus.ReportStatus(r.host, componentstatus.NewFatalErrorEvent(errHTTP))
+			receiver.settings.Logger.Error("HTTP server stopped unexpectedly", zap.Error(errHTTP))
+			componentstatus.ReportStatus(receiver.host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil

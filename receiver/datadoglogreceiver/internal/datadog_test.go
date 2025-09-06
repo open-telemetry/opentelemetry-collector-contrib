@@ -13,12 +13,11 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
 func TestParseRequest(t *testing.T) {
@@ -199,7 +198,7 @@ func createTestRequest(input []byte, encoding, contentType string) (*http.Reques
 		body = &buf
 	}
 
-	req, err := http.NewRequest("POST", "/api/v2/logs", body)
+	req, err := http.NewRequest(http.MethodPost, "/api/v2/logs", body)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +219,7 @@ func validateParsedLogs(t *testing.T, logs *plog.Logs, input string, enableDdtag
 	err := json.Unmarshal([]byte(input), &records)
 	require.NoError(t, err)
 
-	assert.Equal(t, len(records), int(logs.LogRecordCount()))
+	assert.Equal(t, len(records), logs.LogRecordCount())
 
 	if len(records) == 0 {
 		return
@@ -281,7 +280,7 @@ func validateDdtags(t *testing.T, attrs pcommon.Map, ddtags string) {
 		if len(kv) == 1 {
 			val, exists := attrs.Get(kv[0])
 			assert.True(t, exists, "Attribute %s should exist", kv[0])
-			assert.Equal(t, "", val.Str())
+			assert.Empty(t, val.Str())
 		} else {
 			val, exists := attrs.Get(kv[0])
 			assert.True(t, exists, "Attribute %s should exist", kv[0])

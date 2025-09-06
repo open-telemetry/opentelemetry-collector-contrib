@@ -59,14 +59,13 @@ func extractSeverity(input []byte) string {
 
 					// Special handling for single-letter tokens
 					if len(token) == 1 {
-						if i+n < inputLen {
-							nextChar := input[i+n]
-							// Ensure the next character is a separator or space
-							if !isSeparator(nextChar) && !isSpace(nextChar) {
-								continue // Do not accept the match
-							}
-						} else {
+						if i+n >= inputLen {
 							continue // Do not accept single-letter tokens at the end
+						}
+						nextChar := input[i+n]
+						// Ensure the next character is a separator or space
+						if !isSeparator(nextChar) && !isSpace(nextChar) {
+							continue // Do not accept the match
 						}
 					}
 

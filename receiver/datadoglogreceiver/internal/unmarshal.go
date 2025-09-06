@@ -12,6 +12,12 @@ import (
 
 type UnixTime time.Time
 
+type Message struct {
+	Str string
+	Map map[string]any
+	Arr []any
+}
+
 // UnmarshalJSON is the method that satisfies the Unmarshaller interface
 func (u *UnixTime) UnmarshalJSON(b []byte) error {
 	var timestamp int64
@@ -44,12 +50,6 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
-}
-
-type Message struct {
-	Str string
-	Map map[string]any
-	Arr []any
 }
 
 type DatadogRecord struct {
