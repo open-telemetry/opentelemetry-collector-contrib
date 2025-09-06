@@ -49,6 +49,15 @@ func TestLoadConfig(t *testing.T) {
 				ParseStringTags: true,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "disable_keep_alives"),
+			expected: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: defaultHTTPEndpoint,
+				},
+				DisableKeepAlives: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

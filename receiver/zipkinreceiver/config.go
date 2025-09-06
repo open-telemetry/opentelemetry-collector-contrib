@@ -15,6 +15,8 @@ type Config struct {
 	// If enabled the zipkin receiver will attempt to parse string tags/binary annotations into int/bool/float.
 	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
+	// If true, HTTP keep-alive is disabled. By default, keep-alive is enabled.
+	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

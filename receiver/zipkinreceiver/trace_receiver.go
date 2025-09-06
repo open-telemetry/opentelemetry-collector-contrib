@@ -100,6 +100,11 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 		return err
 	}
 
+	// Apply keep-alive setting to the HTTP server
+	if zr.config.DisableKeepAlives {
+		zr.server.SetKeepAlivesEnabled(false)
+	}
+
 	var listener net.Listener
 	listener, err = zr.config.ToListener(ctx)
 	if err != nil {
