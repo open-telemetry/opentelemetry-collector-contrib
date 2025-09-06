@@ -61,6 +61,7 @@ body:
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
+      - exporter/kedascaler
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
@@ -230,6 +231,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/datadoglog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/envoyals
