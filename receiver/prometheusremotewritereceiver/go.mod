@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.134.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.132.0
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.40.0
@@ -153,3 +154,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
