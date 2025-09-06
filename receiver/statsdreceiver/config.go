@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
@@ -66,10 +67,15 @@ func (c *Config) Validate() error {
 			if eachMap.Histogram.MaxSize != 0 && (eachMap.Histogram.MaxSize < structure.MinSize || eachMap.Histogram.MaxSize > structure.MaximumMaxSize) {
 				errs = multierr.Append(errs, fmt.Errorf("histogram max_size out of range: %v", eachMap.Histogram.MaxSize))
 			}
-		} else {
+
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				if err := c.validateExplicitBuckets(eachMap.Histogram.ExplicitBuckets); err != nil {
+					errs = multierr.Append(errs, err)
+				}
+			}
+		} else if eachMap.ObserverType != protocol.HistogramObserver {
 			// Non-histogram observer w/ histogram config
-			var empty protocol.HistogramConfig
-			if eachMap.Histogram != empty {
+			if eachMap.Histogram.MaxSize != 0 || eachMap.Histogram.ExplicitBuckets != nil {
 				errs = multierr.Append(errs, errors.New("histogram configuration requires observer_type: histogram"))
 			}
 		}
@@ -89,5 +95,27 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("must specify object id for all TimerHistogramMappings"))
 	}
 
+	return errs
+}
+
+func (*Config) validateExplicitBuckets(explicitBuckets []protocol.ExplicitBucket) error {
+	var errs error
+	for i, eb := range explicitBuckets {
+		if eb.MatcherPattern == "" {
+			errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern must not be empty", i))
+		}
+		if _, err := regexp.Compile(eb.MatcherPattern); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern is not a valid regular expression: %w", i, err))
+		}
+		if len(eb.Buckets) == 0 {
+			return multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
+		}
+		for j := 0; j < len(eb.Buckets)-1; j++ {
+			if eb.Buckets[j] > eb.Buckets[j+1] {
+				errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets are not unique or not ascendingly sorted %+v", i, eb.Buckets))
+				break
+			}
+		}
+	}
 	return errs
 }
