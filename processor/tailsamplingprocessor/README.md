@@ -39,6 +39,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
 - `and`: Sample based on multiple policies, creates an AND policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
+- `skip`: Skip sampling decisions for traces that match sub-policies, allowing subsequent policies to evaluate the trace
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order.
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
@@ -69,6 +70,8 @@ Each policy will result in a decision, and the processor will evaluate them to m
 - When there's an "inverted not sample" decision, the trace is not sampled; ***Deprecated***
 - When there's a "sample" decision, the trace is sampled;
 - When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled; ***Deprecated***
+- When there's a "skip" decision, the policy is skipped and evaluation continues with the next policy;
+- When there's a "continue" decision, it's treated as no match and evaluation continues with the next policy;
 - In all other cases, the trace is NOT sampled
 
 An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy. There is an exception to this if the policy is within an and or composite policy, the resulting decision will be either sampled or not sampled. The "inverted" decisions have been deprecated, please make use of drop policy to explicitly not sample select traces.
@@ -189,6 +192,25 @@ processors:
             }
          },
          {
+            name: skip-policy-1,
+            type: skip,
+            skip: {
+              skip_sub_policy:
+              [
+                {
+                    name: test-skip-policy-1,
+                    type: string_attribute,
+                    string_attribute: {key: service.name, values: [test-service], invert_match: true}
+                },
+                {
+                    name: test-skip-policy-2,
+                    type: latency,
+                    latency: {threshold_ms: 1000}
+                }
+              ]
+            }
+         },
+         {
             name: composite-policy-1,
             type: composite,
             composite:
@@ -229,6 +251,62 @@ processors:
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+## Skip Policy
+
+The skip policy is a special type of sampling policy that allows conditional evaluation flow control. Unlike other policies that make final sampling decisions (sample/not sample), the skip policy can:
+
+1. **Skip evaluation**: When sub-policies match, the skip policy returns a "skipped" decision and policy evaluation continues with the next policy in the list
+2. **Continue evaluation**: When sub-policies don't match, the skip policy returns a "continued" decision and policy evaluation continues with the next policy in the list
+
+### Skip Policy Behavior
+
+The skip policy contains sub-policies and follows this logic:
+- If **any** sub-policy returns `NotSampled` or `InvertNotSampled`, the skip policy returns `Continued`
+- If **all** sub-policies return `Sampled` or `InvertSampled`, the skip policy returns `Skipped`
+
+### Use Cases
+
+1. **Conditional Policy Application**: Skip sampling decisions for certain services or request types
+2. **Policy Ordering Control**: Ensure specific policies are evaluated only for certain traces
+3. **Complex Decision Trees**: Create sophisticated sampling logic with multiple conditional branches
+
+### Example Configuration
+
+```yaml
+processors:
+  tail_sampling:
+    policies:
+      - name: skip-test-traffic
+        type: skip
+        skip:
+          skip_sub_policy:
+            - name: test-service-filter
+              type: string_attribute
+              string_attribute:
+                key: service.name
+                values: [test-service]
+            - name: synthetic-traffic-filter
+              type: string_attribute
+              string_attribute:
+                key: http.user_agent
+                values: [synthetic-*]
+                enabled_regex_matching: true
+      - name: sample-errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: low-volume-sampling
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 1
+```
+
+In this example:
+- If a trace is from `test-service` AND has a synthetic user agent, the skip policy will return `Skipped` and evaluation continues with `sample-errors`
+- If either condition fails, the skip policy returns `Continued` and evaluation continues with `sample-errors` 
+- The `sample-errors` policy will sample all error traces
+- The `low-volume-sampling` policy provides a 1% sampling fallback for other traces
 
 ## A Practical Example
 
@@ -557,6 +635,24 @@ To track how often a drop policy votes to drop a trace, use:
 
 ```
 sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="dropped"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
+
+**Skip Policy Decision Frequency**
+
+To track how often a skip policy votes to skip a trace (allowing subsequent policies to evaluate), use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="skipped"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
+
+**Continue Policy Decision Frequency**
+
+To track how often a policy votes to continue evaluation (treating it as no match), use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="continued"}) by (policy) /
 sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 ```
 

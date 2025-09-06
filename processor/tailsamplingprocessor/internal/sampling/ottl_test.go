@@ -15,7 +15,7 @@ import (
 )
 
 func TestEvaluate_OTTL(t *testing.T) {
-	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
 		Desc                string
@@ -90,7 +90,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			assert.Equal(t, err != nil, c.WantErr)
 
 			if err == nil {
-				decision, err := filter.Evaluate(t.Context(), traceID, newTraceWithSpansAttributes(c.Spans))
+				decision, err := filter.Evaluate(t.Context(), testTraceID, newTraceWithSpansAttributes(c.Spans))
 				assert.Equal(t, err != nil, c.WantErr)
 				assert.Equal(t, decision, c.Decision)
 			}
