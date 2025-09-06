@@ -1,3 +1,6 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 type: datadoglog
 scope_name: https://github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver
 
