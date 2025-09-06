@@ -65,6 +65,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudRegion(compute.Location)
 	d.rb.SetHostID(compute.VMID)
 	d.rb.SetCloudAccountID(compute.SubscriptionID)
+	d.rb.SetCloudAvailabilityZone(compute.AvailabilityZone)
 
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
