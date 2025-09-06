@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.40.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.134.0
 	go.opentelemetry.io/collector/connector v0.134.0
-	go.opentelemetry.io/collector/connector/connectortest v0.133.0
+	go.opentelemetry.io/collector/connector/connectortest v0.134.0
 	go.opentelemetry.io/collector/consumer v1.40.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.134.0
 	go.opentelemetry.io/collector/exporter v0.134.0
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/collector/client v1.40.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v0.134.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.40.0 // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.133.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.134.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.134.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.134.0 // indirect
 	go.opentelemetry.io/collector/extension v1.40.0 // indirect
@@ -53,7 +53,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.134.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.134.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.134.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.133.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.134.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
