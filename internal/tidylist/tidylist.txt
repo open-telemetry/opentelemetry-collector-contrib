@@ -11,10 +11,6 @@ connector/spanmetricsconnector
 internal/common
 pkg/resourcetotelemetry
 exporter/carbonexporter
-pkg/translator/opencensus
-internal/sharedcomponent
-receiver/opencensusreceiver
-exporter/opencensusexporter
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
@@ -42,6 +38,7 @@ internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
 internal/datadog
+internal/sharedcomponent
 pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
@@ -169,6 +166,7 @@ extension/googleclientauthextension
 extension/headerssetterextension
 extension/healthcheckextension
 pkg/status
+internal/healthcheck
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
@@ -203,6 +201,7 @@ internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
+pkg/translator/opencensus
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -230,7 +229,6 @@ receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
-receiver/awscloudwatchmetricsreceiver
 receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
@@ -298,7 +296,6 @@ receiver/receivercreator
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/sapmreceiver
 receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver
