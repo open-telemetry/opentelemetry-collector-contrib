@@ -99,7 +99,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Percentage of memory used.
+          - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
                 - asDouble: 0.009669439735715272
@@ -107,7 +107,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.memory.percent
             unit: "1"
-          - description: Memory limit of the container.
+          - description: Memory limit of the container. Not supported on Windows.
             name: container.memory.usage.limit
             sum:
               aggregationTemporality: 2
