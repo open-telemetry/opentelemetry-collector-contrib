@@ -1,15 +1,17 @@
-package db
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package db // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/tsdb"
 
 import (
 	"sync"
 	"time"
 
 	"github.com/prometheus/prometheus/model/histogram"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/prometheus/prometheus/tsdb/chunks"
 )
 
 type sample struct {
@@ -100,7 +102,6 @@ func (db *InMemoryDB) Cleanup(retention time.Duration) {
 
 	cutoff := time.Now().Add(-retention).UnixMilli()
 	for key, series := range db.series {
-
 		var filteredSample []chunks.Sample
 		for _, s := range series.Samples {
 			if s.T() >= cutoff {

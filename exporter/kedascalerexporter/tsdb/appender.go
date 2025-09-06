@@ -1,4 +1,7 @@
-package db
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package db // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/tsdb"
 
 import (
 	"fmt"
@@ -15,7 +18,7 @@ type InMemoryAppender struct {
 	db *InMemoryDB
 }
 
-func (a *InMemoryAppender) SetOptions(*storage.AppendOptions) {
+func (*InMemoryAppender) SetOptions(*storage.AppendOptions) {
 	// No options to set for in-memory appender.
 }
 
@@ -102,10 +105,10 @@ func (a *InMemoryAppender) Append(
 	return 0, nil
 }
 
-func (a *InMemoryAppender) UpdateMetadata(
-	ref storage.SeriesRef,
-	l labels.Labels,
-	m metadata.Metadata,
+func (*InMemoryAppender) UpdateMetadata(
+	_ storage.SeriesRef,
+	_ labels.Labels,
+	_ metadata.Metadata,
 ) (storage.SeriesRef, error) {
 	return 0, nil
 }
@@ -113,7 +116,7 @@ func (a *InMemoryAppender) UpdateMetadata(
 func (a *InMemoryAppender) AppendHistogramCTZeroSample(
 	ref storage.SeriesRef,
 	l labels.Labels,
-	t, ct int64,
+	t, _ int64,
 	h *histogram.Histogram,
 	fh *histogram.FloatHistogram,
 ) (storage.SeriesRef, error) {
@@ -124,17 +127,17 @@ func (a *InMemoryAppender) AppendCTZeroSample(
 	ref storage.SeriesRef,
 	l labels.Labels,
 	t int64,
-	ct int64,
+	_ int64,
 ) (storage.SeriesRef, error) {
 	return a.Append(ref, l, t, 0)
 }
 
-func (a *InMemoryAppender) AppendExemplar(
+func (*InMemoryAppender) AppendExemplar(
 	ref storage.SeriesRef,
-	l labels.Labels,
-	e exemplar.Exemplar,
+	_ labels.Labels,
+	_ exemplar.Exemplar,
 ) (storage.SeriesRef, error) {
 	return ref, nil
 }
-func (a *InMemoryAppender) Commit() error   { return nil }
-func (a *InMemoryAppender) Rollback() error { return nil }
+func (*InMemoryAppender) Commit() error   { return nil }
+func (*InMemoryAppender) Rollback() error { return nil }

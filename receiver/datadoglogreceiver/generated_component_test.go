@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver/internal/metadata"
 )
 
 func TestComponentFactoryType(t *testing.T) {
@@ -47,7 +49,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name+"-shutdown", func(t *testing.T) {
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 			settings.ID = component.NewID(typeStr)
 
 			c, err := test.createFn(context.Background(), settings, cfg)
@@ -56,7 +58,7 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, err)
 		})
 		t.Run(test.name+"-lifecycle", func(t *testing.T) {
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 			settings.ID = component.NewID(typeStr)
 
 			firstRcvr, err := test.createFn(context.Background(), settings, cfg)

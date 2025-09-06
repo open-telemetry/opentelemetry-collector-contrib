@@ -1,4 +1,7 @@
-package internal
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver/internal"
 
 import (
 	"fmt"
@@ -8,6 +11,12 @@ import (
 )
 
 type UnixTime time.Time
+
+type Message struct {
+	Str string
+	Map map[string]any
+	Arr []any
+}
 
 // UnmarshalJSON is the method that satisfies the Unmarshaller interface
 func (u *UnixTime) UnmarshalJSON(b []byte) error {
@@ -41,12 +50,6 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
-}
-
-type Message struct {
-	Str string
-	Map map[string]any
-	Arr []any
 }
 
 type DatadogRecord struct {

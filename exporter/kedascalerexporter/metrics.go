@@ -1,4 +1,7 @@
-package kedascalerexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kedascalerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter"
 
 import (
 	"context"
@@ -151,9 +154,10 @@ func (e *kedaScalerExporter) HandleQuery(w http.ResponseWriter, r *http.Request)
 
 func (e *kedaScalerExporter) Start(ctx context.Context, host component.Host) error {
 	var err error
+	var cln net.Listener
 
 	if e.config.MonitoringHTTP != nil {
-		cln, err := e.config.MonitoringHTTP.ToListener(ctx)
+		cln, err = e.config.MonitoringHTTP.ToListener(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to bind to monitoring http address %q: %w",
 				e.config.MonitoringHTTP.Endpoint, err)

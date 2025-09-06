@@ -1,4 +1,7 @@
-package datadoglogreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package datadoglogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver"
 
 import (
 	"context"
@@ -9,9 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-var (
-	typeStr = component.MustNewType("datadoglog")
-)
+var typeStr = component.MustNewType("datadoglog")
 
 const (
 	defaultVersion  = "v2_api"
@@ -33,7 +34,12 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createLogsReceiver(_ context.Context, params receiver.Settings, baseCfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	baseCfg component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
 	cfg := baseCfg.(*Config)
 
 	logReceiver, err := newDatadogLogReceiver(cfg, consumer, params)

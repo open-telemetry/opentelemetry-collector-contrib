@@ -1,4 +1,7 @@
-package kedascalerexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kedascalerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter"
 
 import (
 	"context"
@@ -7,14 +10,14 @@ import (
 	"sync"
 	"time"
 
-	tsdb "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/tsdb"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
-	"go.uber.org/zap"
-
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+
+	tsdb "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/tsdb"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 type OTLPMetricStore struct {
@@ -77,24 +80,25 @@ func (s *OTLPMetricStore) ProcessMetrics(md pmetric.Metrics) error {
 			}
 		}
 		for _, hp := range ts.Histograms {
+			var appendErr error
 			if hp.IsFloatHistogram() {
-				_, err = s.appender.AppendHistogram(0, ls, hp.Timestamp, nil, hp.ToFloatHistogram())
+				_, appendErr = s.appender.AppendHistogram(0, ls, hp.Timestamp, nil, hp.ToFloatHistogram())
 			} else {
-				_, err = s.appender.AppendHistogram(0, ls, hp.Timestamp, hp.ToIntHistogram(), nil)
+				_, appendErr = s.appender.AppendHistogram(0, ls, hp.Timestamp, hp.ToIntHistogram(), nil)
 			}
-			if err != nil {
+			if appendErr != nil {
 				// Although AppendHistogram does not currently return ErrDuplicateSampleForTimestamp there is
 				// a note indicating its inclusion in the future.
-				if errors.Is(err, storage.ErrOutOfOrderSample) ||
-					errors.Is(err, storage.ErrOutOfBounds) ||
-					errors.Is(err, storage.ErrDuplicateSampleForTimestamp) {
+				if errors.Is(appendErr, storage.ErrOutOfOrderSample) ||
+					errors.Is(appendErr, storage.ErrOutOfBounds) ||
+					errors.Is(appendErr, storage.ErrDuplicateSampleForTimestamp) {
 					s.logger.Error(
 						"Out of order histogram",
-						zap.Error(err),
+						zap.Error(appendErr),
 						zap.Int64("timestamp", hp.Timestamp),
 					)
 				}
-				return err
+				return appendErr
 			}
 		}
 	}
@@ -177,6 +181,6 @@ func (s *OTLPMetricStore) Query(query string, ts time.Time) (float64, error) {
 }
 
 // Close cleans up resources used by the store
-func (s *OTLPMetricStore) Close() error {
+func (*OTLPMetricStore) Close() error {
 	return nil
 }

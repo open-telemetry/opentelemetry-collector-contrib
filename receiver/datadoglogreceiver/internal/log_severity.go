@@ -1,4 +1,7 @@
-package internal
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver/internal"
 
 import "go.opentelemetry.io/collector/pdata/plog"
 
@@ -32,7 +35,6 @@ var tokenToSeverity = map[string]string{
 
 // extractSeverity attempts to identify and extract a severity level from the input byte slice
 func extractSeverity(input []byte) string {
-
 	inputLen := len(input)
 	// Iterate through each character in the input
 	for i := 0; i < inputLen; i++ {
@@ -47,30 +49,31 @@ func extractSeverity(input []byte) string {
 			tokens := tokenLengths[n]
 			for _, token := range tokens {
 				// Compare the substring with the token (case-insensitive)
-				if equalFoldBytes(substr, []byte(token)) {
-					// Check if the token is at word boundaries
-					prevIsLetterOrDigit := i > 0 && isLetterOrDigit(input[i-1])
-					nextIsLetterOrDigit := i+n < inputLen && isLetterOrDigit(input[i+n])
-					if prevIsLetterOrDigit || nextIsLetterOrDigit {
-						continue // Not a word boundary, skip this match
-					}
-
-					// Special handling for single-letter tokens
-					if len(token) == 1 {
-						if i+n < inputLen {
-							nextChar := input[i+n]
-							// Ensure the next character is a separator or space
-							if !isSeparator(nextChar) && !isSpace(nextChar) {
-								continue // Do not accept the match
-							}
-						} else {
-							continue // Do not accept single-letter tokens at the end
-						}
-					}
-
-					// Return the corresponding severity level
-					return tokenToSeverity[token]
+				if !equalFoldBytes(substr, []byte(token)) {
+					continue
 				}
+
+				// Check if the token is at word boundaries
+				prevIsLetterOrDigit := i > 0 && isLetterOrDigit(input[i-1])
+				nextIsLetterOrDigit := i+n < inputLen && isLetterOrDigit(input[i+n])
+				if prevIsLetterOrDigit || nextIsLetterOrDigit {
+					continue // Not a word boundary, skip this match
+				}
+
+				// Special handling for single-letter tokens
+				if len(token) == 1 {
+					if i+n >= inputLen {
+						continue // Do not accept single-letter tokens at the end
+					}
+					nextChar := input[i+n]
+					// Ensure the next character is a separator or space
+					if !isSeparator(nextChar) && !isSpace(nextChar) {
+						continue // Do not accept the match
+					}
+				}
+
+				// Return the corresponding severity level
+				return tokenToSeverity[token]
 			}
 		}
 	}

@@ -1,4 +1,7 @@
-package db
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package db // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/tsdb"
 
 import (
 	"context"
@@ -29,18 +32,18 @@ type inMemorySeriesSet struct {
 
 func (s *inMemorySeriesSet) Next() bool {
 	s.cur++
-	return s.cur-1 < len(s.series)
+	return s.cur <= len(s.series)
 }
 
 func (s *inMemorySeriesSet) At() storage.Series {
 	return s.series[s.cur-1]
 }
 
-func (s *inMemorySeriesSet) Err() error {
+func (*inMemorySeriesSet) Err() error {
 	return nil
 }
 
-func (s *inMemorySeriesSet) Warnings() annotations.Annotations {
+func (*inMemorySeriesSet) Warnings() annotations.Annotations {
 	return nil
 }
 
@@ -95,9 +98,9 @@ func (q *InMemoryQuerier) LabelNames(
 		if !matchLabels(s.Labels, matchers) {
 			continue
 		}
-		for _, l := range s.Labels {
+		s.Labels.Range(func(l labels.Label) {
 			nameSet[l.Name] = struct{}{}
-		}
+		})
 	}
 	var names []string
 	for n := range nameSet {
@@ -139,6 +142,6 @@ func (q *InMemoryQuerier) LabelValues(
 	return values, nil, nil
 }
 
-func (q *InMemoryQuerier) Close() error {
+func (*InMemoryQuerier) Close() error {
 	return nil
 }

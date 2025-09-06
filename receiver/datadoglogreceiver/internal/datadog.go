@@ -1,4 +1,7 @@
-package internal
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver/internal"
 
 import (
 	"compress/flate"
@@ -11,7 +14,6 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -33,15 +35,15 @@ func ParseRequest(
 	}
 
 	defer func() {
-		if body, ok := body.(io.Closer); ok {
-			if closeErr := body.Close(); closeErr != nil {
+		if closer, ok := body.(io.Closer); ok {
+			if closeErr := closer.Close(); closeErr != nil {
 				logger.Warn("failed to close reader", zap.Error(closeErr))
 			}
 		}
 	}()
 
-	if err := validateContentType(req); err != nil {
-		return nil, err
+	if validateErr := validateContentType(req); validateErr != nil {
+		return nil, validateErr
 	}
 
 	datadogRecords, err := parseDatadogRecords(body, logger)
@@ -104,7 +106,7 @@ func parseDatadogRecords(body io.Reader, logger *zap.Logger) ([]DatadogRecord, e
 			zap.Error(arrayErr), // Log the array parsing error
 			zap.Error(err),      // Log the single record parsing error
 		)
-		return nil, fmt.Errorf("failed to parse as array: %v; as single record: %v", arrayErr, err)
+		return nil, fmt.Errorf("failed to parse as array: %w; as single record: %w", arrayErr, err)
 	}
 
 	return []DatadogRecord{singleRecord}, nil
@@ -176,7 +178,7 @@ func ddTagsAsAttributeMap(ddtags string) pcommon.Map {
 // datadogStatusToSeverity converts Datadog status to OpenTelemetry severity
 // Reference: https://docs.datadoghq.com/logs/log_configuration/processors/?tab=ui#log-status-remapper
 // OpenTelemetry severity: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#severity-fields
-func toSeverity(status string, message string) (plog.SeverityNumber, string) {
+func toSeverity(status, message string) (plog.SeverityNumber, string) {
 	switch strings.ToLower(status) {
 	case "emergency":
 		return plog.SeverityNumberFatal, "FATAL"
