@@ -280,7 +280,6 @@ receiver/receivercreator receiver/receivercreator
 receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
-receiver/sapmreceiver receiver/sapm
 receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking

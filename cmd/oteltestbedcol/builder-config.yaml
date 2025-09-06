@@ -44,7 +44,6 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.134.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver v0.134.0

@@ -623,8 +623,7 @@ $(1)
 endef
 
 # List of directories where certificates are stored for unit tests.
-CERT_DIRS := receiver/sapmreceiver/testdata \
-             receiver/signalfxreceiver/testdata \
+CERT_DIRS := receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/cert \
              receiver/mongodbreceiver/testdata/certs \
