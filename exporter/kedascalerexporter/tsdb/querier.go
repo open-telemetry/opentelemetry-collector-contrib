@@ -32,18 +32,18 @@ type inMemorySeriesSet struct {
 
 func (s *inMemorySeriesSet) Next() bool {
 	s.cur++
-	return s.cur-1 < len(s.series)
+	return s.cur <= len(s.series)
 }
 
 func (s *inMemorySeriesSet) At() storage.Series {
 	return s.series[s.cur-1]
 }
 
-func (s *inMemorySeriesSet) Err() error {
+func (*inMemorySeriesSet) Err() error {
 	return nil
 }
 
-func (s *inMemorySeriesSet) Warnings() annotations.Annotations {
+func (*inMemorySeriesSet) Warnings() annotations.Annotations {
 	return nil
 }
 
@@ -142,6 +142,6 @@ func (q *InMemoryQuerier) LabelValues(
 	return values, nil, nil
 }
 
-func (q *InMemoryQuerier) Close() error {
+func (*InMemoryQuerier) Close() error {
 	return nil
 }

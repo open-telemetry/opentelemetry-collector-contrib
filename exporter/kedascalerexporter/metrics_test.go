@@ -4,14 +4,14 @@
 package kedascalerexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestMetrics(t *testing.T) {
@@ -96,7 +96,7 @@ func TestMetrics(t *testing.T) {
 			require.NoError(t, err)
 			defer exporter.metricStore.Close()
 
-			err = exporter.ConsumeMetrics(context.Background(), input)
+			err = exporter.ConsumeMetrics(t.Context(), input)
 			require.NoError(t, err)
 
 			// Use the timestamp from the test data (1746036255000000000 nanoseconds)

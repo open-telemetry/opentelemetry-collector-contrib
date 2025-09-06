@@ -5,6 +5,7 @@ package kedascalerexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -125,7 +126,7 @@ func (e *kedaScaler) GetMetricSpec(
 			zap.String("name", sor.Name),
 			zap.String("namespace", sor.Namespace),
 		)
-		return nil, fmt.Errorf("GetMetricSpec")
+		return nil, errors.New("GetMetricSpec")
 	}
 	targetValue, err := getTargetValue(scalerMetadata)
 	if err != nil {
@@ -185,7 +186,7 @@ func (e *kedaScaler) getMetricQuery(metadata map[string]string) (string, error) 
 			"unable to get metric query from scaled object's metadata",
 			zap.String("metadata", fmt.Sprintf("%v", metadata)),
 		)
-		return "", fmt.Errorf("unable to get metric query from scaled object's metadata")
+		return "", errors.New("unable to get metric query from scaled object's metadata")
 	}
 
 	metricQuery = strings.TrimSpace(metricQuery)
