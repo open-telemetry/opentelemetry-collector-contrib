@@ -8,14 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -149,23 +148,23 @@ func TestMetricsWithQueue(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 
-	failoverConnector := conn.(*WrappedMetricsConnector)
+	failoverConnector := conn.(*wrappedMetricsConnector)
 	mRouter := failoverConnector.GetFailoverRouter()
 	mRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
 	mRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
 	mRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	md := sampleMetric()
 
-	assert.NoError(t, conn.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, conn.ConsumeMetrics(t.Context(), md))
 }
 
 func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {

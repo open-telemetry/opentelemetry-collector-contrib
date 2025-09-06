@@ -69,7 +69,7 @@ func createTracesToTraces(
 	}
 
 	// Return testable wrapper that exposes internal failover router
-	return NewWrappedTracesConnector(wrapped, t.(*tracesFailover)), nil
+	return newWrappedTracesConnector(wrapped, t.(*tracesFailover)), nil
 }
 
 func createMetricsToMetrics(
@@ -106,7 +106,7 @@ func createMetricsToMetrics(
 	}
 
 	// Return testable wrapper that exposes internal failover router
-	return NewWrappedMetricsConnector(wrapped, t.(*metricsFailover)), nil
+	return newWrappedMetricsConnector(wrapped, t.(*metricsFailover)), nil
 }
 
 func createLogsToLogs(
@@ -143,5 +143,5 @@ func createLogsToLogs(
 	}
 
 	// Return testable wrapper that exposes internal failover router
-	return NewWrappedLogsConnector(wrapped, t.(*logsFailover)), nil
+	return newWrappedLogsConnector(wrapped, t.(*logsFailover)), nil
 }

@@ -112,21 +112,21 @@ func (w *wrappedLogsConnector) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func NewWrappedTracesConnector(consumer consumer.Traces, failoverCore *tracesFailover) *wrappedTracesConnector {
+func newWrappedTracesConnector(consumer consumer.Traces, failoverCore *tracesFailover) *wrappedTracesConnector {
 	return &wrappedTracesConnector{
 		consumer:     consumer,
 		failoverCore: failoverCore,
 	}
 }
 
-func NewWrappedMetricsConnector(consumer consumer.Metrics, failoverCore *metricsFailover) *wrappedMetricsConnector {
+func newWrappedMetricsConnector(consumer consumer.Metrics, failoverCore *metricsFailover) *wrappedMetricsConnector {
 	return &wrappedMetricsConnector{
 		consumer:     consumer,
 		failoverCore: failoverCore,
 	}
 }
 
-func NewWrappedLogsConnector(consumer consumer.Logs, failoverCore *logsFailover) *wrappedLogsConnector {
+func newWrappedLogsConnector(consumer consumer.Logs, failoverCore *logsFailover) *wrappedLogsConnector {
 	return &wrappedLogsConnector{
 		consumer:     consumer,
 		failoverCore: failoverCore,

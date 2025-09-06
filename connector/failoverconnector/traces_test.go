@@ -3,7 +3,6 @@
 
 package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -41,10 +40,10 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
-	wrappedConn := conn.(*WrappedTracesConnector)
+	wrappedConn := conn.(*wrappedTracesConnector)
 	failoverRouter := wrappedConn.GetFailoverRouter()
 	defer func() {
-		assert.NoError(t, wrappedConn.Shutdown(context.Background()))
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
 	}()
 
 	require.NoError(t, err)
@@ -83,11 +82,11 @@ func TestTracesWithValidFailover(t *testing.T) {
 
 	require.NoError(t, err)
 
-	wrappedConn := conn.(*WrappedTracesConnector)
+	wrappedConn := conn.(*wrappedTracesConnector)
 	failoverRouter := wrappedConn.GetFailoverRouter()
 	failoverRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 	defer func() {
-		assert.NoError(t, wrappedConn.Shutdown(context.Background()))
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
 	}()
 
 	tr := sampleTrace()
@@ -129,7 +128,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 
 	tr := sampleTrace()
 
-	assert.EqualError(t, failoverConnector.ConsumeTraces(context.Background(), tr), "All provided pipelines return errors")
+	assert.EqualError(t, failoverConnector.ConsumeTraces(t.Context(), tr), "All provided pipelines return errors")
 }
 
 func TestTracesWithQueue(t *testing.T) {
@@ -150,23 +149,23 @@ func TestTracesWithQueue(t *testing.T) {
 		tracesThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
-	wrappedConn := conn.(*WrappedTracesConnector)
+	wrappedConn := conn.(*wrappedTracesConnector)
 	failoverRouter := wrappedConn.GetFailoverRouter()
 	failoverRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 	failoverRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 	failoverRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
 	defer func() {
-		assert.NoError(t, wrappedConn.Shutdown(context.Background()))
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
 	}()
 
 	tr := sampleTrace()
 
-	assert.NoError(t, wrappedConn.ConsumeTraces(context.Background(), tr))
+	assert.NoError(t, wrappedConn.ConsumeTraces(t.Context(), tr))
 }
 
 func sampleTrace() ptrace.Traces {

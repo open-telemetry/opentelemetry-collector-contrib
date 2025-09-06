@@ -8,14 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -45,10 +44,10 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
-	wrappedConn := conn.(*WrappedLogsConnector)
+	wrappedConn := conn.(*wrappedLogsConnector)
 	failoverRouter := wrappedConn.GetFailoverRouter()
 	defer func() {
-		assert.NoError(t, wrappedConn.Shutdown(context.Background()))
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
 	}()
 
 	require.NoError(t, err)
@@ -151,23 +150,23 @@ func TestLogsWithQueue(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
-	failoverConnector := conn.(*WrappedLogsConnector)
+	failoverConnector := conn.(*wrappedLogsConnector)
 	lRouter := failoverConnector.GetFailoverRouter()
 	lRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
 	lRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
 	lRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errLogsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	ld := sampleLog()
 
-	assert.NoError(t, conn.ConsumeLogs(context.Background(), ld))
+	assert.NoError(t, conn.ConsumeLogs(t.Context(), ld))
 }
 
 func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
