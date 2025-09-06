@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedasc
 
 go 1.24
 
-toolchain go1.24.5
-
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
