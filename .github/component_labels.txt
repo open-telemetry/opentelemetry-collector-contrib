@@ -186,6 +186,7 @@ processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
+processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span

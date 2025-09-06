@@ -13,6 +13,7 @@
 //go:generate mdatagen internal/docker/metadata.yaml
 //go:generate mdatagen internal/gcp/metadata.yaml
 //go:generate mdatagen internal/heroku/metadata.yaml
+//go:generate mdatagen internal/hetzner/metadata.yaml
 //go:generate mdatagen internal/openshift/metadata.yaml
 //go:generate mdatagen internal/system/metadata.yaml
 //go:generate mdatagen internal/k8snode/metadata.yaml
