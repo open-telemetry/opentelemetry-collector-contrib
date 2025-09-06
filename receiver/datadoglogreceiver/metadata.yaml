@@ -9,6 +9,8 @@ status:
   stability:
     beta: [logs]
   distributions: []
+  codeowners:
+    active: [amir-jakoby]
 # telemetry:
 #   metrics:
 #     processor_thp_received_log_bytes:
