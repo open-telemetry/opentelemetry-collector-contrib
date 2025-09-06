@@ -12,9 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-var (
-	typeStr = component.MustNewType("datadoglog")
-)
+var typeStr = component.MustNewType("datadoglog")
 
 const (
 	defaultVersion  = "v2_api"

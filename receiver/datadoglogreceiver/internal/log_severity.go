@@ -35,7 +35,6 @@ var tokenToSeverity = map[string]string{
 
 // extractSeverity attempts to identify and extract a severity level from the input byte slice
 func extractSeverity(input []byte) string {
-
 	inputLen := len(input)
 	// Iterate through each character in the input
 	for i := 0; i < inputLen; i++ {

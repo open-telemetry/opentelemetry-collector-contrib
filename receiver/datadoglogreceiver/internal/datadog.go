@@ -179,7 +179,7 @@ func ddTagsAsAttributeMap(ddtags string) pcommon.Map {
 // datadogStatusToSeverity converts Datadog status to OpenTelemetry severity
 // Reference: https://docs.datadoghq.com/logs/log_configuration/processors/?tab=ui#log-status-remapper
 // OpenTelemetry severity: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#severity-fields
-func toSeverity(status string, message string) (plog.SeverityNumber, string) {
+func toSeverity(status, message string) (plog.SeverityNumber, string) {
 	switch strings.ToLower(status) {
 	case "emergency":
 		return plog.SeverityNumberFatal, "FATAL"

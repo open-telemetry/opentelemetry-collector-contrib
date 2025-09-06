@@ -11,13 +11,14 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver/internal"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver/internal"
 )
 
 const (
