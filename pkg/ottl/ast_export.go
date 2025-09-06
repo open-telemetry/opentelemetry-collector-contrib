@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottl
+package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 // Public AST type aliases for codegen
 // These are type aliases to the internal AST types, making them accessible for code generation.
