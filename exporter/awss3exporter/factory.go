@@ -6,6 +6,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -54,12 +55,13 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:            "us-east-1",
-			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-			StorageClass:      "STANDARD",
-			RetryMode:         DefaultRetryMode,
-			RetryMaxAttempts:  DefaultRetryMaxAttempts,
-			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+			Region:                  "us-east-1",
+			S3PartitionFormat:       "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			StorageClass:            "STANDARD",
+			RetryMode:               DefaultRetryMode,
+			RetryMaxAttempts:        DefaultRetryMaxAttempts,
+			RetryMaxBackoff:         DefaultRetryMaxBackoff,
+			s3PartitionTimeLocation: time.Local,
 		},
 		MarshalerName: "otlp_json",
 	}

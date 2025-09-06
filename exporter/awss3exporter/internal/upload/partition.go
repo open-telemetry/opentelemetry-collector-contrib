@@ -26,6 +26,8 @@ type PartitionKeyBuilder struct {
 	// different time buckets.
 	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	PartitionFormat string
+	// PartitionTimeLocation is used to provide timezone for partition time. Defaults to Local time location.
+	PartitionTimeLocation *time.Location
 	// FilePrefix is used to define the prefix of the file written
 	// to the directory in S3.
 	FilePrefix string
@@ -58,7 +60,11 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix str
 	if prefix != "" {
 		prefix += "/"
 	}
-	return prefix + timefmt.Format(ts, pki.PartitionFormat)
+	location := pki.PartitionTimeLocation
+	if location == nil {
+		location = time.Local
+	}
+	return prefix + timefmt.Format(ts.In(location), pki.PartitionFormat)
 }
 
 func (pki *PartitionKeyBuilder) fileName() string {

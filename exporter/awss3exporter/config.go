@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,6 +30,8 @@ type S3UploaderConfig struct {
 	S3Prefix string `mapstructure:"s3_prefix"`
 	// S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	S3PartitionFormat string `mapstructure:"s3_partition_format"`
+	// S3PartitionTimezone is used to provide timezone for partition time. Defaults to Local timezone.
+	S3PartitionTimezone string `mapstructure:"s3_partition_timezone"`
 	// FilePrefix is the filename prefix used for the file to avoid any potential collisions.
 	FilePrefix string `mapstructure:"file_prefix"`
 	// Endpoint is the URL used for communicated with S3.
@@ -63,6 +66,9 @@ type S3UploaderConfig struct {
 	// If unspecified, a default function will be used that generates a random string.
 	// Valid values are: "uuidv7"
 	UniqueKeyFuncName string `mapstructure:"unique_key_func_name"`
+
+	// Not in config file, will be set in [Config.Validate].
+	s3PartitionTimeLocation *time.Location `mapstructure:"-"`
 }
 
 type MarshalerType string
@@ -155,5 +161,16 @@ func (c *Config) Validate() error {
 	if c.S3Uploader.UniqueKeyFuncName != "" && !validUniqueKeyFuncs[c.S3Uploader.UniqueKeyFuncName] {
 		errs = multierr.Append(errs, errors.New("invalid UniqueKeyFuncName"))
 	}
+
+	if c.S3Uploader.S3PartitionTimezone != "" {
+		var err error
+		c.S3Uploader.s3PartitionTimeLocation, err = time.LoadLocation(c.S3Uploader.S3PartitionTimezone)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("invalid S3 partition timezone: %w", err))
+		}
+	} else {
+		c.S3Uploader.s3PartitionTimeLocation = time.Local
+	}
+
 	return errs
 }
