@@ -248,7 +248,8 @@ func (c *Cluster) DescribeServices(_ context.Context, input *ecs.DescribeService
 // SetTasks update both list and map.
 func (c *Cluster) SetTasks(tasks []ecstypes.Task) {
 	m := make(map[string]ecstypes.Task, len(tasks))
-	for _, t := range tasks {
+	for i := range tasks {
+		t := tasks[i]
 		m[*t.TaskArn] = t
 	}
 	c.taskMap = m
@@ -268,8 +269,9 @@ func (c *Cluster) SetTaskDefinitions(defs []*ecstypes.TaskDefinition) {
 // SetContainerInstances updates the list and map.
 func (c *Cluster) SetContainerInstances(instances []ecstypes.ContainerInstance) {
 	m := make(map[string]ecstypes.ContainerInstance, len(instances))
-	for _, ci := range instances {
-		m[*ci.ContainerInstanceArn] = ci
+	for i := range instances {
+		instance := instances[i]
+		m[*instance.ContainerInstanceArn] = instance
 	}
 	c.containerInstanceMap = m
 	c.containerInstanceList = instances
@@ -278,8 +280,9 @@ func (c *Cluster) SetContainerInstances(instances []ecstypes.ContainerInstance) 
 // SetEc2Instances updates the list and map.
 func (c *Cluster) SetEc2Instances(instances []ec2types.Instance) {
 	m := make(map[string]ec2types.Instance, len(instances))
-	for _, i := range instances {
-		m[*i.InstanceId] = i
+	for i := range instances {
+		instance := instances[i]
+		m[*instance.InstanceId] = instance
 	}
 	c.ec2Map = m
 	c.ec2List = instances
@@ -288,7 +291,8 @@ func (c *Cluster) SetEc2Instances(instances []ec2types.Instance) {
 // SetServices updates the list and map.
 func (c *Cluster) SetServices(services []ecstypes.Service) {
 	m := make(map[string]ecstypes.Service, len(services))
-	for _, s := range services {
+	for i := range services {
+		s := services[i]
 		m[*s.ServiceArn] = s
 	}
 	c.serviceMap = m

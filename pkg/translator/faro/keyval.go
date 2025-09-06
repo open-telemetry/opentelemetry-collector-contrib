@@ -75,7 +75,7 @@ func keyValToInterfaceSlice(kv *keyVal) []any {
 }
 
 // logToKeyVal represents a Log object as keyVal
-func logToKeyVal(l faroTypes.Log) *keyVal {
+func logToKeyVal(l *faroTypes.Log) *keyVal {
 	kv := newKeyVal()
 
 	// default to info level, prioritize log level if set
@@ -95,7 +95,7 @@ func logToKeyVal(l faroTypes.Log) *keyVal {
 }
 
 // exceptionToKeyVal represents an Exception object as keyVal
-func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
+func exceptionToKeyVal(e *faroTypes.Exception) *keyVal {
 	kv := newKeyVal()
 	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindException))
@@ -110,23 +110,23 @@ func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
 }
 
 // exceptionMessage string is concatenating of the Exception.Type and Exception.Value
-func exceptionMessage(e faroTypes.Exception) string {
+func exceptionMessage(e *faroTypes.Exception) string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Value)
 }
 
 // exceptionToString is the string representation of an Exception
-func exceptionToString(e faroTypes.Exception) string {
+func exceptionToString(e *faroTypes.Exception) string {
 	stacktrace := exceptionMessage(e)
 	if e.Stacktrace != nil {
-		for _, frame := range e.Stacktrace.Frames {
-			stacktrace += frameToString(frame)
+		for i := range e.Stacktrace.Frames {
+			stacktrace += frameToString(&e.Stacktrace.Frames[i])
 		}
 	}
 	return stacktrace
 }
 
 // frameToString function converts a Frame into a human readable string
-func frameToString(frame faroTypes.Frame) string {
+func frameToString(frame *faroTypes.Frame) string {
 	module := ""
 	if frame.Module != "" {
 		module = frame.Module + "|"
@@ -135,7 +135,7 @@ func frameToString(frame faroTypes.Frame) string {
 }
 
 // measurementToKeyVal representation of the measurement object
-func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
+func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 	kv := newKeyVal()
 
 	keyValAdd(kv, faroTimestamp, m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
@@ -160,7 +160,7 @@ func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 }
 
 // eventToKeyVal produces key -> value representation of Event metadata
-func eventToKeyVal(e faroTypes.Event) *keyVal {
+func eventToKeyVal(e *faroTypes.Event) *keyVal {
 	kv := newKeyVal()
 	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindEvent))
