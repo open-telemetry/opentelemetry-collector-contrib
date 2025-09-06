@@ -534,9 +534,9 @@ func TestKeepAliveConfig(t *testing.T) {
 			r, err := newReceiver(cfg, sink, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
-				require.NoError(t, r.Shutdown(context.Background()))
+				require.NoError(t, r.Shutdown(t.Context()))
 			})
 
 			// Make a request to verify the server starts successfully
