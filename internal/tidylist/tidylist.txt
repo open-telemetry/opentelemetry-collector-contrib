@@ -121,6 +121,7 @@ internal/kafka
 pkg/batchpersignal
 pkg/kafka/topic
 exporter/kafkaexporter
+exporter/kedascalerexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
@@ -244,6 +245,7 @@ receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
 receiver/couchdbreceiver
+receiver/datadoglogreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
