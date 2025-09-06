@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.134.0
@@ -43,7 +43,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/spf13/pflag v1.0.7 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.134.0 // indirect
 	go.opentelemetry.io/collector/client v1.40.0 // indirect
