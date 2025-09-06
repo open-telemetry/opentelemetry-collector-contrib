@@ -85,6 +85,42 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterCurrentEpochDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterKnownNodesDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterMyEpochDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterSizeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterSlotsAssignedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterSlotsFailDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterSlotsOkDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterSlotsPfailDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterStateDataPoint(ts, 1, AttributeClusterStateOk)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterStatsMessagesReceivedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoClusterStatsMessagesSentDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterInfoTotalClusterLinksBufferLimitExceededDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 
 			allMetricsCount++
@@ -276,6 +312,159 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Longest output list among current client connections", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_current_epoch":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_current_epoch"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_current_epoch")
+					validatedMetrics["redis.clusterInfo.cluster_current_epoch"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Current epoch of the cluster", ms.At(i).Description())
+					assert.Equal(t, "{epoch}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_known_nodes":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_known_nodes"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_known_nodes")
+					validatedMetrics["redis.clusterInfo.cluster_known_nodes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of known nodes in the cluster", ms.At(i).Description())
+					assert.Equal(t, "{node}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_my_epoch":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_my_epoch"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_my_epoch")
+					validatedMetrics["redis.clusterInfo.cluster_my_epoch"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The node's current epoch", ms.At(i).Description())
+					assert.Equal(t, "{epoch}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_size":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_size"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_size")
+					validatedMetrics["redis.clusterInfo.cluster_size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of master nodes in the cluster", ms.At(i).Description())
+					assert.Equal(t, "{master}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_slots_assigned":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_slots_assigned"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_slots_assigned")
+					validatedMetrics["redis.clusterInfo.cluster_slots_assigned"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of slots assigned in the cluster", ms.At(i).Description())
+					assert.Equal(t, "{slot}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_slots_fail":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_slots_fail"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_slots_fail")
+					validatedMetrics["redis.clusterInfo.cluster_slots_fail"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of slots in the cluster that are in a failing state", ms.At(i).Description())
+					assert.Equal(t, "{slot}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_slots_ok":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_slots_ok"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_slots_ok")
+					validatedMetrics["redis.clusterInfo.cluster_slots_ok"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of slots in the cluster that are ok", ms.At(i).Description())
+					assert.Equal(t, "{slot}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_slots_pfail":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_slots_pfail"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_slots_pfail")
+					validatedMetrics["redis.clusterInfo.cluster_slots_pfail"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of slots in the cluster that are in a 'potentially failing' state", ms.At(i).Description())
+					assert.Equal(t, "{slot}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_state":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_state"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_state")
+					validatedMetrics["redis.clusterInfo.cluster_state"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "State of the cluster", ms.At(i).Description())
+					assert.Equal(t, "{state}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cluster_state")
+					assert.True(t, ok)
+					assert.Equal(t, "ok", attrVal.Str())
+				case "redis.clusterInfo.cluster_stats_messages_received":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_stats_messages_received"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_stats_messages_received")
+					validatedMetrics["redis.clusterInfo.cluster_stats_messages_received"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of messages received by the cluster", ms.At(i).Description())
+					assert.Equal(t, "{message}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.cluster_stats_messages_sent":
+					assert.False(t, validatedMetrics["redis.clusterInfo.cluster_stats_messages_sent"], "Found a duplicate in the metrics slice: redis.clusterInfo.cluster_stats_messages_sent")
+					validatedMetrics["redis.clusterInfo.cluster_stats_messages_sent"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of messages sent by the cluster", ms.At(i).Description())
+					assert.Equal(t, "{message}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.clusterInfo.total_cluster_links_buffer_limit_exceeded":
+					assert.False(t, validatedMetrics["redis.clusterInfo.total_cluster_links_buffer_limit_exceeded"], "Found a duplicate in the metrics slice: redis.clusterInfo.total_cluster_links_buffer_limit_exceeded")
+					validatedMetrics["redis.clusterInfo.total_cluster_links_buffer_limit_exceeded"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of times the cluster links buffer limit was exceeded", ms.At(i).Description())
+					assert.Equal(t, "{exceed}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
