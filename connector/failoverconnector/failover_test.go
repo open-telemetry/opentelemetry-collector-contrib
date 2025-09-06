@@ -81,7 +81,7 @@ func TestFailoverRecovery(t *testing.T) {
 		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
 		require.Eventually(t, func() bool {
-			return consumeTracesAndCheckStable(failoverConnector, 2, tr)
+			return consumeTracesAndCheckStable(tRouter, 2, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
 		// Simulate recovery of exporter
