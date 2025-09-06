@@ -41,6 +41,13 @@ func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
 	return tr
 }
 
+func addTestMetric(_ *testing.T, rm pmetric.ResourceMetrics) {
+	met := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	met.SetEmptyGauge()
+	met.SetName("test.metric")
+	met.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.0)
+}
+
 func TestRunningMetrics(t *testing.T) {
 	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
