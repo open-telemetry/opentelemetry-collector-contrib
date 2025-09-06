@@ -63,8 +63,8 @@ func setNatsUserInfoOption(options *nats.Options, cfg *UserInfoConfig) {
 	options.Password = cfg.Password
 }
 
-func setNatsNKeyOption(options *nats.Options, cfg *NKeyConfig) error {
-	keyPair, err := nkeys.FromSeed([]byte(cfg.Seed))
+func setNatsNKeyOption(options *nats.Options, cfg *NkeyConfig) error {
+	keyPair, err := nkeys.FromSeed(cfg.Seed)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func setNatsNKeyOption(options *nats.Options, cfg *NKeyConfig) error {
 }
 
 func setNatsUserJWTOption(options *nats.Options, cfg *UserJWTConfig) error {
-	keyPair, err := nkeys.FromSeed([]byte(cfg.Seed))
+	keyPair, err := nkeys.FromSeed(cfg.Seed)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func setNatsUserJWTOption(options *nats.Options, cfg *UserJWTConfig) error {
 
 func setNatsUserCredentialsOption(options *nats.Options, cfg *UserCredentialsConfig) error {
 	var errs error
-	userConfig, err := os.ReadFile(cfg.UserFile)
+	userConfig, err := os.ReadFile(cfg.UserFilePath)
 	errs = multierr.Append(errs, err)
 	userJwt, err := jwt.ParseDecoratedJWT(userConfig)
 	errs = multierr.Append(errs, err)
@@ -114,8 +114,8 @@ func setNatsAuthOption(options *nats.Options, cfg *AuthConfig) error {
 	if cfg.Token != nil {
 		setNatsTokenOption(options, cfg.Token)
 	}
-	if cfg.NKey != nil {
-		errs = multierr.Append(errs, setNatsNKeyOption(options, cfg.NKey))
+	if cfg.Nkey != nil {
+		errs = multierr.Append(errs, setNatsNKeyOption(options, cfg.Nkey))
 	}
 	if cfg.UserJWT != nil {
 		errs = multierr.Append(errs, setNatsUserJWTOption(options, cfg.UserJWT))

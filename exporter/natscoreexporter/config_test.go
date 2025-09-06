@@ -41,14 +41,14 @@ func TestConfigValidate(t *testing.T) {
 			err: errors.New("failed to parse logs subject"),
 		},
 		{
-			name: "returns error for built-in marshaler and encoding extension configured simultaneously",
+			name: "returns error for marshaler configured more than once",
 			cfg: Config{
 				Logs: LogsConfig{
 					BuiltinMarshalerName:  "otlp_json",
 					EncodingExtensionName: "otlp",
 				},
 			},
-			err: errors.New("built-in marshaler and encoding extension configured simultaneously"),
+			err: errors.New("marshaler configured more than once"),
 		},
 		{
 			name: "returns error for unsupported built-in marshaler",
@@ -63,7 +63,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "returns error for invalid encoding extension name",
 			cfg: Config{
 				Logs: LogsConfig{
-					EncodingExtensionName: "",
+					EncodingExtensionName: "/",
 				},
 			},
 			err: errors.New("failed to unmarshal encoding extension name"),
@@ -91,19 +91,20 @@ func TestConfigValidate(t *testing.T) {
 			err: errors.New("incomplete user_info configuration"),
 		},
 		{
-			name: "returns error for multiple auth methods configured simultaneously",
+			name: "returns error if NKey auth configured more than once",
 			cfg: Config{
 				Auth: AuthConfig{
-					Token: &TokenConfig{
-						Token: "token",
-					},
-					NKey: &NKeyConfig{
+					Nkey: &NkeyConfig{
 						PublicKey: "public_key",
-						Seed:      "seed",
+						Seed:      []byte("seed"),
+					},
+					UserJWT: &UserJWTConfig{
+						JWT:  "jwt",
+						Seed: []byte("seed"),
 					},
 				},
 			},
-			err: errors.New("multiple auth methods configured simultaneously"),
+			err: errors.New("NKey auth configured more than once"),
 		},
 	}
 	for _, tt := range tests {

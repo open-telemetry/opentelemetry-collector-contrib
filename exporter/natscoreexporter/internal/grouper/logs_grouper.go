@@ -108,7 +108,7 @@ func (g *logsGrouper) Group(ctx context.Context, srcLogs plog.Logs) ([]Group[plo
 
 var _ Grouper[plog.Logs] = (*logsGrouper)(nil)
 
-func NewLogsGrouper(subject string, telemetrySettings component.TelemetrySettings) (Grouper[plog.Logs], error) {
+func NewLogsGrouper(subject string, telemetrySettings component.TelemetrySettings) (*logsGrouper, error) {
 	parser, err := ottllog.NewParser(
 		ottlfuncs.StandardConverters[ottllog.TransformContext](),
 		telemetrySettings,

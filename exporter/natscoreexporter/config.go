@@ -73,14 +73,14 @@ type UserInfoConfig struct {
 	_ struct{}
 }
 
-// NKeyConfig defines the configuration for NKey auth.
+// NkeyConfig defines the configuration for NKey auth.
 //
 // See: https://pkg.go.dev/github.com/nats-io/nats.go#Nkey
-type NKeyConfig struct {
+type NkeyConfig struct {
 	// PublicKey is the public key to use for NKey auth.
 	PublicKey string `mapstructure:"public_key"`
 	// Seed is the seed to use for NKey auth.
-	Seed string `mapstructure:"seed"`
+	Seed []byte `mapstructure:"seed"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
@@ -93,7 +93,7 @@ type UserJWTConfig struct {
 	// JWT is the JWT to use for NKey auth via JWT.
 	JWT string `mapstructure:"jwt"`
 	// Seed is the seed to use for NKey auth via JWT.
-	Seed string `mapstructure:"seed"`
+	Seed []byte `mapstructure:"seed"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
@@ -103,8 +103,8 @@ type UserJWTConfig struct {
 //
 // See: https://pkg.go.dev/github.com/nats-io/nats.go#UserCredentials
 type UserCredentialsConfig struct {
-	// UserFile is the path to the user credentials file to use for NKey auth via credentials file.
-	UserFile string `mapstructure:"user_file"`
+	// UserFilePath is the path to the user credentials file to use for NKey auth via credentials file.
+	UserFilePath string `mapstructure:"user_file"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
@@ -120,13 +120,13 @@ type AuthConfig struct {
 	// UserInfo holds the configuration for username/password auth.
 	UserInfo *UserInfoConfig `mapstructure:"user_info"`
 
-	// NKey holds the configuration for NKey auth.
-	NKey *NKeyConfig `mapstructure:"nkey"`
+	// Nkey holds the configuration for NKey auth.
+	Nkey *NkeyConfig `mapstructure:"nkey"`
 
-	// UserJWT holds the configuration for JWT auth.
+	// UserJWT holds the configuration for NKey auth via JWT.
 	UserJWT *UserJWTConfig `mapstructure:"user_jwt"`
 
-	// UserCredentials holds the configuration for credentials file auth.
+	// UserCredentials holds the configuration for NKey auth via credentials file.
 	UserCredentials *UserCredentialsConfig `mapstructure:"user_credentials"`
 
 	// Prevent unkeyed literal initialization
@@ -162,7 +162,7 @@ func (c *SignalConfig) Validate() error {
 	var errs error
 
 	if c.BuiltinMarshalerName != "" && c.EncodingExtensionName != "" {
-		errs = multierr.Append(errs, errors.New("built-in marshaler and encoding extension configured simultaneously"))
+		errs = multierr.Append(errs, errors.New("marshaler configured more than once"))
 	}
 
 	if c.BuiltinMarshalerName != "" {
@@ -256,22 +256,22 @@ func (c *UserInfoConfig) Validate() error {
 	return nil
 }
 
-func (c *NKeyConfig) Validate() error {
-	if c.PublicKey == "" || c.Seed == "" {
+func (c *NkeyConfig) Validate() error {
+	if c.PublicKey == "" || c.Seed == nil {
 		return errors.New("incomplete nkey configuration")
 	}
 	return nil
 }
 
 func (c *UserJWTConfig) Validate() error {
-	if c.JWT == "" || c.Seed == "" {
+	if c.JWT == "" || c.Seed == nil {
 		return errors.New("incomplete user_jwt configuration")
 	}
 	return nil
 }
 
 func (c *UserCredentialsConfig) Validate() error {
-	if c.UserFile == "" {
+	if c.UserFilePath == "" {
 		return errors.New("incomplete user_credentials configuration")
 	}
 	return nil
@@ -279,40 +279,47 @@ func (c *UserCredentialsConfig) Validate() error {
 
 func (c *AuthConfig) Validate() error {
 	var errs error
-	authMethodsCount := 0
+
 	if c.Token != nil {
-		authMethodsCount++
 		if err := c.Token.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 	if c.UserInfo != nil {
-		authMethodsCount++
 		if err := c.UserInfo.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	if c.NKey != nil {
-		authMethodsCount++
-		if err := c.NKey.Validate(); err != nil {
+	if c.Nkey != nil {
+		if err := c.Nkey.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 	if c.UserJWT != nil {
-		authMethodsCount++
 		if err := c.UserJWT.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 	if c.UserCredentials != nil {
-		authMethodsCount++
 		if err := c.UserCredentials.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	if authMethodsCount > 1 {
-		errs = multierr.Append(errs, errors.New("multiple auth methods configured simultaneously"))
+
+	isConfiguredCount := 0
+	for _, isConfigured := range []bool{
+		c.Nkey != nil,
+		c.UserJWT != nil,
+		c.UserCredentials != nil,
+	} {
+		if isConfigured {
+			isConfiguredCount++
+		}
 	}
+	if isConfiguredCount > 1 {
+		errs = multierr.Append(errs, errors.New("NKey auth configured more than once"))
+	}
+
 	return errs
 }
 
