@@ -171,7 +171,7 @@ func TestEndsWith(t *testing.T) {
 
 			require.NoError(t, err)
 
-			result, err := expressionFunc(context.Background(), nil)
+			result, err := expressionFunc(t.Context(), nil)
 			if tt.expectErr {
 				require.Error(t, err)
 				return

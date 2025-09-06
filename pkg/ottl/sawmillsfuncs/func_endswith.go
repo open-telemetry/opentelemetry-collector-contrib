@@ -6,7 +6,6 @@ package sawmillsfuncs // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -33,12 +32,12 @@ func createEndsWithFunction[K any](
 	args, ok := oArgs.(*EndsWithArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf(
+		return nil, errors.New(
 			"NewEndsWithFactory args must be of type *EndsWithArguments[K]",
 		)
 	}
 
-	return endsWith(args.Target, args.Suffixes, args.CaseSensitive)
+	return endsWith(args.Target, args.Suffixes, args.CaseSensitive), nil
 }
 
 func endsWithAny(s string, suffixes []string) bool {
@@ -54,7 +53,7 @@ func endsWith[K any](
 	target ottl.StringGetter[K],
 	suffixes []string,
 	caseSensitive bool,
-) (ottl.ExprFunc[K], error) {
+) ottl.ExprFunc[K] {
 	var processedSuffixes []string
 	if !caseSensitive {
 		processedSuffixes = make([]string, len(suffixes))
@@ -82,5 +81,5 @@ func endsWith[K any](
 			val = strings.ToLower(val)
 		}
 		return endsWithAny(val, processedSuffixes), nil
-	}, nil
+	}
 }

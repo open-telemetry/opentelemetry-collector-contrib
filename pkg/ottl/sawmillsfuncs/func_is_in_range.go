@@ -5,7 +5,7 @@ package sawmillsfuncs // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -47,18 +47,18 @@ func createIsInRangeFunction[K any](
 ) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*IsInRangeArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("IsInRangeFactory args must be of type *IsInRangeArguments[K]")
+		return nil, errors.New("IsInRangeFactory args must be of type *IsInRangeArguments[K]")
 	}
 
 	// Validate that all required arguments are provided
 	if args.Target == nil {
-		return nil, fmt.Errorf("target is required")
+		return nil, errors.New("target is required")
 	}
 	if args.Min == nil {
-		return nil, fmt.Errorf("min is required")
+		return nil, errors.New("min is required")
 	}
 	if args.Max == nil {
-		return nil, fmt.Errorf("max is required")
+		return nil, errors.New("max is required")
 	}
 
 	// Validation Phase:
@@ -70,33 +70,33 @@ func createIsInRangeFunction[K any](
 	// Validate target type
 	target, err := args.Target.Get(ctx, *new(K))
 	if err != nil {
-		return nil, fmt.Errorf("target must be a number")
+		return nil, errors.New("target must be a number")
 	}
 	if target == nil {
-		return nil, fmt.Errorf("target value is nil")
+		return nil, errors.New("target value is nil")
 	}
 
 	// Validate min type
-	min, err := args.Min.Get(ctx, *new(K))
+	minVal, err := args.Min.Get(ctx, *new(K))
 	if err != nil {
-		return nil, fmt.Errorf("min must be a number")
+		return nil, errors.New("min must be a number")
 	}
-	if min == nil {
-		return nil, fmt.Errorf("min value is nil")
+	if minVal == nil {
+		return nil, errors.New("min value is nil")
 	}
 
 	// Validate max type
-	max, err := args.Max.Get(ctx, *new(K))
+	maxVal, err := args.Max.Get(ctx, *new(K))
 	if err != nil {
-		return nil, fmt.Errorf("max must be a number")
+		return nil, errors.New("max must be a number")
 	}
-	if max == nil {
-		return nil, fmt.Errorf("max value is nil")
+	if maxVal == nil {
+		return nil, errors.New("max value is nil")
 	}
 
 	// Validate that min <= max using the validation values
-	if *min > *max {
-		return nil, fmt.Errorf("min must be less than or equal to max")
+	if *minVal > *maxVal {
+		return nil, errors.New("min must be less than or equal to max")
 	}
 
 	// Runtime Phase:
@@ -109,28 +109,28 @@ func createIsInRangeFunction[K any](
 			return nil, err
 		}
 		if target == nil {
-			return nil, fmt.Errorf("target value is nil")
+			return nil, errors.New("target value is nil")
 		}
 
 		// Get the current min value from the runtime context
-		min, err := args.Min.Get(ctx, tCtx)
+		minVal, err := args.Min.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if min == nil {
-			return nil, fmt.Errorf("min value is nil")
+		if minVal == nil {
+			return nil, errors.New("min value is nil")
 		}
 
 		// Get the current max value from the runtime context
-		max, err := args.Max.Get(ctx, tCtx)
+		maxVal, err := args.Max.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if max == nil {
-			return nil, fmt.Errorf("max value is nil")
+		if maxVal == nil {
+			return nil, errors.New("max value is nil")
 		}
 
 		// Check if target is in range [min, max]
-		return *target >= *min && *target <= *max, nil
+		return *target >= *minVal && *target <= *maxVal, nil
 	}, nil
 }

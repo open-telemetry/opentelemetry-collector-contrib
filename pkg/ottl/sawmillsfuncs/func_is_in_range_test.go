@@ -279,7 +279,7 @@ func TestIsInRange(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			result, err := function(context.Background(), nil)
+			result, err := function(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})

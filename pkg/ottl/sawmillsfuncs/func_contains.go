@@ -6,7 +6,6 @@ package sawmillsfuncs // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -33,12 +32,12 @@ func createContainsFunction[K any](
 	args, ok := oArgs.(*ContainsArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf(
+		return nil, errors.New(
 			"NewContainsFactory args must be of type *ContainsArguments[K]",
 		)
 	}
 
-	return contains(args.Target, args.Patterns, args.CaseSensitive)
+	return contains(args.Target, args.Patterns, args.CaseSensitive), nil
 }
 
 func containsAny(s string, substrings []string) bool {
@@ -54,7 +53,7 @@ func contains[K any](
 	target ottl.StringGetter[K],
 	patterns []string,
 	caseSensitive bool,
-) (ottl.ExprFunc[K], error) {
+) ottl.ExprFunc[K] {
 	var processedPatterns []string
 	if !caseSensitive {
 		processedPatterns = make([]string, len(patterns))
@@ -82,5 +81,5 @@ func contains[K any](
 			val = strings.ToLower(val)
 		}
 		return containsAny(val, processedPatterns), nil
-	}, nil
+	}
 }

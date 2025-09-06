@@ -12,11 +12,11 @@ import (
 type Matcher interface {
 	MatchString(s string) bool
 	FindAllString(s string, n int) []string
-	ReplaceAllString(s string, replacement string) string
+	ReplaceAllString(s, replacement string) string
 	SubexpNames() []string
 	FindStringSubmatch(s string) []string
 	FindAllStringSubmatchIndex(s string, n int) [][]int
-	ExpandString(dst []byte, template string, src string, match []int) []byte
+	ExpandString(dst []byte, template, src string, match []int) []byte
 }
 
 const patternLengthThreshold = 200 // the threshold is chosen based on the performance of the regex engine

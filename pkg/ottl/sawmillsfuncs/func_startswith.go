@@ -6,7 +6,6 @@ package sawmillsfuncs // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -33,12 +32,12 @@ func createStartsWithFunction[K any](
 	args, ok := oArgs.(*StartsWithArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf(
+		return nil, errors.New(
 			"NewStartsWithFactory args must be of type *StartsWithArguments[K]",
 		)
 	}
 
-	return startsWith(args.Target, args.Prefixes, args.CaseSensitive)
+	return startsWith(args.Target, args.Prefixes, args.CaseSensitive), nil
 }
 
 func startsWithAny(s string, prefixes []string) bool {
@@ -54,7 +53,7 @@ func startsWith[K any](
 	target ottl.StringGetter[K],
 	prefixes []string,
 	caseSensitive bool,
-) (ottl.ExprFunc[K], error) {
+) ottl.ExprFunc[K] {
 	var processedPrefixes []string
 	if !caseSensitive {
 		processedPrefixes = make([]string, len(prefixes))
@@ -82,5 +81,5 @@ func startsWith[K any](
 			val = strings.ToLower(val)
 		}
 		return startsWithAny(val, processedPrefixes), nil
-	}, nil
+	}
 }

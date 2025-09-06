@@ -6,15 +6,13 @@ package sawmillsfuncs
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_splitMetricByAttributes(t *testing.T) {
@@ -609,11 +607,10 @@ func Test_splitMetricByAttributes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := splitMetricByAttributes[ottlmetric.TransformContext](
+			evaluate := splitMetricByAttributes[ottlmetric.TransformContext](
 				tt.prefix,
 				tt.attributes,
 			)
-			require.NoError(t, err)
 
 			ms := pmetric.NewMetricSlice()
 			input := tt.input()
@@ -623,7 +620,7 @@ func Test_splitMetricByAttributes(t *testing.T) {
 			ms.CopyTo(expected)
 			tt.want(expected)
 
-			_, err = evaluate(
+			_, err := evaluate(
 				nil,
 				ottlmetric.NewTransformContext(
 					input,
