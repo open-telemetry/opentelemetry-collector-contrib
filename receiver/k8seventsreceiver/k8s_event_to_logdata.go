@@ -11,6 +11,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 const (
@@ -29,10 +31,12 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
-func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
+func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName(metadata.ScopeName)
+	sl.Scope().SetVersion(version)
 	lr := sl.LogRecords().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
