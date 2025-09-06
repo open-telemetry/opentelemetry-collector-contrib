@@ -42,8 +42,8 @@ func ParseRequest(
 		}
 	}()
 
-	if err := validateContentType(req); err != nil {
-		return nil, err
+	if validateErr := validateContentType(req); validateErr != nil {
+		return nil, validateErr
 	}
 
 	datadogRecords, err := parseDatadogRecords(body, logger)

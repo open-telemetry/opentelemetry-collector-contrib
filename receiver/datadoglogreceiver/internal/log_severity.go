@@ -49,29 +49,31 @@ func extractSeverity(input []byte) string {
 			tokens := tokenLengths[n]
 			for _, token := range tokens {
 				// Compare the substring with the token (case-insensitive)
-				if equalFoldBytes(substr, []byte(token)) {
-					// Check if the token is at word boundaries
-					prevIsLetterOrDigit := i > 0 && isLetterOrDigit(input[i-1])
-					nextIsLetterOrDigit := i+n < inputLen && isLetterOrDigit(input[i+n])
-					if prevIsLetterOrDigit || nextIsLetterOrDigit {
-						continue // Not a word boundary, skip this match
-					}
-
-					// Special handling for single-letter tokens
-					if len(token) == 1 {
-						if i+n >= inputLen {
-							continue // Do not accept single-letter tokens at the end
-						}
-						nextChar := input[i+n]
-						// Ensure the next character is a separator or space
-						if !isSeparator(nextChar) && !isSpace(nextChar) {
-							continue // Do not accept the match
-						}
-					}
-
-					// Return the corresponding severity level
-					return tokenToSeverity[token]
+				if !equalFoldBytes(substr, []byte(token)) {
+					continue
 				}
+
+				// Check if the token is at word boundaries
+				prevIsLetterOrDigit := i > 0 && isLetterOrDigit(input[i-1])
+				nextIsLetterOrDigit := i+n < inputLen && isLetterOrDigit(input[i+n])
+				if prevIsLetterOrDigit || nextIsLetterOrDigit {
+					continue // Not a word boundary, skip this match
+				}
+
+				// Special handling for single-letter tokens
+				if len(token) == 1 {
+					if i+n >= inputLen {
+						continue // Do not accept single-letter tokens at the end
+					}
+					nextChar := input[i+n]
+					// Ensure the next character is a separator or space
+					if !isSeparator(nextChar) && !isSpace(nextChar) {
+						continue // Do not accept the match
+					}
+				}
+
+				// Return the corresponding severity level
+				return tokenToSeverity[token]
 			}
 		}
 	}
