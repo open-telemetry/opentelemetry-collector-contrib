@@ -252,10 +252,6 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 		errs = multierr.Append(errs, fmt.Errorf("profileID does not match expected '%s', actual '%s'", expected.ProfileID().String(), actual.ProfileID().String()))
 	}
 
-	if !reflect.DeepEqual(expected.LocationIndices(), actual.LocationIndices()) {
-		errs = multierr.Append(errs, errors.New("locationIndicies do not match expected"))
-	}
-
 	if !reflect.DeepEqual(expected.CommentStrindices(), actual.CommentStrindices()) {
 		errs = multierr.Append(errs, errors.New("comment does not match expected"))
 	}
@@ -280,10 +276,6 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 		errs = multierr.Append(errs, fmt.Errorf("period does not match expected '%d', actual '%d'", expected.Period(), actual.Period()))
 	}
 
-	if expected.DefaultSampleTypeIndex() != actual.DefaultSampleTypeIndex() {
-		errs = multierr.Append(errs, fmt.Errorf("defaultSampleType does not match expected '%d', actual '%d'", expected.DefaultSampleTypeIndex(), actual.DefaultSampleTypeIndex()))
-	}
-
 	if expected.PeriodType().TypeStrindex() != actual.PeriodType().TypeStrindex() ||
 		expected.PeriodType().UnitStrindex() != actual.PeriodType().UnitStrindex() ||
 		expected.PeriodType().AggregationTemporality() != actual.PeriodType().AggregationTemporality() {
@@ -292,73 +284,21 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 			actual.PeriodType().UnitStrindex(), actual.PeriodType().TypeStrindex(), actual.PeriodType().AggregationTemporality()))
 	}
 
-	errs = multierr.Append(errs, internal.AddErrPrefix("sampleType", CompareProfileValueTypeSlice(expected.SampleType(), actual.SampleType())))
+	errs = multierr.Append(errs, internal.AddErrPrefix("sampleType", CompareProfileValueType(expected.SampleType(), actual.SampleType())))
 
 	errs = multierr.Append(errs, internal.AddErrPrefix("sample", CompareProfileSampleSlice(expected.Sample(), actual.Sample())))
 
 	return errs
 }
 
-func CompareProfileValueTypeSlice(expected, actual pprofile.ValueTypeSlice) error {
-	var errs error
-	if expected.Len() != actual.Len() {
-		errs = multierr.Append(errs, fmt.Errorf("number of valueTypes doesn't match expected: %d, actual: %d",
-			expected.Len(), actual.Len()))
-		return errs
+func CompareProfileValueType(expected, actual pprofile.ValueType) error {
+	if !isValueTypeEqual(expected, actual) {
+		return fmt.Errorf(`expected valueType "unit: %d, type: %d, aggregationTemporality: %d",`+
+			`got "unit: %d, type: %d, aggregationTemporality: %d"`, expected.UnitStrindex(), expected.TypeStrindex(), expected.AggregationTemporality(),
+			actual.UnitStrindex(), actual.TypeStrindex(), actual.AggregationTemporality())
 	}
 
-	numValueTypes := expected.Len()
-
-	matchingValueTypes := make(map[pprofile.ValueType]pprofile.ValueType, numValueTypes)
-
-	var outOfOrderErrs error
-	for e := 0; e < numValueTypes; e++ {
-		elr := expected.At(e)
-		var foundMatch bool
-		for a := 0; a < numValueTypes; a++ {
-			alr := actual.At(a)
-			if _, ok := matchingValueTypes[alr]; ok {
-				continue
-			}
-			if elr.TypeStrindex() == alr.TypeStrindex() && elr.UnitStrindex() == alr.UnitStrindex() {
-				foundMatch = true
-				matchingValueTypes[alr] = elr
-				if e != a {
-					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`valueTypes are out of order: valueType "unit: %d, type: %d, aggregationTemporality: %d" expected at index %d, found at index %d`,
-							elr.UnitStrindex(), elr.TypeStrindex(), elr.AggregationTemporality(), e, a))
-				}
-				break
-			}
-		}
-		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected valueType "unit: %d, type: %d, aggregationTemporality: %d"`, elr.UnitStrindex(), elr.TypeStrindex(), elr.AggregationTemporality()))
-		}
-	}
-
-	for i := 0; i < numValueTypes; i++ {
-		if _, ok := matchingValueTypes[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected valueType "unit: %d, type: %d, aggregationTemporality: %d"`,
-				actual.At(i).UnitStrindex(), actual.At(i).TypeStrindex(), actual.At(i).AggregationTemporality()))
-		}
-	}
-
-	if errs != nil {
-		return errs
-	}
-	if outOfOrderErrs != nil {
-		return outOfOrderErrs
-	}
-
-	for alr, elr := range matchingValueTypes {
-		if !isValueTypeEqual(elr, alr) {
-			errs = multierr.Append(errs, fmt.Errorf(`expected valueType "unit: %d, type: %d, aggregationTemporality: %d",`+
-				`got "unit: %d, type: %d, aggregationTemporality: %d"`, elr.UnitStrindex(), elr.TypeStrindex(), elr.AggregationTemporality(),
-				alr.UnitStrindex(), alr.TypeStrindex(), alr.AggregationTemporality()))
-		}
-	}
-
-	return errs
+	return nil
 }
 
 func isValueTypeEqual(expected, actual pprofile.ValueType) bool {
@@ -428,20 +368,13 @@ func CompareProfileSampleSlice(expected, actual pprofile.SampleSlice) error {
 
 func CompareProfileSample(expected, actual pprofile.Sample) error {
 	var errs error
-	if expected.LocationsStartIndex() != actual.LocationsStartIndex() {
-		errs = multierr.Append(errs, fmt.Errorf("expected locationStartIndex '%d', got '%d'", expected.LocationsStartIndex(), actual.LocationsStartIndex()))
-	}
-
-	if expected.LocationsLength() != actual.LocationsLength() {
-		errs = multierr.Append(errs, fmt.Errorf("expected locationLenght '%d', got '%d'", expected.LocationsLength(), actual.LocationsLength()))
-	}
 
 	if !reflect.DeepEqual(expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()) {
 		errs = multierr.Append(errs, fmt.Errorf("expected timestampUnixNano '%v', got '%v'", expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()))
 	}
 
-	if !reflect.DeepEqual(expected.Value().AsRaw(), actual.Value().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("expected value '%v', got '%v'", expected.Value().AsRaw(), actual.Value().AsRaw()))
+	if !reflect.DeepEqual(expected.Values().AsRaw(), actual.Values().AsRaw()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected values '%v', got '%v'", expected.Values().AsRaw(), actual.Values().AsRaw()))
 	}
 
 	if !reflect.DeepEqual(expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()) {
@@ -507,25 +440,13 @@ func CompareProfileMappingSlice(expected, actual pprofile.MappingSlice) error {
 	}
 
 	for alr, elr := range matchingItems {
-		if !isMappingEqual(elr, alr) {
+		if !elr.Equal(alr) {
 			errs = multierr.Append(errs, fmt.Errorf(`mapping with "attributes: %v", does not match expected`,
 				alr.AttributeIndices().AsRaw()))
 		}
 	}
 
 	return errs
-}
-
-func isMappingEqual(expected, actual pprofile.Mapping) bool {
-	return expected.MemoryStart() == actual.MemoryStart() &&
-		expected.MemoryLimit() == actual.MemoryLimit() &&
-		expected.FileOffset() == actual.FileOffset() &&
-		expected.FilenameStrindex() == actual.FilenameStrindex() &&
-		reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) &&
-		expected.HasFunctions() == actual.HasFunctions() &&
-		expected.HasFilenames() == actual.HasFilenames() &&
-		expected.HasLineNumbers() == actual.HasLineNumbers() &&
-		expected.HasInlineFrames() == actual.HasInlineFrames()
 }
 
 func CompareProfileFunctionSlice(expected, actual pprofile.FunctionSlice) error {
@@ -665,10 +586,6 @@ func CompareProfileLocation(expected, actual pprofile.Location) error {
 		errs = multierr.Append(errs, fmt.Errorf("expected address '%d', got '%d'", expected.Address(), actual.Address()))
 	}
 
-	if expected.IsFolded() != actual.IsFolded() {
-		errs = multierr.Append(errs, fmt.Errorf("expected isFolded '%v', got '%v'", expected.IsFolded(), actual.IsFolded()))
-	}
-
 	if !reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) {
 		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()))
 	}
@@ -745,17 +662,17 @@ func isLineEqual(expected, actual pprofile.Line) bool {
 		expected.Column() == actual.Column()
 }
 
-func CompareProfileAttributeUnitSlice(expected, actual pprofile.AttributeUnitSlice) error {
+func CompareKeyValueAndUnitSlice(expected, actual pprofile.KeyValueAndUnitSlice) error {
 	var errs error
 	if expected.Len() != actual.Len() {
-		errs = multierr.Append(errs, fmt.Errorf("number of attributeUnits doesn't match expected: %d, actual: %d",
+		errs = multierr.Append(errs, fmt.Errorf("number of keyValueAndUnits doesn't match expected: %d, actual: %d",
 			expected.Len(), actual.Len()))
 		return errs
 	}
 
 	numItems := expected.Len()
 
-	matchingItems := make(map[pprofile.AttributeUnit]pprofile.AttributeUnit, numItems)
+	matchingItems := make(map[pprofile.KeyValueAndUnit]pprofile.KeyValueAndUnit, numItems)
 
 	var outOfOrderErrs error
 	for e := 0; e < numItems; e++ {
@@ -766,26 +683,26 @@ func CompareProfileAttributeUnitSlice(expected, actual pprofile.AttributeUnitSli
 			if _, ok := matchingItems[alr]; ok {
 				continue
 			}
-			if elr.AttributeKeyStrindex() == alr.AttributeKeyStrindex() && elr.UnitStrindex() == alr.UnitStrindex() {
+			if elr.KeyStrindex() == alr.KeyStrindex() && elr.Value().AsRaw() == alr.Value().AsRaw() && elr.UnitStrindex() == alr.UnitStrindex() {
 				foundMatch = true
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`attributeUnits are out of order: attributeUnit "attributeKey: %d" expected at index %d, found at index %d`,
-							elr.AttributeKeyStrindex(), e, a))
+						fmt.Errorf(`keyValueAndUnits are out of order: keyValueAndUnit "key: %d" expected at index %d, found at index %d`,
+							elr.KeyStrindex(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected attributeUnit "attributeKey: %d"`, elr.AttributeKeyStrindex()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected keyValueAndUnit "key: %d"`, elr.KeyStrindex()))
 		}
 	}
 
 	for i := 0; i < numItems; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected profile attributeUnit "attributeKey: %d"`,
-				actual.At(i).AttributeKeyStrindex()))
+			errs = multierr.Append(errs, fmt.Errorf(`unexpected profile keyValueAndUnit "key: %d"`,
+				actual.At(i).KeyStrindex()))
 		}
 	}
 

@@ -23,22 +23,12 @@ func ValidateProfile(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error
 		errs = errors.Join(errs, errors.New("string table must start with the empty string"))
 	}
 
-	if pp.SampleType().Len() < 1 {
-		// Since the proto field 'default_sample_type_index' is always valid, there must be at least
-		// one sample type in the profile.
-		errs = errors.Join(errs, errors.New("missing sample type, need at least a default"))
-	}
-
 	errs = errors.Join(errs, validateSampleType(dic, pp))
 
 	errs = errors.Join(errs, validateSamples(dic, pp))
 
 	if err := validateValueType(stLen, pp.PeriodType()); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("period_type: %w", err))
-	}
-
-	if err := validateIndex(stLen, pp.DefaultSampleTypeIndex()); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("default_sample_type_strindex: %w", err))
 	}
 
 	if err := validateIndices(stLen, pp.CommentStrindices()); err != nil {
@@ -49,7 +39,7 @@ func ValidateProfile(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error
 		errs = errors.Join(errs, fmt.Errorf("attribute_indices: %w", err))
 	}
 
-	errs = errors.Join(errs, validateAttributeUnits(dic))
+	errs = errors.Join(errs, validateKeyValueAndUnits(dic))
 
 	return errs
 }
@@ -75,16 +65,12 @@ func validateIndex(length int, idx int32) error {
 }
 
 func validateSampleType(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error {
-	var errs error
-
 	stLen := dic.StringTable().Len()
-	for i := range pp.SampleType().Len() {
-		if err := validateValueType(stLen, pp.SampleType().At(i)); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("sample_type[%d]: %w", i, err))
-		}
+	if err := validateValueType(stLen, pp.SampleType()); err != nil {
+		return fmt.Errorf("sample_type: %w", err)
 	}
 
-	return errs
+	return nil
 }
 
 func validateValueType(stLen int, pvt pprofile.ValueType) error {
@@ -122,45 +108,6 @@ func validateSamples(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error
 func validateSample(dic pprofile.ProfilesDictionary, pp pprofile.Profile, sample pprofile.Sample) error {
 	var errs error
 
-	length := sample.LocationsLength()
-	if length < 0 {
-		errs = errors.Join(errs, fmt.Errorf("locations_length %d is negative", length))
-	}
-
-	if length > 0 {
-		start := sample.LocationsStartIndex()
-		if err := validateIndex(pp.LocationIndices().Len(), start); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("locations_start_index: %w", err))
-		}
-
-		end := start + length
-		if err := validateIndex(pp.LocationIndices().Len(), end-1); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("locations end (%d+%d): %w", start, length, err))
-		}
-
-		if errs != nil {
-			// Return here to avoid panicking when accessing the location indices.
-			return errs
-		}
-
-		for i := start; i < end; i++ {
-			locIdx := pp.LocationIndices().At(int(i))
-			if err := validateIndex(dic.LocationTable().Len(), locIdx); err != nil {
-				errs = errors.Join(errs, fmt.Errorf("location_indices[%d]: %w", i, err))
-				continue
-			}
-			if err := validateLocation(dic, dic.LocationTable().At(int(locIdx))); err != nil {
-				errs = errors.Join(errs, fmt.Errorf("locations[%d]: %w", i, err))
-			}
-		}
-	}
-
-	numValues := pp.SampleType().Len()
-	if sample.Value().Len() != numValues {
-		errs = errors.Join(errs, fmt.Errorf("value length %d does not match sample_type length=%d",
-			sample.Value().Len(), numValues))
-	}
-
 	if err := validateIndices(dic.AttributeTable().Len(), sample.AttributeIndices()); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("attribute_indices: %w", err))
 	}
@@ -175,7 +122,7 @@ func validateSample(dic pprofile.ProfilesDictionary, pp pprofile.Profile, sample
 		}
 	}
 
-	if sample.HasLinkIndex() {
+	if sample.LinkIndex() > 0 {
 		if err := validateIndex(dic.LinkTable().Len(), sample.LinkIndex()); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("link_index: %w", err))
 		}
@@ -187,7 +134,7 @@ func validateSample(dic pprofile.ProfilesDictionary, pp pprofile.Profile, sample
 func validateLocation(dic pprofile.ProfilesDictionary, loc pprofile.Location) error {
 	var errs error
 
-	if loc.HasMappingIndex() {
+	if loc.MappingIndex() > 0 {
 		if err := validateIndex(dic.MappingTable().Len(), loc.MappingIndex()); err != nil {
 			// Continuing would run into a panic.
 			return fmt.Errorf("mapping_index: %w", err)
@@ -233,11 +180,11 @@ func validateMapping(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) 
 	return errs
 }
 
-func validateAttributeUnits(dic pprofile.ProfilesDictionary) error {
+func validateKeyValueAndUnits(dic pprofile.ProfilesDictionary) error {
 	var errs error
 
-	for i := range dic.AttributeUnits().Len() {
-		if err := validateAttributeUnit(dic, dic.AttributeUnits().At(i)); err != nil {
+	for i := range dic.AttributeTable().Len() {
+		if err := validateKeyValueAndUnit(dic, dic.AttributeTable().At(i)); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("attribute_units[%d]: %w", i, err))
 		}
 	}
@@ -245,11 +192,11 @@ func validateAttributeUnits(dic pprofile.ProfilesDictionary) error {
 	return errs
 }
 
-func validateAttributeUnit(dic pprofile.ProfilesDictionary, au pprofile.AttributeUnit) error {
+func validateKeyValueAndUnit(dic pprofile.ProfilesDictionary, au pprofile.KeyValueAndUnit) error {
 	var errs error
 
-	if err := validateIndex(dic.StringTable().Len(), au.AttributeKeyStrindex()); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("attribute_key: %w", err))
+	if err := validateIndex(dic.StringTable().Len(), au.KeyStrindex()); err != nil {
+		errs = errors.Join(errs, fmt.Errorf("key: %w", err))
 	}
 
 	if err := validateIndex(dic.StringTable().Len(), au.UnitStrindex()); err != nil {

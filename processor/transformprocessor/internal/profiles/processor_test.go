@@ -1350,11 +1350,11 @@ func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, k
 	profile := td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(profileIndex)
 	switch v := value.(type) {
 	case string:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, pcommon.NewValueStr(v)))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueStr(v)))
 	case []any:
 		sl := pcommon.NewValueSlice()
 		require.NoError(t, sl.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, sl))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, sl))
 	default:
 		t.Fatalf("unsupported value type: %T", v)
 	}
@@ -1371,7 +1371,7 @@ func deleteProfileAttribute(pp pprofile.Profiles, idx int, key string) {
 	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
 	indices := profile.AttributeIndices().AsRaw()
 	for i := range indices {
-		if dic.AttributeTable().At(int(indices[i])).Key() == key {
+		if dic.StringTable().At(int(dic.AttributeTable().At(int(indices[i])).KeyStrindex())) == key {
 			indices[i] = indices[len(indices)-1]
 			profile.AttributeIndices().FromRaw(indices[:len(indices)-1])
 			return
@@ -1386,7 +1386,7 @@ func deleteProfileAttributeSequential(pp pprofile.Profiles, idx int, key string)
 	indices := profile.AttributeIndices().AsRaw()
 	j := 0
 	for i := range indices {
-		if dic.AttributeTable().At(int(indices[i])).Key() == key {
+		if dic.StringTable().At(int(dic.AttributeTable().At(int(indices[i])).KeyStrindex())) == key {
 			continue
 		}
 		indices[j] = indices[i]

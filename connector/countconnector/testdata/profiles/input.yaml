@@ -11,30 +11,26 @@ resourceProfiles:
       - profiles:
           - attributeIndices: [0, 1]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [0, 2]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [3]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
           - attributeIndices: []
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 100
         scope: {}
 
@@ -50,30 +46,26 @@ resourceProfiles:
       - profiles:
           - attributeIndices: [0, 1]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [0, 2]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [3]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
           - attributeIndices: []
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 100
         scope: {}
 
@@ -86,30 +78,26 @@ resourceProfiles:
       - profiles:
           - attributeIndices: [0, 1]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [0, 2]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [3]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
           - attributeIndices: []
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 100
         scope: {}
 
@@ -118,45 +106,45 @@ resourceProfiles:
       - profiles:
           - attributeIndices: [0, 1]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [0, 2]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [3]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
           - attributeIndices: []
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 100
         scope: {}
 dictionary:
   attributeTable:
-    - key: profile.required
+    - keyStrindex: 1
       value:
         stringValue: foo
-    - key: profile.optional
+    - keyStrindex: 2
       value:
         stringValue: bar
-    - key: profile.optional
+    - keyStrindex: 2
       value:
         stringValue: notbar
-    - key: profile.required
+    - keyStrindex: 1
       value:
         stringValue: notfoo
   stringTable:
     - count
+    - profile.required
+    - profile.optional
+  stackTable:
+    - {}
