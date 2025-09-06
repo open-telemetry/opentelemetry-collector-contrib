@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
@@ -79,10 +78,9 @@ func createDefaultConfig() component.Config {
 			NumStreams:        arrow.DefaultNumStreams,
 			MaxStreamLifetime: arrow.DefaultMaxStreamLifetime,
 
-			Zstd:        zstd.DefaultEncoderConfig(),
 			Prioritizer: arrow.DefaultPrioritizer,
 
-			// Note the default payload compression is
+			// Note the default payload compression is on
 			PayloadCompression: arrow.DefaultPayloadCompression,
 		},
 	}
