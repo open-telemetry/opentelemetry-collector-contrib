@@ -390,6 +390,29 @@ func TestSamplesQuery(t *testing.T) {
 	}
 }
 
+func TestGetInstanceId(t *testing.T) {
+	localhostName, _ := os.Hostname()
+
+	hostString := "example.com:1521"
+	instanceID := getInstanceID(hostString, zap.NewNop())
+	assert.Equal(t, "example.com:1521", instanceID)
+
+	localHostStringUppercase := "Localhost:1521"
+	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
+
+	localHostString := "127.0.0.1:1521"
+	localInstanceID = getInstanceID(localHostString, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
+
+	localHostStringIPV6 := "[::1]:1521"
+	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
+}
+
 func readFile(fname string) []byte {
 	file, err := os.ReadFile(filepath.Join("testdata", fname))
 	if err != nil {
