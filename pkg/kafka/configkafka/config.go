@@ -197,14 +197,19 @@ type ProducerConfig struct {
 	// broker request. Defaults to 0 for unlimited. Similar to
 	// `queue.buffering.max.messages` in the JVM producer.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
+
+	// Whether or not to allow automatic topic creation.
+	// (default enabled).
+	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
 }
 
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
-		MaxMessageBytes:  1000000,
-		RequiredAcks:     WaitForLocal,
-		Compression:      "none",
-		FlushMaxMessages: 0,
+		MaxMessageBytes:        1000000,
+		RequiredAcks:           WaitForLocal,
+		Compression:            "none",
+		FlushMaxMessages:       0,
+		AllowAutoTopicCreation: true,
 	}
 }
 
