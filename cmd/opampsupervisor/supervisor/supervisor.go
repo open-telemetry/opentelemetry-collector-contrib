@@ -1964,10 +1964,14 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config. Reporting failed remote config status: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		return false
 	}
 	if configChanged {
 		// only report applying if the config has changed and will run agent with new config
 		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
+	} else {
+		// if the config has not changed report applied status, we should still report a status to the server in this case
+		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 	}
 
 	span.SetStatus(codes.Ok, "")
