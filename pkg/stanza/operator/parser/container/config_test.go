@@ -87,6 +87,14 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "filepath_pattern",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.FilePathPattern = ""
+					return cfg
+				}(),
+			},
+			{
 				Name: "parse_to_attributes",
 				Expect: func() *Config {
 					p := NewConfig()
