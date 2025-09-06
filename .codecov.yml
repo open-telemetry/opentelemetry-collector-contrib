@@ -200,6 +200,10 @@ component_management:
     name: exporter_kafka
     paths:
     - exporter/kafkaexporter/**
+  - component_id: exporter_kedascaler
+    name: exporter_kedascaler
+    paths:
+    - exporter/kedascalerexporter/**
   - component_id: exporter_loadbalancing
     name: exporter_loadbalancing
     paths:
@@ -624,6 +628,10 @@ component_management:
     name: receiver_couchdb
     paths:
     - receiver/couchdbreceiver/**
+  - component_id: receiver_datadoglog
+    name: receiver_datadoglog
+    paths:
+    - receiver/datadoglogreceiver/**
   - component_id: receiver_datadog
     name: receiver_datadog
     paths:
