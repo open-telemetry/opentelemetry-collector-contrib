@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: libhoneyreceiver
+note: Allow service.name with unset scope.name 
+issues: [42432]
+subtext:
+  This change allows the receiver to handle multiple service.names even if there are spans without the scope set.
+  It also avoids a panic when a downstream consumer is missing.
+change_logs: [user]

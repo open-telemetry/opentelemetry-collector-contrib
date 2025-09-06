@@ -6,6 +6,7 @@
 package supervisor
 
 import (
+	"context"
 	"flag"
 	"fmt"
 
@@ -76,13 +77,13 @@ func (ws *windowsService) start(elog *eventlog.Log) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	sup, err := NewSupervisor(logger, cfg)
+	sup, err := NewSupervisor(context.Background(), logger, cfg)
 	if err != nil {
 		return fmt.Errorf("new supervisor: %w", err)
 	}
 	ws.sup = sup
 
-	return ws.sup.Start()
+	return ws.sup.Start(context.Background())
 }
 
 func (ws *windowsService) stop() {

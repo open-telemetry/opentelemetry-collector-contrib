@@ -16,6 +16,7 @@ import (
 func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
 	recordIntDataPoint(mb, volumeMetrics.Available, s.AvailableBytes, currentTime)
 	recordIntDataPoint(mb, volumeMetrics.Capacity, s.CapacityBytes, currentTime)
+	recordIntDataPoint(mb, volumeMetrics.Used, s.UsedBytes, currentTime)
 	recordIntDataPoint(mb, volumeMetrics.Inodes, s.Inodes, currentTime)
 	recordIntDataPoint(mb, volumeMetrics.InodesFree, s.InodesFree, currentTime)
 	recordIntDataPoint(mb, volumeMetrics.InodesUsed, s.InodesUsed, currentTime)

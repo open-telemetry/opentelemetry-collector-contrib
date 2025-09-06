@@ -74,7 +74,7 @@ Amount of memory used to cache filesystem data, including tmpfs and shared memor
 
 ### container.memory.percent
 
-Percentage of memory used.
+Percentage of memory used. Not supported on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -82,7 +82,7 @@ Percentage of memory used.
 
 ### container.memory.total_cache
 
-Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).
+Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -90,7 +90,7 @@ Total amount of memory used by the processes of this cgroup (and descendants) th
 
 ### container.memory.usage.limit
 
-Memory limit of the container.
+Memory limit of the container. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -658,7 +658,7 @@ Number of bytes of file/anon cache that are queued for syncing to disk in this c
 
 ### container.network.io.usage.rx_errors
 
-Received errors.
+Received errors. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -686,7 +686,7 @@ Packets received.
 
 ### container.network.io.usage.tx_errors
 
-Sent errors.
+Sent errors. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

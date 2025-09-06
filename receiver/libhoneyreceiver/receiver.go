@@ -171,6 +171,34 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
+// writeLibhoneyError writes a bad request error response in the appropriate format for libhoney clients
+func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, errorMsg string) {
+	errorResponse := []response.ResponseInBatch{{
+		ErrorStr: errorMsg,
+		Status:   http.StatusBadRequest,
+	}}
+
+	var responseBody []byte
+	var err error
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		responseBody, err = msgpack.Marshal(errorResponse)
+		contentType = encoder.MsgpackContentType
+	default:
+		responseBody, err = json.Marshal(errorResponse)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		// Fallback to generic error if we can't marshal the response
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, http.StatusBadRequest, responseBody)
+}
+
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
@@ -189,12 +217,38 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		r.settings.Logger.Debug("dataset parsed", zap.String("dataset.parsed", dataset))
 	}
 
-	body, err := io.ReadAll(req.Body)
+	// The confighttp middleware automatically handles decompression based on Content-Encoding header
+	// However, there's a bug where some clients send uncompressed data with Content-Encoding headers
+	// This causes the decompressor middleware to panic. We wrap the read in panic recovery.
+
+	var body []byte
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				// Log the panic but don't expose internal details to the client
+				r.settings.Logger.Error("Panic during request body read (likely malformed compressed data)",
+					zap.Any("panic", panicVal),
+					zap.String("content-encoding", req.Header.Get("Content-Encoding")))
+				err = errors.New("failed to read request body: invalid compressed data")
+			}
+		}()
+		body, err = io.ReadAll(req.Body)
+	}()
+
 	if err != nil {
-		errorutil.HTTPError(resp, err)
+		r.settings.Logger.Error("Failed to read request body", zap.Error(err))
+		writeLibhoneyError(resp, enc, "failed to read request body")
+		// Drain any remaining body to allow connection reuse
+		if req.Body != nil {
+			_, _ = io.ReadAll(req.Body)
+			_ = req.Body.Close()
+		}
+		return
 	}
 	if err = req.Body.Close(); err != nil {
-		errorutil.HTTPError(resp, err)
+		r.settings.Logger.Error("Failed to close request body", zap.Error(err))
+		writeLibhoneyError(resp, enc, "failed to close request body")
+		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
 	switch req.Header.Get("Content-Type") {
@@ -204,6 +258,8 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		err = decoder.Decode(&libhoneyevents)
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
+			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
+			return
 		}
 		// Post-process msgpack events to ensure timestamps are set
 		for i := range libhoneyevents {
@@ -221,13 +277,18 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			}
 		}
 		if len(libhoneyevents) > 0 {
-			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			if libhoneyevents[0].MsgPackTimestamp != nil {
+				r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			} else {
+				r.settings.Logger.Debug("Decoding with msgpack worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			}
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case encoder.JSONContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
-			errorutil.HTTPError(resp, err)
+			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
+			return
 		}
 		if len(libhoneyevents) > 0 {
 			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
@@ -243,16 +304,24 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
-		ctx = r.obsreport.StartLogsOp(ctx)
-		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
-		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		if r.nextLogs != nil {
+			ctx = r.obsreport.StartLogsOp(ctx)
+			err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		} else {
+			r.settings.Logger.Debug("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+		}
 	}
 
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
-		ctx = r.obsreport.StartTracesOp(ctx)
-		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
-		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		if r.nextTraces != nil {
+			ctx = r.obsreport.StartTracesOp(ctx)
+			err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		} else {
+			r.settings.Logger.Debug("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+		}
 	}
 
 	if err != nil {

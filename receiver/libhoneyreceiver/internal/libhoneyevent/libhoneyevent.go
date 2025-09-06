@@ -142,7 +142,7 @@ func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serv
 			scopeLibraryVersion = scopeLibVer.(string)
 		}
 		newScope := SimpleScope{
-			ServiceName:    serviceName, // we only set the service name once. If the same library comes from multiple services in the same batch, we're in trouble.
+			ServiceName:    serviceName,
 			LibraryName:    scopeLibraryName.(string),
 			LibraryVersion: scopeLibraryVersion,
 			ScopeSpans:     ptrace.NewSpanSlice(),
@@ -151,7 +151,20 @@ func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serv
 		seen.Scope[scopeKey] = newScope
 		return scopeKey, nil
 	}
-	return "libhoney.receiver", errors.New("library name not found")
+	// Create a per-service default scope instead of using a global default
+	defaultScopeKey := serviceName + "-libhoney.receiver"
+	if _, ok := seen.Scope[defaultScopeKey]; !ok {
+		// Create a default scope for this specific service
+		newScope := SimpleScope{
+			ServiceName:    serviceName,
+			LibraryName:    "libhoney.receiver",
+			LibraryVersion: "1.0.0",
+			ScopeSpans:     ptrace.NewSpanSlice(),
+			ScopeLogs:      plog.NewLogRecordSlice(),
+		}
+		seen.Scope[defaultScopeKey] = newScope
+	}
+	return defaultScopeKey, errors.New("library name not found")
 }
 
 func spanIDFrom(s string) trc.SpanID {

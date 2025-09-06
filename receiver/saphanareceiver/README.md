@@ -59,8 +59,6 @@ GRANT OTEL_MONITORING TO otel_monitoring_user;
 
 ## Configuration
 
-> :information_source: This receiver is in beta and configuration fields are subject to change.
-
 The following settings are required:
 
 - `endpoint` (default: `localhost:33015`): The hostname/IP address and port of the SAP HANA instance

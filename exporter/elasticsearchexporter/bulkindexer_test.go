@@ -391,6 +391,38 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				),
 			},
 		},
+		{
+			name: "skip profiling version conflict logging",
+			roundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body: io.NopCloser(strings.NewReader(
+						`{"items":[{"create":{"_index":".profiling-stackframes-2024.06.01","status":400,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`)),
+				}, nil
+			},
+			wantMessage: "",
+			wantESBulkReqs: &metricdata.DataPoint[int64]{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(200),
+				),
+			},
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "failed_client"),
+					attribute.String("error.type", "version_conflict_engine_exception"),
+				),
+			},
+			wantESLatency: &metricdata.HistogramDataPoint[float64]{
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+					semconv.HTTPResponseStatusCode(200),
+				),
+			},
+		},
 	}
 
 	for _, tt := range tests {

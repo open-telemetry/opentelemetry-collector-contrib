@@ -62,7 +62,8 @@ The following allocatable resource types are available.
   - pods
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
-- `namespace`: Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed. 
+- `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
+- `namespaces`: Allows to observe resources for a list of given namespaces. If this option is set, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed, as those are cluster-scoped resources.
 
 Example:
 
@@ -286,8 +287,8 @@ subjects:
 EOF
 ```
 
-As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a
-particular namespace by setting the `namespace` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
+As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a list of
+particular namespaces by setting the `namespaces` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
 instead of granting the collector cluster-wide read access to resources.
 Note however, that in this case the following resources will not be observed by the `k8sclusterreceiver`:
 
@@ -295,7 +296,7 @@ Note however, that in this case the following resources will not be observed by 
 - `Namespaces`
 - `ClusterResourceQuotas`
 
-To use this approach, use the commands below to create the required `Role` and `RoleBinding`:
+To use this approach, use the commands below to create the required `Role` and `RoleBinding` for each of the namespaces the collector should observe:
 
 ```bash
 <<EOF | kubectl apply -f -
@@ -433,7 +434,7 @@ Example:
 Add the following rules to your ClusterRole:
 
 ```yaml
-- apigroups:
+- apiGroups:
   - quota.openshift.io
   resources:
   - clusterresourcequotas

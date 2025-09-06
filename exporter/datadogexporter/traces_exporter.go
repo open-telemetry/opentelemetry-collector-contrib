@@ -11,15 +11,15 @@ import (
 	"time"
 
 	gzip "github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/datadog-go/v5/statsd"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
@@ -36,6 +36,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
+
+var onceZorkianTracesWarning sync.Once
 
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
@@ -92,6 +94,9 @@ func newTracesExporter(
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
+		onceZorkianTracesWarning.Do(func() {
+			exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
+		})
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exp.client = client
@@ -181,6 +186,9 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts, tags ma
 			return clientutil.WrapError(merr, httpresp)
 		})
 	} else {
+		onceZorkianTracesWarning.Do(func() {
+			exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
+		})
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 		for host := range hosts {
 			series = append(series, metrics.DefaultZorkianMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)

@@ -55,7 +55,9 @@ func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions
 }
 
 func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
-	ocf.logger.Debug("Evaluating with OTTL conditions filter", zap.String("traceID", traceID.String()))
+	if ocf.logger.Core().Enabled(zap.DebugLevel) {
+		ocf.logger.Debug("Evaluating with OTTL conditions filter", zap.String("traceID", traceID.String()))
+	}
 
 	if ocf.sampleSpanExpr == nil && ocf.sampleSpanEventExpr == nil {
 		return NotSampled, nil

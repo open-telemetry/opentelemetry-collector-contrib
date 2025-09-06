@@ -3,4 +3,5 @@
 a_bucket{le="-1.0"} 0
 a_bucket{le="1.0"} 1
 a_bucket{le="+Inf"} 3
+a_count 3
 # EOF

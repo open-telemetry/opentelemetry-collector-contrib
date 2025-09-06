@@ -500,6 +500,15 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.volume.usage:
+    enabled: false
+    description: "The number of used bytes in the pod volume."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative 
+      monotonic: false 
+    attributes: []
   k8s.volume.inodes:
     enabled: true
     description: "The total inodes in the filesystem."

@@ -393,7 +393,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Percentage of memory used.
+          - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
                 - asDouble: 0.02053846320949035
@@ -477,7 +477,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).
+          - description: Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows.
             name: container.memory.total_cache
             sum:
               aggregationTemporality: 2
@@ -607,7 +607,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Memory limit of the container.
+          - description: Memory limit of the container. Not supported on Windows.
             name: container.memory.usage.limit
             sum:
               aggregationTemporality: 2
@@ -671,7 +671,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
-          - description: Received errors.
+          - description: Received errors. Not supported on Windows.
             name: container.network.io.usage.rx_errors
             sum:
               aggregationTemporality: 2
@@ -727,7 +727,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
-          - description: Sent errors.
+          - description: Sent errors. Not supported on Windows.
             name: container.network.io.usage.tx_errors
             sum:
               aggregationTemporality: 2
@@ -1178,7 +1178,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Percentage of memory used.
+          - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
                 - asDouble: 0.037324707178785346
@@ -1262,7 +1262,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).
+          - description: Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows.
             name: container.memory.total_cache
             sum:
               aggregationTemporality: 2
@@ -1392,7 +1392,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Memory limit of the container.
+          - description: Memory limit of the container. Not supported on Windows.
             name: container.memory.usage.limit
             sum:
               aggregationTemporality: 2
@@ -1456,7 +1456,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
-          - description: Received errors.
+          - description: Received errors. Not supported on Windows.
             name: container.network.io.usage.rx_errors
             sum:
               aggregationTemporality: 2
@@ -1512,7 +1512,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
-          - description: Sent errors.
+          - description: Sent errors. Not supported on Windows.
             name: container.network.io.usage.tx_errors
             sum:
               aggregationTemporality: 2

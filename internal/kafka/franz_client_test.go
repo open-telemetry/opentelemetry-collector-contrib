@@ -339,7 +339,7 @@ func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	topicCount := 10
 	topics := make([]string, topicCount)
 	topicPrefix := "topic-"
-	for i := 0; i < topicCount; i++ {
+	for i := range topicCount {
 		topics[i] = fmt.Sprintf("%s%d", topicPrefix, i)
 	}
 	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topics...))

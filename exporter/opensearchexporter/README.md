@@ -124,9 +124,9 @@ Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/
 ```yaml
 extensions:
   basicauth/client:
-  client_auth:
-    username: username
-    password: password
+    client_auth:
+      username: username
+      password: password
 
 exporters:
   opensearch/trace:

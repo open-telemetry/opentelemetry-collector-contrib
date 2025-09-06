@@ -136,12 +136,12 @@ func TestEventLoopHandlesError(t *testing.T) {
 	go cli.containerEventLoop(ctx)
 	defer cancel()
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		for _, l := range logs.All() {
-			assert.Contains(t, l.Message, "Error watching podman container events")
-			assert.Contains(t, l.ContextMap()["error"], "EOF")
+			assert.Contains(tt, l.Message, "Error watching podman container events")
+			assert.Contains(tt, l.ContextMap()["error"], "EOF")
 		}
-		return len(logs.All()) > 0
+		assert.NotEmpty(tt, logs.All())
 	}, 1*time.Second, 1*time.Millisecond, "failed to find desired error logs.")
 
 	finished := make(chan struct{})
@@ -182,18 +182,18 @@ func TestEventLoopHandles(t *testing.T) {
 
 	eventChan <- event{ID: "c1", Status: "start"}
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Len(t, cli.containers, 1)
+		assert.Len(tt, cli.containers, 1)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 
 	eventChan <- event{ID: "c1", Status: "died"}
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Empty(t, cli.containers)
+		assert.Empty(tt, cli.containers)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 }
 

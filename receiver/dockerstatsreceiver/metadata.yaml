@@ -171,7 +171,7 @@ metrics:
   # Memory
   container.memory.usage.limit:
     enabled: true
-    description: "Memory limit of the container."
+    description: "Memory limit of the container. Not supported on Windows."
     unit: By
     sum:
       value_type: int
@@ -195,7 +195,7 @@ metrics:
       monotonic: false
   container.memory.percent:
     enabled: true
-    description: "Percentage of memory used."
+    description: "Percentage of memory used. Not supported on Windows."
     unit: "1"
     gauge:
       value_type: double
@@ -341,7 +341,7 @@ metrics:
       monotonic: false
   container.memory.total_cache:
     enabled: true
-    description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1)."
+    description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows."
     unit: By
     sum:
       value_type: int
@@ -641,7 +641,7 @@ metrics:
       - interface
   container.network.io.usage.rx_errors:
     enabled: false
-    description: "Received errors."
+    description: "Received errors. Not supported on Windows."
     unit: "{errors}"
     sum:
       value_type: int
@@ -651,7 +651,7 @@ metrics:
       - interface
   container.network.io.usage.tx_errors:
     enabled: false
-    description: "Sent errors."
+    description: "Sent errors. Not supported on Windows."
     unit: "{errors}"
     sum:
       value_type: int

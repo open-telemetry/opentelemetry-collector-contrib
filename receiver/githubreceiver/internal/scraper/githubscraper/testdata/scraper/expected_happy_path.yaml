@@ -1,13 +1,13 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: organization.name
+        - key: vcs.owner.name
           value:
             stringValue: open-telemetry
-        - key: vcs.vendor.name
+        - key: vcs.provider.name
           value:
             stringValue: github
-    schemaUrl: https://opentelemetry.io/schemas/1.27.0
+    schemaUrl: https://opentelemetry.io/schemas/1.37.0
     scopeMetrics:
       - metrics:
           - description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
@@ -85,7 +85,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: vcs.ref.head.type
+                    - key: vcs.ref.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -106,6 +106,12 @@ resourceMetrics:
                     - key: vcs.line_change.type
                       value:
                         stringValue: added
+                    - key: vcs.ref.base.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.ref.base.type
+                      value:
+                        stringValue: branch
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
@@ -125,6 +131,12 @@ resourceMetrics:
                     - key: vcs.line_change.type
                       value:
                         stringValue: removed
+                    - key: vcs.ref.base.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.ref.base.type
+                      value:
+                        stringValue: branch
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
@@ -146,6 +158,12 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
+                    - key: vcs.ref.base.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.ref.base.type
+                      value:
+                        stringValue: branch
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
@@ -165,6 +183,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: vcs.ref.base.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.ref.base.type
+                      value:
+                        stringValue: branch
                     - key: vcs.ref.head.name
                       value:
                         stringValue: main
@@ -184,7 +208,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.ref.revisions_delta
             unit: '{revision}'
-          - description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
+          - description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.type` attribute will always be `branch`.
             gauge:
               dataPoints:
                 - asInt: "86400"
