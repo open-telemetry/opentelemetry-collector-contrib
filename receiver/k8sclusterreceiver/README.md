@@ -434,7 +434,7 @@ Example:
 Add the following rules to your ClusterRole:
 
 ```yaml
-- apigroups:
+- apiGroups:
   - quota.openshift.io
   resources:
   - clusterresourcequotas
