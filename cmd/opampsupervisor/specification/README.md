@@ -116,6 +116,9 @@ capabilities:
   # The Collector will report Health.
   reports_health: # true if unspecified
 
+  # The supervisor will report OpAMP heartbeats to the Server.
+  reports_heartbeat: # true if unspecified
+
 storage:
   # A writable directory where the Supervisor can store data
   # (e.g. cached remote config).
@@ -503,6 +506,16 @@ to make sure a fresh AgentDescription is obtained by the Supervisor on
 the next Collector start (at the minimum the version number to be
 included in AgentDescription is expected to change after the executable
 is updated).
+
+### OpAMP Heartbeats
+
+OpAMP heartbeats are enabled by default in the Supervisor. They can be
+disabled by setting `capabilities.reports_heartbeat` to `false`. The
+default interval is 30 seconds, but this can be changed by the OpAMP
+server sending a ServerToAgent message with the appropriate field set.
+This causes the Supervisor to periodically send an empty OpAMP
+AgentToServer message in order to keep the connection alive.
+For more information see the [OpAMP specification](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#opampconnectionsettingsheartbeat_interval_seconds).
 
 ### Addons Management
 
