@@ -158,4 +158,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 
 // TODO: Remove this when github.com/stretchr/testify is fixed.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42459
-replace github.com/stretchr/testify => github.com/stretchr/testify v1.10.0
+replace github.com/stretchr/testify => github.com/stretchr/testify v1.11.1

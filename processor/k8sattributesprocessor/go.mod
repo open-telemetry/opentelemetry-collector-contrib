@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.40.0
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componentstatus v0.134.0

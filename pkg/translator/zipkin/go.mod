@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.134.0
 	github.com/openzipkin/zipkin-go v0.4.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.40.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0

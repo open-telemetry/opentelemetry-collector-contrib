@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.134.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.1.2
