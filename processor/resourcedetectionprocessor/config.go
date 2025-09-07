@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/linode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
@@ -93,6 +94,9 @@ type DetectorConfig struct {
 
 	// Kubeadm contains user-specified configurations for the Kubeadm detector
 	KubeadmConfig kubeadm.Config `mapstructure:"kubeadm"`
+
+	// LinodeConfig contains user-specified configurations for the linode detector
+	LinodeConfig linode.Config `mapstructure:"linode"`
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
@@ -113,6 +117,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
 		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
+		LinodeConfig:           linode.CreateDefaultConfig(),
 	}
 }
 
@@ -150,6 +155,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.K8SNodeConfig
 	case kubeadm.TypeStr:
 		return d.KubeadmConfig
+	case linode.TypeStr:
+		return d.LinodeConfig
 	default:
 		return nil
 	}

@@ -208,6 +208,7 @@ body:
       - processor/resourcedetection
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/linode
       - processor/schema
       - processor/span
       - processor/sumologic

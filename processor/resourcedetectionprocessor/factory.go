@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/linode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
@@ -72,6 +73,7 @@ func NewFactory() processor.Factory {
 		k8snode.TypeStr:          k8snode.NewDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
+		linode.TypeStr:           linode.NewDetector,
 	})
 
 	f := &factory{
