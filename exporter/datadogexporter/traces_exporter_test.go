@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -336,6 +338,33 @@ func TestNewTracesExporter(t *testing.T) {
 	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+}
+
+func TestNewTracesExporter_Zorkian(t *testing.T) {
+	resetZorkianWarningsForTesting()
+	require.NoError(t, enableZorkianMetricExport())
+	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
+	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
+
+	metricsServer := testutil.DatadogServerMock()
+	defer metricsServer.Close()
+
+	cfg := &datadogconfig.Config{}
+	cfg.API.Key = "ddog_32_characters_long_api_key1"
+	cfg.Metrics.Endpoint = metricsServer.URL
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	f := NewFactory()
+	core, logs := observer.New(zap.WarnLevel)
+	params.Logger = zap.New(core)
+	ctx := t.Context()
+
+	// The client should have been created correctly
+	exp, err := f.CreateTraces(ctx, params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+
+	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 }
 
 func TestPushTraceData(t *testing.T) {
