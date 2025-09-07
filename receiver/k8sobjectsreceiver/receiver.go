@@ -186,7 +186,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		zap.Any("mode", object.Mode),
 		zap.Any("namespaces", object.Namespaces))
 
-	if object.IgnoreNamespaces.Regex != "" && len(object.Namespaces) == 0 {
+	if object.ExcludeNamespaces.Regex != "" && len(object.Namespaces) == 0 {
 		allNamespaces, err := kr.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			kr.setting.Logger.Error("failed to list namespaces", zap.Error(err))
@@ -194,7 +194,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		}
 
 		for _, ns := range allNamespaces.Items {
-			if !regexp.MustCompile(object.IgnoreNamespaces.Regex).MatchString(ns.GetName()) {
+			if !regexp.MustCompile(object.ExcludeNamespaces.Regex).MatchString(ns.GetName()) {
 				object.Namespaces = append(object.Namespaces, ns.GetName())
 			}
 		}
