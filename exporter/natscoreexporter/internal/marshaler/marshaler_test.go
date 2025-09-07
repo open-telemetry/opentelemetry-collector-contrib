@@ -4,7 +4,6 @@
 package marshaler
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,37 +11,37 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-type mockGenericMarshaler struct{}
+type fakeGenericMarshaler struct{}
 
-func (m *mockGenericMarshaler) MarshalString(sd string) ([]byte, error) {
+func (m *fakeGenericMarshaler) MarshalString(sd string) ([]byte, error) {
 	return []byte(sd), nil
 }
 
-var _ GenericMarshaler = (*mockGenericMarshaler)(nil)
+var _ GenericMarshaler = (*fakeGenericMarshaler)(nil)
 
-type mockResolver struct{}
+type fakeResolver struct{}
 
-func (r *mockResolver) Resolve(host component.Host) (GenericMarshaler, error) {
-	return &mockGenericMarshaler{}, nil
+func (r *fakeResolver) Resolve(host component.Host) (GenericMarshaler, error) {
+	return &fakeGenericMarshaler{}, nil
 }
 
-var _ Resolver = (*mockResolver)(nil)
+var _ Resolver = (*fakeResolver)(nil)
 
-func mockPick(genericMarshaler GenericMarshaler) (MarshalFunc[string], error) {
-	mockGenericMarshaler, ok := genericMarshaler.(*mockGenericMarshaler)
-	if !ok {
-		return nil, errors.New("genericMarshaler is not a mockGenericMarshaler")
-	}
-	return mockGenericMarshaler.MarshalString, nil
+func fakePick(genericMarshaler GenericMarshaler) (MarshalFunc[string], error) {
+	return genericMarshaler.(*fakeGenericMarshaler).MarshalString, nil
 }
 
-var _ PickFunc[string] = mockPick
+var _ PickFunc[string] = fakePick
+
+func newMarshalerWithFakes() Marshaler[string] {
+	return NewMarshaler(&fakeResolver{}, fakePick)
+}
 
 func TestMarshaler(t *testing.T) {
 	t.Parallel()
 
 	t.Run("composes resolver and pick", func(t *testing.T) {
-		marshaler := NewMarshaler(&mockResolver{}, mockPick)
+		marshaler := newMarshalerWithFakes()
 
 		err := marshaler.Resolve(componenttest.NewNopHost())
 		assert.NoError(t, err)

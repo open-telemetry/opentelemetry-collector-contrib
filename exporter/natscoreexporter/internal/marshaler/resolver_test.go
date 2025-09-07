@@ -89,27 +89,27 @@ func TestBuiltinMarshalerResolver(t *testing.T) {
 	}
 }
 
-type mockHost struct {
+type fakeHost struct {
 	extensions map[component.ID]component.Component
 }
 
-func (h *mockHost) GetExtensions() map[component.ID]component.Component {
+func (h *fakeHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }
 
-var _ component.Host = (*mockHost)(nil)
+var _ component.Host = (*fakeHost)(nil)
 
-type mockExtension struct {
+type fakeExtension struct {
 	component.Component
 }
 
-var _ component.Component = (*mockExtension)(nil)
+var _ component.Component = (*fakeExtension)(nil)
 
 func TestEncodingExtensionResolver(t *testing.T) {
 	t.Parallel()
 
-	extension := &mockExtension{}
-	host := &mockHost{
+	extension := &fakeExtension{}
+	host := &fakeHost{
 		extensions: map[component.ID]component.Component{
 			component.NewID(component.MustNewType("extension")): extension,
 		},

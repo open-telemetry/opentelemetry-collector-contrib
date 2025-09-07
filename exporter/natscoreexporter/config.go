@@ -60,12 +60,12 @@ type TokenConfig struct {
 	Token string `mapstructure:"token"`
 }
 
-// UserInfoConfig defines the configuration for username/password auth.
+// UserConfig defines the configuration for username/password auth.
 //
 // See: https://pkg.go.dev/github.com/nats-io/nats.go#UserInfo
-type UserInfoConfig struct {
+type UserConfig struct {
 	// User is the username to use for username/password auth.
-	User string `mapstructure:"user"`
+	Username string `mapstructure:"username"`
 	// Password is the password to use for username/password auth.
 	Password string `mapstructure:"password"`
 
@@ -86,10 +86,10 @@ type NkeyConfig struct {
 	_ struct{}
 }
 
-// UserJWTConfig defines the configuration for NKey auth via JWT.
+// NkeyJWTConfig defines the configuration for NKey auth via JWT.
 //
 // See: https://pkg.go.dev/github.com/nats-io/nats.go#UserJWT
-type UserJWTConfig struct {
+type NkeyJWTConfig struct {
 	// JWT is the JWT to use for NKey auth via JWT.
 	JWT string `mapstructure:"jwt"`
 	// Seed is the seed to use for NKey auth via JWT.
@@ -99,11 +99,11 @@ type UserJWTConfig struct {
 	_ struct{}
 }
 
-// UserCredentialsConfig defines the configuration for NKey auth via credentials file.
+// NkeyUserFileConfig defines the configuration for NKey auth via user file.
 //
 // See: https://pkg.go.dev/github.com/nats-io/nats.go#UserCredentials
-type UserCredentialsConfig struct {
-	// UserFilePath is the path to the user credentials file to use for NKey auth via credentials file.
+type NkeyUserFileConfig struct {
+	// UserFilePath is the path to the user file to use for NKey auth via user file.
 	UserFilePath string `mapstructure:"user_file"`
 
 	// Prevent unkeyed literal initialization
@@ -117,17 +117,17 @@ type AuthConfig struct {
 	// Token holds the configuration for token auth.
 	Token *TokenConfig `mapstructure:"token"`
 
-	// UserInfo holds the configuration for username/password auth.
-	UserInfo *UserInfoConfig `mapstructure:"user_info"`
+	// User holds the configuration for username/password auth.
+	User *UserConfig `mapstructure:"user"`
 
 	// Nkey holds the configuration for NKey auth.
 	Nkey *NkeyConfig `mapstructure:"nkey"`
 
-	// UserJWT holds the configuration for NKey auth via JWT.
-	UserJWT *UserJWTConfig `mapstructure:"user_jwt"`
+	// NkeyJWT holds the configuration for NKey auth via JWT.
+	NkeyJWT *NkeyJWTConfig `mapstructure:"nkey_jwt"`
 
-	// UserCredentials holds the configuration for NKey auth via credentials file.
-	UserCredentials *UserCredentialsConfig `mapstructure:"user_credentials"`
+	// NkeyUserFile holds the configuration for NKey auth via user file.
+	NkeyUserFile *NkeyUserFileConfig `mapstructure:"nkey_user_file"`
 
 	// Prevent unkeyed literal initialization
 	_ struct{}
@@ -244,35 +244,35 @@ func (c *TracesConfig) Validate() error {
 
 func (c *TokenConfig) Validate() error {
 	if c.Token == "" {
-		return errors.New("incomplete token configuration")
+		return errors.New("incomplete token auth configuration")
 	}
 	return nil
 }
 
-func (c *UserInfoConfig) Validate() error {
-	if c.User == "" || c.Password == "" {
-		return errors.New("incomplete user_info configuration")
+func (c *UserConfig) Validate() error {
+	if c.Username == "" || c.Password == "" {
+		return errors.New("incomplete username/password auth configuration")
 	}
 	return nil
 }
 
 func (c *NkeyConfig) Validate() error {
 	if c.PublicKey == "" || c.Seed == nil {
-		return errors.New("incomplete nkey configuration")
+		return errors.New("incomplete NKey auth configuration")
 	}
 	return nil
 }
 
-func (c *UserJWTConfig) Validate() error {
+func (c *NkeyJWTConfig) Validate() error {
 	if c.JWT == "" || c.Seed == nil {
-		return errors.New("incomplete user_jwt configuration")
+		return errors.New("incomplete NKey auth (via JWT) configuration")
 	}
 	return nil
 }
 
-func (c *UserCredentialsConfig) Validate() error {
+func (c *NkeyUserFileConfig) Validate() error {
 	if c.UserFilePath == "" {
-		return errors.New("incomplete user_credentials configuration")
+		return errors.New("incomplete NKey auth (via user file) configuration")
 	}
 	return nil
 }
@@ -285,8 +285,8 @@ func (c *AuthConfig) Validate() error {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	if c.UserInfo != nil {
-		if err := c.UserInfo.Validate(); err != nil {
+	if c.User != nil {
+		if err := c.User.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
@@ -295,13 +295,13 @@ func (c *AuthConfig) Validate() error {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	if c.UserJWT != nil {
-		if err := c.UserJWT.Validate(); err != nil {
+	if c.NkeyJWT != nil {
+		if err := c.NkeyJWT.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	if c.UserCredentials != nil {
-		if err := c.UserCredentials.Validate(); err != nil {
+	if c.NkeyUserFile != nil {
+		if err := c.NkeyUserFile.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
@@ -309,8 +309,8 @@ func (c *AuthConfig) Validate() error {
 	isConfiguredCount := 0
 	for _, isConfigured := range []bool{
 		c.Nkey != nil,
-		c.UserJWT != nil,
-		c.UserCredentials != nil,
+		c.NkeyJWT != nil,
+		c.NkeyUserFile != nil,
 	} {
 		if isConfigured {
 			isConfiguredCount++

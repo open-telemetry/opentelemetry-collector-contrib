@@ -45,7 +45,7 @@ func newNatsCoreExporter[T any](
 	}
 }
 
-func setNatsSecureOption(options *nats.Options, ctx context.Context, cfg *configtls.ClientConfig) error {
+func setNatsTLSOption(options *nats.Options, ctx context.Context, cfg *configtls.ClientConfig) error {
 	tlsConfig, err := cfg.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
@@ -58,12 +58,12 @@ func setNatsTokenOption(options *nats.Options, cfg *TokenConfig) {
 	options.Token = cfg.Token
 }
 
-func setNatsUserInfoOption(options *nats.Options, cfg *UserInfoConfig) {
-	options.User = cfg.User
+func setNatsUserOption(options *nats.Options, cfg *UserConfig) {
+	options.User = cfg.Username
 	options.Password = cfg.Password
 }
 
-func setNatsNKeyOption(options *nats.Options, cfg *NkeyConfig) error {
+func setNatsNkeyOption(options *nats.Options, cfg *NkeyConfig) error {
 	keyPair, err := nkeys.FromSeed(cfg.Seed)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func setNatsNKeyOption(options *nats.Options, cfg *NkeyConfig) error {
 	return nil
 }
 
-func setNatsUserJWTOption(options *nats.Options, cfg *UserJWTConfig) error {
+func setNatsNkeyJWTOption(options *nats.Options, cfg *NkeyJWTConfig) error {
 	keyPair, err := nkeys.FromSeed(cfg.Seed)
 	if err != nil {
 		return err
@@ -87,11 +87,11 @@ func setNatsUserJWTOption(options *nats.Options, cfg *UserJWTConfig) error {
 	return nil
 }
 
-func setNatsUserCredentialsOption(options *nats.Options, cfg *UserCredentialsConfig) error {
+func setNatsNkeyUserFileOption(options *nats.Options, cfg *NkeyUserFileConfig) error {
 	var errs error
 	userConfig, err := os.ReadFile(cfg.UserFilePath)
 	errs = multierr.Append(errs, err)
-	userJwt, err := jwt.ParseDecoratedJWT(userConfig)
+	userJWT, err := jwt.ParseDecoratedJWT(userConfig)
 	errs = multierr.Append(errs, err)
 	keyPair, err := jwt.ParseDecoratedNKey(userConfig)
 	errs = multierr.Append(errs, err)
@@ -100,7 +100,7 @@ func setNatsUserCredentialsOption(options *nats.Options, cfg *UserCredentialsCon
 	}
 
 	options.UserJWT = func() (string, error) {
-		return userJwt, nil
+		return userJWT, nil
 	}
 	options.SignatureCB = keyPair.Sign
 	return nil
@@ -108,20 +108,20 @@ func setNatsUserCredentialsOption(options *nats.Options, cfg *UserCredentialsCon
 
 func setNatsAuthOption(options *nats.Options, cfg *AuthConfig) error {
 	var errs error
-	if cfg.UserInfo != nil {
-		setNatsUserInfoOption(options, cfg.UserInfo)
+	if cfg.User != nil {
+		setNatsUserOption(options, cfg.User)
 	}
 	if cfg.Token != nil {
 		setNatsTokenOption(options, cfg.Token)
 	}
 	if cfg.Nkey != nil {
-		errs = multierr.Append(errs, setNatsNKeyOption(options, cfg.Nkey))
+		errs = multierr.Append(errs, setNatsNkeyOption(options, cfg.Nkey))
 	}
-	if cfg.UserJWT != nil {
-		errs = multierr.Append(errs, setNatsUserJWTOption(options, cfg.UserJWT))
+	if cfg.NkeyJWT != nil {
+		errs = multierr.Append(errs, setNatsNkeyJWTOption(options, cfg.NkeyJWT))
 	}
-	if cfg.UserCredentials != nil {
-		errs = multierr.Append(errs, setNatsUserCredentialsOption(options, cfg.UserCredentials))
+	if cfg.NkeyUserFile != nil {
+		errs = multierr.Append(errs, setNatsNkeyUserFileOption(options, cfg.NkeyUserFile))
 	}
 	return errs
 }
@@ -131,7 +131,7 @@ func createNats(ctx context.Context, cfg *Config) (*nats.Conn, error) {
 	options := nats.GetDefaultOptions()
 	options.Url = cfg.Endpoint
 	options.Pedantic = cfg.Pedantic
-	errs = multierr.Append(errs, setNatsSecureOption(&options, ctx, &cfg.TLS))
+	errs = multierr.Append(errs, setNatsTLSOption(&options, ctx, &cfg.TLS))
 	errs = multierr.Append(errs, setNatsAuthOption(&options, &cfg.Auth))
 	if errs != nil {
 		return nil, errs
@@ -178,7 +178,8 @@ func (e *natsCoreExporter[T]) export(ctx context.Context, data T) error {
 }
 
 func (e *natsCoreExporter[T]) shutdown(_ context.Context) error {
-	return e.conn.Drain()
+	e.conn.Close()
+	return nil
 }
 
 func createResolver(cfg *SignalConfig) (marshaler.Resolver, error) {

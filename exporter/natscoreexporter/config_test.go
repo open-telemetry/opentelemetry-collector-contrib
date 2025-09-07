@@ -80,15 +80,15 @@ func TestConfigValidate(t *testing.T) {
 			err: nil,
 		},
 		{
-			name: "returns error for incomplete username/password configuration",
+			name: "returns error for incomplete username/password auth configuration",
 			cfg: Config{
 				Auth: AuthConfig{
-					UserInfo: &UserInfoConfig{
-						User: "user",
+					User: &UserConfig{
+						Username: "user",
 					},
 				},
 			},
-			err: errors.New("incomplete user_info configuration"),
+			err: errors.New("incomplete username/password auth configuration"),
 		},
 		{
 			name: "returns error if NKey auth configured more than once",
@@ -98,7 +98,7 @@ func TestConfigValidate(t *testing.T) {
 						PublicKey: "public_key",
 						Seed:      []byte("seed"),
 					},
-					UserJWT: &UserJWTConfig{
+					NkeyJWT: &NkeyJWTConfig{
 						JWT:  "jwt",
 						Seed: []byte("seed"),
 					},
@@ -133,6 +133,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Endpoint: "nats://localhost:1234",
+				Pedantic: true,
 				TLS:      configtls.NewDefaultClientConfig(),
 				Logs: LogsConfig{
 					Subject:              "\"logs\"",

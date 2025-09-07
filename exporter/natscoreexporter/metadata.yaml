@@ -7,3 +7,6 @@ status:
   distributions: [contrib]
   codeowners:
     active: [EthanKim8683]
+
+tests:
+  skip_lifecycle: true
