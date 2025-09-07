@@ -542,7 +542,7 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		{
 			Name: "pods",
 			Mode: WatchMode,
-			IgnoreNamespaces: filter.Config{
+			ExcludeNamespaces: filter.Config{
 				Regex: "default_ignore",
 			},
 		},
