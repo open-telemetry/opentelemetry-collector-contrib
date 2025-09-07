@@ -258,16 +258,19 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 
 func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) error {
 	tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
-
-	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
-
-	var m []*prompb.MetricMetadata
-	if prwe.exporterSettings.SendMetadata {
-		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
-	}
 	if err != nil {
 		prwe.telemetry.recordTranslationFailure(ctx)
 		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+	}
+	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+
+
+	var m []*prompb.MetricMetadata
+	if prwe.exporterSettings.SendMetadata {
+		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
+		if err != nil {
+			prwe.settings.Logger.Debug("failed to translate metrics into metadata, exporting remaining metadata", zap.Error(err), zap.Int("translated", len(m)))
+		}
 	}
 	// Call export even if a conversion error, since there may be points that were successfully converted.
 	return prwe.handleExport(ctx, tsMap, m)

@@ -369,7 +369,9 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...))
+			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...)
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }
@@ -387,6 +389,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		//nolint:errcheck
 		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
 	}
 }
@@ -682,7 +685,8 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
 
-			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			err := addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
 				assert.Empty(t, converter.timeSeries())
@@ -818,12 +822,13 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter(Settings{})
 
-			converter.addSummaryDataPoints(
+			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 			)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
@@ -917,12 +922,13 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter(Settings{})
 
-			converter.addHistogramDataPoints(
+			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 			)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)

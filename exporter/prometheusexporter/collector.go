@@ -52,6 +52,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	namespace, err := labelNamer.Build(config.Namespace)
 	if err != nil {
 		logger.Error("failed to build namespace, ignoring", zap.Error(err))
+		namespace = ""
 	}
 	return &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
