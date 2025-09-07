@@ -348,7 +348,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.ConvertOTLPDelta,
 		o.NativeOTLPDeltaIngestion,
 		o.CTZeroIngestionEnabled,
-		time.Duration(5*time.Minute), // LookbackDelta - Using the default value of 5 minutes
+		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
 		o.EnableTypeAndUnitLabels,
 	)
 

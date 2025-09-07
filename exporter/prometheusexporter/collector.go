@@ -452,7 +452,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		if multiErrs != nil {
 			return nil, multiErrs
 		}
-		
+
 		// Map service.name + service.namespace to job
 		if job, ok := extractJob(rAttributes); ok {
 			labels[model.JobLabel] = job

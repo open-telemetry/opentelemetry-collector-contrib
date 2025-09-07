@@ -264,7 +264,6 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 	}
 	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
 
-
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
 		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
