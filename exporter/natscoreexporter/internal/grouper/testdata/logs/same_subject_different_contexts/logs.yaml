@@ -7,12 +7,12 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: id
-                value:
-                  stringValue: 1.1.1
               - key: subject
                 value:
                   stringValue: "1"
+              - key: id
+                value:
+                  stringValue: 1.1.1
             body: {}
           - attributes:
               - key: id
@@ -29,12 +29,12 @@ resourceLogs:
                 stringValue: "1.1"
       - logRecords:
           - attributes:
-              - key: id
-                value:
-                  stringValue: 1.2.1
               - key: subject
                 value:
                   stringValue: "1"
+              - key: id
+                value:
+                  stringValue: 1.2.1
             body: {}
         scope:
           attributes:

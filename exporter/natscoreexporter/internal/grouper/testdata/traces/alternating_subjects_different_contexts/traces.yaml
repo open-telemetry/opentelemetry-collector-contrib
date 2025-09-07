@@ -1,59 +1,63 @@
-resourceMetrics:
+resourceSpans:
   - resource:
       attributes:
         - key: id
           value:
             stringValue: "1"
-    scopeMetrics:
-      - metrics:
-          - metadata:
+    scopeSpans:
+      - scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "1.1"
+        spans:
+          - attributes:
               - key: id
                 value:
                   stringValue: 1.1.1
               - key: subject
                 value:
                   stringValue: "1"
-          - metadata:
+            status: {}
+          - attributes:
               - key: id
                 value:
                   stringValue: 1.1.2
               - key: subject
                 value:
                   stringValue: "2"
-        scope:
-          attributes:
-            - key: id
-              value:
-                stringValue: "1.1"
-      - metrics:
-          - metadata:
-              - key: subject
-                value:
-                  stringValue: "1"
-              - key: id
-                value:
-                  stringValue: 1.2.1
-        scope:
+            status: {}
+      - scope:
           attributes:
             - key: id
               value:
                 stringValue: "1.2"
+        spans:
+          - attributes:
+              - key: id
+                value:
+                  stringValue: 1.2.1
+              - key: subject
+                value:
+                  stringValue: "1"
+            status: {}
   - resource:
       attributes:
         - key: id
           value:
             stringValue: "2"
-    scopeMetrics:
-      - metrics:
-          - metadata:
+    scopeSpans:
+      - scope:
+          attributes:
+            - key: id
+              value:
+                stringValue: "2.1"
+        spans:
+          - attributes:
               - key: id
                 value:
                   stringValue: 2.1.1
               - key: subject
                 value:
                   stringValue: "2"
-        scope:
-          attributes:
-            - key: id
-              value:
-                stringValue: "2.1"
+            status: {}

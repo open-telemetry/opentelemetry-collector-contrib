@@ -12,12 +12,12 @@ resourceSpans:
                 stringValue: "1.1"
         spans:
           - attributes:
-              - key: id
-                value:
-                  stringValue: 1.1.1
               - key: subject
                 value:
                   stringValue: "1"
+              - key: id
+                value:
+                  stringValue: 1.1.1
             status: {}
           - attributes:
               - key: id
