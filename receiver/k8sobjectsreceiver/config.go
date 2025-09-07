@@ -45,18 +45,18 @@ const (
 )
 
 type K8sObjectsConfig struct {
-	Name             string               `mapstructure:"name"`
-	Group            string               `mapstructure:"group"`
-	Namespaces       []string             `mapstructure:"namespaces"`
-	IgnoreNamespaces filter.Config        `mapstructure:"ignore_namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
-	LabelSelector    string               `mapstructure:"label_selector"`
-	FieldSelector    string               `mapstructure:"field_selector"`
-	Interval         time.Duration        `mapstructure:"interval"`
-	ResourceVersion  string               `mapstructure:"resource_version"`
-	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
-	exclude          map[apiWatch.EventType]bool
-	gvr              *schema.GroupVersionResource
+	Name              string               `mapstructure:"name"`
+	Group             string               `mapstructure:"group"`
+	Namespaces        []string             `mapstructure:"namespaces"`
+	ExcludeNamespaces filter.Config        `mapstructure:"exclude_namespaces"`
+	Mode              mode                 `mapstructure:"mode"`
+	LabelSelector     string               `mapstructure:"label_selector"`
+	FieldSelector     string               `mapstructure:"field_selector"`
+	Interval          time.Duration        `mapstructure:"interval"`
+	ResourceVersion   string               `mapstructure:"resource_version"`
+	ExcludeWatchType  []apiWatch.EventType `mapstructure:"exclude_watch_type"`
+	exclude           map[apiWatch.EventType]bool
+	gvr               *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -159,14 +159,14 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	copied := &K8sObjectsConfig{
-		Name:             k.Name,
-		Group:            k.Group,
-		Mode:             k.Mode,
-		LabelSelector:    k.LabelSelector,
-		FieldSelector:    k.FieldSelector,
-		Interval:         k.Interval,
-		ResourceVersion:  k.ResourceVersion,
-		IgnoreNamespaces: k.IgnoreNamespaces,
+		Name:              k.Name,
+		Group:             k.Group,
+		Mode:              k.Mode,
+		LabelSelector:     k.LabelSelector,
+		FieldSelector:     k.FieldSelector,
+		Interval:          k.Interval,
+		ResourceVersion:   k.ResourceVersion,
+		ExcludeNamespaces: k.ExcludeNamespaces,
 	}
 
 	copied.Namespaces = make([]string, len(k.Namespaces))
