@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
@@ -44,7 +45,7 @@ func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMeta
 	return prompb.MetricMetadata_UNKNOWN
 }
 
-func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace string) []*prompb.MetricMetadata {
+func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace string) ([]*prompb.MetricMetadata, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	metadataLength := 0
@@ -58,6 +59,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: addMetricSuffixes, Namespace: namespace}
 	unitNamer := otlptranslator.UnitNamer{}
 	metadata := make([]*prompb.MetricMetadata, 0, metadataLength)
+	var errs error
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
@@ -68,7 +70,8 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 				metric := scopeMetrics.Metrics().At(k)
 				metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 				if err != nil {
-					// TODO: What to do here?
+					errs = multierr.Append(errs, err)
+					continue
 				}
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
@@ -81,5 +84,5 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 		}
 	}
 
-	return metadata
+	return metadata, errs
 }

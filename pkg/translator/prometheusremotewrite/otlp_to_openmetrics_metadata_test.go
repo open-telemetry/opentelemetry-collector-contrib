@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -269,7 +270,8 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			metaData, err := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			require.NoError(t, err)
 
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
