@@ -10,7 +10,7 @@ require (
 	github.com/google/addlicense v1.2.0
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.134.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.135.0
 	github.com/rhysd/actionlint v1.7.7
 	go.opentelemetry.io/build-tools/checkapi v0.26.2
 	go.opentelemetry.io/build-tools/checkfile v0.26.2
@@ -19,8 +19,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.26.2
 	go.opentelemetry.io/build-tools/issuegenerator v0.26.2
 	go.opentelemetry.io/build-tools/multimod v0.26.2
-	go.opentelemetry.io/collector/cmd/builder v0.134.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/cmd/mdatagen v0.134.1-0.20250908133507-3166bac6544f
+	go.opentelemetry.io/collector/cmd/builder v0.135.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.135.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.36.0
 	golang.org/x/vuln v1.1.4
@@ -254,13 +254,13 @@ require (
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.26.2 // indirect
-	go.opentelemetry.io/collector/component v1.40.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/confmap v1.40.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.40.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/featuregate v1.40.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/filter v0.134.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.134.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/pdata v1.40.1-0.20250908133507-3166bac6544f // indirect
+	go.opentelemetry.io/collector/component v1.41.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.41.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.41.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
+	go.opentelemetry.io/collector/filter v0.135.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.41.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect

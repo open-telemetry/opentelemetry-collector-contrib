@@ -7,6 +7,15 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.135.0
+
+### 💡 Enhancements 💡
+
+- `datadog`: remove references to `DataDog/opentelemetry-mapping-go` library in favor of `DataDog/datadog-agent/pkg/opentelemetry-mapping-go` (#42475)
+  No change to end user behavior.
+
+<!-- previous-version -->
+
 ## v0.134.0
 
 <!-- previous-version -->
