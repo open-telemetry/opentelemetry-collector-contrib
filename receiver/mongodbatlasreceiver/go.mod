@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/atlas v0.38.0
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componentstatus v0.134.0

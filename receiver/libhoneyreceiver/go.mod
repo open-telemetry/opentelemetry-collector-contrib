@@ -1,12 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
+	github.com/klauspost/compress v1.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/client v1.40.0
 	go.opentelemetry.io/collector/component v1.40.0
@@ -57,7 +58,6 @@ require (
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.2.2 // indirect

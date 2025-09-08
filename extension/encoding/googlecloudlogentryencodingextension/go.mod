@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/goccy/go-json v0.10.5
@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/confmap v1.40.0

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.4
@@ -13,7 +13,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	go.opentelemetry.io/collector/component v1.40.0

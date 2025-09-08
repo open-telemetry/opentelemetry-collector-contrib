@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.134.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/confmap v1.40.0

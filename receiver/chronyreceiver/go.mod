@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/facebook/time v0.0.0-20240510113249-fa89cc575891
 	github.com/google/go-cmp v0.7.0
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
 	go.opentelemetry.io/collector/confmap v1.40.0
