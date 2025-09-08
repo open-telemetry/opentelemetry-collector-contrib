@@ -734,8 +734,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			tc.cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, &baseCfg, false)
+			baseCfg, err := promconfig.Load("", nil)
+			require.NoError(t, err)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -774,12 +775,28 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
 						if s.MetricRelabelConfig != nil {
-							for _, sc := range manager.promCfg.ScrapeConfigs {
-								if sc.JobName == s.MetricRelabelConfig.JobName {
-									for _, mc := range sc.MetricRelabelConfigs {
-										require.Equal(t, s.MetricRelabelConfig.MetricRelabelRegex, mc.Regex)
+							found := false
+							var lastGot string
+							// The manager may not be done processing the Refresh call by the
+							// time we check the value of the ScrapeConfig, so retry a couple
+							// times to see if it fixes itself.
+						RETRY:
+							for j := 0; j < 3; j++ {
+								for _, sc := range manager.promCfg.ScrapeConfigs {
+									if sc.JobName == s.MetricRelabelConfig.JobName {
+										for _, mc := range sc.MetricRelabelConfigs {
+											lastGot = mc.Regex.String()
+											if s.MetricRelabelConfig.MetricRelabelRegex.String() == mc.Regex.String() {
+												found = true
+												break RETRY
+											}
+										}
 									}
 								}
+								time.Sleep(2 * time.Second)
+							}
+							if !found {
+								t.Errorf("MetricRelabelConfig did not match expectation, want %v got %v", s.MetricRelabelConfig.MetricRelabelRegex.String(), lastGot)
 							}
 						}
 
@@ -926,8 +943,9 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-	baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig, ScrapeConfigs: initialScrapeConfigs}
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, &baseCfg, false)
+	baseCfg, err := promconfig.Load("", nil)
+	baseCfg.ScrapeConfigs = initialScrapeConfigs
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, false)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()
