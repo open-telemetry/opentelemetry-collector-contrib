@@ -20,13 +20,13 @@ all desired running containers on a configured interval.  These stats are for co
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
-> :information_source: Requires Docker API version 1.22+ and only Linux is supported.
+> :information_source: Requires Docker API version 1.22+
 
 ## Configuration
 
 The following settings are optional:
 
-- `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
+- `endpoint` (default = `unix:///var/run/docker.sock` (Linux) , default = `npipe:////./pipe/docker_engine` (Windows) ): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
