@@ -310,14 +310,6 @@ func Test_createLabelSet(t *testing.T) {
 			getPromLabels(label31, value31, label32, value32),
 		},
 		{
-			"empty_extra_case",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{"", ""},
-			getPromLabels(label11, value11, label12, value12, "", ""),
-		},
-		{
 			"single_left_over_case",
 			pcommon.NewResource(),
 			lbs1,

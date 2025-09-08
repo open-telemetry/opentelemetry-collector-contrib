@@ -35,6 +35,12 @@ func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusEx
 		return nil, errBlankPrometheusAddress
 	}
 
+	// Return error early because newCollector
+	// will call logger.Error if it fails to build the namespace.
+	if set.Logger == nil {
+		return nil, errors.New("nil logger")
+	}
+
 	collector := newCollector(config, set.Logger)
 	registry := prometheus.NewRegistry()
 	_ = registry.Register(collector)
