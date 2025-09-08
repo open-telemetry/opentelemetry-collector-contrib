@@ -444,7 +444,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 func addDataStreamAttributes(document *objmodel.Document, key string, idx elasticsearch.Index) {
 	if idx.IsDataStream() {
 		if key != "" {
-			key = key + "."
+			key += "."
 		}
 		document.AddString(key+elasticsearch.DataStreamType, idx.Type)
 		document.AddString(key+elasticsearch.DataStreamDataset, idx.Dataset)
