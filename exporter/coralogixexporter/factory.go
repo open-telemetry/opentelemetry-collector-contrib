@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 		PrivateKey: "",
 		AppName:    "",
 		RateLimiter: RateLimiterConfig{
-			Enabled:   false,
+			Enabled:   true,
 			Threshold: 10,
 			Duration:  time.Minute,
 		},
