@@ -7,11 +7,12 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type HexToBytesArguments[K any] struct {
-	hexStr   string
+	hexStr string
 }
 
 func NewHexToBytesFactory[K any]() ottl.Factory[K] {

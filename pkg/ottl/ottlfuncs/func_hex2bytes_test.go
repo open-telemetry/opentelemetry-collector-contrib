@@ -41,7 +41,7 @@ func TestHexToBytes(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, f)
 
-			got, err := f(context.Background(), nil)
+			got, err := f(t.Context(), nil)
 			if tt.wantError {
 				assert.Error(t, err)
 			} else {
