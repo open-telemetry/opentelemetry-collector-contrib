@@ -11,6 +11,11 @@ statsd/receiver_settings:
       observer_type: "histogram"
       histogram:
         max_size: 170
+        explicit_buckets:
+          - matcher_pattern: "foo.*"
+            buckets: [1, 10, 100]
+          - matcher_pattern: "bar.*"
+            buckets: [0.1, 0.5, 1]
     - statsd_type: "distribution"
       observer_type: "summary"
       summary:
