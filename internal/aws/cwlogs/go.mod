@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.54.0
 	github.com/aws/smithy-go v1.22.5
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

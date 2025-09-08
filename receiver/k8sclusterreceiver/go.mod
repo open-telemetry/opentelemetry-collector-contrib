@@ -16,7 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.134.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/component/componentstatus v0.134.0
 	go.opentelemetry.io/collector/component/componenttest v0.134.0

@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/IBM/sarama v1.46.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/config/configcompression v1.40.0
 	go.opentelemetry.io/collector/config/configtls v1.40.0
