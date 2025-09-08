@@ -5,6 +5,8 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
@@ -86,12 +88,22 @@ func newUploadManager(
 		uniqueKeyFunc = nil
 	}
 
+	var s3PartitionTimeLocation *time.Location
+	if conf.S3Uploader.S3PartitionTimezone != "" {
+		s3PartitionTimeLocation, err = time.LoadLocation(conf.S3Uploader.S3PartitionTimezone)
+		if err != nil {
+			return nil, fmt.Errorf("invalid S3 partition timezone: %w", err)
+		}
+	} else {
+		s3PartitionTimeLocation = time.Local
+	}
+
 	return upload.NewS3Manager(
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
 			PartitionPrefix:       conf.S3Uploader.S3Prefix,
 			PartitionFormat:       conf.S3Uploader.S3PartitionFormat,
-			PartitionTimeLocation: conf.S3Uploader.s3PartitionTimeLocation,
+			PartitionTimeLocation: s3PartitionTimeLocation,
 			FilePrefix:            conf.S3Uploader.FilePrefix,
 			FileFormat:            format,
 			Metadata:              metadata,
