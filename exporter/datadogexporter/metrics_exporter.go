@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
+	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -76,6 +76,11 @@ func newMetricsExporter(
 		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
 	} else {
 		options = append(options, otlpmetrics.WithRemapping())
+	}
+
+	if inferIntervalDeltaFeatureGate.IsEnabled() {
+		params.Logger.Info("Metrics interval will be inferred for OTLP delta metrics with a set StartTimestamp.")
+		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
 	tr, err := otlpmetrics.NewTranslator(params.TelemetrySettings, attrsTranslator, options...)

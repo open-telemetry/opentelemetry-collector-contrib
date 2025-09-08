@@ -103,16 +103,16 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for github resource attributes.
 type ResourceAttributesConfig struct {
-	OrganizationName ResourceAttributeConfig `mapstructure:"organization.name"`
-	VcsVendorName    ResourceAttributeConfig `mapstructure:"vcs.vendor.name"`
+	VcsOwnerName    ResourceAttributeConfig `mapstructure:"vcs.owner.name"`
+	VcsProviderName ResourceAttributeConfig `mapstructure:"vcs.provider.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		OrganizationName: ResourceAttributeConfig{
+		VcsOwnerName: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		VcsVendorName: ResourceAttributeConfig{
+		VcsProviderName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
