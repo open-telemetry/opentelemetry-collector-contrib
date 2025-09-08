@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071
