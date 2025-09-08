@@ -905,10 +905,8 @@ func TestConsumeTraces(t *testing.T) {
 
 				// Trigger flush.
 				mockClock.Advance(time.Nanosecond)
-				// TODO: Remove time.Sleep call, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42461
-				time.Sleep(10 * time.Millisecond)
-				require.Eventually(t, func() bool {
-					return len(mcon.AllMetrics()) > 0
+				require.EventuallyWithT(t, func(c *assert.CollectT) {
+					assert.NotEmpty(c, mcon.AllMetrics())
 				}, 1*time.Second, 10*time.Millisecond)
 				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
 			}
