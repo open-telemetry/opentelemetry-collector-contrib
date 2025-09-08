@@ -1,0 +1,51 @@
+# Test configuration file for HTTP JSON receiver
+receivers:
+  httpjson:
+    collection_interval: 30s
+    initial_delay: 5s
+    timeout: 10s
+    resource_attributes:
+      service.name: "test-service"
+      environment: "test"
+    endpoints:
+      - name: "httpbin_json"
+        url: "https://httpbin.org/json"
+        method: "GET"
+        headers:
+          User-Agent: "otel-httpjson-receiver/1.0"
+        metrics:
+          - name: "slideshow_slides_count"
+            json_path: "slideshow.slides.#"
+            type: "gauge"
+            description: "Number of slides in slideshow"
+            unit: "1"
+            value_type: "int"
+            attributes:
+              source: "httpbin"
+              slideshow_title: "Sample Slide Show"
+              
+      - name: "httpbin_uuid"
+        url: "https://httpbin.org/uuid"
+        method: "GET"
+        timeout: 5s
+        metrics:
+          - name: "uuid_service_available"
+            json_path: "uuid"
+            type: "gauge"
+            description: "UUID service availability"
+            unit: "1"
+            value_type: "int"
+
+processors:
+  batch:
+
+exporters:
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    metrics:
+      receivers: [httpjson]
+      processors: [batch]
+      exporters: [logging]

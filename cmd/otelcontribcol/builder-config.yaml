@@ -246,6 +246,8 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.134.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.134.0
+  - gomod: httpjsonreceiver v0.0.0
+
 
 connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.134.0
@@ -276,3 +278,5 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  - httpjsonreceiver => ../../receiver/httpjsonreceiver
+
