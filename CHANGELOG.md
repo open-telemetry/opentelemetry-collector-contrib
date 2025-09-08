@@ -7,6 +7,120 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.134.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/awscloudwatchmetrics`: Remove unmaintained component (#42238)
+- `opencensusreceiver`: Remove the deprecated opencensus receiver. (#36791)
+- `opencensusexporter`: Remove the deprecated opencensus exporter. (#36791)
+- `pkg/ottl`: Keep the original map and continue processing keys if an error is encountered when calling an optional replacement function in `replace_all_patterns`. (#42359)
+
+### 💡 Enhancements 💡
+
+- `cmd/opampsupervisor`: Add metrics to the Supervisor application. (#40155)
+  Add some metrics to the cmd/opampsupervisor application.
+  
+  The following metrics are added:
+  - supervisor.collector.health_status: The health status of the collector.
+  
+- `cfgardenobserver`: Move to alpha (#41586)
+- `exporter/prometheus`: Add debug logging for refused metric points. (#13643)
+- `httpcheckreceiver`: Add response body validation (#41325)
+  The httpcheckreceiver now supports validating the response body using a few approaches.
+  String matching, JSON path matching, size ranges, and regex matching are supported.
+  
+- `httpcheckreceiver`: Fix race for timing of request steps (#42042)
+  The httpcheckreceiver uses atomic operations to track the timing of request steps to avoid race conditions.
+  
+- `pkg/ottl`: Avoid multiple copies of the Map in replace_all_patterns. (#42359)
+- `kafkareceiver`: Add profiles support (#41479)
+- `pkg/ottl`: Remove unnecessary Value initialization when setting an attribute/body (#42335, #42362)
+- `opampsupervisor`: Emit spans for handling OpAMP messages (#38724)
+- `pkg/ottl`: Add an `Index(target, value)` OTTL function which returns the index of the first occurrence of `value` in `target`. (#40351)
+- `pkg/stanza`: add `sanitize_utf8` operator to replace invalid UTF-8 characters. (#42028)
+
+### 🧰 Bug fixes 🧰
+
+- `elasticsearchexporter`: Fix the warning on Kibana when using `sum` operation on delta temporality sum metric mapped as a counter (#40804)
+- `failoverconnector`: fix for flaky test in failover_test.go (#42020)
+- `k8sattributesprocessor`: Allow service.namespace to be used in rules and fix docs (#40859)
+- `prometheusremotewriteexporter`: Make sure concurrency is set to the appropriate value (#41785)
+- `tailsamplingprocessor`: Fix a race condition in the tailsampling processor that could cause traces to be dropped prematurely. (#41656)
+- `sqlserverreceiver`: Fix memory leak from top queries and query samples features (#42302)
+  The issue was caused by the misuse of the obfuscate library.
+  
+- `telemetrygen`: Fix infinite duration bug and add tests. (#42170)
+
+<!-- previous-version -->
+
+## v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `coralogixexporter`: Remove unused deprecated configgrpc.ClientConfig (#40853)
+- `googlecloudlogentry_encoding`: Parse cloud audit logs into log record attributes instead of placing it in the body as is. (#42035)
+- `all`: Increase minimum Go version to 1.24 (#41968)
+- `signaltometricsconnector`: Use configoptional for optional metric fields (#41922)
+- `routingprocessor`: Remove deprecated component routingprocessor (#19739)
+  Please use the [routing connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector) instead.
+
+### 💡 Enhancements 💡
+
+- `elasticsearchexporter`: Enhance telemetry metrics to include error.type attribute for better error categorization. (#41962)
+  Improve the telemetry metrics by adding the `error.type` attribute to the
+  `elasticsearch.docs.processed` metric. This change allows for better
+  categorization and understanding of errors that occurs while processing documents.
+  
+- `awslogsencodingextension`: Adds `aws.access_key.id` to CloudTrail logs and aligns `aws.resources` attribute fields with naming conventions. (#41815)
+- `k8sclusterreceiver`: Add optional experimental k8s.container.status.state metric (#32457, #32457)
+- `farotranslator`: Improve error hashing by draining exception values (#42032)
+- `faroreceiver`: Added Timestamp, ObservedTimestamp, SpanId, TraceId fields to the Log Record (#40800)
+- `kafkareceiver`: Add `on_permanent_error` option to `message_marking` configuration. (#41333)
+- `filelogreceiver`: Move filelog.decompressFingerprint feature gate to beta stage (#42189)
+- `googlecloudlogentry_encoding`: Add support to decode multiple logs (#41137)
+- `httpcheckreceiver`: Add request body to http requests (#41325)
+  The httpcheckreceiver can be configured to send a request body to the target endpoint.
+  
+- `tailsamplingprocessor`: Optimize telemetry collection in tailsamplingprocessor (#41888)
+- `zipkinexporter`: Include instrumentation scope attributes (#39206)
+- `oidcauthextension`: Add support for accessing custom JWT claims. (#41449)
+  Users can now access JWT claims from OIDC Auth context allowing dynamic processing based on received JWT token.
+  
+- `oracledbreceiver`: Add support for Oracle DB receiver to read session action as trace context. (#41878)
+- `oracledbreceiver`: Removing the toLowercase conversion on sql text in top_query payload. Also, adding child_address into the query_samples payload. (#37478)
+- `opensearchexporter`: Add dynamic index naming support for traces (#34746, #38595)
+  - This feature supports trace index names in config.
+  - It allows users to specify dynamic trace indices based on attributes.
+  - It supports time-based index name formatting and fallback options.
+  - Improves code consistency between logs and trace exporter.
+  
+- `exporter/prometheusremotewriteexporter`: Improve logging of remote write errors (#41856)
+- `prometheusreceiver`: Remove temporary fix for metric name validation, fix upstream resolved (#42004)
+- `metricstarttimeprocessor`: Add reset detection to the starttimemetric strategy in the metricstarttimeprocessor (#41870)
+- `tailsamplingprocessor`: Add a new option to block on num traces overflow. (#41546)
+- `cmd/telemetrygen`: Support custom metric names via --otlp-metric-name flag (#42070)
+- `telemetrygen`: Allow `inf` duration for continuous run (#40225)
+- `textencodingextension`: Move textencodingextension to beta (#41595)
+- `receiver/webhookeventreceiver`: Adds configuration to split logs at JSON object boundaries. (#39766)
+- `webhookeventreceiver`: Move webhookevent receiver to beta (#41997)
+
+### 🧰 Bug fixes 🧰
+
+- `awss3receiver`: Fixed an issue where the AWS S3 receiver failed to retrieve data from S3 buckets when notified by SQS if the S3 key was URL-encoded. (#42027)
+- `jmxreceiver`: support `jmx_configs` for jmx scraper usecase (#41952)
+- `logdedupprocessor`: Fix UB caused by holding reference to mutable data. (#42147)
+- `metricstarttimeprocessor`: Fix UB caused by holding reference to mutable data. (#42151)
+- `libhoneyreceiver`: Parsing Span and Trace IDs no longer panic if there is a parsing issue. (#42200)
+- `vcenterreceiver`: Fixes a potential issue with vm collection without a types.VirtualMachineConfigInfo attached to the VM. (#42098)
+- `prometheusreceiver`: Fixes a bug where static configuration labels were dropped when using the Prometheus receiver. Previously, labels defined in the static config were not being applied to the metrics. (#41727)
+- `opencensusreceiver`: Perform graceful shutdown of HTTP server on shutdown (#42117)
+- `signaltometricsconnector`: Strictly validate configuration for component. (#41970)
+- `mysqlreceiver`: Fix for the conversion error on mysql.event_id. Setting an int (0) as default value in SQL. (#42040)
+- `windowseventlogreceiver`: Fixes issue for remote log collection where domain was not properly passed into EvtOpenSession syscall (#41950)
+
+<!-- previous-version -->
+
 ## v0.132.0
 
 ### 🛑 Breaking changes 🛑

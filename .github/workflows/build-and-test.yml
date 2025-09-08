@@ -316,7 +316,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -567,12 +567,12 @@ jobs:
         run: |
           make genotelcontribcol
           make docker-otelcontribcol
-          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
           docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-          docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
+          docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
@@ -582,7 +582,7 @@ jobs:
       - name: Push Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-          docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker push otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
           docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
     runs-on: ubuntu-24.04
@@ -626,7 +626,7 @@ jobs:
 
       - name: Create Github Release
         run: |
-          gh release create $RELEASE_TAG -t $RELEASE_TAG -F ${{ env.RELEASE_NOTES }}
+          gh release create "$RELEASE_TAG" -t "$RELEASE_TAG" -F ${{ env.RELEASE_NOTES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}

@@ -1,8 +1,6 @@
 name: scoped-test
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -25,37 +23,42 @@ jobs:
       - name: Get changes
         shell: bash
         id: changes
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+          changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD")"
           echo changed_files
-          echo $changed_files
+          echo "$changed_files"
 
           go_sources=$(echo "$changed_files" | tr ' ' '\n' | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
           echo go_sources
-          echo $go_sources
+          echo "$go_sources"
           if [[ -n "$go_sources" ]]; then
             {
               echo 'go_sources<<EOF'
-              echo $go_sources
+              echo "$go_sources"
               echo EOF
-            } >> $GITHUB_OUTPUT
+            } >> "$GITHUB_OUTPUT"
           fi
 
           go_tests=$(echo "$changed_files" | tr ' ' '\n' | grep -E '.*_test\.go$' || true)
           echo go_tests
-          echo $go_tests
+          echo "$go_tests"
           if [[ -n "$go_tests" ]]; then
             {
               echo 'go_tests<<EOF'
-              echo $go_tests
+              echo "$go_tests"
               echo EOF
-            } >> $GITHUB_OUTPUT
+            } >> "$GITHUB_OUTPUT"
           fi
 
   scoped-tests:
     needs: changedfiles
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        runner: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Echo changed files
         shell: bash
@@ -77,6 +80,7 @@ jobs:
 
       - name: Build gotestsum on Windows
         if: runner.os == 'Windows'
+        shell: pwsh # Explicitly set the shell to avoid actionlint treating this an attempt to escape single quote
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
 
       - name: Build gotestsum
@@ -95,4 +99,4 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make"
+          make for-affected-components CMD="make lint test-three-times"
