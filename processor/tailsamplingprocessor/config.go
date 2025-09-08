@@ -74,6 +74,8 @@ type sharedPolicyCfg struct {
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
 	// Configs for OTTL condition filter sampling policy evaluator
 	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
+	// Configs for any extensions that are used.
+	ExtensionCfg map[string]any `mapstructure:"extension"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
