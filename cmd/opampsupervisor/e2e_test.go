@@ -2518,7 +2518,7 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 	)
 	s, _ := newSupervisor(t, "reports_heartbeat", map[string]string{"url": server.addr})
 
-	require.Nil(t, s.Start())
+	require.Nil(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
