@@ -52,7 +52,6 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.134.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.134.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
