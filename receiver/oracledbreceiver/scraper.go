@@ -146,7 +146,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 		hostName:             hostName,
-		serviceInstanceID:    getInstanceID(hostName, logger),
+		serviceInstanceID:    getInstanceID(instanceName, logger),
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -168,7 +168,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 		obfuscator:         newObfuscator(),
-		serviceInstanceID:  getInstanceID(hostName, logger),
+		serviceInstanceID:  getInstanceID(instanceName, logger),
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -836,10 +836,17 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	return rb
 }
 
-func getInstanceID(hostString string, logger *zap.Logger) string {
+func getInstanceID(instanceString string, logger *zap.Logger) string {
 	const fallback = "unknown:1521"
 
-	host, port, err := net.SplitHostPort(hostString)
+	parts := strings.SplitN(instanceString, "/", 2)
+	hostAndPort := parts[0]
+	service := ""
+	if len(parts) == 2 {
+		service = "/" + parts[1]
+	}
+
+	host, port, err := net.SplitHostPort(hostAndPort)
 	if err == nil && (strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()) {
 		host, err = os.Hostname()
 	}
@@ -847,10 +854,10 @@ func getInstanceID(hostString string, logger *zap.Logger) string {
 	if err != nil {
 		logger.Warn("Failed to compute service.instance.id", zap.Error(err))
 		if port == "" {
-			return fallback
+			return fallback + service
 		}
-		return "unknown:" + port
+		return "unknown:" + port + service
 	}
 
-	return host + ":" + port
+	return host + ":" + port + service
 }
