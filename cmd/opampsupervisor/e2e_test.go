@@ -882,7 +882,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 	require.Eventually(t, func() bool {
 		caps := capabilities.Load()
 
-		return caps == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus)
+		return caps == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus|protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat)
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
