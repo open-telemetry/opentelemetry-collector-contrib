@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	go.opentelemetry.io/collector/extension v1.40.1-0.20250908133507-3166bac6544f
 	go.opentelemetry.io/collector/pdata v1.40.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/pdata/pprofile v0.134.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.134.1-0.20250908133507-3166bac6544f
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component v1.40.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/collector/featuregate v1.40.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.134.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
