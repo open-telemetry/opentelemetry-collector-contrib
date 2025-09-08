@@ -75,8 +75,8 @@ github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.7
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:0pJ8unHLvA+BbDPvVyF7+61C6OeRTIWBgv5Zu4HOIIc=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.0-devel.0.20250902202452-61c2536752eb h1:4n+aTSBv3Dbu1W34cgnB9u8moMTXbhAjpjXpOLhPDYk=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:nhBRk46zMJrrGdRRPT/tv7ggV5DOsmBM8ArecelDmDA=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250902202452-61c2536752eb h1:9kZWPQeeG0oFbEApu8UC47RCc+9SRpxO0V3vJrIe4Wo=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:mqFZAOwPpEOVZ9+xcO+ik22urFwABEmzd6lGA1ihU/E=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250908112322-c0e8c8158aa2 h1:STWAt2pChFf7RkhaAa2q9OoTZ5uvksP+hhVxLA4u13g=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250908112322-c0e8c8158aa2/go.mod h1:jwfF9oUgkMl0a5qHWBqqMi/uG2kEY2ScZ0UPRd+8uDA=
 github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.71.0-devel.0.20250902202452-61c2536752eb h1:p6eccVfbHADnkJeIL4fRl03nMbztbkw5ZABPYbvGPrQ=
 github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:/n2ahiZCYFpdex/heAynM/boLq6zuFpbbqGmlJV1Db8=
 github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.71.0-devel.0.20250902202452-61c2536752eb h1:sRK1nNFmr7CKxIdaPNv+8DjrUd+1c5oVISSsEJ4/0Qc=
