@@ -846,20 +846,20 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 
 	host, port, err := net.SplitHostPort(hostAndPort)
 	if err != nil {
-		return handleInstanceIdErr(err, logger, port, service)
+		return handleInstanceIDErr(err, logger, port, service)
 	}
 
 	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
 		host, err = os.Hostname()
 	}
 	if err != nil {
-		return handleInstanceIdErr(err, logger, port, service)
+		return handleInstanceIDErr(err, logger, port, service)
 	}
 
 	return host + ":" + port + service
 }
 
-func handleInstanceIdErr(err error, logger *zap.Logger, port string, service string) string {
+func handleInstanceIDErr(err error, logger *zap.Logger, port string, service string) string {
 	const fallback = "unknown:1521"
 
 	logger.Warn("Failed to compute service.instance.id", zap.Error(err))
