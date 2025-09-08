@@ -134,12 +134,11 @@ With the below configuration, the **groupbyattrs** will re-associate the spans w
 
 ```yaml
 processors:
-  batch:
   groupbyattrs:
 
 pipelines:
   traces:
-    processors: [batch, groupbyattrs/grouping]
+    processors: [groupbyattrs/grouping]
     ...
 ```
 

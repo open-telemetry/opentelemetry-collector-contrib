@@ -27,8 +27,6 @@ receivers:
     protocols:
       grpc:
       http:
-processors:
-  batch:
 
 exporters:
   logging:
@@ -41,15 +39,12 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [logging, http]
     metrics:
       receivers: [otlp]
-      processors: [batch]
       exporters: [logging, http]
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [logging, http]
 
 ```

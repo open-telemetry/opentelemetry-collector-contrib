@@ -46,9 +46,6 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
 
-processors:
-  batch:
-
 exporters:
   debug:
     verbosity: detailed
@@ -57,15 +54,12 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
     metrics:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
 ```
 
