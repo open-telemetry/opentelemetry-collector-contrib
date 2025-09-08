@@ -10,12 +10,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.134.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.40.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/confmap v1.40.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/consumer v1.40.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/featuregate v1.40.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/pdata v1.40.1-0.20250908133507-3166bac6544f
-	go.opentelemetry.io/collector/processor v1.40.1-0.20250908133507-3166bac6544f
+	go.opentelemetry.io/collector/component v1.41.0
+	go.opentelemetry.io/collector/confmap v1.41.0
+	go.opentelemetry.io/collector/consumer v1.41.0
+	go.opentelemetry.io/collector/featuregate v1.41.0
+	go.opentelemetry.io/collector/pdata v1.41.0
+	go.opentelemetry.io/collector/processor v1.41.0
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
@@ -64,7 +64,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.134.1-0.20250908133507-3166bac6544f // indirect
-	go.opentelemetry.io/collector/pipeline v1.40.1-0.20250908133507-3166bac6544f // indirect
+	go.opentelemetry.io/collector/pipeline v1.41.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.134.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
