@@ -29,7 +29,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.134.0
-	github.com/prometheus/common v0.65.0
+	github.com/prometheus/common v0.66.0
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
 	github.com/shirou/gopsutil/v4 v4.25.8
 	github.com/stretchr/testify v1.11.1
@@ -64,7 +64,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.40.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.134.1-0.20250904124342-6831efd5116d
 	go.opentelemetry.io/collector/receiver/receivertest v0.134.1-0.20250904124342-6831efd5116d
-	go.opentelemetry.io/otel v1.37.0
+	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -296,8 +296,8 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
-	github.com/spf13/pflag v1.0.7 // indirect
+	github.com/spf13/cobra v1.10.1 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/splunk/stef/go/grpc v0.0.7 // indirect
 	github.com/splunk/stef/go/otel v0.0.7 // indirect
 	github.com/splunk/stef/go/pdata v0.0.7 // indirect
@@ -370,12 +370,12 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.13.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.37.0 // indirect
-	go.opentelemetry.io/otel/log v0.13.0 // indirect
-	go.opentelemetry.io/otel/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
+	go.opentelemetry.io/otel/log v0.14.0 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.13.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
