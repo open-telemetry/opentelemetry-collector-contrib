@@ -2523,14 +2523,21 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
-	// Set the heartbeat interval to 5 seconds
+	// Set the heartbeat interval to 1 seconds
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
 			Opamp: &protobufs.OpAMPConnectionSettings{
+				DestinationEndpoint:      "ws://" + server.addr + "/v1/opamp",
 				HeartbeatIntervalSeconds: 1,
 			},
 		},
 	})
+
+	// supervisor disconnects from the server
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	// supervisor reconnects to the server
+	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	require.Eventually(t, func() bool {
 		return heartbeatReport.Load()
