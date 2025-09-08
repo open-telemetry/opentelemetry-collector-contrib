@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/proba
 go 1.24.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.134.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.135.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.41.0
 	go.opentelemetry.io/collector/component/componenttest v0.135.0

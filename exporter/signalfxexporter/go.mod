@@ -6,15 +6,15 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.134.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.134.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.135.0
 	github.com/shirou/gopsutil/v4 v4.25.8
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.11.1
@@ -71,7 +71,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.134.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.135.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
