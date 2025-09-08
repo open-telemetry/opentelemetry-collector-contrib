@@ -205,6 +205,7 @@ body:
       - processor/resourcedetection
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/openstack/nova
       - processor/schema
       - processor/span
       - processor/sumologic

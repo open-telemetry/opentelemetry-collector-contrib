@@ -25,7 +25,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for resourcedetectionprocessor/nova resource attributes.
+// ResourceAttributesConfig provides config for novadetector resource attributes.
 type ResourceAttributesConfig struct {
 	CloudAccountID        ResourceAttributeConfig `mapstructure:"cloud.account.id"`
 	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`

@@ -27,9 +27,8 @@ type Config struct {
 // CreateDefaultConfig returns the default configuration for the Nova detector.
 func CreateDefaultConfig() Config {
 	return Config{
-		Labels:             []string{},
-		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
-		// default: best-effort
+		Labels:                []string{},
+		ResourceAttributes:    metadata.DefaultResourceAttributesConfig(),
 		FailOnMissingMetadata: false,
 	}
 }
