@@ -106,11 +106,11 @@ func (c *Consumer) ConsumeTimeSeries(
 	dims *metrics.Dimensions,
 	typ metrics.DataType,
 	timestamp uint64,
-	_ int64,
+	interval int64,
 	value float64,
 ) {
 	dt := c.toDataType(typ)
-	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met := NewMetric(dims.Name(), dt, timestamp, interval, value, dims.Tags())
 	met.SetResources([]datadogV2.MetricResource{
 		{
 			Name: datadog.PtrString(dims.Host()),
