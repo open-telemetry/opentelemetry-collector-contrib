@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
 
-go 1.24
+go 1.24.0
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/tg123/go-htpasswd v1.2.4
 	go.opentelemetry.io/collector/client v1.40.0
 	go.opentelemetry.io/collector/component v1.40.0
