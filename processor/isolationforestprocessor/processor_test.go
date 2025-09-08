@@ -5,13 +5,11 @@
 package isolationforestprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -112,7 +110,7 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 	features := map[string][]float64{
 		"duration": {50.0},
 	}
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"service.name": "frontend",
 	}
 
@@ -121,8 +119,6 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 	// We don't assert on isAnomaly (model behavior dependent), but ensure it's a boolean by using it
 	if isAnomaly {
 		assert.NotEmpty(t, model) // if anomalous, a model name should exist (default or specific)
-	} else {
-		// ok even if not anomalous
 	}
 }
 
@@ -134,7 +130,7 @@ func Test_processTraces_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	tdIn := makeTrace()
-	tdOut, err := p.processTraces(context.Background(), tdIn)
+	tdOut, err := p.processTraces(t.Context(), tdIn)
 	require.NoError(t, err)
 
 	rs := tdOut.ResourceSpans().At(0)
@@ -155,7 +151,7 @@ func Test_processLogs_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	ldIn := makeLogs()
-	ldOut, err := p.processLogs(context.Background(), ldIn)
+	ldOut, err := p.processLogs(t.Context(), ldIn)
 	require.NoError(t, err)
 
 	rl := ldOut.ResourceLogs().At(0)
@@ -176,7 +172,7 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	mdIn := makeMetrics()
-	mdOut, err := p.processMetrics(context.Background(), mdIn)
+	mdOut, err := p.processMetrics(t.Context(), mdIn)
 	require.NoError(t, err)
 
 	rm := mdOut.ResourceMetrics().At(0)
@@ -186,7 +182,7 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 	switch m.Type() {
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
-		require.True(t, dps.Len() > 0)
+		require.Positive(t, dps.Len())
 		attrs := dps.At(0).Attributes()
 
 		_, ok := attrs.Get(cfg.ScoreAttribute)

@@ -4,12 +4,11 @@
 package gcp
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -83,7 +82,7 @@ func TestProvider(t *testing.T) {
 				instanceName: testInstance.instanceName,
 			}}
 
-			src, err := provider.Source(context.Background())
+			src, err := provider.Source(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, source.HostnameKind, src.Kind)
 			assert.Equal(t, testInstance.hostname, src.Identifier)

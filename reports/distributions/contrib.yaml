@@ -46,7 +46,6 @@ components:
         - logicmonitor
         - logzio
         - mezmo
-        - opencensus
         - opensearch
         - otelarrow
         - prometheus
@@ -98,6 +97,7 @@ components:
         - pprof
         - redis_storage
         - sigv4auth
+        - skywalking_encoding
         - text_encoding
         - zipkin_encoding
     processor:
@@ -111,6 +111,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
+        - isolationforest
         - k8sattributes
         - logdedup
         - metricsgeneration
@@ -121,7 +122,6 @@ components:
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
         - sumologic
         - tail_sampling
@@ -191,7 +191,6 @@ components:
         - nginx
         - nsxt
         - ntp
-        - opencensus
         - oracledb
         - otelarrow
         - otlpjsonfile
@@ -208,7 +207,6 @@ components:
         - redis
         - riak
         - saphana
-        - sapm
         - signalfx
         - skywalking
         - snmp

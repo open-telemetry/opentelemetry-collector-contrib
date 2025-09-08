@@ -301,7 +301,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 
 	switch to.kind {
 	case "Job":
-		ms.Setup(gvk.Job, store)
+		ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-job-0"] = testutils.WithOwnerReferences(
@@ -319,7 +319,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 		}
 		return ms
 	case "ReplicaSet":
-		ms.Setup(gvk.ReplicaSet, store)
+		ms.Setup(gvk.ReplicaSet, metadata.ClusterWideInformerKey, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-replicaset-0"] = testutils.WithOwnerReferences(
@@ -561,4 +561,30 @@ func TestPodMetadata(t *testing.T) {
 			assert.Equal(t, allExpectedMetadata, podMeta)
 		})
 	}
+}
+
+func TestPodContainerStateMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
+	)
+
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sContainerStatusState.Enabled = true
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_container_state.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
 }

@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -56,7 +55,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		"localhost:9091": nil,
 	}
 	for endpoint := range endpointsToReceivers {
-		ctx := context.Background()
+		ctx := t.Context()
 		mp, cfg, err := setupMockPrometheus(targets...)
 		require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 		defer mp.Close()
@@ -64,7 +63,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		require.NoError(t, err)
 		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
-			APIServer: &APIServer{
+			APIServer: APIServer{
 				Enabled: true,
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: endpoint,

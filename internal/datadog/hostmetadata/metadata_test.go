@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata/payload"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/azure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -205,7 +205,7 @@ func TestPushMetadata(t *testing.T) {
 	pcfg.MetricsEndpoint = ts.URL
 
 	pusher := NewPusher(mockExporterCreateSettings, pcfg)
-	err := pusher.Push(context.Background(), mockMetadata)
+	err := pusher.Push(t.Context(), mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -221,7 +221,7 @@ func TestFailPushMetadata(t *testing.T) {
 	pcfg.MetricsEndpoint = ts.URL
 
 	pusher := NewPusher(mockExporterCreateSettings, pcfg)
-	err := pusher.Push(context.Background(), mockMetadata)
+	err := pusher.Push(t.Context(), mockMetadata)
 	require.Error(t, err)
 }
 
@@ -239,7 +239,7 @@ func TestPusher(t *testing.T) {
 	attrs := testutil.NewAttributeMap(map[string]string{
 		attributes.AttributeDatadogHostname: "datadog-hostname",
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	server := testutil.DatadogServerMock()

@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.23.0"
+    "go": "1.24"
   },
   "schedule": [
     "on tuesday"
@@ -98,6 +98,10 @@
       "matchSourceUrls": [
         "https://github.com/datadog{/,}**"
       ]
+    },
+    {
+      "matchPackagePatterns": ["^github.com/DataDog/opentelemetry-mapping-go/"],
+      "enabled": false
     },
     {
       "matchManagers": [

@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
 
-go 1.23.0
+go 1.24.0
 
 require (
-	github.com/docker/docker v28.1.1+incompatible
+	github.com/docker/docker v28.3.3+incompatible
 	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
@@ -12,6 +12,8 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.5.0 // indirect
