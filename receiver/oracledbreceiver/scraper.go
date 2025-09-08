@@ -859,7 +859,7 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 	return host + ":" + port + service
 }
 
-func handleInstanceIDErr(err error, logger *zap.Logger, port string, service string) string {
+func handleInstanceIDErr(err error, logger *zap.Logger, port, service string) string {
 	const fallback = "unknown:1521"
 
 	logger.Warn("Failed to compute service.instance.id", zap.Error(err))
