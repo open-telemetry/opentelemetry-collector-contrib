@@ -5,11 +5,11 @@ go 1.24.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.134.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.40.0
+	go.opentelemetry.io/collector/component v1.40.1-0.20250908133507-3166bac6544f
 	go.opentelemetry.io/collector/component/componenttest v0.134.0
-	go.opentelemetry.io/collector/extension v1.40.0
+	go.opentelemetry.io/collector/extension v1.40.1-0.20250908133507-3166bac6544f
 	go.opentelemetry.io/collector/extension/extensiontest v0.134.0
-	go.opentelemetry.io/collector/pdata v1.40.0
+	go.opentelemetry.io/collector/pdata v1.40.1-0.20250908133507-3166bac6544f
 	google.golang.org/protobuf v1.36.8
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
@@ -26,7 +26,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.40.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.40.1-0.20250908133507-3166bac6544f // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.134.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
