@@ -228,6 +228,46 @@ The current phase of namespaces (1 for active and 0 for terminating)
 | ---- | ----------- | ---------- | --------- |
 |  | Gauge | Int | Development |
 
+### k8s.node.allocatable.cpu
+
+Amount of cpu allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {cpu} | Sum | Double | Unspecified | false |
+
+### k8s.node.allocatable.ephemeral_storage
+
+Amount of ephemeral-storage allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Unspecified | false |
+
+### k8s.node.allocatable.memory
+
+Amount of memory allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Unspecified | false |
+
+### k8s.node.allocatable.pods
+
+Amount of pods allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {pod} | Sum | Int | Unspecified | false |
+
+### k8s.node.allocatable.storage
+
+Amount of storage allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Unspecified | false |
+
 ### k8s.pod.phase
 
 Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
