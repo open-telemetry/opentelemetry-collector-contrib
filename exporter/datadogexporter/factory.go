@@ -51,6 +51,13 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.129.0"),
 )
 
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportnativeclient",
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.135.0"),
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+)
+
 // noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
 var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAPMStats",
