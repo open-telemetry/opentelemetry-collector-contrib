@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 
 go 1.24.6
 
-toolchain go1.24.7
-
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elastic/go-docappender/v2 v2.11.0
