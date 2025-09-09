@@ -40,7 +40,10 @@ require (
 	k8s.io/client-go v0.34.3
 )
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.144.0
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.144.0
+	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260130192532-20cbfc09f93d
+)
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -111,7 +114,6 @@ require (
 	go.opentelemetry.io/collector/extension v1.50.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.50.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.144.1-0.20260130192532-20cbfc09f93d // indirect
-	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.144.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.144.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.144.1-0.20260130192532-20cbfc09f93d // indirect
