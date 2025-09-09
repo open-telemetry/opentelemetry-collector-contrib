@@ -41,12 +41,13 @@ type Manager struct {
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
 
-	// configUpdateCount tracks updates to the config, for testing.
+	// configUpdateCount tracks how many times the config has changed, for
+	// testing.
 	configUpdateCount *atomic.Int64
 }
 
 func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
-	m := &Manager{
+	return &Manager{
 		shutdown:               make(chan struct{}),
 		settings:               set,
 		cfg:                    cfg,
@@ -55,7 +56,6 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 		enableNativeHistograms: enableNativeHistograms,
 		configUpdateCount:      &atomic.Int64{},
 	}
-	return m
 }
 
 func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Manager, dm *discovery.Manager) error {

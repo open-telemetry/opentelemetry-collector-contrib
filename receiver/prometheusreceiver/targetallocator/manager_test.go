@@ -724,8 +724,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			ctx := t.Context()
-			// mr := metric.NewManualReader()
-			// meter := metric.NewMeterProvider(metric.WithReader(mr)).Meter("test")
 
 			allocator, err := setupMockTargetAllocator(tc.responses)
 			require.NoError(t, err, "Failed to create allocator", tc.responses)
@@ -777,21 +775,12 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
 
-						gotUpdates := false
-						for range 3 {
-							// The manager may not be done processing the Refresh call by the
-							// time we check the value of the ScrapeConfig, so retry a couple
-							// times and wait for the count to update.
+						// The manager may not be done processing the Refresh call by the
+						// time we check the value of the ScrapeConfig.
+						require.Eventually(t, func() bool {
 							v := manager.configUpdateCount.Load()
-							if v >= int64(len(tc.responses.responses["/scrape_configs"])) {
-								gotUpdates = true
-								break
-							}
-							time.Sleep(time.Second)
-						}
-						if !gotUpdates {
-							t.Error("manager config did not update as expected")
-						}
+							return v >= int64(len(tc.responses.responses["/scrape_configs"]))
+						}, 5*time.Second, 250*time.Millisecond)
 
 						if s.MetricRelabelConfig != nil {
 							for _, sc := range manager.promCfg.ScrapeConfigs {
