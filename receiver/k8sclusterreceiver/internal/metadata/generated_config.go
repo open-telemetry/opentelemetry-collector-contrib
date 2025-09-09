@@ -62,7 +62,6 @@ type MetricsConfig struct {
 	K8sNodeAllocatableEphemeralStorage  MetricConfig `mapstructure:"k8s.node.allocatable.ephemeral_storage"`
 	K8sNodeAllocatableMemory            MetricConfig `mapstructure:"k8s.node.allocatable.memory"`
 	K8sNodeAllocatablePods              MetricConfig `mapstructure:"k8s.node.allocatable.pods"`
-	K8sNodeAllocatableStorage           MetricConfig `mapstructure:"k8s.node.allocatable.storage"`
 	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
 	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
@@ -181,9 +180,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeAllocatablePods: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatableStorage: MetricConfig{
 			Enabled: true,
 		},
 		K8sNodeCondition: MetricConfig{
