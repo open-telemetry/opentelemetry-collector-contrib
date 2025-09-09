@@ -186,6 +186,10 @@ type Supervisor struct {
 
 	featureGates map[string]struct{}
 	metrics      *supervisorTelemetry.Metrics
+
+	// heartbeatInterval is the interval the OpAMP client is configured to send heartbeats.
+	// Default is 30 seconds but can be overridden by the OpAMP server with an OpAMPConnectionSettings message.
+	heartbeatIntervalSeconds uint64
 }
 
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -204,6 +208,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		agentReady:                     atomic.Bool{},
 		agentReadyChan:                 make(chan struct{}, 1),
 		metrics:                        &supervisorTelemetry.Metrics{},
+		heartbeatIntervalSeconds:       30,
 	}
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
@@ -713,6 +718,12 @@ func (s *Supervisor) startOpAMPClient() error {
 		return err
 	}
 
+	// Set heartbeat interval if the agent supports it
+	if s.config.Capabilities.ReportsHeartbeat {
+		d := time.Duration(s.heartbeatIntervalSeconds) * time.Second
+		settings.HeartbeatInterval = &d
+	}
+
 	s.telemetrySettings.Logger.Debug("Starting OpAMP client...")
 	if err := s.opampClient.Start(s.runCtx, settings); err != nil {
 		return err
@@ -1025,6 +1036,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	if err := newServerConfig.Validate(); err != nil {
 		s.telemetrySettings.Logger.Error("New OpAMP settings resulted in invalid configuration", zap.Error(err))
 		return err
+	}
+
+	// Update the heartbeat interval if the agent supports it
+	if s.config.Capabilities.ReportsHeartbeat {
+		s.heartbeatIntervalSeconds = settings.HeartbeatIntervalSeconds
 	}
 
 	if err := s.stopOpAMPClient(); err != nil {
