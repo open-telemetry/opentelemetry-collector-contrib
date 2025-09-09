@@ -74,6 +74,11 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
+	if inferIntervalDeltaFeatureGate.IsEnabled() {
+		params.Logger.Info("Metrics interval will be inferred for OTLP delta metrics with a set StartTimestamp.")
+		options = append(options, otlpmetrics.WithInferDeltaInterval())
+	}
+
 	tr, err := otlpmetrics.NewTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err

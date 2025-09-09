@@ -572,3 +572,19 @@ func TestNewSaramaClientConfigWithAWSMSKIAM(t *testing.T) {
 	assert.Equal(t, sarama.SASLMechanism(sarama.SASLTypeOAuth), saramaConfig.Net.SASL.Mechanism)
 	assert.NotNil(t, saramaConfig.Net.SASL.TokenProvider, "TokenProvider should not be nil for AWS_MSK_IAM_OAUTHBEARER")
 }
+
+func TestSetSaramaProducerConfig_AutoTopicCreation(t *testing.T) {
+	cfg := configkafka.NewDefaultProducerConfig()
+
+	// Explicit false
+	cfg.AllowAutoTopicCreation = false
+	sc := sarama.NewConfig()
+	setSaramaProducerConfig(sc, cfg, time.Second)
+	assert.False(t, sc.Metadata.AllowAutoTopicCreation)
+
+	// Explicit true
+	cfg.AllowAutoTopicCreation = true
+	sc = sarama.NewConfig()
+	setSaramaProducerConfig(sc, cfg, time.Second)
+	assert.True(t, sc.Metadata.AllowAutoTopicCreation)
+}
