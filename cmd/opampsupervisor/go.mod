@@ -194,7 +194,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.135.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.135.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.37.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.62.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.14.0 // indirect
@@ -224,7 +224,6 @@ require (
 	google.golang.org/grpc v1.75.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	modernc.org/b/v2 v2.1.0 // indirect
-	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../../receiver/syslogreceiver
