@@ -480,7 +480,7 @@ func TestS3SQSReader_ReadAllSkipDeletion(t *testing.T) {
 	// Run test with callback
 	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
-	_ = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+	_ = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
 		return nil
 	})
 
