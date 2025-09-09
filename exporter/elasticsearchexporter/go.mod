@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
 
-go 1.24.0
+go 1.24.6
+
+toolchain go1.24.7
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
@@ -37,7 +39,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.41.0
 	go.opentelemetry.io/collector/pdata v1.41.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0
-	go.opentelemetry.io/ebpf-profiler v0.0.202531
+	go.opentelemetry.io/ebpf-profiler v0.0.202536
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
