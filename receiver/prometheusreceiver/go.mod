@@ -40,7 +40,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.41.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.135.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.135.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
