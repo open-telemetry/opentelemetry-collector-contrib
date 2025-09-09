@@ -29,7 +29,7 @@ const (
 )
 
 var allowAllocatableNamespace = featuregate.GlobalRegistry().MustRegister(
-	"k8scluster.allocatableNamespace.enabled",
+	"receiver.k8scluster.allocatableNamespace.enabled",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allocatable metrics are reported under allocatable namespace: with '.' instead of '_'"),
 	featuregate.WithRegisterFromVersion("v0.136.0"),
@@ -68,6 +68,28 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
+	if allowAllocatableNamespace.IsEnabled() {
+		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
+			mb.RecordK8sNodeAllocatableCPUDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
+		}
+
+		if ephemeralMemoryVal, ok := node.Status.Allocatable[corev1.ResourceEphemeralStorage]; ok {
+			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, ephemeralMemoryVal.Value())
+		}
+
+		if storageVal, ok := node.Status.Allocatable[corev1.ResourceStorage]; ok {
+			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, storageVal.Value())
+		}
+
+		if memoryVal, ok := node.Status.Allocatable[corev1.ResourceMemory]; ok {
+			mb.RecordK8sNodeAllocatableMemoryDataPoint(ts, memoryVal.Value())
+		}
+
+		if podVal, ok := node.Status.Allocatable[corev1.ResourcePods]; ok {
+			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, podVal.Value())
+		}
+	}
+
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -91,22 +113,24 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
-		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
-		if !ok {
-			set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
-				node.GetName()).Error())
-			continue
+	if !allowAllocatableNamespace.IsEnabled() {
+		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
+			if !ok {
+				set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+					node.GetName()).Error())
+				continue
+			}
+			m := sm.Metrics().AppendEmpty()
+			m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
+			m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
+			m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
+			g := m.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
+			dp.SetTimestamp(ts)
 		}
-		m := sm.Metrics().AppendEmpty()
-		m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
-		m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
-		m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
-		g := m.SetEmptyGauge()
-		dp := g.DataPoints().AppendEmpty()
-		setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
-		dp.SetTimestamp(ts)
 	}
 
 	if sm.Metrics().Len() == 0 {
@@ -226,8 +250,5 @@ func setNodeAllocatableValue(dp pmetric.NumberDataPoint, res corev1.ResourceName
 }
 
 func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
-	if allowAllocatableNamespace.IsEnabled() {
-		return "k8s.node.allocatable." + strcase.ToSnake(nodeAllocatableTypeValue)
-	}
 	return "k8s.node.allocatable_" + strcase.ToSnake(nodeAllocatableTypeValue)
 }
