@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -39,10 +40,15 @@ type Manager struct {
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
+	ConfigUpdateCount      metric.Int64Counter
 }
 
 func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
-	return &Manager{
+	return NewManagerWithMeter(set, cfg, promCfg, enableNativeHistograms, nil)
+}
+
+func NewManagerWithMeter(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool, meter metric.Meter) *Manager {
+	m := &Manager{
 		shutdown:               make(chan struct{}),
 		settings:               set,
 		cfg:                    cfg,
@@ -50,6 +56,12 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 		initialScrapeConfigs:   promCfg.ScrapeConfigs,
 		enableNativeHistograms: enableNativeHistograms,
 	}
+	if meter != nil {
+		m.ConfigUpdateCount, _ = meter.Int64Counter("otelcol_targetallocator_config_sync_updates",
+			metric.WithDescription("Number of updates to the config"),
+			metric.WithUnit("{updates}"))
+	}
+	return m
 }
 
 func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Manager, dm *discovery.Manager) error {
@@ -72,7 +84,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 	m.settings.Logger.Info("Starting target allocator discovery")
 
 	operation := func() (uint64, error) {
-		savedHash, opErr := m.sync(uint64(0), httpClient)
+		savedHash, opErr := m.sync(ctx, uint64(0), httpClient)
 		if opErr != nil {
 			if errors.Is(opErr, syscall.ECONNREFUSED) {
 				return 0, backoff.RetryAfter(1)
@@ -91,7 +103,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		for {
 			select {
 			case <-targetAllocatorIntervalTicker.C:
-				hash, newErr := m.sync(savedHash, httpClient)
+				hash, newErr := m.sync(ctx, savedHash, httpClient)
 				if newErr != nil {
 					m.settings.Logger.Error(newErr.Error())
 					continue
@@ -113,7 +125,7 @@ func (m *Manager) Shutdown() {
 
 // sync request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
-func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, error) {
+func (m *Manager) sync(ctx context.Context, compareHash uint64, httpClient *http.Client) (uint64, error) {
 	m.settings.Logger.Debug("Syncing target allocator jobs")
 	scrapeConfigsResponse, err := getScrapeConfigsResponse(httpClient, m.cfg.Endpoint)
 	if err != nil {
@@ -184,6 +196,7 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		return 0, err
 	}
 
+	m.ConfigUpdateCount.Add(ctx, 1)
 	return hash, nil
 }
 
