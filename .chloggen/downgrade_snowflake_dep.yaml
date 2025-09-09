@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/snowflake, receiver/sqlquery
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix panic on startup caused by gosnowflake v1.16.0
+note: Fix panic on startup caused by gosnowflake `v1.16.0`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42605]
@@ -16,7 +16,7 @@ issues: [42605]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The solution was to downgrade the dependency version.
+  The solution was to downgrade the dependency version to `v1.15.0`.
   For more information, refer to the [upstream gosnowflake issue](https://github.com/snowflakedb/gosnowflake/issues/1533)
 
 # If your change doesn't affect end users or the exported elements of any package,
