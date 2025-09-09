@@ -168,11 +168,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_GAUGE,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						metricName, _ := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestGaugeDoubleMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
 						return metricName
 					}(),
 					Unit: "bytes_per_second",
@@ -182,11 +183,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_GAUGE,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						metricName, _ := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestGaugeIntMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
 						return metricName
 					}(),
 					Unit: "per_second",
@@ -196,11 +198,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_COUNTER,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						metricName, _ := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestSumDoubleMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
 						return metricName
 					}(),
 					Unit: "seconds",
@@ -210,11 +213,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_COUNTER,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						metricName, _ := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestSumIntMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
 						return metricName
 					}(),
 					Unit: "connections",
@@ -224,11 +228,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_HISTOGRAM,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						metricName, _ := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestDoubleHistogramMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
 						return metricName
 					}(),
 					Unit: "",
@@ -238,11 +243,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_SUMMARY,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						metricName, _ := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestDoubleSummaryMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
 						return metricName
 					}(),
 					Unit: "",
