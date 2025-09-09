@@ -70,6 +70,12 @@ var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustR
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
 )
 
+var inferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
+)
+
 func init() {
 	log.SetupLogger(log.Disabled(), "off")
 }

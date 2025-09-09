@@ -2116,6 +2116,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				},
 			})
 
+			// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42550
+			time.Sleep(100 * time.Millisecond)
 			// Check that the status is set to APPLYING
 			require.Eventually(t, func() bool {
 				status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
