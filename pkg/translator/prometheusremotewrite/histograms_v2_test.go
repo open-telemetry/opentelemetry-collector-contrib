@@ -598,6 +598,14 @@ func validateNativeHistogramCountV2(t *testing.T, h writev2.Histogram) {
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
 }
 
+func validateHistogramCount(t *testing.T, h pmetric.HistogramDataPoint) {
+	actualCount := uint64(0)
+	for _, bucket := range h.BucketCounts().AsRaw() {
+		actualCount += bucket
+	}
+	require.Equal(t, h.Count(), actualCount, "histogram count mismatch")
+}
+
 func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -750,9 +758,303 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 				m,
 			))
 
-			x := tt.wantSeries()
-			assert.Equal(t, x, converter.unique)
+			assert.Equal(t, tt.wantSeries(), converter.unique)
 			assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
+func TestHistogramToCustomBucketsHistogram(t *testing.T) {
+	tests := []struct {
+		name           string
+		hist           func() pmetric.HistogramDataPoint
+		wantNativeHist func() writev2.Histogram
+		wantErrMessage string
+	}{
+		{
+			name: "convert hist to custom buckets hist",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := pmetric.NewHistogramDataPoint()
+				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(2)
+				pt.SetSum(10.1)
+
+				pt.BucketCounts().FromRaw([]uint64{1, 1})
+				pt.ExplicitBounds().FromRaw([]float64{0, 1})
+				return pt
+			},
+			wantNativeHist: func() writev2.Histogram {
+				return writev2.Histogram{
+					Count:          &writev2.Histogram_CountInt{CountInt: 2},
+					Sum:            10.1,
+					Schema:         -53,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{1, 0},
+					CustomValues:   []float64{0, 1},
+					Timestamp:      500,
+				}
+			},
+		},
+		{
+			name: "convert hist to custom buckets hist with no sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := pmetric.NewHistogramDataPoint()
+				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+
+				pt.BucketCounts().FromRaw([]uint64{2, 2})
+				pt.ExplicitBounds().FromRaw([]float64{0, 1})
+				return pt
+			},
+			wantNativeHist: func() writev2.Histogram {
+				return writev2.Histogram{
+					Count:          &writev2.Histogram_CountInt{CountInt: 4},
+					Schema:         -53,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{2, 0},
+					CustomValues:   []float64{0, 1},
+					Timestamp:      500,
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			validateHistogramCount(t, tt.hist())
+			got := explicitHistogramToCustomBucketsHistogram(tt.hist())
+
+			require.Equal(t, tt.wantNativeHist(), got)
+			validateNativeHistogramCountV2(t, got)
+		})
+	}
+}
+
+func TestPrometheusConverter_addCustomBucketsHistogramDataPoints(t *testing.T) {
+	tests := []struct {
+		name       string
+		metric     func() pmetric.Metric
+		wantSeries func() map[uint64]*writev2.TimeSeries
+	}{
+		{
+			name: "histogram data points with same labels and without scope promotion",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist_to_nhcb")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetCount(3)
+				pt.SetSum(3)
+				pt.BucketCounts().FromRaw([]uint64{2, 0, 1})
+				pt.ExplicitBounds().FromRaw([]float64{5, 10})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(1)
+				pt.Attributes().PutStr("attr", "test_attr")
+
+				pt = metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetCount(11)
+				pt.SetSum(5)
+				pt.BucketCounts().FromRaw([]uint64{3, 8, 0})
+				pt.ExplicitBounds().FromRaw([]float64{0, 1})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(2)
+				pt.Attributes().PutStr("attr", "test_attr")
+
+				return metric
+			},
+			wantSeries: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_to_nhcb"},
+					{Name: "attr", Value: "test_attr"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 3},
+								Sum:            3,
+								Schema:         -53,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveDeltas: []int64{2, -2, 1},
+								CustomValues:   []float64{5, 10},
+							},
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 11},
+								Sum:            5,
+								Schema:         -53,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveDeltas: []int64{3, 5, -8},
+								CustomValues:   []float64{0, 1},
+							},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 0,
+						},
+						// TODO support exemplars
+						/*Exemplars: []writev2.Exemplar{
+							{Value: 1},
+							{Value: 2},
+						},*/
+					},
+				}
+			},
+		},
+		{
+			name: "histogram data points with same labels",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist_to_nhcb")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetCount(3)
+				pt.SetSum(3)
+				pt.BucketCounts().FromRaw([]uint64{2, 0, 1})
+				pt.ExplicitBounds().FromRaw([]float64{5, 10})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(1)
+				pt.Attributes().PutStr("attr", "test_attr")
+
+				pt = metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetCount(11)
+				pt.SetSum(5)
+				pt.BucketCounts().FromRaw([]uint64{3, 8, 0})
+				pt.ExplicitBounds().FromRaw([]float64{0, 1})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(2)
+				pt.Attributes().PutStr("attr", "test_attr")
+
+				return metric
+			},
+			wantSeries: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_to_nhcb"},
+					{Name: "attr", Value: "test_attr"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 3},
+								Sum:            3,
+								Schema:         -53,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveDeltas: []int64{2, -2, 1},
+								CustomValues:   []float64{5, 10},
+							},
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 11},
+								Sum:            5,
+								Schema:         -53,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveDeltas: []int64{3, 5, -8},
+								CustomValues:   []float64{0, 1},
+							},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 0,
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "histogram data points with different labels and without scope promotion",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist_to_nhcb")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetCount(6)
+				pt.SetSum(3)
+				pt.BucketCounts().FromRaw([]uint64{4, 2})
+				pt.ExplicitBounds().FromRaw([]float64{0, 1})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(1)
+				pt.Attributes().PutStr("attr", "test_attr")
+
+				pt = metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetCount(11)
+				pt.SetSum(5)
+				pt.BucketCounts().FromRaw([]uint64{3, 8})
+				pt.ExplicitBounds().FromRaw([]float64{0, 1})
+				pt.Exemplars().AppendEmpty().SetDoubleValue(2)
+				pt.Attributes().PutStr("attr", "test_attr_two")
+
+				return metric
+			},
+			wantSeries: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_to_nhcb"},
+					{Name: "attr", Value: "test_attr"},
+				}
+				labelsAnother := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_to_nhcb"},
+					{Name: "attr", Value: "test_attr_two"},
+				}
+
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 6},
+								Sum:            3,
+								Schema:         -53,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{4, -2},
+								CustomValues:   []float64{0, 1},
+							},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 0,
+						},
+					},
+					timeSeriesSignature(labelsAnother): {
+						LabelsRefs: []uint32{1, 2, 3, 5},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 11},
+								Sum:            5,
+								Schema:         -53,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{3, 5},
+								CustomValues:   []float64{0, 1},
+							},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 0,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+			unitNamer := otlptranslator.UnitNamer{}
+			m := metadata{
+				Type: otelMetricTypeToPromMetricTypeV2(metric),
+				Help: metric.Description(),
+				Unit: unitNamer.Build(metric.Unit()),
+			}
+			converter := newPrometheusConverterV2(Settings{})
+			metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
+
+			converter.addCustomBucketsHistogramDataPoints(
+				metric.Histogram().DataPoints(),
+				pcommon.NewResource(),
+				Settings{ConvertHistogramsToNHCB: true},
+				metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
+				m)
+
+			require.Equal(t, tt.wantSeries(), converter.unique)
+			require.Empty(t, converter.conflicts)
 		})
 	}
 }
