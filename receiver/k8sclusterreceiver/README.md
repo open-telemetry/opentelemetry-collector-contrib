@@ -460,7 +460,7 @@ Add the following rules to your ClusterRole:
 The `k8scluster.allocatableNamespace.enabled` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
 The feature gate is in `alpha` stage, which means it is disabled by default.
 
-If enabled (together with the `allocatable_types_to_report` config option), the SemConv valid format of the node allocatable metrics are reported:
+If enabled the SemConv valid format of the node allocatable metrics are reported (if enabled):
 
 - `k8s.node.allocatable.cpu`
 - `k8s.node.allocatable.ephemeral_storage`
