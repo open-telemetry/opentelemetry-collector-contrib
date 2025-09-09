@@ -77,10 +77,6 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, ephemeralMemoryVal.Value())
 		}
 
-		if storageVal, ok := node.Status.Allocatable[corev1.ResourceStorage]; ok {
-			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, storageVal.Value())
-		}
-
 		if memoryVal, ok := node.Status.Allocatable[corev1.ResourceMemory]; ok {
 			mb.RecordK8sNodeAllocatableMemoryDataPoint(ts, memoryVal.Value())
 		}

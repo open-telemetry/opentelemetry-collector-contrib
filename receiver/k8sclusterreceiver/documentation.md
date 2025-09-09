@@ -260,14 +260,6 @@ Amount of pods allocatable on the node
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pod} | Sum | Int | Unspecified | false |
 
-### k8s.node.allocatable.storage
-
-Amount of storage allocatable on the node
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Unspecified | false |
-
 ### k8s.pod.phase
 
 Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)

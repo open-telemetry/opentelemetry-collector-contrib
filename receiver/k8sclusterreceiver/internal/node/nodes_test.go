@@ -64,7 +64,7 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
-func TestNodeMetricsReportCPUMetricsAllocatableNamespace(t *testing.T) {
+func TestNodeAllocatableNamespaceMetrics(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), true))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), false))
@@ -76,7 +76,6 @@ func TestNodeMetricsReportCPUMetricsAllocatableNamespace(t *testing.T) {
 	mbc.Metrics.K8sNodeAllocatableCPU.Enabled = true
 	mbc.Metrics.K8sNodeAllocatableMemory.Enabled = true
 	mbc.Metrics.K8sNodeAllocatableEphemeralStorage.Enabled = true
-	mbc.Metrics.K8sNodeAllocatableStorage.Enabled = true
 	mbc.Metrics.K8sNodeAllocatablePods.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)

@@ -22,12 +22,6 @@ resourceMetrics:
                 - asInt: "1234"
             name: k8s.node.allocatable_ephemeral_storage
             unit: By
-          - description: Amount of storage allocatable on the node
-            gauge:
-              dataPoints:
-                - asInt: "34"
-            name: k8s.node.allocatable_storage
-            unit: By
           - description: Amount of memory allocatable on the node
             gauge:
               dataPoints:

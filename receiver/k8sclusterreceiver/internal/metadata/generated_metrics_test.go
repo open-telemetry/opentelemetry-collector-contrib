@@ -197,10 +197,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, 1)
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, 1)
-
 			allMetricsCount++
 			mb.RecordK8sNodeConditionDataPoint(ts, 1, "condition-val")
 
@@ -737,20 +733,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of pods allocatable on the node", ms.At(i).Description())
 					assert.Equal(t, "{pod}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityUnspecified, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.allocatable.storage":
-					assert.False(t, validatedMetrics["k8s.node.allocatable.storage"], "Found a duplicate in the metrics slice: k8s.node.allocatable.storage")
-					validatedMetrics["k8s.node.allocatable.storage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of storage allocatable on the node", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityUnspecified, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
