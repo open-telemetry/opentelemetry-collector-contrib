@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -25,6 +26,13 @@ const (
 	// Keys for node metadata and entity attributes. These are NOT used by resource attributes.
 	nodeCreationTime       = "node.creation_timestamp"
 	k8sNodeConditionPrefix = "k8s.node.condition"
+)
+
+var allowAllocatableNamespace = featuregate.GlobalRegistry().MustRegister(
+	"k8scluster.allocatableNamespace.enabled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allocatable metrics are reported under allocatable namespace: with '.' instead of '_'"),
+	featuregate.WithRegisterFromVersion("v0.136.0"),
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -218,5 +226,8 @@ func setNodeAllocatableValue(dp pmetric.NumberDataPoint, res corev1.ResourceName
 }
 
 func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
+	if allowAllocatableNamespace.IsEnabled() {
+		return "k8s.node.allocatable." + strcase.ToSnake(nodeAllocatableTypeValue)
+	}
 	return "k8s.node.allocatable_" + strcase.ToSnake(nodeAllocatableTypeValue)
 }

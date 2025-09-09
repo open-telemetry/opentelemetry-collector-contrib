@@ -540,7 +540,7 @@ metrics:
   # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled 
   # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
 
-  # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
+  # k8s.node.allocatable_* or k8s.node.allocatable.* metrics (k8s.node.allocatable_cpu/k8s.node.allocatable.cpu, k8s.node.allocatable_memory/k8s.node.allocatable.memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
 
 tests:
