@@ -467,6 +467,8 @@ func TestPeriodicMetrics(t *testing.T) {
 	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
 	go em.periodicMetrics()
 
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42515
+	time.Sleep(10 * time.Millisecond)
 	// ensure our gauge is showing 1 item in the queue
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)

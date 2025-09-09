@@ -81,6 +81,10 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	if cfg.FlushMaxMessages > 0 {
 		opts = append(opts, kgo.MaxBufferedRecords(cfg.FlushMaxMessages))
 	}
+	// Configure auto topic creation
+	if cfg.AllowAutoTopicCreation {
+		opts = append(opts, kgo.AllowAutoTopicCreation())
+	}
 
 	return kgo.NewClient(opts...)
 }
