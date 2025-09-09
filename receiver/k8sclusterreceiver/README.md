@@ -59,16 +59,9 @@ The following allocatable resource types are available (see Node Allocatable in 
   - memory
   - ephemeral-storage
   - pods
-
-When enabled, this setting produces the following node-level metrics (one per selected type):
-
-| allocatable type | metric name                      | unit     | type  | value type |
-| ---------------- | -------------------------------- | -------- | ----- | ---------- |
-| cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
-| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
-| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
-| pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
-
+  Note that with the introduction of the [receiver.k8scluster.allocatableNamespace.enabled](#receiverk8sclusterallocatablenamespaceenabled) feature gate, the metrics for the allocatable resource types
+  (`k8s.node.allocatable.cpu`, `k8s.node.allocatable.ephemeral_storage`, `k8s.node.allocatable.memory`, `k8s.node.allocatable.pods`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+  To activate the feature flag, start the collector with `--feature-gates receiver.k8scluster.allocatableNamespace.enabled`.
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
 - `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
@@ -455,23 +448,21 @@ Add the following rules to your ClusterRole:
 
 ## Feature Gates
 
-### `k8scluster.allocatableNamespace.enabled`
+### `receiver.k8scluster.allocatableNamespace.enabled`
 
-The `k8scluster.allocatableNamespace.enabled` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
+The `receiver.k8scluster.allocatableNamespace.enabled` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
 The feature gate is in `alpha` stage, which means it is disabled by default.
 
-If enabled the SemConv valid format of the node allocatable metrics are reported (if enabled):
+If enabled the SemConv valid format of the node allocatable metrics are reported (if enabled via the metrics section):
 
 - `k8s.node.allocatable.cpu`
 - `k8s.node.allocatable.ephemeral_storage`
-- `k8s.node.allocatable.storage`
 - `k8s.node.allocatable.memory`
 - `k8s.node.allocatable.pods`
 
-instead of the original version:
+instead, the old metrics are disabled and not reported (even if `allocatable_types_to_report` config option is set):
 
 - `k8s.node.allocatable_cpu`
 - `k8s.node.allocatable_ephemeral_storage`
-- `k8s.node.allocatable_storage`
 - `k8s.node.allocatable_memory`
 - `k8s.node.allocatable_pods`
