@@ -443,9 +443,12 @@ func (ecsDataPointsEncoder) encodeMetrics(
 
 func addDataStreamAttributes(document *objmodel.Document, key string, idx elasticsearch.Index) {
 	if idx.IsDataStream() {
-		document.AddString(key+"data_stream.type", idx.Type)
-		document.AddString(key+"data_stream.dataset", idx.Dataset)
-		document.AddString(key+"data_stream.namespace", idx.Namespace)
+		if key != "" {
+			key += "."
+		}
+		document.AddString(key+elasticsearch.DataStreamType, idx.Type)
+		document.AddString(key+elasticsearch.DataStreamDataset, idx.Dataset)
+		document.AddString(key+elasticsearch.DataStreamNamespace, idx.Namespace)
 	}
 }
 
