@@ -8,7 +8,6 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"math/rand/v2"
 	"path"
 	"path/filepath"
@@ -21,6 +20,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/goleak"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 func randPort() int {
@@ -50,22 +51,20 @@ func getContainer(req testcontainers.ContainerRequest) (testcontainers.Container
 	return container, nil
 }
 
-type ClickHouseEnv struct {
+type clickhouseEnv struct {
 	NativeEndpoint       string
 	HTTPEndpoint         string
 	SecureNativeEndpoint string
 	HTTPSEndpoint        string
 }
 
-// StdoutLogConsumer is a LogConsumer that prints the log to stdout
-type StdoutLogConsumer struct{}
+type stdoutLogConsumer struct{}
 
-// Accept prints the log to stdout
-func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
+func (*stdoutLogConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }
 
-func createClickhouseContainer(image string) (testcontainers.Container, *ClickHouseEnv, error) {
+func createClickhouseContainer(image string) (testcontainers.Container, *clickhouseEnv, error) {
 	port := randPort()
 	httpPort := port + 1
 	tlsPort := port + 2
@@ -74,8 +73,15 @@ func createClickhouseContainer(image string) (testcontainers.Container, *ClickHo
 	_, b, _, _ := runtime.Caller(0)
 	basePath := filepath.Dir(b)
 
-	lc := StdoutLogConsumer{}
+	fileMount := func(testDataPath, containerPath string) testcontainers.ContainerFile {
+		return testcontainers.ContainerFile{
+			HostFilePath:      path.Join(basePath, "testdata", testDataPath),
+			ContainerFilePath: containerPath,
+			FileMode:          0o644,
+		}
+	}
 
+	var lc stdoutLogConsumer
 	req := testcontainers.ContainerRequest{
 		Image: image,
 		ExposedPorts: []string{
@@ -84,10 +90,12 @@ func createClickhouseContainer(image string) (testcontainers.Container, *ClickHo
 			fmt.Sprintf("%d:9440", tlsPort),
 			fmt.Sprintf("%d:8443", httpsPort),
 		},
-		Mounts: []testcontainers.ContainerMount{
-			testcontainers.BindMount(path.Join(basePath, "./testdata/certs"), "/etc/clickhouse-server/certs"),
-			testcontainers.BindMount(path.Join(basePath, "./testdata/clickhouse-config.xml"), "/etc/clickhouse-server/config.d/otel.xml"),
-			testcontainers.BindMount(path.Join(basePath, "./testdata/clickhouse-users.xml"), "/etc/clickhouse-server/users.d/otel-users.xml"),
+		Files: []testcontainers.ContainerFile{
+			fileMount("clickhouse-config.xml", "/etc/clickhouse-server/config.d/otel.xml"),
+			fileMount("clickhouse-users.xml", "/etc/clickhouse-server/users.d/otel-users.xml"),
+			fileMount("certs/CAroot.crt", "/etc/clickhouse-server/certs/CAroot.crt"),
+			fileMount("certs/server.crt", "/etc/clickhouse-server/certs/server.crt"),
+			fileMount("certs/server.key", "/etc/clickhouse-server/certs/server.key"),
 		},
 		LogConsumerCfg: &testcontainers.LogConsumerConfig{
 			Opts:      []testcontainers.LogProductionOption{testcontainers.WithLogProductionTimeout(10 * time.Second)},
@@ -107,7 +115,7 @@ func createClickhouseContainer(image string) (testcontainers.Container, *ClickHo
 		return nil, nil, fmt.Errorf("failed to read container host address: %w", err)
 	}
 
-	env := ClickHouseEnv{
+	env := clickhouseEnv{
 		NativeEndpoint:       fmt.Sprintf("tcp://%s:%d?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, port),
 		HTTPEndpoint:         fmt.Sprintf("http://%s:%d?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, httpPort),
 		SecureNativeEndpoint: fmt.Sprintf("tcp://%s:%d?username=secure_default&enable_json_type=1&database=otel_int_test", host, tlsPort),
@@ -231,7 +239,7 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 			t.Fatal(err)
 		}
 
-		err = db.Ping(context.Background())
+		err = db.Ping(t.Context())
 		if err != nil {
 			t.Fatal(err)
 		}
