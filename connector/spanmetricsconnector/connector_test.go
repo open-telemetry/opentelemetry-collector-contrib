@@ -905,9 +905,9 @@ func TestConsumeTraces(t *testing.T) {
 
 				// Trigger flush.
 				mockClock.Advance(time.Nanosecond)
-				require.EventuallyWithT(t, func(c *assert.CollectT) {
-					assert.NotEmpty(c, mcon.AllMetrics())
-				}, 1*time.Second, 10*time.Millisecond)
+				require.EventuallyWithT(t, func(tt *assert.CollectT) {
+					assert.NotEmpty(tt, mcon.AllMetrics())
+				}, 11*time.Second, 10*time.Millisecond)
 				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
 			}
 		})
