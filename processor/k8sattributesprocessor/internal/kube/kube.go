@@ -34,7 +34,9 @@ const (
 	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
 	MetadataFromStatefulSet = "statefulset"
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
-	MetadataFromDaemonSet  = "daemonset"
+	MetadataFromDaemonSet = "daemonset"
+	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
+	MetadataFromJob        = "job"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -100,6 +102,7 @@ type Client interface {
 	GetDeployment(string) (*Deployment, bool)
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
+	GetJob(string) (*Job, bool)
 	Start() error
 	Stop()
 }
@@ -124,6 +127,7 @@ type Pod struct {
 	DeploymentUID  string
 	StatefulSetUID string
 	DaemonSetUID   string
+	JobUID         string
 	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
@@ -305,6 +309,7 @@ type FieldExtractionRule struct {
 	//  - deployment
 	//  - statefulset
 	//  - daemonset
+	//  - job
 	From string
 }
 
@@ -341,6 +346,12 @@ func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[
 
 func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromDaemonSet {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, formatter string) {
+	if r.From == MetadataFromJob {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
@@ -428,6 +439,13 @@ type StatefulSet struct {
 
 // DaemonSet represents a kubernetes daemonset.
 type DaemonSet struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
+}
+
+// Job represents a kubernetes job.
+type Job struct {
 	Name       string
 	UID        string
 	Attributes map[string]string
