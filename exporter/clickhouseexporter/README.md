@@ -290,6 +290,7 @@ Connection options:
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
+- `tls` Advanced TLS configuration (See [TLS](#tls)).
 
 Additional DSN features:
 
@@ -342,8 +343,21 @@ Processing:
 
 ## TLS
 
-The exporter supports TLS. To enable TLS, you need to specify the `secure=true` query parameter in the `endpoint` URL or
-use the `https` scheme.
+The exporter supports TLS. To enable TLS, you must specify the `secure=true` query parameter in the `endpoint` URL or use the `https` scheme.
+
+You may also use certificate authentication with the `tls` setting:
+
+```yaml
+exporters:
+  clickhouse:
+    endpoint: . . .
+    tls:
+      insecure: false
+      insecure_skip_verify: false
+      ca_file: CAroot.crt
+      cert_file: client.crt
+      key_file: client.key
+```
 
 ## Schema management
 
