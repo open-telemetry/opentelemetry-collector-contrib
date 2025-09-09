@@ -359,6 +359,8 @@ exporters:
       key_file: client.key
 ```
 
+The available `tls` options are inherited from OpenTelemetry's TLS config structure, more options are available than shown in this example.
+
 ## Schema management
 
 By default, the exporter will create the database and tables under the names defined in the config. This is fine for simple deployments, but for production workloads, it is recommended that you manage your own schema by setting `create_schema` to `false` in the config.
