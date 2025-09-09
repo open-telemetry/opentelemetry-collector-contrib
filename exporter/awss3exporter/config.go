@@ -157,6 +157,5 @@ func (c *Config) Validate() error {
 	if c.S3Uploader.UniqueKeyFuncName != "" && !validUniqueKeyFuncs[c.S3Uploader.UniqueKeyFuncName] {
 		errs = multierr.Append(errs, errors.New("invalid UniqueKeyFuncName"))
 	}
-
 	return errs
 }
