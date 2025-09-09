@@ -50,6 +50,10 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 	var reader s3Reader
 	var err error
 
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	// Create the appropriate reader based on configuration
 	switch {
 	case cfg.StartTime != "" && cfg.EndTime != "":

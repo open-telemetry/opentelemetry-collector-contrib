@@ -142,7 +142,7 @@ func (c Config) Validate() error {
 			errs = multierr.Append(errs, errors.New("sqs.wait_time_seconds must be between 0 and 20"))
 		}
 		// Validate max number of messages
-		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 0 || *c.SQS.MaxNumberOfMessages > 10) {
+		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 1 || *c.SQS.MaxNumberOfMessages > 10) {
 			errs = multierr.Append(errs, errors.New("sqs.max_number_of_messages must be between 1 and 10"))
 		}
 	}
