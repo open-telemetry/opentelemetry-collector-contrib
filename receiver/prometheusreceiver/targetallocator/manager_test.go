@@ -33,8 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
@@ -726,8 +724,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			ctx := t.Context()
-			mr := metric.NewManualReader()
-			meter := metric.NewMeterProvider(metric.WithReader(mr)).Meter("test")
+			// mr := metric.NewManualReader()
+			// meter := metric.NewMeterProvider(metric.WithReader(mr)).Meter("test")
 
 			allocator, err := setupMockTargetAllocator(tc.responses)
 			require.NoError(t, err, "Failed to create allocator", tc.responses)
@@ -740,7 +738,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			baseCfg, err := promconfig.Load("", nil)
 			require.NoError(t, err)
-			manager := NewManagerWithMeter(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false, meter)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -783,13 +781,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						for range 3 {
 							// The manager may not be done processing the Refresh call by the
 							// time we check the value of the ScrapeConfig, so retry a couple
-							// times and wait for the metric to update.
-							var rm metricdata.ResourceMetrics
-							require.NoError(t, mr.Collect(ctx, &rm))
-
-							sm := rm.ScopeMetrics[0].Metrics[0]
-							sum := sm.Data.(metricdata.Sum[int64])
-							if sum.DataPoints[0].Value >= int64(len(tc.responses.responses["/scrape_configs"])) {
+							// times and wait for the count to update.
+							v := manager.configUpdateCount.Load()
+							if v >= int64(len(tc.responses.responses["/scrape_configs"])) {
 								gotUpdates = true
 								break
 							}
