@@ -214,7 +214,7 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 	t.Run("TestLogsJSONExporter", testProtocolsMapBody(testLogsJSONExporter))
 	t.Run("TestTracesJSONExporter", testProtocols(testTracesJSONExporter, false))
 
-	t.Run("TestCertConnect", testProtocols(func(t *testing.T, dsn string) {
+	t.Run("TestCertAuth", testProtocols(func(t *testing.T, dsn string) {
 		applyTLS := func(config *Config) {
 			config.TLS.CAFile = "./testdata/certs/CAroot.crt"
 			config.TLS.CertFile = "./testdata/certs/client.crt"

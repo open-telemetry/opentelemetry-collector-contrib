@@ -62,7 +62,7 @@ func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr st
 		return nil
 	}
 
-	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", database, clusterStr)
+	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS \"%s\" %s", database, clusterStr)
 
 	err := db.Exec(ctx, ddl)
 	if err != nil {
