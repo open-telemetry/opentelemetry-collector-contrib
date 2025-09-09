@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod {
+func createPods(t *testing.T, client *fake.Clientset, numPods int, distinctNamespaces bool) []*corev1.Pod {
 	out := make([]*corev1.Pod, 0, numPods)
 	for i := 0; i < numPods; i++ {
 		p := &corev1.Pod{
@@ -33,7 +33,12 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod
 			},
 		}
 
+		if distinctNamespaces {
+			p.Namespace = fmt.Sprintf("test-%d", i)
+		}
+
 		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(t.Context(), p, v1.CreateOptions{})
+
 		require.NoError(t, err, "error creating node")
 		out = append(out, createdPod)
 		time.Sleep(2 * time.Millisecond)
