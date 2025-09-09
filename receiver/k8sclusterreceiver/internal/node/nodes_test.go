@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -63,6 +64,49 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
+func TestNodeMetricsReportCPUMetricsAllocatableNamespace(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), false))
+	}()
+	n := testutils.NewNode("1")
+	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
+		[]string{
+			"Ready",
+			"MemoryPressure",
+			"DiskPressure",
+			"NetworkUnavailable",
+			"PIDPressure",
+			"OutOfDisk",
+		},
+		[]string{
+			"cpu",
+			"memory",
+			"ephemeral-storage",
+			"storage",
+			"pods",
+			"hugepages-1Gi",
+			"hugepages-2Mi",
+			"not-present",
+		},
+		pcommon.Timestamp(time.Now().UnixNano()),
+	)
+	m := pmetric.NewMetrics()
+	rm.MoveTo(m.ResourceMetrics().AppendEmpty())
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_allocatable.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
 func TestNodeOptionalMetrics(t *testing.T) {
 	n := testutils.NewNode("2")
 	rac := metadata.DefaultResourceAttributesConfig()
@@ -86,6 +130,44 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	rm.MoveTo(m.ResourceMetrics().AppendEmpty())
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_optional.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
+func TestNodeOptionalMetricsAllocatableNamespace(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), false))
+	}()
+	n := testutils.NewNode("2")
+	rac := metadata.DefaultResourceAttributesConfig()
+	rac.K8sKubeletVersion.Enabled = true
+	rac.ContainerRuntime.Enabled = true
+	rac.ContainerRuntimeVersion.Enabled = true
+	rac.OsType.Enabled = true
+	rac.OsDescription.Enabled = true
+
+	rb := metadata.NewResourceBuilder(rac)
+	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
+		[]string{},
+		[]string{
+			"cpu",
+			"memory",
+		},
+
+		pcommon.Timestamp(time.Now().UnixNano()),
+	)
+	m := pmetric.NewMetrics()
+	rm.MoveTo(m.ResourceMetrics().AppendEmpty())
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_optional_allocatable.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
 		pmetrictest.IgnoreTimestamp(),
