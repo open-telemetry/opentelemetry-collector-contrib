@@ -1,5 +1,3 @@
-github.com/Azure/go-amqp v1.4.0 h1:Xj3caqi4comOF/L1Uc5iuBxR/pB6KumejC01YQOqOR4=
-github.com/Azure/go-amqp v1.4.0/go.mod h1:vZAogwdrkbyK3Mla8m/CxSc/aKdnTZ4IbPxl51Y5WZE=
 github.com/Azure/go-amqp v1.5.0 h1:GRiQK1VhrNFbyx5VlmI6BsA1FCp27W5rb9kxOZScnTo=
 github.com/Azure/go-amqp v1.5.0/go.mod h1:vZAogwdrkbyK3Mla8m/CxSc/aKdnTZ4IbPxl51Y5WZE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
