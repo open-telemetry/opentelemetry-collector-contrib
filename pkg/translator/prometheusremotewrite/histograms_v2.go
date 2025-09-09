@@ -66,8 +66,6 @@ func explicitHistogramToCustomBucketsHistogram(p pmetric.HistogramDataPoint) wri
 		// need to know here if it was used for the detection.
 		// Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28663#issuecomment-1810577303
 		// Counter reset detection in Prometheus: https://github.com/prometheus/prometheus/blob/f997c72f294c0f18ca13fa06d51889af04135195/tsdb/chunkenc/histogram.go#L232
-
-		// TODO was writev2.Histogram_UNKNOWN check if okay
 		ResetHint: writev2.Histogram_RESET_HINT_UNSPECIFIED,
 		// TODO add
 		Schema: histogram.CustomBucketsSchema,
