@@ -936,6 +936,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 	baseCfg, err := promconfig.Load("", nil)
+	require.NoError(t, err)
 	baseCfg.ScrapeConfigs = initialScrapeConfigs
 	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, false)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
