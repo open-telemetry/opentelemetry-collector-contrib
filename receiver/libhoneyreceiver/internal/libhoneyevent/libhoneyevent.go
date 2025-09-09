@@ -74,15 +74,15 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	if err != nil {
 		return err
 	}
-	if (tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero()) && tmp.Time == "none" {
-		// neither timestamp was set. give it right now.
-		tmp.Time = tstr
-		tnow := time.Now()
-		tmp.MsgPackTimestamp = &tnow
-	}
 	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
-		propertime := eventtime.GetEventTime(tmp.Time)
-		tmp.MsgPackTimestamp = &propertime
+		if tmp.Time == "none" {
+			tmp.Time = tstr
+			tnow := time.Now()
+			tmp.MsgPackTimestamp = &tnow
+		} else {
+			propertime := eventtime.GetEventTime(tmp.Time)
+			tmp.MsgPackTimestamp = &propertime
+		}
 	}
 
 	*l = LibhoneyEvent(tmp)
@@ -123,16 +123,15 @@ func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
 		tmp.Time = timeStr
 	}
 
-	// Apply the same timestamp logic as JSON
-	if (tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero()) && tmp.Time == "none" {
-		// neither timestamp was set. give it right now.
-		tmp.Time = tstr
-		tnow := time.Now()
-		tmp.MsgPackTimestamp = &tnow
-	}
 	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
-		propertime := eventtime.GetEventTime(tmp.Time)
-		tmp.MsgPackTimestamp = &propertime
+		if tmp.Time == "none" {
+			tmp.Time = tstr
+			tnow := time.Now()
+			tmp.MsgPackTimestamp = &tnow
+		} else {
+			propertime := eventtime.GetEventTime(tmp.Time)
+			tmp.MsgPackTimestamp = &propertime
+		}
 	}
 
 	*l = LibhoneyEvent(tmp)
