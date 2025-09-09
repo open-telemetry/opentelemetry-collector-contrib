@@ -551,13 +551,6 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-  k8s.node.allocatable.storage:
-    enabled: true
-    description: Amount of storage allocatable on the node
-    unit: "By"
-    sum:
-      monotonic: false
-      value_type: int
   k8s.node.allocatable.memory:
     enabled: true
     description: Amount of memory allocatable on the node
