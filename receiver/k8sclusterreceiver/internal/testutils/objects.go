@@ -202,6 +202,7 @@ func NewNode(id string) *corev1.Node {
 				corev1.ResourceCPU:              *resource.NewMilliQuantity(123, resource.DecimalSI),
 				corev1.ResourceMemory:           *resource.NewQuantity(456, resource.DecimalSI),
 				corev1.ResourceEphemeralStorage: *resource.NewQuantity(1234, resource.DecimalSI),
+				corev1.ResourceStorage:          *resource.NewQuantity(34, resource.DecimalSI),
 				corev1.ResourcePods:             *resource.NewQuantity(12, resource.DecimalSI),
 				"hugepages-1Gi":                 *resource.NewQuantity(2, resource.DecimalSI),
 				"hugepages-2Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
