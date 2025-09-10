@@ -446,6 +446,24 @@ Gauge tracking the indexed license usage per index
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
 | splunk.splunkd.version | The splunkd version number | Any Str | false |
 
+### splunk.license.remaining
+
+Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {seconds} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| splunk.license.status | The status of the license. | Any Str | false |
+| splunk.license.label | The label of the license. | Any Str | false |
+| splunk.license.type | The type of license. | Any Str | false |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
+| splunk.splunkd.version | The splunkd version number | Any Str | false |
+
 ### splunk.parse.queue.ratio
 
 Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.
