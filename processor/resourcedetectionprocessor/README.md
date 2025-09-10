@@ -675,7 +675,7 @@ Uses the [Akamai metadata API](https://techdocs.akamai.com/cloud-computing/docs/
 
 The list of the populated resource attributes can be found at [Akamai Detector Resource Attributes](./internal/akamai/documentation.md).
 
-Linode custom configuration example:
+Akamai custom configuration example:
 
 ```yaml
 processors:
