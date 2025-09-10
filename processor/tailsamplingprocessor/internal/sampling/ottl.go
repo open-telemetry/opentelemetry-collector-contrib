@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type ottlConditionFilter struct {
@@ -24,10 +25,10 @@ type ottlConditionFilter struct {
 	logger              *zap.Logger
 }
 
-var _ PolicyEvaluator = (*ottlConditionFilter)(nil)
+var _ samplingpolicy.Evaluator = (*ottlConditionFilter)(nil)
 
 // NewOTTLConditionFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (PolicyEvaluator, error) {
+func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (samplingpolicy.Evaluator, error) {
 	filter := &ottlConditionFilter{
 		errorMode: errMode,
 		logger:    settings.Logger,
@@ -54,13 +55,13 @@ func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions
 	return filter, nil
 }
 
-func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	if ocf.logger.Core().Enabled(zap.DebugLevel) {
 		ocf.logger.Debug("Evaluating with OTTL conditions filter", zap.String("traceID", traceID.String()))
 	}
 
 	if ocf.sampleSpanExpr == nil && ocf.sampleSpanEventExpr == nil {
-		return NotSampled, nil
+		return samplingpolicy.NotSampled, nil
 	}
 
 	trace.Lock()
@@ -91,10 +92,10 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 				if ocf.sampleSpanExpr != nil {
 					ok, err = ocf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ss, rs))
 					if err != nil {
-						return Error, err
+						return samplingpolicy.Error, err
 					}
 					if ok {
-						return Sampled, nil
+						return samplingpolicy.Sampled, nil
 					}
 				}
 
@@ -104,15 +105,15 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 					for l := 0; l < spanEvents.Len(); l++ {
 						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource, ss, rs))
 						if err != nil {
-							return Error, err
+							return samplingpolicy.Error, err
 						}
 						if ok {
-							return Sampled, nil
+							return samplingpolicy.Sampled, nil
 						}
 					}
 				}
 			}
 		}
 	}
-	return NotSampled, nil
+	return samplingpolicy.NotSampled, nil
 }

@@ -8,9 +8,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
-func getNewCompositePolicy(settings component.TelemetrySettings, config *CompositeCfg) (sampling.PolicyEvaluator, error) {
+func getNewCompositePolicy(settings component.TelemetrySettings, config *CompositeCfg) (samplingpolicy.Evaluator, error) {
 	subPolicyEvalParams := make([]sampling.SubPolicyEvalParams, len(config.SubPolicyCfg))
 	rateAllocationsMap := getRateAllocationMap(config)
 	for i := range config.SubPolicyCfg {
@@ -47,7 +48,7 @@ func getRateAllocationMap(config *CompositeCfg) map[string]float64 {
 }
 
 // Return instance of composite sub-policy
-func getCompositeSubPolicyEvaluator(settings component.TelemetrySettings, cfg *CompositeSubPolicyCfg) (sampling.PolicyEvaluator, error) {
+func getCompositeSubPolicyEvaluator(settings component.TelemetrySettings, cfg *CompositeSubPolicyCfg) (samplingpolicy.Evaluator, error) {
 	switch cfg.Type {
 	case And:
 		return getNewAndPolicy(settings, &cfg.AndCfg)
