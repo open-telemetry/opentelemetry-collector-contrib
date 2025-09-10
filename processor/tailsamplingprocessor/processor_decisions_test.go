@@ -502,6 +502,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 			withDecisionBatcher(idb),
 			withPolicies(policies),
 			WithSampledDecisionCache(c),
+			withRecordPolicy(),
 		},
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
@@ -557,6 +558,15 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
 	require.Equal(t, 1, mpe.EvaluationCount)
 	require.Equal(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
+	allTraces := nextConsumer.AllTraces()
+	require.Len(t, allTraces, 2)
+
+	// Second trace should have the cached decision attribute
+	cachedAttr, ok := allTraces[1].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.cached_decision")
+	if !ok {
+		assert.FailNow(t, "Did not find expected attribute")
+	}
+	require.True(t, cachedAttr.Bool())
 }
 
 func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {

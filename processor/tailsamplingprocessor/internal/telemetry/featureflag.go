@@ -18,7 +18,7 @@ func IsMetricStatCountSpansSampledEnabled() bool {
 var recordPolicyFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.tailsamplingprocessor.recordpolicy",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy'/ 'tailsampling.composite_policy' attributes."),
+	featuregate.WithRegisterDescription("When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes."),
 )
 
 func IsRecordPolicyEnabled() bool {

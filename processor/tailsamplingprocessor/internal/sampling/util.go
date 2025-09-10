@@ -104,3 +104,14 @@ func SetAttrOnScopeSpans(data *TraceData, attrName, attrKey string) {
 		}
 	}
 }
+
+func SetBoolAttrOnScopeSpans(data ptrace.Traces, attrName string, attrValue bool) {
+	rs := data.ResourceSpans()
+	for i := 0; i < rs.Len(); i++ {
+		rss := rs.At(i)
+		for j := 0; j < rss.ScopeSpans().Len(); j++ {
+			ss := rss.ScopeSpans().At(j)
+			ss.Scope().Attributes().PutBool(attrName, attrValue)
+		}
+	}
+}
