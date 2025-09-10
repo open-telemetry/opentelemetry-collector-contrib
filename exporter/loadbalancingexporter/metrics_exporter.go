@@ -5,12 +5,14 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -104,7 +106,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 				e.logger.Error("failed to export metric", zap.Error(ee))
 			}
 			if len(batches) == 0 {
-				return consumererror.NewPermanent(errors.Join(ee))
+				return consumererror.NewPermanent(errors.Join(errs...))
 			}
 		}
 	case resourceRouting:
