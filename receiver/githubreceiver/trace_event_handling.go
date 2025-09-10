@@ -74,7 +74,7 @@ func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent) (
 		return ptrace.Traces{}, errors.New("failed to create job queue span")
 	}
 
-	err = gtr.createStepSpans(r, e, traceID, queueSpanID)
+	err = gtr.createStepSpans(r, e, traceID, parentID)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create step spans", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create step spans")
