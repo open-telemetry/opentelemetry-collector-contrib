@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -46,5 +45,6 @@ func BenchmarkSampling(b *testing.B) {
 		for i, id := range traceIDs {
 			_ = tsp.makeDecision(id, sampleBatches[i], metrics)
 		}
+		_ = tsp.makeDecision(id, sb, metrics)
 	}
 }
