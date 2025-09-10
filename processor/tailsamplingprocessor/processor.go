@@ -655,7 +655,7 @@ func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Start is invoked during service startup.
-func (tsp *tailSamplingSpanProcessor) Start(ctx context.Context, host component.Host) error {
+func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Host) error {
 	// We need to store the host before loading sampling policies in order to load any extensions.
 	tsp.host = host
 	if tsp.policies == nil {

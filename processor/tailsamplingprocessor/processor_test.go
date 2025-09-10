@@ -732,7 +732,10 @@ func TestDuplicatePolicyName(t *testing.T) {
 	})
 	require.NoError(t, err)
 	err = p.Start(t.Context(), componenttest.NewNopHost())
-	defer p.Shutdown(t.Context())
+	defer func() {
+		err = p.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
 
 	// verify
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
@@ -809,7 +812,10 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	require.NoError(t, err)
 	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(t.Context())
+	defer func() {
+		err := p.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
 
 	tsp := p.(*tailSamplingSpanProcessor)
 	require.GreaterOrEqual(t, len(tsp.policies), 2)
@@ -1100,11 +1106,11 @@ func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplin
 }
 
 // Start implements component.Component.
-func (e extension) Start(ctx context.Context, host component.Host) error {
+func (*extension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
 // Shutdown implements component.Component.
-func (e extension) Shutdown(ctx context.Context) error {
+func (*extension) Shutdown(_ context.Context) error {
 	return nil
 }
