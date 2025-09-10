@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.135.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.135.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.31.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7
 )
 
@@ -80,7 +80,7 @@ require (
 	google.golang.org/api v0.248.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/protobuf v1.36.9
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
