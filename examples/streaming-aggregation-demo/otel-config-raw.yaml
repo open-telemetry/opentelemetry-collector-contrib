@@ -1,0 +1,26 @@
+# OpenTelemetry Collector configuration WITHOUT streaming aggregation (raw metrics)
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317 # Port for raw metrics
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8890
+    namespace: raw
+    const_labels:
+      pipeline: raw
+    metric_expiration: 5m
+    enable_open_metrics: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus] # No processors - direct pass-through
+
+  telemetry:
+    logs:
+      level: info

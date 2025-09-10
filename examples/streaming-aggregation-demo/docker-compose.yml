@@ -1,0 +1,121 @@
+version: "3.8"
+
+services:
+  # Build the custom collector first (if needed)
+  collector-builder:
+    image: golang:1.21-alpine
+    volumes:
+      - ../..:/repo
+      - ./collector-builder:/build
+    working_dir: /build
+    command: |
+      sh -c "
+        apk add --no-cache git make &&
+        go install go.opentelemetry.io/collector/cmd/builder@v0.96.0 &&
+        builder --config=builder-config.yaml || true
+      "
+    profiles:
+      - build
+
+  # Collector with streaming aggregation processor
+  collector-aggregated:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector-simple
+    container_name: collector-aggregated
+    volumes:
+      - ./otel-config.yaml:/etc/otel-config.yaml
+    ports:
+      - "4318:4318" # OTLP gRPC for aggregated metrics
+      - "8889:8889" # Prometheus metrics endpoint
+      - "8888:8888" # Collector internal metrics
+    networks:
+      - demo-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Collector without aggregation (raw metrics)
+  collector-raw:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector-simple
+    container_name: collector-raw
+    volumes:
+      - ./otel-config-raw.yaml:/etc/otel-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC for raw metrics
+      - "8890:8890" # Prometheus metrics endpoint
+      - "8887:8887" # Collector internal metrics
+    networks:
+      - demo-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Metric generator
+  metric-generator:
+    build:
+      context: ./metric-generator
+      dockerfile: Dockerfile
+    container_name: metric-generator
+    networks:
+      - demo-network
+    depends_on:
+      - collector-raw
+      - collector-aggregated
+    restart: unless-stopped
+    environment:
+      - RAW_COLLECTOR_ENDPOINT=collector-raw:4317
+      - AGGREGATED_COLLECTOR_ENDPOINT=collector-aggregated:4318
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--storage.tsdb.retention.time=1h"
+      - "--web.enable-remote-write-receiver"
+    ports:
+      - "9090:9090"
+    networks:
+      - demo-network
+    restart: unless-stopped
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    ports:
+      - "3000:3000"
+    networks:
+      - demo-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+networks:
+  demo-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

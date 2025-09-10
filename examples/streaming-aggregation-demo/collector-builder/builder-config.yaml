@@ -1,0 +1,30 @@
+dist:
+  name: otelcol-streaming
+  description: Custom OpenTelemetry Collector with Streaming Aggregation Processor
+  output_path: ./bin
+  otelcol_version: 0.96.0
+
+extensions:
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.96.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0
+
+processors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor v0.96.0
+    path: ../../../processor/streamingaggregationprocessor
+    # Use local path since this is a custom processor
+
+exporters:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.96.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.96.0
+
+connectors:
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.96.0
+
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v0.96.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.96.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.96.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.96.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.96.0

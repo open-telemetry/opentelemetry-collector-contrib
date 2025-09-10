@@ -1,0 +1,49 @@
+# OpenTelemetry Collector configuration WITH streaming aggregation processor
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4318 # Port for aggregated metrics
+
+processors:
+  streamingaggregation:
+    window_size: 30s # Aggregate over 30-second windows
+    num_windows: 4 # Keep 4 windows for late data
+    max_memory_mb: 100 # Memory limit
+    export_interval: 30s # Export every 30 seconds
+
+exporters:
+  prometheusremotewrite:
+    endpoint: http://prometheus:9090/api/v1/write
+    namespace: aggregated
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # Also expose metrics via Prometheus scrape endpoint for debugging
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [streamingaggregation]
+      exporters: [prometheusremotewrite]
+
+  telemetry:
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

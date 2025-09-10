@@ -1,0 +1,51 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+    timeout: 30s
+    send_batch_size: 1000
+
+  # Use metrics transform processor to simulate aggregation
+  metricstransform:
+    transforms:
+      - include: .*
+        match_type: regexp
+        action: update
+        operations:
+          - action: aggregate_labels
+            label_set: []
+            aggregation_type: sum
+
+  # Add attributes to distinguish aggregated metrics
+  attributes:
+    actions:
+      - key: aggregation
+        value: "30s"
+        action: insert
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      environment: "demo"
+      aggregated: "true"
+
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 100
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch, metricstransform, attributes]
+      exporters: [prometheus, debug]
+
+  telemetry:
+    logs:
+      level: info

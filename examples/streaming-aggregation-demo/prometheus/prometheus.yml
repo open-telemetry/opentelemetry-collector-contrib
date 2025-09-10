@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # Scrape raw metrics from the collector without aggregation
+  - job_name: "otel-collector-raw"
+    static_configs:
+      - targets: ["collector-raw:8890"]
+    scrape_interval: 1s # High frequency for raw metrics
+
+  # Scrape aggregated metrics from the collector with streaming aggregation
+  - job_name: "otel-collector-aggregated"
+    static_configs:
+      - targets: ["collector-aggregated:8889"]
+    scrape_interval: 5s # Lower frequency for aggregated metrics
+
+  # Scrape collector's own metrics
+  - job_name: "otel-collector-raw-internal"
+    static_configs:
+      - targets: ["collector-raw:8887"]
+
+  - job_name: "otel-collector-aggregated-internal"
+    static_configs:
+      - targets: ["collector-aggregated:8888"]
