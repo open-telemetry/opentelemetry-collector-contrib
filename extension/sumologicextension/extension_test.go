@@ -381,11 +381,12 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 	getServer := func() *httptest.Server {
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				if heartbeatURL == req.URL.Path {
+				switch req.URL.Path {
+				case heartbeatURL:
 					w.WriteHeader(http.StatusNoContent)
-				} else if metadataURL == req.URL.Path {
+				case metadataURL:
 					w.WriteHeader(http.StatusOK)
-				} else {
+				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 			}))
@@ -444,7 +445,6 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Shutdown(t.Context()))
 	require.FileExists(t, credsPath)
 
-	//require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
 	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, se.Shutdown(t.Context()))
 
@@ -454,8 +454,8 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 	require.NoError(t, err)
 	credsPath = path.Join(dir, fileName)
 
-	require.EqualValues(t, hashKeyV2, se.hashKey)
-	require.EqualValues(t, credentials.CollectorCredentials{
+	require.Equal(t, hashKeyV2, se.hashKey)
+	require.Equal(t, credentials.CollectorCredentials{
 		CollectorName: "collector_name",
 		Credentials: api.OpenRegisterResponsePayload{
 			CollectorCredentialID:  "collectorId",
