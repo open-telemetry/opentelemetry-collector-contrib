@@ -32,7 +32,7 @@ type client interface {
 	getReplicaStatusStats() ([]replicaStatusStats, error)
 	getQuerySamples(uint64) ([]querySample, error)
 	getTopQueries(uint64, uint64) ([]topQuery, error)
-	explainQuery(statement, schema string, logger *zap.Logger) (string, error)
+	explainQuery(statement, schema string, logger *zap.Logger) string
 	Close() error
 }
 
@@ -788,27 +788,27 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 }
 
 // explainQuery implements client.
-func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger) (string, error) {
+func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger) string {
 	if strings.HasSuffix(statement, "...") {
 		logger.Warn("statement is truncated, skipping explain", zap.String("statement", statement))
-		return "", nil
+		return ""
 	}
 
 	if !isQueryExplainable(statement) {
 		logger.Debug("statement is not explainable, skipping explain query", zap.String("statement", statement))
-		return "", nil
+		return ""
 	}
 
 	sqlclient, err := sql.Open("mysql", c.connStr)
 	if err != nil {
 		logger.Error("unable to connect to database for explain", zap.Error(err))
-		return "", nil
+		return ""
 	}
 
 	if schema != "" {
 		if _, err = sqlclient.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
 			logger.Error(fmt.Sprintf("unable to use schema: %s", schema), zap.Error(err))
-			return "", nil
+			return ""
 		}
 	}
 
@@ -816,9 +816,9 @@ func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger)
 	err = sqlclient.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
 	if err != nil {
 		logger.Error("unable to execute explain statement", zap.Error(err))
-		return "", nil
+		return ""
 	}
-	return plan, nil
+	return plan
 }
 
 func isQueryExplainable(query string) bool {

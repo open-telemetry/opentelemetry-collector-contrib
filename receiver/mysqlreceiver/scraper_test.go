@@ -534,10 +534,10 @@ func (c *mockClient) getTopQueries(uint64, uint64) ([]topQuery, error) {
 	return queries, nil
 }
 
-func (*mockClient) explainQuery(_, _ string, _ *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(_, _ string, _ *zap.Logger) string {
 	file, _ := os.ReadFile(filepath.Join("testdata", "obfuscate", "inputQueryPlan.json"))
 
-	return string(file), nil
+	return string(file)
 }
 
 func (*mockClient) Close() error {

@@ -689,7 +689,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
 		}
 
-		queryPlan, _ := m.sqlclient.explainQuery(q.querySampleText, q.schemaName, m.logger)
+		queryPlan := m.sqlclient.explainQuery(q.querySampleText, q.schemaName, m.logger)
 
 		var obfuscatedPlan string
 		var ok bool
