@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -98,10 +99,15 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 	switch e.routingKey {
 	case svcRouting:
-		var err error
-		batches, err = splitMetricsByResourceServiceName(md)
-		if err != nil {
-			return err
+		var errs []error
+		batches, errs = splitMetricsByResourceServiceName(md)
+		if len(errs) > 0 {
+			for _, ee := range errs {
+				e.logger.Error("failed to export metric", zap.Error(ee))
+			}
+			if len(batches) == 0 {
+				return consumererror.NewPermanent(errors.Join(errs...))
+			}
 		}
 	case resourceRouting:
 		batches = splitMetricsByResourceID(md)
@@ -152,15 +158,17 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	return errs
 }
 
-func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, error) {
+func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {
 	results := map[string]pmetric.Metrics{}
+	var errs []error
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
 
 		svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 		if !ok {
-			return nil, errors.New("unable to get service name")
+			errs = append(errs, fmt.Errorf("unable to get service name from resource metric with attributes: %v", rm.Resource().Attributes().AsRaw()))
+			continue
 		}
 
 		newMD := pmetric.NewMetrics()
@@ -176,7 +184,7 @@ func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.M
 		}
 	}
 
-	return results, nil
+	return results, errs
 }
 
 func splitMetricsByResourceID(md pmetric.Metrics) map[string]pmetric.Metrics {
