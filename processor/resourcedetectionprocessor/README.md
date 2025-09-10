@@ -669,18 +669,18 @@ processors:
     detectors: ["hetzner"]
 ```
 
-### Linode
+### Akamai
 
-Uses the [Linode metadata API](https://techdocs.akamai.com/cloud-computing/docs/metadata-service-api) to read resource information from the instance metadata service and populate related resource attributes.
+Uses the [Akamai metadata API](https://techdocs.akamai.com/cloud-computing/docs/metadata-service-api) to read resource information from the instance metadata service and populate related resource attributes.
 
-The list of the populated resource attributes can be found at [Linode Detector Resource Attributes](./internal/linode/documentation.md).
+The list of the populated resource attributes can be found at [Akamai Detector Resource Attributes](./internal/akamai/documentation.md).
 
 Linode custom configuration example:
 
 ```yaml
 processors:
-  resourcedetection/linode:
-    detectors: ["linode"]
+  resourcedetection/akamai:
+    detectors: ["akamai"]
 ```
 
 ## Configuration
