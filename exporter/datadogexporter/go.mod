@@ -64,7 +64,6 @@ require (
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.36.9
 	gopkg.in/yaml.v3 v3.0.1
-	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
 
 require (
@@ -188,7 +187,6 @@ require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

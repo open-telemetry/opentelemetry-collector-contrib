@@ -127,7 +127,6 @@ require (
 	github.com/aws/smithy-go v1.22.5 // indirect
 	github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -401,7 +400,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	k8s.io/api v0.32.3 // indirect
 	k8s.io/apimachinery v0.32.3 // indirect
 	k8s.io/client-go v0.32.3 // indirect
