@@ -94,8 +94,8 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 	}
 
 	deleteMessages := true // Default to true
-	if cfg.SQS.DeleteMessages != nil {
-		deleteMessages = *cfg.SQS.DeleteMessages
+	if val := cfg.SQS.DeleteMessages.Get(); val != nil {
+		deleteMessages = *val
 	}
 
 	return &s3SQSNotificationReader{

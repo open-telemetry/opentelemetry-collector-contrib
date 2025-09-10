@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/multierr"
 )
 
@@ -42,7 +43,7 @@ type SQSConfig struct {
 	MaxNumberOfMessages int64 `mapstructure:"max_number_of_messages"`
 	// DeleteMessages indicates whether to delete messages from the queue after processing.
 	// Default is true.
-	DeleteMessages *bool `mapstructure:"delete_messages"`
+	DeleteMessages configoptional.Optional[bool] `mapstructure:"delete_messages"`
 }
 
 // Notifications groups optional notification sources.

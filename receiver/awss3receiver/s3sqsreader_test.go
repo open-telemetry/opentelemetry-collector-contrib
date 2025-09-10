@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/zap"
 )
 
@@ -110,7 +111,7 @@ func TestNewS3SQSReader(t *testing.T) {
 				Region:              "us-east-1",
 				MaxNumberOfMessages: 5,
 				WaitTimeSeconds:     10,
-				DeleteMessages:      aws.Bool(false),
+				DeleteMessages:      configoptional.Some(false),
 			},
 		}
 
