@@ -1068,6 +1068,7 @@ func TestExtension(t *testing.T) {
 
 	tsp := p.(*tailSamplingSpanProcessor)
 	assert.Len(t, tsp.policies, 1)
+	assert.Equal(t, "extension", host.extension.policyName)
 	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
 
@@ -1085,13 +1086,15 @@ func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
 }
 
 type extension struct {
-	cfg map[string]any
+	policyName string
+	cfg        map[string]any
 }
 
 var _ samplingpolicy.Extension = &extension{}
 
 // NewEvaluator implements samplingpolicy.Extension.
-func (e *extension) NewEvaluator(cfg map[string]any) (samplingpolicy.Evaluator, error) {
+func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplingpolicy.Evaluator, error) {
+	e.policyName = policyName
 	e.cfg = cfg
 	return nil, nil
 }

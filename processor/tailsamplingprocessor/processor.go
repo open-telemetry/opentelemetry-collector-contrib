@@ -276,7 +276,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		t := string(cfg.Type)
 		extension, ok := policyExtensions[t]
 		if ok {
-			evaluator, err := extension.NewEvaluator(cfg.ExtensionCfg[t])
+			evaluator, err := extension.NewEvaluator(cfg.Name, cfg.ExtensionCfg[t])
 			if err != nil {
 				return nil, fmt.Errorf("unable to load extension %s: %w", t, err)
 			}

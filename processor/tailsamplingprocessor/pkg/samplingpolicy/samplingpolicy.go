@@ -63,5 +63,5 @@ type Evaluator interface {
 }
 
 type Extension interface {
-	NewEvaluator(cfg map[string]any) (Evaluator, error)
+	NewEvaluator(policyName string, cfg map[string]any) (Evaluator, error)
 }
