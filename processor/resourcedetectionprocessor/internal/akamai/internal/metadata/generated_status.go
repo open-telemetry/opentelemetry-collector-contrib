@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("linodedetector")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/linode"
+	Type      = component.MustNewType("akamaidetector")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
 )
 
 const (

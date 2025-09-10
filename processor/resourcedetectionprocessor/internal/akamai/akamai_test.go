@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package linode
+package akamai
 
 import (
 	"context"
@@ -20,29 +20,29 @@ import (
 
 // ---- test fakes & helpers ----
 
-type fakeLinodeClient struct {
+type fakeAkamaiClient struct {
 	inst *linodemeta.InstanceData
 	err  error
 }
 
-func (f *fakeLinodeClient) GetInstance(_ context.Context) (*linodemeta.InstanceData, error) {
+func (f *fakeAkamaiClient) GetInstance(_ context.Context) (*linodemeta.InstanceData, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
 	return f.inst, nil
 }
 
-func withFakeClient(t *testing.T, cli linodeAPI) {
+func withFakeClient(t *testing.T, cli akamaiAPI) {
 	t.Helper()
-	orig := newLinodeClient
-	newLinodeClient = func(_ context.Context) (linodeAPI, error) { return cli, nil }
-	t.Cleanup(func() { newLinodeClient = orig })
+	orig := newAkamaiClient
+	newAkamaiClient = func(_ context.Context) (akamaiAPI, error) { return cli, nil }
+	t.Cleanup(func() { newAkamaiClient = orig })
 }
 
 // ---- tests ----
 
 func TestNewDetector(t *testing.T) {
-	withFakeClient(t, &fakeLinodeClient{
+	withFakeClient(t, &fakeAkamaiClient{
 		inst: &linodemeta.InstanceData{
 			ID:     1,
 			Label:  "dummy",
@@ -57,18 +57,20 @@ func TestNewDetector(t *testing.T) {
 	require.NotNil(t, det)
 }
 
-func TestLinodeDetector_Detect_OK(t *testing.T) {
+func TestAkamaiDetector_Detect_OK(t *testing.T) {
 	const (
-		acct         = "acc-eeee-uuuu-iiiii-dddd"
-		id           = 4242
-		label        = "linode-4242"
-		instanceType = "g6-standard-4"
-		region       = "us-southeast"
-		imageID      = "linode/ubuntu24.04"
-		imageLabel   = "Ubuntu 24.04 LTS"
+		cloudProvider = "akamai_cloud"
+		cloudPlatform = "akamai_cloud_platform"
+		acct          = "acc-eeee-uuuu-iiiii-dddd"
+		id            = 4242
+		label         = "linode-4242"
+		instanceType  = "g6-standard-4"
+		region        = "us-southeast"
+		imageID       = "linode/ubuntu24.04"
+		imageLabel    = "Ubuntu 24.04 LTS"
 	)
 
-	withFakeClient(t, &fakeLinodeClient{
+	withFakeClient(t, &fakeAkamaiClient{
 		inst: &linodemeta.InstanceData{
 			ID:           id,
 			Label:        label,
@@ -88,7 +90,8 @@ func TestLinodeDetector_Detect_OK(t *testing.T) {
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		string(conventions.CloudProviderKey):  TypeStr,
+		string(conventions.CloudPlatformKey):  cloudPlatform,
+		string(conventions.CloudProviderKey):  cloudProvider,
 		string(conventions.CloudRegionKey):    region,
 		string(conventions.CloudAccountIDKey): acct,
 		string(conventions.HostIDKey):         strconv.Itoa(id),
@@ -100,9 +103,9 @@ func TestLinodeDetector_Detect_OK(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestLinodeDetector_NotOnLinode(t *testing.T) {
-	// Pretend we are not on Linode / metadata unreachable.
-	withFakeClient(t, &fakeLinodeClient{
+func TestAkamaiDetector_NotOnAkamai(t *testing.T) {
+	// Pretend we are not on Akamai / metadata unreachable.
+	withFakeClient(t, &fakeAkamaiClient{
 		err: errors.New("no metadata here"),
 	})
 

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package linode // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/linode"
+package akamai // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
 
 import (
 	"context"
@@ -14,37 +14,37 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/linode/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai/internal/metadata"
 )
 
 const (
 	// TypeStr is type of detector.
-	TypeStr = "linode"
+	TypeStr = "akamai"
 )
 
 var _ internal.Detector = (*Detector)(nil)
 
-// newLinodeClient is overridden in tests to point the client at a fake server.
-var newLinodeClient = func(ctx context.Context) (linodeAPI, error) {
+// newAkamaiClient is overridden in tests to point the client at a fake server.
+var newAkamaiClient = func(ctx context.Context) (akamaiAPI, error) {
 	return linodemeta.NewClient(ctx)
 }
 
-type linodeAPI interface {
+type akamaiAPI interface {
 	GetInstance(ctx context.Context) (*linodemeta.InstanceData, error)
 }
 
-// Detector is a Linode metadata detector.
+// Detector is a Akamai metadata detector.
 type Detector struct {
-	client linodeAPI
+	client akamaiAPI
 	logger *zap.Logger
 	rb     *metadata.ResourceBuilder
 }
 
-// NewDetector creates a new Linode metadata detector.
+// NewDetector creates a new Akamai metadata detector.
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
-	cli, err := newLinodeClient(context.Background())
+	cli, err := newAkamaiClient(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -58,15 +58,19 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 
 // Detect detects system metadata and returns a resource with the available ones.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	// Try to fetch instance metadata; if it fails we're not on Linode (or metadata unreachable).
+	// Try to fetch instance metadata; if it fails we're not on Akamai (or metadata unreachable).
 	inst, err := d.client.GetInstance(ctx)
 	if err != nil {
-		d.logger.Debug("Linode detector: not running on Linode or metadata unavailable", zap.Error(err))
+		d.logger.Debug("Akamai detector: not running on Akamai or metadata unavailable", zap.Error(err))
 		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudAccountID(inst.AccountEUUID)
-	d.rb.SetCloudProvider(TypeStr)
+	// Cloud provider and platform values will be "akamai_cloud" and "akamai_cloud_platform" from conventions when it's merged.
+	// d.rb.SetCloudProvider(conventions.CloudProviderAkamaiCloud.Value.AsString())
+	// d.rb.SetCloudPlatform(conventions.CloudPlatformAkamaiCloud.Value.AsString())
+	d.rb.SetCloudPlatform("akamai_cloud_platform")
+	d.rb.SetCloudProvider("akamai_cloud")
 	d.rb.SetCloudRegion(inst.Region)
 	d.rb.SetHostID(strconv.Itoa(inst.ID))
 	d.rb.SetHostImageID(inst.Image.ID)

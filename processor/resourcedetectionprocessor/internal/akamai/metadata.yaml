@@ -1,4 +1,4 @@
-type: linodedetector
+type: akamaidetector
 
 status:
   class: processor
@@ -12,8 +12,12 @@ resource_attributes:
     description: The cloud account id
     type: string
     enabled: true
+  cloud.platform:
+    description: The cloud platform
+    enabled: true
+    type: string
   cloud.provider:
-    description: The cloud.provider
+    description: The cloud provider
     enabled: true
     type: string
   cloud.region:

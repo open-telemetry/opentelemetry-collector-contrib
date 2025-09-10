@@ -14,6 +14,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetCloudAccountID("cloud.account.id-val")
+			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetHostID("host.id-val")
@@ -27,9 +28,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -41,6 +42,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "cloud.account.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("cloud.platform")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "cloud.platform-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)

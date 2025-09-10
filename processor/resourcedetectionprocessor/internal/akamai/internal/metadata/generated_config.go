@@ -25,9 +25,10 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for linodedetector resource attributes.
+// ResourceAttributesConfig provides config for akamaidetector resource attributes.
 type ResourceAttributesConfig struct {
 	CloudAccountID ResourceAttributeConfig `mapstructure:"cloud.account.id"`
+	CloudPlatform  ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider  ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion    ResourceAttributeConfig `mapstructure:"cloud.region"`
 	HostID         ResourceAttributeConfig `mapstructure:"host.id"`
@@ -40,6 +41,9 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		CloudAccountID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudPlatform: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		CloudProvider: ResourceAttributeConfig{
