@@ -93,85 +93,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
-	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
-	defer server.Close()
-
-	require.NoError(t, enableZorkianMetricExport())
-	defer require.NoError(t, enableMetricExportSerializer())
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-
-	// Use the mock server for API key validation
-	c := cfg.(*datadogconfig.Config)
-	c.Metrics.Endpoint = server.URL
-	c.HostMetadata.Enabled = false
-
-	t.Run("true", func(t *testing.T) {
-		c.API.FailOnInvalidKey = true
-		ctx := t.Context()
-		// metrics exporter
-		mexp, err := factory.CreateMetrics(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, mexp)
-
-		texp, err := factory.CreateTraces(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, texp)
-
-		lexp, err := factory.CreateLogs(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		// logs agent exporter does not fail on  invalid api key
-		assert.NoError(t, err)
-		assert.NotNil(t, lexp)
-	})
-	t.Run("false", func(t *testing.T) {
-		c.API.FailOnInvalidKey = false
-		ctx := t.Context()
-		exp, err := factory.CreateMetrics(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, exp)
-
-		texp, err := factory.CreateTraces(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, texp)
-
-		lexp, err := factory.CreateLogs(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, lexp)
-	})
-}
-
 func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
@@ -383,9 +304,4 @@ func TestStopExporters(t *testing.T) {
 	case <-time.After(time.Second * 10):
 		t.Fatal("Timed out")
 	}
-}
-
-func resetZorkianWarningsForTesting() {
-	onceZorkianMetricsWarning = sync.Once{}
-	onceZorkianTracesWarning = sync.Once{}
 }

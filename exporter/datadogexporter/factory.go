@@ -51,9 +51,10 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.129.0"),
 )
 
-var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportnativeclient",
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.135.0"),
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
@@ -80,39 +81,14 @@ func init() {
 	log.SetupLogger(log.Disabled(), "off")
 }
 
-// isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
-func isMetricExportV2Enabled() bool {
-	return metricExportNativeClientFeatureGate.IsEnabled()
-}
-
 func isMetricExportSerializerEnabled() bool {
 	return metricExportSerializerClientFeatureGate.IsEnabled()
-}
-
-// enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
-func enableNativeMetricExport() error {
-	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
-		return err
-	}
-	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), true)
-}
-
-// enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
-func enableZorkianMetricExport() error {
-	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
-		return err
-	}
-	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
 }
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
 	if err := metadataReporter.ConsumeResource(res); err != nil {
 		logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
 	}
-}
-
-func enableMetricExportSerializer() error {
-	return featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), true)
 }
 
 type factory struct {
