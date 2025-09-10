@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/multierr"
 )
 
@@ -36,10 +37,10 @@ type SQSConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// WaitTimeSeconds specifies the duration (in seconds) for long polling SQS messages.
 	// Maximum is 20 seconds. Default is 20 seconds.
-	WaitTimeSeconds *int64 `mapstructure:"wait_time_seconds"`
+	WaitTimeSeconds configoptional.Optional[int64] `mapstructure:"wait_time_seconds"`
 	// MaxNumberOfMessages specifies the maximum number of messages to receive in a single poll.
 	// Valid values: 1-10. Default is 10.
-	MaxNumberOfMessages *int64 `mapstructure:"max_number_of_messages"`
+	MaxNumberOfMessages configoptional.Optional[int64] `mapstructure:"max_number_of_messages"`
 }
 
 // Notifications groups optional notification sources.
@@ -138,11 +139,11 @@ func (c Config) Validate() error {
 			errs = multierr.Append(errs, errors.New("sqs.region is required"))
 		}
 		// Validate wait time seconds
-		if c.SQS.WaitTimeSeconds != nil && (*c.SQS.WaitTimeSeconds < 0 || *c.SQS.WaitTimeSeconds > 20) {
+		if val := c.SQS.WaitTimeSeconds.Get(); val != nil && (*val < 0 || *val > 20) {
 			errs = multierr.Append(errs, errors.New("sqs.wait_time_seconds must be between 0 and 20"))
 		}
 		// Validate max number of messages
-		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 1 || *c.SQS.MaxNumberOfMessages > 10) {
+		if val := c.SQS.MaxNumberOfMessages.Get(); val != nil && (*val < 1 || *val > 10) {
 			errs = multierr.Append(errs, errors.New("sqs.max_number_of_messages must be between 1 and 10"))
 		}
 	}
