@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracle
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.69.4
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.70.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.135.0
@@ -29,9 +29,9 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/util/log v0.69.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.69.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.69.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.70.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.70.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.70.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.6 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -74,9 +74,9 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
