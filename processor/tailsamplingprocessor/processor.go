@@ -232,15 +232,6 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg, po
 func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg, policyExtensions map[string]samplingpolicy.Extension) (samplingpolicy.Evaluator, error) {
 	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
 
-	extension, ok := policyExtensions[string(cfg.Type)]
-	if ok {
-		evaluator, err := extension.NewEvaluator(cfg.ExtensionCfg)
-		if err != nil {
-			return nil, fmt.Errorf("unable to load extension %s: %w", string(cfg.Type), err)
-		}
-		return evaluator, nil
-	}
-
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(settings), nil
@@ -281,8 +272,17 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
-
 	default:
+		t := string(cfg.Type)
+		extension, ok := policyExtensions[t]
+		if ok {
+			evaluator, err := extension.NewEvaluator(cfg.ExtensionCfg[t])
+			if err != nil {
+				return nil, fmt.Errorf("unable to load extension %s: %w", t, err)
+			}
+			return evaluator, nil
+		}
+
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
 }

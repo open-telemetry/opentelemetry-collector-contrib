@@ -75,7 +75,7 @@ type sharedPolicyCfg struct {
 	// Configs for OTTL condition filter sampling policy evaluator
 	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
 	// Configs for any extensions that are used.
-	ExtensionCfg map[string]any `mapstructure:"extension"`
+	ExtensionCfg map[string]map[string]any `mapstructure:",remain"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.

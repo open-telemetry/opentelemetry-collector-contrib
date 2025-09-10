@@ -1045,6 +1045,11 @@ func TestExtension(t *testing.T) {
 				sharedPolicyCfg: sharedPolicyCfg{
 					Name: "extension",
 					Type: "my_extension",
+					ExtensionCfg: map[string]map[string]any{
+						"my_extension": {
+							"foo": "bar",
+						},
+					},
 				},
 			},
 		},
@@ -1055,30 +1060,39 @@ func TestExtension(t *testing.T) {
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
 
-	require.NoError(t, p.Start(t.Context(), extensionHost{}))
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
 	defer func() {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
 	tsp := p.(*tailSamplingSpanProcessor)
 	assert.Len(t, tsp.policies, 1)
+	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
 
-type extensionHost struct{}
+type extensionHost struct {
+	extension *extension
+}
 
-func (h extensionHost) GetExtensions() map[component.ID]component.Component {
+func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
+	if h.extension == nil {
+		h.extension = &extension{}
+	}
 	return map[component.ID]component.Component{
-		component.MustNewID("my_extension"): extension{},
+		component.MustNewID("my_extension"): h.extension,
 	}
 }
 
 type extension struct {
+	cfg map[string]any
 }
 
-var _ samplingpolicy.Extension = extension{}
+var _ samplingpolicy.Extension = &extension{}
 
 // NewEvaluator implements samplingpolicy.Extension.
-func (e extension) NewEvaluator(cfg map[string]any) (samplingpolicy.Evaluator, error) {
+func (e *extension) NewEvaluator(cfg map[string]any) (samplingpolicy.Evaluator, error) {
+	e.cfg = cfg
 	return nil, nil
 }
 
