@@ -462,14 +462,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	}
 
 	ctx := context.Background()
-	startTime := time.Now()
 
 	// Check all policies before making a final decision.
 	for i, p := range tsp.policies {
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
-		latency := time.Since(startTime)
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute)
-
 		if err != nil {
 			if samplingDecisions[sampling.Error] == nil {
 				samplingDecisions[sampling.Error] = p
