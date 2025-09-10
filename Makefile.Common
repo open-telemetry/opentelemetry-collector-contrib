@@ -79,6 +79,7 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
+MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
 
 GOTESTSUM_OPT?= --rerun-fails=1
 
@@ -251,6 +252,10 @@ lint: $(LINT) checklicense misspell
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
+
+.PHONY: modernize
+modernize: $(MODERNIZE)
+	$(MODERNIZE) -fix -test -v ./...
 
 .PHONY: tidy
 tidy:
