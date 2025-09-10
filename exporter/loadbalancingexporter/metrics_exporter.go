@@ -103,6 +103,9 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			for _, ee := range errs {
 				e.logger.Error("failed to export metric", zap.Error(ee))
 			}
+			if len(batches) == 0 {
+				return consumererror.NewPermanent(errors.Join(ee))
+			}
 		}
 	case resourceRouting:
 		batches = splitMetricsByResourceID(md)
