@@ -39,6 +39,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
 - `and`: Sample based on multiple policies, creates an AND policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
+- `skip`: Skip sampling decisions for traces containing spans that match sub-policies (span-level evaluation), allowing subsequent policies to evaluate the trace
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order.
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
@@ -69,6 +70,8 @@ Each policy will result in a decision, and the processor will evaluate them to m
 - When there's an "inverted not sample" decision, the trace is not sampled; ***Deprecated***
 - When there's a "sample" decision, the trace is sampled;
 - When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled; ***Deprecated***
+- When there's a "skip" decision, the policy is skipped and evaluation continues with the next policy;
+- When there's a "continue" decision, it's treated as no match and evaluation continues with the next policy;
 - In all other cases, the trace is NOT sampled
 
 An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy. There is an exception to this if the policy is within an and or composite policy, the resulting decision will be either sampled or not sampled. The "inverted" decisions have been deprecated, please make use of drop policy to explicitly not sample select traces.
@@ -189,6 +192,25 @@ processors:
             }
          },
          {
+            name: skip-policy-1,
+            type: skip,
+            skip: {
+              skip_sub_policy:
+              [
+                {
+                    name: test-skip-policy-1,
+                    type: string_attribute,
+                    string_attribute: {key: service.name, values: [test-service], invert_match: true}
+                },
+                {
+                    name: test-skip-policy-2,
+                    type: latency,
+                    latency: {threshold_ms: 1000}
+                }
+              ]
+            }
+         },
+         {
             name: composite-policy-1,
             type: composite,
             composite:
@@ -229,6 +251,89 @@ processors:
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+## Skip Policy
+
+The skip policy is a special type of sampling policy that allows conditional evaluation flow control. Unlike other policies that make final sampling decisions (sample/not sample), the skip policy can:
+
+1. **Skip evaluation**: When sub-policies match, the skip policy returns a "skipped" decision and policy evaluation continues with the next policy in the list
+2. **Continue evaluation**: When sub-policies don't match, the skip policy returns a "continued" decision and policy evaluation continues with the next policy in the list
+
+### Skip Policy Behavior
+
+**Important**: The skip policy evaluates each span individually within a trace, not the entire trace at once.
+
+The skip policy contains sub-policies and follows this span-level logic:
+- **For each span** in the trace, evaluate all sub-policies against that span
+- If **any span** matches **all** sub-policies (all return `Sampled` or `InvertSampled`), the skip policy returns `Skipped`
+- If **no span** matches all sub-policies, the skip policy returns `Continued`
+
+This means the skip policy makes decisions based on individual span characteristics, allowing for fine-grained control over which traces get evaluated by subsequent policies.
+
+### Use Cases
+
+1. **Span-Level Conditional Policy Application**: Skip sampling decisions for traces containing specific types of spans
+2. **Policy Ordering Control**: Ensure specific policies are evaluated only for traces with certain span characteristics  
+3. **Complex Decision Trees**: Create sophisticated sampling logic with multiple conditional branches based on individual span attributes
+4. **Performance Optimization**: Skip expensive policy evaluation for traces containing high-volume or low-priority spans
+
+### Example Configuration
+
+```yaml
+processors:
+  tail_sampling:
+    policies:
+      - name: skip-common-test-errors
+        type: skip
+        skip:
+          skip_sub_policy:
+            - name: test-service-filter
+              type: string_attribute
+              string_attribute:
+                key: service.name
+                values: [test-sample-500-service]
+            - name: common-error-codes
+              type: numeric_attribute
+              numeric_attribute:
+                key: http.status_code
+                min_value: 500
+                max_value: 502
+      - name: sample-server-errors
+        type: numeric_attribute
+        numeric_attribute:
+          key: http.status_code
+          min_value: 500
+          max_value: 505
+      - name: low-volume-sampling
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 1
+```
+
+In this example:
+- **Span-level evaluation**: The skip policy checks each span individually within the trace
+- If **any span** is from `test-sample-500-service` AND has status code 500-502, the skip policy will return `Skipped` and evaluation jumps directly to `low-volume-sampling` (bypassing the server error sampling)
+- If **no span** matches both conditions, the skip policy returns `Continued` and evaluation continues with `sample-server-errors`
+- The `sample-server-errors` policy will sample all traces with HTTP status codes 500-505
+- The `low-volume-sampling` policy provides a 1% sampling fallback for other traces
+
+**Real-world benefit**: Known test service errors (500-502) are excluded from server error sampling, while genuine server errors (503-505) from the test service and all errors (500-505) from other services are still captured.
+
+**Key behavior**: Even if a trace has multiple spans, only one span needs to match all sub-policy conditions for the skip policy to return `Skipped`.
+
+### Span-Level vs Trace-Level Evaluation
+
+Unlike most other tail sampling policies that consider the entire trace, the skip policy operates at the **span level**:
+
+**Example Trace with 3 spans:**
+- `span1`: `service.name=web-frontend`, `http.status_code=503` (server error from frontend)
+- `span2`: `service.name=test-sample-500-service`, `http.status_code=501` ← **Matches both conditions**
+- `span3`: `service.name=database`, `http.status_code=200` (successful database call)
+
+**Result**: `Skipped` (because span2 matches: test service AND status 500-502)
+**Outcome**: This trace bypasses server error sampling and goes to low-volume sampling instead
+
+This allows for precise control over policy evaluation based on individual span characteristics within a trace.
 
 ## A Practical Example
 
@@ -557,6 +662,24 @@ To track how often a drop policy votes to drop a trace, use:
 
 ```
 sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="dropped"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
+
+**Skip Policy Decision Frequency**
+
+To track how often a skip policy votes to skip a trace (allowing subsequent policies to evaluate), use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="skipped"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
+
+**Continue Policy Decision Frequency**
+
+To track how often a policy votes to continue evaluation (treating it as no match), use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="continued"}) by (policy) /
 sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 ```
 
