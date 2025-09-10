@@ -122,12 +122,13 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
-				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-				Description: "Latency (in microseconds) of a given sampling policy",
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_cpu_time",
+				Description: "Total time spent (in microseconds) executing a specific sampling policy",
 				Unit:        "µs",
-				Data: metricdata.Histogram[int64]{
+				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "always"),
@@ -300,12 +301,13 @@ func TestMetricsWithComponentID(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
-				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-				Description: "Latency (in microseconds) of a given sampling policy",
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_cpu_time",
+				Description: "Total time spent (in microseconds) executing a specific sampling policy",
 				Unit:        "µs",
-				Data: metricdata.Histogram[int64]{
+				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "unique_id.always"),

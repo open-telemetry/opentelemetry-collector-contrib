@@ -10,9 +10,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -25,9 +24,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingGlobalCountTracesSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingNewTraceIDReceived.Add(context.Background(), 1)
-	tb.ProcessorTailSamplingSamplingDecisionLatency.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingLateSpanAge.Record(context.Background(), 1)
+	tb.ProcessorTailSamplingSamplingPolicyCPUTime.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTraceRemovalAge.Record(context.Background(), 1)
@@ -47,14 +46,14 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorTailSamplingNewTraceIDReceived(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorTailSamplingSamplingDecisionLatency(t, testTel,
-		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
-		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingSamplingLateSpanAge(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingPolicyCPUTime(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingSamplingPolicyEvaluationError(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

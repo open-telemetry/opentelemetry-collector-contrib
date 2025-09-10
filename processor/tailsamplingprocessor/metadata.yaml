@@ -29,13 +29,14 @@ attributes:
 
 telemetry:
   metrics:
-    processor_tail_sampling_sampling_decision_latency:
-      description: Latency (in microseconds) of a given sampling policy
+    processor_tail_sampling_sampling_policy_cpu_time:
+      description: Total time spent (in microseconds) executing a specific sampling policy
       unit: µs
       enabled: true
-      histogram:
+      sum:
         value_type: int
-        bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
+        monotonic: true
+      attributes: [policy]
 
     processor_tail_sampling_sampling_decision_timer_latency:
       description: Latency (in milliseconds) of each run of the sampling decision timer
