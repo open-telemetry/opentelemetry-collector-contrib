@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 const (
@@ -24,11 +26,11 @@ type probabilisticSampler struct {
 	hashSalt  string
 }
 
-var _ PolicyEvaluator = (*probabilisticSampler)(nil)
+var _ samplingpolicy.Evaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) PolicyEvaluator {
+func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) samplingpolicy.Evaluator {
 	if hashSalt == "" {
 		hashSalt = defaultHashSalt
 	}
@@ -42,14 +44,14 @@ func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt stri
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
+func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
 	if hashTraceID(s.hashSalt, traceID[:]) <= s.threshold {
-		return Sampled, nil
+		return samplingpolicy.Sampled, nil
 	}
 
-	return NotSampled, nil
+	return samplingpolicy.NotSampled, nil
 }
 
 // calculateThreshold converts a ratio into a value between 0 and MaxUint64
