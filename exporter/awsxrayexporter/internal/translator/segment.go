@@ -329,6 +329,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	storeResource := true
 	if span.Kind() != ptrace.SpanKindServer &&
+		span.Kind() != ptrace.SpanKindConsumer &&
 		!span.ParentSpanID().IsEmpty() {
 		segmentType = "subsegment"
 		// We only store the resource information for segments, the local root.
