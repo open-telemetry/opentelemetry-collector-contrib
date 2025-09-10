@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -416,7 +417,8 @@ func disabledExemplarsConfig() ExemplarsConfig {
 
 func enabledExemplarsConfig() ExemplarsConfig {
 	return ExemplarsConfig{
-		Enabled: true,
+		Enabled:         true,
+		MaxPerDataPoint: defaultMaxPerDatapoint,
 	}
 }
 
@@ -436,18 +438,18 @@ func disabledEventsConfig() EventsConfig {
 func explicitHistogramsConfig() HistogramConfig {
 	return HistogramConfig{
 		Unit: defaultUnit,
-		Explicit: &ExplicitHistogramConfig{
+		Explicit: configoptional.Some(ExplicitHistogramConfig{
 			Buckets: []time.Duration{4 * time.Second, 6 * time.Second, 8 * time.Second},
-		},
+		}),
 	}
 }
 
 func exponentialHistogramsConfig() HistogramConfig {
 	return HistogramConfig{
 		Unit: defaultUnit,
-		Exponential: &ExponentialHistogramConfig{
+		Exponential: configoptional.Some(ExponentialHistogramConfig{
 			MaxSize: 10,
-		},
+		}),
 	}
 }
 
@@ -628,11 +630,11 @@ func TestStart(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	createParams := connectortest.NewNopSettings(factory.Type())
-	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
+	conn, err := factory.CreateTracesToMetrics(t.Context(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	smc := conn.(*connectorImp)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = smc.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := smc.Shutdown(ctx); require.NoError(t, sdErr) }()
 	assert.NoError(t, err)
@@ -640,7 +642,7 @@ func TestStart(t *testing.T) {
 
 func TestConcurrentShutdown(t *testing.T) {
 	// Prepare
-	ctx := context.Background()
+	ctx := t.Context()
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 
 	// Test
@@ -732,7 +734,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	}
 	p.logger = logger
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -891,7 +893,7 @@ func TestConsumeTraces(t *testing.T) {
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
 
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			err = p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
@@ -903,6 +905,8 @@ func TestConsumeTraces(t *testing.T) {
 
 				// Trigger flush.
 				mockClock.Advance(time.Nanosecond)
+				// TODO: Remove time.Sleep call, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42461
+				time.Sleep(10 * time.Millisecond)
 				require.Eventually(t, func() bool {
 					return len(mcon.AllMetrics()) > 0
 				}, 1*time.Second, 10*time.Millisecond)
@@ -918,7 +922,7 @@ func TestCallsMetricsInitialise(t *testing.T) {
 	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -953,7 +957,7 @@ func TestResourceMetricsCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// 0 resources in the beginning
 	assert.Zero(t, p.resourceMetrics.Len())
@@ -990,7 +994,7 @@ func TestResourceMetricsExpiration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// 0 resources in the beginning
 	assert.Zero(t, p.resourceMetrics.Len())
@@ -1015,7 +1019,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// 0 resources in the beginning
 	assert.Zero(t, p.resourceMetrics.Len())
@@ -1055,7 +1059,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	traces := buildSampleTrace()
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
 	for n := 0; n < b.N; n++ {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}
@@ -1090,7 +1094,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 			require.NoError(t, err)
 			traces := buildSampleTrace()
 
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -1215,7 +1219,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -1302,7 +1306,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
@@ -1405,7 +1409,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		{
 			name:   "initialize histogram with no config provided",
 			config: Config{},
-			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil, 0),
+			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, 0, 0),
 		},
 		{
 			name: "Disable histogram",
@@ -1423,7 +1427,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Milliseconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, 0, 0),
 		},
 		{
 			name: "initialize explicit histogram with default bounds (seconds)",
@@ -1432,59 +1436,59 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Seconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, 0, 0),
 		},
 		{
 			name: "initialize explicit histogram with bounds (seconds)",
 			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
-					Explicit: &ExplicitHistogramConfig{
+					Explicit: configoptional.Some(ExplicitHistogramConfig{
 						Buckets: []time.Duration{
 							100 * time.Millisecond,
 							1000 * time.Millisecond,
 						},
-					},
+					}),
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, 0, 0),
 		},
 		{
 			name: "initialize explicit histogram with bounds (ms)",
 			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
-					Explicit: &ExplicitHistogramConfig{
+					Explicit: configoptional.Some(ExplicitHistogramConfig{
 						Buckets: []time.Duration{
 							100 * time.Millisecond,
 							1000 * time.Millisecond,
 						},
-					},
+					}),
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, nil, 0),
+			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, 0, 0),
 		},
 		{
 			name: "initialize exponential histogram",
 			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
-					Exponential: &ExponentialHistogramConfig{
+					Exponential: configoptional.Some(ExponentialHistogramConfig{
 						MaxSize: 10,
-					},
+					}),
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(10, nil, 0),
+			want: metrics.NewExponentialHistogramMetrics(10, 0, 0),
 		},
 		{
 			name: "initialize exponential histogram with default max buckets count",
 			config: Config{
 				Histogram: HistogramConfig{
 					Unit:        metrics.Milliseconds,
-					Exponential: &ExponentialHistogramConfig{},
+					Exponential: configoptional.Some(ExponentialHistogramConfig{}),
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, nil, 0),
+			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, 0, 0),
 		},
 	}
 	for _, tt := range tests {
@@ -1519,7 +1523,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 			cfg.Events = tt.eventsConfig
 			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 			require.NoError(t, err)
-			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+			err = c.ConsumeTraces(t.Context(), buildSampleTrace())
 			require.NoError(t, err)
 			metrics := c.buildMetrics()
 			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -1594,7 +1598,7 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 				}, traces.ResourceSpans().AppendEmpty())
 
 			// Test
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 			// Verify exactly 1 exemplar is added to all data points when flushing
 			err = p.ConsumeTraces(ctx, traces)
@@ -1706,7 +1710,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
 			// Test
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 			// Send first batch of spans
 			err = p.ConsumeTraces(ctx, buildSampleTrace())
@@ -1800,7 +1804,7 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	// Send a span from service A which should fill the cache
 	serviceATrace1 := ptrace.NewTraces()
@@ -1873,7 +1877,7 @@ func TestSeparateDimensions(t *testing.T) {
 	cfg.Histogram.Dimensions = []Dimension{{Name: doubleAttrName, Default: stringp("0.0")}}
 	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	require.NoError(t, err)
-	err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+	err = c.ConsumeTraces(t.Context(), buildSampleTrace())
 	require.NoError(t, err)
 	metrics := c.buildMetrics()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -2068,8 +2072,8 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 
 	// Send two batches of spans to the connector to ensure it consumes more spans data,
 	// avoiding potential edge-case traps.
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
 
 	// Ignore the first buildMetrics call, which emits zero datapoint values.
 	_ = connector.buildMetrics()
@@ -2195,8 +2199,8 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 
 	// Send two batches of spans to the connector to ensure it consumes more spans data,
 	// avoiding potential edge-case traps.
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
+	assert.NoError(t, connector.ConsumeTraces(t.Context(), traces))
 
 	// Ignore the first buildMetrics call, which emits zero datapoint values.
 	_ = connector.buildMetrics()

@@ -7,22 +7,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
@@ -34,6 +37,7 @@ type Supervisor struct {
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -83,6 +87,10 @@ func (s Supervisor) Validate() error {
 		return err
 	}
 
+	if err := s.HealthCheck.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -103,6 +111,7 @@ type Capabilities struct {
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
+	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -146,6 +155,9 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 
 	if c.ReportsAvailableComponents {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
+	}
+	if c.ReportsHeartbeat {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
 	return supportedCapabilities
@@ -259,11 +271,35 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs    Logs                   `mapstructure:"logs"`
-	Metrics Metrics                `mapstructure:"metrics"`
-	Traces  telemetry.TracesConfig `mapstructure:"traces"`
+	Logs    Logs                           `mapstructure:"logs"`
+	Metrics Metrics                        `mapstructure:"metrics"`
+	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
+}
+
+type HealthCheck struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
+}
+
+func (h HealthCheck) Port() int64 {
+	_, port, err := net.SplitHostPort(h.Endpoint)
+	if err != nil {
+		return 0
+	}
+	parsedPort, err := strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return parsedPort
+}
+
+func (h HealthCheck) Validate() error {
+	parsedPort := h.Port()
+	if parsedPort < 0 || parsedPort > 65535 {
+		return fmt.Errorf("healthcheck::endpoint must contain a valid port number, got %d", parsedPort)
+	}
+	return nil
 }
 
 type Logs struct {
@@ -307,6 +343,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
+			ReportsHeartbeat:               true,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,

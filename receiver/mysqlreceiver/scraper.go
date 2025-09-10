@@ -441,6 +441,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// uptime
 		case "Uptime":
 			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
+
+		// page size
+		case "Innodb_page_size":
+			addPartialIfError(errs, m.mb.RecordMysqlPageSizeDataPoint(now, v))
 		}
 	}
 }

@@ -331,7 +331,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 				}
 			}
 			var err error
-			adjusted, err = ma.AdjustMetrics(context.Background(), adjusted)
+			adjusted, err = ma.AdjustMetrics(t.Context(), adjusted)
 			assert.NoError(t, err)
 
 			// Add the instance/job to the expected metrics as well if they aren't already present.

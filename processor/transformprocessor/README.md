@@ -257,17 +257,20 @@ These common functions can be used for any Signal.
 In addition to the common OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
 
 **Metrics only functions**
+
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [extract_count_metric](#extract_count_metric)
 - [extract_sum_metric](#extract_sum_metric)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
+- [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
+- [merge_histogram_buckets](#merge_histogram_buckets)
 
 ### convert_sum_to_gauge
 
@@ -370,6 +373,25 @@ Examples:
 - `convert_summary_count_val_to_sum("delta", true, ".count")`
 
 - `convert_summary_count_val_to_sum("cumulative", false, ".count")`
+
+### convert_summary_quantile_val_to_gauge
+
+`convert_summary_quantile_val_to_gauge(Optional[attributeKey], Optional[suffix])`
+
+The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric and injects each of the Summary's quantiles into a single Gauge datapoint.
+
+`attributeKey` is an optional string that specifies the attribute key holding the quantile value for each corresponding output data point. The default key is `quantile`.
+`suffix` is an optional string representing the suffix of the metric name. The default value is `.quantiles`.
+
+The name for the new metric will be `<summary metric name>.quantiles`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list. Function conditions will apply.
+
+Examples:
+
+- `convert_summary_quantile_val_to_gauge("custom_quantile", "custom_suffix")`
+
+- `convert_summary_quantile_val_to_gauge("custom_quantile")`
+
+- `convert_summary_quantile_val_to_gauge()`
 
 ### convert_summary_sum_val_to_sum
 
@@ -596,6 +618,37 @@ statements:
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
+### merge_histogram_buckets
+
+`merge_histogram_buckets(bound)`
+
+The `merge_histogram_buckets` function merges a specific bucket of a histogram with the next bucket by removing the specified boundary. This effectively combines the counts of the bucket ending at the specified bound with the counts of the next bucket.
+
+`bound` is a float64 value that specifies which bucket boundary to remove. The function will merge the bucket that ends at this boundary with the next bucket.
+
+The function:
+- Preserves the total count and sum of the histogram.  
+- Only works on histogram metrics (no-op for other metric types).  
+- Uses floating-point tolerance (epsilon = 1e-12) when matching the bound.  
+- Makes no changes if:  
+  - The bound is not found.  
+  - The histogram is empty.  
+  - The histogram structure is invalid (mismatched bounds and counts).
+
+Examples:
+
+```yaml
+# Merge the bucket ending at 0.5 with the next bucket
+- merge_histogram_buckets(0.5) where metric.name == "http_request_duration"
+
+# Given a histogram with:
+# bounds: [0.1, 0.5, 1.0]
+# counts: [5, 8, 3, 1]
+#
+# After merging at 0.5:
+# bounds: [0.1, 1.0]
+# counts: [5, 11, 1]
+```
 
 ## Examples
 

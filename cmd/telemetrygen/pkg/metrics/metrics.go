@@ -16,7 +16,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.13.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -45,7 +45,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		return err
 	}
 
-	if c.TotalDuration > 0 {
+	if c.TotalDuration.Duration() > 0 || c.TotalDuration.IsInf() {
 		c.NumMetrics = 0
 	}
 
@@ -98,8 +98,8 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 
 		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes(), tb)
 	}
-	if c.TotalDuration > 0 {
-		time.Sleep(c.TotalDuration)
+	if c.TotalDuration.Duration() > 0 && !c.TotalDuration.IsInf() {
+		time.Sleep(c.TotalDuration.Duration())
 		running.Store(false)
 	}
 	wg.Wait()

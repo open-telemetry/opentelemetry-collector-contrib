@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/config"
@@ -80,16 +79,43 @@ func (p *prwTelemetryOtel) recordWrittenExemplars(ctx context.Context, numExempl
 	p.telemetryBuilder.ExporterPrometheusremotewriteWrittenExemplars.Add(ctx, numExemplars, metric.WithAttributes(p.otelAttrs...))
 }
 
+type gogoProto interface {
+	Size() int
+	MarshalToSizedBuffer([]byte) (int, error)
+}
+
 type buffer struct {
-	protobuf *proto.Buffer
+	protobuf []byte
 	snappy   []byte
+}
+
+func (b *buffer) MarshalAndEncode(req gogoProto) ([]byte, error) {
+	sizePb := req.Size()
+	if sizePb > cap(b.protobuf) {
+		b.protobuf = make([]byte, sizePb)
+	}
+	b.protobuf = b.protobuf[:sizePb]
+	n, err := req.MarshalToSizedBuffer(b.protobuf)
+	if err != nil {
+		return nil, err
+	}
+	b.protobuf = b.protobuf[:n]
+
+	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
+	// Manually grow the buffer to make sure Snappy uses it and we can re-use it afterwards.
+	maxCompressedLen := snappy.MaxEncodedLen(len(b.protobuf))
+	if maxCompressedLen > cap(b.snappy) {
+		b.snappy = make([]byte, maxCompressedLen)
+	}
+	b.snappy = b.snappy[:maxCompressedLen]
+	return snappy.Encode(b.snappy, b.protobuf), nil
 }
 
 // A reusable buffer pool for serializing protobufs and compressing them with Snappy.
 var bufferPool = sync.Pool{
 	New: func() any {
 		return &buffer{
-			protobuf: proto.NewBuffer(nil),
+			protobuf: nil,
 			snappy:   nil,
 		}
 	},
@@ -175,7 +201,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		closeChan:           make(chan struct{}),
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
-		concurrency:         cfg.RemoteWriteQueue.NumConsumers,
+		concurrency:         concurrency,
 		clientSettings:      &cfg.ClientConfig,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
@@ -194,7 +220,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 
-	prwe.wal, err = newWAL(cfg.WAL, set, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL.Get(), set, prwe.export)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +341,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	prwe.wal.telemetry.recordWALWriteLatency(ctx, duration.Milliseconds())
 	if err != nil {
 		prwe.wal.telemetry.recordWALWritesFailures(ctx)
-		return consumererror.NewPermanent(err)
+		return err
 	}
 	return nil
 }
@@ -340,33 +366,11 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	for i := 0; i < concurrencyLimit; i++ {
 		go func() {
 			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
-					return
-
-				case request, ok := <-input:
-					if !ok {
-						return
-					}
-
-					buf := bufferPool.Get().(*buffer)
-					buf.protobuf.Reset()
-					defer bufferPool.Put(buf)
-
-					if errMarshal := buf.protobuf.Marshal(request); errMarshal != nil {
-						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
-						mu.Unlock()
-						return
-					}
-
-					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
-						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
-						mu.Unlock()
-					}
-				}
+			err := prwe.handleRequests(ctx, input)
+			if err != nil {
+				mu.Lock()
+				errs = multierr.Append(errs, err)
+				mu.Unlock()
 			}
 		}()
 	}
@@ -375,21 +379,37 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	return errs
 }
 
-func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
-	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
-	// Manually grow the buffer to make sure Snappy uses it and we can re-use it afterwards.
-	maxCompressedLen := snappy.MaxEncodedLen(len(buf.protobuf.Bytes()))
-	if maxCompressedLen > len(buf.snappy) {
-		if cap(buf.snappy) < maxCompressedLen {
-			buf.snappy = make([]byte, maxCompressedLen)
-		} else {
-			buf.snappy = buf.snappy[:maxCompressedLen]
+func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.WriteRequest) error {
+	var errs error
+	buf := bufferPool.Get().(*buffer)
+	defer bufferPool.Put(buf)
+	for {
+		select {
+		case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
+			return errs
+
+		case request, ok := <-input:
+			if !ok {
+				return errs
+			}
+
+			reqBuf, errMarshal := buf.MarshalAndEncode(request)
+			if errMarshal != nil {
+				return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+			}
+
+			if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+			}
 		}
 	}
-	compressedData := snappy.Encode(buf.snappy, buf.protobuf.Bytes())
+}
 
+func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
+	retryCount := 0
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() (int, error) {
+		retryCount++
 		// check there was no timeout in the component level to avoid retries
 		// to continue to run after a timeout
 		select {
@@ -400,7 +420,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		}
 
 		// Create the HTTP POST request to send to the endpoint
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(buf))
 		if err != nil {
 			return http.StatusBadRequest, backoff.Permanent(consumererror.NewPermanent(err))
 		}
@@ -446,11 +466,23 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			prwe.settings.Logger.Debug("remote write request successful",
+				zap.Int("status_code", resp.StatusCode),
+				zap.String("status", resp.Status),
+				zap.String("endpoint", prwe.endpointURL.String()),
+			)
 			return resp.StatusCode, nil
 		}
 
-		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
-		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		prwe.settings.Logger.Error("failed to send WriteRequest to remote endpoint",
+			zap.Int("status_code", resp.StatusCode),
+			zap.String("status", resp.Status),
+			zap.String("endpoint", prwe.endpointURL.String()),
+			zap.Int("retry_attempt", retryCount),
+			zap.String("error", string(body)),
+		)
+		rerr := errors.New("remote write request failed")
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return resp.StatusCode, rerr
 		}
@@ -477,10 +509,11 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	}
 
 	if err != nil {
+		// A permanent error is being returned here so we don't retry on context deadline exceeded.
 		return consumererror.NewPermanent(err)
 	}
 
-	return err
+	return nil
 }
 
 func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }

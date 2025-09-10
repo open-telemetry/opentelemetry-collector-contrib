@@ -4,7 +4,6 @@
 package sigv4authextension
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -19,7 +18,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	awsCredsProvider := mockCredentials()
-	awsCreds, _ := (*awsCredsProvider).Retrieve(context.Background())
+	awsCreds, _ := (*awsCredsProvider).Retrieve(t.Context())
 
 	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
 	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)

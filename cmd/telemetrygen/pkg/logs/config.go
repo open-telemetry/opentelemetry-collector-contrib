@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
@@ -48,7 +49,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/logs"
-	c.NumLogs = 1
+	c.Rate = 1
+	c.TotalDuration = types.DurationWithInf(0)
 	c.Body = "the message"
 	c.SeverityText = "Info"
 	c.SeverityNumber = 9
@@ -58,7 +60,7 @@ func (c *Config) SetDefaults() {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumLogs <= 0 {
+	if c.TotalDuration.Duration() <= 0 && c.NumLogs <= 0 && !c.TotalDuration.IsInf() {
 		return errors.New("either `logs` or `duration` must be greater than 0")
 	}
 

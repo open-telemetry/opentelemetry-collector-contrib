@@ -6,7 +6,6 @@ package datasetexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -853,16 +852,16 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	lr4.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(3))
 	lr5.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(4))
 
-	logs, err := createLogsExporter(context.Background(), createSettings, config)
+	logs, err := createLogsExporter(t.Context(), createSettings, config)
 	if assert.NoError(t, err) {
-		err = logs.Start(context.Background(), componenttest.NewNopHost())
+		err = logs.Start(t.Context(), componenttest.NewNopHost())
 		assert.NoError(t, err)
 
 		assert.NotNil(t, logs)
-		err = logs.ConsumeLogs(context.Background(), ld)
+		err = logs.ConsumeLogs(t.Context(), ld)
 		assert.NoError(t, err)
 		time.Sleep(time.Second)
-		err = logs.Shutdown(context.Background())
+		err = logs.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}
 

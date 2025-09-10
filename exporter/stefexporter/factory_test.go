@@ -4,7 +4,6 @@
 package stefexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	me, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	me, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -499,7 +500,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	// the specified mapping mode.
 	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
 	defer scopeMappingModeSessions.End()
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 
 	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
@@ -566,7 +567,9 @@ func (*elasticsearchExporter) pushProfileRecord(
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-		case otelserializer.ExecutablesSymQueueIndex, otelserializer.LeafFramesSymQueueIndex:
+		case otelserializer.ExecutablesSymQueueIndex,
+			otelserializer.LeafFramesSymQueueIndex,
+			otelserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:
@@ -630,11 +633,12 @@ func (e *elasticsearchExporter) getRequestMappingMode(ctx context.Context) (Mapp
 	case 1:
 		mode, err := e.parseMappingMode(values[0])
 		if err != nil {
-			return -1, fmt.Errorf("invalid context mapping mode: %w", err)
+			return -1, consumererror.NewPermanent(fmt.Errorf("invalid context mapping mode: %w", err))
 		}
 		return mode, nil
+
 	default:
-		return -1, fmt.Errorf("expected one value for client metadata key %q, got %d", metadataKey, n)
+		return -1, consumererror.NewPermanent(fmt.Errorf("expected one value for client metadata key %q, got %d", metadataKey, n))
 	}
 }
 
@@ -647,7 +651,7 @@ func (e *elasticsearchExporter) getScopeMappingMode(
 	}
 	mode, err := e.parseMappingMode(attr.AsString())
 	if err != nil {
-		return -1, fmt.Errorf("invalid scope mapping mode: %w", err)
+		return -1, consumererror.NewPermanent(fmt.Errorf("invalid scope mapping mode: %w", err))
 	}
 	return mode, nil
 }

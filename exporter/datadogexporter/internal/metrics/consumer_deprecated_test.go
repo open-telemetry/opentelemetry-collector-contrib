@@ -4,11 +4,10 @@
 package metrics
 
 import (
-	"context"
 	"testing"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -48,7 +47,7 @@ func TestZorkianRunningMetrics(t *testing.T) {
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	consumer := NewZorkianConsumer()
 	_, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
@@ -95,7 +94,7 @@ func TestZorkianTagsMetrics(t *testing.T) {
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	consumer := NewZorkianConsumer()
 	_, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)

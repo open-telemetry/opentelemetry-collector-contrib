@@ -7,13 +7,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/trace/transform"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.32.0"
 )
 
 func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
@@ -37,26 +39,11 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 		otelres := rspan.Resource()
 		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
-			// Note: default value from GetOTelService is "otlpresourcenoservicename"
-			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", traceutil.GetOTelService(otelres, true))
-			if err != nil {
-				return ptrace.Traces{}, err
-			}
-
 			serviceVersion := ""
 			if serviceVersionAttr, ok := otelres.Attributes().Get(string(semconv.ServiceVersionKey)); ok {
 				serviceVersion = serviceVersionAttr.AsString()
 			}
 			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion)
-			if err != nil {
-				return ptrace.Traces{}, err
-			}
-
-			env := "default"
-			if envFromAttr := traceutil.GetOTelEnv(otelres); envFromAttr != "" {
-				env = envFromAttr
-			}
-			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env)
 			if err != nil {
 				return ptrace.Traces{}, err
 			}
@@ -74,12 +61,43 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				return ptrace.Traces{}, err
 			}
 
+			// Map VCS (version control system) attributes for source code integration at resource level
+			if vcsRevision, ok := rattr.Get(string(semconv.VCSRefHeadRevisionKey)); ok {
+				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "git.commit.sha", vcsRevision.AsString())
+				if err != nil {
+					return ptrace.Traces{}, err
+				}
+			}
+			if vcsRepoURL, ok := rattr.Get(string(semconv.VCSRepositoryURLFullKey)); ok {
+				// Strip protocol from repository URL as required by Datadog
+				cleanURL := stripProtocolFromURL(vcsRepoURL.AsString())
+				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "git.repository_url", cleanURL)
+				if err != nil {
+					return ptrace.Traces{}, err
+				}
+			}
+
 			libspans := rspan.ScopeSpans().At(j)
 			for k := 0; k < libspans.Spans().Len(); k++ {
 				otelspan := libspans.Spans().At(k)
 				sattr := otelspan.Attributes()
 
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan))
+				// Note: default value from GetOTelService is "otlpresourcenoservicename"
+				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", traceutil.GetOTelService(otelspan, otelres, true))
+				if err != nil {
+					return ptrace.Traces{}, err
+				}
+
+				env := "default"
+				if envFromAttr := transform.GetOTelEnv(otelspan, otelres, false); envFromAttr != "" {
+					env = envFromAttr
+				}
+				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env)
+				if err != nil {
+					return ptrace.Traces{}, err
+				}
+
+				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan, otelres))
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
@@ -96,8 +114,25 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
+
+				// Map VCS (version control system) attributes for source code integration
+				if vcsRevision, ok := sattr.Get(string(semconv.VCSRefHeadRevisionKey)); ok {
+					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "git.commit.sha", vcsRevision.AsString())
+					if err != nil {
+						return ptrace.Traces{}, err
+					}
+				}
+				if vcsRepoURL, ok := sattr.Get(string(semconv.VCSRepositoryURLFullKey)); ok {
+					// Strip protocol from repository URL as required by Datadog
+					cleanURL := stripProtocolFromURL(vcsRepoURL.AsString())
+					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "git.repository_url", cleanURL)
+					if err != nil {
+						return ptrace.Traces{}, err
+					}
+				}
+
 				metaMap := make(map[string]string)
-				code := traceutil.GetOTelStatusCode(otelspan)
+				code := transform.GetOTelStatusCode(otelspan, otelres, false)
 				if code != 0 {
 					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code))
 					if err != nil {
@@ -171,6 +206,17 @@ func status2Error(status ptrace.Status, events ptrace.SpanEventSlice, metaMap ma
 		}
 	}
 	return 1
+}
+
+func stripProtocolFromURL(rawURL string) string {
+	// Try to parse as URL first
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		// If parsing fails, return the original string
+		return rawURL
+	}
+
+	return strings.TrimPrefix(rawURL, parsedURL.Scheme+"://")
 }
 
 // TODO remove once Status2Error is imported from datadog-agent

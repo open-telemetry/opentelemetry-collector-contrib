@@ -25,10 +25,14 @@ permissions: read-all
 
 jobs:
   setup-environment:
-    runs-on: windows-2025
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ windows-latest, windows-11-arm ]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         id: go-setup
         with:
@@ -40,6 +44,32 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
+
+  windows-smoke-build:
+    needs: [setup-environment]
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ windows-latest, windows-11-arm ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
+      - name: Build Collector
+        run: make otelcontribcol
+
   windows-unittest-matrix:
     needs: [setup-environment]
     strategy:
@@ -71,9 +101,7 @@ jobs:
       GOGC: 50
       GOMEMLIMIT: 2GiB
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: install IIS
-        run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         id: go-setup
         with:
@@ -146,7 +174,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         id: go-setup
         with:
@@ -158,7 +186,7 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           merge-multiple: true
           pattern: test-results-windows-${{ matrix.os }}-*
