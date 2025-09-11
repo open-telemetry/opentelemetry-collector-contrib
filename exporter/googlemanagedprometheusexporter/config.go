@@ -58,7 +58,10 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	// Update metric naming to match GMP conventions
 	namer := otlptranslator.MetricNamer{WithMetricSuffixes: c.MetricConfig.Config.AddMetricSuffixes}
 	cfg.MetricConfig.GetMetricName = func(baseName string, metric pmetric.Metric) (string, error) {
-		compliantName := namer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+		compliantName, err := namer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+		if err != nil {
+			return "", err
+		}
 		return googlemanagedprometheus.GetMetricName(baseName, compliantName, metric)
 	}
 	// Map to the prometheus_target monitored resource

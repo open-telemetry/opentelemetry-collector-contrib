@@ -250,126 +250,134 @@ func Test_createLabelSet(t *testing.T) {
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
+		expectErr      bool
 	}{
 		{
-			"labels_clean",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+			name:           "labels_clean",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
-			"labels_with_resource",
-			func() pcommon.Resource {
+			name: "labels_with_resource",
+			resource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				res.Attributes().PutStr("service.name", "prometheus")
 				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
 				return res
 			}(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
 		},
 		{
-			"labels_with_nonstring_resource",
-			func() pcommon.Resource {
+			name: "labels_with_nonstring_resource",
+			resource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				res.Attributes().PutInt("service.name", 12345)
 				res.Attributes().PutBool("service.instance.id", true)
 				return res
 			}(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
 		},
 		{
-			"labels_duplicate_in_extras",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{label11, value31},
-			getPromLabels(label11, value31, label12, value12),
+			name:           "labels_duplicate_in_extras",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label11, value31},
+			want:           getPromLabels(label11, value31, label12, value12),
 		},
 		{
-			"labels_dirty",
-			pcommon.NewResource(),
-			lbs1Dirty,
-			map[string]string{},
-			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
+			name:           "labels_dirty",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1Dirty,
+			externalLabels: map[string]string{},
+			extras:         []string{label31 + dirty1, value31, label32, value32},
+			want:           getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
-			"no_original_case",
-			pcommon.NewResource(),
-			pcommon.NewMap(),
-			nil,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label31, value31, label32, value32),
+			name:           "no_original_case",
+			resource:       pcommon.NewResource(),
+			orig:           pcommon.NewMap(),
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label31, value31, label32, value32),
 		},
 		{
-			"empty_extra_case",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{"", ""},
-			getPromLabels(label11, value11, label12, value12, "", ""),
+			name:           "empty_extra_case",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{"", ""},
+			want:           getPromLabels(label11, value11, label12, value12, "", ""),
+			expectErr:      true,
 		},
 		{
-			"single_left_over_case",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32},
-			getPromLabels(label11, value11, label12, value12, label31, value31),
+			name:           "single_left_over_case",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31),
 		},
 		{
-			"valid_external_labels",
-			pcommon.NewResource(),
-			lbs1,
-			exlbs1,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
+			name:           "valid_external_labels",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: exlbs1,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
 		},
 		{
-			"overwritten_external_labels",
-			pcommon.NewResource(),
-			lbs1,
-			exlbs2,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+			name:           "overwritten_external_labels",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: exlbs2,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
-			"colliding attributes",
-			pcommon.NewResource(),
-			lbsColliding,
-			nil,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+			name:           "colliding attributes",
+			resource:       pcommon.NewResource(),
+			orig:           lbsColliding,
+			externalLabels: nil,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
 		},
 		{
-			"existing_attribute_value_is_the_same_as_the_new_label_value",
-			pcommon.NewResource(),
-			lbsCollidingSameValue,
-			nil,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(collidingSanitized, value11, label31, value31, label32, value32),
+			name:           "existing_attribute_value_is_the_same_as_the_new_label_value",
+			resource:       pcommon.NewResource(),
+			orig:           lbsCollidingSameValue,
+			externalLabels: nil,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(collidingSanitized, value11, label31, value31, label32, value32),
 		},
 		{
-			"sanitize_labels_starts_with_underscore",
-			pcommon.NewResource(),
-			lbs3,
-			exlbs1,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
+			name:           "sanitize_labels_starts_with_underscore",
+			resource:       pcommon.NewResource(),
+			orig:           lbs3,
+			externalLabels: exlbs1,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...))
+			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...)
+			if tt.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }
@@ -387,6 +395,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		//nolint:errcheck
 		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
 	}
 }
@@ -682,7 +691,8 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
 
-			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			err := addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
 				assert.Empty(t, converter.timeSeries())
@@ -818,12 +828,13 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter(Settings{})
 
-			converter.addSummaryDataPoints(
+			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 			)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
@@ -917,12 +928,13 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter(Settings{})
 
-			converter.addHistogramDataPoints(
+			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 			)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
