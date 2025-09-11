@@ -13,10 +13,16 @@ processors:
     max_memory_mb: 100 # Memory limit
     stale_data_threshold: 30s # Reset cumulative state after 30 seconds of no data
 
+  metricstransform:
+    transforms:
+      - include: ".*"
+        match_type: regexp
+        action: update
+        new_name: "aggregated_$$0"
+
 exporters:
-  prometheusremotewrite:
-    endpoint: http://prometheus:9090/api/v1/write
-    namespace: aggregated
+  otlphttp:
+    endpoint: http://prometheus:9090/api/v1/otlp
     tls:
       insecure: true
     retry_on_failure:
@@ -25,16 +31,12 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
 
-  # Also expose metrics via Prometheus scrape endpoint for debugging
-  prometheus:
-    endpoint: "0.0.0.0:8889"
-
 service:
   pipelines:
     metrics:
       receivers: [otlp]
-      processors: [streamingaggregation]
-      exporters: [prometheusremotewrite]
+      processors: [streamingaggregation, metricstransform]
+      exporters: [otlphttp]
 
   telemetry:
     logs:

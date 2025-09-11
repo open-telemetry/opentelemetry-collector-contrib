@@ -65,9 +65,14 @@ echo -e "${GREEN}✅ Collector binary built successfully${NC}"
 cd "$DEMO_DIR"
 
 echo ""
-echo "Stopping existing services (if any)..."
+echo "Stopping existing services and resetting Prometheus volume..."
 echo "========================================="
 docker-compose down 2>/dev/null || true
+
+# Reset only the Prometheus volume for fresh data
+echo "Resetting Prometheus volume for fresh data..."
+docker volume rm streaming-aggregation-demo_prometheus-data 2>/dev/null || true
+echo "Prometheus volume reset complete"
 
 echo ""
 echo "Starting Docker Compose services..."

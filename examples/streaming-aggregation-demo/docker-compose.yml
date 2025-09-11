@@ -84,6 +84,7 @@ services:
       - "--web.enable-lifecycle"
       - "--storage.tsdb.retention.time=1h"
       - "--web.enable-remote-write-receiver"
+      - "--web.enable-otlp-receiver"
     ports:
       - "9090:9090"
     networks:
