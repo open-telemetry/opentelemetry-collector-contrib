@@ -391,17 +391,15 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		}
 
 		var val any
-		var manager optionalManager
+		var optionalFieldRef typedValueWrapper
 		var err error
 		var ok bool
 		if isOptional {
-			manager, ok = field.Interface().(optionalManager)
-
+			optionalFieldRef, ok = field.Addr().Interface().(typedValueWrapper)
 			if !ok {
 				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
 			}
-
-			fieldType = manager.get().Type()
+			fieldType = optionalFieldRef.getWrappedType()
 		}
 
 		switch {
@@ -415,11 +413,38 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			default:
 				return errors.New("invalid function name given")
 			}
-			f, ok := p.functions[name]
+			var f Factory[K]
+			f, ok = p.functions[name]
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
+		case strings.HasPrefix(fieldType.Name(), "LiteralGetter"):
+			var fieldVal typedValueWrapper
+			if isOptional {
+				fieldVal, ok = optionalFieldRef.getRawValue().(typedValueWrapper)
+			} else {
+				fieldVal, ok = field.Addr().Interface().(typedValueWrapper)
+			}
+			if !ok {
+				return errors.New("LiteralGetter is not a typedValueWrapper. This is a bug in the OTTL")
+			}
+
+			var buildArg any
+			buildArg, err = p.buildArg(arg.Value, fieldVal.getWrappedType())
+			if err != nil {
+				return err
+			}
+
+			if _, ok = buildArg.(literalGetter); !ok {
+				return fmt.Errorf("getter type %T does not support literal values", buildArg)
+			}
+
+			err = fieldVal.setWrappedValue(reflect.ValueOf(buildArg))
+			if err != nil {
+				return err
+			}
+			val = reflect.ValueOf(fieldVal).Elem().Interface()
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:
@@ -429,7 +454,10 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
 		if isOptional {
-			field.Set(manager.set(val))
+			err = optionalFieldRef.setWrappedValue(reflect.ValueOf(val))
+			if err != nil {
+				return err
+			}
 		} else {
 			field.Set(reflect.ValueOf(val))
 		}
@@ -568,37 +596,37 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardStringGetter[K]{Getter: arg.Get}, nil
+		return newStandardStringGetter(arg), nil
 	case strings.HasPrefix(name, "StringLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
+		return newStandardStringLikeGetter[K](arg), nil
 	case strings.HasPrefix(name, "FloatGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardFloatGetter[K]{Getter: arg.Get}, nil
+		return newStandardFloatGetter(arg), nil
 	case strings.HasPrefix(name, "FloatLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardFloatLikeGetter[K]{Getter: arg.Get}, nil
+		return newStandardFloatLikeGetter(arg), nil
 	case strings.HasPrefix(name, "IntGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardIntGetter[K]{Getter: arg.Get}, nil
+		return newStandardIntGetter(arg), nil
 	case strings.HasPrefix(name, "IntLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardIntLikeGetter[K]{Getter: arg.Get}, nil
+		return newStandardIntLikeGetter(arg), nil
 	case strings.HasPrefix(name, "PMapGetSetter"):
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
 			return nil, errors.New("must be a path")
@@ -614,43 +642,43 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardPMapGetter[K]{Getter: arg.Get}, nil
+		return newStandardPMapGetter(arg), nil
 	case strings.HasPrefix(name, "PSliceGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardPSliceGetter[K]{Getter: arg.Get}, nil
+		return newStandardPSliceGetter(arg), nil
 	case strings.HasPrefix(name, "DurationGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardDurationGetter[K]{Getter: arg.Get}, nil
+		return newStandardDurationGetter(arg), nil
 	case strings.HasPrefix(name, "TimeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardTimeGetter[K]{Getter: arg.Get}, nil
+		return newStandardTimeGetter(arg), nil
 	case strings.HasPrefix(name, "BoolGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardBoolGetter[K]{Getter: arg.Get}, nil
+		return newStandardBoolGetter(arg), nil
 	case strings.HasPrefix(name, "BoolLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardBoolLikeGetter[K]{Getter: arg.Get}, nil
+		return newStandardBoolLikeGetter(arg), nil
 	case strings.HasPrefix(name, "ByteSliceLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardByteSliceLikeGetter[K]{Getter: arg.Get}, nil
+		return newStandardByteSliceLikeGetter(arg), nil
 	case name == "Enum":
 		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
@@ -709,19 +737,20 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	return vals, nil
 }
 
-// optionalManager provides a way for the parser to handle Optional[T] structs
-// without needing to know the concrete type of T, which is inaccessible through
-// the reflect package.
-// Would likely be resolved by https://github.com/golang/go/issues/54393.
-type optionalManager interface {
-	// set takes a non-reflection value and returns a reflect.Value of
-	// an Optional[T] struct with this value set.
-	set(val any) reflect.Value
-
-	// get returns a reflect.Value value of the value contained within
-	// an Optional[T]. This allows obtaining a reflect.Type for T.
-	get() reflect.Value
+// typedValueWrapper is an interface that allows types to wrap values with generic types,
+// and access the type information at runtime.
+type typedValueWrapper interface {
+	// getWrappedType returns the type of the wrapped value.
+	getWrappedType() reflect.Type
+	// setWrappedValue sets the wrapped value to the provided reflect.Value.
+	setWrappedValue(val reflect.Value) error
+	// getRawValue returns the raw value of the wrapped type, if applicable, it should
+	// return a pointer to the value so it can be modified externally.
+	getRawValue() any
 }
+
+// Ensure Optional implements typedValueWrapper.
+var _ typedValueWrapper = (*Optional[any])(nil)
 
 // Optional is used to represent an optional function argument
 type Optional[T any] struct {
@@ -729,39 +758,41 @@ type Optional[T any] struct {
 	hasValue bool
 }
 
-// This is called only by reflection.
-func (Optional[T]) set(val any) reflect.Value {
-	return reflect.ValueOf(Optional[T]{
-		val:      val.(T),
-		hasValue: true,
-	})
+func (*Optional[T]) getWrappedType() reflect.Type {
+	return reflect.TypeFor[T]()
+}
+
+func (o *Optional[T]) setWrappedValue(val reflect.Value) error {
+	typedVal, ok := val.Interface().(T)
+	if !ok {
+		return fmt.Errorf("cannot set value of type %q to an Optional of type %q", val.Type(), reflect.TypeFor[T]())
+	}
+	o.val = typedVal
+	o.hasValue = true
+	return nil
+}
+
+func (o *Optional[T]) getRawValue() any {
+	return &o.val
 }
 
 // IsEmpty returns true if the Optional[T] does not contain a value.
-func (o Optional[T]) IsEmpty() bool {
+func (o *Optional[T]) IsEmpty() bool {
 	return !o.hasValue
 }
 
 // Get returns the value contained in the Optional[T].
-func (o Optional[T]) Get() T {
+func (o *Optional[T]) Get() T {
 	return o.val
 }
 
 // GetOr returns the value contained in the Optional[T] if it exists,
 // otherwise it returns the default value provided.
-func (o Optional[T]) GetOr(value T) T {
+func (o *Optional[T]) GetOr(value T) T {
 	if !o.hasValue {
 		return value
 	}
 	return o.val
-}
-
-func (o Optional[T]) get() reflect.Value {
-	// `(reflect.Value).Call` will create a reflect.Value containing a zero-valued T.
-	// Trying to create a reflect.Value for T by calling reflect.TypeOf or
-	// reflect.ValueOf on an empty T value creates an invalid reflect.Value object,
-	// the `Call` method appears to do extra processing to capture the type.
-	return reflect.ValueOf(o).MethodByName("Get").Call(nil)[0]
 }
 
 // NewTestingOptional allows creating an Optional with a value already populated for use in testing
@@ -771,4 +802,95 @@ func NewTestingOptional[T any](val T) Optional[T] {
 		val:      val,
 		hasValue: true,
 	}
+}
+
+// typedGetter is like Getter, but with typed return values.
+type typedGetter[K, V any] interface {
+	Get(ctx context.Context, tCtx K) (V, error)
+}
+
+// Ensure LiteralGetter implements typedValueWrapper.
+var _ typedValueWrapper = (*LiteralGetter[any, any, typedGetter[any, any]])(nil)
+
+// LiteralGetter allows OTTL functions to use getters that might return literal
+// values. It provides a way to check if the getter is a literal getter and to retrieve
+// the literal value from it.
+// K is the type of the context, G is the type of the getter, and V is the type of
+// the literal value returned by getter G.
+type LiteralGetter[K, V any, G typedGetter[K, V]] struct {
+	getter G
+}
+
+func (*LiteralGetter[K, V, G]) getWrappedType() reflect.Type {
+	return reflect.TypeFor[G]()
+}
+
+func (p *LiteralGetter[K, V, G]) setWrappedValue(val reflect.Value) error {
+	typedVal, ok := val.Interface().(G)
+	if !ok {
+		return fmt.Errorf("cannot set value of type %s to a Getter of type %s", val.Type(), reflect.TypeFor[G]())
+	}
+	p.getter = typedVal
+	return nil
+}
+
+func (p *LiteralGetter[K, V, G]) getRawValue() any {
+	return p.getter
+}
+
+// IsLiteral checks if the wrapped getter holds a literal getter.
+func (p *LiteralGetter[K, G, V]) IsLiteral() bool {
+	lg, ok := any(p.getter).(literalGetter)
+	return ok && lg.isLiteral()
+}
+
+// GetLiteral retrieves the literal value from the getter.
+// If the getter is not a literal getter, or the value it's holding is not a literal,
+// an error is returned.
+func (p *LiteralGetter[K, V, G]) GetLiteral() (V, error) {
+	lg, ok := any(p.getter).(literalGetter)
+	if !ok {
+		return *new(V), fmt.Errorf("getter of type %T is not a literal getter", p.getter)
+	}
+	val, err := lg.getLiteral()
+	if err != nil {
+		return *new(V), err
+	}
+	if typedVal, ok := val.(V); ok {
+		return typedVal, nil
+	}
+	// should not happen thanks to the type restriction
+	return *new(V), fmt.Errorf("value is not of expected type %T, got %T instead", reflect.TypeFor[V](), val)
+}
+
+func (p *LiteralGetter[K, V, G]) Get(ctx context.Context, tCtx K) (V, error) {
+	return p.getter.Get(ctx, tCtx)
+}
+
+// mockLiteralGetter is a mock implementation of LiteralGetter that can be used for testing.
+type mockLiteralGetter[K, V any] struct {
+	valueGetter func(context.Context, K) (V, error)
+	literal     bool
+}
+
+func (m mockLiteralGetter[K, V]) Get(_ context.Context, _ K) (V, error) {
+	return m.valueGetter(context.Background(), *new(K))
+}
+
+func (m mockLiteralGetter[K, V]) isLiteral() bool {
+	return m.literal
+}
+
+func (m mockLiteralGetter[K, V]) getLiteral() (any, error) {
+	return m.valueGetter(context.Background(), *new(K))
+}
+
+// NewTestingLiteralGetter allows creating an LiteralGetter with a getter already populated
+// for use in testing OTTL functions.
+func NewTestingLiteralGetter[K, V any, G typedGetter[K, V]](literal bool, getter G) LiteralGetter[K, V, G] {
+	mockedGetter := mockLiteralGetter[K, V]{
+		valueGetter: getter.Get,
+		literal:     literal,
+	}
+	return LiteralGetter[K, V, G]{getter: any(mockedGetter).(G)}
 }
