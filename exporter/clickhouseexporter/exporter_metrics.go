@@ -37,12 +37,12 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	metrics.SetLogger(e.logger)
 
-	dsn, err := e.cfg.buildDSN()
+	opt, err := e.cfg.buildClickHouseOptions()
 	if err != nil {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClient(dsn)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt)
 	if err != nil {
 		return err
 	}

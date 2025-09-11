@@ -24,13 +24,8 @@ func DatabaseFromDSN(dsn string) (string, error) {
 	return opt.Auth.Database, nil
 }
 
-// NewClickhouseClient creates a new ClickHouse client from a DSN URL string.
-func NewClickhouseClient(dsn string) (driver.Conn, error) {
-	opt, err := clickhouse.ParseDSN(dsn)
-	if err != nil {
-		return nil, err
-	}
-
+// NewClickhouseClientFromOptions creates a new ClickHouse client from a clickhouse.Options struct.
+func NewClickhouseClientFromOptions(opt *clickhouse.Options) (driver.Conn, error) {
 	// Always connect to default database since configured database may not exist yet.
 	// TODO: only do this if createSchema is true
 	opt.Auth.Database = DefaultDatabase
@@ -67,7 +62,7 @@ func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr st
 		return nil
 	}
 
-	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", database, clusterStr)
+	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %q %s", database, clusterStr)
 
 	err := db.Exec(ctx, ddl)
 	if err != nil {
