@@ -17,7 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
@@ -46,7 +46,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -93,7 +93,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = sampling.InvertSampled
+	mpe1.NextDecision = samplingpolicy.InvertSampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -143,8 +143,8 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.Sampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Sampled
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -196,8 +196,8 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// First policy takes precedence
-	mpe1.NextDecision = sampling.Sampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Sampled
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -247,7 +247,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.NotSampled
+	mpe1.NextDecision = samplingpolicy.NotSampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -295,7 +295,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.NotSampled
+	mpe1.NextDecision = samplingpolicy.NotSampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -340,8 +340,8 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.InvertNotSampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.InvertNotSampled
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -393,8 +393,8 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.InvertNotSampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.InvertNotSampled
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -442,8 +442,8 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The combined decision from the policies is NotSampled
-	mpe1.NextDecision = sampling.InvertSampled
-	mpe2.NextDecision = sampling.NotSampled
+	mpe1.NextDecision = samplingpolicy.InvertSampled
+	mpe2.NextDecision = samplingpolicy.NotSampled
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -502,6 +502,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 			withDecisionBatcher(idb),
 			withPolicies(policies),
 			WithSampledDecisionCache(c),
+			withRecordPolicy(),
 		},
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
@@ -516,7 +517,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be sampled, this will later be set to not sampled, but the sampling decision will be cached
-	mpe.NextDecision = sampling.Sampled
+	mpe.NextDecision = samplingpolicy.Sampled
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -550,13 +551,22 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	require.False(t, ok)
 
 	// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = sampling.NotSampled
+	mpe.NextDecision = samplingpolicy.NotSampled
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
 	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
 	require.Equal(t, 1, mpe.EvaluationCount)
 	require.Equal(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
+	allTraces := nextConsumer.AllTraces()
+	require.Len(t, allTraces, 2)
+
+	// Second trace should have the cached decision attribute
+	cachedAttr, ok := allTraces[1].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.cached_decision")
+	if !ok {
+		assert.FailNow(t, "Did not find expected attribute")
+	}
+	require.True(t, cachedAttr.Bool())
 }
 
 func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
@@ -593,7 +603,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be NOT sampled, this will later be set to sampled, but the sampling decision will be cached
-	mpe.NextDecision = sampling.NotSampled
+	mpe.NextDecision = samplingpolicy.NotSampled
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -627,7 +637,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	require.False(t, ok)
 
 	// Set next decision to sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = sampling.Sampled
+	mpe.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -668,8 +678,8 @@ func TestSampleOnFirstMatch(t *testing.T) {
 	}()
 
 	// Second policy matches, last policy should not be evaluated
-	mpe1.NextDecision = sampling.NotSampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.NotSampled
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
