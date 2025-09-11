@@ -59,7 +59,7 @@ func TestNewMarshaller(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "invalid jsonl format for traces",
+			name: "valid jsonl format for traces",
 			config: &Config{
 				Formats: &Formats{
 					Logs:    formatTypeJSONL,
@@ -68,7 +68,31 @@ func TestNewMarshaller(t *testing.T) {
 				},
 				Encodings: &Encodings{},
 			},
-			shouldError: true,
+			shouldError: false,
+		},
+		{
+			name: "valid jsonl format for metrics",
+			config: &Config{
+				Formats: &Formats{
+					Logs:    formatTypeJSONL,
+					Metrics: formatTypeJSONL,
+					Traces:  formatTypeProto,
+				},
+				Encodings: &Encodings{},
+			},
+			shouldError: false,
+		},
+		{
+			name: "valid all jsonl formats",
+			config: &Config{
+				Formats: &Formats{
+					Logs:    formatTypeJSONL,
+					Metrics: formatTypeJSONL,
+					Traces:  formatTypeJSONL,
+				},
+				Encodings: &Encodings{},
+			},
+			shouldError: false,
 		},
 		{
 			name: "invalid format",
