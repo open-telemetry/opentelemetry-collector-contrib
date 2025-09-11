@@ -864,10 +864,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_sapm
-    name: receiver_sapm
-    paths:
-    - receiver/sapmreceiver/**
   - component_id: receiver_signalfx
     name: receiver_signalfx
     paths:

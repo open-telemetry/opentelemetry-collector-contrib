@@ -207,6 +207,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/dynatrace
+      - processor/resourcedetection/internal/hetzner
       - processor/schema
       - processor/span
       - processor/sumologic
@@ -303,7 +304,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
