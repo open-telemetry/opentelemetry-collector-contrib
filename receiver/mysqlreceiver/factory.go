@@ -143,7 +143,7 @@ func newCache[v any](size int) *lru.Cache[string, v] {
 	if size <= 0 {
 		size = 1
 	}
-	// lru will only return error when the size is less than 0
+	// Ignore returned error as lru will only return an error when the size is less than 0
 	cache, _ := lru.New[string, v](size)
 	return cache
 }
