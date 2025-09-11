@@ -1,0 +1,8 @@
+receivers:
+  otlpgmi:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+    license:
+      validation_url: https://license.example.com/validate
+      cache_timeout: 1800

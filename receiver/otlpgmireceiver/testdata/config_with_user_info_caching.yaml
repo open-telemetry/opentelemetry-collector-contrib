@@ -1,0 +1,30 @@
+receivers:
+  otlpgmi:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+    license:
+      validation_url: https://license.example.com/api/validate
+      cache_timeout: 7200  # Cache for 2 hours
+
+# Example client usage with user info caching:
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/traces
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/metrics  
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/logs
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/profiles
+
+# Expected validation service response format:
+# {
+#   "user_id": "user123",
+#   "username": "john.doe", 
+#   "email": "john@example.com",
+#   "company": "Acme Corp",
+#   "plan": "enterprise",
+#   "expires_at": 1640995200,
+#   "metadata": {
+#     "region": "us-west",
+#     "tier": "premium"
+#   }
+# }

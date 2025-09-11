@@ -1,0 +1,16 @@
+receivers:
+  otlpgmi:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+    license:
+      validation_url: https://license.example.com/api/validate
+      cache_timeout: 3600
+
+# Example client usage:
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/traces
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/metrics  
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/logs
+# POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/profiles

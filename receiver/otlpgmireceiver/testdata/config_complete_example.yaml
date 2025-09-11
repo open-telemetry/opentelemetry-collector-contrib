@@ -1,0 +1,48 @@
+receivers:
+  otlpgmi:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+    license:
+      validation_url: https://api.example.com/v1/license/validate
+      cache_timeout: 3600  # Cache for 1 hour
+
+# Example usage:
+# 1. Client sends data with license key in URL:
+#    POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/traces
+#    POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/metrics
+#    POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/logs
+#    POST http://localhost:4318/ABC123-DEF456-GHI789-JKL012/v1/profiles
+
+# 2. Receiver validates license by calling:
+#    GET https://api.example.com/v1/license/validate?licenseKey=ABC123-DEF456-GHI789-JKL012
+
+# 3. Expected validation service response:
+#    {
+#      "user_id": "user123",
+#      "username": "john.doe",
+#      "email": "john@example.com",
+#      "company": "Acme Corp",
+#      "plan": "enterprise",
+#      "expires_at": 1640995200,
+#      "metadata": {
+#        "region": "us-west",
+#        "tier": "premium",
+#        "department": "engineering"
+#      }
+#    }
+
+# 4. User information is automatically injected as resource attributes:
+#    - user.id: "user123"
+#    - user.name: "john.doe"
+#    - user.email: "john@example.com"
+#    - user.company: "Acme Corp"
+#    - user.plan: "enterprise"
+#    - user.expires_at: 1640995200
+#    - user.metadata.region: "us-west"
+#    - user.metadata.tier: "premium"
+#    - user.metadata.department: "engineering"
+
+# 5. All telemetry data (traces, metrics, logs, profiles) will contain these attributes

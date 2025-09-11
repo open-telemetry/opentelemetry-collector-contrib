@@ -1,0 +1,27 @@
+receivers:
+  otlpgmi:
+    protocols:
+      http:
+        endpoint: localhost:4318
+    license:
+      validation_url: https://api.example.com/v1/license/validate
+      cache_timeout: 3600
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlpgmi]
+      exporters: [debug]
+    metrics:
+      receivers: [otlpgmi]
+      exporters: [debug]
+    logs:
+      receivers: [otlpgmi]
+      exporters: [debug]
+    profiles:
+      receivers: [otlpgmi]
+      exporters: [debug]
