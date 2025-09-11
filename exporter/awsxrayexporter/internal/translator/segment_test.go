@@ -1180,7 +1180,7 @@ func TestProducerSpanNonAwsRemoteServiceName(t *testing.T) {
 	spanName := "my-topic send"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributePeerService] = "ProducerService"
+	attributes[string(conventionsv112.PeerServiceKey)] = "ProducerService"
 	resource := constructDefaultResource()
 	span := constructProducerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -1322,7 +1322,7 @@ func validateLocalRootSegmentTypeDependencySubsegment(t *testing.T, segment *aws
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
 	assert.Len(t, segment.Metadata["default"], 30)
-	assert.Equal(t, "receive", segment.Metadata["default"][conventions.AttributeMessagingOperation])
+	assert.Equal(t, "receive", segment.Metadata["default"][string(conventionsv112.MessagingOperationKey)])
 	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
 	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
 	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
