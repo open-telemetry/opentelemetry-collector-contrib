@@ -217,7 +217,7 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 				profile := scopeProfile.Profiles().At(k)
 
 				pCtx := ottlprofile.NewTransformContext(profile, ld.Dictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
-				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile)
+				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile, ld.Dictionary())
 				multiError = errors.Join(multiError, counter.update(ctx, attributes, pCtx))
 			}
 		}

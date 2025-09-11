@@ -264,7 +264,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
-				profileAttrs := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile)
+				profileAttrs := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
 
 				for _, md := range sm.profileMetricDefs {
 					filteredProfileAttrs, ok := md.FilterAttributes(profileAttrs)

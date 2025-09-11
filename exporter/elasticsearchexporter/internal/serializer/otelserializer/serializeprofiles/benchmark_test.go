@@ -19,14 +19,19 @@ func BenchmarkTransform(b *testing.B) {
 			name: "with a basic recorded sample",
 			buildDictionary: func() pprofile.ProfilesDictionary {
 				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append("")
+
 				a := dic.AttributeTable().AppendEmpty()
-				a.SetKey("profile.frame.type")
+				dic.StringTable().Append("profile.frame.type")
+				a.SetKeyStrindex(1)
 				a.Value().SetStr("native")
 				a = dic.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
+				a.SetKeyStrindex(2)
+				dic.StringTable().Append("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildIDEncoded)
 				a = dic.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
+				a.SetKeyStrindex(3)
+				dic.StringTable().Append("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildID2Encoded)
 
 				dic.StringTable().Append("firefox", "libc.so", "samples", "count", "cpu", "nanoseconds")
@@ -55,7 +60,7 @@ func BenchmarkTransform(b *testing.B) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				st := p.SampleType().AppendEmpty()
+				st := p.SampleType()
 				st.SetTypeStrindex(2)
 				st.SetUnitStrindex(3)
 				pt := p.PeriodType()
@@ -64,9 +69,7 @@ func BenchmarkTransform(b *testing.B) {
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
-				s.Value().Append(1)
-				s.SetLocationsLength(2)
-				s.SetLocationsStartIndex(0)
+				s.Values().Append(1)
 
 				return rp
 			},

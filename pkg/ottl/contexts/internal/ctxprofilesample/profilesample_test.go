@@ -24,14 +24,6 @@ func TestPathGetSetter(t *testing.T) {
 		keys []ottl.Key[*profileSampleContext]
 	}{
 		{
-			path: "locations_start_index",
-			val:  int64(42),
-		},
-		{
-			path: "locations_length",
-			val:  int64(43),
-		},
-		{
 			path: "values",
 			val:  []int64{73, 74, 75},
 		},

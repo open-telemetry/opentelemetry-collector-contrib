@@ -45,9 +45,9 @@ The throttling duration in ms imposed by the broker when exporting messages. [de
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | deprecated |
 
 #### Attributes
 
@@ -113,9 +113,9 @@ The time it took in ms to export a batch of messages. [deprecated]
 
 Deprecated in favor of kafka_exporter_write_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | deprecated |
 
 #### Attributes
 
@@ -132,9 +132,9 @@ The number of exported messages. [deprecated]
 
 Deprecated in favor of kafka_exporter_records.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | deprecated |
 
 #### Attributes
 

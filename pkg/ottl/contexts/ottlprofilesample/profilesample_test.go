@@ -190,8 +190,6 @@ func createProfileSampleTelemetry() (pprofile.Sample, pprofile.Profile) {
 	profile := pprofile.NewProfile()
 	sample := profile.Sample().AppendEmpty()
 	sample.SetLinkIndex(42)
-	sample.SetLocationsStartIndex(73)
-	sample.SetLocationsLength(97)
 
 	timestamps := sample.TimestampsUnixNano()
 	if timestamps.Len() == 0 {
@@ -199,7 +197,7 @@ func createProfileSampleTelemetry() (pprofile.Sample, pprofile.Profile) {
 		timestamps.Append(uint64(time.Now().Unix()))
 	}
 
-	values := sample.Value()
+	values := sample.Values()
 	if values.Len() == 0 {
 		values.EnsureCapacity(1)
 		values.Append(3)

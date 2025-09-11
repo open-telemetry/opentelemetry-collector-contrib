@@ -54,11 +54,13 @@ func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 
 	profile.AttributeIndices().Append(0)
 	a := dic.AttributeTable().AppendEmpty()
-	a.SetKey("app")
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("app")
 	a.Value().SetStr("server")
 	profile.AttributeIndices().Append(0)
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKey("instance_num")
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("instance_num")
 	a.Value().SetInt(1)
 }
 
@@ -68,10 +70,12 @@ func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 
 	profile.AttributeIndices().Append(0)
 	a := dic.AttributeTable().AppendEmpty()
-	a.SetKey("customer")
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("customer")
 	a.Value().SetStr("acme")
 	profile.AttributeIndices().Append(0)
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKey("env")
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("env")
 	a.Value().SetStr("dev")
 }
