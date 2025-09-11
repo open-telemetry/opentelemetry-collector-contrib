@@ -960,7 +960,9 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					}
 				}
 				if c.Rules.CronJobUID {
-					tags[string(conventions.K8SCronJobUIDKey)] = c.jobToCronJobUID[string(ref.UID)]
+					if cronJob, ok := c.jobToCronJobUID[string(ref.UID)]; ok && cronJob != "" {
+						tags[string(conventions.K8SCronJobUIDKey)] = cronJob
+					}
 				}
 			}
 		}
