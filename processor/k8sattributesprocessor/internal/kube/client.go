@@ -723,6 +723,16 @@ func (c *WatchClient) GetDeployment(deploymentUID string) (*Deployment, bool) {
 	return nil, false
 }
 
+func (c *WatchClient) GetReplicaSet(uid string) (*ReplicaSet, bool) {
+	c.m.RLock()
+	replicaset, ok := c.ReplicaSets[uid]
+	c.m.RUnlock()
+	if ok {
+		return replicaset, ok
+	}
+	return nil, false
+}
+
 func (c *WatchClient) GetStatefulSet(statefulSetUID string) (*StatefulSet, bool) {
 	c.m.RLock()
 	statefulSet, ok := c.StatefulSets[statefulSetUID]
@@ -813,7 +823,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						name := replicaset.Deployment.Name
 						if name != "" {
 							if c.Rules.DeploymentName {
@@ -827,7 +837,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					}
 				}
 				if c.Rules.DeploymentUID {
-					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						if replicaset.Deployment.Name != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
@@ -1244,21 +1254,21 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		StartTime:      pod.Status.StartTime,
 	}
 
-	if replicaset, ok := c.getReplicaSet(getPodReplicaSetUID(pod)); ok {
+	if replicaset, ok := c.GetReplicaSet(getPodReplicaSetUID(pod)); ok {
 		if replicaset.Deployment.UID != "" {
 			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
 	}
 
-	if statefulset, ok := c.getStatefulSet(getPodStatefulSetUID(pod)); ok {
+	if statefulset, ok := c.GetStatefulSet(getPodStatefulSetUID(pod)); ok {
 		newPod.StatefulSetUID = statefulset.UID
 	}
 
-	if daemonset, ok := c.getDaemonSet(getPodDaemonSetUID(pod)); ok {
+	if daemonset, ok := c.GetDaemonSet(getPodDaemonSetUID(pod)); ok {
 		newPod.DaemonSetUID = daemonset.UID
 	}
 
-	if job, ok := c.getJob(getPodJobUID(pod)); ok {
+	if job, ok := c.GetJob(getPodJobUID(pod)); ok {
 		newPod.JobUID = job.UID
 	}
 
@@ -1770,46 +1780,6 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 	}
 	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
 	return &transformedReplicaset
-}
-
-func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
-	c.m.RLock()
-	replicaset, ok := c.ReplicaSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return replicaset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getStatefulSet(uid string) (*StatefulSet, bool) {
-	c.m.RLock()
-	statefulset, ok := c.StatefulSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return statefulset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getDaemonSet(uid string) (*DaemonSet, bool) {
-	c.m.RLock()
-	daemonset, ok := c.DaemonSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return daemonset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getJob(uid string) (*Job, bool) {
-	c.m.RLock()
-	job, ok := c.Jobs[uid]
-	c.m.RUnlock()
-	if ok {
-		return job, ok
-	}
-	return nil, false
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
