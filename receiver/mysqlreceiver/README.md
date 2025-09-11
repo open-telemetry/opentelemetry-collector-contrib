@@ -68,7 +68,7 @@ The following settings are optional:
         - However, the top queries collection will only run after 60 seconds have passed since the last collection.
       - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
         - In this case, `top_query_collection.collection_internal` will make no effects to the collection
-  - `query_plan_cache_size`: (optional, default=1000). The query plan cache size. Once we got explain for one query, we will store it in the cache.
+  - `query_plan_cache_size`: (optional, default = `1000`). The query plan cache size. Once we got explain for one query, we will store it in the cache.
     This defines the cache's size for query plan.
   - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`.
 
