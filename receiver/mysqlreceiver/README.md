@@ -58,7 +58,7 @@ The following settings are optional:
   - `max_rows_per_query` - maximum number of rows to collect per scrape (default=`100`)
 - `top_query_collection`: Additional configuration for top queries collection (`db.server.top_query` event):
   - `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
-    - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
+    - Queries that finished execution outside the lookback window are not included in the collection. Increasing the lookback window will be useful for capturing long-running queries.
   - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
   - `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
   - `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
