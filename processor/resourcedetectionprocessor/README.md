@@ -688,6 +688,20 @@ other sources to the collector, then these describe the monitored entity in the 
 Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
 or the collector's host instead, which might be inaccurate.
 
+### Hetzner
+
+Uses the [Hetzner metadata API](https://docs.hetzner.cloud/reference/cloud#server-metadata) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Hetzner Detector Resource Attributes](./internal/hetzner/documentation.md).
+
+Hetzner custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/hetzner:
+    detectors: ["hetzner"]
+```
+
 ## Configuration
 
 ```yaml
